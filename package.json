@@ -1,0 +1,12 @@
+{
+  "name": "crater",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gentest": "bun run tools/gentest.ts"
+  },
+  "dependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}

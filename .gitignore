@@ -3,3 +3,10 @@ target/
 .mooncakes/
 .moonagent/
 taffy
+
+# Dependencies
+node_modules/
+bun.lock
+
+# MoonBit generated files
+*.generated.mbti
