@@ -537,3 +537,176 @@ test "block_warns_on_absolute" {
   inspect(result.warnings.length(), content="1")
   inspect(result.warnings[0], content="UnsupportedPosition(\"abs-child\")")
 }
+
+///|
+/// From taffy: block_display_none
+test "block_display_none" {
+  let default_style = @style.Style::default()
+
+  let child1_style = { ..default_style, height: @types.Length(10.0) }
+  let child1 = @node.Node::leaf("child1", child1_style)
+
+  // This child has display: none
+  let child2_style = {
+    ..default_style,
+    display: @style.None,
+    height: @types.Length(10.0),
+  }
+  let child2 = @node.Node::leaf("child2", child2_style)
+
+  let child3_style = { ..default_style, height: @types.Length(10.0) }
+  let child3 = @node.Node::leaf("child3", child3_style)
+
+  let root_style = { ..default_style, width: @types.Length(50.0) }
+  let root = @node.Node::new("root", root_style, [child1, child2, child3])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Root height should be 20px (10 + 10), not 30px
+  // display:none child should not contribute to layout
+  inspect(layout.width, content="50")
+  inspect(layout.height, content="20")
+
+  // First visible child
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[0].height, content="10")
+
+  // Second visible child should be at y=10 (skipping the display:none child)
+  inspect(layout.children[1].y, content="10")
+  inspect(layout.children[1].height, content="10")
+}
+
+///|
+test "block_auto_width_fills_parent" {
+  let default_style = @style.Style::default()
+
+  let child_style = {
+    ..default_style,
+    height: @types.Length(20.0),
+    // width: auto (default)
+  }
+  let child = @node.Node::leaf("child", child_style)
+
+  let root_style = {
+    ..default_style,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Child with auto width should fill parent width
+  inspect(layout.children[0].width, content="200")
+}
+
+///|
+test "block_multiple_children_stacking" {
+  let default_style = @style.Style::default()
+
+  let children : Array[@node.Node] = []
+  for i = 0; i < 5; i = i + 1 {
+    let child_style = { ..default_style, height: @types.Length(20.0) }
+    children.push(@node.Node::leaf("child\{i}", child_style))
+  }
+
+  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root = @node.Node::new("root", root_style, children)
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Total height should be 100px (5 * 20)
+  inspect(layout.height, content="100")
+
+  // Each child should be stacked vertically
+  for i = 0; i < 5; i = i + 1 {
+    inspect(layout.children[i].y, content="\{i * 20}")
+  }
+}
+
+///|
+test "block_percentage_nested" {
+  let default_style = @style.Style::default()
+
+  // Grandchild with 50% width of child
+  let grandchild_style = {
+    ..default_style,
+    width: @types.Percent(0.5),
+    height: @types.Length(20.0),
+  }
+  let grandchild = @node.Node::leaf("grandchild", grandchild_style)
+
+  // Child with 50% width of root
+  let child_style = { ..default_style, width: @types.Percent(0.5) }
+  let child = @node.Node::new("child", child_style, [grandchild])
+
+  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root = @node.Node::new("root", root_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Child = 200 * 0.5 = 100
+  inspect(layout.children[0].width, content="100")
+  // Grandchild = 100 * 0.5 = 50
+  inspect(layout.children[0].children[0].width, content="50")
+}
+
+///|
+test "block_border_and_padding_combined" {
+  let default_style = @style.Style::default()
+
+  let child_style = { ..default_style, height: @types.Length(30.0) }
+  let child = @node.Node::leaf("child", child_style)
+
+  let root_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    padding: {
+      left: @types.Length(5.0),
+      right: @types.Length(5.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(10.0),
+    },
+    border: {
+      left: @types.Length(2.0),
+      right: @types.Length(2.0),
+      top: @types.Length(3.0),
+      bottom: @types.Length(3.0),
+    },
+  }
+  let root = @node.Node::new("root", root_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Child x = border.left + padding.left = 2 + 5 = 7
+  // Child y = border.top + padding.top = 3 + 10 = 13
+  inspect(layout.children[0].x, content="7")
+  inspect(layout.children[0].y, content="13")
+
+  // Child width = 100 - (5+5) - (2+2) = 86
+  inspect(layout.children[0].width, content="86")
+
+  // Root height = border.top + padding.top + child + padding.bottom + border.bottom
+  // = 3 + 10 + 30 + 10 + 3 = 56
+  inspect(layout.height, content="56")
+}

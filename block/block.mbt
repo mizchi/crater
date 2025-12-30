@@ -108,8 +108,15 @@ fn compute_internal(
   let child_layouts : Array[@node.Layout] = []
   let mut current_y = 0.0
   let mut prev_margin_bottom = 0.0
+  let mut is_first_visible = true
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
+
+    // Skip children with display: none
+    if child.style.display == @style.None {
+      continue
+    }
+
     let child_ctx : @node.LayoutContext = {
       available_width: child_available_width,
       available_height: child_available_height,
@@ -118,11 +125,12 @@ fn compute_internal(
 
     // Calculate collapsed margin between siblings
     // Adjacent vertical margins collapse to the maximum of the two
-    let collapsed_margin = if i == 0 {
+    let collapsed_margin = if is_first_visible {
       child_layout.margin.top
     } else {
       max(prev_margin_bottom, child_layout.margin.top)
     }
+    is_first_visible = false
 
     // Position child relative to content area
     let positioned_layout : @node.Layout = {

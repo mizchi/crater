@@ -5,7 +5,7 @@ pub(all) enum Display {
   Flex
   Grid
   None
-} derive(Show)
+} derive(Show, Eq)
 
 ///|
 /// CSS position property

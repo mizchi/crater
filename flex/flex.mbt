@@ -385,7 +385,7 @@ fn compute_internal(
     let child = children[i]
 
     // Compute cross position based on align-items
-    let cross_pos = compute_align(
+    let cross_align_offset = compute_align(
       style.align_items,
       item.final_cross,
       cross_size.unwrap_or(max_cross),
@@ -394,14 +394,15 @@ fn compute_internal(
 
     // Add margin to main position
     let main_start = if is_row { item.margin.left } else { item.margin.top }
+    let cross_start = if is_row { item.margin.top } else { item.margin.left }
 
     // Calculate x, y based on direction
     let (child_x, child_y) = if is_row {
       let x = main_pos + main_start + padding.left + border.left
-      let y = cross_pos + padding.top + border.top
+      let y = cross_align_offset + cross_start + padding.top + border.top
       (x, y)
     } else {
-      let x = cross_pos + padding.left + border.left
+      let x = cross_align_offset + cross_start + padding.left + border.left
       let y = main_pos + main_start + padding.top + border.top
       (x, y)
     }
