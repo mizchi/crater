@@ -1,9 +1,9 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node --experimental-strip-types
 /**
  * Test case generator for crater
  *
  * Usage:
- *   bun run tools/gentest.ts <html-file> [output-json]
+ *   npm run gentest <html-file> [output-json]
  *
  * This script:
  * 1. Opens an HTML file in a headless browser
@@ -181,10 +181,10 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log('Usage: bun run tools/gentest.ts <html-file> [output-json]');
+    console.log('Usage: npm run gentest -- <html-file> [output-json]');
     console.log('');
     console.log('Example:');
-    console.log('  bun run tools/gentest.ts taffy/test_fixtures/block/block_basic.html');
+    console.log('  npm run gentest -- taffy/test_fixtures/block/block_basic.html');
     process.exit(1);
   }
 

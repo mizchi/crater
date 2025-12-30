@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "gentest": "bun run tools/gentest.ts"
+    "gentest": "node --experimental-strip-types tools/gentest.ts",
+    "test": "vitest"
   },
   "dependencies": {
     "puppeteer": "^23.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
   }
 }
