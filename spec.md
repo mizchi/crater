@@ -18,8 +18,34 @@ Pure MoonBit implementation of CSS layout calculation.
 - [x] min/max width/height
 - [x] Margin collapsing (adjacent siblings)
 - [x] Percentage margin/padding (relative to parent width per CSS spec)
-- [ ] Flex layout
+- [x] Flex layout (row/column, justify-content, align-items, flex-grow/shrink)
 - [ ] Grid layout
+
+## Implementation Roadmap
+
+1. **Phase 1**: Flex layout ✅
+2. **Phase 2**: Grid layout
+3. **Phase 3**: `position: absolute/fixed`
+4. **Phase 4**: Float (simplified, if needed)
+
+## Unsupported Features Policy
+
+### Float
+
+`float` is intentionally deferred due to implementation complexity:
+- Requires BFC (Block Formatting Context) handling
+- Complex interaction with `clear`, `overflow`, inline elements
+- Modern layouts should use Flex/Grid instead
+
+**Current behavior**: When `float` is detected, emit a warning and treat as normal block flow.
+
+```moonbit
+// Proposed warning API
+pub enum LayoutWarning {
+  UnsupportedFloat(String)  // node id
+  UnsupportedPosition(String)
+}
+```
 
 ## TODO
 
@@ -55,10 +81,28 @@ Use cases:
 2. Client-side: Pass actual measured dimensions from browser
 3. Testing: Use fixed placeholder dimensions
 
+### Hit Testing
+
+Point-based hit testing to identify which element is at a given coordinate:
+
+```moonbit
+// Find element at point (x, y) in layout tree
+pub fn hit_test(layout : Layout, x : Double, y : Double) -> Layout?
+
+// Find all elements containing point (for nested elements)
+pub fn hit_test_all(layout : Layout, x : Double, y : Double) -> Array[Layout]
+```
+
+Use cases:
+1. Click handling: Identify clicked element
+2. Hover detection: Find element under cursor
+3. Touch handling: Identify tapped element
+4. Accessibility: Navigate between elements
+
 ### Future Features
 
 - [ ] `position: absolute` layout
 - [ ] `overflow` handling
-- [ ] `z-index` stacking context (for hit testing)
+- [ ] `z-index` stacking context (for hit testing order)
 - [ ] CSS Grid tracks and areas
 - [ ] Flex wrap and grow/shrink

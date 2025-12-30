@@ -1,0 +1,66 @@
+{
+  "name": "block_basic",
+  "viewport": {
+    "width": 800,
+    "height": 600
+  },
+  "root": {
+    "id": "test-root",
+    "style": {
+      "display": "block",
+      "width": {
+        "unit": "px",
+        "value": 50
+      },
+      "height": {
+        "unit": "auto"
+      }
+    },
+    "layout": {
+      "x": 0,
+      "y": 0,
+      "width": 50,
+      "height": 20
+    },
+    "children": [
+      {
+        "id": "node",
+        "style": {
+          "width": {
+            "unit": "auto"
+          },
+          "height": {
+            "unit": "px",
+            "value": 10
+          }
+        },
+        "layout": {
+          "x": 0,
+          "y": 0,
+          "width": 50,
+          "height": 10
+        },
+        "children": []
+      },
+      {
+        "id": "node",
+        "style": {
+          "width": {
+            "unit": "auto"
+          },
+          "height": {
+            "unit": "px",
+            "value": 10
+          }
+        },
+        "layout": {
+          "x": 0,
+          "y": 10,
+          "width": 50,
+          "height": 10
+        },
+        "children": []
+      }
+    ]
+  }
+}
