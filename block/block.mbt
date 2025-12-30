@@ -105,7 +105,7 @@ fn compute_internal(
   }
 
   // Layout children with margin collapsing
-  let child_layouts : Array[@node.Layout] = []
+  let child_layouts : Array[@node.Layout] = Array::new(capacity=node.children.length())
   let mut current_y = 0.0
   let mut prev_margin_bottom = 0.0
   let mut is_first_visible = true

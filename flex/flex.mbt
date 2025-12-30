@@ -135,7 +135,7 @@ fn compute_internal(
   }
 
   // Collect flex items info
-  let flex_items : Array[FlexItem] = []
+  let flex_items : Array[FlexItem] = Array::new(capacity=child_count)
   let mut total_flex_grow = 0.0
   let mut total_flex_shrink = 0.0
   let mut total_base_main = 0.0
@@ -361,26 +361,13 @@ fn compute_internal(
   )
 
   // Phase 5: Build child layouts
-  let child_layouts : Array[@node.Layout] = []
+  let child_layouts : Array[@node.Layout] = Array::new(capacity=child_count)
   let mut main_pos = start_offset
 
-  // Handle reverse direction
-  let indices = if is_reverse {
-    let arr : Array[Int] = []
-    for i = child_count - 1; i >= 0; i = i - 1 {
-      arr.push(i)
-    }
-    arr
-  } else {
-    let arr : Array[Int] = []
-    for i = 0; i < child_count; i = i + 1 {
-      arr.push(i)
-    }
-    arr
-  }
-
-  for j = 0; j < indices.length(); j = j + 1 {
-    let i = indices[j]
+  // Iterate in order or reverse based on flex direction
+  for j = 0; j < child_count; j = j + 1 {
+    // Calculate actual index based on direction
+    let i = if is_reverse { child_count - 1 - j } else { j }
     let item = flex_items[i]
     let child = children[i]
 
