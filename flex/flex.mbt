@@ -218,24 +218,29 @@ fn compute_internal(
   }
 
   // Phase 2: Distribute remaining space (only if main size is defined)
-  if main_size_defined {
+  // Skip if no flex-grow/shrink needed
+  if main_size_defined && (total_flex_grow > 0.0 || total_flex_shrink > 0.0) {
     let remaining_space = main_size - total_base_main
 
     if remaining_space > 0.0 && total_flex_grow > 0.0 {
       // Grow items
       for i = 0; i < flex_items.length(); i = i + 1 {
         let item = flex_items[i]
-        let grow_amount = remaining_space * (item.flex_grow / total_flex_grow)
-        flex_items[i] = { ..item, final_main: item.base_main + grow_amount }
+        if item.flex_grow > 0.0 {
+          let grow_amount = remaining_space * (item.flex_grow / total_flex_grow)
+          flex_items[i] = { ..item, final_main: item.base_main + grow_amount }
+        }
       }
     } else if remaining_space < 0.0 && total_flex_shrink > 0.0 {
       // Shrink items
       let shrink_space = -remaining_space
       for i = 0; i < flex_items.length(); i = i + 1 {
         let item = flex_items[i]
-        let shrink_amount = shrink_space * (item.flex_shrink / total_flex_shrink)
-        let new_main = max(0.0, item.base_main - shrink_amount)
-        flex_items[i] = { ..item, final_main: new_main }
+        if item.flex_shrink > 0.0 {
+          let shrink_amount = shrink_space * (item.flex_shrink / total_flex_shrink)
+          let new_main = max(0.0, item.base_main - shrink_amount)
+          flex_items[i] = { ..item, final_main: new_main }
+        }
       }
     }
   }
@@ -244,7 +249,8 @@ fn compute_internal(
   for i = 0; i < flex_items.length(); i = i + 1 {
     let item = flex_items[i]
     let child_style = children[item.index].style
-    let mut final_main = item.final_main
+    let original_main = item.final_main
+    let mut final_main = original_main
 
     if is_row {
       match child_style.min_width {
@@ -292,7 +298,10 @@ fn compute_internal(
       }
     }
 
-    flex_items[i] = { ..item, final_main }
+    // Only update if changed
+    if final_main != original_main {
+      flex_items[i] = { ..item, final_main }
+    }
   }
 
   // Phase 3: Handle cross axis sizing
@@ -338,7 +347,10 @@ fn compute_internal(
       }
     }
 
-    flex_items[i] = { ..item, final_cross: constrained_cross }
+    // Only update if cross size changed from base
+    if constrained_cross != item.base_cross {
+      flex_items[i] = { ..item, final_cross: constrained_cross }
+    }
     max_cross = max(max_cross, constrained_cross + item.margin_cross)
   }
 
@@ -400,23 +412,41 @@ fn compute_internal(
       (item.final_cross, item.final_main)
     }
 
-    // Recursively compute grandchildren layout
-    let child_ctx : @node.LayoutContext = {
-      available_width: child_width,
-      available_height: Some(child_height),
-    }
-    let nested_layout = compute_nested(child, child_ctx, warnings)
-
-    let child_layout : @node.Layout = {
-      id: child.id,
-      x: child_x,
-      y: child_y,
-      width: child_width,
-      height: child_height,
-      margin: item.margin,
-      padding: nested_layout.padding,
-      border: nested_layout.border,
-      children: nested_layout.children,
+    // Build child layout - optimize for leaf nodes
+    let child_layout : @node.Layout = if child.children.length() == 0 {
+      // Leaf node: skip nested computation entirely
+      let child_style = child.style
+      let child_padding = resolve_rect(child_style.padding, child_width)
+      let child_border = resolve_rect(child_style.border, child_width)
+      {
+        id: child.id,
+        x: child_x,
+        y: child_y,
+        width: child_width,
+        height: child_height,
+        margin: item.margin,
+        padding: child_padding,
+        border: child_border,
+        children: [],
+      }
+    } else {
+      // Container node: recursively compute
+      let child_ctx : @node.LayoutContext = {
+        available_width: child_width,
+        available_height: Some(child_height),
+      }
+      let nested_layout = compute_nested(child, child_ctx, warnings)
+      {
+        id: child.id,
+        x: child_x,
+        y: child_y,
+        width: child_width,
+        height: child_height,
+        margin: item.margin,
+        padding: nested_layout.padding,
+        border: nested_layout.border,
+        children: nested_layout.children,
+      }
     }
     child_layouts.push(child_layout)
 
