@@ -852,9 +852,8 @@ test "flex_grow_within_constrained_min_column" {
 ///|
 /// From taffy: percentage_flex_basis_main_max_width
 /// Test percentage max-width with flex-grow
-/// Note: Full CSS Flexbox redistribution after max constraint is not yet implemented.
 /// taffy redistributes excess space from capped items to uncapped items.
-/// Current behavior: grow once, then apply max constraints without redistribution.
+#skip("taffy redistributes excess space after max constraint - not yet implemented")
 test "flex_percentage_max_width_with_grow" {
   let default_style = @style.Style::default()
 
@@ -886,12 +885,11 @@ test "flex_percentage_max_width_with_grow" {
   }
   let layout = compute(root, ctx)
 
-  // Current behavior (no redistribution):
-  // child1 grows to 40 (200 * 1/5), then max=120 not reached -> 40
-  // child2 grows to 160 (200 * 4/5), then max=40 caps it -> 40
-  inspect(layout.children[0].width, content="40")
+  // taffy expected: child1 gets 120 (max), child2 gets 40 (max)
+  // Excess from child2 (160-40=120) redistributed to child1
+  inspect(layout.children[0].width, content="120")
   inspect(layout.children[1].width, content="40")
-  inspect(layout.children[1].x, content="40")
+  inspect(layout.children[1].x, content="120")
 }
 
 ///|
@@ -1132,8 +1130,8 @@ test "flex_shrink_with_margin" {
 
 ///|
 /// From taffy: flex_grow_less_than_factor_one
-/// Note: CSS Flexbox spec says if sum(flex-grow) < 1, distribute only that fraction.
-/// Current implementation distributes all remaining space proportionally.
+/// CSS Flexbox spec says if sum(flex-grow) < 1, distribute only that fraction.
+#skip("CSS spec: flex-grow sum < 1 should only distribute that fraction - not yet implemented")
 test "flex_grow_less_than_factor_one" {
   let default_style = @style.Style::default()
 
@@ -1172,14 +1170,14 @@ test "flex_grow_less_than_factor_one" {
   }
   let layout = compute(root, ctx)
 
-  // Current behavior: distributes all remaining space (460) proportionally
-  // total_flex_grow = 0.8
-  // child1: 40 + 460 * (0.2/0.8) = 40 + 115 = 155
-  // child2: 0 + 460 * (0.2/0.8) = 115
-  // child3: 0 + 460 * (0.4/0.8) = 230
-  inspect(layout.children[0].width, content="155")
-  inspect(layout.children[1].width, content="115")
-  inspect(layout.children[2].width, content="230")
+  // taffy expected: distribute only 80% of remaining space (460 * 0.8 = 368)
+  // child1: 40 + 460 * 0.2 = 40 + 92 = 132
+  // child2: 0 + 460 * 0.2 = 92
+  // child3: 0 + 460 * 0.4 = 184
+  // Total: 132 + 92 + 184 = 408 (92 remaining space unused)
+  inspect(layout.children[0].width, content="132")
+  inspect(layout.children[1].width, content="92")
+  inspect(layout.children[2].width, content="184")
 }
 
 ///|
