@@ -106,8 +106,28 @@ fn compute_internal(
   }
 
   // For main size, if container size is auto, we use total of children (no shrink/grow)
-  let main_size_defined = if is_row { true } else { content_height is Some(_) }
-  let main_size = if is_row { content_width } else { content_height.unwrap_or(0.0) }
+  // However, if min-height/min-width is set, we use that for flex distribution
+  let (main_size_defined, main_size) = if is_row {
+    (true, content_width)
+  } else {
+    match content_height {
+      Some(ch) => (true, ch)
+      None => {
+        // height: auto - check if min-height is set
+        match style.min_height {
+          @types.Length(min_h) => {
+            let effective_min = min_h - padding.vertical_sum() - border.vertical_sum()
+            (true, effective_min)
+          }
+          @types.Percent(p) => {
+            let effective_min = parent_height * p - padding.vertical_sum() - border.vertical_sum()
+            (true, effective_min)
+          }
+          @types.Auto => (false, 0.0)
+        }
+      }
+    }
+  }
   let cross_size = if is_row { content_height } else { Some(content_width) }
 
   // Phase 1: Calculate base sizes for each child
@@ -134,7 +154,7 @@ fn compute_internal(
     }
   }
 
-  // Collect flex items info
+  // Collect flex items info (skip display:none children)
   let flex_items : Array[FlexItem] = Array::new(capacity=child_count)
   let mut total_flex_grow = 0.0
   let mut total_flex_shrink = 0.0
@@ -143,6 +163,12 @@ fn compute_internal(
   for i = 0; i < child_count; i = i + 1 {
     let child = children[i]
     let child_style = child.style
+
+    // Skip display:none children
+    if child_style.display == @style.None {
+      continue
+    }
+
     let child_margin = resolve_rect(child_style.margin, content_width)
 
     // Calculate base size on main axis
@@ -366,22 +392,23 @@ fn compute_internal(
   let free_space = main_size - actual_main_used
 
   // Calculate start position and gap based on justify-content
+  let visible_count = flex_items.length()
   let (start_offset, gap) = compute_justify(
     style.justify_content,
     free_space,
-    child_count
+    visible_count
   )
 
   // Phase 5: Build child layouts
-  let child_layouts : Array[@node.Layout] = Array::new(capacity=child_count)
+  let child_layouts : Array[@node.Layout] = Array::new(capacity=visible_count)
   let mut main_pos = start_offset
 
   // Iterate in order or reverse based on flex direction
-  for j = 0; j < child_count; j = j + 1 {
+  for j = 0; j < visible_count; j = j + 1 {
     // Calculate actual index based on direction
-    let i = if is_reverse { child_count - 1 - j } else { j }
+    let i = if is_reverse { visible_count - 1 - j } else { j }
     let item = flex_items[i]
-    let child = children[i]
+    let child = children[item.index]  // Use original index from flex_items
 
     // Compute cross position based on align-items
     let cross_align_offset = compute_align(

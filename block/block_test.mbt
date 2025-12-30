@@ -710,3 +710,290 @@ test "block_border_and_padding_combined" {
   // = 3 + 10 + 30 + 10 + 3 = 56
   inspect(layout.height, content="56")
 }
+
+///|
+/// From taffy: block_margin_y_collapse_through_blocked_by_padding
+/// Padding blocks margin collapse
+test "block_margin_collapse_blocked_by_padding" {
+  let default_style = @style.Style::default()
+
+  let child1_style = {
+    ..default_style,
+    height: @types.Length(10.0),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(10.0),
+    },
+  }
+  let child1 = @node.Node::leaf("child1", child1_style)
+
+  // This child has padding-bottom which blocks margin collapse
+  let child2_style = {
+    ..default_style,
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(10.0),
+    },
+    padding: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(1.0),
+    },
+  }
+  let child2 = @node.Node::new("child2", child2_style, [])
+
+  let child3_style = {
+    ..default_style,
+    height: @types.Length(10.0),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(0.0),
+    },
+  }
+  let child3 = @node.Node::leaf("child3", child3_style)
+
+  let root_style = { ..default_style, width: @types.Length(50.0) }
+  let root = @node.Node::new("root", root_style, [child1, child2, child3])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // child1: y=0, height=10
+  // margin collapse: max(10, 10) = 10
+  // child2: y=20, height=1 (just padding-bottom)
+  // margin collapse: max(10, 10) = 10
+  // child3: y=31, height=10
+  // total height = 41
+  inspect(layout.height, content="41")
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[1].y, content="20")
+  inspect(layout.children[2].y, content="31")
+}
+
+///|
+/// From taffy: block_min_width_percentage
+test "block_min_width_percentage" {
+  let default_style = @style.Style::default()
+
+  let child_style = {
+    ..default_style,
+    width: @types.Length(50.0),
+    min_width: @types.Percent(0.6),  // 60% of parent
+    height: @types.Length(30.0),
+  }
+  let child = @node.Node::leaf("child", child_style)
+
+  let root_style = {
+    ..default_style,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Child min-width = 200 * 0.6 = 120 > 50
+  inspect(layout.children[0].width, content="120")
+}
+
+///|
+/// From taffy: block_max_width_percentage
+test "block_max_width_percentage" {
+  let default_style = @style.Style::default()
+
+  let child_style = {
+    ..default_style,
+    // width: auto, max-width: 30%
+    max_width: @types.Percent(0.3),
+    height: @types.Length(30.0),
+  }
+  let child = @node.Node::leaf("child", child_style)
+
+  let root_style = {
+    ..default_style,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Child max-width = 200 * 0.3 = 60
+  // width: auto would be 200, but capped at 60
+  inspect(layout.children[0].width, content="60")
+}
+
+///|
+/// From taffy: block_aspect_ratio (simplified)
+/// Test height calculation with percentage height
+test "block_percentage_height_nested" {
+  let default_style = @style.Style::default()
+
+  let grandchild_style = {
+    ..default_style,
+    height: @types.Percent(0.5),  // 50% of child
+    width: @types.Length(30.0),
+  }
+  let grandchild = @node.Node::leaf("grandchild", grandchild_style)
+
+  let child_style = {
+    ..default_style,
+    height: @types.Percent(0.5),  // 50% of root
+  }
+  let child = @node.Node::new("child", child_style, [grandchild])
+
+  let root_style = {
+    ..default_style,
+    width: @types.Length(200.0),
+    height: @types.Length(200.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Child height = 200 * 0.5 = 100
+  inspect(layout.children[0].height, content="100")
+  // Grandchild height = 100 * 0.5 = 50
+  inspect(layout.children[0].children[0].height, content="50")
+}
+
+///|
+/// Test multiple display:none children
+test "block_multiple_display_none" {
+  let default_style = @style.Style::default()
+
+  let visible1_style = { ..default_style, height: @types.Length(20.0) }
+  let visible1 = @node.Node::leaf("visible1", visible1_style)
+
+  let hidden1_style = {
+    ..default_style,
+    display: @style.None,
+    height: @types.Length(50.0),
+  }
+  let hidden1 = @node.Node::leaf("hidden1", hidden1_style)
+
+  let hidden2_style = {
+    ..default_style,
+    display: @style.None,
+    height: @types.Length(50.0),
+  }
+  let hidden2 = @node.Node::leaf("hidden2", hidden2_style)
+
+  let visible2_style = { ..default_style, height: @types.Length(30.0) }
+  let visible2 = @node.Node::leaf("visible2", visible2_style)
+
+  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root = @node.Node::new("root", root_style, [visible1, hidden1, hidden2, visible2])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Only visible children: 20 + 30 = 50
+  inspect(layout.height, content="50")
+  inspect(layout.children.length(), content="2")
+  inspect(layout.children[0].height, content="20")
+  inspect(layout.children[1].height, content="30")
+  inspect(layout.children[1].y, content="20")
+}
+
+///|
+/// From taffy: deeply_nested_block
+test "block_deeply_nested" {
+  let default_style = @style.Style::default()
+
+  let leaf_style = { ..default_style, height: @types.Length(10.0) }
+  let leaf = @node.Node::leaf("leaf", leaf_style)
+
+  let level3_style = {
+    ..default_style,
+    padding: {
+      left: @types.Length(2.0),
+      right: @types.Length(2.0),
+      top: @types.Length(2.0),
+      bottom: @types.Length(2.0),
+    },
+  }
+  let level3 = @node.Node::new("level3", level3_style, [leaf])
+
+  let level2_style = {
+    ..default_style,
+    padding: {
+      left: @types.Length(3.0),
+      right: @types.Length(3.0),
+      top: @types.Length(3.0),
+      bottom: @types.Length(3.0),
+    },
+  }
+  let level2 = @node.Node::new("level2", level2_style, [level3])
+
+  let level1_style = {
+    ..default_style,
+    padding: {
+      left: @types.Length(5.0),
+      right: @types.Length(5.0),
+      top: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+    },
+  }
+  let level1 = @node.Node::new("level1", level1_style, [level2])
+
+  let root_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    padding: {
+      left: @types.Length(10.0),
+      right: @types.Length(10.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(10.0),
+    },
+  }
+  let root = @node.Node::new("root", root_style, [level1])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+  }
+  let layout = compute(root, ctx)
+
+  // Total height = 10 + (10 + (5 + (3 + (2 + 10 + 2) + 3) + 5) + 10)
+  // = 10 + 10 + 5 + 3 + 2 + 10 + 2 + 3 + 5 + 10 + 10 = 50
+  inspect(layout.height, content="50")
+
+  // Leaf position: 10 + 5 + 3 + 2 = 20 from root
+  let level1_layout = layout.children[0]
+  let level2_layout = level1_layout.children[0]
+  let level3_layout = level2_layout.children[0]
+  let leaf_layout = level3_layout.children[0]
+
+  // Check nested widths shrink correctly
+  // root content = 100 - 20 = 80
+  // level1 content = 80 - 10 = 70
+  // level2 content = 70 - 6 = 64
+  // level3 content = 64 - 4 = 60
+  inspect(leaf_layout.width, content="60")
+}
