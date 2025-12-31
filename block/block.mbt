@@ -252,6 +252,12 @@ fn compute_with_collapse(
     @types.Auto => ()
   }
 
+  // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
+  let min_box_width = padding.horizontal_sum() + border.horizontal_sum()
+  if box_width < min_box_width {
+    box_width = min_box_width
+  }
+
   // Available width for children (content area)
   let child_available_width = box_width -
     padding.horizontal_sum() -
@@ -304,9 +310,13 @@ fn compute_with_collapse(
       let child_margin = @types.resolve_rect(child_style.margin, parent_width)
 
       // Calculate child's intrinsic width contribution
+      // Note: padding+border override explicit width if too small
+      let child_padding = @types.resolve_rect(child_style.padding, parent_width)
+      let child_border = @types.resolve_rect(child_style.border, parent_width)
+      let child_min_box = child_padding.horizontal_sum() + child_border.horizontal_sum()
       let child_intrinsic_width : Double = match child_style.width {
-        @types.Length(w) => w
-        @types.Percent(_) => 0.0 // Percentage doesn't contribute to intrinsic sizing
+        @types.Length(w) => @types.max(w, child_min_box)
+        @types.Percent(_) => child_min_box // At minimum, padding+border
         @types.Auto => {
           // For width:auto, use max-content of child's content
           if child.children.length() == 0 {
@@ -350,6 +360,10 @@ fn compute_with_collapse(
         }
       }
       @types.Auto => ()
+    }
+    // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
+    if box_width < min_box_width {
+      box_width = min_box_width
     }
   }
 
@@ -588,6 +602,12 @@ fn compute_with_collapse(
       }
     }
     @types.Auto => ()
+  }
+
+  // Ensure box_height is at least padding + border (CSS rule: padding/border override max-size)
+  let min_box_height = padding.vertical_sum() + border.vertical_sum()
+  if box_height < min_box_height {
+    box_height = min_box_height
   }
 
   // Now handle absolute positioned children
