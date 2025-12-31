@@ -1720,26 +1720,48 @@ fn compute_internal(
         (w, inner.height, inner)
       }
       (None, Some(h)) => {
+        // Width is auto: use shrink-to-fit approach
+        // Step 1: Compute intrinsic width using dedicated function
+        // This correctly handles percentage children as 0 in intrinsic sizing
+        let intrinsic_width = compute_intrinsic_main_size(child, true, Some(h))
+        // Shrink-to-fit: min(max-content, available_width)
+        let shrink_to_fit_width = if intrinsic_width < container_width {
+          intrinsic_width
+        } else {
+          container_width
+        }
+        // Step 2: Layout with definite width so percentage children resolve correctly
         let inner = compute_nested(
           child,
-          { available_width: container_width, available_height: Some(h), sizing_mode: @node.Definite },
+          { available_width: shrink_to_fit_width, available_height: Some(h), sizing_mode: @node.Definite },
           warnings,
         )
-        (inner.width, h, inner)
+        (shrink_to_fit_width, h, inner)
       }
       (None, None) => {
+        // Both width and height are auto: use shrink-to-fit approach
+        // Step 1: Compute intrinsic size using dedicated function
+        // This correctly handles percentage children as 0 in intrinsic sizing
+        let intrinsic_width = compute_intrinsic_main_size(child, true, None)
+        // Shrink-to-fit: min(max-content, available_width)
+        let shrink_to_fit_width = if intrinsic_width < container_width {
+          intrinsic_width
+        } else {
+          container_width
+        }
+        // Step 2: Layout with definite width to get height and child layouts
         let inner = compute_nested(
           child,
-          { available_width: container_width, available_height: Some(final_height), sizing_mode: @node.Definite },
+          { available_width: shrink_to_fit_width, available_height: None, sizing_mode: @node.Definite },
           warnings,
         )
         match child_style.aspect_ratio {
           Some(ar) if ar > 0.0 => {
-            let w = inner.width
+            let w = shrink_to_fit_width
             let h = w / ar
             (w, h, inner)
           }
-          _ => (inner.width, inner.height, inner)
+          _ => (shrink_to_fit_width, inner.height, inner)
         }
       }
     }
@@ -1754,6 +1776,14 @@ fn compute_internal(
       params.min_height,
       params.max_height,
     )
+
+    // CSS rule: padding+border override explicit size constraints
+    let child_padding = @types.resolve_rect(child_style.padding, container_width)
+    let child_border = @types.resolve_rect(child_style.border, container_width)
+    let min_child_width = child_padding.horizontal_sum() + child_border.horizontal_sum()
+    let min_child_height = child_padding.vertical_sum() + child_border.vertical_sum()
+    let child_width = if child_width < min_child_width { min_child_width } else { child_width }
+    let child_height = if child_height < min_child_height { min_child_height } else { child_height }
 
     // Calculate position
     // If insets are specified, use them; otherwise use align_items/justify_content
@@ -1886,16 +1916,31 @@ fn compute_internal(
   }
 
   // If width is auto and is row direction, calculate actual width from child layouts
+  // Note: Only non-absolute children should be counted for intrinsic width
   let final_width = if width_is_auto && is_row && child_layouts.length() > 0 {
-    // Calculate content width used
+    // Calculate content width used (only from non-absolute children)
     let mut max_x = 0.0
-    for child in child_layouts {
-      let right_edge = child.x + child.width + child.margin.right
+    let mut has_flow_children = false
+    for i = 0; i < child_count; i = i + 1 {
+      if children[i].style.position == @style.Absolute {
+        continue
+      }
+      if children[i].style.display == @style.None {
+        continue
+      }
+      has_flow_children = true
+      let child_layout = child_layouts[i]
+      let right_edge = child_layout.x + child_layout.width + child_layout.margin.right
       if right_edge > max_x {
         max_x = right_edge
       }
     }
-    max_x + padding.horizontal_sum() + border.horizontal_sum()
+    if has_flow_children {
+      max_x + padding.horizontal_sum() + border.horizontal_sum()
+    } else {
+      // No flow children - shrink to content (0) plus padding/border
+      padding.horizontal_sum() + border.horizontal_sum()
+    }
   } else {
     container_width
   }

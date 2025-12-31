@@ -752,27 +752,46 @@ fn layout_absolute_child(
       (w, h, inner)
     }
     (None, Some(h)) => {
-      let inner = compute_nested(child, container_width, Some(h), warnings)
+      // Width is auto: use shrink-to-fit approach
+      // Step 1: Compute intrinsic width using MaxContent sizing
+      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings)
+      // Shrink-to-fit: min(max-content, available_width)
+      let shrink_to_fit_width = if intrinsic.width < container_width {
+        intrinsic.width
+      } else {
+        container_width
+      }
       let w = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
-        _ => inner.width
+        _ => shrink_to_fit_width
       }
+      // Step 2: Re-layout with definite width
+      let inner = compute_nested(child, w, Some(h), warnings)
       (w, h, inner)
     }
     (None, None) => {
-      let inner = compute_nested(
-        child,
-        container_width,
-        Some(container_height),
-        warnings,
-      )
+      // Both width and height are auto: use shrink-to-fit approach
+      // Step 1: Compute intrinsic size using MaxContent sizing
+      let intrinsic = compute_nested_intrinsic(child, None, warnings)
+      // Shrink-to-fit: min(max-content, available_width)
+      let shrink_to_fit_width = if intrinsic.width < container_width {
+        intrinsic.width
+      } else {
+        container_width
+      }
       match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
-          let w = inner.width
+          let w = shrink_to_fit_width
           let h = w / ar
+          // Re-layout with definite size
+          let inner = compute_nested(child, w, Some(h), warnings)
           (w, h, inner)
         }
-        _ => (inner.width, inner.height, inner)
+        _ => {
+          // Re-layout with definite width
+          let inner = compute_nested(child, shrink_to_fit_width, None, warnings)
+          (shrink_to_fit_width, inner.height, inner)
+        }
       }
     }
   }
@@ -787,6 +806,14 @@ fn layout_absolute_child(
     params.min_height,
     params.max_height,
   )
+
+  // CSS rule: padding+border override explicit size constraints
+  let child_padding = @types.resolve_rect(child_style.padding, container_width)
+  let child_border = @types.resolve_rect(child_style.border, container_width)
+  let min_child_width = child_padding.horizontal_sum() + child_border.horizontal_sum()
+  let min_child_height = child_padding.vertical_sum() + child_border.vertical_sum()
+  let child_width = if child_width < min_child_width { min_child_width } else { child_width }
+  let child_height = if child_height < min_child_height { min_child_height } else { child_height }
 
   // Check if margins are Auto (for centering behavior)
   let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
@@ -925,6 +952,71 @@ fn compute_nested(
     available_width,
     available_height,
     sizing_mode: @node.Definite,
+  }
+  compute_with_collapse(node, ctx, warnings).layout
+}
+
+///|
+/// Compute nested children for intrinsic sizing (MaxContent mode)
+/// This is used for shrink-to-fit calculations in absolute positioning
+fn compute_nested_intrinsic(
+  node : @node.Node,
+  available_height : Double?,
+  warnings : Array[@node.LayoutWarning],
+) -> @node.Layout {
+  let style = node.style
+  // Use 0 for percentage resolution in intrinsic sizing
+  let padding = @types.resolve_rect(style.padding, 0.0)
+  let border = @types.resolve_rect(style.border, 0.0)
+
+  // For leaf nodes, return intrinsic size based on style
+  if node.children.length() == 0 {
+    // Get intrinsic size from MeasureFunc if available
+    let intrinsic = match node.measure {
+      Some(mf) => {
+        let available_h = available_height.unwrap_or(0.0)
+        Some((mf.func)(0.0, available_h))
+      }
+      None => None
+    }
+
+    // For intrinsic sizing, percentage widths resolve to 0
+    let width = match style.width {
+      @types.Length(w) => w
+      @types.Percent(_) => 0.0 // Percentage resolves to 0 in intrinsic sizing
+      @types.Auto =>
+        match intrinsic {
+          Some(intr) => intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
+          None => padding.horizontal_sum() + border.horizontal_sum()
+        }
+    }
+    let height = match style.height {
+      @types.Length(h) => h
+      @types.Percent(_) => padding.vertical_sum() + border.vertical_sum()
+      @types.Auto =>
+        match intrinsic {
+          Some(intr) => intr.max_height + padding.vertical_sum() + border.vertical_sum()
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+    }
+    return {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width,
+      height,
+      margin: @types.Rect::zero(),
+      padding,
+      border,
+      children: [],
+    }
+  }
+
+  // For containers, use MaxContent sizing mode
+  let ctx : @node.LayoutContext = {
+    available_width: @double.infinity,
+    available_height,
+    sizing_mode: @node.MaxContent,
   }
   compute_with_collapse(node, ctx, warnings).layout
 }
