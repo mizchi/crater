@@ -913,7 +913,8 @@ fn calculate_track_intrinsic_sizes(
         }
       }
 
-      // Distribute extra space to max_sizes (only growable tracks for max-content)
+      // Distribute extra space to max_sizes
+      // CSS Grid spec: First distribute min-content evenly, then prioritize max-content tracks
       if max_extra > 0.0 {
         if all_fr && total_fr_value > 0.0 {
           // Distribute proportionally based on fr values
@@ -926,22 +927,86 @@ fn calculate_track_intrinsic_sizes(
               _ => ()
             }
           }
-        } else if growable_count > 0 {
-          let per_track = max_extra / growable_count.to_double()
+        } else {
+          // Split distribution into two phases:
+          // 1. Distribute up to item's min-content contribution evenly
+          // 2. Distribute remaining (max - min) to MaxContent tracks first
+
+          // Calculate how much of max_extra corresponds to min-content
+          // (min_contrib was already distributed to min_sizes)
+          let min_contribution_base = min_extra + min_sum // item's min-content
+          let max_contribution_base = max_extra + max_sum // item's max-content
+          let beyond_min = max_contribution_base - min_contribution_base // max - min for item
+
+          // First, ensure max_sizes reach at least min_sizes level (evenly distributed)
           for t = start; t < end; t = t + 1 {
-            let can_grow = match track_types[t] {
-              @style.MinContent => false
-              _ => true
-            }
-            if can_grow {
-              max_sizes[t] = max_sizes[t] + per_track
+            let growth_to_min = min_sizes[t] - max_sizes[t]
+            if growth_to_min > 0.0 {
+              max_sizes[t] = min_sizes[t]
             }
           }
-        } else {
-          // All tracks are MinContent, distribute evenly as fallback
-          let per_track = max_extra / span.to_double()
-          for t = start; t < end; t = t + 1 {
-            max_sizes[t] = max_sizes[t] + per_track
+
+          // Now distribute the beyond_min portion with priority
+          if beyond_min > 0.0 {
+            // Count different track types for prioritized distribution
+            let mut max_content_count = 0
+            let mut auto_count = 0
+            let mut other_growable = 0
+            for t = start; t < end; t = t + 1 {
+              match track_types[t] {
+                @style.MaxContent => max_content_count = max_content_count + 1
+                @style.Auto => auto_count = auto_count + 1
+                @style.MinContent => ()
+                @style.Length(_) => ()
+                @style.Percent(_) => ()
+                _ => other_growable = other_growable + 1
+              }
+            }
+
+            let mut remaining = beyond_min
+            // First, distribute to MaxContent tracks
+            if max_content_count > 0 && remaining > 0.0 {
+              let per_track = remaining / max_content_count.to_double()
+              for t = start; t < end; t = t + 1 {
+                match track_types[t] {
+                  @style.MaxContent => {
+                    max_sizes[t] = max_sizes[t] + per_track
+                    remaining = remaining - per_track
+                  }
+                  _ => ()
+                }
+              }
+            }
+            // Then, distribute to Auto tracks
+            if auto_count > 0 && remaining > 0.0 {
+              let per_track = remaining / auto_count.to_double()
+              for t = start; t < end; t = t + 1 {
+                match track_types[t] {
+                  @style.Auto => {
+                    max_sizes[t] = max_sizes[t] + per_track
+                    remaining = remaining - per_track
+                  }
+                  _ => ()
+                }
+              }
+            }
+            // Finally, distribute to other growable tracks
+            if other_growable > 0 && remaining > 0.0 {
+              let per_track = remaining / other_growable.to_double()
+              for t = start; t < end; t = t + 1 {
+                let is_other = match track_types[t] {
+                  @style.MaxContent => false
+                  @style.Auto => false
+                  @style.MinContent => false
+                  @style.Length(_) => false
+                  @style.Percent(_) => false
+                  _ => true
+                }
+                if is_other {
+                  max_sizes[t] = max_sizes[t] + per_track
+                }
+              }
+            }
           }
         }
       }
@@ -1190,6 +1255,8 @@ fn single_to_track(
     @style.SingleTrackSizing::MinContent => @style.MinContent
     @style.SingleTrackSizing::MaxContent => @style.MaxContent
     @style.SingleTrackSizing::MinMax(min, max) => @style.MinMax(min, max)
+    @style.SingleTrackSizing::FitContentLength(v) => @style.FitContentLength(v)
+    @style.SingleTrackSizing::FitContentPercent(p) => @style.FitContentPercent(p)
   }
 }
 
@@ -1273,6 +1340,9 @@ fn calculate_repeat_track_size(
       @style.SingleTrackSizing::Auto => total = total + 0.0
       @style.SingleTrackSizing::MinContent => total = total + 0.0
       @style.SingleTrackSizing::MaxContent => total = total + 0.0
+      @style.SingleTrackSizing::FitContentLength(v) => total = total + v
+      @style.SingleTrackSizing::FitContentPercent(p) =>
+        total = total + available_size * p
       @style.SingleTrackSizing::MinMax(min, _) =>
         match min {
           @style.MinTrackSizing::Length(v) => total = total + v
@@ -1337,6 +1407,7 @@ fn resolve_tracks_with_implicit(
   let min_sizes : Array[Double] = []
   let max_sizes : Array[Double] = []
   let mut total_fr = 0.0
+  let mut fr_track_count_phase1 = 0
   let mut fixed_size = 0.0
   for i = 0; i < track_count; i = i + 1 {
     let template = all_templates[i]
@@ -1370,6 +1441,7 @@ fn resolve_tracks_with_implicit(
         min_sizes.push(0.0)
         max_sizes.push(1.0e10) // Effectively unlimited
         total_fr = total_fr + fr
+        fr_track_count_phase1 = fr_track_count_phase1 + 1
       }
       @style.Auto => {
         // Auto uses max-content for base size but can shrink to min-content
@@ -1415,6 +1487,26 @@ fn resolve_tracks_with_implicit(
         max_sizes.push(max_size)
         fixed_size = fixed_size + base
       }
+      @style.FitContentLength(limit) => {
+        // fit-content(limit) = min(max-content, max(min-content, limit))
+        // The track size is clamped between min-content and min(max-content, limit)
+        let max_limit = if max_content < limit { max_content } else { limit }
+        let base = if max_limit > min_content { max_limit } else { min_content }
+        base_sizes.push(base)
+        min_sizes.push(min_content)
+        max_sizes.push(max_limit)
+        fixed_size = fixed_size + base
+      }
+      @style.FitContentPercent(p) => {
+        // fit-content(percent) - percent of container size as limit
+        let limit = if size_is_definite { available_size * p } else { 1.0e10 }
+        let max_limit = if max_content < limit { max_content } else { limit }
+        let base = if max_limit > min_content { max_limit } else { min_content }
+        base_sizes.push(base)
+        min_sizes.push(min_content)
+        max_sizes.push(max_limit)
+        fixed_size = fixed_size + base
+      }
       @style.Repeat(_, _) => {
         // Repeat should be expanded before reaching here
         // Treat as auto if unexpanded
@@ -1430,32 +1522,78 @@ fn resolve_tracks_with_implicit(
   let remaining_space = max(0.0, available_size - fixed_size - total_gaps)
 
   // If we have fr units, distribute to them
-  if total_fr > 0.0 {
+  if fr_track_count_phase1 > 0 {
     if size_is_definite {
       // Container size is definite: distribute remaining space to Fr tracks
-      let fr_unit = remaining_space / total_fr
-      for i = 0; i < track_count; i = i + 1 {
-        let template = all_templates[i]
-        match template {
-          @style.Fr(fr) => base_sizes[i] = fr * fr_unit
-          _ => ()
+      if total_fr > 0.0 {
+        let fr_unit = remaining_space / total_fr
+        for i = 0; i < track_count; i = i + 1 {
+          let template = all_templates[i]
+          match template {
+            @style.Fr(fr) => base_sizes[i] = fr * fr_unit
+            _ => ()
+          }
+        }
+      } else {
+        // All fr values are 0 - distribute evenly
+        let per_track = remaining_space / fr_track_count_phase1.to_double()
+        for i = 0; i < track_count; i = i + 1 {
+          match all_templates[i] {
+            @style.Fr(_) => base_sizes[i] = per_track
+            _ => ()
+          }
         }
       }
     } else {
-      // Container size is indefinite: Fr tracks use their max-content size
-      // Per CSS Grid spec, fr units are treated as max-content when container is auto-sized
+      // Container size is indefinite: Find hypothetical fr unit to maintain proportions
+      // Per CSS Grid spec: fr unit = max(max-content / fr value) across all fr tracks
+      let mut hypothetical_fr_unit = 0.0
+      let mut fr_track_count = 0
       for i = 0; i < track_count; i = i + 1 {
         let template = all_templates[i]
         match template {
-          @style.Fr(_) => {
+          @style.Fr(fr) => {
+            fr_track_count = fr_track_count + 1
             let max_content = if i < max_content_sizes.length() {
               max_content_sizes[i]
             } else {
               0.0
             }
-            base_sizes[i] = max_content
+            // Calculate what fr unit would be needed for this track's content
+            if fr > 0.0 {
+              let needed_fr_unit = max_content / fr
+              if needed_fr_unit > hypothetical_fr_unit {
+                hypothetical_fr_unit = needed_fr_unit
+              }
+            }
           }
           _ => ()
+        }
+      }
+      // Apply the hypothetical fr unit to all fr tracks
+      // If total_fr is 0, use max-content sizes directly (no redistribution)
+      if total_fr == 0.0 && fr_track_count > 0 {
+        // All fr values are 0, just use the intrinsic max-content sizes
+        for i = 0; i < track_count; i = i + 1 {
+          match all_templates[i] {
+            @style.Fr(_) => {
+              let max_content = if i < max_content_sizes.length() {
+                max_content_sizes[i]
+              } else {
+                0.0
+              }
+              base_sizes[i] = max_content
+            }
+            _ => ()
+          }
+        }
+      } else {
+        for i = 0; i < track_count; i = i + 1 {
+          let template = all_templates[i]
+          match template {
+            @style.Fr(fr) => base_sizes[i] = fr * hypothetical_fr_unit
+            _ => ()
+          }
         }
       }
     }

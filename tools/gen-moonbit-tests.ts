@@ -42,7 +42,7 @@ interface GridLine {
 }
 
 interface TrackSizing {
-  type: 'length' | 'percent' | 'fr' | 'auto' | 'min-content' | 'max-content' | 'minmax' | 'repeat';
+  type: 'length' | 'percent' | 'fr' | 'auto' | 'min-content' | 'max-content' | 'minmax' | 'repeat' | 'fit-content-length' | 'fit-content-percent';
   value?: number;
   min?: TrackSizing;
   max?: TrackSizing;
@@ -129,6 +129,8 @@ function trackSizingToMoonBit(track: TrackSizing): string {
     case 'auto': return '@style.Auto';
     case 'min-content': return '@style.MinContent';
     case 'max-content': return '@style.MaxContent';
+    case 'fit-content-length': return `@style.FitContentLength(${track.value!.toFixed(1)})`;
+    case 'fit-content-percent': return `@style.FitContentPercent(${track.value!.toFixed(4)})`;
     case 'minmax':
       const min = minTrackToMoonBit(track.min!);
       const max = maxTrackToMoonBit(track.max!);
@@ -152,6 +154,8 @@ function singleTrackToMoonBit(track: TrackSizing): string {
     case 'auto': return '@style.SingleTrackSizing::Auto';
     case 'min-content': return '@style.SingleTrackSizing::MinContent';
     case 'max-content': return '@style.SingleTrackSizing::MaxContent';
+    case 'fit-content-length': return `@style.SingleTrackSizing::FitContentLength(${track.value!.toFixed(1)})`;
+    case 'fit-content-percent': return `@style.SingleTrackSizing::FitContentPercent(${track.value!.toFixed(4)})`;
     case 'minmax':
       const min = minTrackToMoonBit(track.min!);
       const max = maxTrackToMoonBit(track.max!);

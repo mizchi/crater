@@ -89,6 +89,8 @@ pub(all) enum SingleTrackSizing {
   MinContent // Min-content sizing
   MaxContent // Max-content sizing
   MinMax(MinTrackSizing, MaxTrackSizing) // minmax(min, max)
+  FitContentLength(Double) // fit-content(length)
+  FitContentPercent(Double) // fit-content(percent)
 } derive(Show, Eq)
 
 ///|
@@ -110,6 +112,8 @@ pub(all) enum TrackSizingFunction {
   MaxContent // Max-content sizing
   MinMax(MinTrackSizing, MaxTrackSizing) // minmax(min, max)
   Repeat(RepeatCount, Array[SingleTrackSizing]) // repeat(count, tracks)
+  FitContentLength(Double) // fit-content(length)
+  FitContentPercent(Double) // fit-content(percent)
 } derive(Show, Eq)
 
 ///|

@@ -46,7 +46,7 @@ interface GridLine {
 }
 
 interface TrackSizing {
-  type: 'length' | 'percent' | 'fr' | 'auto' | 'min-content' | 'max-content' | 'minmax' | 'repeat';
+  type: 'length' | 'percent' | 'fr' | 'auto' | 'min-content' | 'max-content' | 'minmax' | 'repeat' | 'fit-content-length' | 'fit-content-percent';
   value?: number;
   min?: TrackSizing;
   max?: TrackSizing;
@@ -223,6 +223,27 @@ function parseTrackSizing(value) {
       continue;
     }
 
+    // Handle fit-content(...)
+    if (remaining.startsWith('fit-content(')) {
+      const parenStart = 12;
+      let depth = 1;
+      let i = parenStart;
+      while (i < remaining.length && depth > 0) {
+        if (remaining[i] === '(') depth++;
+        else if (remaining[i] === ')') depth--;
+        i++;
+      }
+      const fitContentArg = remaining.slice(parenStart, i - 1).trim();
+      remaining = remaining.slice(i).trim();
+
+      if (fitContentArg.endsWith('px')) {
+        tracks.push({ type: 'fit-content-length', value: parseFloat(fitContentArg) });
+      } else if (fitContentArg.endsWith('%')) {
+        tracks.push({ type: 'fit-content-percent', value: parseFloat(fitContentArg) / 100 });
+      }
+      continue;
+    }
+
     // Handle simple values (space-separated)
     const spaceIdx = remaining.indexOf(' ');
     const token = spaceIdx > 0 ? remaining.slice(0, spaceIdx) : remaining;
@@ -317,11 +338,12 @@ function measureTextContent(el) {
   const maxWidth = clone.offsetWidth;
   const maxHeight = clone.offsetHeight;
 
-  // Measure min-content width (wrap at every opportunity)
+  // Measure min-content width using CSS min-content
+  // This respects word boundaries and zero-width space break opportunities
   clone.style.whiteSpace = 'normal';
-  clone.style.wordBreak = 'break-all';
-  clone.style.width = '0px';
-  const minWidth = clone.scrollWidth;
+  clone.style.wordBreak = 'normal';
+  clone.style.width = 'min-content';
+  const minWidth = clone.offsetWidth;
   // For min_height, we use the height at max-content width (natural line height)
   // because grid intrinsic sizing typically uses this for content-based sizing
   const minHeight = maxHeight;
