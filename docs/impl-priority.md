@@ -115,7 +115,7 @@
 | 開始時 | 147/223 (66%) | 352/607 (58%) | 241/329 (73%) | 740/1159 (64%) |
 | P0完了 | 157/223 (70%) | 375/607 (62%) | 245/329 (74%) | 777/1159 (67%) |
 | P1完了 | 168/223 (75%) | 409/607 (67%) | 248/329 (75%) | 825/1159 (71%) |
-| P2進行中 | 168/196 (86%) | 349/537 (65%) | 240/297 (81%) | **874/1171 (74.6%)** |
+| P2進行中 | 168/196 (86%) | 349/537 (65%) | 240/297 (81%) | **887/1171 (75.7%)** |
 
 ### P1での主な修正 (+48 tests)
 
@@ -126,31 +126,30 @@
 5. **negative space handling** (+13): Space* の negative space 対応
 6. **test fixes** (+2): reverse テストの期待値修正
 
-### P2での修正 (+46 tests from 828 to 874)
+### P2での修正 (+59 tests from 828 to 887)
 
 1. **wrap container intrinsic sizing** (+3): wrap container は available width を使用
 2. **aspect_ratio support** (+7): Block/Flex で aspect_ratio サポート
 3. **Block intrinsic sizing (MaxContent)** (+11): 2パスレイアウトで intrinsic width 計算
 4. **padding/border override** (+2): padding+border が max-width を超える場合
 5. **percentage intrinsic sizing** (+5): intrinsic sizing で percentage は 0 として解決
+6. **MeasureFunc intrinsic sizing** (+12): leaf ノードの MeasureFunc を intrinsic sizing で使用
+7. **overflow visible min-size** (+1): overflow:visible 時は min-size が intrinsic size
 
-## 残りの課題 (297 tests remaining)
+## 残りの課題 (284 tests remaining)
 
 | カテゴリ | 影響テスト数 | 優先度 | 備考 |
 |---------|-------------|--------|------|
 | baseline alignment | ~9件 | P3 | align_baseline_child (5), block_align_baseline_child (4) |
-| multiline min/max | 5件 | P2 | multiline_min_max |
+| multiline min/max | 5件 | P2 | CSS box-sizing 問題 (docs/issue_multiline_min_max.md 参照) |
 | bevy issues | 8件 | P2 | bevy_issue (4), bevy_issue_9530 (4) |
-| measure func | ~7件 | P3 | MeasureFunc 未対応 |
 | absolute positioning | ~5件 | P2 | absolute_correct_cross_child_size_with (3) |
-| overflow shrink | 3件 | P2 | overflow_main_axis_shrink |
 | grid-flex integration | ~6件 | P3 | gridflex_*, grid_min_content_flex_* |
 | margin collapsing edge cases | ~10件 | P3 | margin_y_collapse_* |
 | intrinsic sizing edge | ~6件 | P2 | intrinsic_sizing_main_size_* |
 
 ### 次に取り組むべき候補
 
-1. **multiline_min_max (5件)**: flex-wrap 時の min/max 制約
-2. **bevy_issue (8件)**: 特定のエッジケース修正
-3. **overflow_main_axis_shrink (3件)**: overflow 時の shrink 動作
-4. **absolute positioning (5件)**: percentage sizing in absolute
+1. **bevy_issue (8件)**: 特定のエッジケース修正
+2. **absolute positioning (5件)**: percentage sizing in absolute
+3. **multiline_min_max (5件)**: CSS box-sizing 問題 (詳細は docs/issue_multiline_min_max.md)

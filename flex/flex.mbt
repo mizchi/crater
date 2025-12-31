@@ -38,9 +38,16 @@ fn compute_intrinsic_main_size(
   let style = node.style
   let children = node.children
 
-  // Leaf nodes have 0 intrinsic size (unless we support text/image intrinsic sizes)
+  // Leaf nodes: use MeasureFunc if available, otherwise 0
   if children.length() == 0 {
-    return 0.0
+    match node.measure {
+      Some(mf) => {
+        // Call MeasureFunc to get intrinsic size
+        let intrinsic = (mf.func)(0.0, 0.0)
+        return if is_row { intrinsic.max_width } else { intrinsic.max_height }
+      }
+      None => return 0.0
+    }
   }
 
   // For containers, compute based on display type and children
@@ -706,17 +713,28 @@ fn compute_internal(
     // Calculate min/max constraints on main axis
     // Note: In CSS Flexbox, min-width/min-height: auto means the content minimum size
     // For flex items with children, this prevents shrinking below content size
+    // Check if overflow is visible (affects automatic minimum size)
+    let is_overflow_visible = match (child_style.overflow_x, child_style.overflow_y) {
+      (@style.Overflow::Visible, @style.Overflow::Visible) => true
+      _ => false
+    }
     let (min_main, max_main) = if is_row {
       let min_w = match child_style.min_width {
         @types.Length(v) => v
         @types.Percent(p) => content_width * p
-        @types.Auto =>
-          // Auto min-width: use intrinsic content size for containers
-          if child.children.length() > 0 {
+        @types.Auto => {
+          // Auto min-width: use intrinsic content size for containers/MeasureFunc
+          // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
+          let has_measure = match child.measure {
+            Some(_) => true
+            None => false
+          }
+          if is_overflow_visible && (child.children.length() > 0 || has_measure) {
             compute_intrinsic_main_size(child, true, content_height)
           } else {
             0.0
           }
+        }
       }
       let max_w = match child_style.max_width {
         @types.Length(v) => v
@@ -732,13 +750,19 @@ fn compute_internal(
             Some(ch) => ch * p
             None => 0.0
           }
-        @types.Auto =>
-          // Auto min-height: use intrinsic content size for containers
-          if child.children.length() > 0 {
+        @types.Auto => {
+          // Auto min-height: use intrinsic content size for containers/MeasureFunc
+          // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
+          let has_measure = match child.measure {
+            Some(_) => true
+            None => false
+          }
+          if is_overflow_visible && (child.children.length() > 0 || has_measure) {
             compute_intrinsic_main_size(child, false, Some(content_width))
           } else {
             0.0
           }
+        }
       }
       let max_h = match child_style.max_height {
         @types.Length(v) => v
