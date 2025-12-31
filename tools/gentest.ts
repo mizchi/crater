@@ -125,13 +125,15 @@ interface TestCase {
 // Helper script to inject into the page
 const extractorScript = `
 function parseDimension(value) {
-  if (!value || value === 'auto' || value === '' || value === 'none') return { unit: 'auto' };
+  // Distinguish between "not specified" (undefined) and "explicitly auto"
+  if (!value || value === '' || value === 'none') return undefined;
+  if (value === 'auto') return { unit: 'auto' };
   if (value.endsWith('px')) return { unit: 'px', value: parseFloat(value) };
   if (value.endsWith('%')) return { unit: 'percent', value: parseFloat(value) / 100 };
   if (value.endsWith('fr')) return { unit: 'fr', value: parseFloat(value) };
   if (value === 'min-content') return { unit: 'min-content' };
   if (value === 'max-content') return { unit: 'max-content' };
-  return { unit: 'auto' };
+  return undefined;
 }
 
 function parseEdges(style, prop) {
@@ -139,7 +141,8 @@ function parseEdges(style, prop) {
   const right = parseDimension(style[prop + 'Right'] || style.getPropertyValue(prop + '-right'));
   const top = parseDimension(style[prop + 'Top'] || style.getPropertyValue(prop + '-top'));
   const bottom = parseDimension(style[prop + 'Bottom'] || style.getPropertyValue(prop + '-bottom'));
-  if (left.unit === 'auto' && right.unit === 'auto' && top.unit === 'auto' && bottom.unit === 'auto') {
+  // Return undefined only if nothing is defined
+  if (!left && !right && !top && !bottom) {
     return undefined;
   }
   return { left, right, top, bottom };
@@ -151,7 +154,8 @@ function parseBorderWidth(style) {
   const right = parseDimension(style.borderRightWidth || style.getPropertyValue('border-right-width'));
   const top = parseDimension(style.borderTopWidth || style.getPropertyValue('border-top-width'));
   const bottom = parseDimension(style.borderBottomWidth || style.getPropertyValue('border-bottom-width'));
-  if (left.unit === 'auto' && right.unit === 'auto' && top.unit === 'auto' && bottom.unit === 'auto') {
+  // Return undefined only if nothing is defined
+  if (!left && !right && !top && !bottom) {
     return undefined;
   }
   return { left, right, top, bottom };
@@ -449,24 +453,27 @@ function describeElement(el, parentRect) {
     })(),
   };
 
-  // Clean up undefined and auto-only values
-  if (style.width?.unit === 'auto') delete style.width;
-  if (style.height?.unit === 'auto') delete style.height;
-  if (style.minWidth?.unit === 'auto') delete style.minWidth;
-  if (style.minHeight?.unit === 'auto') delete style.minHeight;
-  if (style.maxWidth?.unit === 'auto') delete style.maxWidth;
-  if (style.maxHeight?.unit === 'auto') delete style.maxHeight;
-  if (style.flexBasis?.unit === 'auto') delete style.flexBasis;
-  if (style.rowGap?.unit === 'auto') delete style.rowGap;
-  if (style.columnGap?.unit === 'auto') delete style.columnGap;
+  // Clean up undefined values
+  if (!style.width) delete style.width;
+  if (!style.height) delete style.height;
+  if (!style.minWidth) delete style.minWidth;
+  if (!style.minHeight) delete style.minHeight;
+  if (!style.maxWidth) delete style.maxWidth;
+  if (!style.maxHeight) delete style.maxHeight;
+  if (!style.flexBasis) delete style.flexBasis;
+  if (!style.rowGap) delete style.rowGap;
+  if (!style.columnGap) delete style.columnGap;
   if (!style.gridTemplateColumns?.length) delete style.gridTemplateColumns;
   if (!style.gridTemplateRows?.length) delete style.gridTemplateRows;
   if (!style.gridAutoColumns?.length) delete style.gridAutoColumns;
   if (!style.gridAutoRows?.length) delete style.gridAutoRows;
   if (style.gridColumn?.start?.type === 'auto' && style.gridColumn?.end?.type === 'auto') delete style.gridColumn;
   if (style.gridRow?.start?.type === 'auto' && style.gridRow?.end?.type === 'auto') delete style.gridRow;
-  if (style.inset?.left?.unit === 'auto' && style.inset?.right?.unit === 'auto' &&
-      style.inset?.top?.unit === 'auto' && style.inset?.bottom?.unit === 'auto') delete style.inset;
+  // Clean up empty edge objects (inset, margin, padding, border)
+  if (style.inset && !style.inset.left && !style.inset.right && !style.inset.top && !style.inset.bottom) delete style.inset;
+  if (style.margin && !style.margin.left && !style.margin.right && !style.margin.top && !style.margin.bottom) delete style.margin;
+  if (style.padding && !style.padding.left && !style.padding.right && !style.padding.top && !style.padding.bottom) delete style.padding;
+  if (style.border && !style.border.left && !style.border.right && !style.border.top && !style.border.bottom) delete style.border;
 
   const result = {
     id: id,

@@ -113,7 +113,18 @@ interface TestCase {
 }
 
 function dimensionToMoonBit(dim: Dimension | undefined): string {
-  if (!dim) return '@types.Auto';
+  if (!dim) return '@types.Length(0.0)';  // undefined = not specified = 0 (for margin/padding/border)
+  switch (dim.unit) {
+    case 'px': return `@types.Length(${dim.value!.toFixed(1)})`;
+    case 'percent': return `@types.Percent(${dim.value!.toFixed(4)})`;
+    case 'auto': return '@types.Auto';  // explicit auto
+    default: return '@types.Length(0.0)';
+  }
+}
+
+// For inset: undefined means Auto (not specified = default position)
+function insetDimensionToMoonBit(dim: Dimension | undefined): string {
+  if (!dim) return '@types.Auto';  // undefined = not specified = Auto for inset
   switch (dim.unit) {
     case 'px': return `@types.Length(${dim.value!.toFixed(1)})`;
     case 'percent': return `@types.Percent(${dim.value!.toFixed(4)})`;
@@ -125,6 +136,11 @@ function dimensionToMoonBit(dim: Dimension | undefined): string {
 function edgesToMoonBit(edges: Edges | undefined): string {
   if (!edges) return '{ left: @types.Length(0.0), right: @types.Length(0.0), top: @types.Length(0.0), bottom: @types.Length(0.0) }';
   return `{ left: ${dimensionToMoonBit(edges.left)}, right: ${dimensionToMoonBit(edges.right)}, top: ${dimensionToMoonBit(edges.top)}, bottom: ${dimensionToMoonBit(edges.bottom)} }`;
+}
+
+function insetEdgesToMoonBit(edges: Edges | undefined): string {
+  if (!edges) return '{ left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto }';
+  return `{ left: ${insetDimensionToMoonBit(edges.left)}, right: ${insetDimensionToMoonBit(edges.right)}, top: ${insetDimensionToMoonBit(edges.top)}, bottom: ${insetDimensionToMoonBit(edges.bottom)} }`;
 }
 
 function trackSizingToMoonBit(track: TrackSizing): string {
@@ -389,7 +405,7 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
 
   // Inset
   if (style.inset) {
-    lines.push(`${indent}  inset: ${edgesToMoonBit(style.inset)},`);
+    lines.push(`${indent}  inset: ${insetEdgesToMoonBit(style.inset)},`);
   }
 
   // Flex container properties

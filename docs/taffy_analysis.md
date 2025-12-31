@@ -15,16 +15,56 @@ Taffy (Rust) のレイアウトエンジン実装を分析し、crater への移
 | Block | 222 | 147 | 66.2% |
 | **合計** | **1158** | **740** | **63.9%** |
 
-### 最新の改善
+### 失敗テストの詳細分類
 
-- **Block margin collapse**: 兄弟・親子間のマージン折りたたみ実装
-- **Display:none ordering**: 元のインデックスを維持
-- **Margin auto**: 通常ブロック要素と絶対配置要素の両方をサポート
+#### Flex (255 failed)
+| カテゴリ | 件数 | 説明 |
+|---------|------|------|
+| other | 51 | 複合的な問題 |
+| min_max | 34 | min/max 制約 |
+| align | 24 | align-items/self |
+| wrap | 23 | flex-wrap |
+| percentage | 18 | パーセント値 |
+| margin | 18 | マージン計算 |
+| baseline | 17 | baseline alignment |
+| padding_border | 14 | padding/border |
+| grow | 14 | flex-grow |
+| absolute | 13 | 絶対配置 |
+| aspect_ratio | 12 | アスペクト比 |
+| shrink | 10 | flex-shrink |
+
+#### Block (75 failed)
+| カテゴリ | 件数 | 説明 |
+|---------|------|------|
+| absolute | 24 | 絶対配置 |
+| margin | 14 | マージン計算 (auto含む) |
+| percentage | 10 | パーセント値 |
+| baseline | 7 | baseline alignment |
+| aspect_ratio | 7 | アスペクト比 |
+| padding_border | 6 | padding/border |
+
+#### Grid (88 failed)
+| カテゴリ | 件数 | 説明 |
+|---------|------|------|
+| content_sizing | 16 | min/max-content |
+| percent | 12 | パーセント値 |
+| absolute | 10 | 絶対配置 |
+| blockgrid | 9 | Block in Grid |
+| leaf | 6 | リーフノード |
+| blockflex | 6 | Block in Flex |
+| span | 5 | span アイテム |
 
 ### 既知の制限
 
-- テスト fixture に `margin: auto` と `aspectRatio` が欠落
-- Intrinsic sizing は特定コンテキスト（float, inline-block等）でのみ必要
+#### Fixture の問題（gentest 改善が必要）
+- **margin: auto** - ブラウザの computed style では `0px` になるため消失
+- **aspect-ratio** - computed style に現れない
+
+#### 実装の問題（コード修正で対応可能）
+- **percentage in indefinite** - 親サイズ不定時の % 解決
+- **min/max constraints** - 制約の適用順序
+- **baseline alignment** - テキストベースライン計算
+- **intrinsic sizing** - shrink-to-fit/fill の判定
 
 ### Taffy フィクスチャ移植状況
 

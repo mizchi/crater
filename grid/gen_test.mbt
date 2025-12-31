@@ -109,6 +109,7 @@ test "taffy/chrome_issue_325928327" {
   let root_child0_child0_style = {
     ..@style.Style::default(),
     height: @types.Percent(1.0000),
+    aspect_ratio: Some(1.0000),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
@@ -1765,6 +1766,7 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child0_style = {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
+    inset: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
@@ -1822,6 +1824,7 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child0_style = {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
+    inset: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
   }
   let root_child1_child0 = @node.Node::leaf("node", root_child1_child0_style)
   root_child1_children.push(root_child1_child0)
@@ -5781,6 +5784,7 @@ test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_ins
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     inset: { left: @types.Percent(0.0500), right: @types.Percent(0.0500), top: @types.Percent(0.0500), bottom: @types.Percent(0.0500) },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -5811,6 +5815,7 @@ test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     inset: { left: @types.Percent(0.1000), right: @types.Percent(0.1000), top: @types.Percent(0.0500), bottom: @types.Auto },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -5841,6 +5846,7 @@ test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     inset: { left: @types.Auto, right: @types.Auto, top: @types.Percent(0.3000), bottom: @types.Percent(0.5000) },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -5872,6 +5878,7 @@ test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
     position: @style.Position::Absolute,
     height: @types.Percent(0.1000),
     inset: { left: @types.Auto, right: @types.Auto, top: @types.Percent(0.3000), bottom: @types.Percent(0.5000) },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -5903,6 +5910,7 @@ test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
     position: @style.Position::Absolute,
     width: @types.Percent(0.4000),
     inset: { left: @types.Percent(0.1000), right: @types.Percent(0.1000), top: @types.Percent(0.0500), bottom: @types.Auto },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -5929,6 +5937,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    aspect_ratio: Some(0.5000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -5970,6 +5979,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_width" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -6014,6 +6024,7 @@ test "taffy/grid_aspect_ratio_fill_child_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -6043,6 +6054,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -6077,6 +6089,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_height: @types.Length(20.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -6111,6 +6124,7 @@ test "taffy/grid_aspect_ratio_fill_child_min_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     min_width: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -6140,6 +6154,7 @@ test "taffy/grid_aspect_ratio_fill_child_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -6170,6 +6185,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
     ..@style.Style::default(),
     width: @types.Length(50.0),
     height: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -6200,6 +6216,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
     ..@style.Style::default(),
     width: @types.Length(50.0),
     height: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8432,6 +8449,8 @@ test "taffy/grid_fr_single_item_indefinite" {
   let root_style = {
     ..@style.Style::default(),
     display: @style.Grid,
+    width: @types.Auto,
+    height: @types.Auto,
     grid_template_columns: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
     grid_template_rows: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
   }
@@ -11348,6 +11367,7 @@ test "taffy/grid_margins_auto_margins" {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
+    margin: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
     align_self: @style.AlignSelf::Start,
     justify_self: @style.AlignSelf::Start,
   }
@@ -11451,6 +11471,7 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    margin: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
     align_self: @style.AlignSelf::Stretch,
     justify_self: @style.AlignSelf::Stretch,
   }
@@ -12371,6 +12392,7 @@ test "taffy/grid_max_content_single_item_margin_auto" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    margin: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -13597,6 +13619,7 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
   let root_child1_style = {
     ..@style.Style::default(),
     min_width: @types.Length(10.0),
+    margin: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
@@ -13612,6 +13635,7 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    margin: { left: @types.Auto, right: @types.Auto, top: @types.Auto, bottom: @types.Auto },
     grid_column: { start: @style.Span(2), end: @style.Auto },
   }
   let root_child4_measure = @node.MeasureFunc::{
@@ -15823,7 +15847,7 @@ test "taffy/grid_percent_items_nested_inside_stretch_alignment" {
   let root_child0_child0_style = {
     ..@style.Style::default(),
     display: @style.Grid,
-    padding: { left: @types.Auto, right: @types.Auto, top: @types.Percent(0.2000), bottom: @types.Auto },
+    padding: { left: @types.Length(0.0), right: @types.Length(0.0), top: @types.Percent(0.2000), bottom: @types.Length(0.0) },
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
