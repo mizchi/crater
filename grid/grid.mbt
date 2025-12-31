@@ -989,6 +989,7 @@ fn resolve_tracks_with_implicit(
 
   // Build complete template array: [implicit before] + [explicit] + [implicit after]
   let all_templates : Array[@style.TrackSizingFunction] = []
+  let is_implicit : Array[Bool] = []
 
   // Implicit tracks before explicit grid
   // These use auto_templates in reverse order: closest to explicit uses last template
@@ -1000,11 +1001,13 @@ fn resolve_tracks_with_implicit(
     let k = offset - i
     let template = get_auto_template_reverse(auto_templates, k)
     all_templates.push(template)
+    is_implicit.push(true)
   }
 
   // Explicit tracks
   for i = 0; i < explicit_count; i = i + 1 {
     all_templates.push(explicit_templates[i])
+    is_implicit.push(false)
   }
 
   // Implicit tracks after explicit grid
@@ -1012,6 +1015,7 @@ fn resolve_tracks_with_implicit(
   for i = 0; i < implicit_after; i = i + 1 {
     let template = get_auto_template(auto_templates, i)
     all_templates.push(template)
+    is_implicit.push(true)
   }
   let track_count = all_templates.length()
   let total_gaps = if track_count > 1 {
@@ -1061,8 +1065,10 @@ fn resolve_tracks_with_implicit(
       }
       @style.Auto => {
         // Auto uses max-content for base size but can shrink to min-content
+        // Implicit tracks can shrink to 0
+        let min_for_auto = if is_implicit[i] { 0.0 } else { min_content }
         base_sizes.push(max_content)
-        min_sizes.push(min_content)
+        min_sizes.push(min_for_auto)
         max_sizes.push(1.0e10)
         fixed_size = fixed_size + max_content
       }
