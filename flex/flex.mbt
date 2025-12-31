@@ -1140,6 +1140,7 @@ fn compute_internal(
   let cross_free_space = effective_cross - total_lines_cross
 
   // Handle align-content: Stretch - distribute extra space to lines
+  // NOTE: Stretch applies to line SIZE even in single-line containers
   let line_count = flex_lines.length()
   if style.align_content == @style.Stretch &&
     cross_free_space > 0.0 &&
@@ -1154,8 +1155,16 @@ fn compute_internal(
       }
     }
   }
+
+  // CSS spec: align-content positioning has no effect on single-line flex containers
+  // For single-line containers (nowrap), line is always positioned at Start
+  let effective_align_content_for_position : @style.Alignment = if should_wrap {
+    style.align_content
+  } else {
+    @style.Start
+  }
   let (line_start_offset, line_gap) = compute_justify(
-    style.align_content,
+    effective_align_content_for_position,
     cross_free_space,
     line_count,
   )
