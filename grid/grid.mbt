@@ -34,14 +34,15 @@ fn min_double(a : Double, b : Double) -> Double {
 fn resolve_min_track_size(
   min_track : @style.MinTrackSizing,
   available_size : Double,
-  content_size : Double,
+  min_content_size : Double,
+  max_content_size : Double,
 ) -> Double {
   match min_track {
     @style.MinTrackSizing::Length(v) => v
     @style.MinTrackSizing::Percent(p) => available_size * p
-    @style.MinTrackSizing::Auto => content_size
-    @style.MinTrackSizing::MinContent => content_size
-    @style.MinTrackSizing::MaxContent => content_size
+    @style.MinTrackSizing::Auto => 0.0 // Auto in minmax uses 0 as minimum
+    @style.MinTrackSizing::MinContent => min_content_size
+    @style.MinTrackSizing::MaxContent => max_content_size
   }
 }
 
@@ -50,15 +51,16 @@ fn resolve_min_track_size(
 fn resolve_max_track_size(
   max_track : @style.MaxTrackSizing,
   available_size : Double,
-  content_size : Double,
+  min_content_size : Double,
+  max_content_size : Double,
 ) -> Double {
   match max_track {
     @style.MaxTrackSizing::Length(v) => v
     @style.MaxTrackSizing::Percent(p) => available_size * p
     @style.MaxTrackSizing::Fr(_) => 1.0e10 // Fr in max position means flexible
     @style.MaxTrackSizing::Auto => 1.0e10
-    @style.MaxTrackSizing::MinContent => content_size
-    @style.MaxTrackSizing::MaxContent => content_size
+    @style.MaxTrackSizing::MinContent => min_content_size
+    @style.MaxTrackSizing::MaxContent => max_content_size
   }
 }
 
@@ -209,12 +211,12 @@ pub fn compute_grid_layout(
   )
   let total_row_count = max_int(explicit_row_count, row_max_idx + row_offset)
 
-  // Calculate content sizes for auto tracks (using adjusted placements and total track counts)
-  let column_content_sizes = calculate_track_content_sizes(
+  // Calculate intrinsic content sizes for tracks (min-content and max-content)
+  let (column_min_content, column_max_content) = calculate_track_intrinsic_sizes(
     children, adjusted_placements, total_column_count, true, // is_column
     container_width_for_expansion,
   )
-  let row_content_sizes = calculate_track_content_sizes(
+  let (row_min_content, row_max_content) = calculate_track_intrinsic_sizes(
     children, adjusted_placements, total_row_count, false, // is_column
     container_width_for_expansion, // CSS: percent padding resolves against width
   )
@@ -296,7 +298,8 @@ pub fn compute_grid_layout(
     style.grid_auto_columns,
     preliminary_content_width,
     column_gap,
-    column_content_sizes,
+    column_min_content,
+    column_max_content,
     col_offset,
     total_column_count,
     not(width_is_auto), // Only distribute remaining space if width is definite
@@ -306,7 +309,8 @@ pub fn compute_grid_layout(
     style.grid_auto_rows,
     preliminary_content_height,
     row_gap,
-    row_content_sizes,
+    row_min_content,
+    row_max_content,
     row_offset,
     total_row_count,
     not(height_is_auto), // Only distribute remaining space if height is definite
@@ -695,17 +699,27 @@ fn apply_content_alignment(
 }
 
 ///|
-/// Calculate content sizes for each track based on item sizes
-fn calculate_track_content_sizes(
+/// Default intrinsic sizes for leaf nodes (matches Taffy behavior)
+let default_min_content_size : Double = 20.0
+
+///|
+let default_max_content_size : Double = 40.0
+
+///|
+/// Calculate both min-content and max-content sizes for each track
+fn calculate_track_intrinsic_sizes(
   children : Array[@node.Node],
   placements : Array[GridItemPlacement],
   track_count : Int,
   is_column : Bool,
-  container_width : Double, // For resolving percent padding (all % padding resolves against width)
-) -> Array[Double] {
-  let sizes : Array[Double] = []
+  container_width : Double, // For resolving percent padding
+) -> (Array[Double], Array[Double]) {
+  // (min_content_sizes, max_content_sizes)
+  let min_sizes : Array[Double] = []
+  let max_sizes : Array[Double] = []
   for i = 0; i < track_count; i = i + 1 {
-    sizes.push(0.0)
+    min_sizes.push(0.0)
+    max_sizes.push(0.0)
   }
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
@@ -721,95 +735,121 @@ fn calculate_track_content_sizes(
       (placement.row_start, placement.row_end)
     }
 
-    // Only consider items that span exactly one track for auto sizing
+    // Only consider items that span exactly one track for intrinsic sizing
     if track_end - track_start == 1 && track_start < track_count {
-      // Calculate the base size (content + padding + border)
-      let (base_size, margin_start, margin_end) = if is_column {
-        let content_w = match child.style.width {
-          @types.Length(v) => v
-          @types.Percent(_) => 0.0 // Percent needs container size
-          @types.Auto =>
-            // Check if aspect_ratio can derive width from height
-            match (child.style.aspect_ratio, child.style.height) {
-              (Some(ratio), @types.Length(h)) => h * ratio
-              _ => 0.0
-            }
-        }
-        // Padding and border create minimum size (percent padding resolves against width)
-        let pl = resolve_dimension(child.style.padding.left, container_width, 0.0)
-        let pr = resolve_dimension(child.style.padding.right, container_width, 0.0)
-        let bl = resolve_dimension(child.style.border.left, container_width, 0.0)
-        let br = resolve_dimension(child.style.border.right, container_width, 0.0)
-        let min_w = pl + pr + bl + br
-        let w = if content_w > min_w { content_w } else { min_w }
-        let ml = match child.style.margin.left {
-          @types.Length(v) => v
-          _ => 0.0
-        }
-        let mr = match child.style.margin.right {
-          @types.Length(v) => v
-          _ => 0.0
-        }
-        (w, ml, mr)
-      } else {
-        let content_h = match child.style.height {
-          @types.Length(v) => v
-          @types.Percent(_) => 0.0
-          @types.Auto =>
-            // Check if aspect_ratio can derive height from width
-            match (child.style.aspect_ratio, child.style.width) {
-              (Some(ratio), @types.Length(w)) => w / ratio
-              _ =>
-                // For auto-height grid/flex containers, compute their intrinsic height
-                if child.style.display == @style.Grid && child.children.length() > 0 {
-                  // Get width for nested grid computation
-                  let nested_width = match child.style.width {
-                    @types.Length(v) => v
-                    _ => 0.0
-                  }
-                  // Compute nested grid layout to get its height
-                  let nested_layout = compute_grid_layout(child, nested_width, 0.0)
-                  nested_layout.height
-                } else if child.style.display == @style.Flex && child.children.length() > 0 {
-                  let nested_width = match child.style.width {
-                    @types.Length(v) => v
-                    _ => 0.0
-                  }
-                  let ctx : @node.LayoutContext = {
-                    available_width: nested_width,
-                    available_height: None,
-                  }
-                  let nested_layout = @flex.compute(child, ctx)
-                  nested_layout.height
-                } else {
-                  0.0
-                }
-            }
-        }
-        // Padding and border create minimum size (percent padding resolves against WIDTH per CSS spec)
-        let pt = resolve_dimension(child.style.padding.top, container_width, 0.0)
-        let pb = resolve_dimension(child.style.padding.bottom, container_width, 0.0)
-        let bt = resolve_dimension(child.style.border.top, container_width, 0.0)
-        let bb = resolve_dimension(child.style.border.bottom, container_width, 0.0)
-        let min_h = pt + pb + bt + bb
-        let h = if content_h > min_h { content_h } else { min_h }
-        let mt = match child.style.margin.top {
-          @types.Length(v) => v
-          _ => 0.0
-        }
-        let mb = match child.style.margin.bottom {
-          @types.Length(v) => v
-          _ => 0.0
-        }
-        (h, mt, mb)
+      let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
+        child, is_column, container_width,
+      )
+      let min_contribution = min_content + margin_start + margin_end
+      let max_contribution = max_content + margin_start + margin_end
+      if min_contribution > min_sizes[track_start] {
+        min_sizes[track_start] = min_contribution
       }
-      let content_size = base_size + margin_start + margin_end
-      if content_size > sizes[track_start] {
-        sizes[track_start] = content_size
+      if max_contribution > max_sizes[track_start] {
+        max_sizes[track_start] = max_contribution
       }
     }
   }
-  sizes
+  (min_sizes, max_sizes)
+}
+
+///|
+/// Calculate intrinsic sizes (min-content, max-content) for a single item
+fn calculate_item_intrinsic_sizes(
+  child : @node.Node,
+  is_column : Bool,
+  container_width : Double,
+) -> (Double, Double, Double, Double) {
+  // Returns (min_content, max_content, margin_start, margin_end)
+  if is_column {
+    // Width intrinsic sizes
+    let (min_content, max_content) = match child.style.width {
+      @types.Length(v) => (v, v)
+      @types.Percent(p) => {
+        let resolved = p * container_width
+        (resolved, resolved)
+      }
+      @types.Auto => {
+        // For leaf nodes with no explicit size, use default intrinsic sizes
+        // This ensures min-content/max-content tracks size correctly
+        if child.children.length() == 0 {
+          (default_min_content_size, default_max_content_size)
+        } else {
+          // For containers, recursively compute layout to get intrinsic size
+          match child.style.display {
+            @style.Grid => {
+              // Compute grid layout with available width (for max-content sizing)
+              let child_layout = compute_grid_layout(child, container_width, 1.0e10)
+              (child_layout.width, child_layout.width)
+            }
+            @style.Flex => {
+              // Compute flex layout
+              let ctx : @node.LayoutContext = { available_width: container_width, available_height: Some(1.0e10) }
+              let child_layout = @flex.compute(child, ctx)
+              (child_layout.width, child_layout.width)
+            }
+            _ => {
+              // For block/other display, use default intrinsic sizes
+              (default_min_content_size, default_max_content_size)
+            }
+          }
+        }
+      }
+    }
+    // Add padding and border to intrinsic sizes
+    let pl = resolve_dimension(child.style.padding.left, container_width, 0.0)
+    let pr = resolve_dimension(child.style.padding.right, container_width, 0.0)
+    let bl = resolve_dimension(child.style.border.left, container_width, 0.0)
+    let br = resolve_dimension(child.style.border.right, container_width, 0.0)
+    let box_size = pl + pr + bl + br
+    let final_min = if min_content + box_size > box_size { min_content + box_size } else { box_size }
+    let final_max = if max_content + box_size > box_size { max_content + box_size } else { box_size }
+    let ml = match child.style.margin.left { @types.Length(v) => v; _ => 0.0 }
+    let mr = match child.style.margin.right { @types.Length(v) => v; _ => 0.0 }
+    (final_min, final_max, ml, mr)
+  } else {
+    // Height intrinsic sizes
+    let (min_content, max_content) = match child.style.height {
+      @types.Length(v) => (v, v)
+      @types.Percent(_) => {
+        // Percent height resolves against container height, but we don't have it here
+        // Return 0 for percent heights in intrinsic sizing
+        (0.0, 0.0)
+      }
+      @types.Auto => {
+        if child.children.length() == 0 {
+          (default_min_content_size, default_max_content_size)
+        } else {
+          // For containers, recursively compute layout to get intrinsic size
+          match child.style.display {
+            @style.Grid => {
+              let child_layout = compute_grid_layout(child, 1.0e10, container_width)
+              (child_layout.height, child_layout.height)
+            }
+            @style.Flex => {
+              let ctx : @node.LayoutContext = { available_width: 1.0e10, available_height: Some(container_width) }
+              let child_layout = @flex.compute(child, ctx)
+              (child_layout.height, child_layout.height)
+            }
+            _ => {
+              (default_min_content_size, default_max_content_size)
+            }
+          }
+        }
+      }
+    }
+    // Add padding and border (resolved against WIDTH per CSS spec)
+    let pt = resolve_dimension(child.style.padding.top, container_width, 0.0)
+    let pb = resolve_dimension(child.style.padding.bottom, container_width, 0.0)
+    let bt = resolve_dimension(child.style.border.top, container_width, 0.0)
+    let bb = resolve_dimension(child.style.border.bottom, container_width, 0.0)
+    let box_size = pt + pb + bt + bb
+    let final_min = if min_content + box_size > box_size { min_content + box_size } else { box_size }
+    let final_max = if max_content + box_size > box_size { max_content + box_size } else { box_size }
+    let mt = match child.style.margin.top { @types.Length(v) => v; _ => 0.0 }
+    let mb = match child.style.margin.bottom { @types.Length(v) => v; _ => 0.0 }
+    (final_min, final_max, mt, mb)
+  }
 }
 
 ///|
@@ -927,7 +967,8 @@ fn resolve_tracks_with_implicit(
   auto_templates : Array[@style.TrackSizingFunction],
   available_size : Double,
   gap : Double,
-  content_sizes : Array[Double],
+  min_content_sizes : Array[Double],
+  max_content_sizes : Array[Double],
   offset : Int, // Number of implicit tracks before explicit grid
   total_count : Int, // Total number of tracks needed
   size_is_definite : Bool, // If false, auto tracks should not expand beyond content
@@ -977,8 +1018,13 @@ fn resolve_tracks_with_implicit(
   let mut fixed_size = 0.0
   for i = 0; i < track_count; i = i + 1 {
     let template = all_templates[i]
-    let content = if i < content_sizes.length() {
-      content_sizes[i]
+    let min_content = if i < min_content_sizes.length() {
+      min_content_sizes[i]
+    } else {
+      0.0
+    }
+    let max_content = if i < max_content_sizes.length() {
+      max_content_sizes[i]
     } else {
       0.0
     }
@@ -1004,42 +1050,53 @@ fn resolve_tracks_with_implicit(
         total_fr = total_fr + fr
       }
       @style.Auto => {
-        base_sizes.push(content)
-        min_sizes.push(content)
+        // Auto uses max-content for base size but can shrink to min-content
+        base_sizes.push(max_content)
+        min_sizes.push(min_content)
         max_sizes.push(1.0e10)
-        fixed_size = fixed_size + content
+        fixed_size = fixed_size + max_content
       }
       @style.MinContent => {
-        base_sizes.push(content)
-        min_sizes.push(content)
-        max_sizes.push(content)
-        fixed_size = fixed_size + content
+        // MinContent track uses min-content size
+        base_sizes.push(min_content)
+        min_sizes.push(min_content)
+        max_sizes.push(min_content)
+        fixed_size = fixed_size + min_content
       }
       @style.MaxContent => {
-        base_sizes.push(content)
-        min_sizes.push(content)
-        max_sizes.push(content)
-        fixed_size = fixed_size + content
+        // MaxContent track uses max-content size
+        base_sizes.push(max_content)
+        min_sizes.push(max_content)
+        max_sizes.push(max_content)
+        fixed_size = fixed_size + max_content
       }
       @style.MinMax(min_track, max_track) => {
         let min_size = resolve_min_track_size(
-          min_track, available_size, content,
+          min_track, available_size, min_content, max_content,
         )
         let max_size = resolve_max_track_size(
-          max_track, available_size, content,
+          max_track, available_size, min_content, max_content,
         )
-        base_sizes.push(min_size)
+        // Base size depends on whether max is flexible or finite
+        let base = if max_size < 1.0e9 {
+          // Finite max: use it as base, clamped to min
+          if max_size > min_size { max_size } else { min_size }
+        } else {
+          // Infinite max (fr/auto): use max-content as base, clamped to min
+          if max_content > min_size { max_content } else { min_size }
+        }
+        base_sizes.push(base)
         min_sizes.push(min_size)
         max_sizes.push(max_size)
-        fixed_size = fixed_size + min_size
+        fixed_size = fixed_size + base
       }
       @style.Repeat(_, _) => {
         // Repeat should be expanded before reaching here
         // Treat as auto if unexpanded
-        base_sizes.push(content)
-        min_sizes.push(content)
+        base_sizes.push(max_content)
+        min_sizes.push(min_content)
         max_sizes.push(1.0e10)
-        fixed_size = fixed_size + content
+        fixed_size = fixed_size + max_content
       }
     }
   }
