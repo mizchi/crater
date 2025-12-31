@@ -6,7 +6,7 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 
 ## 現在のテスト状況
 
-**293/368 passed (79.6%)**
+**301/368 passed (81.8%)**
 
 前回からの改善:
 - IntrinsicSize::default() を {0, 0, 0, 0} に変更
@@ -16,8 +16,9 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 - Fr トラックの比率計算改善 (hypothetical fr unit)
 - 0fr トラックの処理修正
 - justify_items/justify_self サポート追加
+- overflow プロパティ追加 (overflow:hidden で minimum contribution = 0)
 
-## 残り75件の失敗テスト分類
+## 残り67件の失敗テスト分類
 
 ### 1. 単純に対応すれば良いもの (Low Priority)
 
@@ -25,7 +26,6 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 
 | カテゴリ | 件数 | 説明 | 対応方法 |
 |---------|------|------|----------|
-| justify_self fixtures | 1 | fixture に justifySelf が欠けている | fixture 更新 |
 | negative_space_gap | 4 | トラックがコンテナに収まらない時の gap 処理 | gap 計算でオーバーフロー時の処理追加 |
 | grid_out_of_order_items | 1 | アイテム順序の問題 | placement ロジック確認 |
 | grid_repeat_mixed | 1 | repeat() の混合パターン | repeat 展開ロジック確認 |
@@ -36,36 +36,36 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 
 | カテゴリ | 件数 | 説明 | 対応方法 |
 |---------|------|------|----------|
-| auto_margins | 6 | auto margin と alignment の相互作用 | apply_alignment でのマージン処理改善 |
+| auto_margins | 3 | auto margin と alignment の相互作用 | apply_alignment でのマージン処理改善 |
 | placement_negative | 3 | 負のライン番号での配置 | resolve_line_placement の負の値処理確認 |
-| fit_content edge cases | 5 | fit-content(percent) in indefinite | percent 値の解決ロジック |
+| fit_content edge cases | 4 | fit-content(percent) in indefinite | percent 値の解決ロジック |
 | grid_auto_* | 2 | 暗黙的トラック関連 | auto track sizing 確認 |
 
 ### 3. 依存関係があるもの (High Priority - 先に実装すべき)
 
 これらを先に修正すると、他のテストも改善される可能性が高い:
 
-#### 3.1 overflow 処理 (11テストに影響)
+#### 3.1 overflow + spanning items の相互作用 (7テストに影響)
 
-`_hidden` suffix のテストは overflow:hidden による intrinsic sizing 変更を期待:
+overflow 基本処理は実装済みだが、spanning items との相互作用が複雑:
 
 ```
-grid_span_2_*_hidden (6件)
+grid_span_2_*_hidden (4件)
 grid_span_6_*_hidden (1件)
 grid_span_13_*_hidden (1件)
-grid_fit_content_*_hidden (3件)
+grid_fit_content_*_hidden (1件)
 ```
 
-**対応方法:**
-1. overflow プロパティをスタイル抽出に追加
-2. intrinsic sizing で overflow:hidden を考慮
-3. CSS spec: overflow:hidden → min-content を使用しない
+**問題点:**
+- 複数トラックをspan するアイテムのoverflow:hidden処理
+- min-content トラックと auto トラックへの分配方法
 
-#### 3.2 入れ子グリッドの intrinsic sizing (7テストに影響)
+#### 3.2 入れ子グリッドの intrinsic sizing (8テストに影響)
 
 ```
 grid_max_width_* (3件)
 grid_percent_items_nested_* (4件)
+grid_percent_items_width_and_margin (1件)
 ```
 
 **対応方法:**
@@ -93,18 +93,19 @@ grid_percent_tracks_indefinite_* (2件)
 | aspect_ratio in grid | 4 | グリッドでの aspect ratio | 相互作用が複雑 |
 | min_content_flex | 6 | flex 子要素の min-content | flex レイアウト依存 |
 | available_space | 2 | 利用可能スペースの制約 | 根本的な設計見直し必要 |
+| fr edge cases | 2 | fr トラックのエッジケース | 調査必要 |
+| span distribution | 3 | spanning の複雑なケース | 調査必要 |
+| overflow_* | 2 | overflow の追加ケース | 調査必要 |
 
 ## 推奨する実装順序
 
 ### Phase 1: 依存関係の解決 (高優先度)
 
-1. **overflow 処理の追加**
-   - style に overflow プロパティ追加
-   - gentest.ts で overflow を抽出
-   - intrinsic sizing で overflow を考慮
-
-2. **percent in indefinite の修正**
+1. **percent in indefinite の修正**
    - compute_track_sizes で indefinite + percent の処理
+
+2. **入れ子グリッドの intrinsic sizing 改善**
+   - 再帰計算での max-width/min-width 制約適用
 
 ### Phase 2: 中程度の修正
 
@@ -117,14 +118,15 @@ grid_percent_tracks_indefinite_* (2件)
 ### Phase 3: 単純な修正
 
 5. **negative_space_gap**
-6. **fixture 更新** (justify_self など)
-7. **placement 修正**
+6. **placement 修正** (負のライン番号)
+7. **repeat_mixed** ロジック修正
 
 ### Phase 4: 後回し
 
 8. baseline alignment
 9. aspect_ratio
 10. min_content_flex
+11. spanning + overflow 相互作用の完全対応
 
 ## ファイル構成 (参考)
 
@@ -185,8 +187,9 @@ pub fn minimum_contribution(...) -> f32 {
 - [x] テキストコンテンツの measure
 - [x] fit-content サポート
 - [x] justify_items/justify_self
-- [ ] overflow 処理 ← 次に実装すべき
-- [ ] Automatic minimum size (CSS Grid spec)
+- [x] overflow 処理 (基本)
+- [ ] overflow + spanning items 相互作用
+- [ ] Automatic minimum size (CSS Grid spec完全対応)
 - [ ] AvailableSpace (MinContent/MaxContent)
 - [ ] Baseline alignment (部分的)
 
