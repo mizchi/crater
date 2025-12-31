@@ -1970,7 +1970,9 @@ fn find_grid_area_bounds(
 }
 
 ///|
-/// Place grid items using auto-placement algorithm with occupancy tracking
+/// Place grid items using 2-pass auto-placement algorithm
+/// Pass 1: Identify all explicit Line placements to determine grid bounds
+/// Pass 2: Auto-place remaining items starting from the minimum column/row
 fn place_grid_items(
   children : Array[@node.Node],
   explicit_columns : Int,
@@ -1978,29 +1980,99 @@ fn place_grid_items(
   auto_flow : @style.GridAutoFlow,
   grid_areas : Array[Array[String]],
 ) -> Array[GridItemPlacement] {
-  let placements : Array[GridItemPlacement] = []
   let columns = if explicit_columns > 0 { explicit_columns } else { 1 }
 
-  // Grid occupation matrix (simplified: row-first filling)
-  // In a full implementation, we'd track which cells are occupied
-  let mut next_row = 0
-  let mut next_column = 0
+  // === PASS 1: Find grid bounds from explicit Line placements ===
+  let mut min_col = 0
+  let mut min_row = 0
+  let mut max_col = columns
+  let mut max_row = if explicit_rows > 0 { explicit_rows } else { 1 }
+
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let style = child.style
-
-    // Skip hidden children
     if style.display == @style.None {
-      placements.push({
-        row_start: 0,
-        row_end: 0,
-        column_start: 0,
-        column_end: 0,
-      })
       continue
     }
 
-    // Check for grid-area placement first
+    // Check for explicit column Line placement
+    match style.grid_column.start {
+      @style.Line(n) => {
+        let col_idx = if n > 0 {
+          n - 1
+        } else if n < 0 {
+          columns + 1 + n
+        } else {
+          0
+        }
+        if col_idx < min_col {
+          min_col = col_idx
+        }
+        let end_idx = col_idx + 1
+        if end_idx > max_col {
+          max_col = end_idx
+        }
+      }
+      _ => ()
+    }
+
+    // Check for explicit row Line placement
+    match style.grid_row.start {
+      @style.Line(n) => {
+        let row_idx = if n > 0 {
+          n - 1
+        } else if n < 0 {
+          explicit_rows + 1 + n
+        } else {
+          0
+        }
+        if row_idx < min_row {
+          min_row = row_idx
+        }
+        let end_idx = row_idx + 1
+        if end_idx > max_row {
+          max_row = end_idx
+        }
+      }
+      _ => ()
+    }
+  }
+
+  // === PASS 2: Place explicitly positioned items first ===
+  // This ensures we know which cells are occupied before auto-placement
+  let placements : Array[GridItemPlacement] = []
+  let occupied : Array[(Int, Int)] = []
+
+  // Initialize placements array
+  for i = 0; i < children.length(); i = i + 1 {
+    placements.push({ row_start: 0, row_end: 0, column_start: 0, column_end: 0 })
+  }
+
+  // First, place FULLY explicitly positioned items (both column and row are Line)
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let style = child.style
+    if style.display == @style.None {
+      continue
+    }
+
+    // Check if item has explicit Line positioning
+    let has_explicit_column = match style.grid_column.start {
+      @style.Line(_) => true
+      _ => false
+    }
+    let has_explicit_row = match style.grid_row.start {
+      @style.Line(_) => true
+      _ => false
+    }
+
+    // Only process FULLY explicitly positioned items (both column AND row)
+    // Semi-explicit items (one explicit, one auto) will be processed in Pass 3
+    if not(has_explicit_column && has_explicit_row) {
+      continue
+    }
+
+    // Check for grid-area placement
     let area_placement = match style.grid_area {
       Some(area_name) => find_grid_area_bounds(grid_areas, area_name)
       None => None
@@ -2008,63 +2080,198 @@ fn place_grid_items(
 
     let (col_start, col_end, row_start, row_end) = match area_placement {
       Some(bounds) =>
-        // Use area bounds
         (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
       None => {
-        // Resolve grid placement using grid-column and grid-row
         let (cs, ce) = resolve_line_placement(
           style.grid_column,
-          next_column,
+          0, // auto_position not used for explicit items
           columns,
         )
         let (rs, re) = resolve_line_placement(
           style.grid_row,
-          next_row,
+          0,
           explicit_rows,
         )
         (cs, ce, rs, re)
       }
     }
-    placements.push({
+
+    placements[i] = {
       row_start,
       row_end,
       column_start: col_start,
       column_end: col_end,
-    })
+    }
 
-    // Check if this item has explicit positioning
-    // Span is not explicit - it means "auto-place with this span"
+    // Mark cells as occupied
+    for r = row_start; r < row_end; r = r + 1 {
+      for c = col_start; c < col_end; c = c + 1 {
+        occupied.push((r, c))
+      }
+    }
+  }
+
+  // === PASS 3: Auto-place remaining items ===
+  // Auto-placement cursor starts at the minimum index (to fill implicit tracks first)
+  let mut next_row = min_row
+  let mut next_column = min_col
+
+  // Helper to check if a cell is occupied
+  fn is_cell_occupied(occupied : Array[(Int, Int)], row : Int, col : Int) -> Bool {
+    for i = 0; i < occupied.length(); i = i + 1 {
+      let (r, c) = occupied[i]
+      if r == row && c == col {
+        return true
+      }
+    }
+    false
+  }
+
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let style = child.style
+
+    if style.display == @style.None {
+      continue
+    }
+
+    // Skip items already placed in Pass 2 (FULLY explicitly positioned)
     let has_explicit_column = match style.grid_column.start {
-      @style.Auto | @style.Span(_) => false
-      _ => true
+      @style.Line(_) => true
+      _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @style.Auto | @style.Span(_) => false
-      _ => true
+      @style.Line(_) => true
+      _ => false
+    }
+    if has_explicit_column && has_explicit_row {
+      continue
     }
 
-    // Only advance position for auto-placed items (not explicitly positioned items)
-    // An item with explicit position in the primary axis should not affect cursor
-    let is_explicitly_positioned = has_explicit_column || has_explicit_row
-    match auto_flow {
-      @style.Row | @style.RowDense =>
-        // Only advance if not explicitly positioned
-        if not(is_explicitly_positioned) {
+    // Check for grid-area placement
+    let area_placement = match style.grid_area {
+      Some(area_name) => find_grid_area_bounds(grid_areas, area_name)
+      None => None
+    }
+
+    let (col_start, col_end, row_start, row_end) = match area_placement {
+      Some(bounds) =>
+        (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
+      None => {
+        // For semi-explicit items, use explicit position for one dimension,
+        // cursor for the other
+        if has_explicit_row {
+          // Explicit row, auto column - find first unoccupied column in that row
+          let (rs, re) = resolve_line_placement(
+            style.grid_row,
+            0,
+            explicit_rows,
+          )
+          let row_to_check = rs
+          let mut col_cursor = min_col
+          while is_cell_occupied(occupied, row_to_check, col_cursor) {
+            col_cursor = col_cursor + 1
+            // Don't wrap for semi-explicit items, just extend
+          }
+          let (cs, ce) = resolve_line_placement(
+            style.grid_column,
+            col_cursor,
+            columns,
+          )
+          (cs, ce, rs, re)
+        } else if has_explicit_column {
+          // Explicit column, auto row - find first unoccupied row in that column
+          let (cs, ce) = resolve_line_placement(
+            style.grid_column,
+            0,
+            columns,
+          )
+          let col_to_check = cs
+          let mut row_cursor = min_row
+          while is_cell_occupied(occupied, row_cursor, col_to_check) {
+            row_cursor = row_cursor + 1
+            // Don't wrap for semi-explicit items, just extend
+          }
+          let (rs, re) = resolve_line_placement(
+            style.grid_row,
+            row_cursor,
+            explicit_rows,
+          )
+          (cs, ce, rs, re)
+        } else {
+          // Fully auto-placed: find next unoccupied cell
+          match auto_flow {
+            @style.Row | @style.RowDense => {
+              // Row-major: advance column, then row
+              while is_cell_occupied(occupied, next_row, next_column) {
+                next_column = next_column + 1
+                if next_column >= columns {
+                  next_column = min_col
+                  next_row = next_row + 1
+                }
+              }
+            }
+            @style.Column | @style.ColumnDense => {
+              // Column-major: advance row, then column
+              let rows = if explicit_rows > 0 { explicit_rows } else { 1 }
+              while is_cell_occupied(occupied, next_row, next_column) {
+                next_row = next_row + 1
+                if next_row >= rows {
+                  next_row = min_row
+                  next_column = next_column + 1
+                }
+              }
+            }
+          }
+
+          let (cs, ce) = resolve_line_placement(
+            style.grid_column,
+            next_column,
+            columns,
+          )
+          let (rs, re) = resolve_line_placement(
+            style.grid_row,
+            next_row,
+            explicit_rows,
+          )
+          (cs, ce, rs, re)
+        }
+      }
+    }
+
+    placements[i] = {
+      row_start,
+      row_end,
+      column_start: col_start,
+      column_end: col_end,
+    }
+
+    // Mark cells as occupied
+    for r = row_start; r < row_end; r = r + 1 {
+      for c = col_start; c < col_end; c = c + 1 {
+        occupied.push((r, c))
+      }
+    }
+
+    // Advance cursor only for fully auto-placed items
+    if not(has_explicit_column) && not(has_explicit_row) {
+      match auto_flow {
+        @style.Row | @style.RowDense => {
           next_column = col_end
           if next_column >= columns {
-            next_column = 0
+            next_column = min_col
             next_row = next_row + 1
           }
         }
-      @style.Column | @style.ColumnDense =>
-        // Only advance if not explicitly positioned
-        if not(is_explicitly_positioned) {
+        @style.Column | @style.ColumnDense => {
           next_row = row_end
-          if next_row >= explicit_rows && explicit_rows > 0 {
-            next_row = 0
+          let rows = if explicit_rows > 0 { explicit_rows } else { 1 }
+          if next_row >= rows {
+            next_row = min_row
             next_column = next_column + 1
           }
         }
+      }
     }
   }
   placements

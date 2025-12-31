@@ -6,11 +6,16 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 
 ## 現在のテスト状況
 
-**199/259 passed (76.8%)**
+**205/259 passed (79.2%)**
 
 (注: gen_test.mbt 再生成により総テスト数が 368 → 259 に変更された)
 
 ### 最新の改善 (2024-12):
+- **3-pass auto-placement アルゴリズム実装** (+6 テスト)
+  - Pass 1: 明示的な Line 配置からグリッド境界を決定
+  - Pass 2: 完全に明示的なアイテム (row/column 両方が Line) を配置
+  - Pass 3: 残りのアイテムを auto-placement (semi-explicit 含む)
+  - negative placement 関連テスト全件修正 (grid_placement_auto_negative, grid_auto_rows, grid_auto_columns など)
 - negative_space_gap テスト4件修正
   - apply_content_alignment で free_space <= 0 時の早期リターンを削除
   - Center/End アライメントは負のオフセットを許可
@@ -37,12 +42,12 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 |---------|------|------|------|
 | negative_space_gap | 4 | トラックがコンテナに収まらない時の gap 処理 | ✅ 修正済 |
 | percent in indefinite (minmax) | 3 | indefinite container での minmax percent | ✅ 修正済 |
+| placement_negative | 5+ | 負のライン番号での配置 (grid_placement_auto_negative, grid_auto_rows, grid_auto_columns など) | ✅ 3-pass auto-placement で修正済 |
 
 ### 2. 根本的な変更が必要なもの (High Complexity)
 
 | カテゴリ | 件数 | 説明 | 必要な対応 |
 |---------|------|------|----------|
-| placement_negative | 5+ | 負のライン番号での配置 (grid_placement_auto_negative, grid_auto_rows, grid_auto_columns など) | **2パス auto-placement アルゴリズム**: 明示的配置を先に処理してグリッド境界を決定し、次に auto-placement を暗黙トラックも含めた座標系で実行する必要がある |
 | percent_tracks_indefinite_overflow | 2 | indefinite container での percent + overflow 相互作用 | 2パス計算: container サイズ確定後に percent トラックを再計算 |
 
 ### 3. 単純に対応すれば良いもの (Low Priority)
@@ -60,9 +65,7 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 | カテゴリ | 件数 | 説明 | 対応方法 |
 |---------|------|------|----------|
 | auto_margins | 3 | auto margin と alignment の相互作用 | apply_alignment でのマージン処理改善 |
-| placement_negative | 3 | 負のライン番号での配置 | resolve_line_placement の負の値処理確認 |
 | fit_content edge cases | 4 | fit-content(percent) in indefinite | percent 値の解決ロジック |
-| grid_auto_* | 2 | 暗黙的トラック関連 | auto track sizing 確認 |
 
 ### 3. 依存関係があるもの (High Priority - 先に実装すべき)
 
@@ -211,6 +214,7 @@ pub fn minimum_contribution(...) -> f32 {
 - [x] fit-content サポート
 - [x] justify_items/justify_self
 - [x] overflow 処理 (基本)
+- [x] 3-pass auto-placement (negative placement 対応)
 - [ ] overflow + spanning items 相互作用
 - [ ] Automatic minimum size (CSS Grid spec完全対応)
 - [ ] AvailableSpace (MinContent/MaxContent)
