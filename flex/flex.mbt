@@ -1521,104 +1521,153 @@ fn compute_internal(
     let inset_top = child_style.inset.top.resolve(final_height)
     let inset_bottom = child_style.inset.bottom.resolve(final_height)
 
-    // Calculate child width
-    let child_width : Double = match child_style.width {
-      @types.Length(w) => w
-      @types.Percent(p) => container_width * p
+    // Calculate initial child width (before min/max constraints)
+    let initial_width : Double? = match child_style.width {
+      @types.Length(w) => Some(w)
+      @types.Percent(p) => Some(container_width * p)
       @types.Auto =>
         // If both left and right are set, calculate from insets
         match (inset_left, inset_right) {
           (Some(l), Some(r)) => {
             let w = container_width - l - r - margin_left - margin_right
-            if w > 0.0 { w } else { 0.0 }
+            Some(if w > 0.0 { w } else { 0.0 })
           }
-          _ => 0.0 // Would need intrinsic size
+          _ => None // Need intrinsic size
         }
     }
 
-    // Calculate child height
-    let child_height : Double = match child_style.height {
-      @types.Length(h) => h
-      @types.Percent(p) => final_height * p
+    // Calculate initial child height (before min/max constraints)
+    let initial_height : Double? = match child_style.height {
+      @types.Length(h) => Some(h)
+      @types.Percent(p) => Some(final_height * p)
       @types.Auto =>
         // If both top and bottom are set, calculate from insets
         match (inset_top, inset_bottom) {
           (Some(t), Some(b)) => {
             let h = final_height - t - b - margin_top - margin_bottom
-            if h > 0.0 { h } else { 0.0 }
+            Some(if h > 0.0 { h } else { 0.0 })
           }
-          _ => 0.0 // Would need intrinsic size
+          _ => None // Need intrinsic size
         }
     }
 
-    // Calculate position (including margin)
-    let child_x = match inset_left {
-      Some(l) => l + margin_left + padding.left + border.left
-      None =>
-        match inset_right {
-          Some(r) =>
-            container_width -
-            child_width -
-            r -
-            margin_right -
-            padding.right -
-            border.right +
-            padding.left +
-            border.left
-          None => margin_left + padding.left + border.left // Default to start with margin
-        }
-    }
-    let child_y = match inset_top {
-      Some(t) => t + margin_top + padding.top + border.top
-      None =>
-        match inset_bottom {
-          Some(b) =>
-            final_height -
-            child_height -
-            b -
-            margin_bottom -
-            padding.bottom -
-            border.bottom +
-            padding.top +
-            border.top
-          None => margin_top + padding.top + border.top // Default to start with margin
-        }
+    // Compute intrinsic size if needed, and get child's inner layout
+    let (child_width, child_height, child_inner) = match (initial_width, initial_height) {
+      (Some(w), Some(h)) => {
+        let inner = compute_nested(
+          child,
+          { available_width: w, available_height: Some(h) },
+          warnings,
+        )
+        (w, h, inner)
+      }
+      (Some(w), None) => {
+        let inner = compute_nested(
+          child,
+          { available_width: w, available_height: None },
+          warnings,
+        )
+        (w, inner.height, inner)
+      }
+      (None, Some(h)) => {
+        let inner = compute_nested(
+          child,
+          { available_width: container_width, available_height: Some(h) },
+          warnings,
+        )
+        (inner.width, h, inner)
+      }
+      (None, None) => {
+        let inner = compute_nested(
+          child,
+          { available_width: container_width, available_height: Some(final_height) },
+          warnings,
+        )
+        (inner.width, inner.height, inner)
+      }
     }
 
-    // Handle child's own children if any
-    let child_layout : @node.Layout = if child.children.length() == 0 {
-      let child_padding = resolve_rect(child_style.padding, child_width)
-      let child_border = resolve_rect(child_style.border, child_width)
-      let child_margin = resolve_rect(child_style.margin, container_width)
-      {
-        id: child.id,
-        x: child_x,
-        y: child_y,
-        width: child_width,
-        height: child_height,
-        margin: child_margin,
-        padding: child_padding,
-        border: child_border,
-        children: [],
+    // Apply min/max constraints
+    let child_width = apply_min_max_width(child_width, child_style, container_width)
+    let child_height = apply_min_max_height(child_height, child_style, final_height)
+
+    // Calculate position
+    // If insets are specified, use them; otherwise use align_items/justify_content
+    let has_horizontal_inset = inset_left != None || inset_right != None
+    let has_vertical_inset = inset_top != None || inset_bottom != None
+
+    let child_x = if has_horizontal_inset {
+      match inset_left {
+        Some(l) => l + margin_left + padding.left + border.left
+        None =>
+          match inset_right {
+            Some(r) =>
+              container_width -
+              child_width -
+              r -
+              margin_right -
+              padding.right -
+              border.right +
+              padding.left +
+              border.left
+            None => margin_left + padding.left + border.left
+          }
       }
     } else {
-      let child_ctx : @node.LayoutContext = {
-        available_width: child_width,
-        available_height: Some(child_height),
+      // Use align_items for cross-axis positioning (x for row direction)
+      let free_space = container_width - child_width - margin_left - margin_right
+      let align_offset = if is_row {
+        // For row, cross axis is vertical, but we need horizontal alignment
+        // Use justify_content for main axis (x)
+        compute_absolute_align_offset(style.justify_content, free_space)
+      } else {
+        // For column, cross axis is horizontal
+        compute_absolute_align_offset(style.align_items, free_space)
       }
-      let nested_layout = compute_nested(child, child_ctx, warnings)
-      let child_margin = resolve_rect(child_style.margin, container_width)
-      {
-        id: child.id,
-        x: child_x,
-        y: child_y,
-        width: child_width,
-        height: child_height,
-        margin: child_margin,
-        padding: nested_layout.padding,
-        border: nested_layout.border,
-        children: nested_layout.children,
+      margin_left + align_offset + padding.left + border.left
+    }
+
+    let child_y = if has_vertical_inset {
+      match inset_top {
+        Some(t) => t + margin_top + padding.top + border.top
+        None =>
+          match inset_bottom {
+            Some(b) =>
+              final_height -
+              child_height -
+              b -
+              margin_bottom -
+              padding.bottom -
+              border.bottom +
+              padding.top +
+              border.top
+            None => margin_top + padding.top + border.top
+          }
       }
+    } else {
+      // Use justify_content for main-axis positioning (y for column direction)
+      let free_space = final_height - child_height - margin_top - margin_bottom
+      let align_offset = if is_row {
+        // For row, main axis is horizontal, use align_items for y
+        compute_absolute_align_offset(style.align_items, free_space)
+      } else {
+        // For column, main axis is vertical
+        compute_absolute_align_offset(style.justify_content, free_space)
+      }
+      margin_top + align_offset + padding.top + border.top
+    }
+
+    // Build child layout
+    let child_layout : @node.Layout = {
+      id: child.id,
+      x: child_x,
+      y: child_y,
+      width: child_width,
+      height: child_height,
+      margin: child_margin,
+      padding: child_inner.padding,
+      border: child_inner.border,
+      children: child_inner.children,
     }
     indexed_layouts.push({ dom_index: i, layout: child_layout })
   }
@@ -1781,5 +1830,98 @@ fn compute_align(
     @style.Stretch => 0.0 // Already handled in cross size calculation
     @style.Baseline => available // For simple boxes, baseline = bottom = End alignment
     _ => 0.0 // Default to start for space-* alignments
+  }
+}
+
+///|
+/// Apply min/max width constraints
+fn apply_min_max_width(
+  width : Double,
+  style : @style.Style,
+  available : Double,
+) -> Double {
+  let mut result = width
+
+  // Apply min_width
+  match style.min_width {
+    @types.Length(v) => if result < v { result = v }
+    @types.Percent(p) => {
+      let v = available * p
+      if result < v {
+        result = v
+      }
+    }
+    @types.Auto => ()
+  }
+
+  // Apply max_width
+  match style.max_width {
+    @types.Length(v) => if result > v { result = v }
+    @types.Percent(p) => {
+      let v = available * p
+      if result > v {
+        result = v
+      }
+    }
+    @types.Auto => ()
+  }
+
+  result
+}
+
+///|
+/// Apply min/max height constraints
+fn apply_min_max_height(
+  height : Double,
+  style : @style.Style,
+  available : Double,
+) -> Double {
+  let mut result = height
+
+  // Apply min_height
+  match style.min_height {
+    @types.Length(v) => if result < v { result = v }
+    @types.Percent(p) => {
+      let v = available * p
+      if result < v {
+        result = v
+      }
+    }
+    @types.Auto => ()
+  }
+
+  // Apply max_height
+  match style.max_height {
+    @types.Length(v) => if result > v { result = v }
+    @types.Percent(p) => {
+      let v = available * p
+      if result > v {
+        result = v
+      }
+    }
+    @types.Auto => ()
+  }
+
+  result
+}
+
+///|
+/// Compute alignment offset for absolute positioned items
+fn compute_absolute_align_offset(
+  align : @style.Alignment,
+  free_space : Double,
+) -> Double {
+  if free_space <= 0.0 {
+    return 0.0
+  }
+  match align {
+    @style.Start => 0.0
+    @style.End => free_space
+    @style.Center => free_space / 2.0
+    @style.SpaceBetween => 0.0 // Treat as start for single item
+    @style.SpaceAround => free_space / 2.0 // Center for single item
+    @style.SpaceEvenly => free_space / 2.0 // Center for single item
+    @style.Stretch => 0.0 // Start for absolute
+    @style.Baseline => 0.0 // Start for absolute
   }
 }
