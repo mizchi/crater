@@ -1325,11 +1325,37 @@ fn compute_internal(
         }
       }
 
-      // For stretch, use line cross size; otherwise use item's cross size
+      // For stretch, use line cross size (with min/max constraints) if cross_is_auto
       let item_cross = match effective_align {
         @style.Stretch =>
           if item.cross_is_auto {
-            line_cross_size - item.margin_cross
+            // Apply min/max constraints to stretched size
+            let stretched = line_cross_size - item.margin_cross
+            // item.final_cross already has constraints, use min of stretched and final_cross
+            // to handle max constraints, and max with final_cross to handle min constraints
+            let child = children[item.index]
+            let child_style = child.style
+            let mut constrained = stretched
+            if is_row {
+              match child_style.min_height {
+                @types.Length(v) => if constrained < v { constrained = v }
+                _ => ()
+              }
+              match child_style.max_height {
+                @types.Length(v) => if constrained > v { constrained = v }
+                _ => ()
+              }
+            } else {
+              match child_style.min_width {
+                @types.Length(v) => if constrained < v { constrained = v }
+                _ => ()
+              }
+              match child_style.max_width {
+                @types.Length(v) => if constrained > v { constrained = v }
+                _ => ()
+              }
+            }
+            constrained
           } else {
             item.final_cross
           }
