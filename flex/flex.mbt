@@ -1085,6 +1085,7 @@ fn compute_internal(
     } // Non-stretch align-self means don't stretch
 
     // For stretch alignment, item takes full cross size only if cross dimension is auto
+    // For non-stretch with aspect_ratio, recalculate cross from constrained main dimension
     let final_cross = match effective_align {
       @style.Stretch =>
         if item.cross_is_auto {
@@ -1095,7 +1096,23 @@ fn compute_internal(
         } else {
           item.base_cross
         }
-      _ => item.base_cross
+      _ =>
+        // If cross is auto and aspect_ratio is defined, calculate from main dimension
+        if item.cross_is_auto {
+          match child_style.aspect_ratio {
+            Some(ratio) =>
+              if is_row {
+                // height = width / ratio
+                item.final_main / ratio
+              } else {
+                // width = height * ratio
+                item.final_main * ratio
+              }
+            None => item.base_cross
+          }
+        } else {
+          item.base_cross
+        }
     }
 
     // Apply min/max on cross axis
