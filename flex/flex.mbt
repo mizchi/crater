@@ -93,8 +93,8 @@ fn compute_intrinsic_flex_main_size(
         }
     }
   }
-  let padding = resolve_rect(style.padding, child_available_width)
-  let border = resolve_rect(style.border, child_available_width)
+  let padding = @types.resolve_rect(style.padding, child_available_width)
+  let border = @types.resolve_rect(style.border, child_available_width)
 
   if compute_main_axis {
     // Computing along this container's main axis: sum children's sizes
@@ -115,7 +115,7 @@ fn compute_intrinsic_flex_main_size(
       if child_style.position == @style.Absolute {
         continue
       }
-      let child_margin = resolve_rect(child_style.margin, child_available_width)
+      let child_margin = @types.resolve_rect(child_style.margin, child_available_width)
 
       let child_main = if child_is_row {
         // Main axis is width
@@ -164,7 +164,7 @@ fn compute_intrinsic_flex_main_size(
       if child_style.position == @style.Absolute {
         continue
       }
-      let child_margin = resolve_rect(child_style.margin, child_available_width)
+      let child_margin = @types.resolve_rect(child_style.margin, child_available_width)
 
       let child_cross = if child_is_row {
         // Cross axis is height (we want height for a Row container)
@@ -219,8 +219,8 @@ fn compute_intrinsic_block_main_size(
         _ => 0.0
       }
   }
-  let padding = resolve_rect(style.padding, available_width)
-  let border = resolve_rect(style.border, available_width)
+  let padding = @types.resolve_rect(style.padding, available_width)
+  let border = @types.resolve_rect(style.border, available_width)
 
   // For block layout, if parent is row, intrinsic width is max of children's widths
   // If parent is column, intrinsic height is sum of children's heights
@@ -236,7 +236,7 @@ fn compute_intrinsic_block_main_size(
       if child_style.position == @style.Absolute {
         continue
       }
-      let child_margin = resolve_rect(child_style.margin, available_width)
+      let child_margin = @types.resolve_rect(child_style.margin, available_width)
       let child_width = match child_style.width {
         @types.Length(w) => w + child_margin.left + child_margin.right
         _ =>
@@ -259,7 +259,7 @@ fn compute_intrinsic_block_main_size(
       if child_style.position == @style.Absolute {
         continue
       }
-      let child_margin = resolve_rect(child_style.margin, available_width)
+      let child_margin = @types.resolve_rect(child_style.margin, available_width)
       let child_height = match child_style.height {
         @types.Length(h) => h + child_margin.top + child_margin.bottom
         _ =>
@@ -273,19 +273,6 @@ fn compute_intrinsic_block_main_size(
   }
 }
 
-///|
-/// Resolve a Rect[Dimension] to Rect[Double]
-fn resolve_rect(
-  rect : @types.Rect[@types.Dimension],
-  parent_width : Double,
-) -> @types.Rect[Double] {
-  {
-    left: rect.left.resolve_or(parent_width, 0.0),
-    right: rect.right.resolve_or(parent_width, 0.0),
-    top: rect.top.resolve_or(parent_width, 0.0),
-    bottom: rect.bottom.resolve_or(parent_width, 0.0),
-  }
-}
 
 ///|
 /// Compute the baseline of a node for baseline alignment
@@ -368,9 +355,9 @@ fn compute_internal(
   let parent_height = ctx.available_height.unwrap_or(0.0)
 
   // Resolve box model
-  let margin = resolve_rect(style.margin, parent_width)
-  let padding = resolve_rect(style.padding, parent_width)
-  let border = resolve_rect(style.border, parent_width)
+  let margin = @types.resolve_rect(style.margin, parent_width)
+  let padding = @types.resolve_rect(style.padding, parent_width)
+  let border = @types.resolve_rect(style.border, parent_width)
 
   // Container size
   let width_is_auto = match style.width {
@@ -511,7 +498,7 @@ fn compute_internal(
     if child_style.position == @style.Absolute {
       continue
     }
-    let child_margin = resolve_rect(child_style.margin, content_width)
+    let child_margin = @types.resolve_rect(child_style.margin, content_width)
 
     // Get explicit cross dimension value for aspect_ratio calculation
     let explicit_cross : Double? = if is_row {
@@ -1210,7 +1197,7 @@ fn compute_internal(
   } else {
     @style.Start
   }
-  let (line_start_offset, line_gap) = compute_justify(
+  let (line_start_offset, line_gap) = @alignment.compute_justify(
     effective_align_content_for_position,
     cross_free_space,
     line_count,
@@ -1304,7 +1291,7 @@ fn compute_internal(
     let (start_offset, justify_gap) = if auto_margin_count > 0 {
       (0.0, 0.0)
     } else {
-      compute_justify(effective_justify, line_free_space, line_item_count)
+      @alignment.compute_justify(effective_justify, line_free_space, line_item_count)
     }
     let gap = main_gap + justify_gap
     let mut main_pos = start_offset
@@ -1510,8 +1497,8 @@ fn compute_internal(
       }
       let child_layout : @node.Layout = if child.children.length() == 0 {
         let child_style = child.style
-        let child_padding = resolve_rect(child_style.padding, child_width)
-        let child_border = resolve_rect(child_style.border, child_width)
+        let child_padding = @types.resolve_rect(child_style.padding, child_width)
+        let child_border = @types.resolve_rect(child_style.border, child_width)
         {
           id: child.id,
           x: child_x,
@@ -1759,7 +1746,7 @@ fn compute_internal(
       let align_offset = if is_row {
         // For row, main axis is horizontal
         // Use justify_self/justify_content for main axis (x)
-        compute_align_self_offset(
+        @alignment.compute_align_self_offset(
           child_style.justify_self,
           style.justify_content,
           free_space,
@@ -1767,7 +1754,7 @@ fn compute_internal(
       } else {
         // For column, cross axis is horizontal
         // Use align_self/align_items for cross axis (x)
-        let offset = compute_align_self_offset(
+        let offset = @alignment.compute_align_self_offset(
           child_style.align_self,
           style.align_items,
           free_space,
@@ -1805,7 +1792,7 @@ fn compute_internal(
       let align_offset = if is_row {
         // For row, cross axis is vertical
         // Use align_self/align_items for cross axis (y)
-        let offset = compute_align_self_offset(
+        let offset = @alignment.compute_align_self_offset(
           child_style.align_self,
           style.align_items,
           free_space,
@@ -1819,7 +1806,7 @@ fn compute_internal(
       } else {
         // For column, main axis is vertical
         // Use justify_self/justify_content for main axis (y)
-        compute_align_self_offset(
+        @alignment.compute_align_self_offset(
           child_style.justify_self,
           style.justify_content,
           free_space,
@@ -1828,7 +1815,7 @@ fn compute_internal(
       params.margin_top + align_offset + border.top
     }
 
-    let child_margin = resolve_rect(child_style.margin, container_width)
+    let child_margin = @types.resolve_rect(child_style.margin, container_width)
 
     // Build child layout
     let child_layout : @node.Layout = {
@@ -1892,8 +1879,8 @@ fn compute_nested(
 ) -> @node.Layout {
   let style = node.style
   let parent_width = ctx.available_width
-  let padding = resolve_rect(style.padding, parent_width)
-  let border = resolve_rect(style.border, parent_width)
+  let padding = @types.resolve_rect(style.padding, parent_width)
+  let border = @types.resolve_rect(style.border, parent_width)
 
   // For leaf nodes, return intrinsic size based on style
   // A leaf with no content has intrinsic size of 0 (plus padding/border)
@@ -1987,49 +1974,6 @@ priv struct FlexLine {
 }
 
 ///|
-/// Compute justify-content positioning
-fn compute_justify(
-  justify : @style.Alignment,
-  free_space : Double,
-  item_count : Int,
-) -> (Double, Double) {
-  // Returns (start_offset, gap_between_items)
-  if item_count == 0 {
-    return (0.0, 0.0)
-  }
-  // CSS spec: when free_space is negative, SpaceBetween/SpaceAround/SpaceEvenly
-  // behave like Start (items packed at start, no gap distribution)
-  if free_space < 0.0 {
-    match justify {
-      @style.SpaceBetween | @style.SpaceAround | @style.SpaceEvenly =>
-        return (0.0, 0.0)
-      _ => ()
-    }
-  }
-  match justify {
-    @style.Start => (0.0, 0.0)
-    @style.End => (free_space, 0.0)
-    @style.Center => (free_space / 2.0, 0.0)
-    @style.SpaceBetween =>
-      if item_count == 1 {
-        (0.0, 0.0)
-      } else {
-        (0.0, free_space / (item_count - 1).to_double())
-      }
-    @style.SpaceAround => {
-      let gap = free_space / item_count.to_double()
-      (gap / 2.0, gap)
-    }
-    @style.SpaceEvenly => {
-      let gap = free_space / (item_count + 1).to_double()
-      (gap, gap)
-    }
-    @style.Stretch => (0.0, 0.0) // Stretch doesn't apply to main axis
-    @style.Baseline => (0.0, 0.0) // Baseline doesn't apply to justify-content
-  }
-}
-
-///|
 /// Compute align-items positioning
 fn compute_align(
   align : @style.Alignment,
@@ -2048,42 +1992,3 @@ fn compute_align(
   }
 }
 
-///|
-/// Compute alignment offset for absolute positioned items
-fn compute_absolute_align_offset(
-  align : @style.Alignment,
-  free_space : Double,
-) -> Double {
-  if free_space <= 0.0 {
-    return 0.0
-  }
-  match align {
-    @style.Start => 0.0
-    @style.End => free_space
-    @style.Center => free_space / 2.0
-    @style.SpaceBetween => 0.0 // Treat as start for single item
-    @style.SpaceAround => free_space / 2.0 // Center for single item
-    @style.SpaceEvenly => free_space / 2.0 // Center for single item
-    @style.Stretch => 0.0 // Start for absolute
-    @style.Baseline => 0.0 // Start for absolute
-  }
-}
-
-///|
-/// Compute alignment offset for align_self (child's override)
-fn compute_align_self_offset(
-  align_self : @style.AlignSelf,
-  parent_align : @style.Alignment,
-  free_space : Double,
-) -> Double {
-  if free_space <= 0.0 {
-    return 0.0
-  }
-  match align_self {
-    @style.AlignSelf::Auto => compute_absolute_align_offset(parent_align, free_space)
-    @style.AlignSelf::Start => 0.0
-    @style.AlignSelf::End => free_space
-    @style.AlignSelf::Center => free_space / 2.0
-    @style.AlignSelf::Stretch => 0.0 // Start for absolute
-  }
-}

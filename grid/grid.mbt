@@ -864,17 +864,13 @@ fn compute_grid_layout_internal(
 }
 
 ///|
-/// Resolve a dimension value to a concrete size
+/// Resolve a dimension value to a concrete size (delegates to Dimension::resolve_or)
 fn resolve_dimension(
   dim : @types.Dimension,
   available : Double,
-  default : Double,
+  default : Double
 ) -> Double {
-  match dim {
-    @types.Length(v) => v
-    @types.Percent(p) => available * p
-    @types.Auto => default
-  }
+  dim.resolve_or(available, default)
 }
 
 ///|

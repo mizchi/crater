@@ -140,19 +140,6 @@ fn compute_root_layout(
   }
 }
 
-///|
-/// Resolve a Rect[Dimension] (margin/padding/border) to Rect[Double]
-fn resolve_rect(
-  rect : @types.Rect[@types.Dimension],
-  parent_width : Double,
-) -> @types.Rect[Double] {
-  {
-    left: rect.left.resolve_or(parent_width, 0.0),
-    right: rect.right.resolve_or(parent_width, 0.0),
-    top: rect.top.resolve_or(parent_width, 0.0),
-    bottom: rect.bottom.resolve_or(parent_width, 0.0),
-  }
-}
 
 ///|
 /// Compute block layout with warnings for unsupported features
@@ -190,9 +177,9 @@ fn compute_with_collapse(
   // Resolve box model
   let parent_width = ctx.available_width
   let parent_height = ctx.available_height.unwrap_or(0.0)
-  let margin = resolve_rect(style.margin, parent_width)
-  let padding = resolve_rect(style.padding, parent_width)
-  let border = resolve_rect(style.border, parent_width)
+  let margin = @types.resolve_rect(style.margin, parent_width)
+  let padding = @types.resolve_rect(style.padding, parent_width)
+  let border = @types.resolve_rect(style.border, parent_width)
 
   // Check if margins can collapse with children
   // Collapse blocked by: border, padding, or overflow hidden/scroll/auto
@@ -637,7 +624,7 @@ fn layout_absolute_child(
     (None, None) => params.margin_top + parent_border.top
   }
 
-  let child_margin = resolve_rect(child_style.margin, container_width)
+  let child_margin = @types.resolve_rect(child_style.margin, container_width)
 
   {
     id: child.id,
@@ -661,8 +648,8 @@ fn compute_nested(
   warnings : Array[@node.LayoutWarning],
 ) -> @node.Layout {
   let style = node.style
-  let padding = resolve_rect(style.padding, available_width)
-  let border = resolve_rect(style.border, available_width)
+  let padding = @types.resolve_rect(style.padding, available_width)
+  let border = @types.resolve_rect(style.border, available_width)
 
   // For leaf nodes, return intrinsic size based on style
   if node.children.length() == 0 {

@@ -212,6 +212,21 @@ pub fn Dimension::resolve_or(
 }
 
 ///|
+/// Resolve a Rect[Dimension] (margin/padding/border) to Rect[Double]
+/// Uses parent_width for percentage resolution (CSS spec: percentages resolve against width)
+pub fn resolve_rect(
+  rect : Rect[Dimension],
+  parent_width : Double
+) -> Rect[Double] {
+  {
+    left: rect.left.resolve_or(parent_width, 0.0),
+    right: rect.right.resolve_or(parent_width, 0.0),
+    top: rect.top.resolve_or(parent_width, 0.0),
+    bottom: rect.bottom.resolve_or(parent_width, 0.0),
+  }
+}
+
+///|
 /// BoundingRect - the output of layout computation
 /// Matches browser's getBoundingClientRect()
 pub(all) struct BoundingRect {
