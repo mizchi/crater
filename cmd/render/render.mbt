@@ -49,8 +49,14 @@ fn default_style() -> @style.Style {
 /// 01: Basic block layout - two children stacked vertically
 fn example_basic() -> @node.Node {
   let style = default_style()
-  let child1 = @node.Node::leaf("child1", { ..style, height: @types.Length(40.0) })
-  let child2 = @node.Node::leaf("child2", { ..style, height: @types.Length(60.0) })
+  let child1 = @node.Node::leaf("child1", {
+    ..style,
+    height: @types.Length(40.0),
+  })
+  let child2 = @node.Node::leaf("child2", {
+    ..style,
+    height: @types.Length(60.0),
+  })
   let root_style = { ..style, width: @types.Length(200.0) }
   @node.Node::new("root", root_style, [child1, child2])
 }
@@ -60,15 +66,19 @@ fn example_basic() -> @node.Node {
 fn example_nested() -> @node.Node {
   let style = default_style()
   let inner = @node.Node::leaf("inner", { ..style, height: @types.Length(30.0) })
-  let middle = @node.Node::new("middle", {
-    ..style,
-    padding: @types.Rect::new(
-      @types.Length(10.0),
-      @types.Length(10.0),
-      @types.Length(10.0),
-      @types.Length(10.0),
-    ),
-  }, [inner])
+  let middle = @node.Node::new(
+    "middle",
+    {
+      ..style,
+      padding: @types.Rect::new(
+        @types.Length(10.0),
+        @types.Length(10.0),
+        @types.Length(10.0),
+        @types.Length(10.0),
+      ),
+    },
+    [inner],
+  )
   let root_style = {
     ..style,
     width: @types.Length(200.0),
@@ -91,10 +101,10 @@ fn example_padding() -> @node.Node {
     ..style,
     width: @types.Length(200.0),
     padding: @types.Rect::new(
-      @types.Length(20.0),  // left
-      @types.Length(30.0),  // right
-      @types.Length(10.0),  // top
-      @types.Length(40.0),  // bottom
+      @types.Length(20.0), // left
+      @types.Length(30.0), // right
+      @types.Length(10.0), // top
+      @types.Length(40.0), // bottom
     ),
   }
   @node.Node::new("root", root_style, [child])
@@ -110,10 +120,10 @@ fn example_border() -> @node.Node {
     width: @types.Length(200.0),
     height: @types.Length(100.0),
     border: @types.Rect::new(
-      @types.Length(5.0),   // left
-      @types.Length(5.0),   // right
-      @types.Length(10.0),  // top
-      @types.Length(10.0),  // bottom
+      @types.Length(5.0), // left
+      @types.Length(5.0), // right
+      @types.Length(10.0), // top
+      @types.Length(10.0), // bottom
     ),
   }
   @node.Node::new("root", root_style, [child])
@@ -127,13 +137,16 @@ fn example_margin() -> @node.Node {
     ..style,
     height: @types.Length(30.0),
     margin: @types.Rect::new(
-      @types.Length(20.0),  // left
-      @types.Length(20.0),  // right
-      @types.Length(10.0),  // top
-      @types.Length(10.0),  // bottom
+      @types.Length(20.0), // left
+      @types.Length(20.0), // right
+      @types.Length(10.0), // top
+      @types.Length(10.0), // bottom
     ),
   })
-  let child2 = @node.Node::leaf("child2", { ..style, height: @types.Length(30.0) })
+  let child2 = @node.Node::leaf("child2", {
+    ..style,
+    height: @types.Length(30.0),
+  })
   let root_style = { ..style, width: @types.Length(200.0) }
   @node.Node::new("root", root_style, [child1, child2])
 }
@@ -149,7 +162,7 @@ fn example_margin_collapse() -> @node.Node {
       @types.Length(0.0),
       @types.Length(0.0),
       @types.Length(0.0),
-      @types.Length(30.0),  // bottom margin 30
+      @types.Length(30.0), // bottom margin 30
     ),
   })
   let child2 = @node.Node::leaf("child2", {
@@ -158,11 +171,14 @@ fn example_margin_collapse() -> @node.Node {
     margin: @types.Rect::new(
       @types.Length(0.0),
       @types.Length(0.0),
-      @types.Length(20.0),  // top margin 20 (collapses with above)
+      @types.Length(20.0), // top margin 20 (collapses with above)
       @types.Length(0.0),
     ),
   })
-  let child3 = @node.Node::leaf("child3", { ..style, height: @types.Length(30.0) })
+  let child3 = @node.Node::leaf("child3", {
+    ..style,
+    height: @types.Length(30.0),
+  })
   let root_style = { ..style, width: @types.Length(200.0) }
   @node.Node::new("root", root_style, [child1, child2, child3])
 }
@@ -194,14 +210,8 @@ fn example_percentage_width() -> @node.Node {
 /// 08: Percentage height
 fn example_percentage_height() -> @node.Node {
   let style = default_style()
-  let child1 = @node.Node::leaf("25%", {
-    ..style,
-    height: @types.Percent(0.25),
-  })
-  let child2 = @node.Node::leaf("50%", {
-    ..style,
-    height: @types.Percent(0.5),
-  })
+  let child1 = @node.Node::leaf("25%", { ..style, height: @types.Percent(0.25) })
+  let child2 = @node.Node::leaf("50%", { ..style, height: @types.Percent(0.5) })
   let root_style = {
     ..style,
     width: @types.Length(200.0),
@@ -216,19 +226,20 @@ fn example_min_max() -> @node.Node {
   let style = default_style()
   let child1 = @node.Node::leaf("min-w:100", {
     ..style,
-    width: @types.Length(50.0),  // would be 50, but min is 100
+    width: @types.Length(50.0), // would be 50, but min is 100
     min_width: @types.Length(100.0),
     height: @types.Length(40.0),
   })
   let child2 = @node.Node::leaf("max-w:150", {
-    ..style,
+    ..style
     // auto width would be 300, but max is 150
+    ,
     max_width: @types.Length(150.0),
     height: @types.Length(40.0),
   })
   let child3 = @node.Node::leaf("max-h:30", {
     ..style,
-    height: @types.Length(60.0),  // would be 60, but max is 30
+    height: @types.Length(60.0), // would be 60, but max is 30
     max_height: @types.Length(30.0),
   })
   let root_style = { ..style, width: @types.Length(300.0) }
@@ -403,7 +414,6 @@ fn example_flex_sidebar() -> @node.Node {
     flex_grow: 1.0,
     height: @types.Length(200.0),
   })
-
   let root_style = {
     ..style,
     display: @style.Flex,

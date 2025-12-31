@@ -12,3 +12,9 @@ node_modules/
 
 # Generated render results
 render-results/
+
+# Generated test fixtures (regenerate with npm run gentest)
+fixtures/
+
+# Generated MoonBit tests (regenerate with npm run gen-moonbit-tests)
+grid/gen_test.mbt

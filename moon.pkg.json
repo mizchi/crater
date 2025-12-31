@@ -5,6 +5,7 @@
     "mizchi/crater/node",
     "mizchi/crater/block",
     "mizchi/crater/flex",
+    "mizchi/crater/grid",
     "mizchi/crater/cls"
   ]
 }

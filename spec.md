@@ -18,14 +18,80 @@ Pure MoonBit implementation of CSS layout calculation.
 - [x] min/max width/height
 - [x] Margin collapsing (adjacent siblings)
 - [x] Percentage margin/padding (relative to parent width per CSS spec)
-- [x] Flex layout (row/column, justify-content, align-items, flex-grow/shrink)
-- [ ] Grid layout
+- [x] Flex layout
+  - [x] flex-direction (row, column, row-reverse, column-reverse)
+  - [x] justify-content (start, end, center, space-between, space-around, space-evenly)
+  - [x] align-items (start, end, center, stretch)
+  - [x] align-self
+  - [x] flex-grow / flex-shrink
+  - [x] flex-basis
+  - [x] flex-wrap (wrap, nowrap)
+  - [x] align-content (stretch, start, end, center, space-between, space-around)
+  - [x] gap (row-gap, column-gap)
+  - [x] margin: auto
+  - [x] aspect-ratio
+- [x] Grid layout
+  - [x] grid-template-columns / grid-template-rows
+  - [x] Track sizing: Length, Percent, Fr, Auto, MinContent, MaxContent
+  - [x] minmax() function
+  - [x] repeat() function (Count, AutoFill, AutoFit)
+  - [x] grid-auto-rows / grid-auto-columns
+  - [x] grid-auto-flow (Row, Column, Dense)
+  - [x] gap (row-gap, column-gap)
+  - [x] justify-content / align-content
+  - [x] justify-items / align-items
+  - [x] align-self for grid items
+  - [x] Grid item placement (line-based)
+  - [x] grid-template-areas (named areas)
+  - [x] Implicit track creation
+  - [x] Negative line indices
+  - [x] aspect-ratio for grid items
+  - [x] Nested Grid/Flex containers
+  - [x] Extrinsic definite sizing for stretched items
+  - [ ] Baseline alignment (partial)
+  - [ ] Auto margins (partial)
+  - [ ] Span items intrinsic sizing
+  - [ ] Percent resolution in deeply nested grids
+
+## Grid Test Status
+
+**Current: 254/322 tests passing (78.9%)**
+
+### Remaining Issues (68 tests)
+
+1. **Baseline Alignment** (~5 tests)
+   - Baseline calculation with padding needs refinement
+   - Multiline baseline handling
+
+2. **Auto Margins** (~2 tests)
+   - Margin distribution when both left/right are auto
+   - Interaction with stretch alignment
+
+3. **Span Items** (~20 tests)
+   - Intrinsic sizing for items spanning multiple tracks
+   - Min-content/max-content calculation for span items
+
+4. **Percent Items** (~10 tests)
+   - Percent resolution in nested grids with auto-sized parents
+   - Containing block width for percent padding
+
+5. **Intrinsic Sizing** (~15 tests)
+   - Min-content/max-content for nested Grid/Flex containers
+   - Indefinite container sizing with content constraints
+
+6. **Placement** (~5 tests)
+   - Out-of-order item placement
+   - Negative line indices with auto placement
+
+7. **Overflow/Constraints** (~5 tests)
+   - Overflow behavior
+   - Padding/border interaction with max-size
 
 ## Implementation Roadmap
 
 1. **Phase 1**: Flex layout ✅
-2. **Phase 2**: Grid layout
-3. **Phase 3**: `position: absolute/fixed`
+2. **Phase 2**: Grid layout ✅ (78.9% tests passing)
+3. **Phase 3**: `position: absolute/fixed` (partial - relative positioning done)
 4. **Phase 4**: Float (simplified, if needed)
 
 ## Unsupported Features Policy
@@ -105,4 +171,62 @@ Use cases:
 - [ ] `overflow` handling
 - [ ] `z-index` stacking context (for hit testing order)
 - [ ] CSS Grid tracks and areas
-- [ ] Flex wrap and grow/shrink
+
+## Test Porting Plan
+
+### Phase 1: taffy Test Suite (Current)
+
+Port tests from [taffy](https://github.com/DioxusLabs/taffy) - a Rust flexbox/grid layout engine.
+
+**Completed categories:**
+- [x] Basic flex row/column
+- [x] flex-grow / flex-shrink
+- [x] justify-content (all values)
+- [x] align-items / align-self
+- [x] flex-wrap (single/multi-line)
+- [x] gap (row-gap, column-gap)
+- [x] align-content (for wrapped lines)
+- [x] min/max constraints
+
+**Pending categories:**
+- [x] margin: auto (centering)
+- [x] aspect-ratio
+- [x] wrap-reverse
+- [x] position: absolute
+- [x] baseline alignment
+- [x] Complex nested scenarios (explicit sizes)
+- [ ] Complex nested scenarios (intrinsic sizing) - requires 2-pass layout
+- [ ] Edge cases (overflow, negative space)
+
+### Phase 2: MDN/WHATWG Spec Tests
+
+Add tests based on CSS specification examples:
+
+- [ ] CSS Flexible Box Layout Module Level 1 (W3C)
+  - https://www.w3.org/TR/css-flexbox-1/
+- [ ] CSS Box Alignment Module Level 3
+  - https://www.w3.org/TR/css-align-3/
+- [ ] MDN Flexbox examples
+  - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout
+
+### Phase 3: Real-World Layout Tests
+
+Create tests from common UI patterns:
+- [ ] Navigation bars
+- [ ] Card layouts
+- [ ] Form layouts
+- [ ] Dashboard grids
+- [ ] Responsive patterns
+
+### Test Coverage Goals
+
+| Feature | taffy | MDN/Spec | Real-world |
+|---------|-------|----------|------------|
+| Flex row | ✅ | - | - |
+| Flex column | ✅ | - | - |
+| Flex wrap | ✅ | - | - |
+| Gap | ✅ | - | - |
+| Alignment | ✅ | - | - |
+| Grid basic | ✅ (254/322) | - | - |
+| Grid span | ⚠️ partial | - | - |
+| Grid baseline | ⚠️ partial | - | - |

@@ -1,13 +1,20 @@
 ///|
 fn max(a : Double, b : Double) -> Double {
-  if a > b { a } else { b }
+  if a > b {
+    a
+  } else {
+    b
+  }
 }
 
 ///|
 /// Resolve a Rect[Dimension] (margin/padding/border) to Rect[Double]
 /// CSS spec: percentage values are ALWAYS relative to parent's WIDTH
 /// (even for top/bottom margin/padding)
-fn resolve_rect(rect : @types.Rect[@types.Dimension], parent_width : Double) -> @types.Rect[Double] {
+fn resolve_rect(
+  rect : @types.Rect[@types.Dimension],
+  parent_width : Double,
+) -> @types.Rect[Double] {
   {
     left: rect.left.resolve_or(parent_width, 0.0),
     right: rect.right.resolve_or(parent_width, 0.0),
@@ -20,7 +27,7 @@ fn resolve_rect(rect : @types.Rect[@types.Dimension], parent_width : Double) -> 
 /// Compute block layout with warnings for unsupported features
 pub fn compute_with_warnings(
   node : @node.Node,
-  ctx : @node.LayoutContext
+  ctx : @node.LayoutContext,
 ) -> @node.LayoutResult {
   let warnings : Array[@node.LayoutWarning] = []
   let layout = compute_internal(node, ctx, warnings)
@@ -38,19 +45,17 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
 fn compute_internal(
   node : @node.Node,
   ctx : @node.LayoutContext,
-  warnings : Array[@node.LayoutWarning]
+  warnings : Array[@node.LayoutWarning],
 ) -> @node.Layout {
   let style = node.style
 
   // Check for unsupported features
   match style.float {
-    @style.Left | @style.Right =>
-      warnings.push(@node.UnsupportedFloat(node.id))
+    @style.Left | @style.Right => warnings.push(@node.UnsupportedFloat(node.id))
     @style.None => ()
   }
   match style.position {
-    @style.Absolute =>
-      warnings.push(@node.UnsupportedPosition(node.id))
+    @style.Absolute => warnings.push(@node.UnsupportedPosition(node.id))
     @style.Relative => ()
   }
 
@@ -100,12 +105,15 @@ fn compute_internal(
   // Calculate available height for children based on parent's specified height
   let child_available_height : Double? = match style.height {
     @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
-    @types.Percent(p) => Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+    @types.Percent(p) =>
+      Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
     @types.Auto => None
   }
 
   // Layout children with margin collapsing
-  let child_layouts : Array[@node.Layout] = Array::new(capacity=node.children.length())
+  let child_layouts : Array[@node.Layout] = Array::new(
+    capacity=node.children.length(),
+  )
   let mut current_y = 0.0
   let mut prev_margin_bottom = 0.0
   let mut is_first_visible = true
@@ -116,7 +124,6 @@ fn compute_internal(
     if child.style.display == @style.None {
       continue
     }
-
     let child_ctx : @node.LayoutContext = {
       available_width: child_available_width,
       available_height: child_available_height,
@@ -180,7 +187,6 @@ fn compute_internal(
     }
     @types.Auto => ()
   }
-
   {
     id: node.id,
     x: 0.0,

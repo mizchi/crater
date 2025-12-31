@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "gentest": "node --experimental-strip-types tools/gentest.ts",
+    "gen-moonbit-tests": "node --experimental-strip-types tools/gen-moonbit-tests.ts",
     "render": "node --experimental-strip-types tools/render.ts",
     "test": "vitest"
   },

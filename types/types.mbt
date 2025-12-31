@@ -4,12 +4,20 @@
 
 ///|
 fn min(a : Double, b : Double) -> Double {
-  if a < b { a } else { b }
+  if a < b {
+    a
+  } else {
+    b
+  }
 }
 
 ///|
 fn max(a : Double, b : Double) -> Double {
-  if a > b { a } else { b }
+  if a > b {
+    a
+  } else {
+    b
+  }
 }
 
 // =============================================================================

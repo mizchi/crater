@@ -5,7 +5,10 @@
 ///|
 /// Compute layout for a node tree with given viewport
 /// Dispatches to the appropriate layout algorithm based on display type
-pub fn compute_layout(node : @node.Node, viewport : @types.Size[Double]) -> @node.Layout {
+pub fn compute_layout(
+  node : @node.Node,
+  viewport : @types.Size[Double],
+) -> @node.Layout {
   let ctx : @node.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
@@ -17,7 +20,7 @@ pub fn compute_layout(node : @node.Node, viewport : @types.Size[Double]) -> @nod
 /// Compute layout with warnings
 pub fn compute_layout_with_warnings(
   node : @node.Node,
-  viewport : @types.Size[Double]
+  viewport : @types.Size[Double],
 ) -> @node.LayoutResult {
   let ctx : @node.LayoutContext = {
     available_width: viewport.width,
@@ -28,43 +31,22 @@ pub fn compute_layout_with_warnings(
 
 ///|
 /// Dispatch to appropriate layout algorithm based on display type
-fn dispatch_compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
+fn dispatch_compute(
+  node : @node.Node,
+  ctx : @node.LayoutContext,
+) -> @node.Layout {
   match node.style.display {
     @style.Flex => @flex.compute(node, ctx)
     @style.Block => @block.compute(node, ctx)
-    @style.Grid => @block.compute(node, ctx)  // TODO: implement grid
-    @style.None => {
-      // display: none - return zero-sized layout
-      id: node.id,
-      x: 0.0,
-      y: 0.0,
-      width: 0.0,
-      height: 0.0,
-      margin: @types.Rect::zero(),
-      padding: @types.Rect::zero(),
-      border: @types.Rect::zero(),
-      children: [],
-    }
-  }
-}
-
-///|
-/// Dispatch with warnings
-fn dispatch_compute_with_warnings(
-  node : @node.Node,
-  ctx : @node.LayoutContext
-) -> @node.LayoutResult {
-  match node.style.display {
-    @style.Flex => @flex.compute_with_warnings(node, ctx)
-    @style.Block => @block.compute_with_warnings(node, ctx)
-    @style.Grid => {
-      // TODO: implement grid, for now use block with warning
-      let result = @block.compute_with_warnings(node, ctx)
-      result.warnings.push(@node.UnsupportedDisplay(node.id))
-      result
-    }
-    @style.None => {
-      layout: {
+    @style.Grid =>
+      @grid.compute_grid_layout(
+        node,
+        ctx.available_width,
+        ctx.available_height.unwrap_or(0.0),
+      )
+    @style.None =>
+      {
+        // display: none - return zero-sized layout
         id: node.id,
         x: 0.0,
         y: 0.0,
@@ -74,21 +56,60 @@ fn dispatch_compute_with_warnings(
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
         children: [],
-      },
-      warnings: [],
+      }
+  }
+}
+
+///|
+/// Dispatch with warnings
+fn dispatch_compute_with_warnings(
+  node : @node.Node,
+  ctx : @node.LayoutContext,
+) -> @node.LayoutResult {
+  match node.style.display {
+    @style.Flex => @flex.compute_with_warnings(node, ctx)
+    @style.Block => @block.compute_with_warnings(node, ctx)
+    @style.Grid => {
+      let layout = @grid.compute_grid_layout(
+        node,
+        ctx.available_width,
+        ctx.available_height.unwrap_or(0.0),
+      )
+      { layout, warnings: [] }
     }
+    @style.None =>
+      {
+        layout: {
+          id: node.id,
+          x: 0.0,
+          y: 0.0,
+          width: 0.0,
+          height: 0.0,
+          margin: @types.Rect::zero(),
+          padding: @types.Rect::zero(),
+          border: @types.Rect::zero(),
+          children: [],
+        },
+        warnings: [],
+      }
   }
 }
 
 ///|
 /// Compute block layout directly
-pub fn compute_block_layout(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
+pub fn compute_block_layout(
+  node : @node.Node,
+  ctx : @node.LayoutContext,
+) -> @node.Layout {
   @block.compute(node, ctx)
 }
 
 ///|
 /// Compute flex layout directly
-pub fn compute_flex_layout(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
+pub fn compute_flex_layout(
+  node : @node.Node,
+  ctx : @node.LayoutContext,
+) -> @node.Layout {
   @flex.compute(node, ctx)
 }
 

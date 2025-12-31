@@ -4,6 +4,7 @@
  *
  * Usage:
  *   npm run gentest <html-file> [output-json]
+ *   npm run gentest --batch <fixture-dir> <output-dir>
  *
  * This script:
  * 1. Opens an HTML file in a headless browser
@@ -16,7 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 interface Dimension {
-  unit: 'px' | 'percent' | 'auto';
+  unit: 'px' | 'percent' | 'auto' | 'fr' | 'min-content' | 'max-content';
   value?: number;
 }
 
@@ -34,20 +35,68 @@ interface LayoutRect {
   height: number;
 }
 
+interface GridPlacement {
+  type: 'auto' | 'line' | 'span';
+  value?: number;
+}
+
+interface GridLine {
+  start: GridPlacement;
+  end: GridPlacement;
+}
+
+interface TrackSizing {
+  type: 'length' | 'percent' | 'fr' | 'auto' | 'min-content' | 'max-content' | 'minmax' | 'repeat';
+  value?: number;
+  min?: TrackSizing;
+  max?: TrackSizing;
+  repeatCount?: number | 'auto-fill' | 'auto-fit';
+  tracks?: TrackSizing[];
+}
+
+interface NodeStyle {
+  display?: string;
+  position?: string;
+  width?: Dimension;
+  height?: Dimension;
+  minWidth?: Dimension;
+  minHeight?: Dimension;
+  maxWidth?: Dimension;
+  maxHeight?: Dimension;
+  margin?: Edges;
+  padding?: Edges;
+  border?: Edges;
+  // Flexbox
+  flexDirection?: string;
+  flexWrap?: string;
+  justifyContent?: string;
+  alignItems?: string;
+  alignContent?: string;
+  alignSelf?: string;
+  flexGrow?: number;
+  flexShrink?: number;
+  flexBasis?: Dimension;
+  // Grid container
+  gridTemplateColumns?: TrackSizing[];
+  gridTemplateRows?: TrackSizing[];
+  gridAutoColumns?: TrackSizing[];
+  gridAutoRows?: TrackSizing[];
+  gridAutoFlow?: string;
+  gridTemplateAreas?: string[];
+  // Grid item
+  gridColumn?: GridLine;
+  gridRow?: GridLine;
+  gridArea?: string;
+  // Gap
+  rowGap?: Dimension;
+  columnGap?: Dimension;
+  // Inset
+  inset?: Edges;
+}
+
 interface NodeTestData {
   id: string;
-  style: {
-    display?: string;
-    position?: string;
-    width?: Dimension;
-    height?: Dimension;
-    margin?: Edges;
-    padding?: Edges;
-    border?: Edges;
-    flexDirection?: string;
-    justifyContent?: string;
-    alignItems?: string;
-  };
+  style: NodeStyle;
   layout: LayoutRect;
   children: NodeTestData[];
 }
@@ -61,49 +110,254 @@ interface TestCase {
 // Helper script to inject into the page
 const extractorScript = `
 function parseDimension(value) {
-  if (!value || value === 'auto' || value === '') return { unit: 'auto' };
+  if (!value || value === 'auto' || value === '' || value === 'none') return { unit: 'auto' };
   if (value.endsWith('px')) return { unit: 'px', value: parseFloat(value) };
   if (value.endsWith('%')) return { unit: 'percent', value: parseFloat(value) / 100 };
+  if (value.endsWith('fr')) return { unit: 'fr', value: parseFloat(value) };
+  if (value === 'min-content') return { unit: 'min-content' };
+  if (value === 'max-content') return { unit: 'max-content' };
   return { unit: 'auto' };
 }
 
 function parseEdges(style, prop) {
-  const left = parseDimension(style[prop + 'Left']);
-  const right = parseDimension(style[prop + 'Right']);
-  const top = parseDimension(style[prop + 'Top']);
-  const bottom = parseDimension(style[prop + 'Bottom']);
+  const left = parseDimension(style[prop + 'Left'] || style.getPropertyValue(prop + '-left'));
+  const right = parseDimension(style[prop + 'Right'] || style.getPropertyValue(prop + '-right'));
+  const top = parseDimension(style[prop + 'Top'] || style.getPropertyValue(prop + '-top'));
+  const bottom = parseDimension(style[prop + 'Bottom'] || style.getPropertyValue(prop + '-bottom'));
   if (left.unit === 'auto' && right.unit === 'auto' && top.unit === 'auto' && bottom.unit === 'auto') {
     return undefined;
   }
   return { left, right, top, bottom };
 }
 
+function parseBorderWidth(style) {
+  // Border uses borderLeftWidth, not borderWidthLeft
+  const left = parseDimension(style.borderLeftWidth || style.getPropertyValue('border-left-width'));
+  const right = parseDimension(style.borderRightWidth || style.getPropertyValue('border-right-width'));
+  const top = parseDimension(style.borderTopWidth || style.getPropertyValue('border-top-width'));
+  const bottom = parseDimension(style.borderBottomWidth || style.getPropertyValue('border-bottom-width'));
+  if (left.unit === 'auto' && right.unit === 'auto' && top.unit === 'auto' && bottom.unit === 'auto') {
+    return undefined;
+  }
+  return { left, right, top, bottom };
+}
+
+function parseTrackSizing(value) {
+  if (!value || value === 'none' || value === '') return [];
+
+  const tracks = [];
+  // Simple tokenization - handle repeat(), minmax(), and simple values
+  let remaining = value.trim();
+
+  while (remaining.length > 0) {
+    remaining = remaining.trim();
+    if (remaining.length === 0) break;
+
+    // Handle repeat(...)
+    if (remaining.startsWith('repeat(')) {
+      const parenStart = 7;
+      let depth = 1;
+      let i = parenStart;
+      while (i < remaining.length && depth > 0) {
+        if (remaining[i] === '(') depth++;
+        else if (remaining[i] === ')') depth--;
+        i++;
+      }
+      const repeatContent = remaining.slice(parenStart, i - 1);
+      remaining = remaining.slice(i).trim();
+
+      // Parse repeat content: count, tracks
+      const commaIdx = repeatContent.indexOf(',');
+      if (commaIdx > 0) {
+        const countStr = repeatContent.slice(0, commaIdx).trim();
+        const tracksStr = repeatContent.slice(commaIdx + 1).trim();
+
+        let repeatCount;
+        if (countStr === 'auto-fill') repeatCount = 'auto-fill';
+        else if (countStr === 'auto-fit') repeatCount = 'auto-fit';
+        else repeatCount = parseInt(countStr, 10);
+
+        const innerTracks = parseTrackSizing(tracksStr);
+        tracks.push({
+          type: 'repeat',
+          repeatCount: repeatCount,
+          tracks: innerTracks
+        });
+      }
+      continue;
+    }
+
+    // Handle minmax(...)
+    if (remaining.startsWith('minmax(')) {
+      const parenStart = 7;
+      let depth = 1;
+      let i = parenStart;
+      while (i < remaining.length && depth > 0) {
+        if (remaining[i] === '(') depth++;
+        else if (remaining[i] === ')') depth--;
+        i++;
+      }
+      const minmaxContent = remaining.slice(parenStart, i - 1);
+      remaining = remaining.slice(i).trim();
+
+      const commaIdx = minmaxContent.indexOf(',');
+      if (commaIdx > 0) {
+        const minStr = minmaxContent.slice(0, commaIdx).trim();
+        const maxStr = minmaxContent.slice(commaIdx + 1).trim();
+        const minTracks = parseTrackSizing(minStr);
+        const maxTracks = parseTrackSizing(maxStr);
+        tracks.push({
+          type: 'minmax',
+          min: minTracks[0] || { type: 'auto' },
+          max: maxTracks[0] || { type: 'auto' }
+        });
+      }
+      continue;
+    }
+
+    // Handle simple values (space-separated)
+    const spaceIdx = remaining.indexOf(' ');
+    const token = spaceIdx > 0 ? remaining.slice(0, spaceIdx) : remaining;
+    remaining = spaceIdx > 0 ? remaining.slice(spaceIdx + 1) : '';
+
+    if (token.endsWith('px')) {
+      tracks.push({ type: 'length', value: parseFloat(token) });
+    } else if (token.endsWith('%')) {
+      tracks.push({ type: 'percent', value: parseFloat(token) / 100 });
+    } else if (token.endsWith('fr')) {
+      tracks.push({ type: 'fr', value: parseFloat(token) });
+    } else if (token === 'auto') {
+      tracks.push({ type: 'auto' });
+    } else if (token === 'min-content') {
+      tracks.push({ type: 'min-content' });
+    } else if (token === 'max-content') {
+      tracks.push({ type: 'max-content' });
+    }
+  }
+
+  return tracks;
+}
+
+function parseGridPlacement(value) {
+  if (!value || value === 'auto') return { type: 'auto' };
+  if (value.startsWith('span ')) {
+    return { type: 'span', value: parseInt(value.slice(5), 10) };
+  }
+  const num = parseInt(value, 10);
+  if (!isNaN(num)) {
+    return { type: 'line', value: num };
+  }
+  return { type: 'auto' };
+}
+
+function parseGridLine(startValue, endValue) {
+  return {
+    start: parseGridPlacement(startValue),
+    end: parseGridPlacement(endValue)
+  };
+}
+
+function parseGridTemplateAreas(value) {
+  if (!value || value === 'none') return undefined;
+  // Parse quoted strings: "header header" "sidebar main" "footer footer"
+  const areas = [];
+  const regex = /"([^"]+)"/g;
+  let match;
+  while ((match = regex.exec(value)) !== null) {
+    areas.push(match[1]);
+  }
+  return areas.length > 0 ? areas : undefined;
+}
+
 function describeElement(el, parentRect) {
   const rect = el.getBoundingClientRect();
-  const style = el.style;
+  const inlineStyle = el.style;
   const computed = getComputedStyle(el);
 
   const id = el.id || el.getAttribute('data-id') || 'node';
 
+  // Get inline styles with fallback to computed
+  const getStyle = (prop) => inlineStyle[prop] || inlineStyle.getPropertyValue(prop);
+  const getComputed = (prop) => computed[prop] || computed.getPropertyValue(prop);
+
+  const style = {
+    display: getStyle('display') || undefined,
+    position: getStyle('position') || undefined,
+    width: parseDimension(getStyle('width')),
+    height: parseDimension(getStyle('height')),
+    minWidth: parseDimension(getStyle('minWidth') || getStyle('min-width')),
+    minHeight: parseDimension(getStyle('minHeight') || getStyle('min-height')),
+    maxWidth: parseDimension(getStyle('maxWidth') || getStyle('max-width')),
+    maxHeight: parseDimension(getStyle('maxHeight') || getStyle('max-height')),
+    margin: parseEdges(inlineStyle, 'margin'),
+    padding: parseEdges(inlineStyle, 'padding'),
+    border: parseBorderWidth(inlineStyle),
+    // Flexbox
+    flexDirection: getStyle('flexDirection') || getStyle('flex-direction') || undefined,
+    flexWrap: getStyle('flexWrap') || getStyle('flex-wrap') || undefined,
+    justifyContent: getStyle('justifyContent') || getStyle('justify-content') || undefined,
+    alignItems: getStyle('alignItems') || getStyle('align-items') || undefined,
+    alignContent: getStyle('alignContent') || getStyle('align-content') || undefined,
+    alignSelf: getStyle('alignSelf') || getStyle('align-self') || undefined,
+    flexGrow: getStyle('flexGrow') || getStyle('flex-grow') ? parseFloat(getStyle('flexGrow') || getStyle('flex-grow')) : undefined,
+    flexShrink: getStyle('flexShrink') || getStyle('flex-shrink') ? parseFloat(getStyle('flexShrink') || getStyle('flex-shrink')) : undefined,
+    flexBasis: parseDimension(getStyle('flexBasis') || getStyle('flex-basis')),
+    // Grid container
+    gridTemplateColumns: parseTrackSizing(getStyle('gridTemplateColumns') || getStyle('grid-template-columns')),
+    gridTemplateRows: parseTrackSizing(getStyle('gridTemplateRows') || getStyle('grid-template-rows')),
+    gridAutoColumns: parseTrackSizing(getStyle('gridAutoColumns') || getStyle('grid-auto-columns')),
+    gridAutoRows: parseTrackSizing(getStyle('gridAutoRows') || getStyle('grid-auto-rows')),
+    gridAutoFlow: getStyle('gridAutoFlow') || getStyle('grid-auto-flow') || undefined,
+    gridTemplateAreas: parseGridTemplateAreas(getStyle('gridTemplateAreas') || getStyle('grid-template-areas')),
+    // Grid item
+    gridColumn: parseGridLine(
+      getStyle('gridColumnStart') || getStyle('grid-column-start'),
+      getStyle('gridColumnEnd') || getStyle('grid-column-end')
+    ),
+    gridRow: parseGridLine(
+      getStyle('gridRowStart') || getStyle('grid-row-start'),
+      getStyle('gridRowEnd') || getStyle('grid-row-end')
+    ),
+    gridArea: getStyle('gridArea') || getStyle('grid-area') || undefined,
+    // Gap
+    rowGap: parseDimension(getStyle('rowGap') || getStyle('row-gap')),
+    columnGap: parseDimension(getStyle('columnGap') || getStyle('column-gap')),
+    // Inset
+    inset: parseEdges(inlineStyle, 'inset') || {
+      left: parseDimension(getStyle('left')),
+      right: parseDimension(getStyle('right')),
+      top: parseDimension(getStyle('top')),
+      bottom: parseDimension(getStyle('bottom'))
+    },
+  };
+
+  // Clean up undefined and auto-only values
+  if (style.width?.unit === 'auto') delete style.width;
+  if (style.height?.unit === 'auto') delete style.height;
+  if (style.minWidth?.unit === 'auto') delete style.minWidth;
+  if (style.minHeight?.unit === 'auto') delete style.minHeight;
+  if (style.maxWidth?.unit === 'auto') delete style.maxWidth;
+  if (style.maxHeight?.unit === 'auto') delete style.maxHeight;
+  if (style.flexBasis?.unit === 'auto') delete style.flexBasis;
+  if (style.rowGap?.unit === 'auto') delete style.rowGap;
+  if (style.columnGap?.unit === 'auto') delete style.columnGap;
+  if (!style.gridTemplateColumns?.length) delete style.gridTemplateColumns;
+  if (!style.gridTemplateRows?.length) delete style.gridTemplateRows;
+  if (!style.gridAutoColumns?.length) delete style.gridAutoColumns;
+  if (!style.gridAutoRows?.length) delete style.gridAutoRows;
+  if (style.gridColumn?.start?.type === 'auto' && style.gridColumn?.end?.type === 'auto') delete style.gridColumn;
+  if (style.gridRow?.start?.type === 'auto' && style.gridRow?.end?.type === 'auto') delete style.gridRow;
+  if (style.inset?.left?.unit === 'auto' && style.inset?.right?.unit === 'auto' &&
+      style.inset?.top?.unit === 'auto' && style.inset?.bottom?.unit === 'auto') delete style.inset;
+
   return {
     id: id,
-    style: {
-      display: style.display || undefined,
-      position: style.position || undefined,
-      width: parseDimension(style.width),
-      height: parseDimension(style.height),
-      margin: parseEdges(style, 'margin'),
-      padding: parseEdges(style, 'padding'),
-      border: parseEdges(style, 'borderWidth') || parseEdges(style, 'border'),
-      flexDirection: style.flexDirection || undefined,
-      justifyContent: style.justifyContent || undefined,
-      alignItems: style.alignItems || undefined,
-    },
+    style: style,
     layout: {
-      x: parentRect ? rect.x - parentRect.x : rect.x,
-      y: parentRect ? rect.y - parentRect.y : rect.y,
-      width: rect.width,
-      height: rect.height,
+      x: parentRect ? Math.round((rect.x - parentRect.x) * 100) / 100 : Math.round(rect.x * 100) / 100,
+      y: parentRect ? Math.round((rect.y - parentRect.y) * 100) / 100 : Math.round(rect.y * 100) / 100,
+      width: Math.round(rect.width * 100) / 100,
+      height: Math.round(rect.height * 100) / 100,
     },
     children: Array.from(el.children).map(child => describeElement(child, rect)),
   };
@@ -144,70 +398,108 @@ async function generateTestCase(htmlPath: string): Promise<TestCase> {
   };
 }
 
-// Convert test case to MoonBit test code
-function toMoonBitTest(tc: TestCase): string {
-  function nodeToStyle(node: NodeTestData, indent: string): string {
-    const lines: string[] = [];
-    lines.push(`${indent}let style = @crater.Style::default()`);
-    // TODO: Add style overrides based on node.style
-    return lines.join('\n');
+async function batchConvert(fixtureDir: string, outputDir: string, pattern?: string) {
+  // Ensure output directory exists
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  function nodeToAssertion(node: NodeTestData, varName: string, indent: string): string {
-    const lines: string[] = [];
-    lines.push(`${indent}// Expected layout for ${node.id}`);
-    lines.push(`${indent}inspect(${varName}.x, content="${node.layout.x}")`);
-    lines.push(`${indent}inspect(${varName}.y, content="${node.layout.y}")`);
-    lines.push(`${indent}inspect(${varName}.width, content="${node.layout.width}")`);
-    lines.push(`${indent}inspect(${varName}.height, content="${node.layout.height}")`);
-    return lines.join('\n');
+  // Find all HTML files
+  const files = fs.readdirSync(fixtureDir)
+    .filter(f => f.endsWith('.html'))
+    .filter(f => !f.startsWith('x')) // Skip disabled tests (xgrid_*)
+    .filter(f => !pattern || f.includes(pattern));
+
+  console.log(`Found ${files.length} HTML fixtures in ${fixtureDir}`);
+
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 800, height: 600 });
+
+  let success = 0;
+  let failed = 0;
+
+  for (const file of files) {
+    const htmlPath = path.join(fixtureDir, file);
+    const jsonPath = path.join(outputDir, file.replace('.html', '.json'));
+
+    try {
+      const absolutePath = path.resolve(htmlPath);
+      await page.goto(`file://${absolutePath}`);
+      await page.evaluate(extractorScript);
+      const rootData = await page.evaluate('getTestData()') as NodeTestData;
+
+      const testCase: TestCase = {
+        name: path.basename(file, '.html'),
+        viewport: { width: 800, height: 600 },
+        root: rootData,
+      };
+
+      fs.writeFileSync(jsonPath, JSON.stringify(testCase, null, 2));
+      success++;
+      process.stdout.write('.');
+    } catch (err) {
+      failed++;
+      console.error(`\nFailed: ${file}: ${err}`);
+    }
   }
 
-  return `///|
-test "${tc.name}" {
-  // Viewport: ${tc.viewport.width}x${tc.viewport.height}
-  // TODO: Build node tree and compute layout
-  // Expected root layout:
-  //   x: ${tc.root.layout.x}
-  //   y: ${tc.root.layout.y}
-  //   width: ${tc.root.layout.width}
-  //   height: ${tc.root.layout.height}
-  inspect(true, content="true") // placeholder
-}
-`;
+  await browser.close();
+
+  console.log(`\n\nConverted ${success} fixtures, ${failed} failed`);
 }
 
 async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log('Usage: npm run gentest -- <html-file> [output-json]');
+    console.log('Usage:');
+    console.log('  npm run gentest -- <html-file> [output-json]');
+    console.log('  npm run gentest -- --batch <fixture-dir> <output-dir> [pattern]');
     console.log('');
-    console.log('Example:');
-    console.log('  npm run gentest -- taffy/test_fixtures/block/block_basic.html');
+    console.log('Examples:');
+    console.log('  npm run gentest -- taffy/test_fixtures/grid/grid_basic.html');
+    console.log('  npm run gentest -- --batch taffy/test_fixtures/grid fixtures/grid');
+    console.log('  npm run gentest -- --batch taffy/test_fixtures/grid fixtures/grid auto_fill');
     process.exit(1);
   }
 
-  const htmlPath = args[0];
-  const outputPath = args[1];
+  if (args[0] === '--batch') {
+    const fixtureDir = args[1];
+    const outputDir = args[2];
+    const pattern = args[3];
 
-  if (!fs.existsSync(htmlPath)) {
-    console.error(`Error: File not found: ${htmlPath}`);
-    process.exit(1);
-  }
+    if (!fixtureDir || !outputDir) {
+      console.error('Error: --batch requires <fixture-dir> and <output-dir>');
+      process.exit(1);
+    }
 
-  console.log(`Generating test case from: ${htmlPath}`);
+    if (!fs.existsSync(fixtureDir)) {
+      console.error(`Error: Directory not found: ${fixtureDir}`);
+      process.exit(1);
+    }
 
-  const testCase = await generateTestCase(htmlPath);
-
-  if (outputPath) {
-    fs.writeFileSync(outputPath, JSON.stringify(testCase, null, 2));
-    console.log(`Wrote JSON to: ${outputPath}`);
+    await batchConvert(fixtureDir, outputDir, pattern);
   } else {
-    console.log('\n--- JSON Test Case ---');
-    console.log(JSON.stringify(testCase, null, 2));
-    console.log('\n--- MoonBit Test (template) ---');
-    console.log(toMoonBitTest(testCase));
+    const htmlPath = args[0];
+    const outputPath = args[1];
+
+    if (!fs.existsSync(htmlPath)) {
+      console.error(`Error: File not found: ${htmlPath}`);
+      process.exit(1);
+    }
+
+    console.log(`Generating test case from: ${htmlPath}`);
+
+    const testCase = await generateTestCase(htmlPath);
+
+    if (outputPath) {
+      fs.writeFileSync(outputPath, JSON.stringify(testCase, null, 2));
+      console.log(`Wrote JSON to: ${outputPath}`);
+    } else {
+      console.log('\n--- JSON Test Case ---');
+      console.log(JSON.stringify(testCase, null, 2));
+    }
   }
 }
 

@@ -2,13 +2,10 @@
 fn main {
   // Create a simple layout example
   let default_style = @style.Style::default()
-
   let child1_style = { ..default_style, height: @types.Length(30.0) }
   let child1 = @node.Node::leaf("child1", child1_style)
-
   let child2_style = { ..default_style, height: @types.Length(50.0) }
   let child2 = @node.Node::leaf("child2", child2_style)
-
   let root_style = {
     ..default_style,
     width: @types.Length(200.0),
