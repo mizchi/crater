@@ -250,11 +250,13 @@ test "flex_row_reverse" {
   }
   let layout = compute(root, ctx)
 
-  // In row-reverse, child2 comes first (at x=0), child1 comes second
-  inspect(layout.children[0].id, content="child2")
-  inspect(layout.children[0].x, content="0")
-  inspect(layout.children[1].id, content="child1")
-  inspect(layout.children[1].x, content="50")
+  // In row-reverse, layout starts from the right (main-end)
+  // DOM order is preserved: children[0] = child1, children[1] = child2
+  // child1 is at x=150 (rightmost), child2 at x=100
+  inspect(layout.children[0].id, content="child1")
+  inspect(layout.children[0].x, content="150") // 200 - 50 = 150
+  inspect(layout.children[1].id, content="child2")
+  inspect(layout.children[1].x, content="100") // 150 - 50 = 100
 }
 
 ///|
@@ -545,11 +547,13 @@ test "flex_column_reverse" {
   }
   let layout = compute(root, ctx)
 
-  // In column-reverse, child2 comes first (at y=0), child1 comes second
-  inspect(layout.children[0].id, content="child2")
-  inspect(layout.children[0].y, content="0")
-  inspect(layout.children[1].id, content="child1")
-  inspect(layout.children[1].y, content="30")
+  // In column-reverse, layout starts from the bottom (main-end)
+  // DOM order is preserved: children[0] = child1, children[1] = child2
+  // child1 is at y=80 (bottommost), child2 at y=50
+  inspect(layout.children[0].id, content="child1")
+  inspect(layout.children[0].y, content="80") // 100 - 20 = 80
+  inspect(layout.children[1].id, content="child2")
+  inspect(layout.children[1].y, content="50") // 80 - 30 = 50
 }
 
 ///|
