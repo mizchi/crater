@@ -175,10 +175,23 @@ fn compute_with_collapse(
   }
 
   // Resolve box model
+  // For MaxContent sizing, percentage values resolve to 0 (CSS intrinsic sizing spec)
   let parent_width = ctx.available_width
   let parent_height = ctx.available_height.unwrap_or(0.0)
-  let margin = @types.resolve_rect(style.margin, parent_width)
-  let padding = @types.resolve_rect(style.padding, parent_width)
+  let is_intrinsic_sizing = match ctx.sizing_mode {
+    @node.MaxContent => true
+    @node.Definite => false
+  }
+  let margin = if is_intrinsic_sizing {
+    @types.resolve_rect_intrinsic(style.margin)
+  } else {
+    @types.resolve_rect(style.margin, parent_width)
+  }
+  let padding = if is_intrinsic_sizing {
+    @types.resolve_rect_intrinsic(style.padding)
+  } else {
+    @types.resolve_rect(style.padding, parent_width)
+  }
   let border = @types.resolve_rect(style.border, parent_width)
 
   // Check if margins can collapse with children
@@ -307,20 +320,43 @@ fn compute_with_collapse(
     for i = 0; i < flow_nodes.length(); i = i + 1 {
       let child = flow_nodes[i]
       let child_style = flow_styles[i]
-      let child_margin = @types.resolve_rect(child_style.margin, parent_width)
+
+      // For intrinsic sizing, percentage margins resolve to 0 (CSS spec)
+      // Only fixed margins contribute to intrinsic width
+      let child_margin_left : Double = match child_style.margin.left {
+        @types.Length(l) => l
+        @types.Percent(_) => 0.0
+        @types.Auto => 0.0
+      }
+      let child_margin_right : Double = match child_style.margin.right {
+        @types.Length(r) => r
+        @types.Percent(_) => 0.0
+        @types.Auto => 0.0
+      }
+      let child_margin_sum = child_margin_left + child_margin_right
 
       // Calculate child's intrinsic width contribution
       // Note: padding+border override explicit width if too small
-      let child_padding = @types.resolve_rect(child_style.padding, parent_width)
+      // For intrinsic sizing, percentage padding also resolves to 0
+      let child_padding_left : Double = match child_style.padding.left {
+        @types.Length(l) => l
+        @types.Percent(_) => 0.0
+        @types.Auto => 0.0
+      }
+      let child_padding_right : Double = match child_style.padding.right {
+        @types.Length(r) => r
+        @types.Percent(_) => 0.0
+        @types.Auto => 0.0
+      }
       let child_border = @types.resolve_rect(child_style.border, parent_width)
-      let child_min_box = child_padding.horizontal_sum() + child_border.horizontal_sum()
+      let child_min_box = child_padding_left + child_padding_right + child_border.horizontal_sum()
       let child_intrinsic_width : Double = match child_style.width {
         @types.Length(w) => @types.max(w, child_min_box)
         @types.Percent(_) => child_min_box // At minimum, padding+border
         @types.Auto => {
           // For width:auto, use max-content of child's content
           if child.children.length() == 0 {
-            0.0 // Leaf nodes with no content have 0 intrinsic width
+            child_min_box // Leaf nodes with no content have padding+border as minimum
           } else {
             // Recursively compute child's max-content width
             let intrinsic_ctx : @node.LayoutContext = {
@@ -333,7 +369,7 @@ fn compute_with_collapse(
           }
         }
       }
-      let child_contribution = child_intrinsic_width + child_margin.horizontal_sum()
+      let child_contribution = child_intrinsic_width + child_margin_sum
       if child_contribution > max_content_width {
         max_content_width = child_contribution
       }

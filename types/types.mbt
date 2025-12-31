@@ -227,6 +227,25 @@ pub fn resolve_rect(
 }
 
 ///|
+/// Resolve a dimension rect for intrinsic sizing
+/// Percentages resolve to 0 in intrinsic sizing contexts
+pub fn resolve_rect_intrinsic(rect : Rect[Dimension]) -> Rect[Double] {
+  fn resolve_intrinsic(dim : Dimension) -> Double {
+    match dim {
+      Length(v) => v
+      Percent(_) => 0.0
+      Auto => 0.0
+    }
+  }
+  {
+    left: resolve_intrinsic(rect.left),
+    right: resolve_intrinsic(rect.right),
+    top: resolve_intrinsic(rect.top),
+    bottom: resolve_intrinsic(rect.bottom),
+  }
+}
+
+///|
 /// BoundingRect - the output of layout computation
 /// Matches browser's getBoundingClientRect()
 pub(all) struct BoundingRect {
