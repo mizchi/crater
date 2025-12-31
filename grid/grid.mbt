@@ -1693,41 +1693,67 @@ fn apply_alignment(
 ) -> (Double, Double, Double, Double) {
   let child_style = child.style
 
-  // Resolve child margins
-  // CSS spec: All percentage margins (including top/bottom) are resolved against the width
-  let margin_left = resolve_dimension(child_style.margin.left, cell_width, 0.0)
-  let margin_right = resolve_dimension(
-    child_style.margin.right,
-    cell_width,
-    0.0,
-  )
-  let margin_top = resolve_dimension(child_style.margin.top, cell_width, 0.0)
-  let margin_bottom = resolve_dimension(
-    child_style.margin.bottom,
-    cell_width,
-    0.0,
-  )
+  // Check for auto margins
+  let margin_left_is_auto = match child_style.margin.left {
+    @types.Auto => true
+    _ => false
+  }
+  let margin_right_is_auto = match child_style.margin.right {
+    @types.Auto => true
+    _ => false
+  }
+  let margin_top_is_auto = match child_style.margin.top {
+    @types.Auto => true
+    _ => false
+  }
+  let margin_bottom_is_auto = match child_style.margin.bottom {
+    @types.Auto => true
+    _ => false
+  }
 
-  // Available space after margins
-  let available_width = cell_width - margin_left - margin_right
-  let available_height = cell_height - margin_top - margin_bottom
+  // Resolve non-auto margins
+  // CSS spec: All percentage margins (including top/bottom) are resolved against the width
+  let fixed_margin_left = if margin_left_is_auto {
+    0.0
+  } else {
+    resolve_dimension(child_style.margin.left, cell_width, 0.0)
+  }
+  let fixed_margin_right = if margin_right_is_auto {
+    0.0
+  } else {
+    resolve_dimension(child_style.margin.right, cell_width, 0.0)
+  }
+  let fixed_margin_top = if margin_top_is_auto {
+    0.0
+  } else {
+    resolve_dimension(child_style.margin.top, cell_width, 0.0)
+  }
+  let fixed_margin_bottom = if margin_bottom_is_auto {
+    0.0
+  } else {
+    resolve_dimension(child_style.margin.bottom, cell_width, 0.0)
+  }
+
+  // Available space after fixed margins
+  let available_width = cell_width - fixed_margin_left - fixed_margin_right
+  let available_height = cell_height - fixed_margin_top - fixed_margin_bottom
 
   // Get effective alignment
   // In Taffy, align_self applies to both axes when justify_self is not specified
-  let align = match child_style.align_self {
-    @style.Auto => container_style.align_items
-    @style.Start => @style.Start
-    @style.End => @style.End
-    @style.Center => @style.Center
-    @style.Stretch => @style.Stretch
+  let align : @style.Alignment = match child_style.align_self {
+    @style.AlignSelf::Auto => container_style.align_items
+    @style.AlignSelf::Start => @style.Alignment::Start
+    @style.AlignSelf::End => @style.Alignment::End
+    @style.AlignSelf::Center => @style.Alignment::Center
+    @style.AlignSelf::Stretch => @style.Alignment::Stretch
   }
   // Use align_self for justify too (matches Taffy behavior)
-  let justify = match child_style.align_self {
-    @style.Auto => container_style.justify_items
-    @style.Start => @style.Start
-    @style.End => @style.End
-    @style.Center => @style.Center
-    @style.Stretch => @style.Stretch
+  let justify : @style.Alignment = match child_style.align_self {
+    @style.AlignSelf::Auto => container_style.justify_items
+    @style.AlignSelf::Start => @style.Alignment::Start
+    @style.AlignSelf::End => @style.Alignment::End
+    @style.AlignSelf::Center => @style.Alignment::Center
+    @style.AlignSelf::Stretch => @style.Alignment::Stretch
   }
 
   // Check if aspect_ratio constrains dimensions
@@ -1751,7 +1777,7 @@ fn apply_alignment(
       if has_aspect_ratio && not(height_is_auto) {
         // Width derived from aspect_ratio, use computed width
         child_layout.width
-      } else if justify == @style.Stretch {
+      } else if justify == @style.Alignment::Stretch {
         available_width
       } else {
         child_layout.width
@@ -1763,7 +1789,7 @@ fn apply_alignment(
       if has_aspect_ratio && not(width_is_auto) {
         // Height derived from aspect_ratio, use computed height
         child_layout.height
-      } else if align == @style.Stretch {
+      } else if align == @style.Alignment::Stretch {
         available_height
       } else {
         child_layout.height
@@ -1789,29 +1815,75 @@ fn apply_alignment(
     item_height = resolved_max_height
   }
 
-  // Calculate position based on alignment
-  let x_offset = match justify {
-    @style.Start => 0.0
-    @style.End => available_width - item_width
-    @style.Center => (available_width - item_width) / 2.0
-    @style.Stretch => 0.0
-    _ => 0.0
+  // Calculate remaining space for auto margins
+  let remaining_width = available_width - item_width
+  let remaining_height = available_height - item_height
+
+  // Calculate auto margins
+  let (final_margin_left, final_margin_right) = if margin_left_is_auto && margin_right_is_auto {
+    // Both auto: split remaining space evenly
+    let auto_margin = if remaining_width > 0.0 { remaining_width / 2.0 } else { 0.0 }
+    (auto_margin, auto_margin)
+  } else if margin_left_is_auto {
+    // Only left auto: absorb all remaining space
+    let auto_margin = if remaining_width > 0.0 { remaining_width } else { 0.0 }
+    (auto_margin, fixed_margin_right)
+  } else if margin_right_is_auto {
+    // Only right auto: absorb all remaining space
+    let auto_margin = if remaining_width > 0.0 { remaining_width } else { 0.0 }
+    (fixed_margin_left, auto_margin)
+  } else {
+    (fixed_margin_left, fixed_margin_right)
   }
-  let y_offset = match align {
-    @style.Start => 0.0
-    @style.End => available_height - item_height
-    @style.Center => (available_height - item_height) / 2.0
-    @style.Stretch => 0.0
-    _ => 0.0
+
+  let (final_margin_top, final_margin_bottom) = if margin_top_is_auto && margin_bottom_is_auto {
+    let auto_margin = if remaining_height > 0.0 { remaining_height / 2.0 } else { 0.0 }
+    (auto_margin, auto_margin)
+  } else if margin_top_is_auto {
+    let auto_margin = if remaining_height > 0.0 { remaining_height } else { 0.0 }
+    (auto_margin, fixed_margin_bottom)
+  } else if margin_bottom_is_auto {
+    let auto_margin = if remaining_height > 0.0 { remaining_height } else { 0.0 }
+    (fixed_margin_top, auto_margin)
+  } else {
+    (fixed_margin_top, fixed_margin_bottom)
   }
+
+  // Calculate position based on alignment (auto margins override alignment)
+  let x_offset = if margin_left_is_auto || margin_right_is_auto {
+    0.0 // Auto margins handle positioning
+  } else {
+    match justify {
+      @style.Alignment::Start => 0.0
+      @style.Alignment::End => available_width - item_width
+      @style.Alignment::Center => (available_width - item_width) / 2.0
+      @style.Alignment::Stretch => 0.0
+      _ => 0.0
+    }
+  }
+  let y_offset = if margin_top_is_auto || margin_bottom_is_auto {
+    0.0 // Auto margins handle positioning
+  } else {
+    match align {
+      @style.Alignment::Start => 0.0
+      @style.Alignment::End => available_height - item_height
+      @style.Alignment::Center => (available_height - item_height) / 2.0
+      @style.Alignment::Stretch => 0.0
+      _ => 0.0
+    }
+  }
+
+  // Suppress unused variable warnings
+  let _ = final_margin_right
+  let _ = final_margin_bottom
 
   // Apply inset for relative positioning
   let inset_left = resolve_dimension(child_style.inset.left, cell_width, 0.0)
   let inset_top = resolve_dimension(child_style.inset.top, cell_height, 0.0)
 
   (
-    cell_x + margin_left + x_offset + inset_left,
-    cell_y + margin_top + y_offset + inset_top,
+    cell_x + final_margin_left + x_offset + inset_left,
+    cell_y + final_margin_top + y_offset + inset_top,
     item_width,
     item_height,
   )
