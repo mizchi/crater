@@ -1530,12 +1530,14 @@ fn calculate_item_intrinsic_sizes(
               let min_ctx : @node.LayoutContext = {
                 available_width: 1.0e10,
                 available_height: Some(0.0),
+                sizing_mode: @node.MaxContent,
               }
               let min_layout = @flex.compute(child, min_ctx)
               // Compute flex layout for max-content (with large available height)
               let max_ctx : @node.LayoutContext = {
                 available_width: 1.0e10,
                 available_height: Some(1.0e10),
+                sizing_mode: @node.MaxContent,
               }
               let max_layout = @flex.compute(child, max_ctx)
               (min_layout.height, max_layout.height)
@@ -2782,6 +2784,7 @@ fn compute_child_layout(
     let ctx : @node.LayoutContext = {
       available_width: width,
       available_height: Some(height),
+      sizing_mode: @node.Definite,
     }
     let nested_layout = @flex.compute(child, ctx)
     for i = 0; i < nested_layout.children.length(); i = i + 1 {

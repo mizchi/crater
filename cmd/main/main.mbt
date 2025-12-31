@@ -22,6 +22,7 @@ fn main {
   let ctx : @node.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = @block.compute(root, ctx)
 

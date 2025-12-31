@@ -29,6 +29,7 @@ fn render_example(name : String, node : @node.Node) -> Unit {
   let ctx : @node.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
+    sizing_mode: @node.MaxContent,
   }
   // Dispatch based on display type
   let layout = match node.style.display {

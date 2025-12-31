@@ -30,7 +30,7 @@ test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -63,7 +63,7 @@ test "taffy/absolute_aspect_ratio_fill_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -95,7 +95,7 @@ test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -132,7 +132,7 @@ test "taffy/absolute_aspect_ratio_fill_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -169,7 +169,7 @@ test "taffy/absolute_aspect_ratio_fill_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -201,7 +201,7 @@ test "taffy/absolute_aspect_ratio_fill_min_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -233,7 +233,7 @@ test "taffy/absolute_aspect_ratio_fill_min_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -266,7 +266,7 @@ test "taffy/absolute_aspect_ratio_fill_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -298,7 +298,7 @@ test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -331,7 +331,7 @@ test "taffy/absolute_aspect_ratio_height_overrides_inset" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -364,7 +364,7 @@ test "taffy/absolute_aspect_ratio_width_overrides_inset" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -420,7 +420,7 @@ test "taffy/absolute_child_with_cross_margin" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -461,7 +461,7 @@ test "taffy/absolute_child_with_main_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -502,7 +502,7 @@ test "taffy/absolute_child_with_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -547,7 +547,7 @@ test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -615,7 +615,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -664,7 +664,7 @@ test "taffy/absolute_layout_align_items_and_justify_content_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -698,7 +698,7 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_bottom_po
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -732,7 +732,7 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_left_posi
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -766,7 +766,7 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_right_pos
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -800,7 +800,7 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_top_posit
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -833,7 +833,7 @@ test "taffy/absolute_layout_align_items_and_justify_content_flex_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -865,7 +865,7 @@ test "taffy/absolute_layout_align_items_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -897,7 +897,7 @@ test "taffy/absolute_layout_align_items_center_on_child_only" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -944,7 +944,7 @@ test "taffy/absolute_layout_child_order" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -985,7 +985,7 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1019,7 +1019,7 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container_flex_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1052,7 +1052,7 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1086,7 +1086,7 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container_flex_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1118,7 +1118,7 @@ test "taffy/absolute_layout_justify_content_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1147,7 +1147,7 @@ test "taffy/absolute_layout_no_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1196,7 +1196,7 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1236,7 +1236,7 @@ test "taffy/absolute_layout_percentage_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1269,7 +1269,7 @@ test "taffy/absolute_layout_row_width_height_end_bottom" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1299,7 +1299,7 @@ test "taffy/absolute_layout_start_top_end_bottom" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1331,7 +1331,7 @@ test "taffy/absolute_layout_width_height_end_bottom" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1363,7 +1363,7 @@ test "taffy/absolute_layout_width_height_start_top" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1395,7 +1395,7 @@ test "taffy/absolute_layout_width_height_start_top_end_bottom" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1458,7 +1458,7 @@ test "taffy/absolute_layout_within_border" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1504,7 +1504,7 @@ test "taffy/absolute_margin_bottom_left" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1538,7 +1538,7 @@ test "taffy/absolute_minmax_bottom_right_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1572,7 +1572,7 @@ test "taffy/absolute_minmax_bottom_right_min_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1608,7 +1608,7 @@ test "taffy/absolute_minmax_bottom_right_min_max_preferred" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1640,7 +1640,7 @@ test "taffy/absolute_minmax_top_left_bottom_right_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1674,7 +1674,7 @@ test "taffy/absolute_minmax_top_left_bottom_right_min_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1705,7 +1705,7 @@ test "taffy/absolute_padding_border_overrides_max_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1736,7 +1736,7 @@ test "taffy/absolute_padding_border_overrides_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1871,7 +1871,7 @@ test "taffy/absolute_resolved_insets" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -1961,7 +1961,7 @@ test "taffy/align_baseline" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2013,7 +2013,7 @@ test "taffy/align_baseline_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2071,7 +2071,7 @@ test "taffy/align_baseline_child_margin" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2129,7 +2129,7 @@ test "taffy/align_baseline_child_margin_percent" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2203,7 +2203,7 @@ test "taffy/align_baseline_child_multiline" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2294,7 +2294,7 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2386,7 +2386,7 @@ test "taffy/align_baseline_child_multiline_override" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2456,7 +2456,7 @@ test "taffy/align_baseline_child_padding" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2513,7 +2513,7 @@ test "taffy/align_baseline_child_top" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2569,7 +2569,7 @@ test "taffy/align_baseline_child_top2" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2616,7 +2616,7 @@ test "taffy/align_baseline_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2675,7 +2675,7 @@ test "taffy/align_baseline_double_nested_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2759,7 +2759,7 @@ test "taffy/align_baseline_multiline" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2851,7 +2851,7 @@ test "taffy/align_baseline_multiline_column" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -2947,7 +2947,7 @@ test "taffy/align_baseline_multiline_column2" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3039,7 +3039,7 @@ test "taffy/align_baseline_multiline_row_and_column" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3106,7 +3106,7 @@ test "taffy/align_baseline_nested_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3178,7 +3178,7 @@ test "taffy/align_baseline_nested_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3239,7 +3239,7 @@ test "taffy/align_center_should_size_based_on_content" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3314,7 +3314,7 @@ test "taffy/align_content_center_single_line" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3379,7 +3379,7 @@ test "taffy/align_content_center_single_line_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3430,7 +3430,7 @@ test "taffy/align_content_center_single_line_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3502,7 +3502,7 @@ test "taffy/align_content_center_wrapped" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3584,7 +3584,7 @@ test "taffy/align_content_center_wrapped_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3660,7 +3660,7 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3733,7 +3733,7 @@ test "taffy/align_content_end" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3794,7 +3794,7 @@ test "taffy/align_content_end_single_line_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3845,7 +3845,7 @@ test "taffy/align_content_end_single_line_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3911,7 +3911,7 @@ test "taffy/align_content_end_wrapped_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -3987,7 +3987,7 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4060,7 +4060,7 @@ test "taffy/align_content_flex_end" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4137,7 +4137,7 @@ test "taffy/align_content_flex_start" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4218,7 +4218,7 @@ test "taffy/align_content_flex_start_with_flex" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4292,7 +4292,7 @@ test "taffy/align_content_flex_start_without_height_on_children" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4362,7 +4362,7 @@ test "taffy/align_content_not_stretch_with_align_items_stretch" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4441,7 +4441,7 @@ test "taffy/align_content_space_around_single_line" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4506,7 +4506,7 @@ test "taffy/align_content_space_around_single_line_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4557,7 +4557,7 @@ test "taffy/align_content_space_around_single_line_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4629,7 +4629,7 @@ test "taffy/align_content_space_around_wrapped" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4711,7 +4711,7 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4787,7 +4787,7 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4832,7 +4832,7 @@ test "taffy/align_content_space_around_wrapped_single" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4899,7 +4899,7 @@ test "taffy/align_content_space_between_single_line" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -4964,7 +4964,7 @@ test "taffy/align_content_space_between_single_line_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5015,7 +5015,7 @@ test "taffy/align_content_space_between_single_line_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5087,7 +5087,7 @@ test "taffy/align_content_space_between_wrapped" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5169,7 +5169,7 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5245,7 +5245,7 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5290,7 +5290,7 @@ test "taffy/align_content_space_between_wrapped_single" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5357,7 +5357,7 @@ test "taffy/align_content_space_evenly_single_line" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5422,7 +5422,7 @@ test "taffy/align_content_space_evenly_single_line_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5473,7 +5473,7 @@ test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5545,7 +5545,7 @@ test "taffy/align_content_space_evenly_wrapped" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5627,7 +5627,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5703,7 +5703,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5748,7 +5748,7 @@ test "taffy/align_content_space_evenly_wrapped_single" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5809,7 +5809,7 @@ test "taffy/align_content_spacearound" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5886,7 +5886,7 @@ test "taffy/align_content_spacebetween" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -5963,7 +5963,7 @@ test "taffy/align_content_start" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6024,7 +6024,7 @@ test "taffy/align_content_start_single_line_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6075,7 +6075,7 @@ test "taffy/align_content_start_single_line_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6141,7 +6141,7 @@ test "taffy/align_content_start_wrapped_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6209,7 +6209,7 @@ test "taffy/align_content_stretch" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6292,7 +6292,7 @@ test "taffy/align_content_stretch_column" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6353,7 +6353,7 @@ test "taffy/align_content_stretch_is_not_overriding_align_items" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6413,7 +6413,7 @@ test "taffy/align_content_stretch_row" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6494,7 +6494,7 @@ test "taffy/align_content_stretch_row_with_children" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6571,7 +6571,7 @@ test "taffy/align_content_stretch_row_with_fixed_height" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6647,7 +6647,7 @@ test "taffy/align_content_stretch_row_with_flex" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6724,7 +6724,7 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6798,7 +6798,7 @@ test "taffy/align_content_stretch_row_with_margin" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6871,7 +6871,7 @@ test "taffy/align_content_stretch_row_with_max_height" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -6944,7 +6944,7 @@ test "taffy/align_content_stretch_row_with_min_height" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7018,7 +7018,7 @@ test "taffy/align_content_stretch_row_with_padding" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7072,7 +7072,7 @@ test "taffy/align_content_stretch_row_with_single_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7116,7 +7116,7 @@ test "taffy/align_content_stretch_row_wrap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7163,7 +7163,7 @@ test "taffy/align_flex_start_with_shrinking_children" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7215,7 +7215,7 @@ test "taffy/align_flex_start_with_shrinking_children_with_stretch" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7266,7 +7266,7 @@ test "taffy/align_flex_start_with_stretching_children" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7305,7 +7305,7 @@ test "taffy/align_items_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7345,7 +7345,7 @@ test "taffy/align_items_center_child_with_margin_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7388,7 +7388,7 @@ test "taffy/align_items_center_child_without_margin_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7444,7 +7444,7 @@ test "taffy/align_items_center_justify_content_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7487,7 +7487,7 @@ test "taffy/align_items_center_min_max_with_padding" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7519,7 +7519,7 @@ test "taffy/align_items_center_with_child_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7551,7 +7551,7 @@ test "taffy/align_items_center_with_child_top" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7623,7 +7623,7 @@ test "taffy/align_items_center_with_height_with_padding_border_with_wrap" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7692,7 +7692,7 @@ test "taffy/align_items_center_with_max_height_percentage_with_align_content_fle
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7739,7 +7739,7 @@ test "taffy/align_items_center_with_max_height_with_align_content_flex_start" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7820,7 +7820,7 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7888,7 +7888,7 @@ test "taffy/align_items_center_with_min_height_percentage_with_align_content_fle
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -7935,7 +7935,7 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8060,7 +8060,7 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8180,7 +8180,7 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8231,7 +8231,7 @@ test "taffy/align_items_flex_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8271,7 +8271,7 @@ test "taffy/align_items_flex_end_child_with_margin_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8314,7 +8314,7 @@ test "taffy/align_items_flex_end_child_without_margin_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8349,7 +8349,7 @@ test "taffy/align_items_flex_start" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8382,7 +8382,7 @@ test "taffy/align_items_min_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8411,7 +8411,7 @@ test "taffy/align_items_stretch" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8442,7 +8442,7 @@ test "taffy/align_items_stretch_min_cross" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8489,7 +8489,7 @@ test "taffy/align_self_baseline" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8528,7 +8528,7 @@ test "taffy/align_self_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8567,7 +8567,7 @@ test "taffy/align_self_center_undefined_max_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8602,7 +8602,7 @@ test "taffy/align_self_flex_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8634,7 +8634,7 @@ test "taffy/align_self_flex_end_override_flex_start" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8665,7 +8665,7 @@ test "taffy/align_self_flex_start" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8709,7 +8709,7 @@ test "taffy/align_stretch_should_size_based_on_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8876,7 +8876,7 @@ test "taffy/android_news_feed" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -8969,7 +8969,7 @@ test "taffy/aspect_ratio_flex_column_fill_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9007,7 +9007,7 @@ test "taffy/aspect_ratio_flex_column_fill_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9045,7 +9045,7 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9078,7 +9078,7 @@ test "taffy/aspect_ratio_flex_column_fill_min_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9111,7 +9111,7 @@ test "taffy/aspect_ratio_flex_column_fill_min_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9144,7 +9144,7 @@ test "taffy/aspect_ratio_flex_column_fill_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9176,7 +9176,7 @@ test "taffy/aspect_ratio_flex_column_fill_width_flex" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9208,7 +9208,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9245,7 +9245,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9282,7 +9282,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9314,7 +9314,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9346,7 +9346,7 @@ test "taffy/aspect_ratio_flex_row_fill_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9383,7 +9383,7 @@ test "taffy/aspect_ratio_flex_row_fill_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9420,7 +9420,7 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9452,7 +9452,7 @@ test "taffy/aspect_ratio_flex_row_fill_min_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9484,7 +9484,7 @@ test "taffy/aspect_ratio_flex_row_fill_min_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9516,7 +9516,7 @@ test "taffy/aspect_ratio_flex_row_fill_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9548,7 +9548,7 @@ test "taffy/aspect_ratio_flex_row_fill_width_flex" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9579,7 +9579,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9615,7 +9615,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9651,7 +9651,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9682,7 +9682,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9730,7 +9730,7 @@ test "taffy/bevy_issue_10343_block" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9787,7 +9787,7 @@ test "taffy/bevy_issue_10343_flex" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9844,7 +9844,7 @@ test "taffy/bevy_issue_10343_grid" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9908,7 +9908,7 @@ test "taffy/bevy_issue_16304" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -9979,7 +9979,7 @@ test "taffy/bevy_issue_21240" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10041,7 +10041,7 @@ test "taffy/bevy_issue_7976_3_level" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10093,7 +10093,7 @@ test "taffy/bevy_issue_7976_4_level" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10130,7 +10130,7 @@ test "taffy/bevy_issue_7976_reduced" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10208,7 +10208,7 @@ test "taffy/bevy_issue_8017" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10278,7 +10278,7 @@ test "taffy/bevy_issue_8017_reduced" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10359,7 +10359,7 @@ test "taffy/bevy_issue_8082" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10441,7 +10441,7 @@ test "taffy/bevy_issue_8082_percent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10532,7 +10532,7 @@ test "taffy/bevy_issue_9530" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10590,7 +10590,7 @@ test "taffy/bevy_issue_9530_reduced" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10637,7 +10637,7 @@ test "taffy/bevy_issue_9530_reduced2" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10676,7 +10676,7 @@ test "taffy/bevy_issue_9530_reduced3" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10710,7 +10710,7 @@ test "taffy/bevy_issue_9530_reduced4" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10761,7 +10761,7 @@ test "taffy/blitz_issue_88" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10802,7 +10802,7 @@ test "taffy/border_center_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10832,7 +10832,7 @@ test "taffy/border_container_match_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10863,7 +10863,7 @@ test "taffy/border_flex_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10884,7 +10884,7 @@ test "taffy/border_no_child" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10902,7 +10902,7 @@ test "taffy/border_no_size" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10928,7 +10928,7 @@ test "taffy/border_stretch_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -10971,7 +10971,7 @@ test "taffy/child_min_max_width_flexing" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11009,7 +11009,7 @@ test "taffy/child_with_padding_align_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11037,7 +11037,7 @@ test "taffy/container_with_unsized_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11085,7 +11085,7 @@ test "taffy/content_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11126,7 +11126,7 @@ test "taffy/display_none" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11170,7 +11170,7 @@ test "taffy/display_none_absolute_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11212,7 +11212,7 @@ test "taffy/display_none_fixed_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11239,7 +11239,7 @@ test "taffy/display_none_only_node" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11291,7 +11291,7 @@ test "taffy/display_none_with_child" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11342,7 +11342,7 @@ test "taffy/display_none_with_margin" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11384,7 +11384,7 @@ test "taffy/display_none_with_position" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11420,7 +11420,7 @@ test "taffy/display_none_with_position_absolute" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11462,7 +11462,7 @@ test "taffy/do_not_clamp_height_of_absolute_node_to_height_of_its_overflow_hidde
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11507,7 +11507,7 @@ test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11548,7 +11548,7 @@ test "taffy/flex_basis_flex_grow_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11589,7 +11589,7 @@ test "taffy/flex_basis_flex_grow_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11629,7 +11629,7 @@ test "taffy/flex_basis_flex_shrink_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11669,7 +11669,7 @@ test "taffy/flex_basis_flex_shrink_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11711,7 +11711,7 @@ test "taffy/flex_basis_larger_than_content_column" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11753,7 +11753,7 @@ test "taffy/flex_basis_larger_than_content_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11802,7 +11802,7 @@ test "taffy/flex_basis_overrides_main_size" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11865,7 +11865,7 @@ test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" 
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11915,7 +11915,7 @@ test "taffy/flex_basis_smaller_than_content_column" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11957,7 +11957,7 @@ test "taffy/flex_basis_smaller_than_content_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -11992,7 +11992,7 @@ test "taffy/flex_basis_smaller_than_main_dimen_column" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12023,7 +12023,7 @@ test "taffy/flex_basis_smaller_than_main_dimen_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12078,7 +12078,7 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12145,7 +12145,7 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12211,7 +12211,7 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12278,7 +12278,7 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12319,7 +12319,7 @@ test "taffy/flex_basis_unconstraint_column" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12348,7 +12348,7 @@ test "taffy/flex_basis_unconstraint_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12385,7 +12385,7 @@ test "taffy/flex_basis_zero_undefined_main_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12420,7 +12420,7 @@ test "taffy/flex_column_relative_all_sides" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12462,7 +12462,7 @@ test "taffy/flex_direction_column" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12511,7 +12511,7 @@ test "taffy/flex_direction_column_no_height" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12561,7 +12561,7 @@ test "taffy/flex_direction_column_reverse" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12610,7 +12610,7 @@ test "taffy/flex_direction_column_reverse_no_height" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12659,7 +12659,7 @@ test "taffy/flex_direction_row" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12707,7 +12707,7 @@ test "taffy/flex_direction_row_no_width" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12757,7 +12757,7 @@ test "taffy/flex_direction_row_reverse" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12839,7 +12839,7 @@ test "taffy/flex_grow_0_min_size" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12881,7 +12881,7 @@ test "taffy/flex_grow_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12925,7 +12925,7 @@ test "taffy/flex_grow_flex_basis_percent_min_max" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -12976,7 +12976,7 @@ test "taffy/flex_grow_height_maximized" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13023,7 +13023,7 @@ test "taffy/flex_grow_in_at_most_container" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13072,7 +13072,7 @@ test "taffy/flex_grow_less_than_factor_one" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13128,7 +13128,7 @@ test "taffy/flex_grow_root_minimized" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13171,7 +13171,7 @@ test "taffy/flex_grow_shrink_at_most" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13212,7 +13212,7 @@ test "taffy/flex_grow_to_min" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13252,7 +13252,7 @@ test "taffy/flex_grow_within_constrained_max_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13300,7 +13300,7 @@ test "taffy/flex_grow_within_constrained_max_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13347,7 +13347,7 @@ test "taffy/flex_grow_within_constrained_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13386,7 +13386,7 @@ test "taffy/flex_grow_within_constrained_min_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13426,7 +13426,7 @@ test "taffy/flex_grow_within_constrained_min_max_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13466,7 +13466,7 @@ test "taffy/flex_grow_within_constrained_min_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13509,7 +13509,7 @@ test "taffy/flex_grow_within_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13551,7 +13551,7 @@ test "taffy/flex_root_ignored" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13585,7 +13585,7 @@ test "taffy/flex_row_relative_all_sides" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13617,7 +13617,7 @@ test "taffy/flex_shrink_by_outer_margin_with_max_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13656,7 +13656,7 @@ test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13698,7 +13698,7 @@ test "taffy/flex_shrink_flex_grow_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13747,7 +13747,7 @@ test "taffy/flex_shrink_to_zero" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13792,7 +13792,7 @@ test "taffy/flex_wrap_align_stretch_fits_one_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13836,7 +13836,7 @@ test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13893,7 +13893,7 @@ test "taffy/flex_wrap_wrap_to_child_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -13954,7 +13954,7 @@ test "taffy/gap_column_gap_child_margins" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14005,7 +14005,7 @@ test "taffy/gap_column_gap_determines_parent_width" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14060,7 +14060,7 @@ test "taffy/gap_column_gap_flexible" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14114,7 +14114,7 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14165,7 +14165,7 @@ test "taffy/gap_column_gap_inflexible" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14215,7 +14215,7 @@ test "taffy/gap_column_gap_inflexible_undefined_parent" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14267,7 +14267,7 @@ test "taffy/gap_column_gap_justify_center" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14319,7 +14319,7 @@ test "taffy/gap_column_gap_justify_flex_end" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14371,7 +14371,7 @@ test "taffy/gap_column_gap_justify_flex_start" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14423,7 +14423,7 @@ test "taffy/gap_column_gap_justify_space_around" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14475,7 +14475,7 @@ test "taffy/gap_column_gap_justify_space_between" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14527,7 +14527,7 @@ test "taffy/gap_column_gap_justify_space_evenly" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14579,7 +14579,7 @@ test "taffy/gap_column_gap_mixed_flexible" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14633,7 +14633,7 @@ test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14685,7 +14685,7 @@ test "taffy/gap_column_gap_percentage_cyclic_shrinkable" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14740,7 +14740,7 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14795,7 +14795,7 @@ test "taffy/gap_column_gap_percentage_flexible" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14851,7 +14851,7 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14902,7 +14902,7 @@ test "taffy/gap_column_gap_percentage_inflexible" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -14999,7 +14999,7 @@ test "taffy/gap_column_gap_row_gap_wrapping" {
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15086,7 +15086,7 @@ test "taffy/gap_column_gap_start_index" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15168,7 +15168,7 @@ test "taffy/gap_column_gap_wrap_align_center" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15258,7 +15258,7 @@ test "taffy/gap_column_gap_wrap_align_flex_end" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15348,7 +15348,7 @@ test "taffy/gap_column_gap_wrap_align_flex_start" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15438,7 +15438,7 @@ test "taffy/gap_column_gap_wrap_align_space_around" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15528,7 +15528,7 @@ test "taffy/gap_column_gap_wrap_align_space_between" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15610,7 +15610,7 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15715,7 +15715,7 @@ test "taffy/gap_column_row_gap_wrapping" {
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15811,7 +15811,7 @@ test "taffy/gap_row_gap_align_items_end" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15896,7 +15896,7 @@ test "taffy/gap_row_gap_align_items_stretch" {
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -15965,7 +15965,7 @@ test "taffy/gap_row_gap_column_child_margins" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16016,7 +16016,7 @@ test "taffy/gap_row_gap_determines_parent_height" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16113,7 +16113,7 @@ test "taffy/gap_row_gap_percentage_wrapping" {
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16192,7 +16192,7 @@ test "taffy/gap_row_gap_row_wrap_child_margins" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16226,7 +16226,7 @@ test "taffy/intrinsic_sizing_cross_size_column" {
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16248,7 +16248,7 @@ test "taffy/intrinsic_sizing_main_size_column" {
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16277,7 +16277,7 @@ test "taffy/intrinsic_sizing_main_size_column_nested" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16322,7 +16322,7 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16373,7 +16373,7 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 20.0)
@@ -16402,7 +16402,7 @@ test "taffy/intrinsic_sizing_main_size_row" {
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16429,7 +16429,7 @@ test "taffy/intrinsic_sizing_main_size_row_nested" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16471,7 +16471,7 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16518,7 +16518,7 @@ test "taffy/justify_content_column_center" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16587,7 +16587,7 @@ test "taffy/justify_content_column_center_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16662,7 +16662,7 @@ test "taffy/justify_content_column_center_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16717,7 +16717,7 @@ test "taffy/justify_content_column_end" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16786,7 +16786,7 @@ test "taffy/justify_content_column_end_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16861,7 +16861,7 @@ test "taffy/justify_content_column_end_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16916,7 +16916,7 @@ test "taffy/justify_content_column_end_reverse" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -16967,7 +16967,7 @@ test "taffy/justify_content_column_flex_end" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17018,7 +17018,7 @@ test "taffy/justify_content_column_flex_end_reverse" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17069,7 +17069,7 @@ test "taffy/justify_content_column_flex_start" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17120,7 +17120,7 @@ test "taffy/justify_content_column_flex_start_reverse" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17167,7 +17167,7 @@ test "taffy/justify_content_column_max_height_and_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17209,7 +17209,7 @@ test "taffy/justify_content_column_min_height_and_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17245,7 +17245,7 @@ test "taffy/justify_content_column_min_height_and_margin_bottom" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17277,7 +17277,7 @@ test "taffy/justify_content_column_min_height_and_margin_top" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17320,7 +17320,7 @@ test "taffy/justify_content_column_space_around" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17389,7 +17389,7 @@ test "taffy/justify_content_column_space_around_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17464,7 +17464,7 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17519,7 +17519,7 @@ test "taffy/justify_content_column_space_between" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17588,7 +17588,7 @@ test "taffy/justify_content_column_space_between_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17663,7 +17663,7 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17718,7 +17718,7 @@ test "taffy/justify_content_column_space_evenly" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17787,7 +17787,7 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17862,7 +17862,7 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17917,7 +17917,7 @@ test "taffy/justify_content_column_start" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -17986,7 +17986,7 @@ test "taffy/justify_content_column_start_negative_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18061,7 +18061,7 @@ test "taffy/justify_content_column_start_negative_space_gap" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18116,7 +18116,7 @@ test "taffy/justify_content_column_start_reverse" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18157,7 +18157,7 @@ test "taffy/justify_content_min_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18210,7 +18210,7 @@ test "taffy/justify_content_min_width_with_padding_child_width_greater_than_pare
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18271,7 +18271,7 @@ test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18328,7 +18328,7 @@ test "taffy/justify_content_overflow_min_max" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18379,7 +18379,7 @@ test "taffy/justify_content_row_center" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18430,7 +18430,7 @@ test "taffy/justify_content_row_flex_end" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18481,7 +18481,7 @@ test "taffy/justify_content_row_flex_start" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18522,7 +18522,7 @@ test "taffy/justify_content_row_max_width_and_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18554,7 +18554,7 @@ test "taffy/justify_content_row_min_width_and_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18597,7 +18597,7 @@ test "taffy/justify_content_row_space_around" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18648,7 +18648,7 @@ test "taffy/justify_content_row_space_between" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18699,7 +18699,7 @@ test "taffy/justify_content_row_space_evenly" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18738,7 +18738,7 @@ test "taffy/margin_and_flex_column" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18769,7 +18769,7 @@ test "taffy/margin_and_flex_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18800,7 +18800,7 @@ test "taffy/margin_and_stretch_column" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18831,7 +18831,7 @@ test "taffy/margin_and_stretch_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18870,7 +18870,7 @@ test "taffy/margin_auto_bottom" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18913,7 +18913,7 @@ test "taffy/margin_auto_bottom_and_top" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18956,7 +18956,7 @@ test "taffy/margin_auto_bottom_and_top_justify_center" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -18999,7 +18999,7 @@ test "taffy/margin_auto_left" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19041,7 +19041,7 @@ test "taffy/margin_auto_left_and_right" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19085,7 +19085,7 @@ test "taffy/margin_auto_left_and_right_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19128,7 +19128,7 @@ test "taffy/margin_auto_left_and_right_column_and_center" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19172,7 +19172,7 @@ test "taffy/margin_auto_left_and_right_stretch" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19208,7 +19208,7 @@ test "taffy/margin_auto_left_child_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19240,7 +19240,7 @@ test "taffy/margin_auto_left_fix_right_child_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19272,7 +19272,7 @@ test "taffy/margin_auto_left_right_child_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19311,7 +19311,7 @@ test "taffy/margin_auto_left_stretching_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19363,7 +19363,7 @@ test "taffy/margin_auto_multiple_children_column" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19419,7 +19419,7 @@ test "taffy/margin_auto_multiple_children_row" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19466,7 +19466,7 @@ test "taffy/margin_auto_right" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19509,7 +19509,7 @@ test "taffy/margin_auto_top" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19553,7 +19553,7 @@ test "taffy/margin_auto_top_and_bottom_stretch" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19596,7 +19596,7 @@ test "taffy/margin_auto_top_stretching_child" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19632,7 +19632,7 @@ test "taffy/margin_bottom" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19664,7 +19664,7 @@ test "taffy/margin_fix_left_auto_right_child_bigger_than_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19695,7 +19695,7 @@ test "taffy/margin_left" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19727,7 +19727,7 @@ test "taffy/margin_right" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19759,7 +19759,7 @@ test "taffy/margin_should_not_be_part_of_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19791,7 +19791,7 @@ test "taffy/margin_should_not_be_part_of_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19822,7 +19822,7 @@ test "taffy/margin_top" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19859,7 +19859,7 @@ test "taffy/margin_with_sibling_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19900,7 +19900,7 @@ test "taffy/margin_with_sibling_row" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19935,7 +19935,7 @@ test "taffy/max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19963,7 +19963,7 @@ test "taffy/max_height_overrides_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -19985,7 +19985,7 @@ test "taffy/max_height_overrides_height_on_root" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20012,7 +20012,7 @@ test "taffy/max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20040,7 +20040,7 @@ test "taffy/max_width_overrides_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20062,7 +20062,7 @@ test "taffy/max_width_overrides_width_on_root" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20089,7 +20089,7 @@ test "taffy/measure_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20123,7 +20123,7 @@ test "taffy/measure_child_absolute" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20156,7 +20156,7 @@ test "taffy/measure_child_constraint" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20190,7 +20190,7 @@ test "taffy/measure_child_constraint_padding_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20230,7 +20230,7 @@ test "taffy/measure_child_with_flex_grow" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20274,7 +20274,7 @@ test "taffy/measure_child_with_flex_shrink" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20320,7 +20320,7 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20359,7 +20359,7 @@ test "taffy/measure_child_with_min_size_greater_than_available_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20392,7 +20392,7 @@ test "taffy/measure_flex_basis_overrides_measure" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20424,7 +20424,7 @@ test "taffy/measure_height_overrides_measure" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20465,7 +20465,7 @@ test "taffy/measure_remeasure_child_after_growing" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20511,7 +20511,7 @@ test "taffy/measure_remeasure_child_after_shrinking" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20548,7 +20548,7 @@ test "taffy/measure_remeasure_child_after_stretching" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20573,7 +20573,7 @@ test "taffy/measure_root" {
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20611,7 +20611,7 @@ test "taffy/measure_stretch_overrides_measure" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20647,7 +20647,7 @@ test "taffy/measure_width_overrides_measure" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20684,7 +20684,7 @@ test "taffy/min_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20719,7 +20719,7 @@ test "taffy/min_height_larger_than_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20747,7 +20747,7 @@ test "taffy/min_height_overrides_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20769,7 +20769,7 @@ test "taffy/min_height_overrides_height_on_root" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20793,7 +20793,7 @@ test "taffy/min_height_overrides_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20836,7 +20836,7 @@ test "taffy/min_height_with_nested_fixed_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20874,7 +20874,7 @@ test "taffy/min_max_percent_different_width_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20908,7 +20908,7 @@ test "taffy/min_max_percent_no_width_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20945,7 +20945,7 @@ test "taffy/min_width" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -20980,7 +20980,7 @@ test "taffy/min_width_larger_than_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21008,7 +21008,7 @@ test "taffy/min_width_overrides_max_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21036,7 +21036,7 @@ test "taffy/min_width_overrides_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21058,7 +21058,7 @@ test "taffy/min_width_overrides_width_on_root" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21239,7 +21239,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child19)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21379,7 +21379,7 @@ test "taffy/multiline_min_max_12" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21455,7 +21455,7 @@ test "taffy/multiline_min_max_13" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21531,7 +21531,7 @@ test "taffy/multiline_min_max_14" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21606,7 +21606,7 @@ test "taffy/multiline_min_max_5" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21682,7 +21682,7 @@ test "taffy/multiline_min_max_8" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21730,7 +21730,7 @@ test "taffy/nested_overflowing_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21772,7 +21772,7 @@ test "taffy/nested_overflowing_child_in_constraint_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21821,7 +21821,7 @@ test "taffy/only_shrinkable_item_with_flex_basis_zero" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21859,7 +21859,7 @@ test "taffy/overflow_cross_axis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21889,7 +21889,7 @@ test "taffy/overflow_main_axis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21924,7 +21924,7 @@ test "taffy/overflow_main_axis_shrink_hidden" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21959,7 +21959,7 @@ test "taffy/overflow_main_axis_shrink_scroll" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -21992,7 +21992,7 @@ test "taffy/overflow_main_axis_shrink_visible" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22023,7 +22023,7 @@ test "taffy/overflow_scroll_main_axis_justify_content_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22061,7 +22061,7 @@ test "taffy/overflow_scrollbars_overridden_by_available_space" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22096,7 +22096,7 @@ test "taffy/overflow_scrollbars_overridden_by_max_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22127,7 +22127,7 @@ test "taffy/overflow_scrollbars_overridden_by_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22158,7 +22158,7 @@ test "taffy/overflow_scrollbars_take_up_space_both_axis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22188,7 +22188,7 @@ test "taffy/overflow_scrollbars_take_up_space_cross_axis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22218,7 +22218,7 @@ test "taffy/overflow_scrollbars_take_up_space_main_axis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22251,7 +22251,7 @@ test "taffy/padding_align_end_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22281,7 +22281,7 @@ test "taffy/padding_border_overrides_max_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22311,7 +22311,7 @@ test "taffy/padding_border_overrides_min_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22341,7 +22341,7 @@ test "taffy/padding_border_overrides_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22382,7 +22382,7 @@ test "taffy/padding_border_overrides_size_flex_basis_0_growable" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22416,7 +22416,7 @@ test "taffy/padding_border_overrides_size_root" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22449,7 +22449,7 @@ test "taffy/padding_center_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22479,7 +22479,7 @@ test "taffy/padding_container_match_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22510,7 +22510,7 @@ test "taffy/padding_flex_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22531,7 +22531,7 @@ test "taffy/padding_no_child" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22548,7 +22548,7 @@ test "taffy/padding_no_size" {
   }
   let root = @node.Node::leaf("test-root", root_style)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22574,7 +22574,7 @@ test "taffy/padding_stretch_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22611,7 +22611,7 @@ test "taffy/parent_wrap_child_size_overflowing_parent" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22662,7 +22662,7 @@ test "taffy/percent_absolute_position" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22720,7 +22720,7 @@ test "taffy/percent_within_flex_grow" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22765,7 +22765,7 @@ test "taffy/percentage_absolute_position" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22821,7 +22821,7 @@ test "taffy/percentage_container_in_wrapping_container" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22870,7 +22870,7 @@ test "taffy/percentage_different_width_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22910,7 +22910,7 @@ test "taffy/percentage_different_width_height_column" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22952,7 +22952,7 @@ test "taffy/percentage_flex_basis" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -22994,7 +22994,7 @@ test "taffy/percentage_flex_basis_cross" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23038,7 +23038,7 @@ test "taffy/percentage_flex_basis_cross_max_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23082,7 +23082,7 @@ test "taffy/percentage_flex_basis_cross_max_width" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23124,7 +23124,7 @@ test "taffy/percentage_flex_basis_cross_min_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23168,7 +23168,7 @@ test "taffy/percentage_flex_basis_cross_min_width" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23212,7 +23212,7 @@ test "taffy/percentage_flex_basis_main_max_height" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23256,7 +23256,7 @@ test "taffy/percentage_flex_basis_main_max_width" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23300,7 +23300,7 @@ test "taffy/percentage_flex_basis_main_min_width" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23349,7 +23349,7 @@ test "taffy/percentage_main_max_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23397,7 +23397,7 @@ test "taffy/percentage_margin_should_calculate_based_only_on_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23445,7 +23445,7 @@ test "taffy/percentage_moderate_complexity" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23489,7 +23489,7 @@ test "taffy/percentage_moderate_complexity2" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23555,7 +23555,7 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23607,7 +23607,7 @@ test "taffy/percentage_padding_should_calculate_based_only_on_width" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23643,7 +23643,7 @@ test "taffy/percentage_position_bottom_right" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23675,7 +23675,7 @@ test "taffy/percentage_position_left_top" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23707,7 +23707,7 @@ test "taffy/percentage_size_based_on_parent_inner_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23744,7 +23744,7 @@ test "taffy/percentage_size_of_flex_basis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23783,7 +23783,7 @@ test "taffy/percentage_sizes_should_not_prevent_flex_shrinking" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23818,7 +23818,7 @@ test "taffy/percentage_width_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23847,7 +23847,7 @@ test "taffy/percentage_width_height_undefined_parent_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23876,7 +23876,7 @@ test "taffy/position_root_with_rtl_should_position_withoutdirection" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23914,7 +23914,7 @@ test "taffy/relative_position_should_not_nudge_siblings" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -23972,7 +23972,7 @@ test "taffy/rounding_flex_basis_flex_grow_row_prime_number_width" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24030,7 +24030,7 @@ test "taffy/rounding_flex_basis_flex_grow_row_width_of_100" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24080,7 +24080,7 @@ test "taffy/rounding_flex_basis_flex_shrink_row" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24134,7 +24134,7 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24188,7 +24188,7 @@ test "taffy/rounding_fractial_input_1" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24242,7 +24242,7 @@ test "taffy/rounding_fractial_input_2" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24296,7 +24296,7 @@ test "taffy/rounding_fractial_input_3" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24350,7 +24350,7 @@ test "taffy/rounding_fractial_input_4" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24396,7 +24396,7 @@ test "taffy/rounding_fractial_input_5" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24466,7 +24466,7 @@ test "taffy/rounding_fractial_input_6" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24596,7 +24596,7 @@ test "taffy/rounding_fractial_input_7" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24717,7 +24717,7 @@ test "taffy/rounding_inner_node_controversy_combined" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24794,7 +24794,7 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24859,7 +24859,7 @@ test "taffy/rounding_inner_node_controversy_vertical" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24917,7 +24917,7 @@ test "taffy/rounding_total_fractial" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -24991,7 +24991,7 @@ test "taffy/rounding_total_fractial_nested" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25042,7 +25042,7 @@ test "taffy/scroll_size" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25110,7 +25110,7 @@ test "taffy/simple_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25175,7 +25175,7 @@ test "taffy/single_flex_child_after_absolute_child" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25211,7 +25211,7 @@ test "taffy/size_defined_by_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25240,7 +25240,7 @@ test "taffy/size_defined_by_child_with_border" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25269,7 +25269,7 @@ test "taffy/size_defined_by_child_with_padding" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25303,7 +25303,7 @@ test "taffy/size_defined_by_grand_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25352,7 +25352,7 @@ test "taffy/taffy_issue_696" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25401,7 +25401,7 @@ test "taffy/taffy_issue_696_flex_basis_20" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25448,7 +25448,7 @@ test "taffy/taffy_issue_696_min_height" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25496,7 +25496,7 @@ test "taffy/taffy_issue_696_no_flex_basis" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25544,7 +25544,7 @@ test "taffy/taffy_issue_696_overflow_hidden" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25579,7 +25579,7 @@ test "taffy/undefined_height_with_min_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25609,7 +25609,7 @@ test "taffy/undefined_width_with_min_max" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25647,7 +25647,7 @@ test "taffy/undefined_width_with_min_max_row" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25706,7 +25706,7 @@ test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25773,7 +25773,7 @@ test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25839,7 +25839,7 @@ test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25906,7 +25906,7 @@ test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -25947,7 +25947,7 @@ test "taffy/wrap_child" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26000,7 +26000,7 @@ test "taffy/wrap_column" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26046,7 +26046,7 @@ test "taffy/wrap_grandchild" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26112,7 +26112,7 @@ test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26190,7 +26190,7 @@ test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26259,7 +26259,7 @@ test "taffy/wrap_reverse_column" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26332,7 +26332,7 @@ test "taffy/wrap_reverse_column_fixed_size" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26400,7 +26400,7 @@ test "taffy/wrap_reverse_row" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26472,7 +26472,7 @@ test "taffy/wrap_reverse_row_align_content_center" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26548,7 +26548,7 @@ test "taffy/wrap_reverse_row_align_content_flex_start" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26624,7 +26624,7 @@ test "taffy/wrap_reverse_row_align_content_space_around" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26700,7 +26700,7 @@ test "taffy/wrap_reverse_row_align_content_stretch" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26776,7 +26776,7 @@ test "taffy/wrap_reverse_row_single_line_different_size" {
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26844,7 +26844,7 @@ test "taffy/wrap_row" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26909,7 +26909,7 @@ test "taffy/wrap_row_align_items_center" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -26974,7 +26974,7 @@ test "taffy/wrap_row_align_items_flex_end" {
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -27037,7 +27037,7 @@ test "taffy/wrapped_column_max_height" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -27100,7 +27100,7 @@ test "taffy/wrapped_column_max_height_flex" {
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -27155,7 +27155,7 @@ test "taffy/wrapped_row_within_align_items_center" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -27210,7 +27210,7 @@ test "taffy/wrapped_row_within_align_items_flex_end" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)
@@ -27265,7 +27265,7 @@ test "taffy/wrapped_row_within_align_items_flex_start" {
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
 
-  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0) }
+  let ctx : @node.LayoutContext = { available_width: 800.0, available_height: Some(600.0), sizing_mode: @node.MaxContent }
   let layout = compute(root, ctx)
 
   assert_approx(layout.x, 0.0)

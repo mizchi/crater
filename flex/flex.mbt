@@ -1514,6 +1514,7 @@ fn compute_internal(
         let child_ctx : @node.LayoutContext = {
           available_width: child_width,
           available_height: Some(child_height),
+          sizing_mode: @node.Definite,
         }
         let nested_layout = compute_nested(child, child_ctx, warnings)
         {
@@ -1664,7 +1665,7 @@ fn compute_internal(
       (Some(w), Some(h)) => {
         let inner = compute_nested(
           child,
-          { available_width: w, available_height: Some(h) },
+          { available_width: w, available_height: Some(h), sizing_mode: @node.Definite },
           warnings,
         )
         (w, h, inner)
@@ -1672,7 +1673,7 @@ fn compute_internal(
       (Some(w), None) => {
         let inner = compute_nested(
           child,
-          { available_width: w, available_height: None },
+          { available_width: w, available_height: None, sizing_mode: @node.Definite },
           warnings,
         )
         (w, inner.height, inner)
@@ -1680,7 +1681,7 @@ fn compute_internal(
       (None, Some(h)) => {
         let inner = compute_nested(
           child,
-          { available_width: container_width, available_height: Some(h) },
+          { available_width: container_width, available_height: Some(h), sizing_mode: @node.Definite },
           warnings,
         )
         (inner.width, h, inner)
@@ -1688,7 +1689,7 @@ fn compute_internal(
       (None, None) => {
         let inner = compute_nested(
           child,
-          { available_width: container_width, available_height: Some(final_height) },
+          { available_width: container_width, available_height: Some(final_height), sizing_mode: @node.Definite },
           warnings,
         )
         match child_style.aspect_ratio {

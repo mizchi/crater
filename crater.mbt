@@ -12,6 +12,7 @@ pub fn compute_layout(
   let ctx : @node.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
+    sizing_mode: @node.MaxContent,
   }
   dispatch_compute(node, ctx)
 }
@@ -25,6 +26,7 @@ pub fn compute_layout_with_warnings(
   let ctx : @node.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
+    sizing_mode: @node.MaxContent,
   }
   dispatch_compute_with_warnings(node, ctx)
 }

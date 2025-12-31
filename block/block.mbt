@@ -194,11 +194,22 @@ fn compute_with_collapse(
     overflow_blocks,
   )
 
-  // Box width
+  // Box width - depends on sizing mode
+  // For MaxContent mode with width:Auto, we need to compute content width
+  let use_max_content = match (ctx.sizing_mode, style.width) {
+    (@node.MaxContent, @types.Auto) => true
+    _ => false
+  }
   let mut box_width = match style.width {
     @types.Length(w) => w
     @types.Percent(p) => parent_width * p
-    @types.Auto => parent_width - margin.horizontal_sum()
+    @types.Auto =>
+      if use_max_content {
+        // Will be computed from content - use parent_width as initial value for children
+        parent_width - margin.horizontal_sum()
+      } else {
+        parent_width - margin.horizontal_sum()
+      }
   }
 
   // Apply min/max width constraints
@@ -239,10 +250,15 @@ fn compute_with_collapse(
   // Map to store layouts by original index
   let layout_map : Map[Int, @node.Layout] = {}
 
+  // Map to store static positions for absolute children (their position in flow order)
+  let absolute_static_positions : Map[Int, Int] = {} // index -> flow position (0 = before all, 1 = after first flow child, etc.)
+
   // Collect flow children with their collapse info, original styles, and indices
+  // Also track where absolute children appear in the flow order
   let flow_children : Array[LayoutWithCollapse] = []
   let flow_styles : Array[@style.Style] = []
   let flow_indices : Array[Int] = []
+  let mut flow_position = 0
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
     if child.style.display == @style.None {
@@ -251,20 +267,28 @@ fn compute_with_collapse(
       continue
     }
     if child.style.position == @style.Absolute {
+      // Record where this absolute child appears in flow order
+      absolute_static_positions[i] = flow_position
       continue
     }
     let child_ctx : @node.LayoutContext = {
       available_width: child_available_width,
       available_height: child_available_height,
+      sizing_mode: @node.Definite,
     }
     flow_children.push(compute_with_collapse(child, child_ctx, warnings))
     flow_styles.push(child.style)
     flow_indices.push(i)
+    flow_position = flow_position + 1
   }
 
   // Track escaped margins for parent
   let mut escaped_top : Double? = None
   let mut escaped_bottom : Double? = None
+
+  // Track y positions after each flow child (for absolute static positioning)
+  // flow_y_positions[i] = y position after flow child i
+  let flow_y_positions : Array[Double] = []
   let mut current_y = 0.0
   let mut prev_margin_bottom = 0.0
 
@@ -395,9 +419,46 @@ fn compute_with_collapse(
       }
     }
 
+    // Record y position after this flow child (for absolute static positioning)
+    flow_y_positions.push(current_y)
+
     // Handle last child's bottom margin escape
     if is_last && can_collapse_bottom {
       escaped_bottom = Some(prev_margin_bottom)
+    }
+  }
+
+  // For MaxContent mode, recalculate box_width based on content
+  if use_max_content {
+    let mut max_content_width = 0.0
+    for i = 0; i < flow_children.length(); i = i + 1 {
+      let child_layout = flow_children[i].layout
+      let child_total_width = child_layout.width + child_layout.margin.horizontal_sum()
+      if child_total_width > max_content_width {
+        max_content_width = child_total_width
+      }
+    }
+    box_width = max_content_width + padding.horizontal_sum() + border.horizontal_sum()
+    // Re-apply min/max constraints
+    match style.min_width {
+      @types.Length(min_w) => if box_width < min_w { box_width = min_w }
+      @types.Percent(p) => {
+        let min_w = parent_width * p
+        if box_width < min_w {
+          box_width = min_w
+        }
+      }
+      @types.Auto => ()
+    }
+    match style.max_width {
+      @types.Length(max_w) => if box_width > max_w { box_width = max_w }
+      @types.Percent(p) => {
+        let max_w = parent_width * p
+        if box_width > max_w {
+          box_width = max_w
+        }
+      }
+      @types.Auto => ()
     }
   }
 
@@ -443,11 +504,25 @@ fn compute_with_collapse(
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
     if child.style.position == @style.Absolute {
+      // Get static y position for this absolute child
+      let static_y = match absolute_static_positions.get(i) {
+        Some(pos) =>
+          // pos is the flow position (0 = before all flow children, 1 = after first, etc.)
+          if pos == 0 {
+            0.0
+          } else if pos <= flow_y_positions.length() {
+            flow_y_positions[pos - 1]
+          } else {
+            content_height
+          }
+        None => content_height // Default to end of flow content
+      }
       let abs_layout = layout_absolute_child(
         child,
         box_width,
         box_height,
         border,
+        static_y,
         warnings,
       )
       layout_map[i] = abs_layout
@@ -485,6 +560,7 @@ fn layout_absolute_child(
   container_width : Double,
   container_height : Double,
   parent_border : @types.Rect[Double],
+  static_y : Double, // Y position where the element would be in normal flow
   warnings : Array[@node.LayoutWarning],
 ) -> @node.Layout {
   let child_style = child.style
@@ -621,7 +697,7 @@ fn layout_absolute_child(
     (Some(t), None) => t + params.margin_top + parent_border.top
     (None, Some(b)) =>
       container_height - child_height - b - params.margin_bottom - parent_border.bottom
-    (None, None) => params.margin_top + parent_border.top
+    (None, None) => static_y + params.margin_top + parent_border.top
   }
 
   let child_margin = @types.resolve_rect(child_style.margin, container_width)
@@ -702,6 +778,7 @@ fn compute_nested(
   let ctx : @node.LayoutContext = {
     available_width,
     available_height,
+    sizing_mode: @node.Definite,
   }
   compute_with_collapse(node, ctx, warnings).layout
 }

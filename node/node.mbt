@@ -76,12 +76,23 @@ pub fn Layout::to_bounding_rect(self : Layout) -> @types.BoundingRect {
 }
 
 ///|
+/// Sizing mode for layout computation
+/// Definite: Use available space (normal flow)
+/// MaxContent: Use intrinsic max-content (shrink-to-fit)
+pub(all) enum SizingMode {
+  Definite
+  MaxContent
+}
+
+///|
 /// Context for layout computation
 pub(all) struct LayoutContext {
   /// Available width from parent
   available_width : Double
   /// Available height from parent (may be undefined)
   available_height : Double?
+  /// Sizing mode (defaults to MaxContent for root-level intrinsic sizing)
+  sizing_mode : SizingMode
 }
 
 ///|

@@ -10,6 +10,7 @@ test "block_basic" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="50")
@@ -46,6 +47,7 @@ test "block_border_fixed_size" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="50")
@@ -81,6 +83,7 @@ test "block_margin_x_fixed_size_positive" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="50")
@@ -117,6 +120,7 @@ test "block_padding_fixed_size" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="50")
@@ -160,6 +164,7 @@ test "block_nested" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -192,6 +197,7 @@ test "block_percentage_width" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].width, content="50")
@@ -216,6 +222,7 @@ test "block_percentage_height" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].width, content="20")
@@ -246,6 +253,7 @@ test "block_max_width" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].width, content="100")
@@ -271,6 +279,7 @@ test "block_min_width" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].width, content="100")
@@ -295,6 +304,7 @@ test "block_max_height" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].height, content="80")
@@ -319,6 +329,7 @@ test "block_min_height" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].height, content="60")
@@ -354,6 +365,7 @@ test "block_margin_collapse_siblings" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.height, content="70")
@@ -383,6 +395,7 @@ test "block_percentage_padding" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].padding.left, content="20")
@@ -413,6 +426,7 @@ test "block_percentage_margin_vertical" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].margin.top, content="20")
@@ -435,6 +449,7 @@ test "block_warns_on_float" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let result = compute_with_warnings(root, ctx)
 
@@ -462,6 +477,7 @@ test "block_absolute_positioning_works" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let result = compute_with_warnings(root, ctx)
 
@@ -496,6 +512,7 @@ test "block_display_none" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -533,6 +550,7 @@ test "block_auto_width_fills_parent" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -553,6 +571,7 @@ test "block_multiple_children_stacking" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -585,6 +604,7 @@ test "block_percentage_nested" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -619,6 +639,7 @@ test "block_border_and_padding_combined" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -685,6 +706,7 @@ test "block_margin_collapse_blocked_by_padding" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -720,6 +742,7 @@ test "block_min_width_percentage" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -748,6 +771,7 @@ test "block_max_width_percentage" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -778,6 +802,7 @@ test "block_percentage_height_nested" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -814,6 +839,7 @@ test "block_multiple_display_none" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
@@ -882,6 +908,7 @@ test "block_deeply_nested" {
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
   }
   let layout = compute(root, ctx)
 
