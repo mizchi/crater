@@ -6,9 +6,20 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 
 ## 現在のテスト状況
 
-**301/368 passed (81.8%)**
+**199/259 passed (76.8%)**
 
-前回からの改善:
+(注: gen_test.mbt 再生成により総テスト数が 368 → 259 に変更された)
+
+### 最新の改善 (2024-12):
+- negative_space_gap テスト4件修正
+  - apply_content_alignment で free_space <= 0 時の早期リターンを削除
+  - Center/End アライメントは負のオフセットを許可
+- Fix percent tracks in indefinite containers (minmax cases) テスト3件修正
+  - size_is_definite パラメータを追加し、indefinite 時に percent を auto として扱う
+- Fix total track count for negative placements
+  - 負の配置がある場合の total_column/row_count 計算を修正
+
+### 前回までの改善:
 - IntrinsicSize::default() を {0, 0, 0, 0} に変更
 - テキストコンテンツの measure 抽出を gentest.ts に実装
 - fit-content サポート追加
@@ -18,19 +29,31 @@ Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定
 - justify_items/justify_self サポート追加
 - overflow プロパティ追加 (overflow:hidden で minimum contribution = 0)
 
-## 残り67件の失敗テスト分類
+## 残り60件の失敗テスト分類
 
-### 1. 単純に対応すれば良いもの (Low Priority)
+### 1. 完了済み
+
+| カテゴリ | 件数 | 説明 | 状態 |
+|---------|------|------|------|
+| negative_space_gap | 4 | トラックがコンテナに収まらない時の gap 処理 | ✅ 修正済 |
+| percent in indefinite (minmax) | 3 | indefinite container での minmax percent | ✅ 修正済 |
+
+### 2. 根本的な変更が必要なもの (High Complexity)
+
+| カテゴリ | 件数 | 説明 | 必要な対応 |
+|---------|------|------|----------|
+| placement_negative | 5+ | 負のライン番号での配置 (grid_placement_auto_negative, grid_auto_rows, grid_auto_columns など) | **2パス auto-placement アルゴリズム**: 明示的配置を先に処理してグリッド境界を決定し、次に auto-placement を暗黙トラックも含めた座標系で実行する必要がある |
+| percent_tracks_indefinite_overflow | 2 | indefinite container での percent + overflow 相互作用 | 2パス計算: container サイズ確定後に percent トラックを再計算 |
+
+### 3. 単純に対応すれば良いもの (Low Priority)
 
 以下は影響範囲が限定的で、単独で修正可能:
 
 | カテゴリ | 件数 | 説明 | 対応方法 |
 |---------|------|------|----------|
-| negative_space_gap | 4 | トラックがコンテナに収まらない時の gap 処理 | gap 計算でオーバーフロー時の処理追加 |
-| grid_out_of_order_items | 1 | アイテム順序の問題 | placement ロジック確認 |
 | grid_repeat_mixed | 1 | repeat() の混合パターン | repeat 展開ロジック確認 |
 
-### 2. 中程度の複雑さ (Medium Priority)
+### 4. 中程度の複雑さ (Medium Priority)
 
 他のテストに影響する可能性があるが、比較的isolated:
 
