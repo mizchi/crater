@@ -799,7 +799,10 @@ fn calculate_track_intrinsic_sizes(
   }
 
   // Collect item info with span lengths
-  let items : Array[(Int, Int, Int, Double, Double)] = [] // (index, start, end, min, max)
+  // (index, start, end, min_content_contrib, minimum_contrib, max_contrib)
+  // min_content_contrib: for min-content tracks (unaffected by overflow)
+  // minimum_contrib: for auto tracks (0 for overflow clips)
+  let items : Array[(Int, Int, Int, Double, Double, Double)] = []
   let mut max_span = 1
 
   for i = 0; i < children.length(); i = i + 1 {
@@ -829,15 +832,28 @@ fn calculate_track_intrinsic_sizes(
     let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
       child, is_column, container_width,
     )
-    let min_contribution = min_content + margin_start + margin_end
+    let min_content_contribution = min_content + margin_start + margin_end
     let max_contribution = max_content + margin_start + margin_end
-    items.push((i, track_start, track_end, min_contribution, max_contribution))
+
+    // CSS Grid spec: for auto tracks, overflow:hidden items have minimum contribution of 0
+    let overflow = if is_column { child.style.overflow_x } else { child.style.overflow_y }
+    let has_overflow_clip = overflow != @style.Visible
+    let minimum_contribution = if has_overflow_clip { margin_start + margin_end } else { min_content_contribution }
+
+    items.push((i, track_start, track_end, min_content_contribution, minimum_contribution, max_contribution))
   }
 
   // Phase 1: Handle single-span items
   for item in items {
-    let (_, start, end, min_contrib, max_contrib) = item
+    let (_, start, end, min_content_contrib, minimum_contrib, max_contrib) = item
     if end - start == 1 {
+      // Choose which min contribution to use based on track type
+      // For min-content tracks: use min_content_contrib
+      // For auto/fr/other tracks: use minimum_contrib (respects overflow)
+      let min_contrib = match track_types[start] {
+        @style.MinContent => min_content_contrib
+        _ => minimum_contrib
+      }
       if min_contrib > min_sizes[start] {
         min_sizes[start] = min_contrib
       }
@@ -850,11 +866,22 @@ fn calculate_track_intrinsic_sizes(
   // Phase 2: Handle multi-span items (span 2, 3, ... up to max_span)
   for span_length = 2; span_length <= max_span; span_length = span_length + 1 {
     for item in items {
-      let (_, start, end, min_contrib, max_contrib) = item
+      let (_, start, end, min_content_contrib, minimum_contrib, max_contrib) = item
       let span = end - start
       if span != span_length {
         continue
       }
+
+      // For spanning items, check if any spanned track is MinContent
+      // If so, use min_content_contrib, otherwise use minimum_contrib
+      let mut has_min_content_track = false
+      for t = start; t < end; t = t + 1 {
+        match track_types[t] {
+          @style.MinContent => has_min_content_track = true
+          _ => ()
+        }
+      }
+      let min_contrib = if has_min_content_track { min_content_contrib } else { minimum_contrib }
 
       // Calculate current sum of spanned tracks
       let mut min_sum = 0.0

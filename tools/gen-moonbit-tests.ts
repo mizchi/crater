@@ -53,6 +53,9 @@ interface TrackSizing {
 interface NodeStyle {
   display?: string;
   position?: string;
+  overflow?: string;
+  overflowX?: string;
+  overflowY?: string;
   width?: Dimension;
   height?: Dimension;
   minWidth?: Dimension;
@@ -252,6 +255,14 @@ function positionToMoonBit(value: string | undefined): string {
   return '@style.Position::Relative';
 }
 
+function overflowToMoonBit(value: string | undefined): string {
+  if (!value || value === 'visible') return '@style.Overflow::Visible';
+  if (value === 'hidden') return '@style.Overflow::Hidden';
+  if (value === 'scroll') return '@style.Overflow::Scroll';
+  if (value === 'auto') return '@style.Overflow::Auto';
+  return '@style.Overflow::Visible';
+}
+
 function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): string[] {
   const lines: string[] = [];
   const style = node.style;
@@ -270,6 +281,16 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
 
   if (style.position) {
     lines.push(`${indent}  position: ${positionToMoonBit(style.position)},`);
+  }
+
+  // Overflow - handle shorthand 'overflow' and individual overflowX/overflowY
+  const overflowX = style.overflowX || style.overflow;
+  const overflowY = style.overflowY || style.overflow;
+  if (overflowX && overflowX !== 'visible') {
+    lines.push(`${indent}  overflow_x: ${overflowToMoonBit(overflowX)},`);
+  }
+  if (overflowY && overflowY !== 'visible') {
+    lines.push(`${indent}  overflow_y: ${overflowToMoonBit(overflowY)},`);
   }
 
   if (style.width) {

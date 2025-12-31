@@ -63,6 +63,15 @@ pub(all) enum Float {
 } derive(Show)
 
 ///|
+/// CSS overflow property
+pub(all) enum Overflow {
+  Visible // Content is not clipped (default)
+  Hidden // Content is clipped, no scrollbars
+  Scroll // Content is clipped with scrollbars
+  Auto // Scrollbars if needed
+} derive(Show, Eq)
+
+///|
 /// Grid auto-flow direction
 pub(all) enum GridAutoFlow {
   Row // Fill rows first (default)
@@ -155,6 +164,9 @@ pub(all) struct Style {
   display : Display
   position : Position
   float : Float
+  // Overflow
+  overflow_x : Overflow
+  overflow_y : Overflow
   // Sizing
   width : @types.Dimension
   height : @types.Dimension
@@ -207,6 +219,8 @@ pub fn Style::default() -> Style {
     display: Block,
     position: Relative,
     float: None,
+    overflow_x: Visible,
+    overflow_y: Visible,
     width: @types.Auto,
     height: @types.Auto,
     min_width: @types.Auto,

@@ -57,6 +57,9 @@ interface TrackSizing {
 interface NodeStyle {
   display?: string;
   position?: string;
+  overflow?: string;
+  overflowX?: string;
+  overflowY?: string;
   width?: Dimension;
   height?: Dimension;
   minWidth?: Dimension;
@@ -377,6 +380,9 @@ function describeElement(el, parentRect) {
   const style = {
     display: getStyle('display') || undefined,
     position: getStyle('position') || undefined,
+    overflow: getStyle('overflow') || undefined,
+    overflowX: getStyle('overflowX') || getStyle('overflow-x') || undefined,
+    overflowY: getStyle('overflowY') || getStyle('overflow-y') || undefined,
     width: parseDimension(getStyle('width')),
     height: parseDimension(getStyle('height')),
     minWidth: parseDimension(getStyle('minWidth') || getStyle('min-width')),
