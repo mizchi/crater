@@ -1,209 +1,77 @@
-# Taffy Grid Implementation Analysis
+# Taffy Implementation Analysis
 
 ## 概要
 
-Taffy (Rust) の Grid 実装を分析し、crater の実装との差異を特定した。
+Taffy (Rust) のレイアウトエンジン実装を分析し、crater への移植状況を追跡する。
 
-## 現在のテスト状況
+## 現在のテスト状況 (2024-12-31)
 
-**205/259 passed (79.2%)**
+### パッケージ別テスト結果
 
-(注: gen_test.mbt 再生成により総テスト数が 368 → 259 に変更された)
+| パッケージ | 生成 | 手動 | 合計 | パス | パス率 |
+|-----------|------|------|------|------|--------|
+| Grid | 268 | 32 | 300 | 222 | **74.0%** |
+| Flex | 479 | 70 | 549 | 158 | 28.8% |
+| Block | 132 | 27 | 159 | 74 | 46.5% |
+| **合計** | **879** | **129** | **1008** | **454** | **45.0%** |
 
-### 最新の改善 (2024-12):
-- **3-pass auto-placement アルゴリズム実装** (+6 テスト)
+### Taffy フィクスチャ移植状況
+
+| ディレクトリ | HTML | 生成済み | スキップ | 理由 |
+|-------------|------|---------|---------|------|
+| grid | 259 | 227 | 29 | absolute positioning |
+| blockgrid | 14 | 14 | 0 | - |
+| blockflex | 7 | 7 | 0 | - |
+| gridflex | 6 | 6 | 0 | - |
+| leaf | 14 | 14 | 0 | - |
+| flex | 537 | 479 | 58 | absolute positioning |
+| block | 196 | 132 | 64 | absolute positioning |
+| **合計** | **1033** | **879** | **151** | - |
+
+## 未移植・未実装機能
+
+### 1. Absolute Positioning (151 テストがブロック)
+
+現在 `position: absolute` を使用するテストはスキップされている。
+
+**必要な実装:**
+- `position: absolute` のレイアウト計算
+- `inset` (top/right/bottom/left) の解決
+- containing block の決定ロジック
+
+**影響範囲:**
+- grid: 29 テスト
+- flex: 58 テスト
+- block: 64 テスト
+
+### 2. Flex レイアウト改善 (パス率 28.8%)
+
+Flex のパス率が低い。主な失敗カテゴリ:
+- flex-grow/flex-shrink の計算
+- flex-basis の解決
+- align-items/align-self の処理
+- flex-wrap の処理
+
+### 3. Block レイアウト改善 (パス率 46.5%)
+
+Block の失敗カテゴリ:
+- margin collapsing (マージン折りたたみ)
+- intrinsic sizing
+- min/max 制約
+
+## Grid 実装の詳細
+
+### 最新の改善 (2024-12)
+
+- **3-pass auto-placement アルゴリズム実装**
   - Pass 1: 明示的な Line 配置からグリッド境界を決定
   - Pass 2: 完全に明示的なアイテム (row/column 両方が Line) を配置
   - Pass 3: 残りのアイテムを auto-placement (semi-explicit 含む)
-  - negative placement 関連テスト全件修正 (grid_placement_auto_negative, grid_auto_rows, grid_auto_columns など)
-- negative_space_gap テスト4件修正
-  - apply_content_alignment で free_space <= 0 時の早期リターンを削除
-  - Center/End アライメントは負のオフセットを許可
-- Fix percent tracks in indefinite containers (minmax cases) テスト3件修正
-  - size_is_definite パラメータを追加し、indefinite 時に percent を auto として扱う
-- Fix total track count for negative placements
-  - 負の配置がある場合の total_column/row_count 計算を修正
+- negative_space_gap テスト修正
+- percent tracks in indefinite containers 修正
+- total track count for negative placements 修正
 
-### 前回までの改善:
-- IntrinsicSize::default() を {0, 0, 0, 0} に変更
-- テキストコンテンツの measure 抽出を gentest.ts に実装
-- fit-content サポート追加
-- spanning item の分配ロジック改善 (MaxContent > Auto > Fr)
-- Fr トラックの比率計算改善 (hypothetical fr unit)
-- 0fr トラックの処理修正
-- justify_items/justify_self サポート追加
-- overflow プロパティ追加 (overflow:hidden で minimum contribution = 0)
-
-## 残り60件の失敗テスト分類
-
-### 1. 完了済み
-
-| カテゴリ | 件数 | 説明 | 状態 |
-|---------|------|------|------|
-| negative_space_gap | 4 | トラックがコンテナに収まらない時の gap 処理 | ✅ 修正済 |
-| percent in indefinite (minmax) | 3 | indefinite container での minmax percent | ✅ 修正済 |
-| placement_negative | 5+ | 負のライン番号での配置 (grid_placement_auto_negative, grid_auto_rows, grid_auto_columns など) | ✅ 3-pass auto-placement で修正済 |
-
-### 2. 根本的な変更が必要なもの (High Complexity)
-
-| カテゴリ | 件数 | 説明 | 必要な対応 |
-|---------|------|------|----------|
-| percent_tracks_indefinite_overflow | 2 | indefinite container での percent + overflow 相互作用 | 2パス計算: container サイズ確定後に percent トラックを再計算 |
-
-### 3. 単純に対応すれば良いもの (Low Priority)
-
-以下は影響範囲が限定的で、単独で修正可能:
-
-| カテゴリ | 件数 | 説明 | 対応方法 |
-|---------|------|------|----------|
-| grid_repeat_mixed | 1 | repeat() の混合パターン | repeat 展開ロジック確認 |
-
-### 4. 中程度の複雑さ (Medium Priority)
-
-他のテストに影響する可能性があるが、比較的isolated:
-
-| カテゴリ | 件数 | 説明 | 対応方法 |
-|---------|------|------|----------|
-| auto_margins | 3 | auto margin と alignment の相互作用 | apply_alignment でのマージン処理改善 |
-| fit_content edge cases | 4 | fit-content(percent) in indefinite | percent 値の解決ロジック |
-
-### 3. 依存関係があるもの (High Priority - 先に実装すべき)
-
-これらを先に修正すると、他のテストも改善される可能性が高い:
-
-#### 3.1 overflow + spanning items の相互作用 (7テストに影響)
-
-overflow 基本処理は実装済みだが、spanning items との相互作用が複雑:
-
-```
-grid_span_2_*_hidden (4件)
-grid_span_6_*_hidden (1件)
-grid_span_13_*_hidden (1件)
-grid_fit_content_*_hidden (1件)
-```
-
-**問題点:**
-- 複数トラックをspan するアイテムのoverflow:hidden処理
-- min-content トラックと auto トラックへの分配方法
-
-#### 3.2 入れ子グリッドの intrinsic sizing (8テストに影響)
-
-```
-grid_max_width_* (3件)
-grid_percent_items_nested_* (4件)
-grid_percent_items_width_and_margin (1件)
-```
-
-**対応方法:**
-1. 入れ子グリッドの max-width/min-width 制約を正しく適用
-2. 再帰的な intrinsic sizing 計算の修正
-
-#### 3.3 percent in indefinite containers (5テストに影響)
-
-```
-grid_minmax_*_percent_indefinite (3件)
-grid_percent_tracks_indefinite_* (2件)
-```
-
-**対応方法:**
-1. indefinite container での percent 解決を 0 として扱う
-2. CSS spec に従った処理
-
-### 4. 複雑で後回しにすべきもの (Low Priority)
-
-影響範囲が大きいか、特殊なユースケース:
-
-| カテゴリ | 件数 | 説明 | 理由 |
-|---------|------|------|------|
-| baseline alignment | 4 | baseline + margin/padding | 複雑で使用頻度低 |
-| aspect_ratio in grid | 4 | グリッドでの aspect ratio | 相互作用が複雑 |
-| min_content_flex | 6 | flex 子要素の min-content | flex レイアウト依存 |
-| available_space | 2 | 利用可能スペースの制約 | 根本的な設計見直し必要 |
-| fr edge cases | 2 | fr トラックのエッジケース | 調査必要 |
-| span distribution | 3 | spanning の複雑なケース | 調査必要 |
-| overflow_* | 2 | overflow の追加ケース | 調査必要 |
-
-## 推奨する実装順序
-
-### Phase 1: 依存関係の解決 (高優先度)
-
-1. **percent in indefinite の修正**
-   - compute_track_sizes で indefinite + percent の処理
-
-2. **入れ子グリッドの intrinsic sizing 改善**
-   - 再帰計算での max-width/min-width 制約適用
-
-### Phase 2: 中程度の修正
-
-3. **auto margins の改善**
-   - apply_alignment でのマージン計算修正
-
-4. **fit-content edge cases**
-   - fit-content(percent) in indefinite
-
-### Phase 3: 単純な修正
-
-5. **negative_space_gap**
-6. **placement 修正** (負のライン番号)
-7. **repeat_mixed** ロジック修正
-
-### Phase 4: 後回し
-
-8. baseline alignment
-9. aspect_ratio
-10. min_content_flex
-11. spanning + overflow 相互作用の完全対応
-
-## ファイル構成 (参考)
-
-```
-taffy/src/compute/grid/
-├── mod.rs              - Grid レイアウトのメインエントリポイント
-├── track_sizing.rs     - トラックサイズ計算 (68KB) - 最も重要
-├── alignment.rs        - アライメント処理
-├── explicit_grid.rs    - 明示的グリッドの処理
-├── implicit_grid.rs    - 暗黙的グリッドの処理
-├── placement.rs        - アイテム配置
-└── types/
-    └── grid_item.rs    - GridItem 構造体と intrinsic size 計算
-```
-
-## 核心的な差異 (詳細)
-
-### 1. Automatic Minimum Size
-
-**Taffy (grid_item.rs:459-528):**
-```rust
-pub fn minimum_contribution(...) -> f32 {
-    // overflow が visible でない場合は 0
-    if overflow != Overflow::Visible {
-        return 0.0;
-    }
-
-    // spans_auto_min_track かつ flexible track がなければ min-content
-    let use_content_based_minimum =
-        spans_auto_min_track && (only_span_one_track || !spans_a_flexible_track);
-
-    if use_content_based_minimum {
-        self.min_content_contribution_cached(...)
-    } else {
-        0.0
-    }
-}
-```
-
-### 2. Intrinsic Size Contribution
-
-**Taffy:**
-- `min_content_contribution`: AvailableSpace::MinContent で measure
-- `max_content_contribution`: AvailableSpace::MaxContent で measure
-- キャッシュ機構あり
-
-**Crater:**
-- calculate_item_intrinsic_sizes で計算
-- AvailableSpace の概念がない (将来的に追加検討)
-
-## 現在の実装状況
+### 実装済み機能
 
 - [x] 基本的な Grid レイアウト
 - [x] トラックサイズ計算
@@ -215,13 +83,101 @@ pub fn minimum_contribution(...) -> f32 {
 - [x] justify_items/justify_self
 - [x] overflow 処理 (基本)
 - [x] 3-pass auto-placement (negative placement 対応)
+
+### 未実装機能
+
 - [ ] overflow + spanning items 相互作用
-- [ ] Automatic minimum size (CSS Grid spec完全対応)
+- [ ] Automatic minimum size (CSS Grid spec 完全対応)
 - [ ] AvailableSpace (MinContent/MaxContent)
-- [ ] Baseline alignment (部分的)
+- [ ] Baseline alignment
+
+### Grid 失敗テスト分類
+
+| カテゴリ | 件数 | 説明 | 優先度 |
+|---------|------|------|--------|
+| overflow + spanning | 7 | span アイテムの overflow:hidden | Medium |
+| nested grid intrinsic | 8 | 入れ子グリッドの intrinsic sizing | High |
+| percent in indefinite | 5 | indefinite での percent 解決 | High |
+| auto_margins | 3 | auto margin と alignment | Medium |
+| fit_content edge cases | 4 | fit-content(percent) | Low |
+| baseline alignment | 4 | baseline + margin/padding | Low |
+| aspect_ratio | 4 | グリッドでの aspect ratio | Low |
+
+## テスト生成ツール
+
+### 使用方法
+
+```bash
+# HTML → JSON フィクスチャ生成
+npm run gentest -- --batch taffy/test_fixtures/grid fixtures/grid
+
+# JSON → MoonBit テスト生成
+npm run gen-moonbit-tests -- fixtures/grid grid/gen_test.mbt
+
+# オプション
+--flex       # flex/block 用の compute 関数を使用
+--no-header  # 追加テストファイル用 (assert_approx をスキップ)
+```
+
+### 生成されるファイル
+
+```
+grid/gen_test.mbt          # メイン grid テスト (227)
+grid/gen_blockgrid_test.mbt # block + grid (14)
+grid/gen_blockflex_test.mbt # block + flex (7)
+grid/gen_gridflex_test.mbt  # grid + flex (6)
+grid/gen_leaf_test.mbt      # leaf ノード (14)
+flex/gen_test.mbt          # flex テスト (479)
+block/gen_test.mbt         # block テスト (132)
+```
+
+## 推奨する実装順序
+
+### Phase 1: 高優先度
+
+1. **Absolute positioning サポート**
+   - 151 テストがアンブロックされる
+   - 全パッケージに影響
+
+2. **Flex レイアウト改善**
+   - flex-grow/shrink の計算修正
+   - パス率向上の余地が大きい
+
+### Phase 2: 中優先度
+
+3. **Block margin collapsing**
+   - CSS 仕様に準拠したマージン折りたたみ
+
+4. **Grid overflow + spanning**
+   - spanning items と overflow の相互作用
+
+### Phase 3: 低優先度
+
+5. Baseline alignment
+6. Aspect ratio in grid
+7. AvailableSpace 概念の導入
+
+## ファイル構成 (Taffy 参考)
+
+```
+taffy/src/compute/
+├── grid/
+│   ├── mod.rs              - Grid レイアウトのエントリポイント
+│   ├── track_sizing.rs     - トラックサイズ計算 (最重要)
+│   ├── alignment.rs        - アライメント処理
+│   ├── explicit_grid.rs    - 明示的グリッド
+│   ├── implicit_grid.rs    - 暗黙的グリッド
+│   ├── placement.rs        - アイテム配置
+│   └── types/grid_item.rs  - GridItem と intrinsic size
+├── flexbox/
+│   └── mod.rs              - Flexbox レイアウト
+└── block/
+    └── mod.rs              - Block レイアウト
+```
 
 ## 参考リンク
 
 - CSS Grid spec: https://www.w3.org/TR/css-grid-1/
+- CSS Flexbox spec: https://www.w3.org/TR/css-flexbox-1/
 - Automatic minimum size: https://www.w3.org/TR/css-grid-1/#min-size-auto
-- Taffy source: ./taffy/src/compute/grid/
+- Taffy source: ./taffy/src/compute/
