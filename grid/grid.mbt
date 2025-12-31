@@ -212,9 +212,11 @@ pub fn compute_grid_layout(
   // Calculate content sizes for auto tracks (using adjusted placements and total track counts)
   let column_content_sizes = calculate_track_content_sizes(
     children, adjusted_placements, total_column_count, true, // is_column
+    container_width_for_expansion,
   )
   let row_content_sizes = calculate_track_content_sizes(
     children, adjusted_placements, total_row_count, false, // is_column
+    container_width_for_expansion, // CSS: percent padding resolves against width
   )
 
   // Determine if container has auto sizing
@@ -376,6 +378,9 @@ pub fn compute_grid_layout(
   }
 
   // Calculate final container size
+  // Padding and border create a minimum size even when content is smaller
+  let min_width = padding_left + padding_right + border_left + border_right
+  let min_height = padding_top + padding_bottom + border_top + border_bottom
   let container_width = if width_is_auto {
     // Sum of track sizes + gaps + padding + border
     let total_track_width = calculate_total_track_size(
@@ -387,7 +392,8 @@ pub fn compute_grid_layout(
     border_left +
     border_right
   } else {
-    preliminary_width
+    // Enforce minimum size from padding + border
+    if preliminary_width > min_width { preliminary_width } else { min_width }
   }
   let container_height = if height_is_auto {
     let total_track_height = calculate_total_track_size(row_tracks, row_gap)
@@ -397,7 +403,8 @@ pub fn compute_grid_layout(
     border_top +
     border_bottom
   } else {
-    preliminary_height
+    // Enforce minimum size from padding + border
+    if preliminary_height > min_height { preliminary_height } else { min_height }
   }
   let content_box_left = padding_left + border_left
   let content_box_top = padding_top + border_top
@@ -694,6 +701,7 @@ fn calculate_track_content_sizes(
   placements : Array[GridItemPlacement],
   track_count : Int,
   is_column : Bool,
+  container_width : Double, // For resolving percent padding (all % padding resolves against width)
 ) -> Array[Double] {
   let sizes : Array[Double] = []
   for i = 0; i < track_count; i = i + 1 {
@@ -715,9 +723,9 @@ fn calculate_track_content_sizes(
 
     // Only consider items that span exactly one track for auto sizing
     if track_end - track_start == 1 && track_start < track_count {
-      // Calculate the base size (content + margins)
+      // Calculate the base size (content + padding + border)
       let (base_size, margin_start, margin_end) = if is_column {
-        let w = match child.style.width {
+        let content_w = match child.style.width {
           @types.Length(v) => v
           @types.Percent(_) => 0.0 // Percent needs container size
           @types.Auto =>
@@ -727,6 +735,13 @@ fn calculate_track_content_sizes(
               _ => 0.0
             }
         }
+        // Padding and border create minimum size (percent padding resolves against width)
+        let pl = resolve_dimension(child.style.padding.left, container_width, 0.0)
+        let pr = resolve_dimension(child.style.padding.right, container_width, 0.0)
+        let bl = resolve_dimension(child.style.border.left, container_width, 0.0)
+        let br = resolve_dimension(child.style.border.right, container_width, 0.0)
+        let min_w = pl + pr + bl + br
+        let w = if content_w > min_w { content_w } else { min_w }
         let ml = match child.style.margin.left {
           @types.Length(v) => v
           _ => 0.0
@@ -737,7 +752,7 @@ fn calculate_track_content_sizes(
         }
         (w, ml, mr)
       } else {
-        let h = match child.style.height {
+        let content_h = match child.style.height {
           @types.Length(v) => v
           @types.Percent(_) => 0.0
           @types.Auto =>
@@ -771,6 +786,13 @@ fn calculate_track_content_sizes(
                 }
             }
         }
+        // Padding and border create minimum size (percent padding resolves against WIDTH per CSS spec)
+        let pt = resolve_dimension(child.style.padding.top, container_width, 0.0)
+        let pb = resolve_dimension(child.style.padding.bottom, container_width, 0.0)
+        let bt = resolve_dimension(child.style.border.top, container_width, 0.0)
+        let bb = resolve_dimension(child.style.border.bottom, container_width, 0.0)
+        let min_h = pt + pb + bt + bb
+        let h = if content_h > min_h { content_h } else { min_h }
         let mt = match child.style.margin.top {
           @types.Length(v) => v
           _ => 0.0
@@ -1448,6 +1470,26 @@ fn compute_child_layout(
     available_height,
   )
 
+  // Resolve padding and border for minimum size enforcement
+  let padding_left = resolve_dimension(child.style.padding.left, available_width, 0.0)
+  let padding_right = resolve_dimension(child.style.padding.right, available_width, 0.0)
+  let padding_top = resolve_dimension(child.style.padding.top, available_height, 0.0)
+  let padding_bottom = resolve_dimension(child.style.padding.bottom, available_height, 0.0)
+  let border_left = resolve_dimension(child.style.border.left, available_width, 0.0)
+  let border_right = resolve_dimension(child.style.border.right, available_width, 0.0)
+  let border_top = resolve_dimension(child.style.border.top, available_height, 0.0)
+  let border_bottom = resolve_dimension(child.style.border.bottom, available_height, 0.0)
+
+  // Padding + border creates minimum size
+  let min_width = padding_left + padding_right + border_left + border_right
+  let min_height = padding_top + padding_bottom + border_top + border_bottom
+  if width < min_width {
+    width = min_width
+  }
+  if height < min_height {
+    height = min_height
+  }
+
   // Apply aspect_ratio if one dimension is auto
   match child.style.aspect_ratio {
     Some(ratio) => {
@@ -1525,16 +1567,17 @@ fn apply_alignment(
   let child_style = child.style
 
   // Resolve child margins
+  // CSS spec: All percentage margins (including top/bottom) are resolved against the width
   let margin_left = resolve_dimension(child_style.margin.left, cell_width, 0.0)
   let margin_right = resolve_dimension(
     child_style.margin.right,
     cell_width,
     0.0,
   )
-  let margin_top = resolve_dimension(child_style.margin.top, cell_height, 0.0)
+  let margin_top = resolve_dimension(child_style.margin.top, cell_width, 0.0)
   let margin_bottom = resolve_dimension(
     child_style.margin.bottom,
-    cell_height,
+    cell_width,
     0.0,
   )
 
@@ -1543,6 +1586,7 @@ fn apply_alignment(
   let available_height = cell_height - margin_top - margin_bottom
 
   // Get effective alignment
+  // In Taffy, align_self applies to both axes when justify_self is not specified
   let align = match child_style.align_self {
     @style.Auto => container_style.align_items
     @style.Start => @style.Start
@@ -1550,7 +1594,14 @@ fn apply_alignment(
     @style.Center => @style.Center
     @style.Stretch => @style.Stretch
   }
-  let justify = container_style.justify_items
+  // Use align_self for justify too (matches Taffy behavior)
+  let justify = match child_style.align_self {
+    @style.Auto => container_style.justify_items
+    @style.Start => @style.Start
+    @style.End => @style.End
+    @style.Center => @style.Center
+    @style.Stretch => @style.Stretch
+  }
 
   // Check if aspect_ratio constrains dimensions
   let has_aspect_ratio = match child_style.aspect_ratio {
