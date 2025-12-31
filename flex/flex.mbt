@@ -2025,6 +2025,15 @@ fn compute_justify(
   if item_count == 0 {
     return (0.0, 0.0)
   }
+  // CSS spec: when free_space is negative, SpaceBetween/SpaceAround/SpaceEvenly
+  // behave like Start (items packed at start, no gap distribution)
+  if free_space < 0.0 {
+    match justify {
+      @style.SpaceBetween | @style.SpaceAround | @style.SpaceEvenly =>
+        return (0.0, 0.0)
+      _ => ()
+    }
+  }
   match justify {
     @style.Start => (0.0, 0.0)
     @style.End => (free_space, 0.0)
