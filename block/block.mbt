@@ -356,10 +356,37 @@ fn compute_with_collapse(
       }
     }
 
+    // Calculate x position considering margin auto
+    let child_x = {
+      let margin_left_auto = match child_style.margin.left {
+        @types.Auto => true
+        _ => false
+      }
+      let margin_right_auto = match child_style.margin.right {
+        @types.Auto => true
+        _ => false
+      }
+      // Available space for auto margins
+      let available = child_available_width - child_layout.width -
+        child_layout.margin.left - child_layout.margin.right
+      if margin_left_auto && margin_right_auto {
+        // Both auto: center
+        let auto_margin = if available > 0.0 { available / 2.0 } else { 0.0 }
+        auto_margin + padding.left + border.left
+      } else if margin_left_auto {
+        // Only left auto: push to right
+        let auto_margin = if available > 0.0 { available } else { 0.0 }
+        auto_margin + padding.left + border.left
+      } else {
+        // No auto or only right auto: use left margin
+        child_layout.margin.left + padding.left + border.left
+      }
+    }
+
     // Position child and store in map with original index
     let positioned_layout : @node.Layout = {
       id: child_layout.id,
-      x: child_layout.margin.left + padding.left + border.left,
+      x: child_x,
       y: child_y,
       width: child_layout.width,
       height: child_layout.height,
@@ -496,12 +523,30 @@ fn layout_absolute_child(
     }
   }
 
-  // Resolve margin values
+  // Resolve margin values and track which are auto
   let child_margin = resolve_rect(child_style.margin, container_width)
   let margin_left = child_margin.left
   let margin_right = child_margin.right
   let margin_top = child_margin.top
   let margin_bottom = child_margin.bottom
+
+  // Check if margins are Auto (for centering behavior)
+  let margin_left_is_auto = match child_style.margin.left {
+    @types.Auto => true
+    _ => false
+  }
+  let margin_right_is_auto = match child_style.margin.right {
+    @types.Auto => true
+    _ => false
+  }
+  let margin_top_is_auto = match child_style.margin.top {
+    @types.Auto => true
+    _ => false
+  }
+  let margin_bottom_is_auto = match child_style.margin.bottom {
+    @types.Auto => true
+    _ => false
+  }
 
   // Resolve inset values
   let inset_left = child_style.inset.left.resolve(container_width)
@@ -650,9 +695,23 @@ fn layout_absolute_child(
   // Calculate position
   // Note: For absolute positioning, the containing block is the padding box
   let child_x = match (inset_left, inset_right) {
-    (Some(l), Some(_r)) => {
-      // Both insets specified: use left inset (CSS over-constrained behavior)
-      l + margin_left + parent_border.left
+    (Some(l), Some(r)) => {
+      // Both insets specified
+      // Check for margin auto centering behavior
+      if margin_left_is_auto && margin_right_is_auto {
+        // Both margins auto: center the element
+        let available = container_width - l - r - child_width
+        l + available / 2.0 + parent_border.left
+      } else if margin_left_is_auto {
+        // Only left margin auto: push to right
+        container_width - child_width - r - margin_right + parent_border.left
+      } else if margin_right_is_auto {
+        // Only right margin auto: push to left
+        l + margin_left + parent_border.left
+      } else {
+        // No auto margins: over-constrained, use left inset
+        l + margin_left + parent_border.left
+      }
     }
     (Some(l), None) => l + margin_left + parent_border.left
     (None, Some(r)) =>
@@ -661,9 +720,23 @@ fn layout_absolute_child(
   }
 
   let child_y = match (inset_top, inset_bottom) {
-    (Some(t), Some(_b)) => {
-      // Both insets specified: use top inset (CSS over-constrained behavior)
-      t + margin_top + parent_border.top
+    (Some(t), Some(b)) => {
+      // Both insets specified
+      // Check for margin auto centering behavior
+      if margin_top_is_auto && margin_bottom_is_auto {
+        // Both margins auto: center the element
+        let available = container_height - t - b - child_height
+        t + available / 2.0 + parent_border.top
+      } else if margin_top_is_auto {
+        // Only top margin auto: push to bottom
+        container_height - child_height - b - margin_bottom + parent_border.top
+      } else if margin_bottom_is_auto {
+        // Only bottom margin auto: push to top
+        t + margin_top + parent_border.top
+      } else {
+        // No auto margins: over-constrained, use top inset
+        t + margin_top + parent_border.top
+      }
     }
     (Some(t), None) => t + margin_top + parent_border.top
     (None, Some(b)) =>
