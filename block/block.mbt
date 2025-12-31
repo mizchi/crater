@@ -271,9 +271,9 @@ fn compute_with_collapse(
   // Map to store static positions for absolute children (their position in flow order)
   let absolute_static_positions : Map[Int, Int] = {} // index -> flow position (0 = before all, 1 = after first flow child, etc.)
 
-  // Collect flow children with their collapse info, original styles, and indices
+  // Collect flow children nodes, styles, and indices
   // Also track where absolute children appear in the flow order
-  let flow_children : Array[LayoutWithCollapse] = []
+  let flow_nodes : Array[@node.Node] = []
   let flow_styles : Array[@style.Style] = []
   let flow_indices : Array[Int] = []
   let mut flow_position = 0
@@ -289,15 +289,83 @@ fn compute_with_collapse(
       absolute_static_positions[i] = flow_position
       continue
     }
+    flow_nodes.push(child)
+    flow_styles.push(child.style)
+    flow_indices.push(i)
+    flow_position = flow_position + 1
+  }
+
+  // For MaxContent mode, first determine max-content width from children's contributions
+  if use_max_content {
+    let mut max_content_width = 0.0
+    for i = 0; i < flow_nodes.length(); i = i + 1 {
+      let child = flow_nodes[i]
+      let child_style = flow_styles[i]
+      let child_margin = @types.resolve_rect(child_style.margin, parent_width)
+
+      // Calculate child's intrinsic width contribution
+      let child_intrinsic_width : Double = match child_style.width {
+        @types.Length(w) => w
+        @types.Percent(_) => 0.0 // Percentage doesn't contribute to intrinsic sizing
+        @types.Auto => {
+          // For width:auto, use max-content of child's content
+          if child.children.length() == 0 {
+            0.0 // Leaf nodes with no content have 0 intrinsic width
+          } else {
+            // Recursively compute child's max-content width
+            let intrinsic_ctx : @node.LayoutContext = {
+              available_width: parent_width, // Use parent_width as reference for percentages
+              available_height: child_available_height,
+              sizing_mode: @node.MaxContent,
+            }
+            let child_result = compute_with_collapse(child, intrinsic_ctx, warnings)
+            child_result.layout.width
+          }
+        }
+      }
+      let child_contribution = child_intrinsic_width + child_margin.horizontal_sum()
+      if child_contribution > max_content_width {
+        max_content_width = child_contribution
+      }
+    }
+    // Update box_width from max-content
+    box_width = max_content_width + padding.horizontal_sum() + border.horizontal_sum()
+    // Re-apply min/max constraints
+    match style.min_width {
+      @types.Length(min_w) => if box_width < min_w { box_width = min_w }
+      @types.Percent(p) => {
+        let min_w = parent_width * p
+        if box_width < min_w {
+          box_width = min_w
+        }
+      }
+      @types.Auto => ()
+    }
+    match style.max_width {
+      @types.Length(max_w) => if box_width > max_w { box_width = max_w }
+      @types.Percent(p) => {
+        let max_w = parent_width * p
+        if box_width > max_w {
+          box_width = max_w
+        }
+      }
+      @types.Auto => ()
+    }
+  }
+
+  // Calculate actual child_available_width from final box_width
+  let actual_child_available_width = box_width - padding.horizontal_sum() - border.horizontal_sum()
+
+  // Now compute children's actual layout with the resolved width
+  let flow_children : Array[LayoutWithCollapse] = []
+  for i = 0; i < flow_nodes.length(); i = i + 1 {
+    let child = flow_nodes[i]
     let child_ctx : @node.LayoutContext = {
-      available_width: child_available_width,
+      available_width: actual_child_available_width,
       available_height: child_available_height,
       sizing_mode: @node.Definite,
     }
     flow_children.push(compute_with_collapse(child, child_ctx, warnings))
-    flow_styles.push(child.style)
-    flow_indices.push(i)
-    flow_position = flow_position + 1
   }
 
   // Track escaped margins for parent
@@ -473,40 +541,6 @@ fn compute_with_collapse(
     // Handle last child's bottom margin escape
     if is_last && can_collapse_bottom {
       escaped_bottom = Some(prev_margin_bottom)
-    }
-  }
-
-  // For MaxContent mode, recalculate box_width based on content
-  if use_max_content {
-    let mut max_content_width = 0.0
-    for i = 0; i < flow_children.length(); i = i + 1 {
-      let child_layout = flow_children[i].layout
-      let child_total_width = child_layout.width + child_layout.margin.horizontal_sum()
-      if child_total_width > max_content_width {
-        max_content_width = child_total_width
-      }
-    }
-    box_width = max_content_width + padding.horizontal_sum() + border.horizontal_sum()
-    // Re-apply min/max constraints
-    match style.min_width {
-      @types.Length(min_w) => if box_width < min_w { box_width = min_w }
-      @types.Percent(p) => {
-        let min_w = parent_width * p
-        if box_width < min_w {
-          box_width = min_w
-        }
-      }
-      @types.Auto => ()
-    }
-    match style.max_width {
-      @types.Length(max_w) => if box_width > max_w { box_width = max_w }
-      @types.Percent(p) => {
-        let max_w = parent_width * p
-        if box_width > max_w {
-          box_width = max_w
-        }
-      }
-      @types.Auto => ()
     }
   }
 
