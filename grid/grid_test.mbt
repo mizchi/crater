@@ -1228,23 +1228,10 @@ test "grid_template_areas_basic" {
   let default_style = @style.Style::default()
 
   // Create children with grid-area names
-  let header_style = {
-    ..default_style,
-    grid_area: Some("header"),
-  }
-  let sidebar_style = {
-    ..default_style,
-    grid_area: Some("sidebar"),
-  }
-  let main_style = {
-    ..default_style,
-    grid_area: Some("main"),
-  }
-  let footer_style = {
-    ..default_style,
-    grid_area: Some("footer"),
-  }
-
+  let header_style = { ..default_style, grid_area: Some("header") }
+  let sidebar_style = { ..default_style, grid_area: Some("sidebar") }
+  let main_style = { ..default_style, grid_area: Some("main") }
+  let footer_style = { ..default_style, grid_area: Some("footer") }
   let children : Array[@node.Node] = [
     @node.Node::leaf("header", header_style),
     @node.Node::leaf("sidebar", sidebar_style),
@@ -1267,11 +1254,7 @@ test "grid_template_areas_basic" {
       @style.Length(70.0),
       @style.Length(40.0),
     ],
-    grid_template_areas: [
-      "header header",
-      "sidebar main",
-      "footer footer",
-    ],
+    grid_template_areas: ["header header", "sidebar main", "footer footer"],
   }
   let root = @node.Node::new("root", root_style, children)
   let layout = compute_grid_layout(root, 200.0, 200.0)
@@ -1326,8 +1309,9 @@ test "grid_measure_function_basic" {
   }
 
   // Create a leaf node with the custom measure function
-  let child = @node.Node::with_measure("measured", default_style, custom_measure)
-
+  let child = @node.Node::with_measure(
+    "measured", default_style, custom_measure,
+  )
   let root_style = {
     ..default_style,
     display: @style.Grid,
@@ -1350,15 +1334,14 @@ test "grid_measure_function_basic" {
 test "grid_measure_function_min_content" {
   // Test that min-content uses min_width from measure function
   let default_style = @style.Style::default()
-
   let custom_measure : @node.MeasureFunc = {
     func: fn(_available_width, _available_height) {
       { min_width: 30.0, max_width: 80.0, min_height: 15.0, max_height: 40.0 }
     },
   }
-
-  let child = @node.Node::with_measure("measured", default_style, custom_measure)
-
+  let child = @node.Node::with_measure(
+    "measured", default_style, custom_measure,
+  )
   let root_style = {
     ..default_style,
     display: @style.Grid,

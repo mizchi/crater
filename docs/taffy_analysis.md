@@ -10,37 +10,40 @@ Taffy (Rust) のレイアウトエンジン実装を分析し、crater への移
 
 | パッケージ | 生成 | 手動 | 合計 | パス | パス率 |
 |-----------|------|------|------|------|--------|
-| Grid | 268 | 32 | 300 | 222 | **74.0%** |
+| Grid | 297 | 32 | 329 | 241 | **73.3%** |
 | Flex | 479 | 70 | 549 | 158 | 28.8% |
 | Block | 132 | 27 | 159 | 74 | 46.5% |
-| **合計** | **879** | **129** | **1008** | **454** | **45.0%** |
+| **合計** | **908** | **129** | **1037** | **473** | **45.6%** |
 
 ### Taffy フィクスチャ移植状況
 
 | ディレクトリ | HTML | 生成済み | スキップ | 理由 |
 |-------------|------|---------|---------|------|
-| grid | 259 | 227 | 29 | absolute positioning |
+| grid | 259 | 256 | 0 | ✅ absolute 実装済み |
 | blockgrid | 14 | 14 | 0 | - |
 | blockflex | 7 | 7 | 0 | - |
 | gridflex | 6 | 6 | 0 | - |
 | leaf | 14 | 14 | 0 | - |
 | flex | 537 | 479 | 58 | absolute positioning |
 | block | 196 | 132 | 64 | absolute positioning |
-| **合計** | **1033** | **879** | **151** | - |
+| **合計** | **1033** | **908** | **122** | - |
 
 ## 未移植・未実装機能
 
-### 1. Absolute Positioning (151 テストがブロック)
+### 1. Absolute Positioning (Grid 実装済み、Flex/Block 未実装)
 
-現在 `position: absolute` を使用するテストはスキップされている。
+Grid では `position: absolute` を実装済み。Flex と Block は未対応。
 
-**必要な実装:**
-- `position: absolute` のレイアウト計算
-- `inset` (top/right/bottom/left) の解決
-- containing block の決定ロジック
+**Grid での実装内容:**
+- [x] `position: absolute` のレイアウト計算
+- [x] `inset` (top/right/bottom/left) の解決
+- [x] containing block の決定（padding box）
+- [x] grid-column/grid-row による grid area の指定
+- [x] margin の適用
+- [ ] align-self/justify-self（absolute アイテム）
+- [ ] aspect ratio（absolute アイテム）
 
-**影響範囲:**
-- grid: 29 テスト
+**未実装パッケージ:**
 - flex: 58 テスト
 - block: 64 テスト
 
@@ -83,9 +86,12 @@ Block の失敗カテゴリ:
 - [x] justify_items/justify_self
 - [x] overflow 処理 (基本)
 - [x] 3-pass auto-placement (negative placement 対応)
+- [x] **Absolute positioning** (inset, margin, grid-column/row)
 
 ### 未実装機能
 
+- [ ] Absolute + align-self/justify-self
+- [ ] Absolute + aspect ratio
 - [ ] overflow + spanning items 相互作用
 - [ ] Automatic minimum size (CSS Grid spec 完全対応)
 - [ ] AvailableSpace (MinContent/MaxContent)

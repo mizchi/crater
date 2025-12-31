@@ -524,11 +524,9 @@ async function main() {
       const tc: TestCase = JSON.parse(content);
 
       // Skip tests that use unsupported features
+      // Note: absolute positioning is now supported in grid
       const hasUnsupportedFeatures = (node: NodeTestData): boolean => {
-        const style = node.style;
-        // Skip absolute positioning for now
-        if (style.position === 'absolute') return true;
-        // Skip fit-content, aspect-ratio for now
+        // Currently no features are skipped
         // Recursively check children
         return node.children.some(hasUnsupportedFeatures);
       };

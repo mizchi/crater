@@ -411,11 +411,7 @@ fn create_grid_fr() -> @node.Node {
     display: @style.Grid,
     width: @types.Length(600.0),
     height: @types.Length(400.0),
-    grid_template_columns: [
-      @style.Fr(1.0),
-      @style.Fr(2.0),
-      @style.Fr(1.0),
-    ],
+    grid_template_columns: [@style.Fr(1.0), @style.Fr(2.0), @style.Fr(1.0)],
     grid_template_rows: [
       @style.Fr(1.0),
       @style.Fr(1.0),
