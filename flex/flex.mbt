@@ -1508,6 +1508,24 @@ fn compute_internal(
       continue
     }
 
+    // Skip display:none children - create zero-sized layout
+    if child_style.display == @style.None {
+      let zero_rect : @types.Rect[Double] = { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+      let zero_layout : @node.Layout = {
+        id: child.id,
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+        height: 0.0,
+        margin: zero_rect,
+        padding: zero_rect,
+        border: zero_rect,
+        children: [],
+      }
+      indexed_layouts.push({ dom_index: i, layout: zero_layout })
+      continue
+    }
+
     // Resolve margin values
     let child_margin = resolve_rect(child_style.margin, container_width)
     let margin_left = child_margin.left
@@ -1551,6 +1569,39 @@ fn compute_internal(
         }
     }
 
+    // Resolve min/max constraints for aspect ratio calculation
+    let min_w = match child_style.min_width {
+      @types.Length(v) => v
+      @types.Percent(p) => container_width * p
+      @types.Auto => 0.0
+    }
+    let max_w = match child_style.max_width {
+      @types.Length(v) => v
+      @types.Percent(p) => container_width * p
+      @types.Auto => @double.infinity
+    }
+    let min_h = match child_style.min_height {
+      @types.Length(v) => v
+      @types.Percent(p) => final_height * p
+      @types.Auto => 0.0
+    }
+    let max_h = match child_style.max_height {
+      @types.Length(v) => v
+      @types.Percent(p) => final_height * p
+      @types.Auto => @double.infinity
+    }
+
+    // Apply aspect ratio to calculate missing dimension
+    let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
+      initial_width,
+      initial_height,
+      child_style.aspect_ratio,
+      min_w,
+      max_w,
+      min_h,
+      max_h,
+    )
+
     // Compute intrinsic size if needed, and get child's inner layout
     let (child_width, child_height, child_inner) = match (initial_width, initial_height) {
       (Some(w), Some(h)) => {
@@ -1583,7 +1634,16 @@ fn compute_internal(
           { available_width: container_width, available_height: Some(final_height) },
           warnings,
         )
-        (inner.width, inner.height, inner)
+        // Apply aspect_ratio to intrinsic size
+        match child_style.aspect_ratio {
+          Some(ar) if ar > 0.0 => {
+            // Use intrinsic width to calculate height via aspect_ratio
+            let w = inner.width
+            let h = w / ar
+            (w, h, inner)
+          }
+          _ => (inner.width, inner.height, inner)
+        }
       }
     }
 
@@ -1591,14 +1651,55 @@ fn compute_internal(
     let child_width = apply_min_max_width(child_width, child_style, container_width)
     let child_height = apply_min_max_height(child_height, child_style, final_height)
 
+    // Re-apply aspect ratio after min/max constraints
+    // This handles cases like max_width or max_height with aspect_ratio
+    let (child_width, child_height) = match child_style.aspect_ratio {
+      Some(ar) if ar > 0.0 => {
+        // Check if width has any constraint (min or max)
+        let width_has_constraint = match child_style.max_width {
+          @types.Length(_) => true
+          @types.Percent(_) => true
+          @types.Auto =>
+            match child_style.min_width {
+              @types.Length(_) => true
+              @types.Percent(_) => true
+              @types.Auto => false
+            }
+        }
+        // Check if height has any constraint (min or max)
+        let height_has_constraint = match child_style.max_height {
+          @types.Length(_) => true
+          @types.Percent(_) => true
+          @types.Auto =>
+            match child_style.min_height {
+              @types.Length(_) => true
+              @types.Percent(_) => true
+              @types.Auto => false
+            }
+        }
+        // If height has constraint but width doesn't, height is the driver
+        if height_has_constraint && not(width_has_constraint) {
+          // Height is the driver, calculate width
+          (child_height * ar, child_height)
+        } else {
+          // Width is the driver, calculate height
+          (child_width, child_width / ar)
+        }
+      }
+      _ => (child_width, child_height)
+    }
+
     // Calculate position
     // If insets are specified, use them; otherwise use align_items/justify_content
     let has_horizontal_inset = inset_left != None || inset_right != None
     let has_vertical_inset = inset_top != None || inset_bottom != None
 
+    // Note: For absolute positioning, the containing block is the padding box
+    // (inside border, but NOT inside padding). So we add border but NOT padding
+    // to position calculations.
     let child_x = if has_horizontal_inset {
       match inset_left {
-        Some(l) => l + margin_left + padding.left + border.left
+        Some(l) => l + margin_left + border.left
         None =>
           match inset_right {
             Some(r) =>
@@ -1606,30 +1707,36 @@ fn compute_internal(
               child_width -
               r -
               margin_right -
-              padding.right -
-              border.right +
-              padding.left +
-              border.left
-            None => margin_left + padding.left + border.left
+              border.right
+            None => margin_left + border.left
           }
       }
     } else {
       // Use align_items for cross-axis positioning (x for row direction)
       let free_space = container_width - child_width - margin_left - margin_right
       let align_offset = if is_row {
-        // For row, cross axis is vertical, but we need horizontal alignment
-        // Use justify_content for main axis (x)
-        compute_absolute_align_offset(style.justify_content, free_space)
+        // For row, main axis is horizontal
+        // Use justify_self/justify_content for main axis (x)
+        compute_align_self_offset(
+          child_style.justify_self,
+          style.justify_content,
+          free_space,
+        )
       } else {
         // For column, cross axis is horizontal
-        compute_absolute_align_offset(style.align_items, free_space)
+        // Use align_self/align_items for cross axis (x)
+        compute_align_self_offset(
+          child_style.align_self,
+          style.align_items,
+          free_space,
+        )
       }
-      margin_left + align_offset + padding.left + border.left
+      margin_left + align_offset + border.left
     }
 
     let child_y = if has_vertical_inset {
       match inset_top {
-        Some(t) => t + margin_top + padding.top + border.top
+        Some(t) => t + margin_top + border.top
         None =>
           match inset_bottom {
             Some(b) =>
@@ -1637,24 +1744,31 @@ fn compute_internal(
               child_height -
               b -
               margin_bottom -
-              padding.bottom -
-              border.bottom +
-              padding.top +
-              border.top
-            None => margin_top + padding.top + border.top
+              border.bottom
+            None => margin_top + border.top
           }
       }
     } else {
       // Use justify_content for main-axis positioning (y for column direction)
       let free_space = final_height - child_height - margin_top - margin_bottom
       let align_offset = if is_row {
-        // For row, main axis is horizontal, use align_items for y
-        compute_absolute_align_offset(style.align_items, free_space)
+        // For row, cross axis is vertical
+        // Use align_self/align_items for cross axis (y)
+        compute_align_self_offset(
+          child_style.align_self,
+          style.align_items,
+          free_space,
+        )
       } else {
         // For column, main axis is vertical
-        compute_absolute_align_offset(style.justify_content, free_space)
+        // Use justify_self/justify_content for main axis (y)
+        compute_align_self_offset(
+          child_style.justify_self,
+          style.justify_content,
+          free_space,
+        )
       }
-      margin_top + align_offset + padding.top + border.top
+      margin_top + align_offset + border.top
     }
 
     // Build child layout
@@ -1722,14 +1836,47 @@ fn compute_nested(
   let padding = resolve_rect(style.padding, parent_width)
   let border = resolve_rect(style.border, parent_width)
 
-  // For leaf nodes, just return the computed layout
+  // For leaf nodes, return intrinsic size based on style
+  // A leaf with no content has intrinsic size of 0 (plus padding/border)
   if node.children.length() == 0 {
+    // Get intrinsic size from MeasureFunc if available
+    let intrinsic = match node.measure {
+      Some(mf) => {
+        let available_h = ctx.available_height.unwrap_or(0.0)
+        Some((mf.func)(ctx.available_width, available_h))
+      }
+      None => None
+    }
+
+    // Check if explicit size is set, otherwise use intrinsic or fallback
+    let width = match style.width {
+      @types.Length(w) => w
+      @types.Percent(p) => ctx.available_width * p
+      @types.Auto =>
+        match intrinsic {
+          Some(intr) => intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
+          None => padding.horizontal_sum() + border.horizontal_sum()
+        }
+    }
+    let height = match style.height {
+      @types.Length(h) => h
+      @types.Percent(p) =>
+        match ctx.available_height {
+          Some(ah) => ah * p
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      @types.Auto =>
+        match intrinsic {
+          Some(intr) => intr.max_height + padding.vertical_sum() + border.vertical_sum()
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+    }
     return {
       id: node.id,
       x: 0.0,
       y: 0.0,
-      width: ctx.available_width,
-      height: ctx.available_height.unwrap_or(0.0),
+      width,
+      height,
       margin: @types.Rect::zero(),
       padding,
       border,
@@ -1923,5 +2070,24 @@ fn compute_absolute_align_offset(
     @style.SpaceEvenly => free_space / 2.0 // Center for single item
     @style.Stretch => 0.0 // Start for absolute
     @style.Baseline => 0.0 // Start for absolute
+  }
+}
+
+///|
+/// Compute alignment offset for align_self (child's override)
+fn compute_align_self_offset(
+  align_self : @style.AlignSelf,
+  parent_align : @style.Alignment,
+  free_space : Double,
+) -> Double {
+  if free_space <= 0.0 {
+    return 0.0
+  }
+  match align_self {
+    @style.AlignSelf::Auto => compute_absolute_align_offset(parent_align, free_space)
+    @style.AlignSelf::Start => 0.0
+    @style.AlignSelf::End => free_space
+    @style.AlignSelf::Center => free_space / 2.0
+    @style.AlignSelf::Stretch => 0.0 // Start for absolute
   }
 }

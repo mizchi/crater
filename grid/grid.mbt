@@ -3170,6 +3170,21 @@ fn layout_absolute_child(
 ) -> @node.Layout {
   let style = child.style
 
+  // Handle display:none - return zero-sized layout
+  if style.display == @style.None {
+    return {
+      id: child.id,
+      x: 0.0,
+      y: 0.0,
+      width: 0.0,
+      height: 0.0,
+      margin: default_rect(),
+      padding: default_rect(),
+      border: default_rect(),
+      children: [],
+    }
+  }
+
   // Determine the containing block (grid area) for the absolute item
   // If grid-column/row are specified, use those grid lines
   // Otherwise, use the padding box of the container
@@ -3209,9 +3224,9 @@ fn layout_absolute_child(
   let inset_top = resolve_inset(style.inset.top, area_height)
   let inset_bottom = resolve_inset(style.inset.bottom, area_height)
 
-  // Determine size
+  // Determine initial size
   // Priority: explicit width > insets > intrinsic
-  let width = match style.width {
+  let initial_width = match style.width {
     @types.Length(w) => Some(w)
     @types.Percent(p) => Some(area_width * p)
     @types.Auto =>
@@ -3224,7 +3239,7 @@ fn layout_absolute_child(
       }
   }
 
-  let height = match style.height {
+  let initial_height = match style.height {
     @types.Length(h) => Some(h)
     @types.Percent(p) => Some(area_height * p)
     @types.Auto =>
@@ -3237,24 +3252,112 @@ fn layout_absolute_child(
       }
   }
 
+  // Resolve min/max constraints for aspect ratio calculation
+  let min_w = match style.min_width {
+    @types.Length(v) => v
+    @types.Percent(p) => area_width * p
+    @types.Auto => 0.0
+  }
+  let max_w = match style.max_width {
+    @types.Length(v) => v
+    @types.Percent(p) => area_width * p
+    @types.Auto => @double.infinity
+  }
+  let min_h = match style.min_height {
+    @types.Length(v) => v
+    @types.Percent(p) => area_height * p
+    @types.Auto => 0.0
+  }
+  let max_h = match style.max_height {
+    @types.Length(v) => v
+    @types.Percent(p) => area_height * p
+    @types.Auto => @double.infinity
+  }
+
+  // Apply aspect ratio to calculate missing dimension
+  let (width, height) = @types.resolve_dimensions_with_aspect_ratio(
+    initial_width,
+    initial_height,
+    style.aspect_ratio,
+    min_w,
+    max_w,
+    min_h,
+    max_h,
+  )
+
   // Compute intrinsic size if needed
-  let (final_width, final_height, child_inner) = match (width, height) {
+  let (child_width, child_height, child_inner) = match (width, height) {
     (Some(w), Some(h)) => {
       let inner = compute_child_layout(child, w, h)
       (w, h, inner)
     }
     (Some(w), None) => {
       let inner = compute_child_layout(child, w, 1.0e10)
-      (w, inner.height, inner)
+      // Apply aspect_ratio to intrinsic size
+      let h = match style.aspect_ratio {
+        Some(ar) if ar > 0.0 => w / ar
+        _ => inner.height
+      }
+      (w, h, inner)
     }
     (None, Some(h)) => {
       let inner = compute_child_layout(child, 1.0e10, h)
-      (inner.width, h, inner)
+      // Apply aspect_ratio to intrinsic size
+      let w = match style.aspect_ratio {
+        Some(ar) if ar > 0.0 => h * ar
+        _ => inner.width
+      }
+      (w, h, inner)
     }
     (None, None) => {
       let inner = compute_child_layout(child, 1.0e10, 1.0e10)
-      (inner.width, inner.height, inner)
+      // Apply aspect_ratio to intrinsic size
+      match style.aspect_ratio {
+        Some(ar) if ar > 0.0 => {
+          let w = inner.width
+          let h = w / ar
+          (w, h, inner)
+        }
+        _ => (inner.width, inner.height, inner)
+      }
     }
+  }
+
+  // Apply min/max constraints
+  let final_width = clamp_value(child_width, min_w, max_w)
+  let final_height = clamp_value(child_height, min_h, max_h)
+
+  // Re-apply aspect ratio after min/max constraints
+  let (final_width, final_height) = match style.aspect_ratio {
+    Some(ar) if ar > 0.0 => {
+      // Check if width or height has constraint
+      let width_has_constraint = match style.max_width {
+        @types.Length(_) => true
+        @types.Percent(_) => true
+        @types.Auto =>
+          match style.min_width {
+            @types.Length(_) => true
+            @types.Percent(_) => true
+            @types.Auto => false
+          }
+      }
+      let height_has_constraint = match style.max_height {
+        @types.Length(_) => true
+        @types.Percent(_) => true
+        @types.Auto =>
+          match style.min_height {
+            @types.Length(_) => true
+            @types.Percent(_) => true
+            @types.Auto => false
+          }
+      }
+      if height_has_constraint && not(width_has_constraint) {
+        (final_height * ar, final_height)
+      } else {
+        (final_width, final_width / ar)
+      }
+    }
+    _ => (final_width, final_height)
   }
 
   // Determine position (including margin)
@@ -3286,6 +3389,18 @@ fn layout_absolute_child(
     padding: default_rect(),
     border: default_rect(),
     children: child_inner.children,
+  }
+}
+
+///|
+/// Clamp a value between min and max
+fn clamp_value(value : Double, min_val : Double, max_val : Double) -> Double {
+  if value < min_val {
+    min_val
+  } else if value > max_val {
+    max_val
+  } else {
+    value
   }
 }
 

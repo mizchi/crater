@@ -1,16 +1,147 @@
 ///|
-fn max(a : Double, b : Double) -> Double {
-  if a > b {
-    a
+/// Create a zero-sized layout for a node (used for display:none)
+/// Recursively creates zero layouts for all descendants
+fn create_zero_layout(node : @node.Node) -> @node.Layout {
+  let zero_rect : @types.Rect[Double] = {
+    left: 0.0,
+    right: 0.0,
+    top: 0.0,
+    bottom: 0.0,
+  }
+  let children : Array[@node.Layout] = []
+  for i = 0; i < node.children.length(); i = i + 1 {
+    children.push(create_zero_layout(node.children[i]))
+  }
+  {
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width: 0.0,
+    height: 0.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    children,
+  }
+}
+
+///|
+/// Collapse two margins according to CSS rules:
+/// - Both positive: use the larger one
+/// - Both negative: use the more negative (smaller) one
+/// - Mixed: add them (positive + negative)
+fn collapse_margins(m1 : Double, m2 : Double) -> Double {
+  if m1 >= 0.0 && m2 >= 0.0 {
+    @types.max(m1, m2)
+  } else if m1 <= 0.0 && m2 <= 0.0 {
+    @types.min(m1, m2)
   } else {
-    b
+    m1 + m2
+  }
+}
+
+///|
+/// Collapsed margins that escape from a child element
+priv struct CollapsedMargins {
+  top : Double? // Margin that escapes upward
+  bottom : Double? // Margin that escapes downward
+}
+
+///|
+/// Internal layout result with collapsed margin tracking
+priv struct LayoutWithCollapse {
+  layout : @node.Layout
+  collapsed : CollapsedMargins
+}
+
+///|
+/// Check if element can collapse through (zero height, no border/padding)
+fn can_collapse_through(
+  height : Double,
+  border : @types.Rect[Double],
+  padding : @types.Rect[Double],
+) -> Bool {
+  height == 0.0 && border.top == 0.0 && border.bottom == 0.0 && padding.top ==
+  0.0 && padding.bottom == 0.0
+}
+
+///|
+/// Compute layout with collapse at root level (no parent to escape to)
+fn compute_root_layout(
+  node : @node.Node,
+  ctx : @node.LayoutContext,
+  warnings : Array[@node.LayoutWarning],
+) -> @node.Layout {
+  let result = compute_with_collapse(node, ctx, warnings)
+  let layout = result.layout
+
+  // At root level, escaped margins position children and add to height
+  match result.collapsed.top {
+    Some(escaped_margin) => {
+      // Adjust first child position and height
+      if layout.children.length() > 0 {
+        // Need to adjust children positions by escaped margin
+        let adjusted_children : Array[@node.Layout] = []
+        for i = 0; i < layout.children.length(); i = i + 1 {
+          let child = layout.children[i]
+          // All children: shift by escaped margin
+          adjusted_children.push({
+            id: child.id,
+            x: child.x,
+            y: child.y + escaped_margin,
+            width: child.width,
+            height: child.height,
+            margin: child.margin,
+            padding: child.padding,
+            border: child.border,
+            children: child.children,
+          })
+        }
+        // Calculate new height including escaped top margin
+        let escaped_bottom = match result.collapsed.bottom {
+          Some(m) => m
+          None => 0.0
+        }
+        let new_height = layout.height + escaped_margin + escaped_bottom
+        {
+          id: layout.id,
+          x: layout.x,
+          y: layout.y,
+          width: layout.width,
+          height: new_height,
+          margin: layout.margin,
+          padding: layout.padding,
+          border: layout.border,
+          children: adjusted_children,
+        }
+      } else {
+        layout
+      }
+    }
+    None => {
+      // No escaped top margin, just handle bottom
+      match result.collapsed.bottom {
+        Some(escaped_margin) => {
+          {
+            id: layout.id,
+            x: layout.x,
+            y: layout.y,
+            width: layout.width,
+            height: layout.height + escaped_margin,
+            margin: layout.margin,
+            padding: layout.padding,
+            border: layout.border,
+            children: layout.children,
+          }
+        }
+        None => layout
+      }
+    }
   }
 }
 
 ///|
 /// Resolve a Rect[Dimension] (margin/padding/border) to Rect[Double]
-/// CSS spec: percentage values are ALWAYS relative to parent's WIDTH
-/// (even for top/bottom margin/padding)
 fn resolve_rect(
   rect : @types.Rect[@types.Dimension],
   parent_width : Double,
@@ -30,7 +161,7 @@ pub fn compute_with_warnings(
   ctx : @node.LayoutContext,
 ) -> @node.LayoutResult {
   let warnings : Array[@node.LayoutWarning] = []
-  let layout = compute_internal(node, ctx, warnings)
+  let layout = compute_root_layout(node, ctx, warnings)
   { layout, warnings }
 }
 
@@ -38,15 +169,16 @@ pub fn compute_with_warnings(
 /// Compute block layout for a node and its children
 pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let warnings : Array[@node.LayoutWarning] = []
-  compute_internal(node, ctx, warnings)
+  compute_root_layout(node, ctx, warnings)
 }
 
 ///|
-fn compute_internal(
+/// Internal function that computes layout with margin collapse tracking
+fn compute_with_collapse(
   node : @node.Node,
   ctx : @node.LayoutContext,
   warnings : Array[@node.LayoutWarning],
-) -> @node.Layout {
+) -> LayoutWithCollapse {
   let style = node.style
 
   // Check for unsupported features
@@ -54,21 +186,28 @@ fn compute_internal(
     @style.Left | @style.Right => warnings.push(@node.UnsupportedFloat(node.id))
     @style.None => ()
   }
-  match style.position {
-    @style.Absolute => warnings.push(@node.UnsupportedPosition(node.id))
-    @style.Relative => ()
-  }
 
   // Resolve box model
-  // CSS spec: percentage margins/padding are always relative to parent's WIDTH
   let parent_width = ctx.available_width
   let parent_height = ctx.available_height.unwrap_or(0.0)
   let margin = resolve_rect(style.margin, parent_width)
   let padding = resolve_rect(style.padding, parent_width)
   let border = resolve_rect(style.border, parent_width)
 
-  // Box width (border-box model, like CSS box-sizing: border-box)
-  // This is the total width including padding and border
+  // Check if margins can collapse with children
+  // Collapse blocked by: border, padding, or overflow hidden/scroll/auto
+  let overflow_blocks = match (style.overflow_x, style.overflow_y) {
+    (@style.Overflow::Visible, @style.Overflow::Visible) => false
+    _ => true
+  }
+  let can_collapse_top = border.top == 0.0 && padding.top == 0.0 && not(
+    overflow_blocks,
+  )
+  let can_collapse_bottom = border.bottom == 0.0 && padding.bottom == 0.0 && not(
+    overflow_blocks,
+  )
+
+  // Box width
   let mut box_width = match style.width {
     @types.Length(w) => w
     @types.Percent(p) => parent_width * p
@@ -102,7 +241,7 @@ fn compute_internal(
     padding.horizontal_sum() -
     border.horizontal_sum()
 
-  // Calculate available height for children based on parent's specified height
+  // Calculate available height for children
   let child_available_height : Double? = match style.height {
     @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
     @types.Percent(p) =>
@@ -110,40 +249,118 @@ fn compute_internal(
     @types.Auto => None
   }
 
-  // Layout children with margin collapsing
-  let child_layouts : Array[@node.Layout] = Array::new(
-    capacity=node.children.length(),
-  )
-  let mut current_y = 0.0
-  let mut prev_margin_bottom = 0.0
-  let mut is_first_visible = true
+  // Map to store layouts by original index
+  let layout_map : Map[Int, @node.Layout] = {}
+
+  // Collect flow children with their collapse info, original styles, and indices
+  let flow_children : Array[LayoutWithCollapse] = []
+  let flow_styles : Array[@style.Style] = []
+  let flow_indices : Array[Int] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
-
-    // Skip children with display: none
     if child.style.display == @style.None {
+      // Add zero-sized layout for display:none children (including descendants)
+      layout_map[i] = create_zero_layout(child)
+      continue
+    }
+    if child.style.position == @style.Absolute {
       continue
     }
     let child_ctx : @node.LayoutContext = {
       available_width: child_available_width,
       available_height: child_available_height,
     }
-    let child_layout = compute_internal(child, child_ctx, warnings)
+    flow_children.push(compute_with_collapse(child, child_ctx, warnings))
+    flow_styles.push(child.style)
+    flow_indices.push(i)
+  }
 
-    // Calculate collapsed margin between siblings
-    // Adjacent vertical margins collapse to the maximum of the two
-    let collapsed_margin = if is_first_visible {
-      child_layout.margin.top
-    } else {
-      max(prev_margin_bottom, child_layout.margin.top)
+  // Track escaped margins for parent
+  let mut escaped_top : Double? = None
+  let mut escaped_bottom : Double? = None
+  let mut current_y = 0.0
+  let mut prev_margin_bottom = 0.0
+
+  for i = 0; i < flow_children.length(); i = i + 1 {
+    let child_result = flow_children[i]
+    let child_layout = child_result.layout
+    let child_collapsed = child_result.collapsed
+    let is_first = i == 0
+    let is_last = i == flow_children.length() - 1
+
+    // Get effective margins (including any that escaped from grandchildren)
+    let effective_margin_top = match child_collapsed.top {
+      Some(escaped) => collapse_margins(child_layout.margin.top, escaped)
+      None => child_layout.margin.top
     }
-    is_first_visible = false
+    let effective_margin_bottom = match child_collapsed.bottom {
+      Some(escaped) => collapse_margins(child_layout.margin.bottom, escaped)
+      None => child_layout.margin.bottom
+    }
 
-    // Position child relative to content area
+    // Check if child collapses through
+    // Blocked by: height, border, padding, overflow, aspect_ratio
+    let child_style = flow_styles[i]
+    let child_overflow_blocks = match (child_style.overflow_x, child_style.overflow_y) {
+      (@style.Overflow::Visible, @style.Overflow::Visible) => false
+      _ => true
+    }
+    let child_has_aspect_ratio = match child_style.aspect_ratio {
+      Some(_) => true
+      None => false
+    }
+    let collapses_through = can_collapse_through(
+      child_layout.height,
+      child_layout.border,
+      child_layout.padding,
+    ) && not(child_overflow_blocks) && not(child_has_aspect_ratio)
+
+    // Calculate position and track escaping margins
+    let child_y : Double = if is_first {
+      if can_collapse_top {
+        // First child margin escapes to parent
+        if collapses_through {
+          escaped_top = Some(collapse_margins(effective_margin_top, effective_margin_bottom))
+          prev_margin_bottom = effective_margin_bottom
+        } else {
+          escaped_top = Some(effective_margin_top)
+          prev_margin_bottom = effective_margin_bottom
+        }
+        padding.top + border.top // Child at y=0 relative to content
+      } else {
+        // Margin blocked by border/padding
+        if collapses_through {
+          prev_margin_bottom = collapse_margins(effective_margin_top, effective_margin_bottom)
+        } else {
+          prev_margin_bottom = effective_margin_bottom
+        }
+        current_y = effective_margin_top
+        effective_margin_top + padding.top + border.top
+      }
+    } else {
+      // Sibling collapse
+      if collapses_through {
+        // Collapse-through: element positioned after collapsed margin gap
+        let all_collapsed = collapse_margins(
+          prev_margin_bottom,
+          collapse_margins(effective_margin_top, effective_margin_bottom),
+        )
+        prev_margin_bottom = all_collapsed
+        // Position at the same y as where next sibling would be
+        current_y + all_collapsed + padding.top + border.top
+      } else {
+        let collapsed = collapse_margins(prev_margin_bottom, effective_margin_top)
+        current_y = current_y + collapsed
+        prev_margin_bottom = effective_margin_bottom
+        current_y + padding.top + border.top
+      }
+    }
+
+    // Position child and store in map with original index
     let positioned_layout : @node.Layout = {
       id: child_layout.id,
       x: child_layout.margin.left + padding.left + border.left,
-      y: current_y + collapsed_margin + padding.top + border.top,
+      y: child_y,
       width: child_layout.width,
       height: child_layout.height,
       margin: child_layout.margin,
@@ -151,19 +368,39 @@ fn compute_internal(
       border: child_layout.border,
       children: child_layout.children,
     }
-    child_layouts.push(positioned_layout)
-    current_y = current_y + collapsed_margin + child_layout.height
-    prev_margin_bottom = child_layout.margin.bottom
+    layout_map[flow_indices[i]] = positioned_layout
+
+    // Update current_y (only if not collapsing through)
+    if not(collapses_through) {
+      if is_first && can_collapse_top {
+        current_y = child_layout.height
+      } else if is_first {
+        current_y = effective_margin_top + child_layout.height
+      } else {
+        current_y = current_y + child_layout.height
+      }
+    }
+
+    // Handle last child's bottom margin escape
+    if is_last && can_collapse_bottom {
+      escaped_bottom = Some(prev_margin_bottom)
+    }
   }
 
-  // Add final margin to content height
-  current_y = current_y + prev_margin_bottom
+  // Calculate content height
+  let content_height = if flow_children.length() == 0 {
+    0.0
+  } else if can_collapse_bottom {
+    @types.max(0.0, current_y) // Don't include escaped bottom margin
+  } else {
+    @types.max(0.0, current_y + prev_margin_bottom)
+  }
 
-  // Box height (border-box model)
+  // Box height
   let mut box_height = match style.height {
     @types.Length(h) => h
     @types.Percent(p) => parent_height * p
-    @types.Auto => current_y + padding.vertical_sum() + border.vertical_sum()
+    @types.Auto => content_height + padding.vertical_sum() + border.vertical_sum()
   }
 
   // Apply min/max height constraints
@@ -187,7 +424,32 @@ fn compute_internal(
     }
     @types.Auto => ()
   }
-  {
+
+  // Now handle absolute positioned children
+  for i = 0; i < node.children.length(); i = i + 1 {
+    let child = node.children[i]
+    if child.style.position == @style.Absolute {
+      let abs_layout = layout_absolute_child(
+        child,
+        box_width,
+        box_height,
+        border,
+        warnings,
+      )
+      layout_map[i] = abs_layout
+    }
+  }
+
+  // Assemble child_layouts in original order
+  let child_layouts : Array[@node.Layout] = []
+  for i = 0; i < node.children.length(); i = i + 1 {
+    match layout_map.get(i) {
+      Some(layout) => child_layouts.push(layout)
+      None => () // Should not happen
+    }
+  }
+
+  let layout : @node.Layout = {
     id: node.id,
     x: 0.0,
     y: 0.0,
@@ -198,4 +460,293 @@ fn compute_internal(
     border,
     children: child_layouts,
   }
+
+  { layout, collapsed: { top: escaped_top, bottom: escaped_bottom } }
+}
+
+///|
+/// Layout an absolutely positioned child within a block container
+fn layout_absolute_child(
+  child : @node.Node,
+  container_width : Double,
+  container_height : Double,
+  parent_border : @types.Rect[Double],
+  warnings : Array[@node.LayoutWarning],
+) -> @node.Layout {
+  let child_style = child.style
+
+  // Handle display:none - return zero-sized layout
+  if child_style.display == @style.None {
+    let zero_rect : @types.Rect[Double] = {
+      left: 0.0,
+      right: 0.0,
+      top: 0.0,
+      bottom: 0.0,
+    }
+    return {
+      id: child.id,
+      x: 0.0,
+      y: 0.0,
+      width: 0.0,
+      height: 0.0,
+      margin: zero_rect,
+      padding: zero_rect,
+      border: zero_rect,
+      children: [],
+    }
+  }
+
+  // Resolve margin values
+  let child_margin = resolve_rect(child_style.margin, container_width)
+  let margin_left = child_margin.left
+  let margin_right = child_margin.right
+  let margin_top = child_margin.top
+  let margin_bottom = child_margin.bottom
+
+  // Resolve inset values
+  let inset_left = child_style.inset.left.resolve(container_width)
+  let inset_right = child_style.inset.right.resolve(container_width)
+  let inset_top = child_style.inset.top.resolve(container_height)
+  let inset_bottom = child_style.inset.bottom.resolve(container_height)
+
+  // Calculate initial child width (before min/max constraints)
+  let initial_width : Double? = match child_style.width {
+    @types.Length(w) => Some(w)
+    @types.Percent(p) => Some(container_width * p)
+    @types.Auto =>
+      // If both left and right are set, calculate from insets
+      match (inset_left, inset_right) {
+        (Some(l), Some(r)) => {
+          let w = container_width - l - r - margin_left - margin_right
+          Some(if w > 0.0 { w } else { 0.0 })
+        }
+        _ => None // Need intrinsic size
+      }
+  }
+
+  // Calculate initial child height (before min/max constraints)
+  let initial_height : Double? = match child_style.height {
+    @types.Length(h) => Some(h)
+    @types.Percent(p) => Some(container_height * p)
+    @types.Auto =>
+      // If both top and bottom are set, calculate from insets
+      match (inset_top, inset_bottom) {
+        (Some(t), Some(b)) => {
+          let h = container_height - t - b - margin_top - margin_bottom
+          Some(if h > 0.0 { h } else { 0.0 })
+        }
+        _ => None // Need intrinsic size
+      }
+  }
+
+  // Resolve min/max constraints for aspect ratio calculation
+  let min_w = match child_style.min_width {
+    @types.Length(v) => v
+    @types.Percent(p) => container_width * p
+    @types.Auto => 0.0
+  }
+  let max_w = match child_style.max_width {
+    @types.Length(v) => v
+    @types.Percent(p) => container_width * p
+    @types.Auto => @double.infinity
+  }
+  let min_h = match child_style.min_height {
+    @types.Length(v) => v
+    @types.Percent(p) => container_height * p
+    @types.Auto => 0.0
+  }
+  let max_h = match child_style.max_height {
+    @types.Length(v) => v
+    @types.Percent(p) => container_height * p
+    @types.Auto => @double.infinity
+  }
+
+  // Apply aspect ratio to calculate missing dimension
+  let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
+    initial_width,
+    initial_height,
+    child_style.aspect_ratio,
+    min_w,
+    max_w,
+    min_h,
+    max_h,
+  )
+
+  // Compute intrinsic size if needed, and get child's inner layout
+  let (child_width, child_height, child_inner) = match (initial_width, initial_height) {
+    (Some(w), Some(h)) => {
+      let inner = compute_nested(child, w, Some(h), warnings)
+      (w, h, inner)
+    }
+    (Some(w), None) => {
+      let inner = compute_nested(child, w, None, warnings)
+      // Apply aspect_ratio to intrinsic size
+      let h = match child_style.aspect_ratio {
+        Some(ar) if ar > 0.0 => w / ar
+        _ => inner.height
+      }
+      (w, h, inner)
+    }
+    (None, Some(h)) => {
+      let inner = compute_nested(child, container_width, Some(h), warnings)
+      // Apply aspect_ratio to intrinsic size
+      let w = match child_style.aspect_ratio {
+        Some(ar) if ar > 0.0 => h * ar
+        _ => inner.width
+      }
+      (w, h, inner)
+    }
+    (None, None) => {
+      let inner = compute_nested(child, container_width, Some(container_height), warnings)
+      // Apply aspect_ratio to intrinsic size
+      match child_style.aspect_ratio {
+        Some(ar) if ar > 0.0 => {
+          let w = inner.width
+          let h = w / ar
+          (w, h, inner)
+        }
+        _ => (inner.width, inner.height, inner)
+      }
+    }
+  }
+
+  // Apply min/max constraints
+  let child_width = @types.clamp(child_width, min_w, max_w)
+  let child_height = @types.clamp(child_height, min_h, max_h)
+
+  // Re-apply aspect ratio after min/max constraints
+  let (child_width, child_height) = match child_style.aspect_ratio {
+    Some(ar) if ar > 0.0 => {
+      // Check if width or height has constraint
+      let width_has_constraint = match child_style.max_width {
+        @types.Length(_) => true
+        @types.Percent(_) => true
+        @types.Auto =>
+          match child_style.min_width {
+            @types.Length(_) => true
+            @types.Percent(_) => true
+            @types.Auto => false
+          }
+      }
+      let height_has_constraint = match child_style.max_height {
+        @types.Length(_) => true
+        @types.Percent(_) => true
+        @types.Auto =>
+          match child_style.min_height {
+            @types.Length(_) => true
+            @types.Percent(_) => true
+            @types.Auto => false
+          }
+      }
+      if height_has_constraint && not(width_has_constraint) {
+        (child_height * ar, child_height)
+      } else {
+        (child_width, child_width / ar)
+      }
+    }
+    _ => (child_width, child_height)
+  }
+
+  // Calculate position
+  // Note: For absolute positioning, the containing block is the padding box
+  let child_x = match (inset_left, inset_right) {
+    (Some(l), Some(_r)) => {
+      // Both insets specified: use left inset (CSS over-constrained behavior)
+      l + margin_left + parent_border.left
+    }
+    (Some(l), None) => l + margin_left + parent_border.left
+    (None, Some(r)) =>
+      container_width - child_width - r - margin_right - parent_border.right
+    (None, None) => margin_left + parent_border.left
+  }
+
+  let child_y = match (inset_top, inset_bottom) {
+    (Some(t), Some(_b)) => {
+      // Both insets specified: use top inset (CSS over-constrained behavior)
+      t + margin_top + parent_border.top
+    }
+    (Some(t), None) => t + margin_top + parent_border.top
+    (None, Some(b)) =>
+      container_height - child_height - b - margin_bottom - parent_border.bottom
+    (None, None) => margin_top + parent_border.top
+  }
+
+  {
+    id: child.id,
+    x: child_x,
+    y: child_y,
+    width: child_width,
+    height: child_height,
+    margin: child_margin,
+    padding: child_inner.padding,
+    border: child_inner.border,
+    children: child_inner.children,
+  }
+}
+
+///|
+/// Compute nested children for a block item
+fn compute_nested(
+  node : @node.Node,
+  available_width : Double,
+  available_height : Double?,
+  warnings : Array[@node.LayoutWarning],
+) -> @node.Layout {
+  let style = node.style
+  let padding = resolve_rect(style.padding, available_width)
+  let border = resolve_rect(style.border, available_width)
+
+  // For leaf nodes, return intrinsic size based on style
+  if node.children.length() == 0 {
+    // Get intrinsic size from MeasureFunc if available
+    let intrinsic = match node.measure {
+      Some(mf) => {
+        let available_h = available_height.unwrap_or(0.0)
+        Some((mf.func)(available_width, available_h))
+      }
+      None => None
+    }
+
+    // Check if explicit size is set, otherwise use intrinsic or fallback
+    let width = match style.width {
+      @types.Length(w) => w
+      @types.Percent(p) => available_width * p
+      @types.Auto =>
+        match intrinsic {
+          Some(intr) => intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
+          None => padding.horizontal_sum() + border.horizontal_sum()
+        }
+    }
+    let height = match style.height {
+      @types.Length(h) => h
+      @types.Percent(p) =>
+        match available_height {
+          Some(ah) => ah * p
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      @types.Auto =>
+        match intrinsic {
+          Some(intr) => intr.max_height + padding.vertical_sum() + border.vertical_sum()
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+    }
+    return {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width,
+      height,
+      margin: @types.Rect::zero(),
+      padding,
+      border,
+      children: [],
+    }
+  }
+
+  // For containers, recurse
+  let ctx : @node.LayoutContext = {
+    available_width,
+    available_height,
+  }
+  compute_with_collapse(node, ctx, warnings).layout
 }

@@ -97,6 +97,8 @@ interface NodeStyle {
   columnGap?: Dimension;
   // Inset
   inset?: Edges;
+  // Aspect ratio
+  aspectRatio?: number;
 }
 
 interface MeasureData {
@@ -431,6 +433,20 @@ function describeElement(el, parentRect) {
       top: parseDimension(getStyle('top')),
       bottom: parseDimension(getStyle('bottom'))
     },
+    // Aspect ratio
+    aspectRatio: (() => {
+      const ar = getStyle('aspectRatio') || getStyle('aspect-ratio');
+      if (!ar || ar === 'auto') return undefined;
+      // Handle "3 / 1" or "3/1" or just "3"
+      if (ar.includes('/')) {
+        const parts = ar.split('/').map(s => parseFloat(s.trim()));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          return parts[0] / parts[1];
+        }
+      }
+      const num = parseFloat(ar);
+      return isNaN(num) ? undefined : num;
+    })(),
   };
 
   // Clean up undefined and auto-only values

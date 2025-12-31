@@ -447,15 +447,17 @@ test "block_warns_on_float" {
 }
 
 ///|
-test "block_warns_on_absolute" {
+test "block_absolute_positioning_works" {
   let default_style = @style.Style::default()
   let abs_child_style = {
     ..default_style,
     position: @style.Absolute,
+    width: @types.Length(50.0),
     height: @types.Length(30.0),
+    inset: { left: @types.Length(10.0), right: @types.Auto, top: @types.Length(20.0), bottom: @types.Auto },
   }
   let abs_child = @node.Node::leaf("abs-child", abs_child_style)
-  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root_style = { ..default_style, width: @types.Length(100.0), height: @types.Length(100.0) }
   let root = @node.Node::new("root", root_style, [abs_child])
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
@@ -463,9 +465,14 @@ test "block_warns_on_absolute" {
   }
   let result = compute_with_warnings(root, ctx)
 
-  // Warning emitted for position: absolute
-  inspect(result.warnings.length(), content="1")
-  inspect(result.warnings[0], content="UnsupportedPosition(\"abs-child\")")
+  // No warnings for absolute positioning now
+  inspect(result.warnings.length(), content="0")
+
+  // Absolute child positioned correctly
+  inspect(result.layout.children[0].x, content="10")
+  inspect(result.layout.children[0].y, content="20")
+  inspect(result.layout.children[0].width, content="50")
+  inspect(result.layout.children[0].height, content="30")
 }
 
 ///|
@@ -501,9 +508,14 @@ test "block_display_none" {
   inspect(layout.children[0].y, content="0")
   inspect(layout.children[0].height, content="10")
 
-  // Second visible child should be at y=10 (skipping the display:none child)
-  inspect(layout.children[1].y, content="10")
-  inspect(layout.children[1].height, content="10")
+  // Display:none child is in output at original index, but has 0 size
+  inspect(layout.children[1].y, content="0")
+  inspect(layout.children[1].width, content="0")
+  inspect(layout.children[1].height, content="0")
+
+  // Third child at y=10 (after visible first child)
+  inspect(layout.children[2].y, content="10")
+  inspect(layout.children[2].height, content="10")
 }
 
 ///|
@@ -805,12 +817,19 @@ test "block_multiple_display_none" {
   }
   let layout = compute(root, ctx)
 
-  // Only visible children: 20 + 30 = 50
+  // Only visible children contribute to height: 20 + 30 = 50
   inspect(layout.height, content="50")
-  inspect(layout.children.length(), content="2")
+  // All children are in output (including display:none)
+  inspect(layout.children.length(), content="4")
+  // visible1
   inspect(layout.children[0].height, content="20")
-  inspect(layout.children[1].height, content="30")
-  inspect(layout.children[1].y, content="20")
+  // hidden1 (display:none)
+  inspect(layout.children[1].height, content="0")
+  // hidden2 (display:none)
+  inspect(layout.children[2].height, content="0")
+  // visible2 at y=20 (after visible1)
+  inspect(layout.children[3].height, content="30")
+  inspect(layout.children[3].y, content="20")
 }
 
 ///|

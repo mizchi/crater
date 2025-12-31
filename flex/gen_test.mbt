@@ -24,6 +24,7 @@ test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     inset: { left: @types.Percent(0.0500), right: @types.Percent(0.0500), top: @types.Percent(0.0500), bottom: @types.Percent(0.0500) },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -56,6 +57,7 @@ test "taffy/absolute_aspect_ratio_fill_height" {
     position: @style.Position::Absolute,
     width: @types.Percent(0.5000),
     inset: { left: @types.Percent(0.0500), right: @types.Auto, top: @types.Percent(0.0500), bottom: @types.Auto },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -87,6 +89,7 @@ test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     inset: { left: @types.Percent(0.1000), right: @types.Percent(0.1000), top: @types.Percent(0.0500), bottom: @types.Auto },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -118,6 +121,7 @@ test "taffy/absolute_aspect_ratio_fill_max_height" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     max_width: @types.Length(50.0),
+    aspect_ratio: Some(3.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -154,6 +158,7 @@ test "taffy/absolute_aspect_ratio_fill_max_width" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     max_height: @types.Length(50.0),
+    aspect_ratio: Some(0.5000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -190,6 +195,7 @@ test "taffy/absolute_aspect_ratio_fill_min_height" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     min_width: @types.Length(50.0),
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -221,6 +227,7 @@ test "taffy/absolute_aspect_ratio_fill_min_width" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     min_height: @types.Length(50.0),
+    aspect_ratio: Some(0.5000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -253,6 +260,7 @@ test "taffy/absolute_aspect_ratio_fill_width" {
     position: @style.Position::Absolute,
     height: @types.Percent(0.2000),
     inset: { left: @types.Percent(0.0500), right: @types.Auto, top: @types.Percent(0.0500), bottom: @types.Auto },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -284,6 +292,7 @@ test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
     ..@style.Style::default(),
     position: @style.Position::Absolute,
     inset: { left: @types.Auto, right: @types.Auto, top: @types.Percent(0.3000), bottom: @types.Percent(0.5000) },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -316,6 +325,7 @@ test "taffy/absolute_aspect_ratio_height_overrides_inset" {
     position: @style.Position::Absolute,
     height: @types.Percent(0.1000),
     inset: { left: @types.Auto, right: @types.Auto, top: @types.Percent(0.3000), bottom: @types.Percent(0.5000) },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -348,6 +358,7 @@ test "taffy/absolute_aspect_ratio_width_overrides_inset" {
     position: @style.Position::Absolute,
     width: @types.Percent(0.4000),
     inset: { left: @types.Percent(0.1000), right: @types.Percent(0.1000), top: @types.Percent(0.0500), bottom: @types.Auto },
+    aspect_ratio: Some(3.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8950,6 +8961,7 @@ test "taffy/aspect_ratio_flex_column_fill_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8982,6 +8994,7 @@ test "taffy/aspect_ratio_flex_column_fill_max_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9019,6 +9032,7 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_height: @types.Length(20.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9056,6 +9070,7 @@ test "taffy/aspect_ratio_flex_column_fill_min_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     min_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9088,6 +9103,7 @@ test "taffy/aspect_ratio_flex_column_fill_min_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     min_height: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9120,6 +9136,7 @@ test "taffy/aspect_ratio_flex_column_fill_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9151,6 +9168,7 @@ test "taffy/aspect_ratio_flex_column_fill_width_flex" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9182,6 +9200,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9213,6 +9232,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9249,6 +9269,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_height: @types.Length(20.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9285,6 +9306,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9316,6 +9338,7 @@ test "taffy/aspect_ratio_flex_row_fill_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9347,6 +9370,7 @@ test "taffy/aspect_ratio_flex_row_fill_max_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9383,6 +9407,7 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_height: @types.Length(20.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9419,6 +9444,7 @@ test "taffy/aspect_ratio_flex_row_fill_min_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     min_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9450,6 +9476,7 @@ test "taffy/aspect_ratio_flex_row_fill_min_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     min_height: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9481,6 +9508,7 @@ test "taffy/aspect_ratio_flex_row_fill_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9512,6 +9540,7 @@ test "taffy/aspect_ratio_flex_row_fill_width_flex" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(50.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9542,6 +9571,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9572,6 +9602,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_width: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9607,6 +9638,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     max_height: @types.Length(20.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -9642,6 +9674,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
   let root_child0_style = {
     ..@style.Style::default(),
     height: @types.Length(40.0),
+    aspect_ratio: Some(2.0000),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
