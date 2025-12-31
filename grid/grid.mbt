@@ -36,10 +36,13 @@ fn resolve_min_track_size(
   available_size : Double,
   min_content_size : Double,
   max_content_size : Double,
+  size_is_definite~ : Bool = true,
 ) -> Double {
   match min_track {
     @style.MinTrackSizing::Length(v) => v
-    @style.MinTrackSizing::Percent(p) => available_size * p
+    @style.MinTrackSizing::Percent(p) =>
+      // In indefinite containers, percent behaves as auto (0.0)
+      if size_is_definite { available_size * p } else { 0.0 }
     @style.MinTrackSizing::Auto => 0.0 // Auto in minmax uses 0 as minimum
     @style.MinTrackSizing::MinContent => min_content_size
     @style.MinTrackSizing::MaxContent => max_content_size
@@ -53,10 +56,13 @@ fn resolve_max_track_size(
   available_size : Double,
   min_content_size : Double,
   max_content_size : Double,
+  size_is_definite~ : Bool = true,
 ) -> Double {
   match max_track {
     @style.MaxTrackSizing::Length(v) => v
-    @style.MaxTrackSizing::Percent(p) => available_size * p
+    @style.MaxTrackSizing::Percent(p) =>
+      // In indefinite containers, percent behaves as auto (max-content)
+      if size_is_definite { available_size * p } else { max_content_size }
     @style.MaxTrackSizing::Fr(_) => 1.0e10 // Fr in max position means flexible
     @style.MaxTrackSizing::Auto => 1.0e10
     @style.MaxTrackSizing::MinContent => min_content_size
@@ -444,7 +450,24 @@ fn compute_grid_layout_internal(
     let total_track_width = calculate_total_track_size(
       column_tracks, column_gap,
     )
-    let raw_width = total_track_width +
+
+    // For percent tracks in indefinite containers, use content-based sizing
+    let mut content_max_width = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      if child.style.display == @style.None {
+        continue
+      }
+      match child.style.width {
+        @types.Length(w) => if w > content_max_width { content_max_width = w }
+        _ => ()
+      }
+    }
+
+    // Use max of track-based and content-based size
+    let effective_width = max(total_track_width, content_max_width)
+
+    let raw_width = effective_width +
       padding_left +
       padding_right +
       border_left +
@@ -458,7 +481,24 @@ fn compute_grid_layout_internal(
   }
   let container_height = if height_is_auto {
     let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-    let raw_height = total_track_height +
+
+    // For percent tracks in indefinite containers, use content-based sizing
+    let mut content_max_height = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      if child.style.display == @style.None {
+        continue
+      }
+      match child.style.height {
+        @types.Length(h) => if h > content_max_height { content_max_height = h }
+        _ => ()
+      }
+    }
+
+    // Use max of track-based and content-based size
+    let effective_height = max(total_track_height, content_max_height)
+
+    let raw_height = effective_height +
       padding_top +
       padding_bottom +
       border_top +
@@ -470,6 +510,62 @@ fn compute_grid_layout_internal(
     // Enforce minimum size from padding + border
     if preliminary_height > min_height { preliminary_height } else { min_height }
   }
+
+  // Second pass: resolve percent tracks now that container size is known
+  // This is needed for indefinite containers with percent-based tracks
+  if width_is_auto {
+    let content_width = container_width - padding_left - padding_right - border_left - border_right
+    let mut pos = 0.0
+    for i = 0; i < column_tracks.length(); i = i + 1 {
+      let explicit_index = i - col_offset
+      let template = if explicit_index >= 0 && explicit_index < expanded_columns.length() {
+        expanded_columns[explicit_index]
+      } else {
+        @style.Auto
+      }
+      let min_content = if i < column_min_content.length() { column_min_content[i] } else { 0.0 }
+      let max_content = if i < column_max_content.length() { column_max_content[i] } else { 0.0 }
+      let new_size = match template {
+        @style.Percent(p) => content_width * p
+        @style.MinMax(min_track, @style.MaxTrackSizing::Percent(p)) => {
+          // CSS spec: when min > max in minmax(), min wins
+          let percent_size = content_width * p
+          let min_size = resolve_min_track_size(min_track, content_width, min_content, max_content, size_is_definite=true)
+          if min_size > percent_size { min_size } else { percent_size }
+        }
+        _ => column_tracks[i].size
+      }
+      column_tracks[i] = { position: pos, size: new_size, stretchable: column_tracks[i].stretchable }
+      pos = pos + new_size + column_gap
+    }
+  }
+  if height_is_auto {
+    let content_height = container_height - padding_top - padding_bottom - border_top - border_bottom
+    let mut pos = 0.0
+    for i = 0; i < row_tracks.length(); i = i + 1 {
+      let explicit_index = i - row_offset
+      let template = if explicit_index >= 0 && explicit_index < expanded_rows.length() {
+        expanded_rows[explicit_index]
+      } else {
+        @style.Auto
+      }
+      let min_content = if i < row_min_content.length() { row_min_content[i] } else { 0.0 }
+      let max_content = if i < row_max_content.length() { row_max_content[i] } else { 0.0 }
+      let new_size = match template {
+        @style.Percent(p) => content_height * p
+        @style.MinMax(min_track, @style.MaxTrackSizing::Percent(p)) => {
+          // CSS spec: when min > max in minmax(), min wins
+          let percent_size = content_height * p
+          let min_size = resolve_min_track_size(min_track, content_height, min_content, max_content, size_is_definite=true)
+          if min_size > percent_size { min_size } else { percent_size }
+        }
+        _ => row_tracks[i].size
+      }
+      row_tracks[i] = { position: pos, size: new_size, stretchable: row_tracks[i].stretchable }
+      pos = pos + new_size + row_gap
+    }
+  }
+
   let content_box_left = padding_left + border_left
   let content_box_top = padding_top + border_top
   let content_box_width = container_width -
@@ -1497,9 +1593,11 @@ fn resolve_tracks_with_implicit(
       @style.MinMax(min_track, max_track) => {
         let min_size = resolve_min_track_size(
           min_track, available_size, min_content, max_content,
+          size_is_definite=size_is_definite,
         )
         let max_size = resolve_max_track_size(
           max_track, available_size, min_content, max_content,
+          size_is_definite=size_is_definite,
         )
         // Base size depends on whether max is flexible or finite
         let base = if max_size < 1.0e9 {
