@@ -83,6 +83,8 @@ interface NodeStyle {
   gridAutoRows?: TrackSizing[];
   gridAutoFlow?: string;
   gridTemplateAreas?: string[];
+  justifyItems?: string;
+  justifySelf?: string;
   // Grid item
   gridColumn?: GridLine;
   gridRow?: GridLine;
@@ -391,6 +393,8 @@ function describeElement(el, parentRect) {
     alignItems: getStyle('alignItems') || getStyle('align-items') || undefined,
     alignContent: getStyle('alignContent') || getStyle('align-content') || undefined,
     alignSelf: getStyle('alignSelf') || getStyle('align-self') || undefined,
+    justifyItems: getStyle('justifyItems') || getStyle('justify-items') || undefined,
+    justifySelf: getStyle('justifySelf') || getStyle('justify-self') || undefined,
     flexGrow: getStyle('flexGrow') || getStyle('flex-grow') ? parseFloat(getStyle('flexGrow') || getStyle('flex-grow')) : undefined,
     flexShrink: getStyle('flexShrink') || getStyle('flex-shrink') ? parseFloat(getStyle('flexShrink') || getStyle('flex-shrink')) : undefined,
     flexBasis: parseDimension(getStyle('flexBasis') || getStyle('flex-basis')),

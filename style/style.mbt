@@ -197,6 +197,8 @@ pub(all) struct Style {
   grid_area : String? // Named area for item placement
   // justify-items for grid (different from justify-content)
   justify_items : Alignment
+  // justify-self for grid items (horizontal self-alignment)
+  justify_self : AlignSelf
 }
 
 ///|
@@ -257,5 +259,6 @@ pub fn Style::default() -> Style {
     grid_column: GridLine::auto(),
     grid_area: None,
     justify_items: Stretch,
+    justify_self: Auto,
   }
 }

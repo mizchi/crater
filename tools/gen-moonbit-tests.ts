@@ -68,6 +68,8 @@ interface NodeStyle {
   alignItems?: string;
   alignContent?: string;
   alignSelf?: string;
+  justifyItems?: string;
+  justifySelf?: string;
   flexGrow?: number;
   flexShrink?: number;
   flexBasis?: Dimension;
@@ -355,6 +357,12 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
   }
   if (style.alignSelf) {
     lines.push(`${indent}  align_self: ${alignSelfToMoonBit(style.alignSelf)},`);
+  }
+  if (style.justifyItems) {
+    lines.push(`${indent}  justify_items: ${alignmentToMoonBit(style.justifyItems)},`);
+  }
+  if (style.justifySelf) {
+    lines.push(`${indent}  justify_self: ${alignSelfToMoonBit(style.justifySelf)},`);
   }
 
   // Inset

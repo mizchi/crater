@@ -2236,8 +2236,8 @@ fn apply_alignment(
     @style.AlignSelf::Center => @style.Alignment::Center
     @style.AlignSelf::Stretch => @style.Alignment::Stretch
   }
-  // Use align_self for justify too (matches Taffy behavior)
-  let justify : @style.Alignment = match child_style.align_self {
+  // Use justify_self for horizontal alignment
+  let justify : @style.Alignment = match child_style.justify_self {
     @style.AlignSelf::Auto => container_style.justify_items
     @style.AlignSelf::Start => @style.Alignment::Start
     @style.AlignSelf::End => @style.Alignment::End
