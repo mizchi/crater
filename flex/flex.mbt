@@ -3,6 +3,13 @@
 // =============================================================================
 
 ///|
+/// Layout with DOM index for sorting
+priv struct IndexedLayout {
+  dom_index : Int
+  layout : @node.Layout
+}
+
+///|
 fn max(a : Double, b : Double) -> Double {
   if a > b {
     a
@@ -1055,8 +1062,9 @@ fn compute_internal(
 
   // Phase 4 & 5: Position items and build layouts
   // For multi-line (wrap), we need to process each line separately
-  let child_layouts : Array[@node.Layout] = Array::new(
-    capacity=flex_items.length(),
+  // Use IndexedLayout to preserve DOM order when mixing flex and absolute children
+  let indexed_layouts : Array[IndexedLayout] = Array::new(
+    capacity=child_count,
   )
 
   // Calculate total cross size for all lines (for auto height)
@@ -1399,7 +1407,7 @@ fn compute_internal(
           children: nested_layout.children,
         }
       }
-      child_layouts.push(child_layout)
+      indexed_layouts.push({ dom_index: item.index, layout: child_layout })
 
       // Update position for next item
       if is_reverse {
@@ -1500,6 +1508,13 @@ fn compute_internal(
       continue
     }
 
+    // Resolve margin values
+    let child_margin = resolve_rect(child_style.margin, container_width)
+    let margin_left = child_margin.left
+    let margin_right = child_margin.right
+    let margin_top = child_margin.top
+    let margin_bottom = child_margin.bottom
+
     // Resolve inset values
     let inset_left = child_style.inset.left.resolve(container_width)
     let inset_right = child_style.inset.right.resolve(container_width)
@@ -1513,7 +1528,10 @@ fn compute_internal(
       @types.Auto =>
         // If both left and right are set, calculate from insets
         match (inset_left, inset_right) {
-          (Some(l), Some(r)) => container_width - l - r
+          (Some(l), Some(r)) => {
+            let w = container_width - l - r - margin_left - margin_right
+            if w > 0.0 { w } else { 0.0 }
+          }
           _ => 0.0 // Would need intrinsic size
         }
     }
@@ -1525,40 +1543,45 @@ fn compute_internal(
       @types.Auto =>
         // If both top and bottom are set, calculate from insets
         match (inset_top, inset_bottom) {
-          (Some(t), Some(b)) => final_height - t - b
+          (Some(t), Some(b)) => {
+            let h = final_height - t - b - margin_top - margin_bottom
+            if h > 0.0 { h } else { 0.0 }
+          }
           _ => 0.0 // Would need intrinsic size
         }
     }
 
-    // Calculate position
+    // Calculate position (including margin)
     let child_x = match inset_left {
-      Some(l) => l + padding.left + border.left
+      Some(l) => l + margin_left + padding.left + border.left
       None =>
         match inset_right {
           Some(r) =>
             container_width -
             child_width -
             r -
+            margin_right -
             padding.right -
             border.right +
             padding.left +
             border.left
-          None => padding.left + border.left // Default to (0, 0)
+          None => margin_left + padding.left + border.left // Default to start with margin
         }
     }
     let child_y = match inset_top {
-      Some(t) => t + padding.top + border.top
+      Some(t) => t + margin_top + padding.top + border.top
       None =>
         match inset_bottom {
           Some(b) =>
             final_height -
             child_height -
             b -
+            margin_bottom -
             padding.bottom -
             border.bottom +
             padding.top +
             border.top
-          None => padding.top + border.top // Default to (0, 0)
+          None => margin_top + padding.top + border.top // Default to start with margin
         }
     }
 
@@ -1597,7 +1620,18 @@ fn compute_internal(
         children: nested_layout.children,
       }
     }
-    child_layouts.push(child_layout)
+    indexed_layouts.push({ dom_index: i, layout: child_layout })
+  }
+
+  // Sort indexed_layouts by DOM index to restore original child order
+  indexed_layouts.sort_by(fn(a, b) { a.dom_index - b.dom_index })
+
+  // Extract layouts from indexed_layouts
+  let child_layouts : Array[@node.Layout] = Array::new(
+    capacity=indexed_layouts.length(),
+  )
+  for il in indexed_layouts {
+    child_layouts.push(il.layout)
   }
 
   // If width is auto and is row direction, calculate actual width from child layouts
