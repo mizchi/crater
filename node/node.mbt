@@ -1,19 +1,56 @@
 ///|
+/// Intrinsic size measurement result
+pub(all) struct IntrinsicSize {
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
+}
+
+///|
+/// Default intrinsic size for leaf nodes without measure function
+pub fn IntrinsicSize::default() -> IntrinsicSize {
+  { min_width: 20.0, max_width: 40.0, min_height: 20.0, max_height: 40.0 }
+}
+
+///|
+/// Measure function type - called to determine intrinsic size of a node
+/// Parameters: (available_width, available_height) -> IntrinsicSize
+pub(all) struct MeasureFunc {
+  func : (Double, Double) -> IntrinsicSize
+}
+
+///|
 /// A node in the layout tree
 pub struct Node {
   id : String
   style : @style.Style
   children : Array[Node]
+  measure : MeasureFunc?
 }
 
 ///|
-pub fn Node::new(id : String, style : @style.Style, children : Array[Node]) -> Node {
-  { id, style, children }
+pub fn Node::new(
+  id : String,
+  style : @style.Style,
+  children : Array[Node],
+) -> Node {
+  { id, style, children, measure: None }
 }
 
 ///|
 pub fn Node::leaf(id : String, style : @style.Style) -> Node {
-  { id, style, children: [] }
+  { id, style, children: [], measure: None }
+}
+
+///|
+/// Create a leaf node with a custom measure function
+pub fn Node::with_measure(
+  id : String,
+  style : @style.Style,
+  measure : MeasureFunc,
+) -> Node {
+  { id, style, children: [], measure: Some(measure) }
 }
 
 ///|
@@ -49,9 +86,9 @@ pub(all) struct LayoutContext {
 ///|
 /// Warnings emitted during layout computation
 pub(all) enum LayoutWarning {
-  UnsupportedFloat(String)    // node id with float: left/right
+  UnsupportedFloat(String) // node id with float: left/right
   UnsupportedPosition(String) // node id with position: absolute/fixed
-  UnsupportedDisplay(String)  // node id with unsupported display type
+  UnsupportedDisplay(String) // node id with unsupported display type
 } derive(Show)
 
 ///|

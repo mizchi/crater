@@ -698,12 +698,6 @@ fn apply_content_alignment(
   }
 }
 
-///|
-/// Default intrinsic sizes for leaf nodes (matches Taffy behavior)
-let default_min_content_size : Double = 20.0
-
-///|
-let default_max_content_size : Double = 40.0
 
 ///|
 /// Calculate both min-content and max-content sizes for each track
@@ -754,6 +748,19 @@ fn calculate_track_intrinsic_sizes(
 }
 
 ///|
+/// Get intrinsic sizes from measure function or defaults
+fn get_intrinsic_from_measure(
+  child : @node.Node,
+  available_width : Double,
+  available_height : Double,
+) -> @node.IntrinsicSize {
+  match child.measure {
+    Some(measure) => (measure.func)(available_width, available_height)
+    None => @node.IntrinsicSize::default()
+  }
+}
+
+///|
 /// Calculate intrinsic sizes (min-content, max-content) for a single item
 fn calculate_item_intrinsic_sizes(
   child : @node.Node,
@@ -770,10 +777,10 @@ fn calculate_item_intrinsic_sizes(
         (resolved, resolved)
       }
       @types.Auto => {
-        // For leaf nodes with no explicit size, use default intrinsic sizes
-        // This ensures min-content/max-content tracks size correctly
+        // For leaf nodes, use measure function or defaults
         if child.children.length() == 0 {
-          (default_min_content_size, default_max_content_size)
+          let intrinsic = get_intrinsic_from_measure(child, container_width, 1.0e10)
+          (intrinsic.min_width, intrinsic.max_width)
         } else {
           // For containers, recursively compute layout to get intrinsic size
           match child.style.display {
@@ -789,8 +796,9 @@ fn calculate_item_intrinsic_sizes(
               (child_layout.width, child_layout.width)
             }
             _ => {
-              // For block/other display, use default intrinsic sizes
-              (default_min_content_size, default_max_content_size)
+              // For block/other display, use measure or defaults
+              let intrinsic = get_intrinsic_from_measure(child, container_width, 1.0e10)
+              (intrinsic.min_width, intrinsic.max_width)
             }
           }
         }
@@ -818,7 +826,8 @@ fn calculate_item_intrinsic_sizes(
       }
       @types.Auto => {
         if child.children.length() == 0 {
-          (default_min_content_size, default_max_content_size)
+          let intrinsic = get_intrinsic_from_measure(child, 1.0e10, container_width)
+          (intrinsic.min_height, intrinsic.max_height)
         } else {
           // For containers, recursively compute layout to get intrinsic size
           match child.style.display {
@@ -832,7 +841,8 @@ fn calculate_item_intrinsic_sizes(
               (child_layout.height, child_layout.height)
             }
             _ => {
-              (default_min_content_size, default_max_content_size)
+              let intrinsic = get_intrinsic_from_measure(child, 1.0e10, container_width)
+              (intrinsic.min_height, intrinsic.max_height)
             }
           }
         }

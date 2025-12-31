@@ -1308,3 +1308,67 @@ test "grid_template_areas_basic" {
   assert_eq(layout.children[3].width, 200.0)
   assert_eq(layout.children[3].height, 40.0)
 }
+
+// =============================================================================
+// Measure Function Tests
+// =============================================================================
+
+///|
+test "grid_measure_function_basic" {
+  // Test that custom measure function is used for intrinsic sizing
+  let default_style = @style.Style::default()
+
+  // Create a measure function that returns custom sizes
+  let custom_measure : @node.MeasureFunc = {
+    func: fn(_available_width, _available_height) {
+      { min_width: 50.0, max_width: 100.0, min_height: 25.0, max_height: 50.0 }
+    },
+  }
+
+  // Create a leaf node with the custom measure function
+  let child = @node.Node::with_measure("measured", default_style, custom_measure)
+
+  let root_style = {
+    ..default_style,
+    display: @style.Grid,
+    grid_template_columns: [@style.MaxContent],
+    grid_template_rows: [@style.MaxContent],
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let layout = compute_grid_layout(root, 800.0, 600.0)
+
+  // Container should size to max-content of the measured child
+  assert_eq(layout.width, 100.0)
+  assert_eq(layout.height, 50.0)
+
+  // Child should fill the grid cell
+  assert_eq(layout.children[0].width, 100.0)
+  assert_eq(layout.children[0].height, 50.0)
+}
+
+///|
+test "grid_measure_function_min_content" {
+  // Test that min-content uses min_width from measure function
+  let default_style = @style.Style::default()
+
+  let custom_measure : @node.MeasureFunc = {
+    func: fn(_available_width, _available_height) {
+      { min_width: 30.0, max_width: 80.0, min_height: 15.0, max_height: 40.0 }
+    },
+  }
+
+  let child = @node.Node::with_measure("measured", default_style, custom_measure)
+
+  let root_style = {
+    ..default_style,
+    display: @style.Grid,
+    grid_template_columns: [@style.MinContent],
+    grid_template_rows: [@style.MinContent],
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let layout = compute_grid_layout(root, 800.0, 600.0)
+
+  // Container should size to min-content of the measured child
+  assert_eq(layout.width, 30.0)
+  assert_eq(layout.height, 15.0)
+}
