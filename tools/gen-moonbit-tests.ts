@@ -435,7 +435,7 @@ function assertionsToMoonBit(node: NodeTestData, varPath: string, indent: string
   return lines;
 }
 
-function testCaseToMoonBit(tc: TestCase): string {
+function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' = 'grid'): string {
   const lines: string[] = [];
 
   lines.push('///|');
@@ -446,7 +446,12 @@ function testCaseToMoonBit(tc: TestCase): string {
 
   // Compute layout
   lines.push('');
-  lines.push(`  let layout = compute_grid_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
+  if (layoutType === 'flex') {
+    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}) }`);
+    lines.push(`  let layout = compute(root, ctx)`);
+  } else {
+    lines.push(`  let layout = compute_grid_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
+  }
   lines.push('');
 
   // Assertions
@@ -460,18 +465,41 @@ function testCaseToMoonBit(tc: TestCase): string {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length < 2) {
-    console.log('Usage: npm run gen-moonbit-tests -- <fixture-dir> <output-file> [pattern]');
+  // Parse options
+  let layoutType: 'grid' | 'flex' = 'grid';
+  let noHeader = false;
+  const positionalArgs: string[] = [];
+
+  for (const arg of args) {
+    if (arg === '--flex') {
+      layoutType = 'flex';
+    } else if (arg === '--grid') {
+      layoutType = 'grid';
+    } else if (arg === '--no-header') {
+      noHeader = true;
+    } else {
+      positionalArgs.push(arg);
+    }
+  }
+
+  if (positionalArgs.length < 2) {
+    console.log('Usage: npm run gen-moonbit-tests -- [options] <fixture-dir> <output-file> [pattern]');
+    console.log('');
+    console.log('Options:');
+    console.log('  --flex       Generate tests using flex compute function');
+    console.log('  --grid       Generate tests using grid compute function (default)');
+    console.log('  --no-header  Skip generating assert_approx helper (for additional test files)');
     console.log('');
     console.log('Examples:');
     console.log('  npm run gen-moonbit-tests -- fixtures/grid grid/gen_test.mbt');
-    console.log('  npm run gen-moonbit-tests -- fixtures/grid grid/gen_test.mbt auto_fill');
+    console.log('  npm run gen-moonbit-tests -- --flex fixtures/flex flex/gen_test.mbt');
+    console.log('  npm run gen-moonbit-tests -- --no-header fixtures/blockgrid grid/gen_blockgrid_test.mbt');
     process.exit(1);
   }
 
-  const fixtureDir = args[0];
-  const outputFile = args[1];
-  const pattern = args[2];
+  const fixtureDir = positionalArgs[0];
+  const outputFile = positionalArgs[1];
+  const pattern = positionalArgs[2];
 
   if (!fs.existsSync(fixtureDir)) {
     console.error(`Error: Directory not found: ${fixtureDir}`);
@@ -510,14 +538,14 @@ async function main() {
         continue;
       }
 
-      tests.push(testCaseToMoonBit(tc));
+      tests.push(testCaseToMoonBit(tc, layoutType));
     } catch (err) {
       console.error(`Failed to process ${file}: ${err}`);
     }
   }
 
   // Write output
-  const header = `// Auto-generated from taffy test fixtures
+  const headerWithHelper = `// Auto-generated from taffy test fixtures
 // DO NOT EDIT - regenerate with: npm run gen-moonbit-tests
 
 ///|
@@ -531,6 +559,12 @@ fn assert_approx(actual : Double, expected : Double) -> Unit! {
 }
 
 `;
+  const headerWithoutHelper = `// Auto-generated from taffy test fixtures
+// DO NOT EDIT - regenerate with: npm run gen-moonbit-tests
+// Uses assert_approx from main gen_test.mbt
+
+`;
+  const header = noHeader ? headerWithoutHelper : headerWithHelper;
   fs.writeFileSync(outputFile, header + tests.join('\n\n') + '\n');
 
   console.log(`Generated ${tests.length} tests, skipped ${skipped} (unsupported features)`);

@@ -1,5 +1,6 @@
-// Auto-generated from taffy test fixtures (blockgrid)
-// Uses assert_approx from gen_test.mbt
+// Auto-generated from taffy test fixtures
+// DO NOT EDIT - regenerate with: npm run gen-moonbit-tests
+// Uses assert_approx from main gen_test.mbt
 
 ///|
 test "taffy/blockgrid_block_in_grid_auto" {
