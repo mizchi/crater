@@ -748,9 +748,6 @@ fn apply_content_alignment(
   let last_track = tracks[tracks.length() - 1]
   let total_track_size = last_track.position + last_track.size
   let free_space = container_size - total_track_size
-  if free_space <= 0.0 {
-    return
-  }
   let track_count = tracks.length()
   match alignment {
     @style.Start | @style.Baseline =>
@@ -758,6 +755,10 @@ fn apply_content_alignment(
       // Baseline: treated as start for content alignment
       ()
     @style.Stretch => {
+      // Only distribute positive free_space
+      if free_space <= 0.0 {
+        return
+      }
       // Distribute free_space to stretchable tracks (expand their size)
       let mut stretchable_count = 0
       for i = 0; i < track_count; i = i + 1 {
@@ -810,7 +811,7 @@ fn apply_content_alignment(
       }
     }
     @style.SpaceBetween => {
-      if track_count <= 1 {
+      if track_count <= 1 || free_space <= 0.0 {
         return
       }
       // Distribute free_space between tracks
@@ -825,6 +826,9 @@ fn apply_content_alignment(
       }
     }
     @style.SpaceAround => {
+      if free_space <= 0.0 {
+        return
+      }
       // Each track gets equal space on both sides
       let space_per_track = free_space / track_count.to_double()
       for i = 0; i < track_count; i = i + 1 {
@@ -838,6 +842,9 @@ fn apply_content_alignment(
       }
     }
     @style.SpaceEvenly => {
+      if free_space <= 0.0 {
+        return
+      }
       // Equal space between and around all tracks
       let gap_count = track_count + 1
       let space_per_gap = free_space / gap_count.to_double()
