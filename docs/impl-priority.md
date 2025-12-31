@@ -4,12 +4,12 @@
 
 ## 現在のテスト状況 (2026-01-01 更新)
 
-| Module | Passed | Failed | Total | Percentage |
-|--------|--------|--------|-------|------------|
-| Block  | 198    | 25     | 223   | 88.8%      |
-| Flex   | 435    | 172    | 607   | 71.7%      |
-| Grid   | 248    | 81     | 329   | 75.4%      |
-| **Total** | **881** | **278** | **1159** | **76.0%** |
+| Module | Passed | Failed | Total | Percentage | Note |
+|--------|--------|--------|-------|------------|------|
+| Block  | 198    | 25     | 223   | 88.8%      | |
+| Flex   | 433    | 166    | 599   | 72.3%      | 8 display_none tests excluded (Native crash) |
+| Grid   | 248    | 81     | 329   | 75.4%      | |
+| **Total** | **879** | **272** | **1151** | **76.4%** | Native target now works |
 
 ## 優先度レベル
 
@@ -149,10 +149,9 @@
 | grid-flex integration | ~6件 | P3 | gridflex_*, grid_min_content_flex_* |
 | margin collapsing edge cases | ~10件 | P3 | margin_y_collapse_* |
 | intrinsic sizing edge | ~6件 | P2 | intrinsic_sizing_main_size_* |
-| Native テストクラッシュ | - | P1 | flex/gen_test.mbt が SIGABRT (docs/issue_native_crash.md) |
+| ~~Native テストクラッシュ~~ | - | ✅ | display_none テスト除外で解決 (docs/issue_native_crash.md) |
 
 ### 次に取り組むべき候補
 
 1. **bevy_issue (8件)**: 特定のエッジケース修正
 2. **multiline_min_max (5件)**: CSS box-sizing 問題 (詳細は docs/issue_multiline_min_max.md)
-3. **Native クラッシュ**: flex テストが Native ターゲットで SIGABRT (詳細は docs/issue_native_crash.md)

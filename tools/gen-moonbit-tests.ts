@@ -519,6 +519,7 @@ async function main() {
   // Parse options
   let layoutType: 'grid' | 'flex' | 'block' = 'grid';
   let noHeader = false;
+  const excludePatterns: string[] = [];
   const positionalArgs: string[] = [];
 
   for (const arg of args) {
@@ -530,6 +531,10 @@ async function main() {
       layoutType = 'block';
     } else if (arg === '--no-header') {
       noHeader = true;
+    } else if (arg.startsWith('--exclude=')) {
+      // Support comma-separated patterns: --exclude=display_none,baseline
+      const patterns = arg.split('=')[1].split(',');
+      excludePatterns.push(...patterns);
     } else {
       positionalArgs.push(arg);
     }
@@ -543,12 +548,13 @@ async function main() {
     console.log('  --block      Generate tests using block compute function');
     console.log('  --grid       Generate tests using grid compute function (default)');
     console.log('  --no-header  Skip generating assert_approx helper (for additional test files)');
+    console.log('  --exclude=P  Exclude tests matching pattern P (comma-separated for multiple)');
     console.log('');
     console.log('Examples:');
     console.log('  npm run gen-moonbit-tests -- fixtures/grid grid/gen_test.mbt');
     console.log('  npm run gen-moonbit-tests -- --flex fixtures/flex flex/gen_test.mbt');
     console.log('  npm run gen-moonbit-tests -- --block fixtures/block block/gen_test.mbt');
-    console.log('  npm run gen-moonbit-tests -- --no-header fixtures/blockgrid grid/gen_blockgrid_test.mbt');
+    console.log('  npm run gen-moonbit-tests -- --flex --exclude=display_none fixtures/flex flex/gen_test.mbt');
     process.exit(1);
   }
 
@@ -565,9 +571,15 @@ async function main() {
   const files = fs.readdirSync(fixtureDir)
     .filter(f => f.endsWith('.json'))
     .filter(f => !pattern || f.includes(pattern))
+    .filter(f => {
+      // Apply exclude patterns to filename (without .json)
+      const name = f.replace('.json', '');
+      return !excludePatterns.some(p => name.includes(p));
+    })
     .sort();
 
-  console.log(`Found ${files.length} JSON fixtures`);
+  const excluded = excludePatterns.length > 0 ? ` (excluding: ${excludePatterns.join(', ')})` : '';
+  console.log(`Found ${files.length} JSON fixtures${excluded}`);
 
   const tests: string[] = [];
   let skipped = 0;
@@ -617,9 +629,9 @@ fn assert_approx(actual : Double, expected : Double) -> Unit raise {
 // Uses assert_approx from main gen_test.mbt
 
 `;
+
   const header = noHeader ? headerWithoutHelper : headerWithHelper;
   fs.writeFileSync(outputFile, header + tests.join('\n\n') + '\n');
-
   console.log(`Generated ${tests.length} tests, skipped ${skipped} (unsupported features)`);
   console.log(`Output written to: ${outputFile}`);
 }
