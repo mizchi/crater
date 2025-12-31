@@ -76,6 +76,7 @@ interface NodeStyle {
   flexGrow?: number;
   flexShrink?: number;
   flexBasis?: Dimension;
+  aspectRatio?: number;
   gridTemplateColumns?: TrackSizing[];
   gridTemplateRows?: TrackSizing[];
   gridAutoColumns?: TrackSizing[];
@@ -391,6 +392,37 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
     lines.push(`${indent}  inset: ${edgesToMoonBit(style.inset)},`);
   }
 
+  // Flex container properties
+  if (style.flexDirection) {
+    const dir = style.flexDirection;
+    if (dir === 'row') lines.push(`${indent}  flex_direction: @style.Row,`);
+    else if (dir === 'row-reverse') lines.push(`${indent}  flex_direction: @style.RowReverse,`);
+    else if (dir === 'column') lines.push(`${indent}  flex_direction: @style.Column,`);
+    else if (dir === 'column-reverse') lines.push(`${indent}  flex_direction: @style.ColumnReverse,`);
+  }
+  if (style.flexWrap) {
+    const wrap = style.flexWrap;
+    if (wrap === 'wrap') lines.push(`${indent}  flex_wrap: @style.Wrap,`);
+    else if (wrap === 'wrap-reverse') lines.push(`${indent}  flex_wrap: @style.WrapReverse,`);
+    else if (wrap === 'nowrap') lines.push(`${indent}  flex_wrap: @style.NoWrap,`);
+  }
+
+  // Flex item properties
+  if (style.flexGrow !== undefined && style.flexGrow !== 0) {
+    lines.push(`${indent}  flex_grow: ${style.flexGrow.toFixed(1)},`);
+  }
+  if (style.flexShrink !== undefined && style.flexShrink !== 1) {
+    lines.push(`${indent}  flex_shrink: ${style.flexShrink.toFixed(1)},`);
+  }
+  if (style.flexBasis) {
+    lines.push(`${indent}  flex_basis: ${dimensionToMoonBit(style.flexBasis)},`);
+  }
+
+  // Aspect ratio
+  if (style.aspectRatio !== undefined) {
+    lines.push(`${indent}  aspect_ratio: Some(${style.aspectRatio.toFixed(4)}),`);
+  }
+
   lines.push(`${indent}}`);
 
   // Build children
@@ -548,11 +580,11 @@ async function main() {
 
 ///|
 /// Helper for approximate floating point comparison (tolerance: 0.1)
-fn assert_approx(actual : Double, expected : Double) -> Unit! {
+fn assert_approx(actual : Double, expected : Double) -> Unit raise {
   let tolerance = 0.1
   let diff = if actual > expected { actual - expected } else { expected - actual }
   if diff > tolerance {
-    fail!("assert_approx failed: actual=\\{actual}, expected=\\{expected}, diff=\\{diff}")
+    raise Failure("assert_approx failed: actual=\\{actual}, expected=\\{expected}, diff=\\{diff}")
   }
 }
 

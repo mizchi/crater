@@ -1173,10 +1173,22 @@ fn compute_internal(
     }
 
     // If auto margins exist, they absorb free space instead of justify-content
+    // For reverse directions, flip Start/End in justify_content
+    // In column-reverse: "start" means items at physical bottom, "end" means items at physical top
+    // Flipping gives us the correct start_offset for the reversed positioning algorithm
+    let effective_justify = if is_reverse {
+      match style.justify_content {
+        @style.Start => @style.Alignment::End
+        @style.End => @style.Alignment::Start
+        other => other
+      }
+    } else {
+      style.justify_content
+    }
     let (start_offset, justify_gap) = if auto_margin_count > 0 {
       (0.0, 0.0)
     } else {
-      compute_justify(style.justify_content, line_free_space, line_item_count)
+      compute_justify(effective_justify, line_free_space, line_item_count)
     }
     let gap = main_gap + justify_gap
     let mut main_pos = start_offset
@@ -1195,10 +1207,34 @@ fn compute_internal(
       max_baseline = max(max_baseline, cross_start_margin + item.baseline)
     }
 
+    // For is_reverse, calculate total used main first so we can position from the end
+    let line_total_main = if is_reverse {
+      let mut total = 0.0
+      for item in line_items {
+        total = total + item.final_main + item.margin_main
+        if item.margin_main_start_auto {
+          total = total + auto_margin_size
+        }
+        if item.margin_main_end_auto {
+          total = total + auto_margin_size
+        }
+      }
+      total = total + gap * (line_item_count - 1).to_double()
+      total
+    } else {
+      0.0 // Not used for non-reverse
+    }
+
     // Position items within this line
+    // For is_reverse, we iterate in DOM order but calculate positions from the end
+    // This keeps child_layouts in DOM order while placing items in reversed visual order
+
+    // For is_reverse, track position from the end going backwards
+    let mut reversed_main_pos = start_offset + line_total_main
+
     for j = 0; j < line_item_count; j = j + 1 {
-      let i = if is_reverse { line_item_count - 1 - j } else { j }
-      let item = line_items[i]
+      // Always access items in DOM order so child_layouts stays in DOM order
+      let item = line_items[j]
       let child = children[item.index]
 
       // Calculate auto margin adjustments for main axis
@@ -1291,8 +1327,17 @@ fn compute_internal(
       }
       let main_start = if is_row { item.margin.left } else { item.margin.top }
       let cross_start = if is_row { item.margin.top } else { item.margin.left }
+
+      // For is_reverse, calculate position from the end going backwards
+      let effective_main_pos = if is_reverse {
+        // Position from end: current_end - item_size (not including end margin)
+        reversed_main_pos - item.final_main - item.margin_main
+      } else {
+        main_pos
+      }
+
       let (child_x, child_y) = if is_row {
-        let x = main_pos +
+        let x = effective_main_pos +
           main_start +
           main_start_auto_margin +
           padding.left +
@@ -1309,7 +1354,7 @@ fn compute_internal(
           cross_start +
           padding.left +
           border.left
-        let y = main_pos +
+        let y = effective_main_pos +
           main_start +
           main_start_auto_margin +
           padding.top +
@@ -1355,12 +1400,24 @@ fn compute_internal(
         }
       }
       child_layouts.push(child_layout)
-      main_pos = main_pos +
-        item.final_main +
-        item.margin_main +
-        main_start_auto_margin +
-        main_end_auto_margin +
-        gap
+
+      // Update position for next item
+      if is_reverse {
+        // Move backwards: subtract item size + gap
+        reversed_main_pos = reversed_main_pos -
+          item.final_main -
+          item.margin_main -
+          main_start_auto_margin -
+          main_end_auto_margin -
+          gap
+      } else {
+        main_pos = main_pos +
+          item.final_main +
+          item.margin_main +
+          main_start_auto_margin +
+          main_end_auto_margin +
+          gap
+      }
     }
 
     // Advance to next line

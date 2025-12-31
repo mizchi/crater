@@ -3,11 +3,11 @@
 
 ///|
 /// Helper for approximate floating point comparison (tolerance: 0.1)
-fn assert_approx(actual : Double, expected : Double) -> Unit! {
+fn assert_approx(actual : Double, expected : Double) -> Unit raise {
   let tolerance = 0.1
   let diff = if actual > expected { actual - expected } else { expected - actual }
   if diff > tolerance {
-    fail!("assert_approx failed: actual=\{actual}, expected=\{expected}, diff=\{diff}")
+    raise Failure("assert_approx failed: actual=\{actual}, expected=\{expected}, diff=\{diff}")
   }
 }
 
@@ -26,6 +26,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
     display: @style.Flex,
     position: @style.Position::Absolute,
     inset: { left: @types.Length(50.0), right: @types.Auto, top: @types.Length(40.0), bottom: @types.Auto },
+    flex_direction: @style.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -4413,6 +4414,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
     display: @style.Grid,
     width: @types.Length(50.0),
     grid_template_columns: [@style.Auto, @style.Auto],
+    flex_wrap: @style.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -7702,6 +7704,7 @@ test "taffy/grid_display_none_fixed_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -13345,6 +13348,7 @@ test "taffy/grid_min_content_flex_column" {
   let root_child0_style = {
     ..@style.Style::default(),
     display: @style.Flex,
+    flex_direction: @style.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -13417,6 +13421,7 @@ test "taffy/grid_min_content_flex_row" {
   let root_child0_style = {
     ..@style.Style::default(),
     display: @style.Flex,
+    flex_direction: @style.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
