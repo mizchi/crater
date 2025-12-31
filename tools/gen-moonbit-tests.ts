@@ -85,11 +85,19 @@ interface NodeStyle {
   inset?: Edges;
 }
 
+interface MeasureData {
+  minWidth: number;
+  maxWidth: number;
+  minHeight: number;
+  maxHeight: number;
+}
+
 interface NodeTestData {
   id: string;
   style: NodeStyle;
   layout: LayoutRect;
   children: NodeTestData[];
+  measure?: MeasureData;
 }
 
 interface TestCase {
@@ -362,6 +370,15 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
       lines.push(`${indent}${varName}_children.push(${childVar})`);
     }
     lines.push(`${indent}let ${varName} = @node.Node::new("${node.id}", ${varName}_style, ${varName}_children)`);
+  } else if (node.measure) {
+    // Leaf node with measure function
+    const m = node.measure;
+    lines.push(`${indent}let ${varName}_measure = @node.MeasureFunc::{`);
+    lines.push(`${indent}  func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {`);
+    lines.push(`${indent}    { min_width: ${m.minWidth.toFixed(1)}, max_width: ${m.maxWidth.toFixed(1)}, min_height: ${m.minHeight.toFixed(1)}, max_height: ${m.maxHeight.toFixed(1)} }`);
+    lines.push(`${indent}  }`);
+    lines.push(`${indent}}`);
+    lines.push(`${indent}let ${varName} = @node.Node::with_measure("${node.id}", ${varName}_style, ${varName}_measure)`);
   } else {
     lines.push(`${indent}let ${varName} = @node.Node::leaf("${node.id}", ${varName}_style)`);
   }

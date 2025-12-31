@@ -9,10 +9,9 @@ pub(all) struct IntrinsicSize {
 
 ///|
 /// Default intrinsic size for leaf nodes without measure function
-/// Note: Taffy uses 0 for unmeasured nodes, but our tests expect non-zero defaults
-/// because gentest.ts doesn't extract text content measure functions yet
+/// Matches Taffy behavior: empty/unmeasured nodes have zero intrinsic size
 pub fn IntrinsicSize::default() -> IntrinsicSize {
-  { min_width: 20.0, max_width: 40.0, min_height: 20.0, max_height: 40.0 }
+  { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
 }
 
 ///|

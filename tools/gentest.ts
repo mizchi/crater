@@ -94,11 +94,19 @@ interface NodeStyle {
   inset?: Edges;
 }
 
+interface MeasureData {
+  minWidth: number;
+  maxWidth: number;
+  minHeight: number;
+  maxHeight: number;
+}
+
 interface NodeTestData {
   id: string;
   style: NodeStyle;
   layout: LayoutRect;
   children: NodeTestData[];
+  measure?: MeasureData;
 }
 
 interface TestCase {
@@ -269,12 +277,74 @@ function parseGridTemplateAreas(value) {
   return areas.length > 0 ? areas : undefined;
 }
 
+function measureTextContent(el) {
+  // Check if element has direct text content (not just whitespace)
+  const hasTextContent = Array.from(el.childNodes).some(node =>
+    node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0
+  );
+
+  if (!hasTextContent || el.children.length > 0) {
+    return null;
+  }
+
+  // Get computed font style from original element
+  const computed = getComputedStyle(el);
+
+  // Create a clone to measure without affecting layout
+  const clone = el.cloneNode(true);
+  clone.style.position = 'absolute';
+  clone.style.visibility = 'hidden';
+  clone.style.width = 'auto';
+  clone.style.height = 'auto';
+  clone.style.minWidth = '0';
+  clone.style.maxWidth = 'none';
+  clone.style.minHeight = '0';
+  clone.style.maxHeight = 'none';
+  clone.style.padding = '0';
+  clone.style.border = 'none';
+  clone.style.margin = '0';
+  // Inherit font styles from original element (important for Ahem font)
+  clone.style.fontFamily = computed.fontFamily;
+  clone.style.fontSize = computed.fontSize;
+  clone.style.lineHeight = computed.lineHeight;
+  clone.style.fontWeight = computed.fontWeight;
+  clone.style.fontStyle = computed.fontStyle;
+
+  document.body.appendChild(clone);
+
+  // Measure max-content (no wrapping) - this gives natural width and height
+  clone.style.whiteSpace = 'nowrap';
+  const maxWidth = clone.offsetWidth;
+  const maxHeight = clone.offsetHeight;
+
+  // Measure min-content width (wrap at every opportunity)
+  clone.style.whiteSpace = 'normal';
+  clone.style.wordBreak = 'break-all';
+  clone.style.width = '0px';
+  const minWidth = clone.scrollWidth;
+  // For min_height, we use the height at max-content width (natural line height)
+  // because grid intrinsic sizing typically uses this for content-based sizing
+  const minHeight = maxHeight;
+
+  document.body.removeChild(clone);
+
+  return {
+    minWidth: Math.round(minWidth * 100) / 100,
+    maxWidth: Math.round(maxWidth * 100) / 100,
+    minHeight: Math.round(minHeight * 100) / 100,
+    maxHeight: Math.round(maxHeight * 100) / 100,
+  };
+}
+
 function describeElement(el, parentRect) {
   const rect = el.getBoundingClientRect();
   const inlineStyle = el.style;
   const computed = getComputedStyle(el);
 
   const id = el.id || el.getAttribute('data-id') || 'node';
+
+  // Measure text content if present
+  const measure = measureTextContent(el);
 
   // Get inline styles with fallback to computed
   const getStyle = (prop) => inlineStyle[prop] || inlineStyle.getPropertyValue(prop);
@@ -350,7 +420,7 @@ function describeElement(el, parentRect) {
   if (style.inset?.left?.unit === 'auto' && style.inset?.right?.unit === 'auto' &&
       style.inset?.top?.unit === 'auto' && style.inset?.bottom?.unit === 'auto') delete style.inset;
 
-  return {
+  const result = {
     id: id,
     style: style,
     layout: {
@@ -361,6 +431,13 @@ function describeElement(el, parentRect) {
     },
     children: Array.from(el.children).map(child => describeElement(child, rect)),
   };
+
+  // Add measure data if present
+  if (measure) {
+    result.measure = measure;
+  }
+
+  return result;
 }
 
 function getTestData() {

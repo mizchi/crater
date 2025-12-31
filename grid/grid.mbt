@@ -881,17 +881,52 @@ fn calculate_track_intrinsic_sizes(
         }
       }
 
-      // Distribute extra space to min_sizes (all tracks participate)
+      // Check if all spanned tracks are Fr tracks and calculate total fr value
+      let mut all_fr = true
+      let mut total_fr_value = 0.0
+      for t = start; t < end; t = t + 1 {
+        match track_types[t] {
+          @style.Fr(fr) => total_fr_value = total_fr_value + fr
+          _ => all_fr = false
+        }
+      }
+
+      // Distribute extra space to min_sizes
       if min_extra > 0.0 {
-        let per_track = min_extra / span.to_double()
-        for t = start; t < end; t = t + 1 {
-          min_sizes[t] = min_sizes[t] + per_track
+        if all_fr && total_fr_value > 0.0 {
+          // Distribute proportionally based on fr values
+          for t = start; t < end; t = t + 1 {
+            match track_types[t] {
+              @style.Fr(fr) => {
+                let proportion = fr / total_fr_value
+                min_sizes[t] = min_sizes[t] + min_extra * proportion
+              }
+              _ => ()
+            }
+          }
+        } else {
+          // Distribute evenly
+          let per_track = min_extra / span.to_double()
+          for t = start; t < end; t = t + 1 {
+            min_sizes[t] = min_sizes[t] + per_track
+          }
         }
       }
 
       // Distribute extra space to max_sizes (only growable tracks for max-content)
       if max_extra > 0.0 {
-        if growable_count > 0 {
+        if all_fr && total_fr_value > 0.0 {
+          // Distribute proportionally based on fr values
+          for t = start; t < end; t = t + 1 {
+            match track_types[t] {
+              @style.Fr(fr) => {
+                let proportion = fr / total_fr_value
+                max_sizes[t] = max_sizes[t] + max_extra * proportion
+              }
+              _ => ()
+            }
+          }
+        } else if growable_count > 0 {
           let per_track = max_extra / growable_count.to_double()
           for t = start; t < end; t = t + 1 {
             let can_grow = match track_types[t] {
