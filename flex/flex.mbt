@@ -925,35 +925,37 @@ fn compute_internal(
       }
     } else if initial_remaining < 0.0 && total_flex_shrink > 0.0 {
       // Shrink items with freeze algorithm
-      let max_iterations = 3
+      // CSS spec: shrink is proportional to flex_shrink * flex_basis (scaled flex shrink factor)
+      let max_iterations = 10
       for iter = 0; iter < max_iterations; iter = iter + 1 {
-        // Calculate used space and unfrozen flex-shrink
+        // Calculate used space and total scaled flex shrink factor
         let mut used_space = 0.0
-        let mut unfrozen_flex_shrink = 0.0
+        let mut total_scaled_shrink = 0.0
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
           if item.frozen {
             used_space = used_space + item.final_main + item.margin_main
           } else {
             used_space = used_space + item.base_main + item.margin_main
-            unfrozen_flex_shrink = unfrozen_flex_shrink + item.flex_shrink
+            // Scaled flex shrink factor = flex_shrink * flex_basis
+            total_scaled_shrink = total_scaled_shrink +
+              item.flex_shrink * item.base_main
           }
         }
         let overflow = used_space + total_gap_for_grow - main_size
-        if overflow <= 0.0 || unfrozen_flex_shrink == 0.0 {
+        if overflow <= 0.0 || total_scaled_shrink == 0.0 {
           break
         }
 
-        // Shrink unfrozen items
+        // Shrink unfrozen items proportionally to their scaled shrink factor
         let mut any_clamped = false
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
           if not(item.frozen) && item.flex_shrink > 0.0 {
-            let shrink_amount = if total_flex_shrink < 1.0 {
-              overflow * item.flex_shrink
-            } else {
-              overflow * (item.flex_shrink / unfrozen_flex_shrink)
-            }
+            // Each item's shrink = overflow * (item_scaled_shrink / total_scaled_shrink)
+            let item_scaled_shrink = item.flex_shrink * item.base_main
+            let shrink_ratio = item_scaled_shrink / total_scaled_shrink
+            let shrink_amount = overflow * shrink_ratio
             let target = max(0.0, item.base_main - shrink_amount)
             let clamped = max(item.min_main, min(item.max_main, target))
             if clamped != target {
