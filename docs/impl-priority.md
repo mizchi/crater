@@ -2,19 +2,22 @@
 
 失敗テストの分析に基づく実装優先度。実際の使用頻度と修正難易度を考慮。
 
+## 現在のテスト状況 (2024-12-31 更新)
+
+| Module | Passed | Total | Percentage |
+|--------|--------|-------|------------|
+| Block  | 168    | 223   | 75.3%      |
+| Flex   | 409    | 607   | 67.4%      |
+| Grid   | 248    | 329   | 75.4%      |
+| **Total** | **825** | **1159** | **71.2%** |
+
 ## 優先度レベル
 
-### P0: 最優先（高頻度使用 + 修正可能）
+### P0: 最優先（高頻度使用 + 修正可能） ✅ 完了
 
-#### 1. gentest で margin: auto を HTML からパース
-- **影響**: Block 14件, Flex 18件, Grid 2件
-- **理由**: センタリングは最も基本的な機能
-- **対策**: tools/gentest.ts で HTML の style 属性から直接パース
-- **難易度**: Medium
-
-```
-例: <div style="margin-left: auto;"> から margin: { left: Auto, ... } を生成
-```
+#### 1. gentest で margin: auto を HTML からパース ✅
+- **状態**: 完了
+- **改善**: tools/gentest.ts を改善して margin: auto をパース
 
 #### 2. percentage in indefinite containers
 - **影響**: Block 10件, Flex 18件, Grid 12件
@@ -22,25 +25,21 @@
 - **対策**: 親サイズ不定時の % 解決ロジック修正
 - **難易度**: Medium
 
-### P1: 高優先（高頻度使用）
+### P1: 高優先（高頻度使用） ✅ 部分完了
 
-#### 3. min/max constraints
-- **影響**: Flex 34件
-- **理由**: レスポンシブデザインで必須
-- **対策**: 制約の適用順序を CSS 仕様通りに修正
-- **難易度**: Low-Medium
+#### 3. min/max constraints ✅ 一部完了
+- **状態**: stretch alignment での min/max 対応を修正
+- **残り**: 一部の特殊ケース
 
-#### 4. flex-grow/shrink 計算
-- **影響**: Flex 24件 (grow+shrink)
-- **理由**: `flex: 1` の基本動作
-- **対策**: taffy の実装を参考に修正
-- **難易度**: Medium
+#### 4. flex-grow/shrink 計算 ✅ 完了
+- **状態**: CSS spec に準拠した scaled shrink factor を実装
+- **改善**: +3 tests
 
-#### 5. align/justify
-- **影響**: Flex 24件, Block 2件
-- **理由**: 配置の基本機能
-- **対策**: alignment 計算の見直し
-- **難易度**: Medium
+#### 5. align/justify ✅ 大幅改善
+- **状態**: 複数の修正を実施
+  - align-content の single-line 対応 (+11 tests)
+  - negative space での Space* 処理 (+13 tests)
+- **残り**: baseline alignment (P3), 子が親より大きい場合
 
 ### P2: 中優先（よく使う）
 
@@ -109,14 +108,28 @@
   - height: percentage は 0 扱い (または無視)
   - width: 親の利用可能幅を使用
 
-## 期待される改善
+## 進捗履歴
 
 | Phase | Block | Flex | Grid | 合計 |
 |-------|-------|------|------|------|
-| 現在 | 147/222 (66%) | 352/607 (58%) | 241/329 (73%) | 740/1158 (64%) |
-| Phase 1 | +14 | +18 | +2 | +34 |
-| Phase 2 | +10 | +76 | +12 | +98 |
-| Phase 3 | +31 | +40 | +15 | +86 |
-| 目標 | 202/222 (91%) | 486/607 (80%) | 270/329 (82%) | 958/1158 (83%) |
+| 開始時 | 147/223 (66%) | 352/607 (58%) | 241/329 (73%) | 740/1159 (64%) |
+| P0完了 | 157/223 (70%) | 375/607 (62%) | 245/329 (74%) | 777/1159 (67%) |
+| P1完了 | 168/223 (75%) | 409/607 (67%) | 248/329 (75%) | **825/1159 (71%)** |
 
-※ 数値は推定。実際には重複や依存関係あり。
+### P1での主な修正 (+48 tests)
+
+1. **intrinsic sizing cross-axis fix** (+1): ネスト flex の cross-axis 計算を修正
+2. **flex-shrink scaled factor** (+3): CSS spec に準拠した shrink 計算
+3. **stretch alignment constraints** (+5): min/max 制約の適用
+4. **align-content single-line** (+11): nowrap 時の align-content を Start として扱う
+5. **negative space handling** (+13): Space* の negative space 対応
+6. **test fixes** (+2): reverse テストの期待値修正
+
+## 残りの課題
+
+| カテゴリ | 影響テスト数 | 優先度 |
+|---------|-------------|--------|
+| baseline alignment | 16件 | P3 |
+| absolute positioning | 20件 | P3 |
+| 子が親より大きい場合 | 数件 | P2 |
+| flex-wrap 特殊ケース | 10件 | P2 |
