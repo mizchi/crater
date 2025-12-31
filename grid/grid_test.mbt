@@ -944,13 +944,13 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
   assert_eq(layout.width, 90.0)
   assert_eq(layout.height, 120.0)
 
-  // Row 1: widths 40, 10, 40 (minmax below min - clamped at min but container forces smaller)
-  // Actually taffy gives 40, 10, 40 here
+  // Row 1: widths 40, 20, 40 (minmax should not go below min, even if container is too small)
+  // Taffy respects minmax minimum - it's the min, not the max that bounds
   assert_eq(layout.children[0].x, 0.0)
   assert_eq(layout.children[0].width, 40.0)
   assert_eq(layout.children[1].x, 40.0)
-  assert_eq(layout.children[1].width, 10.0)
-  assert_eq(layout.children[2].x, 50.0)
+  assert_eq(layout.children[1].width, 20.0)
+  assert_eq(layout.children[2].x, 60.0)
   assert_eq(layout.children[2].width, 40.0)
 }
 

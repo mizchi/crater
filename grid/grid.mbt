@@ -1177,24 +1177,50 @@ fn resolve_tracks_with_implicit(
   }
   total_size = total_size + total_gaps
   if total_size > available_size {
-    // We need to shrink tracks - minmax tracks can shrink below their base size
-    let overflow = total_size - available_size
+    // We need to shrink tracks
+    // Priority: 1) Auto tracks shrink first (to min-content)
+    //           2) MinMax tracks shrink second (to their min)
+    let mut remaining_overflow = total_size - available_size
 
-    // Count shrinkable tracks (MinMax tracks)
-    let mut shrinkable_count = 0
+    // Step 1: Shrink Auto tracks to min-content
     for i = 0; i < track_count; i = i + 1 {
+      if remaining_overflow <= 0.0 {
+        break
+      }
       match all_templates[i] {
-        @style.MinMax(_, _) => shrinkable_count = shrinkable_count + 1
+        @style.Auto => {
+          let shrinkable = base_sizes[i] - min_sizes[i]
+          if shrinkable > 0.0 {
+            let shrink = min_double(shrinkable, remaining_overflow)
+            base_sizes[i] = base_sizes[i] - shrink
+            remaining_overflow = remaining_overflow - shrink
+          }
+        }
         _ => ()
       }
     }
-    if shrinkable_count > 0 {
-      let shrink_per_track = overflow / shrinkable_count.to_double()
+
+    // Step 2: If still overflowing, shrink MinMax tracks to their minimum
+    if remaining_overflow > 0.0 {
+      let mut shrinkable_count = 0
       for i = 0; i < track_count; i = i + 1 {
         match all_templates[i] {
           @style.MinMax(_, _) =>
-            base_sizes[i] = max(0.0, base_sizes[i] - shrink_per_track)
+            if base_sizes[i] > min_sizes[i] {
+              shrinkable_count = shrinkable_count + 1
+            }
           _ => ()
+        }
+      }
+      if shrinkable_count > 0 {
+        let shrink_per_track = remaining_overflow / shrinkable_count.to_double()
+        for i = 0; i < track_count; i = i + 1 {
+          match all_templates[i] {
+            @style.MinMax(_, _) =>
+              // Don't shrink below minimum size
+              base_sizes[i] = max(min_sizes[i], base_sizes[i] - shrink_per_track)
+            _ => ()
+          }
         }
       }
     }
@@ -1525,16 +1551,44 @@ fn compute_child_layout(
   available_width : Double,
   available_height : Double,
 ) -> @node.Layout {
+  // For leaf nodes with auto dimensions, use intrinsic sizes
+  let intrinsic = get_intrinsic_from_measure(child, available_width, available_height)
+
+  // Check if dimensions are constrained
+  let width_is_constrained = match child.style.width {
+    @types.Auto =>
+      // Also constrained if max_width is set
+      match child.style.max_width {
+        @types.Auto => false
+        _ => true
+      }
+    _ => true
+  }
+
+  // Determine default size for auto dimension
+  // For leaf nodes:
+  // - When width is unconstrained: use min height (content shrinks in both directions)
+  // - When width is constrained: use max height (content can expand vertically)
+  // For containers: use available size (will be computed by nested layout)
+  let is_leaf = child.children.length() == 0
+  let width_default = if is_leaf { intrinsic.min_width } else { available_width }
+  // Height uses max if width is constrained (text wrapping behavior)
+  let height_default = if is_leaf {
+    if width_is_constrained { intrinsic.max_height } else { intrinsic.min_height }
+  } else {
+    available_height
+  }
+
   // Resolve child size
   let mut width = resolve_dimension(
     child.style.width,
     available_width,
-    available_width,
+    width_default,
   )
   let mut height = resolve_dimension(
     child.style.height,
     available_height,
-    available_height,
+    height_default,
   )
 
   // Resolve padding and border for minimum size enforcement
@@ -1686,7 +1740,7 @@ fn apply_alignment(
 
   // Calculate item size - don't clamp to cell size, allow overflow
   // If aspect_ratio derived a dimension, don't stretch that dimension
-  let item_width = match child_style.width {
+  let mut item_width = match child_style.width {
     @types.Auto =>
       if has_aspect_ratio && not(height_is_auto) {
         // Width derived from aspect_ratio, use computed width
@@ -1698,7 +1752,7 @@ fn apply_alignment(
       }
     _ => child_layout.width // Keep explicit size, don't clamp
   }
-  let item_height = match child_style.height {
+  let mut item_height = match child_style.height {
     @types.Auto =>
       if has_aspect_ratio && not(width_is_auto) {
         // Height derived from aspect_ratio, use computed height
@@ -1709,6 +1763,24 @@ fn apply_alignment(
         child_layout.height
       }
     _ => child_layout.height // Keep explicit size, don't clamp
+  }
+
+  // Apply min/max constraints
+  let resolved_min_width = resolve_dimension(child_style.min_width, cell_width, 0.0)
+  let resolved_max_width = resolve_dimension(child_style.max_width, cell_width, 1.0e10)
+  let resolved_min_height = resolve_dimension(child_style.min_height, cell_height, 0.0)
+  let resolved_max_height = resolve_dimension(child_style.max_height, cell_height, 1.0e10)
+  if item_width < resolved_min_width {
+    item_width = resolved_min_width
+  }
+  if item_width > resolved_max_width {
+    item_width = resolved_max_width
+  }
+  if item_height < resolved_min_height {
+    item_height = resolved_min_height
+  }
+  if item_height > resolved_max_height {
+    item_height = resolved_max_height
   }
 
   // Calculate position based on alignment
