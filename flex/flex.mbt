@@ -54,7 +54,8 @@ fn compute_intrinsic_main_size(
 }
 
 ///|
-/// Compute intrinsic main size for a flex container
+/// Compute intrinsic size for a flex container
+/// parent_is_row: true = compute width, false = compute height
 fn compute_intrinsic_flex_main_size(
   node : @node.Node,
   parent_is_row : Bool,
@@ -69,15 +70,20 @@ fn compute_intrinsic_flex_main_size(
     @style.Column | @style.ColumnReverse => false
   }
 
+  // Determine if we're computing along this container's main axis or cross axis
+  // parent_is_row = true means we want WIDTH
+  // parent_is_row = false means we want HEIGHT
+  // child_is_row = true means container's main axis is WIDTH, cross is HEIGHT
+  // child_is_row = false means container's main axis is HEIGHT, cross is WIDTH
+  let compute_main_axis = parent_is_row == child_is_row
+
   // For the child flex container, compute available width for resolving percentages
   let child_available_width = if parent_is_row {
-    // Parent is row, so cross is height - we don't know parent's main (width) yet
     match style.width {
       @types.Length(w) => w
-      _ => 0.0 // Use 0 for percentage resolution when width is auto
+      _ => 0.0
     }
   } else {
-    // Parent is column, so cross is width
     match available_cross {
       Some(w) => w
       None =>
@@ -90,65 +96,109 @@ fn compute_intrinsic_flex_main_size(
   let padding = resolve_rect(style.padding, child_available_width)
   let border = resolve_rect(style.border, child_available_width)
 
-  // Get gap values
-  let main_gap = if child_is_row {
-    style.column_gap.resolve_or(child_available_width, 0.0)
-  } else {
-    style.row_gap.resolve_or(0.0, 0.0)
-  }
-
-  // Sum up children's main sizes
-  let mut total_main = 0.0
-  let mut item_count = 0
-  for i = 0; i < children.length(); i = i + 1 {
-    let child = children[i]
-    let child_style = child.style
-    if child_style.display == @style.None {
-      continue
-    }
-    if child_style.position == @style.Absolute {
-      continue
-    }
-    let child_margin = resolve_rect(child_style.margin, child_available_width)
-
-    // Get child's main size
-    let child_main = if child_is_row {
-      // Main axis is width
-      match child_style.width {
-        @types.Length(w) => w + child_margin.left + child_margin.right
-        @types.Percent(p) =>
-          child_available_width * p + child_margin.left + child_margin.right
-        @types.Auto =>
-          // Recursively compute child's intrinsic size
-          compute_intrinsic_main_size(child, true, None) +
-          child_margin.left +
-          child_margin.right
-      }
+  if compute_main_axis {
+    // Computing along this container's main axis: sum children's sizes
+    let main_gap = if child_is_row {
+      style.column_gap.resolve_or(child_available_width, 0.0)
     } else {
-      // Main axis is height
-      match child_style.height {
-        @types.Length(h) => h + child_margin.top + child_margin.bottom
-        @types.Percent(_) => child_margin.top + child_margin.bottom // Can't resolve without parent height
-        @types.Auto =>
-          compute_intrinsic_main_size(child, false, Some(child_available_width)) +
-          child_margin.top +
-          child_margin.bottom
+      style.row_gap.resolve_or(0.0, 0.0)
+    }
+
+    let mut total_main = 0.0
+    let mut item_count = 0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @style.None {
+        continue
+      }
+      if child_style.position == @style.Absolute {
+        continue
+      }
+      let child_margin = resolve_rect(child_style.margin, child_available_width)
+
+      let child_main = if child_is_row {
+        // Main axis is width
+        match child_style.width {
+          @types.Length(w) => w + child_margin.left + child_margin.right
+          @types.Percent(p) =>
+            child_available_width * p + child_margin.left + child_margin.right
+          @types.Auto =>
+            compute_intrinsic_main_size(child, true, None) +
+            child_margin.left +
+            child_margin.right
+        }
+      } else {
+        // Main axis is height
+        match child_style.height {
+          @types.Length(h) => h + child_margin.top + child_margin.bottom
+          @types.Percent(_) => child_margin.top + child_margin.bottom
+          @types.Auto =>
+            compute_intrinsic_main_size(child, false, Some(child_available_width)) +
+            child_margin.top +
+            child_margin.bottom
+        }
+      }
+      total_main = total_main + child_main
+      item_count = item_count + 1
+    }
+
+    if item_count > 1 {
+      total_main = total_main + main_gap * (item_count - 1).to_double()
+    }
+
+    if child_is_row {
+      total_main + padding.left + padding.right + border.left + border.right
+    } else {
+      total_main + padding.top + padding.bottom + border.top + border.bottom
+    }
+  } else {
+    // Computing along this container's cross axis: max of children's sizes
+    let mut max_cross = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @style.None {
+        continue
+      }
+      if child_style.position == @style.Absolute {
+        continue
+      }
+      let child_margin = resolve_rect(child_style.margin, child_available_width)
+
+      let child_cross = if child_is_row {
+        // Cross axis is height (we want height for a Row container)
+        match child_style.height {
+          @types.Length(h) => h + child_margin.top + child_margin.bottom
+          @types.Percent(_) => child_margin.top + child_margin.bottom
+          @types.Auto =>
+            compute_intrinsic_main_size(child, false, Some(child_available_width)) +
+            child_margin.top +
+            child_margin.bottom
+        }
+      } else {
+        // Cross axis is width (we want width for a Column container)
+        match child_style.width {
+          @types.Length(w) => w + child_margin.left + child_margin.right
+          @types.Percent(p) =>
+            child_available_width * p + child_margin.left + child_margin.right
+          @types.Auto =>
+            compute_intrinsic_main_size(child, true, None) +
+            child_margin.left +
+            child_margin.right
+        }
+      }
+      if child_cross > max_cross {
+        max_cross = child_cross
       }
     }
-    total_main = total_main + child_main
-    item_count = item_count + 1
-  }
 
-  // Add gaps between items
-  if item_count > 1 {
-    total_main = total_main + main_gap * (item_count - 1).to_double()
-  }
-
-  // Add padding and border on main axis
-  if child_is_row {
-    total_main + padding.left + padding.right + border.left + border.right
-  } else {
-    total_main + padding.top + padding.bottom + border.top + border.bottom
+    // Add padding and border on cross axis
+    if child_is_row {
+      max_cross + padding.top + padding.bottom + border.top + border.bottom
+    } else {
+      max_cross + padding.left + padding.right + border.left + border.right
+    }
   }
 }
 
