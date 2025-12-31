@@ -238,10 +238,12 @@ fn compute_grid_layout_internal(
   let (column_min_content, column_max_content) = calculate_track_intrinsic_sizes(
     children, adjusted_placements, total_column_count, true, // is_column
     container_width_for_expansion,
+    expanded_columns, style.grid_auto_columns, col_offset,
   )
   let (row_min_content, row_max_content) = calculate_track_intrinsic_sizes(
     children, adjusted_placements, total_row_count, false, // is_column
     container_width_for_expansion, // CSS: percent padding resolves against width
+    expanded_rows, style.grid_auto_rows, row_offset,
   )
 
   // Determine if container has auto sizing
@@ -414,27 +416,56 @@ fn compute_grid_layout_internal(
   // Padding and border create a minimum size even when content is smaller
   let min_width = padding_left + padding_right + border_left + border_right
   let min_height = padding_top + padding_bottom + border_top + border_bottom
+
+  // Resolve min/max width/height constraints
+  let resolved_min_width = match style.min_width {
+    @types.Length(v) => max(v, min_width)
+    @types.Percent(p) => max(p * available_width, min_width)
+    @types.Auto => min_width
+  }
+  let resolved_max_width = match style.max_width {
+    @types.Length(v) => v
+    @types.Percent(p) => p * available_width
+    @types.Auto => 1.0e10
+  }
+  let resolved_min_height = match style.min_height {
+    @types.Length(v) => max(v, min_height)
+    @types.Percent(p) => max(p * available_height, min_height)
+    @types.Auto => min_height
+  }
+  let resolved_max_height = match style.max_height {
+    @types.Length(v) => v
+    @types.Percent(p) => p * available_height
+    @types.Auto => 1.0e10
+  }
+
   let container_width = if width_is_auto {
     // Sum of track sizes + gaps + padding + border
     let total_track_width = calculate_total_track_size(
       column_tracks, column_gap,
     )
-    total_track_width +
-    padding_left +
-    padding_right +
-    border_left +
-    border_right
+    let raw_width = total_track_width +
+      padding_left +
+      padding_right +
+      border_left +
+      border_right
+    // Apply min/max constraints, with padding+border as absolute minimum
+    let clamped = if raw_width > resolved_max_width { resolved_max_width } else { raw_width }
+    if clamped < resolved_min_width { resolved_min_width } else { clamped }
   } else {
     // Enforce minimum size from padding + border
     if preliminary_width > min_width { preliminary_width } else { min_width }
   }
   let container_height = if height_is_auto {
     let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-    total_track_height +
-    padding_top +
-    padding_bottom +
-    border_top +
-    border_bottom
+    let raw_height = total_track_height +
+      padding_top +
+      padding_bottom +
+      border_top +
+      border_bottom
+    // Apply min/max constraints, with padding+border as absolute minimum
+    let clamped = if raw_height > resolved_max_height { resolved_max_height } else { raw_height }
+    if clamped < resolved_min_height { resolved_min_height } else { clamped }
   } else {
     // Enforce minimum size from padding + border
     if preliminary_height > min_height { preliminary_height } else { min_height }
@@ -730,12 +761,16 @@ fn apply_content_alignment(
 
 ///|
 /// Calculate both min-content and max-content sizes for each track
+/// Implements CSS Grid intrinsic sizing algorithm with support for spanning items
 fn calculate_track_intrinsic_sizes(
   children : Array[@node.Node],
   placements : Array[GridItemPlacement],
   track_count : Int,
   is_column : Bool,
   container_width : Double, // For resolving percent padding
+  templates : Array[@style.TrackSizingFunction], // Track templates for type-aware distribution
+  auto_templates : Array[@style.TrackSizingFunction], // Auto track templates
+  explicit_offset : Int, // Offset for explicit tracks
 ) -> (Array[Double], Array[Double]) {
   // (min_content_sizes, max_content_sizes)
   let min_sizes : Array[Double] = []
@@ -744,6 +779,29 @@ fn calculate_track_intrinsic_sizes(
     min_sizes.push(0.0)
     max_sizes.push(0.0)
   }
+
+  // Build track type array for distribution decisions
+  let track_types : Array[@style.TrackSizingFunction] = []
+  let explicit_count = templates.length()
+  for i = 0; i < track_count; i = i + 1 {
+    let track_type = if i < explicit_offset {
+      // Implicit track before explicit grid
+      let k = explicit_offset - i
+      get_auto_template_reverse(auto_templates, k)
+    } else if i < explicit_offset + explicit_count {
+      // Explicit track
+      templates[i - explicit_offset]
+    } else {
+      // Implicit track after explicit grid
+      get_auto_template(auto_templates, i - explicit_offset - explicit_count)
+    }
+    track_types.push(track_type)
+  }
+
+  // Collect item info with span lengths
+  let items : Array[(Int, Int, Int, Double, Double)] = [] // (index, start, end, min, max)
+  let mut max_span = 1
+
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let placement = placements[i]
@@ -758,21 +816,103 @@ fn calculate_track_intrinsic_sizes(
       (placement.row_start, placement.row_end)
     }
 
-    // Only consider items that span exactly one track for intrinsic sizing
-    if track_end - track_start == 1 && track_start < track_count {
-      let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-        child, is_column, container_width,
-      )
-      let min_contribution = min_content + margin_start + margin_end
-      let max_contribution = max_content + margin_start + margin_end
-      if min_contribution > min_sizes[track_start] {
-        min_sizes[track_start] = min_contribution
+    // Skip items outside track range
+    if track_start < 0 || track_end > track_count {
+      continue
+    }
+
+    let span = track_end - track_start
+    if span > max_span {
+      max_span = span
+    }
+
+    let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
+      child, is_column, container_width,
+    )
+    let min_contribution = min_content + margin_start + margin_end
+    let max_contribution = max_content + margin_start + margin_end
+    items.push((i, track_start, track_end, min_contribution, max_contribution))
+  }
+
+  // Phase 1: Handle single-span items
+  for item in items {
+    let (_, start, end, min_contrib, max_contrib) = item
+    if end - start == 1 {
+      if min_contrib > min_sizes[start] {
+        min_sizes[start] = min_contrib
       }
-      if max_contribution > max_sizes[track_start] {
-        max_sizes[track_start] = max_contribution
+      if max_contrib > max_sizes[start] {
+        max_sizes[start] = max_contrib
       }
     }
   }
+
+  // Phase 2: Handle multi-span items (span 2, 3, ... up to max_span)
+  for span_length = 2; span_length <= max_span; span_length = span_length + 1 {
+    for item in items {
+      let (_, start, end, min_contrib, max_contrib) = item
+      let span = end - start
+      if span != span_length {
+        continue
+      }
+
+      // Calculate current sum of spanned tracks
+      let mut min_sum = 0.0
+      let mut max_sum = 0.0
+      for t = start; t < end; t = t + 1 {
+        min_sum = min_sum + min_sizes[t]
+        max_sum = max_sum + max_sizes[t]
+      }
+
+      // Calculate extra space needed
+      let min_extra = min_contrib - min_sum
+      let max_extra = max_contrib - max_sum
+
+      // Count tracks that can grow for max-content distribution
+      // MinContent tracks should not grow for max-content
+      let mut growable_count = 0
+      for t = start; t < end; t = t + 1 {
+        let can_grow = match track_types[t] {
+          @style.MinContent => false
+          _ => true
+        }
+        if can_grow {
+          growable_count = growable_count + 1
+        }
+      }
+
+      // Distribute extra space to min_sizes (all tracks participate)
+      if min_extra > 0.0 {
+        let per_track = min_extra / span.to_double()
+        for t = start; t < end; t = t + 1 {
+          min_sizes[t] = min_sizes[t] + per_track
+        }
+      }
+
+      // Distribute extra space to max_sizes (only growable tracks for max-content)
+      if max_extra > 0.0 {
+        if growable_count > 0 {
+          let per_track = max_extra / growable_count.to_double()
+          for t = start; t < end; t = t + 1 {
+            let can_grow = match track_types[t] {
+              @style.MinContent => false
+              _ => true
+            }
+            if can_grow {
+              max_sizes[t] = max_sizes[t] + per_track
+            }
+          }
+        } else {
+          // All tracks are MinContent, distribute evenly as fallback
+          let per_track = max_extra / span.to_double()
+          for t = start; t < end; t = t + 1 {
+            max_sizes[t] = max_sizes[t] + per_track
+          }
+        }
+      }
+    }
+  }
+
   (min_sizes, max_sizes)
 }
 
@@ -903,8 +1043,28 @@ fn calculate_item_intrinsic_sizes(
     let bl = resolve_dimension(child.style.border.left, container_width, 0.0)
     let br = resolve_dimension(child.style.border.right, container_width, 0.0)
     let box_size = pl + pr + bl + br
-    let final_min = if min_content + box_size > box_size { min_content + box_size } else { box_size }
-    let final_max = if max_content + box_size > box_size { max_content + box_size } else { box_size }
+    let content_min = if min_content + box_size > box_size { min_content + box_size } else { box_size }
+    let content_max = if max_content + box_size > box_size { max_content + box_size } else { box_size }
+
+    // Apply min-width/max-width constraints
+    // Note: padding+border (box_size) is the absolute minimum
+    let style_min_width = match child.style.min_width {
+      @types.Length(v) => v
+      @types.Percent(p) => p * container_width
+      @types.Auto => 0.0
+    }
+    let style_max_width = match child.style.max_width {
+      @types.Length(v) => v
+      @types.Percent(p) => p * container_width
+      @types.Auto => 1.0e10
+    }
+    // Effective minimum is max of style min_width and box_size
+    let effective_min = max(style_min_width, box_size)
+    // Apply constraints: clamp to [effective_min, style_max_width], then ensure >= box_size
+    let final_min = max(effective_min, if content_min < effective_min { effective_min } else { content_min })
+    let clamped_max = if content_max > style_max_width { style_max_width } else { content_max }
+    let final_max = if clamped_max < effective_min { effective_min } else { clamped_max }
+
     let ml = match child.style.margin.left { @types.Length(v) => v; _ => 0.0 }
     let mr = match child.style.margin.right { @types.Length(v) => v; _ => 0.0 }
     (final_min, final_max, ml, mr)
@@ -954,8 +1114,28 @@ fn calculate_item_intrinsic_sizes(
     let bt = resolve_dimension(child.style.border.top, container_width, 0.0)
     let bb = resolve_dimension(child.style.border.bottom, container_width, 0.0)
     let box_size = pt + pb + bt + bb
-    let final_min = if min_content + box_size > box_size { min_content + box_size } else { box_size }
-    let final_max = if max_content + box_size > box_size { max_content + box_size } else { box_size }
+    let content_min = if min_content + box_size > box_size { min_content + box_size } else { box_size }
+    let content_max = if max_content + box_size > box_size { max_content + box_size } else { box_size }
+
+    // Apply min-height/max-height constraints
+    // Note: padding+border (box_size) is the absolute minimum
+    let style_min_height = match child.style.min_height {
+      @types.Length(v) => v
+      @types.Percent(p) => p * container_width // percent height resolves against width
+      @types.Auto => 0.0
+    }
+    let style_max_height = match child.style.max_height {
+      @types.Length(v) => v
+      @types.Percent(p) => p * container_width
+      @types.Auto => 1.0e10
+    }
+    // Effective minimum is max of style min_height and box_size
+    let effective_min = max(style_min_height, box_size)
+    // Apply constraints: clamp to [effective_min, style_max_height], then ensure >= box_size
+    let final_min = max(effective_min, if content_min < effective_min { effective_min } else { content_min })
+    let clamped_max = if content_max > style_max_height { style_max_height } else { content_max }
+    let final_max = if clamped_max < effective_min { effective_min } else { clamped_max }
+
     let mt = match child.style.margin.top { @types.Length(v) => v; _ => 0.0 }
     let mb = match child.style.margin.bottom { @types.Length(v) => v; _ => 0.0 }
     (final_min, final_max, mt, mb)
@@ -1214,14 +1394,34 @@ fn resolve_tracks_with_implicit(
   // Phase 2: Distribute remaining space
   let remaining_space = max(0.0, available_size - fixed_size - total_gaps)
 
-  // If we have fr units, distribute to them first
+  // If we have fr units, distribute to them
   if total_fr > 0.0 {
-    let fr_unit = remaining_space / total_fr
-    for i = 0; i < track_count; i = i + 1 {
-      let template = all_templates[i]
-      match template {
-        @style.Fr(fr) => base_sizes[i] = fr * fr_unit
-        _ => ()
+    if size_is_definite {
+      // Container size is definite: distribute remaining space to Fr tracks
+      let fr_unit = remaining_space / total_fr
+      for i = 0; i < track_count; i = i + 1 {
+        let template = all_templates[i]
+        match template {
+          @style.Fr(fr) => base_sizes[i] = fr * fr_unit
+          _ => ()
+        }
+      }
+    } else {
+      // Container size is indefinite: Fr tracks use their max-content size
+      // Per CSS Grid spec, fr units are treated as max-content when container is auto-sized
+      for i = 0; i < track_count; i = i + 1 {
+        let template = all_templates[i]
+        match template {
+          @style.Fr(_) => {
+            let max_content = if i < max_content_sizes.length() {
+              max_content_sizes[i]
+            } else {
+              0.0
+            }
+            base_sizes[i] = max_content
+          }
+          _ => ()
+        }
       }
     }
   } else if size_is_definite {
@@ -1913,22 +2113,38 @@ fn apply_alignment(
     _ => child_layout.height // Keep explicit size, don't clamp
   }
 
-  // Apply min/max constraints
-  let resolved_min_width = resolve_dimension(child_style.min_width, cell_width, 0.0)
+  // Calculate child's padding + border as absolute minimum
+  let child_padding_left = resolve_dimension(child_style.padding.left, cell_width, 0.0)
+  let child_padding_right = resolve_dimension(child_style.padding.right, cell_width, 0.0)
+  let child_padding_top = resolve_dimension(child_style.padding.top, cell_height, 0.0)
+  let child_padding_bottom = resolve_dimension(child_style.padding.bottom, cell_height, 0.0)
+  let child_border_left = resolve_dimension(child_style.border.left, cell_width, 0.0)
+  let child_border_right = resolve_dimension(child_style.border.right, cell_width, 0.0)
+  let child_border_top = resolve_dimension(child_style.border.top, cell_height, 0.0)
+  let child_border_bottom = resolve_dimension(child_style.border.bottom, cell_height, 0.0)
+  let child_min_from_box = child_padding_left + child_padding_right + child_border_left + child_border_right
+  let child_min_height_from_box = child_padding_top + child_padding_bottom + child_border_top + child_border_bottom
+
+  // Apply min/max constraints, with padding+border as absolute minimum
+  let style_min_width = resolve_dimension(child_style.min_width, cell_width, 0.0)
+  let resolved_min_width = max(style_min_width, child_min_from_box)
   let resolved_max_width = resolve_dimension(child_style.max_width, cell_width, 1.0e10)
-  let resolved_min_height = resolve_dimension(child_style.min_height, cell_height, 0.0)
+  let style_min_height = resolve_dimension(child_style.min_height, cell_height, 0.0)
+  let resolved_min_height = max(style_min_height, child_min_height_from_box)
   let resolved_max_height = resolve_dimension(child_style.max_height, cell_height, 1.0e10)
-  if item_width < resolved_min_width {
-    item_width = resolved_min_width
-  }
+
+  // Clamp: min <= size <= max, but min always wins if min > max
   if item_width > resolved_max_width {
     item_width = resolved_max_width
   }
-  if item_height < resolved_min_height {
-    item_height = resolved_min_height
+  if item_width < resolved_min_width {
+    item_width = resolved_min_width
   }
   if item_height > resolved_max_height {
     item_height = resolved_max_height
+  }
+  if item_height < resolved_min_height {
+    item_height = resolved_min_height
   }
 
   // Calculate remaining space for auto margins
