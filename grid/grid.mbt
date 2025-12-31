@@ -3172,24 +3172,14 @@ fn layout_absolute_child(
 
   // Handle display:none - return zero-sized layout
   if style.display == @style.None {
-    return {
-      id: child.id,
-      x: 0.0,
-      y: 0.0,
-      width: 0.0,
-      height: 0.0,
-      margin: default_rect(),
-      padding: default_rect(),
-      border: default_rect(),
-      children: [],
-    }
+    return @absolute.create_zero_layout(child.id)
   }
 
   // Determine the containing block (grid area) for the absolute item
   // If grid-column/row are specified, use those grid lines
   // Otherwise, use the padding box of the container
 
-  // Resolve grid area boundaries
+  // Resolve grid area boundaries (Grid-specific)
   let (area_left, area_right) = resolve_absolute_grid_area_x(
     style.grid_column,
     column_tracks,
@@ -3212,77 +3202,18 @@ fn layout_absolute_child(
   let area_width = area_right - area_left
   let area_height = area_bottom - area_top
 
-  // Resolve margin values
-  let margin_left = resolve_length_dimension(style.margin.left, area_width)
-  let margin_right = resolve_length_dimension(style.margin.right, area_width)
-  let margin_top = resolve_length_dimension(style.margin.top, area_height)
-  let margin_bottom = resolve_length_dimension(style.margin.bottom, area_height)
-
-  // Resolve inset values
-  let inset_left = resolve_inset(style.inset.left, area_width)
-  let inset_right = resolve_inset(style.inset.right, area_width)
-  let inset_top = resolve_inset(style.inset.top, area_height)
-  let inset_bottom = resolve_inset(style.inset.bottom, area_height)
-
-  // Determine initial size
-  // Priority: explicit width > insets > intrinsic
-  let initial_width = match style.width {
-    @types.Length(w) => Some(w)
-    @types.Percent(p) => Some(area_width * p)
-    @types.Auto =>
-      match (inset_left, inset_right) {
-        (Some(l), Some(r)) => {
-          let w = area_width - l - r - margin_left - margin_right
-          if w > 0.0 { Some(w) } else { Some(0.0) }
-        }
-        _ => None
-      }
-  }
-
-  let initial_height = match style.height {
-    @types.Length(h) => Some(h)
-    @types.Percent(p) => Some(area_height * p)
-    @types.Auto =>
-      match (inset_top, inset_bottom) {
-        (Some(t), Some(b)) => {
-          let h = area_height - t - b - margin_top - margin_bottom
-          if h > 0.0 { Some(h) } else { Some(0.0) }
-        }
-        _ => None
-      }
-  }
-
-  // Resolve min/max constraints for aspect ratio calculation
-  let min_w = match style.min_width {
-    @types.Length(v) => v
-    @types.Percent(p) => area_width * p
-    @types.Auto => 0.0
-  }
-  let max_w = match style.max_width {
-    @types.Length(v) => v
-    @types.Percent(p) => area_width * p
-    @types.Auto => @double.infinity
-  }
-  let min_h = match style.min_height {
-    @types.Length(v) => v
-    @types.Percent(p) => area_height * p
-    @types.Auto => 0.0
-  }
-  let max_h = match style.max_height {
-    @types.Length(v) => v
-    @types.Percent(p) => area_height * p
-    @types.Auto => @double.infinity
-  }
+  // Use shared absolute module for size calculation
+  let params = @absolute.compute_size_params(style, area_width, area_height)
 
   // Apply aspect ratio to calculate missing dimension
   let (width, height) = @types.resolve_dimensions_with_aspect_ratio(
-    initial_width,
-    initial_height,
+    params.initial_width,
+    params.initial_height,
     style.aspect_ratio,
-    min_w,
-    max_w,
-    min_h,
-    max_h,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
   )
 
   // Compute intrinsic size if needed
@@ -3293,7 +3224,6 @@ fn layout_absolute_child(
     }
     (Some(w), None) => {
       let inner = compute_child_layout(child, w, 1.0e10)
-      // Apply aspect_ratio to intrinsic size
       let h = match style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -3302,7 +3232,6 @@ fn layout_absolute_child(
     }
     (None, Some(h)) => {
       let inner = compute_child_layout(child, 1.0e10, h)
-      // Apply aspect_ratio to intrinsic size
       let w = match style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
         _ => inner.width
@@ -3311,7 +3240,6 @@ fn layout_absolute_child(
     }
     (None, None) => {
       let inner = compute_child_layout(child, 1.0e10, 1.0e10)
-      // Apply aspect_ratio to intrinsic size
       match style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
           let w = inner.width
@@ -3323,61 +3251,27 @@ fn layout_absolute_child(
     }
   }
 
-  // Apply min/max constraints
-  let final_width = clamp_value(child_width, min_w, max_w)
-  let final_height = clamp_value(child_height, min_h, max_h)
+  // Apply min/max constraints and re-apply aspect ratio
+  let (final_width, final_height) = @absolute.apply_constraints_with_aspect_ratio(
+    child_width,
+    child_height,
+    style,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
 
-  // Re-apply aspect ratio after min/max constraints
-  let (final_width, final_height) = match style.aspect_ratio {
-    Some(ar) if ar > 0.0 => {
-      // Check if width or height has constraint
-      let width_has_constraint = match style.max_width {
-        @types.Length(_) => true
-        @types.Percent(_) => true
-        @types.Auto =>
-          match style.min_width {
-            @types.Length(_) => true
-            @types.Percent(_) => true
-            @types.Auto => false
-          }
-      }
-      let height_has_constraint = match style.max_height {
-        @types.Length(_) => true
-        @types.Percent(_) => true
-        @types.Auto =>
-          match style.min_height {
-            @types.Length(_) => true
-            @types.Percent(_) => true
-            @types.Auto => false
-          }
-      }
-      if height_has_constraint && not(width_has_constraint) {
-        (final_height * ar, final_height)
-      } else {
-        (final_width, final_width / ar)
-      }
-    }
-    _ => (final_width, final_height)
-  }
-
-  // Determine position (including margin)
-  let x = match inset_left {
-    Some(l) => area_left + l + margin_left
-    None =>
-      match inset_right {
-        Some(r) => area_right - r - margin_right - final_width
-        None => area_left + margin_left // Default to start
-      }
-  }
-
-  let y = match inset_top {
-    Some(t) => area_top + t + margin_top
-    None =>
-      match inset_bottom {
-        Some(b) => area_bottom - b - margin_bottom - final_height
-        None => area_top + margin_top // Default to start
-      }
-  }
+  // Compute position using shared module
+  let (x, y) = @absolute.compute_inset_position(
+    params,
+    final_width,
+    final_height,
+    area_left,
+    area_top,
+    area_width,
+    area_height,
+  )
 
   {
     id: child.id,
@@ -3389,38 +3283,6 @@ fn layout_absolute_child(
     padding: default_rect(),
     border: default_rect(),
     children: child_inner.children,
-  }
-}
-
-///|
-/// Clamp a value between min and max
-fn clamp_value(value : Double, min_val : Double, max_val : Double) -> Double {
-  if value < min_val {
-    min_val
-  } else if value > max_val {
-    max_val
-  } else {
-    value
-  }
-}
-
-///|
-/// Resolve inset dimension (left, right, top, bottom)
-fn resolve_inset(dim : @types.Dimension, available : Double) -> Double? {
-  match dim {
-    @types.Length(v) => Some(v)
-    @types.Percent(p) => Some(available * p)
-    @types.Auto => None
-  }
-}
-
-///|
-/// Resolve length dimension (margin, etc.) - Auto becomes 0
-fn resolve_length_dimension(dim : @types.Dimension, available : Double) -> Double {
-  match dim {
-    @types.Length(v) => v
-    @types.Percent(p) => available * p
-    @types.Auto => 0.0
   }
 }
 

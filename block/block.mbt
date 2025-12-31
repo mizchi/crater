@@ -504,128 +504,38 @@ fn layout_absolute_child(
 
   // Handle display:none - return zero-sized layout
   if child_style.display == @style.None {
-    let zero_rect : @types.Rect[Double] = {
-      left: 0.0,
-      right: 0.0,
-      top: 0.0,
-      bottom: 0.0,
-    }
-    return {
-      id: child.id,
-      x: 0.0,
-      y: 0.0,
-      width: 0.0,
-      height: 0.0,
-      margin: zero_rect,
-      padding: zero_rect,
-      border: zero_rect,
-      children: [],
-    }
+    return @absolute.create_zero_layout(child.id)
   }
 
-  // Resolve margin values and track which are auto
-  let child_margin = resolve_rect(child_style.margin, container_width)
-  let margin_left = child_margin.left
-  let margin_right = child_margin.right
-  let margin_top = child_margin.top
-  let margin_bottom = child_margin.bottom
-
-  // Check if margins are Auto (for centering behavior)
-  let margin_left_is_auto = match child_style.margin.left {
-    @types.Auto => true
-    _ => false
-  }
-  let margin_right_is_auto = match child_style.margin.right {
-    @types.Auto => true
-    _ => false
-  }
-  let margin_top_is_auto = match child_style.margin.top {
-    @types.Auto => true
-    _ => false
-  }
-  let margin_bottom_is_auto = match child_style.margin.bottom {
-    @types.Auto => true
-    _ => false
-  }
-
-  // Resolve inset values
-  let inset_left = child_style.inset.left.resolve(container_width)
-  let inset_right = child_style.inset.right.resolve(container_width)
-  let inset_top = child_style.inset.top.resolve(container_height)
-  let inset_bottom = child_style.inset.bottom.resolve(container_height)
-
-  // Calculate initial child width (before min/max constraints)
-  let initial_width : Double? = match child_style.width {
-    @types.Length(w) => Some(w)
-    @types.Percent(p) => Some(container_width * p)
-    @types.Auto =>
-      // If both left and right are set, calculate from insets
-      match (inset_left, inset_right) {
-        (Some(l), Some(r)) => {
-          let w = container_width - l - r - margin_left - margin_right
-          Some(if w > 0.0 { w } else { 0.0 })
-        }
-        _ => None // Need intrinsic size
-      }
-  }
-
-  // Calculate initial child height (before min/max constraints)
-  let initial_height : Double? = match child_style.height {
-    @types.Length(h) => Some(h)
-    @types.Percent(p) => Some(container_height * p)
-    @types.Auto =>
-      // If both top and bottom are set, calculate from insets
-      match (inset_top, inset_bottom) {
-        (Some(t), Some(b)) => {
-          let h = container_height - t - b - margin_top - margin_bottom
-          Some(if h > 0.0 { h } else { 0.0 })
-        }
-        _ => None // Need intrinsic size
-      }
-  }
-
-  // Resolve min/max constraints for aspect ratio calculation
-  let min_w = match child_style.min_width {
-    @types.Length(v) => v
-    @types.Percent(p) => container_width * p
-    @types.Auto => 0.0
-  }
-  let max_w = match child_style.max_width {
-    @types.Length(v) => v
-    @types.Percent(p) => container_width * p
-    @types.Auto => @double.infinity
-  }
-  let min_h = match child_style.min_height {
-    @types.Length(v) => v
-    @types.Percent(p) => container_height * p
-    @types.Auto => 0.0
-  }
-  let max_h = match child_style.max_height {
-    @types.Length(v) => v
-    @types.Percent(p) => container_height * p
-    @types.Auto => @double.infinity
-  }
+  // Use shared absolute module for size calculation
+  let params = @absolute.compute_size_params(
+    child_style,
+    container_width,
+    container_height,
+  )
 
   // Apply aspect ratio to calculate missing dimension
   let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
-    initial_width,
-    initial_height,
+    params.initial_width,
+    params.initial_height,
     child_style.aspect_ratio,
-    min_w,
-    max_w,
-    min_h,
-    max_h,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
   )
 
   // Compute intrinsic size if needed, and get child's inner layout
-  let (child_width, child_height, child_inner) = match (initial_width, initial_height) {
+  let (child_width, child_height, child_inner) = match (
+    initial_width,
+    initial_height,
+  ) {
     (Some(w), Some(h)) => {
       let inner = compute_nested(child, w, Some(h), warnings)
       (w, h, inner)
     }
     (Some(w), None) => {
       let inner = compute_nested(child, w, None, warnings)
-      // Apply aspect_ratio to intrinsic size
       let h = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -634,7 +544,6 @@ fn layout_absolute_child(
     }
     (None, Some(h)) => {
       let inner = compute_nested(child, container_width, Some(h), warnings)
-      // Apply aspect_ratio to intrinsic size
       let w = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
         _ => inner.width
@@ -642,8 +551,12 @@ fn layout_absolute_child(
       (w, h, inner)
     }
     (None, None) => {
-      let inner = compute_nested(child, container_width, Some(container_height), warnings)
-      // Apply aspect_ratio to intrinsic size
+      let inner = compute_nested(
+        child,
+        container_width,
+        Some(container_height),
+        warnings,
+      )
       match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
           let w = inner.width
@@ -655,46 +568,26 @@ fn layout_absolute_child(
     }
   }
 
-  // Apply min/max constraints
-  let child_width = @types.clamp(child_width, min_w, max_w)
-  let child_height = @types.clamp(child_height, min_h, max_h)
+  // Apply min/max constraints and re-apply aspect ratio
+  let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
+    child_width,
+    child_height,
+    child_style,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
 
-  // Re-apply aspect ratio after min/max constraints
-  let (child_width, child_height) = match child_style.aspect_ratio {
-    Some(ar) if ar > 0.0 => {
-      // Check if width or height has constraint
-      let width_has_constraint = match child_style.max_width {
-        @types.Length(_) => true
-        @types.Percent(_) => true
-        @types.Auto =>
-          match child_style.min_width {
-            @types.Length(_) => true
-            @types.Percent(_) => true
-            @types.Auto => false
-          }
-      }
-      let height_has_constraint = match child_style.max_height {
-        @types.Length(_) => true
-        @types.Percent(_) => true
-        @types.Auto =>
-          match child_style.min_height {
-            @types.Length(_) => true
-            @types.Percent(_) => true
-            @types.Auto => false
-          }
-      }
-      if height_has_constraint && not(width_has_constraint) {
-        (child_height * ar, child_height)
-      } else {
-        (child_width, child_width / ar)
-      }
-    }
-    _ => (child_width, child_height)
-  }
+  // Check if margins are Auto (for centering behavior)
+  let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
+  let margin_right_is_auto = @absolute.is_margin_auto(child_style.margin.right)
+  let margin_top_is_auto = @absolute.is_margin_auto(child_style.margin.top)
+  let margin_bottom_is_auto = @absolute.is_margin_auto(child_style.margin.bottom)
 
   // Calculate position
   // Note: For absolute positioning, the containing block is the padding box
-  let child_x = match (inset_left, inset_right) {
+  let child_x = match (params.inset_left, params.inset_right) {
     (Some(l), Some(r)) => {
       // Both insets specified
       // Check for margin auto centering behavior
@@ -704,22 +597,22 @@ fn layout_absolute_child(
         l + available / 2.0 + parent_border.left
       } else if margin_left_is_auto {
         // Only left margin auto: push to right
-        container_width - child_width - r - margin_right + parent_border.left
+        container_width - child_width - r - params.margin_right + parent_border.left
       } else if margin_right_is_auto {
         // Only right margin auto: push to left
-        l + margin_left + parent_border.left
+        l + params.margin_left + parent_border.left
       } else {
         // No auto margins: over-constrained, use left inset
-        l + margin_left + parent_border.left
+        l + params.margin_left + parent_border.left
       }
     }
-    (Some(l), None) => l + margin_left + parent_border.left
+    (Some(l), None) => l + params.margin_left + parent_border.left
     (None, Some(r)) =>
-      container_width - child_width - r - margin_right - parent_border.right
-    (None, None) => margin_left + parent_border.left
+      container_width - child_width - r - params.margin_right - parent_border.right
+    (None, None) => params.margin_left + parent_border.left
   }
 
-  let child_y = match (inset_top, inset_bottom) {
+  let child_y = match (params.inset_top, params.inset_bottom) {
     (Some(t), Some(b)) => {
       // Both insets specified
       // Check for margin auto centering behavior
@@ -729,20 +622,22 @@ fn layout_absolute_child(
         t + available / 2.0 + parent_border.top
       } else if margin_top_is_auto {
         // Only top margin auto: push to bottom
-        container_height - child_height - b - margin_bottom + parent_border.top
+        container_height - child_height - b - params.margin_bottom + parent_border.top
       } else if margin_bottom_is_auto {
         // Only bottom margin auto: push to top
-        t + margin_top + parent_border.top
+        t + params.margin_top + parent_border.top
       } else {
         // No auto margins: over-constrained, use top inset
-        t + margin_top + parent_border.top
+        t + params.margin_top + parent_border.top
       }
     }
-    (Some(t), None) => t + margin_top + parent_border.top
+    (Some(t), None) => t + params.margin_top + parent_border.top
     (None, Some(b)) =>
-      container_height - child_height - b - margin_bottom - parent_border.bottom
-    (None, None) => margin_top + parent_border.top
+      container_height - child_height - b - params.margin_bottom - parent_border.bottom
+    (None, None) => params.margin_top + parent_border.top
   }
+
+  let child_margin = resolve_rect(child_style.margin, container_width)
 
   {
     id: child.id,

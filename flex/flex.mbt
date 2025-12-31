@@ -1644,100 +1644,36 @@ fn compute_internal(
 
     // Skip display:none children - create zero-sized layout
     if child_style.display == @style.None {
-      let zero_rect : @types.Rect[Double] = { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
-      let zero_layout : @node.Layout = {
-        id: child.id,
-        x: 0.0,
-        y: 0.0,
-        width: 0.0,
-        height: 0.0,
-        margin: zero_rect,
-        padding: zero_rect,
-        border: zero_rect,
-        children: [],
-      }
-      indexed_layouts.push({ dom_index: i, layout: zero_layout })
+      indexed_layouts.push({
+        dom_index: i,
+        layout: @absolute.create_zero_layout(child.id),
+      })
       continue
     }
 
-    // Resolve margin values
-    let child_margin = resolve_rect(child_style.margin, container_width)
-    let margin_left = child_margin.left
-    let margin_right = child_margin.right
-    let margin_top = child_margin.top
-    let margin_bottom = child_margin.bottom
-
-    // Resolve inset values
-    let inset_left = child_style.inset.left.resolve(container_width)
-    let inset_right = child_style.inset.right.resolve(container_width)
-    let inset_top = child_style.inset.top.resolve(final_height)
-    let inset_bottom = child_style.inset.bottom.resolve(final_height)
-
-    // Calculate initial child width (before min/max constraints)
-    let initial_width : Double? = match child_style.width {
-      @types.Length(w) => Some(w)
-      @types.Percent(p) => Some(container_width * p)
-      @types.Auto =>
-        // If both left and right are set, calculate from insets
-        match (inset_left, inset_right) {
-          (Some(l), Some(r)) => {
-            let w = container_width - l - r - margin_left - margin_right
-            Some(if w > 0.0 { w } else { 0.0 })
-          }
-          _ => None // Need intrinsic size
-        }
-    }
-
-    // Calculate initial child height (before min/max constraints)
-    let initial_height : Double? = match child_style.height {
-      @types.Length(h) => Some(h)
-      @types.Percent(p) => Some(final_height * p)
-      @types.Auto =>
-        // If both top and bottom are set, calculate from insets
-        match (inset_top, inset_bottom) {
-          (Some(t), Some(b)) => {
-            let h = final_height - t - b - margin_top - margin_bottom
-            Some(if h > 0.0 { h } else { 0.0 })
-          }
-          _ => None // Need intrinsic size
-        }
-    }
-
-    // Resolve min/max constraints for aspect ratio calculation
-    let min_w = match child_style.min_width {
-      @types.Length(v) => v
-      @types.Percent(p) => container_width * p
-      @types.Auto => 0.0
-    }
-    let max_w = match child_style.max_width {
-      @types.Length(v) => v
-      @types.Percent(p) => container_width * p
-      @types.Auto => @double.infinity
-    }
-    let min_h = match child_style.min_height {
-      @types.Length(v) => v
-      @types.Percent(p) => final_height * p
-      @types.Auto => 0.0
-    }
-    let max_h = match child_style.max_height {
-      @types.Length(v) => v
-      @types.Percent(p) => final_height * p
-      @types.Auto => @double.infinity
-    }
+    // Use shared absolute module for size calculation
+    let params = @absolute.compute_size_params(
+      child_style,
+      container_width,
+      final_height,
+    )
 
     // Apply aspect ratio to calculate missing dimension
     let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
-      initial_width,
-      initial_height,
+      params.initial_width,
+      params.initial_height,
       child_style.aspect_ratio,
-      min_w,
-      max_w,
-      min_h,
-      max_h,
+      params.min_width,
+      params.max_width,
+      params.min_height,
+      params.max_height,
     )
 
     // Compute intrinsic size if needed, and get child's inner layout
-    let (child_width, child_height, child_inner) = match (initial_width, initial_height) {
+    let (child_width, child_height, child_inner) = match (
+      initial_width,
+      initial_height,
+    ) {
       (Some(w), Some(h)) => {
         let inner = compute_nested(
           child,
@@ -1768,10 +1704,8 @@ fn compute_internal(
           { available_width: container_width, available_height: Some(final_height) },
           warnings,
         )
-        // Apply aspect_ratio to intrinsic size
         match child_style.aspect_ratio {
           Some(ar) if ar > 0.0 => {
-            // Use intrinsic width to calculate height via aspect_ratio
             let w = inner.width
             let h = w / ar
             (w, h, inner)
@@ -1781,73 +1715,47 @@ fn compute_internal(
       }
     }
 
-    // Apply min/max constraints
-    let child_width = apply_min_max_width(child_width, child_style, container_width)
-    let child_height = apply_min_max_height(child_height, child_style, final_height)
-
-    // Re-apply aspect ratio after min/max constraints
-    // This handles cases like max_width or max_height with aspect_ratio
-    let (child_width, child_height) = match child_style.aspect_ratio {
-      Some(ar) if ar > 0.0 => {
-        // Check if width has any constraint (min or max)
-        let width_has_constraint = match child_style.max_width {
-          @types.Length(_) => true
-          @types.Percent(_) => true
-          @types.Auto =>
-            match child_style.min_width {
-              @types.Length(_) => true
-              @types.Percent(_) => true
-              @types.Auto => false
-            }
-        }
-        // Check if height has any constraint (min or max)
-        let height_has_constraint = match child_style.max_height {
-          @types.Length(_) => true
-          @types.Percent(_) => true
-          @types.Auto =>
-            match child_style.min_height {
-              @types.Length(_) => true
-              @types.Percent(_) => true
-              @types.Auto => false
-            }
-        }
-        // If height has constraint but width doesn't, height is the driver
-        if height_has_constraint && not(width_has_constraint) {
-          // Height is the driver, calculate width
-          (child_height * ar, child_height)
-        } else {
-          // Width is the driver, calculate height
-          (child_width, child_width / ar)
-        }
-      }
-      _ => (child_width, child_height)
-    }
+    // Apply min/max constraints and re-apply aspect ratio
+    let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
+      child_width,
+      child_height,
+      child_style,
+      params.min_width,
+      params.max_width,
+      params.min_height,
+      params.max_height,
+    )
 
     // Calculate position
     // If insets are specified, use them; otherwise use align_items/justify_content
-    let has_horizontal_inset = inset_left != None || inset_right != None
-    let has_vertical_inset = inset_top != None || inset_bottom != None
+    let has_horizontal_inset = params.inset_left != None ||
+      params.inset_right != None
+    let has_vertical_inset = params.inset_top != None ||
+      params.inset_bottom != None
 
     // Note: For absolute positioning, the containing block is the padding box
     // (inside border, but NOT inside padding). So we add border but NOT padding
     // to position calculations.
     let child_x = if has_horizontal_inset {
-      match inset_left {
-        Some(l) => l + margin_left + border.left
+      match params.inset_left {
+        Some(l) => l + params.margin_left + border.left
         None =>
-          match inset_right {
+          match params.inset_right {
             Some(r) =>
-              container_width -
-              child_width -
-              r -
-              margin_right -
-              border.right
-            None => margin_left + border.left
+              container_width - child_width - r - params.margin_right - border.right
+            None => params.margin_left + border.left
           }
       }
     } else {
       // Use align_items for cross-axis positioning (x for row direction)
-      let free_space = container_width - child_width - margin_left - margin_right
+      let free_space = container_width -
+        child_width -
+        params.margin_left -
+        params.margin_right
+      let is_wrap_reverse = match style.flex_wrap {
+        @style.WrapReverse => true
+        _ => false
+      }
       let align_offset = if is_row {
         // For row, main axis is horizontal
         // Use justify_self/justify_content for main axis (x)
@@ -1859,40 +1767,55 @@ fn compute_internal(
       } else {
         // For column, cross axis is horizontal
         // Use align_self/align_items for cross axis (x)
-        compute_align_self_offset(
+        let offset = compute_align_self_offset(
           child_style.align_self,
           style.align_items,
           free_space,
         )
+        // WrapReverse flips cross-axis direction: Start <-> End
+        if is_wrap_reverse && free_space > 0.0 {
+          free_space - offset
+        } else {
+          offset
+        }
       }
-      margin_left + align_offset + border.left
+      params.margin_left + align_offset + border.left
     }
 
     let child_y = if has_vertical_inset {
-      match inset_top {
-        Some(t) => t + margin_top + border.top
+      match params.inset_top {
+        Some(t) => t + params.margin_top + border.top
         None =>
-          match inset_bottom {
+          match params.inset_bottom {
             Some(b) =>
-              final_height -
-              child_height -
-              b -
-              margin_bottom -
-              border.bottom
-            None => margin_top + border.top
+              final_height - child_height - b - params.margin_bottom - border.bottom
+            None => params.margin_top + border.top
           }
       }
     } else {
       // Use justify_content for main-axis positioning (y for column direction)
-      let free_space = final_height - child_height - margin_top - margin_bottom
+      let free_space = final_height -
+        child_height -
+        params.margin_top -
+        params.margin_bottom
+      let is_wrap_reverse = match style.flex_wrap {
+        @style.WrapReverse => true
+        _ => false
+      }
       let align_offset = if is_row {
         // For row, cross axis is vertical
         // Use align_self/align_items for cross axis (y)
-        compute_align_self_offset(
+        let offset = compute_align_self_offset(
           child_style.align_self,
           style.align_items,
           free_space,
         )
+        // WrapReverse flips cross-axis direction: Start <-> End
+        if is_wrap_reverse && free_space > 0.0 {
+          free_space - offset
+        } else {
+          offset
+        }
       } else {
         // For column, main axis is vertical
         // Use justify_self/justify_content for main axis (y)
@@ -1902,8 +1825,10 @@ fn compute_internal(
           free_space,
         )
       }
-      margin_top + align_offset + border.top
+      params.margin_top + align_offset + border.top
     }
+
+    let child_margin = resolve_rect(child_style.margin, container_width)
 
     // Build child layout
     let child_layout : @node.Layout = {
@@ -2121,78 +2046,6 @@ fn compute_align(
     @style.Baseline => available // For simple boxes, baseline = bottom = End alignment
     _ => 0.0 // Default to start for space-* alignments
   }
-}
-
-///|
-/// Apply min/max width constraints
-fn apply_min_max_width(
-  width : Double,
-  style : @style.Style,
-  available : Double,
-) -> Double {
-  let mut result = width
-
-  // Apply min_width
-  match style.min_width {
-    @types.Length(v) => if result < v { result = v }
-    @types.Percent(p) => {
-      let v = available * p
-      if result < v {
-        result = v
-      }
-    }
-    @types.Auto => ()
-  }
-
-  // Apply max_width
-  match style.max_width {
-    @types.Length(v) => if result > v { result = v }
-    @types.Percent(p) => {
-      let v = available * p
-      if result > v {
-        result = v
-      }
-    }
-    @types.Auto => ()
-  }
-
-  result
-}
-
-///|
-/// Apply min/max height constraints
-fn apply_min_max_height(
-  height : Double,
-  style : @style.Style,
-  available : Double,
-) -> Double {
-  let mut result = height
-
-  // Apply min_height
-  match style.min_height {
-    @types.Length(v) => if result < v { result = v }
-    @types.Percent(p) => {
-      let v = available * p
-      if result < v {
-        result = v
-      }
-    }
-    @types.Auto => ()
-  }
-
-  // Apply max_height
-  match style.max_height {
-    @types.Length(v) => if result > v { result = v }
-    @types.Percent(p) => {
-      let v = available * p
-      if result > v {
-        result = v
-      }
-    }
-    @types.Auto => ()
-  }
-
-  result
 }
 
 ///|

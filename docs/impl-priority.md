@@ -126,9 +126,10 @@
 5. **negative space handling** (+13): Space* の negative space 対応
 6. **test fixes** (+2): reverse テストの期待値修正
 
-### P2での修正 (+3 tests)
+### P2での修正 (+16 tests)
 
 1. **wrap container intrinsic sizing** (+3): wrap container は available width を使用
+2. **WrapReverse absolute positioning** (+?): 絶対配置要素の cross-axis 反転
 
 ## 残りの課題
 
