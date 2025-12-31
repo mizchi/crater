@@ -553,9 +553,25 @@ fn compute_internal(
               // Try to use aspect_ratio if cross dimension is known
               match (child_style.aspect_ratio, explicit_cross) {
                 (Some(ratio), Some(cross_val)) => cross_val * ratio
-                _ =>
-                  // Compute intrinsic width from children
-                  compute_intrinsic_main_size(child, true, content_height)
+                _ => {
+                  // For wrap containers, use available main size as their main size
+                  // CSS spec: wrap containers use definite available main size for layout
+                  let is_wrap = match child_style.flex_wrap {
+                    @style.Wrap | @style.WrapReverse => true
+                    _ => false
+                  }
+                  let is_row_flex = match child_style.flex_direction {
+                    @style.Row | @style.RowReverse => true
+                    _ => false
+                  }
+                  // Note: Check for wrap/direction regardless of explicit display
+                  if is_wrap && is_row_flex {
+                    content_width // Use available width for row wrap container
+                  } else {
+                    // Compute intrinsic width from children
+                    compute_intrinsic_main_size(child, true, content_height)
+                  }
+                }
               }
           }
         } else {
@@ -570,9 +586,25 @@ fn compute_internal(
               // Try to use aspect_ratio if cross dimension is known
               match (child_style.aspect_ratio, explicit_cross) {
                 (Some(ratio), Some(cross_val)) => cross_val / ratio
-                _ =>
-                  // Compute intrinsic height from children
-                  compute_intrinsic_main_size(child, false, Some(content_width))
+                _ => {
+                  // For wrap containers, use available main size
+                  let is_wrap = match child_style.flex_wrap {
+                    @style.Wrap | @style.WrapReverse => true
+                    _ => false
+                  }
+                  let is_col_flex = match child_style.flex_direction {
+                    @style.Column | @style.ColumnReverse => true
+                    _ => false
+                  }
+                  // Note: Check for wrap/direction regardless of explicit display
+                  match content_height {
+                    Some(ch) if is_wrap && is_col_flex =>
+                      ch // Use available height for column wrap container
+                    _ =>
+                      // Compute intrinsic height from children
+                      compute_intrinsic_main_size(child, false, Some(content_width))
+                  }
+                }
               }
           }
         }
@@ -648,13 +680,28 @@ fn compute_internal(
           // Otherwise compute intrinsic width from children
           match (child_style.aspect_ratio, explicit_main) {
             (Some(ratio), Some(main_val)) => (main_val * ratio, true)
-            _ =>
-              // Compute intrinsic width for containers with children
-              if child.children.length() > 0 {
+            _ => {
+              // For row wrap containers, use available width
+              // (they need a definite width to determine when to wrap)
+              let is_wrap = match child_style.flex_wrap {
+                @style.Wrap | @style.WrapReverse => true
+                _ => false
+              }
+              let is_row_flex = match child_style.flex_direction {
+                @style.Row | @style.RowReverse => true
+                _ => false
+              }
+              // Note: Check for wrap/direction regardless of explicit display
+              // (flex_wrap/flex_direction imply flex behavior)
+              if is_wrap && is_row_flex {
+                (content_width, true) // Use available width for row wrap container
+              } else if child.children.length() > 0 {
+                // Compute intrinsic width for containers with children
                 (compute_intrinsic_main_size(child, true, content_height), true)
               } else {
                 (0.0, true)
               }
+            }
           }
       }
     }
