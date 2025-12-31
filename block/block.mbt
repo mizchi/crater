@@ -394,11 +394,41 @@ fn compute_with_collapse(
       }
     }
 
+    // Apply inset offset for relative positioned children
+    let (final_x, final_y) = if child_style.position == @style.Relative {
+      let inset = child_style.inset
+      // X offset: left takes precedence over right
+      let x_offset = match inset.left {
+        @types.Length(l) => l
+        @types.Percent(p) => box_width * p
+        @types.Auto =>
+          match inset.right {
+            @types.Length(r) => -r
+            @types.Percent(p) => -(box_width * p)
+            @types.Auto => 0.0
+          }
+      }
+      // Y offset: top takes precedence over bottom
+      let y_offset = match inset.top {
+        @types.Length(t) => t
+        @types.Percent(p) => box_width * p // Use width for percentage (CSS spec)
+        @types.Auto =>
+          match inset.bottom {
+            @types.Length(b) => -b
+            @types.Percent(p) => -(box_width * p)
+            @types.Auto => 0.0
+          }
+      }
+      (child_x + x_offset, child_y + y_offset)
+    } else {
+      (child_x, child_y)
+    }
+
     // Position child and store in map with original index
     let positioned_layout : @node.Layout = {
       id: child_layout.id,
-      x: child_x,
-      y: child_y,
+      x: final_x,
+      y: final_y,
       width: child_layout.width,
       height: child_layout.height,
       margin: child_layout.margin,
