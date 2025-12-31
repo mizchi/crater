@@ -234,11 +234,16 @@ fn compute_grid_layout_internal(
   )
 
   // Calculate total column/row count including implicit tracks
+  // When there are negative placements, offsets shift the explicit grid,
+  // so we must add offsets to explicit counts as well
   let total_column_count = max_int(
-    explicit_column_count,
+    explicit_column_count + col_offset,
     col_max_idx + col_offset,
   )
-  let total_row_count = max_int(explicit_row_count, row_max_idx + row_offset)
+  let total_row_count = max_int(
+    explicit_row_count + row_offset,
+    row_max_idx + row_offset,
+  )
 
   // Calculate intrinsic content sizes for tracks (min-content and max-content)
   let (column_min_content, column_max_content) = calculate_track_intrinsic_sizes(
