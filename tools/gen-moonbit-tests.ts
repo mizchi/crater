@@ -483,7 +483,7 @@ function assertionsToMoonBit(node: NodeTestData, varPath: string, indent: string
   return lines;
 }
 
-function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' = 'grid'): string {
+function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' | 'block' = 'grid'): string {
   const lines: string[] = [];
 
   lines.push('///|');
@@ -495,7 +495,10 @@ function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' = 'grid'): 
   // Compute layout
   lines.push('');
   if (layoutType === 'flex') {
-    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}) }`);
+    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent }`);
+    lines.push(`  let layout = compute(root, ctx)`);
+  } else if (layoutType === 'block') {
+    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent }`);
     lines.push(`  let layout = compute(root, ctx)`);
   } else {
     lines.push(`  let layout = compute_grid_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
@@ -514,7 +517,7 @@ async function main() {
   const args = process.argv.slice(2);
 
   // Parse options
-  let layoutType: 'grid' | 'flex' = 'grid';
+  let layoutType: 'grid' | 'flex' | 'block' = 'grid';
   let noHeader = false;
   const positionalArgs: string[] = [];
 
@@ -523,6 +526,8 @@ async function main() {
       layoutType = 'flex';
     } else if (arg === '--grid') {
       layoutType = 'grid';
+    } else if (arg === '--block') {
+      layoutType = 'block';
     } else if (arg === '--no-header') {
       noHeader = true;
     } else {
@@ -535,12 +540,14 @@ async function main() {
     console.log('');
     console.log('Options:');
     console.log('  --flex       Generate tests using flex compute function');
+    console.log('  --block      Generate tests using block compute function');
     console.log('  --grid       Generate tests using grid compute function (default)');
     console.log('  --no-header  Skip generating assert_approx helper (for additional test files)');
     console.log('');
     console.log('Examples:');
     console.log('  npm run gen-moonbit-tests -- fixtures/grid grid/gen_test.mbt');
     console.log('  npm run gen-moonbit-tests -- --flex fixtures/flex flex/gen_test.mbt');
+    console.log('  npm run gen-moonbit-tests -- --block fixtures/block block/gen_test.mbt');
     console.log('  npm run gen-moonbit-tests -- --no-header fixtures/blockgrid grid/gen_blockgrid_test.mbt');
     process.exit(1);
   }

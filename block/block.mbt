@@ -194,21 +194,39 @@ fn compute_with_collapse(
     overflow_blocks,
   )
 
-  // Box width - depends on sizing mode
+  // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, we need to compute content width
   let use_max_content = match (ctx.sizing_mode, style.width) {
     (@node.MaxContent, @types.Auto) => true
     _ => false
   }
-  let mut box_width = match style.width {
-    @types.Length(w) => w
-    @types.Percent(p) => parent_width * p
-    @types.Auto =>
-      if use_max_content {
-        // Will be computed from content - use parent_width as initial value for children
-        parent_width - margin.horizontal_sum()
-      } else {
-        parent_width - margin.horizontal_sum()
+  // Check if we can calculate width from height + aspect_ratio
+  let width_from_aspect_ratio : Double? = match (style.width, style.height, style.aspect_ratio) {
+    (@types.Auto, @types.Length(h), Some(ratio)) => {
+      // Width = (height - padding - border) * ratio + padding + border
+      let content_height = h - padding.vertical_sum() - border.vertical_sum()
+      Some(content_height * ratio + padding.horizontal_sum() + border.horizontal_sum())
+    }
+    (@types.Auto, @types.Percent(p), Some(ratio)) => {
+      let h = parent_height * p
+      let content_height = h - padding.vertical_sum() - border.vertical_sum()
+      Some(content_height * ratio + padding.horizontal_sum() + border.horizontal_sum())
+    }
+    _ => None
+  }
+  let mut box_width = match width_from_aspect_ratio {
+    Some(w) => w
+    None =>
+      match style.width {
+        @types.Length(w) => w
+        @types.Percent(p) => parent_width * p
+        @types.Auto =>
+          if use_max_content {
+            // Will be computed from content - use parent_width as initial value for children
+            parent_width - margin.horizontal_sum()
+          } else {
+            parent_width - margin.horizontal_sum()
+          }
       }
   }
 
@@ -501,11 +519,19 @@ fn compute_with_collapse(
     @types.max(0.0, current_y + prev_margin_bottom)
   }
 
-  // Box height
+  // Box height - consider aspect_ratio
   let mut box_height = match style.height {
     @types.Length(h) => h
     @types.Percent(p) => parent_height * p
-    @types.Auto => content_height + padding.vertical_sum() + border.vertical_sum()
+    @types.Auto =>
+      match style.aspect_ratio {
+        Some(ratio) => {
+          // Height from aspect ratio: height = width / ratio
+          let content_width = box_width - padding.horizontal_sum() - border.horizontal_sum()
+          content_width / ratio + padding.vertical_sum() + border.vertical_sum()
+        }
+        None => content_height + padding.vertical_sum() + border.vertical_sum()
+      }
   }
 
   // Apply min/max height constraints
