@@ -2802,14 +2802,37 @@ fn compute_child_layout(
     }
   } else if child.style.display == @style.Flex {
     // Recursively compute flex layout for nested flex containers
+    // For intrinsic sizing (1.0e10), use MaxContent mode to get actual size
+    let is_intrinsic_width = available_width >= 1.0e9
+    let is_intrinsic_height = available_height >= 1.0e9
+    let sizing_mode = if is_intrinsic_width || is_intrinsic_height {
+      @node.MaxContent
+    } else {
+      @node.Definite
+    }
     let ctx : @node.LayoutContext = {
       available_width: width,
       available_height: Some(height),
-      sizing_mode: @node.Definite,
+      sizing_mode,
     }
     let nested_layout = @flex.compute(child, ctx)
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
+    }
+    // For auto dimensions with intrinsic sizing, use computed size from Flex
+    let width_is_auto = match child.style.width {
+      @types.Auto => true
+      _ => false
+    }
+    let height_is_auto = match child.style.height {
+      @types.Auto => true
+      _ => false
+    }
+    if width_is_auto && is_intrinsic_width {
+      width = nested_layout.width
+    }
+    if height_is_auto && is_intrinsic_height {
+      height = nested_layout.height
     }
   } else {
     // For non-container children, still need to recursively compute layouts
