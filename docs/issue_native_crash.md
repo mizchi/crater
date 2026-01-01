@@ -17,7 +17,7 @@ Native target crashes with SIGABRT on array out-of-bounds access, instead of pro
 
 ### Repository
 
-- **Repository**: https://github.com/aspect-build/taffy (MoonBit port - private)
+- **Repository**: https://github.com/mizchi/crate (MoonBit port - taffy layout engine)
 - **Commit**: `61d3d466ff4fb5ebeaa424161ac68ae1a0a37285`
 - **Branch**: main
 
