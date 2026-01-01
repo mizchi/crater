@@ -3,6 +3,7 @@ target/
 .mooncakes/
 .moonagent/
 taffy
+blitz
 
 # Dependencies
 node_modules/
