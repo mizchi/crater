@@ -2,6 +2,51 @@
 // CSS Grid Layout Implementation
 // =============================================================================
 
+// =============================================================================
+// Intrinsic Size Cache for Grid
+// =============================================================================
+
+///|
+/// Cache for intrinsic size calculations during a single layout pass
+/// Key: node_uid * 4 + axis * 2 + sizing_type
+/// axis: 0 = column (width), 1 = row (height)
+/// sizing_type: 0 = min_content, 1 = max_content
+priv struct GridIntrinsicCache {
+  data : Map[Int, Double]
+}
+
+///|
+fn GridIntrinsicCache::new() -> GridIntrinsicCache {
+  { data: {} }
+}
+
+///|
+fn GridIntrinsicCache::get(
+  self : GridIntrinsicCache,
+  node_uid : Int,
+  is_row : Bool,
+  is_max_content : Bool,
+) -> Double? {
+  let axis = if is_row { 1 } else { 0 }
+  let sizing = if is_max_content { 1 } else { 0 }
+  let key = node_uid * 4 + axis * 2 + sizing
+  self.data.get(key)
+}
+
+///|
+fn GridIntrinsicCache::set(
+  self : GridIntrinsicCache,
+  node_uid : Int,
+  is_row : Bool,
+  is_max_content : Bool,
+  value : Double,
+) -> Unit {
+  let axis = if is_row { 1 } else { 0 }
+  let sizing = if is_max_content { 1 } else { 0 }
+  let key = node_uid * 4 + axis * 2 + sizing
+  self.data.set(key, value)
+}
+
 ///|
 fn max(a : Double, b : Double) -> Double {
   if a > b {
@@ -215,6 +260,9 @@ fn compute_grid_layout_internal(
   let style = node.style
   let children = node.children
 
+  // Create cache for intrinsic size calculations
+  let intrinsic_cache = GridIntrinsicCache::new()
+
   // Resolve container size first (needed for auto-fill expansion)
   let container_width_for_expansion = resolve_dimension(
     style.width,
@@ -286,6 +334,7 @@ fn compute_grid_layout_internal(
     expanded_columns,
     style.grid_auto_columns,
     col_offset,
+    intrinsic_cache,
   )
   let (row_min_content, row_max_content) = calculate_track_intrinsic_sizes(
     children,
@@ -296,6 +345,7 @@ fn compute_grid_layout_internal(
     expanded_rows,
     style.grid_auto_rows,
     row_offset,
+    intrinsic_cache,
   )
 
   // Determine if container has auto sizing
@@ -1034,6 +1084,7 @@ fn calculate_track_intrinsic_sizes(
   templates : Array[@style.TrackSizingFunction], // Track templates for type-aware distribution
   auto_templates : Array[@style.TrackSizingFunction], // Auto track templates
   explicit_offset : Int, // Offset for explicit tracks
+  cache : GridIntrinsicCache, // Cache for intrinsic size calculations
 ) -> (Array[Double], Array[Double]) {
   // (min_content_sizes, max_content_sizes)
   let min_sizes : Array[Double] = []
@@ -1090,7 +1141,7 @@ fn calculate_track_intrinsic_sizes(
       max_span = span
     }
     let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-      child, is_column, container_width,
+      child, is_column, container_width, cache,
     )
     let min_content_contribution = min_content + margin_start + margin_end
     let max_contribution = max_content + margin_start + margin_end
@@ -1336,6 +1387,7 @@ fn calculate_item_intrinsic_sizes(
   child : @node.Node,
   is_column : Bool,
   container_width : Double,
+  cache : GridIntrinsicCache,
 ) -> (Double, Double, Double, Double) {
   // Returns (min_content, max_content, margin_start, margin_end)
   if is_column {
@@ -1547,21 +1599,35 @@ fn calculate_item_intrinsic_sizes(
               (min_layout.height, max_layout.height)
             }
             @style.Flex => {
-              // Compute flex layout for min-content (with 0 available height)
-              let min_ctx : @node.LayoutContext = {
-                available_width: 1.0e10,
-                available_height: Some(0.0),
-                sizing_mode: @node.MaxContent,
+              // Check cache for min-content height
+              let min_height = match cache.get(child.uid, true, false) {
+                Some(cached) => cached
+                None => {
+                  let min_ctx : @node.LayoutContext = {
+                    available_width: 1.0e10,
+                    available_height: Some(0.0),
+                    sizing_mode: @node.MaxContent,
+                  }
+                  let min_layout = @flex.compute(child, min_ctx)
+                  cache.set(child.uid, true, false, min_layout.height)
+                  min_layout.height
+                }
               }
-              let min_layout = @flex.compute(child, min_ctx)
-              // Compute flex layout for max-content (with large available height)
-              let max_ctx : @node.LayoutContext = {
-                available_width: 1.0e10,
-                available_height: Some(1.0e10),
-                sizing_mode: @node.MaxContent,
+              // Check cache for max-content height
+              let max_height = match cache.get(child.uid, true, true) {
+                Some(cached) => cached
+                None => {
+                  let max_ctx : @node.LayoutContext = {
+                    available_width: 1.0e10,
+                    available_height: Some(1.0e10),
+                    sizing_mode: @node.MaxContent,
+                  }
+                  let max_layout = @flex.compute(child, max_ctx)
+                  cache.set(child.uid, true, true, max_layout.height)
+                  max_layout.height
+                }
               }
-              let max_layout = @flex.compute(child, max_ctx)
-              (min_layout.height, max_layout.height)
+              (min_height, max_height)
             }
             _ => {
               let intrinsic = get_intrinsic_from_measure(

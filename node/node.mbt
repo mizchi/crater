@@ -22,9 +22,22 @@ pub(all) struct MeasureFunc {
 }
 
 ///|
+/// Global counter for generating unique node IDs
+let node_uid_counter : Ref[Int] = { val: 0 }
+
+///|
+/// Generate a new unique node ID
+fn next_uid() -> Int {
+  let uid = node_uid_counter.val
+  node_uid_counter.val = uid + 1
+  uid
+}
+
+///|
 /// A node in the layout tree
 pub struct Node {
   id : String
+  uid : Int // Unique identifier for caching
   style : @style.Style
   children : Array[Node]
   measure : MeasureFunc?
@@ -36,12 +49,12 @@ pub fn Node::new(
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
-  { id, style, children, measure: None }
+  { id, uid: next_uid(), style, children, measure: None }
 }
 
 ///|
 pub fn Node::leaf(id : String, style : @style.Style) -> Node {
-  { id, style, children: [], measure: None }
+  { id, uid: next_uid(), style, children: [], measure: None }
 }
 
 ///|
@@ -51,7 +64,7 @@ pub fn Node::with_measure(
   style : @style.Style,
   measure : MeasureFunc,
 ) -> Node {
-  { id, style, children: [], measure: Some(measure) }
+  { id, uid: next_uid(), style, children: [], measure: Some(measure) }
 }
 
 ///|
