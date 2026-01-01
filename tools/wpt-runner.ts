@@ -185,10 +185,15 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
     // Find the test element
     const body = document.body;
 
+    // Helper to normalize root position to (0,0) for comparison
+    function normalizeRoot(layout: any): any {
+      return { ...layout, x: 0, y: 0 };
+    }
+
     // WPT tests often have a #test element as the main test target
     const testElement = document.getElementById('test');
     if (testElement) {
-      return extractLayout(testElement);
+      return normalizeRoot(extractLayout(testElement));
     }
 
     // Otherwise, find the first meaningful element (skip p, script, etc.)
@@ -197,16 +202,16 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
             el.id !== 'log'
     );
     if (children.length === 1) {
-      return extractLayout(children[0]);
+      return normalizeRoot(extractLayout(children[0]));
     }
 
     // If multiple children, try to find a container div
     const divChildren = children.filter(el => el.tagName === 'DIV');
     if (divChildren.length === 1) {
-      return extractLayout(divChildren[0]);
+      return normalizeRoot(extractLayout(divChildren[0]));
     }
 
-    return extractLayout(body);
+    return normalizeRoot(extractLayout(body));
   });
 
   await page.close();
@@ -238,6 +243,11 @@ function prepareHtmlContent(htmlPath: string): string {
  * Get layout from Crater
  */
 function getCraterLayout(htmlPath: string): LayoutNode {
+  // Helper to normalize root position to (0,0) for comparison
+  function normalizeRoot(node: LayoutNode): LayoutNode {
+    return { ...node, x: 0, y: 0 };
+  }
+
   try {
     // Prepare HTML with inlined CSS
     const htmlContent = prepareHtmlContent(htmlPath);
@@ -256,7 +266,7 @@ function getCraterLayout(htmlPath: string): LayoutNode {
       // Find #test element if it exists (WPT tests)
       const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test');
       if (testElement) {
-        return testElement;
+        return normalizeRoot(testElement);
       }
 
       // If root (body) has a single meaningful child, use that child
@@ -265,16 +275,16 @@ function getCraterLayout(htmlPath: string): LayoutNode {
         c => !c.id.startsWith('#text') && c.id !== 'p' && c.id !== 'div#log'
       );
       if (meaningfulChildren.length === 1) {
-        return meaningfulChildren[0];
+        return normalizeRoot(meaningfulChildren[0]);
       }
 
       // Try to find a container div
       const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div'));
       if (divChildren.length === 1) {
-        return divChildren[0];
+        return normalizeRoot(divChildren[0]);
       }
 
-      return layout;
+      return normalizeRoot(layout);
     } finally {
       // Clean up temp file
       fs.unlinkSync(tempPath);

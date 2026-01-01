@@ -182,7 +182,9 @@ function removeTestScripts(html: string): string {
   }
 
   // Remove onload handlers that call test functions
-  result = result.replace(/\s+onload\s*=\s*["'][^"']*checkLayout[^"']*["']/gi, "");
+  // Handle nested quotes: onload="checkLayout('.foo')" or onload='checkLayout(".foo")'
+  result = result.replace(/\s+onload\s*=\s*"[^"]*"/gi, "");
+  result = result.replace(/\s+onload\s*=\s*'[^']*'/gi, "");
 
   return result;
 }
