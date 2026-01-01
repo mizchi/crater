@@ -49,3 +49,81 @@ This is a [MoonBit](https://docs.moonbitlang.com) project.
 
 - agent-todo.md has some small tasks that are easy for AI to pick up, agent is
   welcome to finish the tasks and check the box when you are done
+
+## Test System
+
+### Taffy Compatible Tests
+
+This project includes tests compatible with [taffy](https://github.com/DioxusLabs/taffy), a Rust-based layout engine. These tests ensure layout algorithm correctness.
+
+**Location:**
+- Fixtures: `fixtures/` (JSON format)
+  - `fixtures/flex/` - Flexbox layout tests
+  - `fixtures/grid/` - Grid layout tests
+  - `fixtures/block/` - Block layout tests
+  - `fixtures/blockflex/`, `fixtures/blockgrid/`, `fixtures/gridflex/` - Mixed layout tests
+  - `fixtures/leaf/` - Leaf node tests
+- Generated tests: `compute/*/gen_test.mbt`
+
+**Commands:**
+```bash
+# Generate MoonBit tests from fixtures
+npm run gen-moonbit-tests -- fixtures/flex compute/flex/gen_test.mbt --flex
+npm run gen-moonbit-tests -- fixtures/grid compute/grid/gen_test.mbt --grid
+npm run gen-moonbit-tests -- fixtures/block compute/block/gen_test.mbt --block
+
+# Options:
+# --flex, --grid, --block    Select layout type
+# --no-header                Skip assert_approx helper (for additional test files)
+# --exclude=pattern          Exclude tests matching pattern
+
+# Run tests
+moon test
+```
+
+**Fixture Format (JSON):**
+```json
+{
+  "name": "test_name",
+  "viewport": { "width": 800, "height": 600 },
+  "root": {
+    "id": "root",
+    "style": { "display": "flex", "width": { "unit": "px", "value": 400 }, ... },
+    "layout": { "x": 0, "y": 0, "width": 400, "height": 300 },
+    "children": [ ... ]
+  }
+}
+```
+
+### WPT (Web Platform Tests)
+
+Browser compatibility tests using actual WPT test files from [web-platform-tests](https://github.com/web-platform-tests/wpt).
+
+**Location:**
+- Test files: `wpt-tests/css-flexbox/` (HTML format)
+- Tools: `tools/fetch-wpt.ts`, `tools/wpt-runner.ts`
+
+**Commands:**
+```bash
+# Fetch WPT tests (from GitHub)
+npm run wpt:fetch -- css-flexbox
+npm run wpt:fetch -- css-flexbox --limit 50
+npm run wpt:fetch -- --all
+npm run wpt:fetch -- --list     # Show available modules
+
+# Run WPT comparison tests (requires Puppeteer)
+npm run wpt -- wpt-tests/css-flexbox/align-content-horiz-001a.html
+npm run wpt -- wpt-tests/css-flexbox/*.html
+```
+
+**How it works:**
+1. Fetches HTML tests from WPT repository
+2. Inlines external CSS, removes test scripts
+3. Renders in Puppeteer (browser) and Crater
+4. Compares layout trees (position, size)
+5. Reports mismatches with tolerance
+
+**Available CSS modules:**
+- `css-flexbox` - Flexbox tests
+- `css-display`, `css-box`, `css-sizing`
+- `css-align`, `css-position`, `css-overflow`
