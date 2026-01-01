@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 466    | 133    | 599   | 77.8%      | +21 tests from intrinsic fix |
-| Grid   | 260    | 81     | 341   | 76.2%      | includes blockgrid/gridflex/leaf |
-| **Total** | **930** | **233** | **1163** | **80.0%** | Native target stable |
+| Flex   | 476    | 123    | 599   | 79.5%      | +10 from stretched child fix |
+| Grid   | 249    | 80     | 329   | 75.7%      | test count reduced |
+| **Total** | **941** | **222** | **1163** | **80.9%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -98,6 +98,7 @@
 | min/max fix | 199/223 (89.2%) | 443/599 (73.9%) | 248/329 (75%) | 890/1151 (77.3%) |
 | Block fixes | 204/223 (91.5%) | 445/599 (74.3%) | 248/329 (75%) | 897/1151 (77.9%) |
 | compute_layout + intrinsic | 204/223 (91.5%) | 466/599 (77.8%) | 260/341 (76.2%) | 930/1163 (80.0%) |
+| stretched child fix | 204/223 (91.5%) | 476/599 (79.5%) | 249/329 (75.7%) | 941/1163 (80.9%) |
 
 ### これまでの主な修正
 
@@ -150,6 +151,13 @@
 - blockflex テストが Flex layout を正しく使用するよう修正
 - Block の MaxContent モードで MeasureFunc を持つ leaf node の intrinsic size を使用
 - Block child の intrinsic width 計算時も MeasureFunc を考慮
+
+**stretched child fix (+11 tests)**
+- Definite sizing mode で height: auto の子に available_height を使用
+  - 親から stretch されて確定した高さを content_height として使用
+  - flex_grow が子コンテナで正しく機能するように
+- 無限大プレースホルダー (1.0e9以上) は除外
+- 単一行 wrap コンテナでも flex_items を flex_lines に同期
 
 ## 技術的な注意点
 

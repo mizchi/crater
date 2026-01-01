@@ -573,6 +573,9 @@ fn compute_internal(
   let content_width = container_width -
     padding.horizontal_sum() -
     border.horizontal_sum()
+  // For Definite sizing mode with auto height, use available_height if provided
+  // This handles stretched flex items whose height is determined by the parent
+  // BUT: avoid using very large values (1e9+) which are used as "infinity" for intrinsic sizing
   let content_height : Double? = match intrinsic_from_measure {
     Some((_, h)) => Some(h - padding.vertical_sum() - border.vertical_sum())
     None =>
@@ -580,7 +583,14 @@ fn compute_internal(
         @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
         @types.Percent(p) =>
           Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
-        @types.Auto => None
+        @types.Auto =>
+          // In Definite mode with available_height, use it for stretched items
+          // But only if it's not an "infinity" placeholder (< 1e9)
+          match (ctx.sizing_mode, ctx.available_height) {
+            (@node.Definite, Some(ah)) if ah < 1.0e9 =>
+              Some(ah - padding.vertical_sum() - border.vertical_sum())
+            _ => None
+          }
       }
   }
 
@@ -1355,8 +1365,8 @@ fn compute_internal(
 
   // Phase 3.5: Sync updated items back to flex_lines and recalculate cross sizes
   // MoonBit creates new structs on update, so flex_lines[0].items may have stale data
-  // For NoWrap mode, we need to copy the updated items back
-  if not(should_wrap) && flex_lines.length() == 1 {
+  // For single-line containers (NoWrap or Wrap with all items in one line), sync items back
+  if flex_lines.length() == 1 {
     // Copy updated flex_items to flex_lines[0]
     flex_lines[0] = { ..flex_lines[0], items: flex_items }
   }
