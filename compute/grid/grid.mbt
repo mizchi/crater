@@ -961,8 +961,8 @@ fn apply_content_alignment(
   let free_space = container_size - total_track_size
   let track_count = tracks.length()
   match alignment {
-    @style.Start | @style.Baseline =>
-      // Start: tracks at start, no adjustment
+    @style.Start | @style.FlexStart | @style.Baseline =>
+      // Start/FlexStart: tracks at start, no adjustment
       // Baseline: treated as start for content alignment
       ()
     @style.Stretch => {
@@ -999,7 +999,7 @@ fn apply_content_alignment(
         }
       }
     }
-    @style.End =>
+    @style.End | @style.FlexEnd =>
       // Shift all tracks by free_space
       for i = 0; i < track_count; i = i + 1 {
         let track = tracks[i]

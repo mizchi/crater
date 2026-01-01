@@ -4,6 +4,8 @@
 ///|
 /// Compute justify-content positioning for distributing items along an axis
 /// Returns (start_offset, gap_between_items)
+/// Note: FlexStart/FlexEnd should be resolved by caller before calling this function
+///       (i.e., caller handles wrap-reverse by flipping FlexStart/FlexEnd)
 pub fn compute_justify(
   justify : @style.Alignment,
   free_space : Double,
@@ -22,8 +24,8 @@ pub fn compute_justify(
     }
   }
   match justify {
-    @style.Start => (0.0, 0.0)
-    @style.End => (free_space, 0.0)
+    @style.Start | @style.FlexStart => (0.0, 0.0)
+    @style.End | @style.FlexEnd => (free_space, 0.0)
     @style.Center => (free_space / 2.0, 0.0)
     @style.SpaceBetween =>
       if item_count == 1 {
@@ -55,8 +57,8 @@ pub fn compute_align_offset(
     return 0.0
   }
   match align {
-    @style.Start => 0.0
-    @style.End => free_space
+    @style.Start | @style.FlexStart => 0.0
+    @style.End | @style.FlexEnd => free_space
     @style.Center => free_space / 2.0
     @style.SpaceBetween => 0.0 // Treat as start for single item
     @style.SpaceAround => free_space / 2.0 // Center for single item

@@ -817,18 +817,37 @@ fn compute_internal(
     @node.MaxContent => true
     _ => false
   }
+  // For column flex wrap, we need to consider max-height even when height is auto
+  // This allows items to wrap when they exceed the max-height constraint
+  let max_height_for_wrap : Double? = if not(is_row) && content_height == None {
+    match style.max_height {
+      @types.Length(mh) =>
+        Some(mh - padding.vertical_sum() - border.vertical_sum())
+      @types.Percent(p) =>
+        Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+      @types.Auto => None
+    }
+  } else {
+    None
+  }
   let initial_main_size_defined = if is_row {
     // Row flex: main size is defined unless we're doing intrinsic sizing with auto width
     not(is_intrinsic_sizing && width_is_auto)
   } else {
-    content_height != None
+    // Column flex: main size is defined if height is explicit OR max-height is set (for wrap)
+    content_height != None || max_height_for_wrap != None
   }
   let initial_main_size = if is_row {
     content_width
   } else {
     match content_height {
       Some(ch) => ch
-      None => 0.0
+      None =>
+        // For wrap mode, use max-height as the line breaking constraint
+        match max_height_for_wrap {
+          Some(mh) => mh
+          None => 0.0
+        }
     }
   }
 
@@ -1799,10 +1818,17 @@ fn compute_internal(
 
   // CSS spec: align-content positioning has no effect on single-line flex containers
   // For single-line containers (nowrap), line is always positioned at Start
+  // Handle wrap-reverse: FlexStart/FlexEnd are flipped, but Start/End are not
+  let is_wrap_reverse = match style.flex_wrap {
+    @style.WrapReverse => true
+    _ => false
+  }
+  // For wrap-reverse with flex-relative alignment, the line positioning is handled
+  // by uses_reversed_layout, so we don't need to flip here
   let effective_align_content_for_position : @style.Alignment = if should_wrap {
     style.align_content
   } else {
-    @style.Start
+    @style.FlexStart
   }
   let (line_start_offset, line_gap) = @alignment.compute_justify(
     effective_align_content_for_position,
@@ -1817,19 +1843,22 @@ fn compute_internal(
   }
   let total_line_gap = cross_gap + effective_line_gap
 
-  // Handle wrap-reverse: lines are positioned in reverse order on cross axis
-  let is_wrap_reverse = match style.flex_wrap {
-    @style.WrapReverse => true
-    _ => false
-  }
-
   // Process each line
-  // For wrap-reverse, we start from the end of cross axis and work backwards
+  // For wrap-reverse with flex-relative alignment (FlexStart/FlexEnd), start from cross-end
+  // For wrap-reverse with physical alignment (Start/End), use normal positioning
   let cross_size_resolved = match cross_size {
     Some(cs) => cs
     None => total_lines_cross
   }
-  let mut cross_pos = if is_wrap_reverse {
+  // Determine if we should use reversed layout
+  // For wrap-reverse with flex-relative alignment, lines are laid out in reverse order
+  // For physical alignment (Start/End), lines are laid out normally (no reversal)
+  let uses_physical_alignment = match style.align_content {
+    @style.Start | @style.End => true
+    _ => false
+  }
+  let uses_reversed_layout = is_wrap_reverse && not(uses_physical_alignment)
+  let mut cross_pos = if uses_reversed_layout {
     // Start from cross-end
     cross_size_resolved - line_start_offset
   } else {
@@ -1844,8 +1873,8 @@ fn compute_internal(
     let line_items = line.items
     let line_cross_size = line.cross_size
 
-    // For wrap-reverse, adjust cross_pos to position from end of line
-    let line_cross_pos = if is_wrap_reverse {
+    // For wrap-reverse with flex-relative alignment, adjust cross_pos to position from end of line
+    let line_cross_pos = if uses_reversed_layout {
       cross_pos - line_cross_size
     } else {
       cross_pos
@@ -2116,9 +2145,9 @@ fn compute_internal(
         }
       }
 
-      // For wrap-reverse, reverse the alignment within the line
+      // For wrap-reverse with flex-relative alignment, reverse the alignment within the line
       // Items that were at cross-start should now be at cross-end
-      let cross_align_offset = if is_wrap_reverse {
+      let cross_align_offset = if uses_reversed_layout {
         let total_cross_used = item_cross + item.margin_cross
         line_cross_size - total_cross_used - base_cross_align_offset
       } else {
@@ -2243,8 +2272,8 @@ fn compute_internal(
     }
 
     // Advance to next line
-    // For wrap-reverse, we move backwards (toward cross-start)
-    cross_pos = if is_wrap_reverse {
+    // For wrap-reverse with flex-relative alignment, we move backwards (toward cross-start)
+    cross_pos = if uses_reversed_layout {
       cross_pos - line_cross_size - total_line_gap
     } else {
       cross_pos + line_cross_size + total_line_gap
@@ -2720,9 +2749,14 @@ fn compute_nested(
   // For containers, recurse based on display type
   match style.display {
     @style.Flex => compute_internal(node, ctx, warnings, cache)
-    _ =>
-      // Default to flex for now (block will be handled by dispatcher)
-      compute_internal(node, ctx, warnings, cache)
+    _ => {
+      // Use global dispatcher for block containers if available
+      // Fall back to flex layout for compatibility with isolated tests
+      match @node.get_layout_dispatcher() {
+        Some(_) => @node.dispatch_layout(node, ctx)
+        None => compute_internal(node, ctx, warnings, cache)
+      }
+    }
   }
 }
 

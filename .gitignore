@@ -16,3 +16,6 @@ render-results/
 
 # Generated test fixtures (regenerate with npm run gentest)
 fixtures/
+
+# WPT tests (regenerate with npm run fetch-wpt)
+wpt-tests/

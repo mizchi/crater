@@ -155,17 +155,21 @@ pub fn parse_flex_wrap(value : String) -> @style.FlexWrap {
 
 ///|
 /// Parse alignment value (justify-content, align-items, align-content)
+/// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
+///       start/end are physical/logical (not affected by wrap-reverse)
 pub fn parse_alignment(value : String) -> @style.Alignment {
   match value.trim().to_lower() {
-    "flex-start" | "start" => @style.Alignment::Start
-    "flex-end" | "end" => @style.Alignment::End
+    "flex-start" => @style.Alignment::FlexStart
+    "flex-end" => @style.Alignment::FlexEnd
+    "start" => @style.Alignment::Start
+    "end" => @style.Alignment::End
     "center" => @style.Alignment::Center
     "space-between" => @style.Alignment::SpaceBetween
     "space-around" => @style.Alignment::SpaceAround
     "space-evenly" => @style.Alignment::SpaceEvenly
     "stretch" => @style.Alignment::Stretch
     "baseline" => @style.Alignment::Baseline
-    _ => @style.Alignment::Start
+    _ => @style.Alignment::FlexStart
   }
 }
 

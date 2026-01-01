@@ -25,9 +25,13 @@ pub(all) enum FlexDirection {
 
 ///|
 /// Alignment for justify-content, align-items, etc.
+/// Note: Start/End are physical/logical directions (not affected by flex-wrap direction)
+///       FlexStart/FlexEnd are flex-relative (affected by wrap-reverse)
 pub(all) enum Alignment {
   Start
   End
+  FlexStart
+  FlexEnd
   Center
   SpaceBetween
   SpaceAround
