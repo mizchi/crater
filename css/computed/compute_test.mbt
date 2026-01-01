@@ -37,9 +37,10 @@ test "parse_flex_direction" {
 }
 
 test "parse_alignment" {
-  inspect(@computed.parse_alignment("flex-start"), content="Start")
+  inspect(@computed.parse_alignment("flex-start"), content="FlexStart")
   inspect(@computed.parse_alignment("start"), content="Start")
-  inspect(@computed.parse_alignment("flex-end"), content="End")
+  inspect(@computed.parse_alignment("flex-end"), content="FlexEnd")
+  inspect(@computed.parse_alignment("end"), content="End")
   inspect(@computed.parse_alignment("center"), content="Center")
   inspect(@computed.parse_alignment("space-between"), content="SpaceBetween")
   inspect(@computed.parse_alignment("stretch"), content="Stretch")
@@ -140,4 +141,38 @@ test "initial_value" {
   inspect(@computed.initial_value("flex-grow"), content="0")
   inspect(@computed.initial_value("flex-shrink"), content="1")
   inspect(@computed.initial_value("width"), content="auto")
+}
+
+test "parse_grid_template_tracks" {
+  let tracks = @computed.parse_grid_template_tracks("100px 200px 1fr")
+  inspect(tracks.length(), content="3")
+  inspect(tracks[0], content="Length(100)")
+  inspect(tracks[1], content="Length(200)")
+  inspect(tracks[2], content="Fr(1)")
+}
+
+test "parse_grid_template_tracks with auto" {
+  let tracks = @computed.parse_grid_template_tracks("auto 50px 2fr")
+  inspect(tracks.length(), content="3")
+  inspect(tracks[0], content="Auto")
+  inspect(tracks[1], content="Length(50)")
+  inspect(tracks[2], content="Fr(2)")
+}
+
+test "parse_grid_template_tracks none" {
+  let tracks = @computed.parse_grid_template_tracks("none")
+  inspect(tracks.length(), content="0")
+}
+
+test "compute_inline grid-template" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "display: grid; grid-template-columns: 100px 1fr 100px",
+    ctx,
+  )
+  inspect(style.display, content="Grid")
+  inspect(style.grid_template_columns.length(), content="3")
+  inspect(style.grid_template_columns[0], content="Length(100)")
+  inspect(style.grid_template_columns[1], content="Fr(1)")
+  inspect(style.grid_template_columns[2], content="Length(100)")
 }

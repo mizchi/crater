@@ -214,6 +214,13 @@ fn calculate_total_track_size(
 }
 
 ///|
+/// Compute grid layout with LayoutContext interface (matches flex/block signature)
+pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
+  let available_height = ctx.available_height.unwrap_or(ctx.available_width)
+  compute_grid_layout_internal(node, ctx.available_width, available_height, false, false)
+}
+
+///|
 /// Compute layout for any node type, delegating to the appropriate module
 /// based on the node's display type (Grid, Flex, or Block)
 pub fn compute_layout(

@@ -390,6 +390,332 @@ fn parse_grid_auto_flow(tokens : ArrayView[@token.Token]) -> @style.GridAutoFlow
 }
 
 ///|
+/// Parse a single track value for MinTrackSizing
+fn parse_min_track_sizing(
+  tokens : ArrayView[@token.Token]
+) -> (@style.MinTrackSizing, ArrayView[@token.Token])? {
+  let tokens = skip_whitespace(tokens)
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Dimension(value, unit) => {
+      if unit == "px" {
+        Some((@style.MinTrackSizing::Length(value), tokens[1:]))
+      } else if unit == "%" {
+        Some((@style.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
+      } else {
+        Some((@style.MinTrackSizing::Length(value), tokens[1:]))
+      }
+    }
+    @token.Token::Percentage(value) =>
+      Some((@style.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
+    @token.Token::Number(value, _) =>
+      if value == 0.0 {
+        Some((@style.MinTrackSizing::Length(0.0), tokens[1:]))
+      } else {
+        None
+      }
+    @token.Token::Ident(s) =>
+      if s == "auto" {
+        Some((@style.MinTrackSizing::Auto, tokens[1:]))
+      } else if s == "min-content" {
+        Some((@style.MinTrackSizing::MinContent, tokens[1:]))
+      } else if s == "max-content" {
+        Some((@style.MinTrackSizing::MaxContent, tokens[1:]))
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse a single track value for MaxTrackSizing
+fn parse_max_track_sizing(
+  tokens : ArrayView[@token.Token]
+) -> (@style.MaxTrackSizing, ArrayView[@token.Token])? {
+  let tokens = skip_whitespace(tokens)
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Dimension(value, unit) => {
+      if unit == "px" {
+        Some((@style.MaxTrackSizing::Length(value), tokens[1:]))
+      } else if unit == "%" {
+        Some((@style.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
+      } else if unit == "fr" {
+        Some((@style.MaxTrackSizing::Fr(value), tokens[1:]))
+      } else {
+        Some((@style.MaxTrackSizing::Length(value), tokens[1:]))
+      }
+    }
+    @token.Token::Percentage(value) =>
+      Some((@style.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
+    @token.Token::Number(value, _) =>
+      if value == 0.0 {
+        Some((@style.MaxTrackSizing::Length(0.0), tokens[1:]))
+      } else {
+        None
+      }
+    @token.Token::Ident(s) =>
+      if s == "auto" {
+        Some((@style.MaxTrackSizing::Auto, tokens[1:]))
+      } else if s == "min-content" {
+        Some((@style.MaxTrackSizing::MinContent, tokens[1:]))
+      } else if s == "max-content" {
+        Some((@style.MaxTrackSizing::MaxContent, tokens[1:]))
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse a single track sizing value (without repeat)
+fn parse_single_track_sizing(
+  tokens : ArrayView[@token.Token]
+) -> (@style.SingleTrackSizing, ArrayView[@token.Token])? {
+  let tokens = skip_whitespace(tokens)
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Dimension(value, unit) => {
+      if unit == "px" {
+        Some((@style.SingleTrackSizing::Length(value), tokens[1:]))
+      } else if unit == "%" {
+        Some((@style.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
+      } else if unit == "fr" {
+        Some((@style.SingleTrackSizing::Fr(value), tokens[1:]))
+      } else {
+        Some((@style.SingleTrackSizing::Length(value), tokens[1:]))
+      }
+    }
+    @token.Token::Percentage(value) =>
+      Some((@style.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
+    @token.Token::Number(value, _) =>
+      if value == 0.0 {
+        Some((@style.SingleTrackSizing::Length(0.0), tokens[1:]))
+      } else {
+        None
+      }
+    @token.Token::Ident(s) =>
+      if s == "auto" {
+        Some((@style.SingleTrackSizing::Auto, tokens[1:]))
+      } else if s == "min-content" {
+        Some((@style.SingleTrackSizing::MinContent, tokens[1:]))
+      } else if s == "max-content" {
+        Some((@style.SingleTrackSizing::MaxContent, tokens[1:]))
+      } else {
+        None
+      }
+    @token.Token::Function(name) =>
+      if name == "minmax" {
+        // Parse minmax(min, max)
+        let rest = tokens[1:] // skip Function token (already consumed '(')
+        match parse_min_track_sizing(rest) {
+          Some((min_val, rest2)) => {
+            // Skip whitespace and comma
+            let rest3 = skip_whitespace(rest2)
+            if rest3.length() == 0 {
+              return None
+            }
+            let rest4 = match rest3[0] {
+              @token.Token::Comma => rest3[1:]
+              _ => rest3
+            }
+            match parse_max_track_sizing(rest4) {
+              Some((max_val, rest5)) => {
+                // Skip to closing paren
+                let rest6 = skip_whitespace(rest5)
+                if rest6.length() > 0 {
+                  match rest6[0] {
+                    @token.Token::RightParen => {
+                      let next_tokens = rest6[1:]
+                      Some(
+                        (@style.SingleTrackSizing::MinMax(min_val, max_val), next_tokens),
+                      )
+                    }
+                    _ => None
+                  }
+                } else {
+                  None
+                }
+              }
+              None => None
+            }
+          }
+          None => None
+        }
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse a track sizing function (including repeat)
+fn parse_track_sizing_function(
+  tokens : ArrayView[@token.Token]
+) -> (@style.TrackSizingFunction, ArrayView[@token.Token])? {
+  let tokens = skip_whitespace(tokens)
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Function(name) =>
+      if name == "repeat" {
+        // Parse repeat(count, tracks...)
+        let rest = tokens[1:]
+        let rest = skip_whitespace(rest)
+        if rest.length() == 0 {
+          return None
+        }
+        // Parse repeat count
+        let (count, rest2) : (@style.RepeatCount, ArrayView[@token.Token]) = match rest[
+          0] {
+          @token.Token::Number(value, _) =>
+            (@style.RepeatCount::Count(value.to_int()), rest[1:])
+          @token.Token::Ident(s) =>
+            if s == "auto-fill" {
+              (@style.RepeatCount::AutoFill, rest[1:])
+            } else if s == "auto-fit" {
+              (@style.RepeatCount::AutoFit, rest[1:])
+            } else {
+              return None
+            }
+          _ => return None
+        }
+        // Skip comma
+        let rest3 = skip_whitespace(rest2)
+        if rest3.length() == 0 {
+          return None
+        }
+        let rest4 = match rest3[0] {
+          @token.Token::Comma => rest3[1:]
+          _ => rest3
+        }
+        // Parse track list until closing paren
+        let tracks : Array[@style.SingleTrackSizing] = []
+        let mut remaining = rest4
+        while remaining.length() > 0 {
+          remaining = skip_whitespace(remaining)
+          if remaining.length() == 0 {
+            break
+          }
+          match remaining[0] {
+            @token.Token::RightParen => {
+              remaining = remaining[1:]
+              break
+            }
+            _ => {
+              match parse_single_track_sizing(remaining) {
+                Some((track, rest)) => {
+                  tracks.push(track)
+                  remaining = rest
+                }
+                None => break
+              }
+            }
+          }
+        }
+        if tracks.length() > 0 {
+          Some((@style.TrackSizingFunction::Repeat(count, tracks), remaining))
+        } else {
+          None
+        }
+      } else if name == "minmax" {
+        // minmax is also valid as TrackSizingFunction
+        match parse_single_track_sizing(tokens) {
+          Some((@style.SingleTrackSizing::MinMax(min_val, max_val), rest)) =>
+            Some((@style.TrackSizingFunction::MinMax(min_val, max_val), rest))
+          _ => None
+        }
+      } else {
+        None
+      }
+    @token.Token::Dimension(value, unit) => {
+      if unit == "px" {
+        Some((@style.TrackSizingFunction::Length(value), tokens[1:]))
+      } else if unit == "%" {
+        Some((@style.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
+      } else if unit == "fr" {
+        Some((@style.TrackSizingFunction::Fr(value), tokens[1:]))
+      } else {
+        Some((@style.TrackSizingFunction::Length(value), tokens[1:]))
+      }
+    }
+    @token.Token::Percentage(value) =>
+      Some((@style.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
+    @token.Token::Number(value, _) =>
+      if value == 0.0 {
+        Some((@style.TrackSizingFunction::Length(0.0), tokens[1:]))
+      } else {
+        None
+      }
+    @token.Token::Ident(s) =>
+      if s == "auto" {
+        Some((@style.TrackSizingFunction::Auto, tokens[1:]))
+      } else if s == "min-content" {
+        Some((@style.TrackSizingFunction::MinContent, tokens[1:]))
+      } else if s == "max-content" {
+        Some((@style.TrackSizingFunction::MaxContent, tokens[1:]))
+      } else if s == "none" {
+        // none means empty template
+        None
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse grid-template-columns or grid-template-rows value
+fn parse_grid_template_tracks(
+  tokens : ArrayView[@token.Token]
+) -> Array[@style.TrackSizingFunction] {
+  let result : Array[@style.TrackSizingFunction] = []
+  let mut remaining = tokens
+  while remaining.length() > 0 {
+    remaining = skip_whitespace(remaining)
+    if remaining.length() == 0 {
+      break
+    }
+    match remaining[0] {
+      @token.Token::Semicolon | @token.Token::EOF => break
+      @token.Token::Ident(s) =>
+        if s == "none" {
+          // none means empty template
+          return []
+        } else {
+          match parse_track_sizing_function(remaining) {
+            Some((track, rest)) => {
+              result.push(track)
+              remaining = rest
+            }
+            None => break
+          }
+        }
+      _ => {
+        match parse_track_sizing_function(remaining) {
+          Some((track, rest)) => {
+            result.push(track)
+            remaining = rest
+          }
+          None => break
+        }
+      }
+    }
+  }
+  result
+}
+
+///|
 /// Parse overflow property
 fn parse_overflow(tokens : ArrayView[@token.Token]) -> @style.Overflow? {
   if tokens.length() == 0 {
@@ -852,6 +1178,16 @@ fn apply_property(
       Some(v) => return { ..style, grid_auto_flow: v }
       None => ()
     }
+  }
+  // grid-template-columns
+  if property == "grid-template-columns" {
+    let tracks = parse_grid_template_tracks(value_tokens)
+    return { ..style, grid_template_columns: tracks }
+  }
+  // grid-template-rows
+  if property == "grid-template-rows" {
+    let tracks = parse_grid_template_tracks(value_tokens)
+    return { ..style, grid_template_rows: tracks }
   }
   // Unknown property - ignore
   style

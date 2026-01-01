@@ -116,3 +116,45 @@ test "flex shorthand" {
   inspect(style.flex_grow, content="1")
   inspect(style.flex_shrink, content="1")
 }
+
+test "grid-template-columns basic" {
+  let style = parse_inline_style("display: grid; grid-template-columns: 100px 200px 1fr")
+  inspect(style.display, content="Grid")
+  inspect(style.grid_template_columns.length(), content="3")
+  inspect(style.grid_template_columns[0], content="Length(100)")
+  inspect(style.grid_template_columns[1], content="Length(200)")
+  inspect(style.grid_template_columns[2], content="Fr(1)")
+}
+
+test "grid-template-rows basic" {
+  let style = parse_inline_style("display: grid; grid-template-rows: auto 50px 2fr")
+  inspect(style.display, content="Grid")
+  inspect(style.grid_template_rows.length(), content="3")
+  inspect(style.grid_template_rows[0], content="Auto")
+  inspect(style.grid_template_rows[1], content="Length(50)")
+  inspect(style.grid_template_rows[2], content="Fr(2)")
+}
+
+test "grid-template-columns with percentage" {
+  let style = parse_inline_style("grid-template-columns: 50% 50%")
+  inspect(style.grid_template_columns.length(), content="2")
+  inspect(style.grid_template_columns[0], content="Percent(0.5)")
+  inspect(style.grid_template_columns[1], content="Percent(0.5)")
+}
+
+test "grid-template-columns none" {
+  let style = parse_inline_style("grid-template-columns: none")
+  inspect(style.grid_template_columns.length(), content="0")
+}
+
+test "grid-template-columns minmax" {
+  let style = parse_inline_style("grid-template-columns: minmax(100px, 1fr)")
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(style.grid_template_columns[0], content="MinMax(Length(100), Fr(1))")
+}
+
+test "grid-template-columns repeat" {
+  let style = parse_inline_style("grid-template-columns: repeat(3, 100px)")
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(style.grid_template_columns[0], content="Repeat(Count(3), [Length(100)])")
+}

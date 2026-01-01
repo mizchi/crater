@@ -96,6 +96,8 @@ priv struct StyleBuilder {
   mut inset_bottom : @types.Dimension
   mut inset_left : @types.Dimension
   mut grid_auto_flow : @style.GridAutoFlow
+  mut grid_template_columns : Array[@style.TrackSizingFunction]
+  mut grid_template_rows : Array[@style.TrackSizingFunction]
 }
 
 ///|
@@ -143,6 +145,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     inset_bottom: @types.Dimension::Auto,
     inset_left: @types.Dimension::Auto,
     grid_auto_flow: @style.GridAutoFlow::Row,
+    grid_template_columns: [],
+    grid_template_rows: [],
   }
 }
 
@@ -198,8 +202,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
       bottom: self.inset_bottom,
       left: self.inset_left,
     },
-    grid_template_rows: [],
-    grid_template_columns: [],
+    grid_template_rows: self.grid_template_rows,
+    grid_template_columns: self.grid_template_columns,
     grid_auto_rows: [],
     grid_auto_columns: [],
     grid_auto_flow: self.grid_auto_flow,
@@ -496,6 +500,10 @@ fn apply_property(
     "overflow-y" => builder.overflow_y = parse_overflow(value)
     // Grid container
     "grid-auto-flow" => builder.grid_auto_flow = parse_grid_auto_flow(value)
+    "grid-template-columns" =>
+      builder.grid_template_columns = parse_grid_template_tracks(value)
+    "grid-template-rows" =>
+      builder.grid_template_rows = parse_grid_template_tracks(value)
     _ => ()
   }
 }

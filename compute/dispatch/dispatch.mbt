@@ -8,6 +8,7 @@
 pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   match node.style.display {
     @style.Flex => @flex.compute(node, ctx)
+    @style.Grid => @grid.compute(node, ctx)
     _ => @block.compute(node, ctx)
   }
 }

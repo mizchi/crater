@@ -20,6 +20,8 @@ fn main {
   // Parse arguments
   let mut input : String? = None
   let mut json_output = false
+  let mut verbose = false
+  let mut box_model = false
   let mut width : Int? = None
   let mut height : Int? = None
   let mut skip_next = false
@@ -35,6 +37,10 @@ fn main {
       return
     } else if arg == "--json" {
       json_output = true
+    } else if arg == "--verbose" || arg == "-v" {
+      verbose = true
+    } else if arg == "--box-model" || arg == "-b" {
+      box_model = true
     } else if arg == "--width" || arg == "-w" {
       if i + 1 < args.length() {
         width = parse_int(args[i + 1])
@@ -82,7 +88,7 @@ fn main {
   if json_output {
     render_json(html, viewport_width, viewport_height)
   } else {
-    render_html(html, viewport_width, viewport_height)
+    render_html_with_options(html, viewport_width, viewport_height, verbose, box_model)
   }
 }
 
@@ -109,8 +115,20 @@ fn print_usage() -> Unit {
   println("Options:")
   println("  -w, --width <px>   Viewport width (default: 800)")
   println("  -H, --height <px>  Viewport height (default: 600)")
+  println("  -v, --verbose      Show detailed box model info (margin/padding/border)")
+  println("  -b, --box-model    Show box model visualization (DevTools-style)")
   println("  --json             Output layout as JSON")
   println("  -h, --help         Show this help message")
+  println("")
+  println("Sixel Visualization Colors (default):")
+  println("  Blue gradient      Container elements (darker = deeper nesting)")
+  println("  Green hatching     Text placeholders (diagonal lines)")
+  println("")
+  println("Sixel Visualization Colors (--box-model):")
+  println("  Yellow/Orange      Margin")
+  println("  Green              Padding")
+  println("  Blue               Content area")
+  println("  Gray hatching      Text placeholders")
 }
 
 ///|
@@ -134,7 +152,13 @@ fn get_example_html() -> String {
 }
 
 ///|
-fn render_html(html : String, width : Int, height : Int) -> Unit {
+fn render_html_with_options(
+  html : String,
+  width : Int,
+  height : Int,
+  verbose : Bool,
+  box_model : Bool
+) -> Unit {
   println("=== HTML Input ===")
   // Truncate long HTML for display
   let display_html = if html.length() > 500 {
@@ -159,11 +183,19 @@ fn render_html(html : String, width : Int, height : Int) -> Unit {
   let layout = @renderer.render(html, ctx)
 
   println("=== Layout Tree ===")
-  @renderer.print_layout_tree(layout, 0)
+  if verbose {
+    println("(verbose mode: showing margin/padding/border)")
+    @renderer.print_layout_tree_with_options(layout, 0, true)
+  } else {
+    @renderer.print_layout_tree(layout, 0)
+  }
   println("")
 
   println("=== Sixel Output ===")
-  let sixel = @sixel.render_layout(layout, width, height)
+  if box_model {
+    println("(box-model mode: margin=yellow, padding=green, content=blue)")
+  }
+  let sixel = @sixel.render_layout_with_options(layout, width, height, box_model)
   println(sixel)
 }
 
