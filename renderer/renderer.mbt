@@ -127,6 +127,48 @@ fn create_text_node(text : String) -> @node.Node {
 }
 
 ///|
+/// Create a MeasureFunc for image with intrinsic dimensions
+fn create_image_measure(intrinsic_width : Double, intrinsic_height : Double) -> @node.MeasureFunc {
+  {
+    func: fn(_available_width : Double, _available_height : Double) -> @node.IntrinsicSize {
+      // If intrinsic size is specified, use it
+      // Otherwise default to 0
+      let width = if intrinsic_width > 0.0 { intrinsic_width } else { 0.0 }
+      let height = if intrinsic_height > 0.0 { intrinsic_height } else { 0.0 }
+
+      // For images with intrinsic dimensions, min and max are the same
+      {
+        min_width: width,
+        max_width: width,
+        min_height: height,
+        max_height: height,
+      }
+    },
+  }
+}
+
+///|
+/// Parse dimension from HTML attribute (e.g., "300" or "300px")
+fn parse_html_dimension(value : String) -> Double? {
+  let trimmed = value.trim().to_string()
+  if trimmed.is_empty() {
+    return None
+  }
+  // Remove "px" suffix if present
+  let num_str = if trimmed.has_suffix("px") {
+    trimmed.substring(end=trimmed.length() - 2)
+  } else {
+    trimmed
+  }
+  // Parse as double
+  try {
+    Some(@strconv.parse_double(num_str))
+  } catch {
+    _ => None
+  }
+}
+
+///|
 /// Convert HTML Element to Node tree for layout computation
 pub fn element_to_node(
   elem : @html.Element,
@@ -394,6 +436,25 @@ fn element_to_node_with_styles_internal(
   }
 
   let node_id = make_node_id(elem)
+
+  // Handle replaced elements (img, etc.) with intrinsic sizing
+  if elem.tag.to_lower() == "img" && children.is_empty() {
+    // Get intrinsic dimensions from HTML attributes
+    let intrinsic_width = match elem.attributes.get("width") {
+      Some(w) => parse_html_dimension(w).unwrap_or(0.0)
+      None => 0.0
+    }
+    let intrinsic_height = match elem.attributes.get("height") {
+      Some(h) => parse_html_dimension(h).unwrap_or(0.0)
+      None => 0.0
+    }
+
+    // If intrinsic dimensions are specified, create a node with measure function
+    if intrinsic_width > 0.0 || intrinsic_height > 0.0 {
+      let measure = create_image_measure(intrinsic_width, intrinsic_height)
+      return @node.Node::with_measure(node_id, style, measure)
+    }
+  }
 
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
