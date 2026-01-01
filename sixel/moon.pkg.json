@@ -1,5 +1,6 @@
 {
   "import": [
     "mizchi/crater/node"
-  ]
+  ],
+  "is-main": true
 }
