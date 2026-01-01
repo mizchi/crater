@@ -7,9 +7,21 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 522    | 77     | 599   | 87.1%      | +14 from padding_border fixes |
+| Flex   | 533    | 66     | 599   | 89.0%      | +11 from MeasureFunc/wrap fixes |
 | Grid   | 251    | 78     | 329   | 76.3%      | |
-| **Total** | **989** | **174** | **1163** | **85.0%** | Native target stable |
+| **Total** | **1000** | **163** | **1163** | **86.0%** | +11 from today's fixes |
+
+### 今日の修正履歴
+
+1. **MeasureFunc 比例スケーリング** (+10 tests)
+   - 幅が制約されると高さが比例して増加（テキストのラップをシミュレート）
+   - `compute_measured_cross_size` ヘルパー関数を追加
+   - bevy_issue_9530_reduced* テストが通過
+
+2. **Wrap コンテナの line cross_size 修正** (+1 test)
+   - multi-line wrap で min_height が line cross_size に反映されない問題を修正
+   - flex_items から正しく cross_size を再計算
+   - align_content_stretch_row_with_min_height テストが通過
 
 ## 失敗テスト分析
 
