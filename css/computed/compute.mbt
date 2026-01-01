@@ -56,7 +56,8 @@ pub fn ComputeContext::with_viewport(viewport_width : Double, viewport_height : 
 priv struct StyleBuilder {
   mut display : @style.Display
   mut position : @style.Position
-  float : @style.Float
+  mut float : @style.Float
+  mut clear : @style.Clear
   mut overflow_x : @style.Overflow
   mut overflow_y : @style.Overflow
   mut width : @types.Dimension
@@ -102,6 +103,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     display: @style.Display::Block,
     position: @style.Position::Relative,
     float: @style.Float::None,
+    clear: @style.Clear::None,
     overflow_x: @style.Overflow::Visible,
     overflow_y: @style.Overflow::Visible,
     width: @types.Dimension::Auto,
@@ -148,6 +150,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     display: self.display,
     position: self.position,
     float: self.float,
+    clear: self.clear,
     overflow_x: self.overflow_x,
     overflow_y: self.overflow_y,
     width: self.width,
@@ -348,6 +351,8 @@ fn apply_property(
     // Display and positioning
     "display" => builder.display = parse_display(value)
     "position" => builder.position = parse_position(value)
+    "float" => builder.float = parse_float(value)
+    "clear" => builder.clear = parse_clear(value)
     // Sizing
     "width" => builder.width = resolve_dimension(value, ctx)
     "height" => builder.height = resolve_dimension(value, ctx)

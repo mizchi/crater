@@ -168,11 +168,7 @@ fn compute_with_collapse(
 ) -> LayoutWithCollapse {
   let style = node.style
 
-  // Check for unsupported features
-  match style.float {
-    @style.Left | @style.Right => warnings.push(@node.UnsupportedFloat(node.id))
-    @style.None => ()
-  }
+  // Note: Float is now supported - no warning needed
 
   // Handle leaf nodes with MeasureFunc (e.g., text nodes)
   // These nodes have no children but need intrinsic size from their measure function
@@ -344,9 +340,12 @@ fn compute_with_collapse(
 
   // Collect flow children nodes, styles, and indices
   // Also track where absolute children appear in the flow order
+  // And separate float elements for special handling
   let flow_nodes : Array[@node.Node] = []
   let flow_styles : Array[@style.Style] = []
   let flow_indices : Array[Int] = []
+  let float_nodes : Array[@node.Node] = []
+  let float_indices : Array[Int] = []
   let mut flow_position = 0
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
@@ -360,11 +359,25 @@ fn compute_with_collapse(
       absolute_static_positions[i] = flow_position
       continue
     }
-    flow_nodes.push(child)
-    flow_styles.push(child.style)
-    flow_indices.push(i)
-    flow_position = flow_position + 1
+    // Check if this is a float element
+    match child.style.float {
+      @style.Float::Left | @style.Float::Right => {
+        float_nodes.push(child)
+        float_indices.push(i)
+        // Float elements still advance flow position for absolute static positioning
+        flow_position = flow_position + 1
+      }
+      @style.Float::None => {
+        flow_nodes.push(child)
+        flow_styles.push(child.style)
+        flow_indices.push(i)
+        flow_position = flow_position + 1
+      }
+    }
   }
+
+  // Create float context for managing float positions
+  let float_ctx = @float.FloatContext::new(child_available_width, padding.left + border.left)
 
   // For MaxContent mode, first determine max-content width from children's contributions
   if use_max_content {
@@ -500,6 +513,75 @@ fn compute_with_collapse(
     flow_children.push(child_result)
   }
 
+  // Layout float elements
+  // Float elements are positioned using the float context
+  let float_layouts : Array[@node.Layout] = []
+  for i = 0; i < float_nodes.length(); i = i + 1 {
+    let child = float_nodes[i]
+    let child_style = child.style
+
+    // Resolve child's box model
+    let child_margin = @types.resolve_rect(child_style.margin, actual_child_available_width)
+    let child_padding = @types.resolve_rect(child_style.padding, actual_child_available_width)
+    let child_border = @types.resolve_rect(child_style.border, actual_child_available_width)
+
+    // Calculate child's width (float elements use shrink-to-fit)
+    let child_width = match child_style.width {
+      @types.Length(w) => w
+      @types.Percent(p) => actual_child_available_width * p
+      @types.Auto => {
+        // Shrink-to-fit: compute intrinsic width
+        let intrinsic_ctx : @node.LayoutContext = {
+          available_width: actual_child_available_width,
+          available_height: child_available_height,
+          sizing_mode: @node.MaxContent,
+        }
+        let intrinsic_layout = compute_with_collapse(child, intrinsic_ctx, warnings).layout
+        @types.min(intrinsic_layout.width, actual_child_available_width)
+      }
+    }
+
+    // Compute child layout with determined width
+    let child_content_width = child_width - child_padding.horizontal_sum() - child_border.horizontal_sum()
+    let child_ctx : @node.LayoutContext = {
+      available_width: if child_content_width > 0.0 { child_content_width } else { 0.0 },
+      available_height: child_available_height,
+      sizing_mode: @node.Definite,
+    }
+    let child_inner = compute_with_collapse(child, child_ctx, warnings).layout
+
+    // Get child dimensions
+    let final_width = child_inner.width
+    let final_height = child_inner.height
+
+    // Place the float using float context
+    let (float_x, float_y) = float_ctx.place_float(
+      child_style.float,
+      final_width,
+      final_height,
+      child_margin.left,
+      child_margin.right,
+      child_margin.top,
+      child_margin.bottom,
+      0.0, // Start from top
+    )
+
+    let float_layout : @node.Layout = {
+      id: child.id,
+      x: float_x,
+      y: float_y,
+      width: final_width,
+      height: final_height,
+      margin: child_margin,
+      padding: child_inner.padding,
+      border: child_inner.border,
+      children: child_inner.children,
+    }
+
+    float_layouts.push(float_layout)
+    layout_map[float_indices[i]] = float_layout
+  }
+
   // Track escaped margins for parent
   let mut escaped_top : Double? = None
   let mut escaped_bottom : Double? = None
@@ -516,6 +598,19 @@ fn compute_with_collapse(
     let child_collapsed = child_result.collapsed
     let is_first = i == 0
     let is_last = i == flow_children.length() - 1
+    let child_style = flow_styles[i]
+
+    // Handle clear property - move current_y below cleared floats
+    match child_style.clear {
+      @style.Clear::Left | @style.Clear::Right | @style.Clear::Both => {
+        let clear_y = float_ctx.get_clear_y(child_style.clear, current_y)
+        if clear_y > current_y {
+          current_y = clear_y
+          prev_margin_bottom = 0.0 // Reset margin collapse after clear
+        }
+      }
+      @style.Clear::None => ()
+    }
 
     // Get effective margins (including any that escaped from grandchildren)
     let effective_margin_top = match child_collapsed.top {
@@ -529,7 +624,6 @@ fn compute_with_collapse(
 
     // Check if child collapses through
     // Blocked by: height, border, padding, overflow, aspect_ratio
-    let child_style = flow_styles[i]
     let child_overflow_blocks = match (child_style.overflow_x, child_style.overflow_y) {
       (@style.Overflow::Visible, @style.Overflow::Visible) => false
       _ => true
@@ -688,13 +782,23 @@ fn compute_with_collapse(
   }
 
   // Calculate content height
-  let content_height = if flow_children.length() == 0 {
+  // If this is a BFC (overflow is not visible), include float heights
+  let float_height = if overflow_blocks {
+    // BFC contains floats - include their height
+    float_ctx.get_float_height()
+  } else {
+    0.0
+  }
+
+  let flow_content_height = if flow_children.length() == 0 {
     0.0
   } else if can_collapse_bottom {
     @types.max(0.0, current_y) // Don't include escaped bottom margin
   } else {
     @types.max(0.0, current_y + prev_margin_bottom)
   }
+
+  let content_height = @types.max(flow_content_height, float_height)
 
   // Box height - consider aspect_ratio
   let mut box_height = match style.height {

@@ -119,6 +119,50 @@ fn parse_position(tokens : ArrayView[@token.Token]) -> @style.Position? {
 }
 
 ///|
+/// Parse float property
+fn parse_float(tokens : ArrayView[@token.Token]) -> @style.Float? {
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Ident(s) =>
+      if s == "left" {
+        Some(@style.Float::Left)
+      } else if s == "right" {
+        Some(@style.Float::Right)
+      } else if s == "none" {
+        Some(@style.Float::None)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse clear property
+fn parse_clear(tokens : ArrayView[@token.Token]) -> @style.Clear? {
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Ident(s) =>
+      if s == "left" {
+        Some(@style.Clear::Left)
+      } else if s == "right" {
+        Some(@style.Clear::Right)
+      } else if s == "both" {
+        Some(@style.Clear::Both)
+      } else if s == "none" {
+        Some(@style.Clear::None)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
 /// Parse flex-direction property
 fn parse_flex_direction(
   tokens : ArrayView[@token.Token]
@@ -362,6 +406,20 @@ fn apply_property(
   if property == "position" {
     match parse_position(value_tokens) {
       Some(v) => return { ..style, position: v }
+      None => ()
+    }
+  }
+  // float
+  if property == "float" {
+    match parse_float(value_tokens) {
+      Some(v) => return { ..style, float: v }
+      None => ()
+    }
+  }
+  // clear
+  if property == "clear" {
+    match parse_clear(value_tokens) {
+      Some(v) => return { ..style, clear: v }
       None => ()
     }
   }

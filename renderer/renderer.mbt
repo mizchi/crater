@@ -704,6 +704,13 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
   if property == "align-self" {
     return { ..target, align_self: source.align_self }
   }
+  // Float properties
+  if property == "float" {
+    return { ..target, float: source.float }
+  }
+  if property == "clear" {
+    return { ..target, clear: source.clear }
+  }
 
   target
 }

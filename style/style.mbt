@@ -60,12 +60,21 @@ pub(all) enum AlignSelf {
 } derive(Show)
 
 ///|
-/// CSS float property (currently unsupported, for detection only)
+/// CSS float property
 pub(all) enum Float {
   None
   Left
   Right
-} derive(Show)
+} derive(Show, Eq)
+
+///|
+/// CSS clear property
+pub(all) enum Clear {
+  None
+  Left
+  Right
+  Both
+} derive(Show, Eq)
 
 ///|
 /// CSS overflow property
@@ -169,6 +178,7 @@ pub(all) struct Style {
   display : Display
   position : Position
   float : Float
+  clear : Clear
   // Overflow
   overflow_x : Overflow
   overflow_y : Overflow
@@ -224,6 +234,7 @@ pub fn Style::default() -> Style {
     display: Block,
     position: Relative,
     float: None,
+    clear: None,
     overflow_x: Visible,
     overflow_y: Visible,
     width: @types.Auto,

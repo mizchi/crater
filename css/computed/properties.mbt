@@ -23,6 +23,7 @@ pub fn initial_value(property : String) -> String {
     "display" => "block"
     "position" => "relative"
     "float" => "none"
+    "clear" => "none"
     // Overflow
     "overflow" | "overflow-x" | "overflow-y" => "visible"
     // Sizing
@@ -127,6 +128,29 @@ pub fn parse_position(value : String) -> @style.Position {
     "absolute" => @style.Position::Absolute
     "relative" | "static" | "fixed" | "sticky" => @style.Position::Relative
     _ => @style.Position::Relative
+  }
+}
+
+///|
+/// Parse float value
+pub fn parse_float(value : String) -> @style.Float {
+  match value.trim().to_lower() {
+    "left" => @style.Float::Left
+    "right" => @style.Float::Right
+    "none" => @style.Float::None
+    _ => @style.Float::None
+  }
+}
+
+///|
+/// Parse clear value
+pub fn parse_clear(value : String) -> @style.Clear {
+  match value.trim().to_lower() {
+    "left" => @style.Clear::Left
+    "right" => @style.Clear::Right
+    "both" => @style.Clear::Both
+    "none" => @style.Clear::None
+    _ => @style.Clear::None
   }
 }
 

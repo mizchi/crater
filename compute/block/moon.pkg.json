@@ -3,6 +3,7 @@
     "mizchi/crater/types",
     "mizchi/crater/style",
     "mizchi/crater/node",
-    "mizchi/crater/compute/absolute"
+    "mizchi/crater/compute/absolute",
+    "mizchi/crater/compute/float"
   ]
 }
