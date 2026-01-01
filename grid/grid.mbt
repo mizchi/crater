@@ -169,6 +169,27 @@ fn calculate_total_track_size(
 }
 
 ///|
+/// Compute layout for any node type, delegating to the appropriate module
+/// based on the node's display type (Grid, Flex, or Block)
+pub fn compute_layout(
+  node : @node.Node,
+  available_width : Double,
+  available_height : Double,
+) -> @node.Layout {
+  let ctx : @node.LayoutContext = {
+    available_width,
+    available_height: Some(available_height),
+    sizing_mode: @node.Definite,
+  }
+  match node.style.display {
+    @style.Flex => @flex.compute(node, ctx)
+    @style.Block => @block.compute(node, ctx)
+    @style.Grid => compute_grid_layout_internal(node, available_width, available_height, false, false)
+    @style.None => @absolute.create_zero_layout(node.id)
+  }
+}
+
+///|
 /// Compute grid layout for a node
 pub fn compute_grid_layout(
   node : @node.Node,

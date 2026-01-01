@@ -319,6 +319,14 @@ fn compute_with_collapse(
   // For MaxContent mode, first determine max-content width from children's contributions
   if use_max_content {
     let mut max_content_width = 0.0
+    // Check if root itself has MeasureFunc (leaf node with intrinsic size)
+    match node.measure {
+      Some(mf) => {
+        let intrinsic = (mf.func)(0.0, 0.0)
+        max_content_width = intrinsic.max_width
+      }
+      None => ()
+    }
     for i = 0; i < flow_nodes.length(); i = i + 1 {
       let child = flow_nodes[i]
       let child_style = flow_styles[i]
@@ -357,17 +365,25 @@ fn compute_with_collapse(
         @types.Percent(_) => child_min_box // At minimum, padding+border
         @types.Auto => {
           // For width:auto, use max-content of child's content
-          if child.children.length() == 0 {
-            child_min_box // Leaf nodes with no content have padding+border as minimum
-          } else {
-            // Recursively compute child's max-content width
-            let intrinsic_ctx : @node.LayoutContext = {
-              available_width: parent_width, // Use parent_width as reference for percentages
-              available_height: child_available_height,
-              sizing_mode: @node.MaxContent,
+          // Leaf nodes with MeasureFunc use intrinsic size
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              @types.max(intrinsic.max_width + child_min_box, child_min_box)
             }
-            let child_result = compute_with_collapse(child, intrinsic_ctx, warnings)
-            child_result.layout.width
+            None =>
+              if child.children.length() == 0 {
+                child_min_box // Leaf nodes with no content have padding+border as minimum
+              } else {
+                // Recursively compute child's max-content width
+                let intrinsic_ctx : @node.LayoutContext = {
+                  available_width: parent_width, // Use parent_width as reference for percentages
+                  available_height: child_available_height,
+                  sizing_mode: @node.MaxContent,
+                }
+                let child_result = compute_with_collapse(child, intrinsic_ctx, warnings)
+                child_result.layout.width
+              }
           }
         }
       }

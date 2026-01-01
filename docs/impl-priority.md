@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 445    | 154    | 599   | 74.3%      | 8 display_none tests excluded |
-| Grid   | 248    | 81     | 329   | 75.4%      | |
-| **Total** | **897** | **254** | **1151** | **77.9%** | Native target stable |
+| Flex   | 466    | 133    | 599   | 77.8%      | +21 tests from intrinsic fix |
+| Grid   | 260    | 81     | 341   | 76.2%      | includes blockgrid/gridflex/leaf |
+| **Total** | **930** | **233** | **1163** | **80.0%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -97,6 +97,7 @@
 | wrap percent | 198/223 (89%) | 443/599 (73.9%) | 248/329 (75%) | 889/1151 (77.2%) |
 | min/max fix | 199/223 (89.2%) | 443/599 (73.9%) | 248/329 (75%) | 890/1151 (77.3%) |
 | Block fixes | 204/223 (91.5%) | 445/599 (74.3%) | 248/329 (75%) | 897/1151 (77.9%) |
+| compute_layout + intrinsic | 204/223 (91.5%) | 466/599 (77.8%) | 260/341 (76.2%) | 930/1163 (80.0%) |
 
 ### これまでの主な修正
 
@@ -142,6 +143,13 @@
 - inset percentage: 相対配置の top/bottom 百分率を親の高さで解決（auto 時は 0）
 - absolute margin:auto: 子が親より大きい場合、margin-left を 0 にして左位置使用
 - aspect_ratio: height が max_height で制限された後、width を再計算
+
+**compute_layout + intrinsic fixes (+33 tests)**
+- Grid モジュールに `compute_layout` 汎用関数を追加
+- root の display に応じて適切なモジュール (Block/Flex/Grid) に委譲
+- blockflex テストが Flex layout を正しく使用するよう修正
+- Block の MaxContent モードで MeasureFunc を持つ leaf node の intrinsic size を使用
+- Block child の intrinsic width 計算時も MeasureFunc を考慮
 
 ## 技術的な注意点
 

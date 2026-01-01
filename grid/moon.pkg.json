@@ -4,6 +4,7 @@
     "mizchi/crater/style",
     "mizchi/crater/node",
     "mizchi/crater/flex",
+    "mizchi/crater/block",
     "mizchi/crater/absolute"
   ]
 }

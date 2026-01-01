@@ -124,27 +124,39 @@ fn compute_intrinsic_flex_main_size(
       }
       let child_margin = @types.resolve_rect(child_style.margin, child_available_width)
 
+      // CSS rule: padding+border override explicit size if larger
+      let child_padding = @types.resolve_rect(child_style.padding, child_available_width)
+      let child_border = @types.resolve_rect(child_style.border, child_available_width)
+      let child_min_width = child_padding.horizontal_sum() + child_border.horizontal_sum()
+      let child_min_height = child_padding.vertical_sum() + child_border.vertical_sum()
+
       let child_main = if child_is_row {
         // Main axis is width
-        match child_style.width {
-          @types.Length(w) => w + child_margin.left + child_margin.right
-          @types.Percent(p) =>
-            child_available_width * p + child_margin.left + child_margin.right
-          @types.Auto =>
-            compute_intrinsic_main_size(child, true, None) +
-            child_margin.left +
-            child_margin.right
+        let base_width = match child_style.width {
+          @types.Length(w) => w
+          @types.Percent(p) => child_available_width * p
+          @types.Auto => compute_intrinsic_main_size(child, true, None)
         }
+        let effective_width = if base_width < child_min_width {
+          child_min_width
+        } else {
+          base_width
+        }
+        effective_width + child_margin.left + child_margin.right
       } else {
         // Main axis is height
-        match child_style.height {
-          @types.Length(h) => h + child_margin.top + child_margin.bottom
-          @types.Percent(_) => child_margin.top + child_margin.bottom
+        let base_height = match child_style.height {
+          @types.Length(h) => h
+          @types.Percent(_) => 0.0
           @types.Auto =>
-            compute_intrinsic_main_size(child, false, Some(child_available_width)) +
-            child_margin.top +
-            child_margin.bottom
+            compute_intrinsic_main_size(child, false, Some(child_available_width))
         }
+        let effective_height = if base_height < child_min_height {
+          child_min_height
+        } else {
+          base_height
+        }
+        effective_height + child_margin.top + child_margin.bottom
       }
       total_main = total_main + child_main
       item_count = item_count + 1
@@ -481,15 +493,55 @@ fn compute_internal(
     @types.Auto => true
     _ => false
   }
-  let mut container_width = match style.width {
-    @types.Length(w) => w
-    @types.Percent(p) => parent_width * p
-    @types.Auto =>
-      // For Definite sizing mode, parent already computed our content size
-      // Don't subtract margin again (it's already accounted for)
-      match ctx.sizing_mode {
-        @node.Definite => parent_width
-        _ => parent_width - margin.horizontal_sum()
+  let height_is_auto = match style.height {
+    @types.Auto => true
+    _ => false
+  }
+
+  // For MaxContent sizing with auto size, check for MeasureFunc (leaf node with intrinsic size)
+  // This applies when we have a flex container with no children but a MeasureFunc
+  let intrinsic_from_measure : (Double, Double)? = match (
+    ctx.sizing_mode,
+    width_is_auto || height_is_auto,
+    node.measure,
+    node.children.length(),
+  ) {
+    (@node.MaxContent, true, Some(mf), 0) => {
+      // Leaf flex node with MeasureFunc - use intrinsic size
+      let intrinsic = (mf.func)(parent_width, parent_height)
+      Some(
+        (
+          intrinsic.max_width + padding.horizontal_sum() + border.horizontal_sum(),
+          intrinsic.max_height + padding.vertical_sum() + border.vertical_sum(),
+        ),
+      )
+    }
+    _ => None
+  }
+
+  let mut container_width = match intrinsic_from_measure {
+    Some((w, _)) => w
+    None =>
+      match style.width {
+        @types.Length(w) => w
+        @types.Percent(p) => parent_width * p
+        @types.Auto =>
+          match ctx.sizing_mode {
+            @node.Definite => parent_width
+            @node.MaxContent =>
+              // For MaxContent with children, compute intrinsic width
+              if node.children.length() > 0 {
+                // Use compute_intrinsic_main_size to get max-content width
+                let intrinsic = compute_intrinsic_main_size(
+                  node,
+                  true,
+                  ctx.available_height,
+                )
+                intrinsic + padding.horizontal_sum() + border.horizontal_sum()
+              } else {
+                parent_width - margin.horizontal_sum()
+              }
+          }
       }
   }
 
@@ -521,11 +573,15 @@ fn compute_internal(
   let content_width = container_width -
     padding.horizontal_sum() -
     border.horizontal_sum()
-  let content_height : Double? = match style.height {
-    @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
-    @types.Percent(p) =>
-      Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
-    @types.Auto => None
+  let content_height : Double? = match intrinsic_from_measure {
+    Some((_, h)) => Some(h - padding.vertical_sum() - border.vertical_sum())
+    None =>
+      match style.height {
+        @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
+        @types.Percent(p) =>
+          Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+        @types.Auto => None
+      }
   }
 
   // Determine main/cross axis based on flex-direction
@@ -593,11 +649,15 @@ fn compute_internal(
   let children = node.children
   let child_count = children.length()
   if child_count == 0 {
-    // No children - just return container
-    let container_height = match style.height {
-      @types.Length(h) => h
-      @types.Percent(p) => parent_height * p
-      @types.Auto => padding.vertical_sum() + border.vertical_sum()
+    // No children - just return container with intrinsic size if available
+    let container_height = match intrinsic_from_measure {
+      Some((_, h)) => h
+      None =>
+        match style.height {
+          @types.Length(h) => h
+          @types.Percent(p) => parent_height * p
+          @types.Auto => padding.vertical_sum() + border.vertical_sum()
+        }
     }
     return {
       id: node.id,
@@ -1749,39 +1809,44 @@ fn compute_internal(
 
   // Calculate container height
   // For wrap mode, use total_lines_cross; for single line, use max_cross
-  let container_height = match style.height {
-    @types.Length(h) => h
-    @types.Percent(p) => parent_height * p
-    @types.Auto =>
-      if is_row {
-        // Row direction: cross size is height
-        total_lines_cross + padding.vertical_sum() + border.vertical_sum()
-      } else {
-        // Column direction: main size is height
-        // Calculate total main size including gaps within and between lines
-        let mut total_main = 0.0
-        for line_idx = 0
-            line_idx < flex_lines.length()
-            line_idx = line_idx + 1 {
-          let line = flex_lines[line_idx]
-          // Sum up item sizes + gaps within the line
-          let mut line_main = 0.0
-          for item in line.items {
-            line_main = line_main + item.final_main + item.margin_main
+  // For leaf nodes with MeasureFunc, use intrinsic height
+  let container_height = match intrinsic_from_measure {
+    Some((_, h)) => h
+    None =>
+      match style.height {
+        @types.Length(h) => h
+        @types.Percent(p) => parent_height * p
+        @types.Auto =>
+          if is_row {
+            // Row direction: cross size is height
+            total_lines_cross + padding.vertical_sum() + border.vertical_sum()
+          } else {
+            // Column direction: main size is height
+            // Calculate total main size including gaps within and between lines
+            let mut total_main = 0.0
+            for line_idx = 0
+                line_idx < flex_lines.length()
+                line_idx = line_idx + 1 {
+              let line = flex_lines[line_idx]
+              // Sum up item sizes + gaps within the line
+              let mut line_main = 0.0
+              for item in line.items {
+                line_main = line_main + item.final_main + item.margin_main
+              }
+              // Add gaps between items within the line
+              if line.items.length() > 1 {
+                line_main = line_main +
+                  main_gap * (line.items.length() - 1).to_double()
+              }
+              total_main = total_main + line_main
+            }
+            // Add cross_gap between lines (which is main gap in column wrap)
+            if flex_lines.length() > 1 {
+              total_main = total_main +
+                cross_gap * (flex_lines.length() - 1).to_double()
+            }
+            total_main + padding.vertical_sum() + border.vertical_sum()
           }
-          // Add gaps between items within the line
-          if line.items.length() > 1 {
-            line_main = line_main +
-              main_gap * (line.items.length() - 1).to_double()
-          }
-          total_main = total_main + line_main
-        }
-        // Add cross_gap between lines (which is main gap in column wrap)
-        if flex_lines.length() > 1 {
-          total_main = total_main +
-            cross_gap * (flex_lines.length() - 1).to_double()
-        }
-        total_main + padding.vertical_sum() + border.vertical_sum()
       }
   }
 
