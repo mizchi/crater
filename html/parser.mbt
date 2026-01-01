@@ -14,6 +14,14 @@ pub(all) struct Element {
 }
 
 ///|
+/// Parsed HTML document with extracted resources
+pub(all) struct Document {
+  root : Element
+  stylesheets : Array[String] // CSS content from <style> tags
+  stylesheet_links : Array[String] // URLs from <link rel="stylesheet">
+}
+
+///|
 /// HTML Node (Element or Text)
 pub(all) enum Node {
   Element(Element)
@@ -26,6 +34,17 @@ priv struct Parser {
   input : String
   mut pos : Int
   len : Int
+}
+
+///|
+/// Check if a tag is a void element (no closing tag required)
+fn is_void_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "area" | "base" | "br" | "col" | "embed" | "hr" | "img" | "input" | "link" |
+    "meta" | "param" | "source" | "track" | "wbr" =>
+      true
+    _ => false
+  }
 }
 
 ///|
@@ -83,6 +102,82 @@ fn Parser::skip_whitespace(self : Parser) -> Unit {
 ///|
 fn is_whitespace(c : Char) -> Bool {
   c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+///|
+/// Skip DOCTYPE declaration (<!doctype ...> or <!DOCTYPE ...>)
+fn Parser::skip_doctype(self : Parser) -> Unit {
+  // Check for <!doctype or <!DOCTYPE
+  if self.peek() is Some('<') {
+    let start_pos = self.pos
+    let _ = self.consume() // <
+    if self.peek() is Some('!') {
+      let _ = self.consume() // !
+      // Check for "doctype" (case-insensitive)
+      let word = self.peek_word_lowercase()
+      if word == "doctype" {
+        // Skip until >
+        while self.peek() is Some(c) && c != '>' {
+          let _ = self.consume()
+        }
+        if self.peek() is Some('>') {
+          let _ = self.consume() // >
+        }
+        return
+      }
+    }
+    // Not a DOCTYPE, reset position
+    self.pos = start_pos
+  }
+}
+
+///|
+/// Skip HTML comment <!-- ... -->
+fn Parser::skip_comment(self : Parser) -> Bool {
+  // Check for <!--
+  if self.peek() is Some('<') && self.peek_at(1) is Some('!') &&
+     self.peek_at(2) is Some('-') && self.peek_at(3) is Some('-') {
+    // Skip <!--
+    let _ = self.consume() // <
+    let _ = self.consume() // !
+    let _ = self.consume() // -
+    let _ = self.consume() // -
+    // Skip until -->
+    while not(self.is_eof()) {
+      if self.peek() is Some('-') && self.peek_at(1) is Some('-') && self.peek_at(2) is Some('>') {
+        let _ = self.consume() // -
+        let _ = self.consume() // -
+        let _ = self.consume() // >
+        return true
+      }
+      let _ = self.consume()
+    }
+    return true
+  }
+  false
+}
+
+///|
+/// Peek at the next word (lowercase) without consuming
+fn Parser::peek_word_lowercase(self : Parser) -> String {
+  let buf = StringBuilder::new()
+  let mut i = self.pos
+  while i < self.input.length() {
+    let code = self.input[i].to_int()
+    let c = code.unsafe_to_char()
+    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
+      // Convert to lowercase
+      if c >= 'A' && c <= 'Z' {
+        buf.write_char((code + 32).unsafe_to_char())
+      } else {
+        buf.write_char(c)
+      }
+      i = i + 1
+    } else {
+      break
+    }
+  }
+  buf.to_string()
 }
 
 ///|
@@ -234,6 +329,11 @@ fn Parser::parse_element(self : Parser) -> Element? {
     }
   }
 
+  // Void elements have no children and no closing tag
+  if is_void_element(tag) {
+    return Some({ tag, id, classes, style, attributes, children: [] })
+  }
+
   // Parse children
   let children = self.parse_children(tag)
 
@@ -269,11 +369,28 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
             let _ = parent_tag
             return children
           }
+          Some('!') => {
+            // Could be a comment <!-- --> or DOCTYPE (unlikely inside body)
+            if self.skip_comment() {
+              continue
+            }
+            // Not a comment, try to parse as element
+            match self.parse_element() {
+              Some(elem) => children.push(Node::Element(elem))
+              None => {
+                // Skip this character and continue
+                let _ = self.consume()
+              }
+            }
+          }
           _ => {
             // Opening tag - parse child element
             match self.parse_element() {
               Some(elem) => children.push(Node::Element(elem))
-              None => break
+              None => {
+                // Skip this character and continue
+                let _ = self.consume()
+              }
             }
           }
         }
@@ -313,17 +430,190 @@ fn Parser::parse_text(self : Parser) -> String {
 pub fn parse(html : String) -> Element? {
   let parser = Parser::new(html)
   parser.skip_whitespace()
+  // Skip DOCTYPE declaration if present
+  parser.skip_doctype()
+  parser.skip_whitespace()
   parser.parse_element()
+}
+
+///|
+/// Parse all top-level elements from HTML
+fn parse_all_elements(html : String) -> Array[Element] {
+  let parser = Parser::new(html)
+  let elements : Array[Element] = []
+
+  while not(parser.is_eof()) {
+    parser.skip_whitespace()
+    // Skip DOCTYPE declaration if present
+    parser.skip_doctype()
+    parser.skip_whitespace()
+
+    if parser.is_eof() {
+      break
+    }
+
+    match parser.parse_element() {
+      Some(elem) => elements.push(elem)
+      None => {
+        // Skip any non-element content
+        match parser.consume() {
+          Some(_) => ()
+          None => break
+        }
+      }
+    }
+  }
+
+  elements
+}
+
+///|
+/// Check if element should be in head
+fn is_head_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "title" | "meta" | "link" | "style" | "base" | "script" | "noscript" => true
+    _ => false
+  }
 }
 
 ///|
 /// Parse HTML with a wrapper div if needed
 pub fn parse_fragment(html : String) -> Element {
-  match parse(html) {
-    Some(elem) => elem
-    None => {
-      // Wrap in a div
-      { tag: "div", id: None, classes: [], style: None, attributes: {}, children: [] }
+  let elements = parse_all_elements(html)
+
+  if elements.is_empty() {
+    return { tag: "body", id: None, classes: [], style: None, attributes: {}, children: [] }
+  }
+
+  // If first element is html, return it
+  if elements.length() == 1 && elements[0].tag.to_lower() == "html" {
+    return elements[0]
+  }
+
+  // If first element is body, return it
+  if elements.length() == 1 && elements[0].tag.to_lower() == "body" {
+    return elements[0]
+  }
+
+  // Otherwise, separate head and body elements and create implicit structure
+  let head_children : Array[Node] = []
+  let body_children : Array[Node] = []
+
+  for elem in elements {
+    if is_head_element(elem.tag) {
+      head_children.push(Node::Element(elem))
+    } else {
+      body_children.push(Node::Element(elem))
     }
   }
+
+  // If we have both head and body elements, create proper html structure
+  if head_children.length() > 0 && body_children.length() > 0 {
+    let head_elem : Element = {
+      tag: "head",
+      id: None,
+      classes: [],
+      style: None,
+      attributes: {},
+      children: head_children,
+    }
+    let body_elem : Element = {
+      tag: "body",
+      id: None,
+      classes: [],
+      style: None,
+      attributes: {},
+      children: body_children,
+    }
+    return {
+      tag: "html",
+      id: None,
+      classes: [],
+      style: None,
+      attributes: {},
+      children: [Node::Element(head_elem), Node::Element(body_elem)],
+    }
+  }
+
+  // If we have only body elements, return a body wrapper
+  if body_children.length() > 0 {
+    return {
+      tag: "body",
+      id: None,
+      classes: [],
+      style: None,
+      attributes: {},
+      children: body_children,
+    }
+  }
+
+  // Only head elements - still wrap in body (unusual case)
+  {
+    tag: "body",
+    id: None,
+    classes: [],
+    style: None,
+    attributes: {},
+    children: head_children,
+  }
+}
+
+///|
+/// Parse HTML and extract stylesheets
+pub fn parse_document(html : String) -> Document {
+  let root = parse_fragment(html)
+  let stylesheets : Array[String] = []
+  let stylesheet_links : Array[String] = []
+  extract_stylesheets(root, stylesheets, stylesheet_links)
+  { root, stylesheets, stylesheet_links }
+}
+
+///|
+/// Recursively extract stylesheets from element tree
+fn extract_stylesheets(
+  elem : Element,
+  stylesheets : Array[String],
+  links : Array[String]
+) -> Unit {
+  // Handle <style> tags - extract text content
+  if elem.tag == "style" {
+    let css = extract_text_content(elem)
+    if not(css.is_empty()) {
+      stylesheets.push(css)
+    }
+  }
+  // Handle <link rel="stylesheet"> tags
+  if elem.tag == "link" {
+    let rel = elem.attributes.get("rel")
+    match rel {
+      Some(r) if r == "stylesheet" => {
+        match elem.attributes.get("href") {
+          Some(href) => links.push(href)
+          None => ()
+        }
+      }
+      _ => ()
+    }
+  }
+  // Recurse into children
+  for child in elem.children {
+    match child {
+      Node::Element(child_elem) =>
+        extract_stylesheets(child_elem, stylesheets, links)
+      Node::Text(_) => ()
+    }
+  }
+}
+
+///|
+/// Extract all text content from an element
+fn extract_text_content(elem : Element) -> String {
+  let buf = StringBuilder::new()
+  for child in elem.children {
+    match child {
+      Node::Text(text) => buf.write_string(text)
+      Node::Element(child_elem) => buf.write_string(extract_text_content(child_elem))
+    }
+  }
+  buf.to_string()
 }

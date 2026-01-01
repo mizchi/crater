@@ -122,3 +122,58 @@ pub(all) struct LayoutResult {
   layout : Layout
   warnings : Array[LayoutWarning]
 }
+
+///|
+/// Layout dispatch function type
+/// Used to delegate layout computation to the appropriate algorithm based on display type
+pub(all) struct LayoutDispatchFunc ((Node, LayoutContext) -> Layout)
+
+///|
+/// Global layout dispatch function
+/// Set this before layout computation to enable cross-layout-type dispatch
+let layout_dispatcher : Ref[LayoutDispatchFunc?] = { val: None }
+
+///|
+/// Set the global layout dispatcher
+pub fn set_layout_dispatcher(f : LayoutDispatchFunc) -> Unit {
+  layout_dispatcher.val = Some(f)
+}
+
+///|
+/// Get the global layout dispatcher (for checking if it's set)
+pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
+  layout_dispatcher.val
+}
+
+///|
+/// Compute layout for a node using the global dispatcher
+/// Falls back to returning a minimal layout if no dispatcher is set
+pub fn dispatch_layout(node : Node, ctx : LayoutContext) -> Layout {
+  match layout_dispatcher.val {
+    Some(LayoutDispatchFunc(f)) => f(node, ctx)
+    None => {
+      // Fallback: create minimal layout from node dimensions
+      let width = match node.style.width {
+        @types.Length(w) => w
+        @types.Percent(p) => ctx.available_width * p
+        @types.Auto => ctx.available_width
+      }
+      let height = match node.style.height {
+        @types.Length(h) => h
+        @types.Percent(p) => ctx.available_height.unwrap_or(0.0) * p
+        @types.Auto => 0.0
+      }
+      {
+        id: node.id,
+        x: 0.0,
+        y: 0.0,
+        width,
+        height,
+        margin: @types.Rect::zero(),
+        padding: @types.Rect::zero(),
+        border: @types.Rect::zero(),
+        children: [],
+      }
+    }
+  }
+}

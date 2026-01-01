@@ -2,8 +2,13 @@
 /// Inline style parser - parses CSS property declarations
 /// e.g., "width: 100px; height: 50px; display: flex"
 
+// Default viewport size for inline parser vh/vw resolution
+let default_viewport_width : Double = 1000.0
+let default_viewport_height : Double = 1000.0
+
 ///|
 /// Parse a dimension value (length, percent, auto)
+/// vh/vw are converted to Length using default viewport (1000x1000)
 fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
   if tokens.length() == 0 {
     return None
@@ -14,8 +19,17 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
         Some(@types.Length(value))
       } else if unit == "%" {
         Some(@types.Percent(value / 100.0))
+      } else if unit == "vw" {
+        // Convert vw to pixels using default viewport width
+        Some(@types.Length(value * default_viewport_width / 100.0))
+      } else if unit == "vh" {
+        // Convert vh to pixels using default viewport height
+        Some(@types.Length(value * default_viewport_height / 100.0))
+      } else if unit == "em" || unit == "rem" {
+        // em/rem treated as 16px multiplier for now
+        Some(@types.Length(value * 16.0))
       } else {
-        // Other units treated as px for now
+        // Other units treated as px
         Some(@types.Length(value))
       }
     }
@@ -37,6 +51,29 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
     }
     _ => None
   }
+}
+
+///|
+/// Parse multiple dimension values (for shorthand properties like margin, padding)
+fn parse_multi_dimensions(tokens : ArrayView[@token.Token], max_count : Int) -> Array[@types.Dimension] {
+  let result : Array[@types.Dimension] = []
+  let mut rest = tokens
+  while result.length() < max_count && rest.length() > 0 {
+    // Skip whitespace
+    rest = skip_whitespace(rest)
+    if rest.length() == 0 {
+      break
+    }
+    // Try to parse a dimension
+    match parse_dimension(rest) {
+      Some(dim) => {
+        result.push(dim)
+        rest = rest[1:]
+      }
+      None => break
+    }
+  }
+  result
 }
 
 ///|
@@ -426,12 +463,33 @@ fn apply_property(
       None => ()
     }
   }
-  // margin (single value for now)
+  // margin (supports 1, 2, 3, or 4 values)
   if property == "margin" {
-    match parse_dimension(value_tokens) {
-      Some(v) =>
-        return { ..style, margin: { left: v, right: v, top: v, bottom: v } }
-      None => ()
+    let dims = parse_multi_dimensions(value_tokens, 4)
+    match dims.length() {
+      1 => {
+        // All sides
+        let v = dims[0]
+        return { ..style, margin: { top: v, right: v, bottom: v, left: v } }
+      }
+      2 => {
+        // top/bottom, left/right
+        let tb = dims[0]
+        let lr = dims[1]
+        return { ..style, margin: { top: tb, right: lr, bottom: tb, left: lr } }
+      }
+      3 => {
+        // top, left/right, bottom
+        let t = dims[0]
+        let lr = dims[1]
+        let b = dims[2]
+        return { ..style, margin: { top: t, right: lr, bottom: b, left: lr } }
+      }
+      4 => {
+        // top, right, bottom, left
+        return { ..style, margin: { top: dims[0], right: dims[1], bottom: dims[2], left: dims[3] } }
+      }
+      _ => ()
     }
   }
   // margin-left
@@ -462,12 +520,29 @@ fn apply_property(
       None => ()
     }
   }
-  // padding (single value for now)
+  // padding (supports 1, 2, 3, or 4 values)
   if property == "padding" {
-    match parse_dimension(value_tokens) {
-      Some(v) =>
-        return { ..style, padding: { left: v, right: v, top: v, bottom: v } }
-      None => ()
+    let dims = parse_multi_dimensions(value_tokens, 4)
+    match dims.length() {
+      1 => {
+        let v = dims[0]
+        return { ..style, padding: { top: v, right: v, bottom: v, left: v } }
+      }
+      2 => {
+        let tb = dims[0]
+        let lr = dims[1]
+        return { ..style, padding: { top: tb, right: lr, bottom: tb, left: lr } }
+      }
+      3 => {
+        let t = dims[0]
+        let lr = dims[1]
+        let b = dims[2]
+        return { ..style, padding: { top: t, right: lr, bottom: b, left: lr } }
+      }
+      4 => {
+        return { ..style, padding: { top: dims[0], right: dims[1], bottom: dims[2], left: dims[3] } }
+      }
+      _ => ()
     }
   }
   // padding-left

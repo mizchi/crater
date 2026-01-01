@@ -174,6 +174,56 @@ fn compute_with_collapse(
     @style.None => ()
   }
 
+  // Handle leaf nodes with MeasureFunc (e.g., text nodes)
+  // These nodes have no children but need intrinsic size from their measure function
+  if node.children.length() == 0 {
+    match node.measure {
+      Some(mf) => {
+        let parent_width = ctx.available_width
+        let parent_height = ctx.available_height.unwrap_or(0.0)
+        let margin = @types.resolve_rect(style.margin, parent_width)
+        let padding = @types.resolve_rect(style.padding, parent_width)
+        let border = @types.resolve_rect(style.border, parent_width)
+        let available_h = ctx.available_height.unwrap_or(0.0)
+        let intrinsic = (mf.func)(parent_width, available_h)
+
+        // Calculate width - constrained by parent width
+        let box_width = match style.width {
+          @types.Length(w) => w
+          @types.Percent(p) => parent_width * p
+          @types.Auto => {
+            let content_width = intrinsic.max_width + padding.horizontal_sum() + border.horizontal_sum()
+            // Text should not exceed parent width
+            @types.min(content_width, parent_width)
+          }
+        }
+
+        // Calculate height
+        let box_height = match style.height {
+          @types.Length(h) => h
+          @types.Percent(p) => parent_height * p
+          @types.Auto => intrinsic.max_height + padding.vertical_sum() + border.vertical_sum()
+        }
+
+        return {
+          layout: {
+            id: node.id,
+            x: 0.0,
+            y: 0.0,
+            width: box_width,
+            height: box_height,
+            margin,
+            padding,
+            border,
+            children: [],
+          },
+          collapsed: { top: None, bottom: None },
+        }
+      }
+      None => ()
+    }
+  }
+
   // Resolve box model
   // For MaxContent sizing, percentage values resolve to 0 (CSS intrinsic sizing spec)
   let parent_width = ctx.available_width
@@ -433,7 +483,21 @@ fn compute_with_collapse(
       available_height: child_available_height,
       sizing_mode: @node.Definite,
     }
-    flow_children.push(compute_with_collapse(child, child_ctx, warnings))
+    // Flex containers establish a new BFC, so use dispatch for them
+    // and don't participate in margin collapsing
+    let child_result = match child.style.display {
+      @style.Flex => {
+        // Use global dispatcher if available, otherwise use block layout
+        // (tests without dispatcher setup will use block layout as fallback)
+        let layout = match @node.get_layout_dispatcher() {
+          Some(_) => @node.dispatch_layout(child, child_ctx)
+          None => compute_with_collapse(child, child_ctx, warnings).layout
+        }
+        { layout, collapsed: { top: None, bottom: None } }
+      }
+      _ => compute_with_collapse(child, child_ctx, warnings)
+    }
+    flow_children.push(child_result)
   }
 
   // Track escaped margins for parent

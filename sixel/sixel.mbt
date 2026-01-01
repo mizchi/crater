@@ -233,6 +233,12 @@ pub fn render_layout(
 }
 
 ///|
+/// Check if this is a text node
+fn is_text_node(id : String) -> Bool {
+  id == "#text"
+}
+
+///|
 fn render_node(
   fb : Framebuffer,
   layout : @node.Layout,
@@ -248,13 +254,28 @@ fn render_node(
   let w = layout.width.to_int()
   let h = layout.height.to_int()
 
-  // Color index based on depth (1-5)
-  let color = (depth % 5) + 1
+  // Skip zero-sized nodes
+  if w == 0 || h == 0 {
+    // Still render children
+    for child in layout.children {
+      render_node(fb, child, abs_x, abs_y, depth + 1)
+    }
+    return
+  }
 
-  // Fill with semi-transparent color (we can't do real alpha in sixel, so just fill)
-  fb.fill_rect(x, y, w, h, color)
-  // Draw border
-  fb.stroke_rect(x, y, w, h, 6) // Black border
+  // Different rendering for text nodes vs container nodes
+  if is_text_node(layout.id) {
+    // Render text as a dark gray filled rectangle (placeholder for actual text)
+    fb.fill_rect(x, y, w, h, 5) // Gray color (index 5)
+  } else {
+    // Color index based on depth (1-5)
+    let color = (depth % 5) + 1
+
+    // Fill with semi-transparent color (we can't do real alpha in sixel, so just fill)
+    fb.fill_rect(x, y, w, h, color)
+    // Draw border
+    fb.stroke_rect(x, y, w, h, 6) // Black border
+  }
 
   // Render children
   for child in layout.children {

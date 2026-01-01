@@ -40,6 +40,18 @@ pub fn ComputeContext::with_parent(parent : @style.Style) -> ComputeContext {
 }
 
 ///|
+/// Create context with custom viewport dimensions
+pub fn ComputeContext::with_viewport(viewport_width : Double, viewport_height : Double) -> ComputeContext {
+  {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width,
+    viewport_height,
+  }
+}
+
+///|
 /// Mutable style builder for collecting computed values
 priv struct StyleBuilder {
   mut display : @style.Display
@@ -344,6 +356,44 @@ fn apply_property(
     "max-width" => builder.max_width = resolve_dimension(value, ctx)
     "max-height" => builder.max_height = resolve_dimension(value, ctx)
     // Box model
+    "margin" => {
+      // Parse margin shorthand: 1-4 values
+      let parts : Array[StringView] = value
+        .split(" ")
+        .filter(fn(s) { not(s.is_empty()) })
+        .collect()
+      match parts.length() {
+        1 => {
+          let dim = resolve_dimension(parts[0].to_string(), ctx)
+          builder.margin_top = dim
+          builder.margin_right = dim
+          builder.margin_bottom = dim
+          builder.margin_left = dim
+        }
+        2 => {
+          let tb = resolve_dimension(parts[0].to_string(), ctx)
+          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          builder.margin_top = tb
+          builder.margin_bottom = tb
+          builder.margin_left = lr
+          builder.margin_right = lr
+        }
+        3 => {
+          builder.margin_top = resolve_dimension(parts[0].to_string(), ctx)
+          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          builder.margin_left = lr
+          builder.margin_right = lr
+          builder.margin_bottom = resolve_dimension(parts[2].to_string(), ctx)
+        }
+        4 => {
+          builder.margin_top = resolve_dimension(parts[0].to_string(), ctx)
+          builder.margin_right = resolve_dimension(parts[1].to_string(), ctx)
+          builder.margin_bottom = resolve_dimension(parts[2].to_string(), ctx)
+          builder.margin_left = resolve_dimension(parts[3].to_string(), ctx)
+        }
+        _ => ()
+      }
+    }
     "margin-top" => builder.margin_top = resolve_dimension(value, ctx)
     "margin-right" => builder.margin_right = resolve_dimension(value, ctx)
     "margin-bottom" => builder.margin_bottom = resolve_dimension(value, ctx)

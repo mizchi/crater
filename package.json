@@ -7,12 +7,15 @@
     "gentest": "node --experimental-strip-types tools/gentest.ts",
     "gen-moonbit-tests": "node --experimental-strip-types tools/gen-moonbit-tests.ts",
     "render": "node --experimental-strip-types tools/render.ts",
+    "wpt": "node --experimental-strip-types tools/wpt-runner.ts",
+    "wpt:fetch": "node --experimental-strip-types tools/fetch-wpt.ts",
     "test": "vitest"
   },
   "dependencies": {
     "puppeteer": "^23.0.0"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "vitest": "^3.0.0"
   }
 }

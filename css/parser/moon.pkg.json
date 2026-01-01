@@ -1,6 +1,8 @@
 {
   "import": [
     "mizchi/crater/css/token",
+    "mizchi/crater/css/selector",
+    "mizchi/crater/css/cascade",
     "mizchi/crater/style",
     "mizchi/crater/types"
   ]

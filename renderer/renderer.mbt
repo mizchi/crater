@@ -3,6 +3,49 @@
 /// Converts HTML elements with inline styles to layout
 
 ///|
+/// Text measurement constants (monospace font simulation)
+/// These approximate a typical monospace font at 16px
+let char_width : Double = 9.6 // Average character width at 16px (single-width)
+let line_height : Double = 20.0 // Line height at 16px
+let chars_per_line : Int = 80 // Default wrap width in characters (single-width)
+
+///|
+/// Check if a character is East Asian Wide (CJK characters that take 2 columns)
+fn is_wide_char(c : Char) -> Bool {
+  let cp = c.to_int()
+  // CJK Unified Ideographs (U+4E00–U+9FFF)
+  (cp >= 0x4E00 && cp <= 0x9FFF) ||
+  // CJK Extension A (U+3400–U+4DBF)
+  (cp >= 0x3400 && cp <= 0x4DBF) ||
+  // Hiragana (U+3040–U+309F)
+  (cp >= 0x3040 && cp <= 0x309F) ||
+  // Katakana (U+30A0–U+30FF)
+  (cp >= 0x30A0 && cp <= 0x30FF) ||
+  // Hangul Syllables (U+AC00–U+D7AF)
+  (cp >= 0xAC00 && cp <= 0xD7AF) ||
+  // Fullwidth Forms (U+FF00–U+FFEF)
+  (cp >= 0xFF00 && cp <= 0xFFEF) ||
+  // CJK Symbols and Punctuation (U+3000–U+303F)
+  (cp >= 0x3000 && cp <= 0x303F)
+}
+
+///|
+/// Calculate display width of a character (1 for narrow, 2 for wide)
+fn char_display_width(c : Char) -> Int {
+  if is_wide_char(c) { 2 } else { 1 }
+}
+
+///|
+/// Calculate total display width of a string (accounting for wide characters)
+fn string_display_width(s : StringView) -> Int {
+  let mut width = 0
+  for c in s.iter() {
+    width = width + char_display_width(c)
+  }
+  width
+}
+
+///|
 /// Render context with viewport dimensions
 pub(all) struct RenderContext {
   viewport_width : Double
@@ -13,6 +56,74 @@ pub(all) struct RenderContext {
 ///|
 pub fn RenderContext::default() -> RenderContext {
   { viewport_width: 800.0, viewport_height: 600.0, root_font_size: 16.0 }
+}
+
+///|
+/// Create a MeasureFunc for text content
+/// Calculates text dimensions based on monospace character width
+/// Accounts for East Asian Wide characters (CJK) which take 2 columns
+fn create_text_measure(text : String) -> @node.MeasureFunc {
+  // Count display width (accounting for wide characters like CJK)
+  let trimmed = text.trim()
+  let display_width = string_display_width(trimmed)
+
+  // Calculate intrinsic width (single line, no wrapping)
+  let text_max_width = display_width.to_double() * char_width
+
+  // For min-width, use the longest word (accounting for wide chars)
+  let mut max_word_width = 0
+  let mut current_word_width = 0
+  for c in trimmed.iter() {
+    if c == ' ' || c == '\n' || c == '\t' {
+      if current_word_width > max_word_width {
+        max_word_width = current_word_width
+      }
+      current_word_width = 0
+    } else {
+      current_word_width = current_word_width + char_display_width(c)
+    }
+  }
+  if current_word_width > max_word_width {
+    max_word_width = current_word_width
+  }
+  let text_min_width = max_word_width.to_double() * char_width
+
+  {
+    func: fn(available_width : Double, _available_height : Double) -> @node.IntrinsicSize {
+      // Calculate how many single-width columns fit in available width
+      let cols_available = if available_width > 0.0 {
+        (available_width / char_width).to_int()
+      } else {
+        chars_per_line
+      }
+      // Calculate how many lines we need
+      let lines = if cols_available > 0 && display_width > 0 {
+        (display_width + cols_available - 1) / cols_available
+      } else {
+        1
+      }
+      let height = lines.to_double() * line_height
+
+      {
+        min_width: text_min_width,
+        max_width: text_max_width,
+        min_height: line_height,
+        max_height: height,
+      }
+    },
+  }
+}
+
+///|
+/// Create a node for text content
+fn create_text_node(text : String) -> @node.Node {
+  let trimmed = text.trim()
+  if trimmed.is_empty() {
+    // Return a zero-size node for whitespace-only text
+    @node.Node::leaf("#text", @style.Style::default())
+  } else {
+    @node.Node::with_measure("#text", @style.Style::default(), create_text_measure(text))
+  }
 }
 
 ///|
@@ -63,28 +174,551 @@ pub fn element_to_node(
 }
 
 ///|
+/// Find body element in HTML tree
+fn find_body(elem : @html.Element) -> @html.Element? {
+  if elem.tag == "body" {
+    return Some(elem)
+  }
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        match find_body(child_elem) {
+          Some(body) => return Some(body)
+          None => ()
+        }
+      }
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
 /// Render HTML string to Layout
 pub fn render(
   html : String,
   ctx : RenderContext
 ) -> @node.Layout {
-  // Parse HTML
-  let elem = @html.parse_fragment(html)
+  // Parse HTML document (includes stylesheet extraction)
+  let doc = @html.parse_document(html)
 
-  // Convert to node tree
-  let root = element_to_node(elem, None)
+  // Parse stylesheets from <style> tags
+  let stylesheets : Array[@cascade.Stylesheet] = []
+  for css in doc.stylesheets {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
 
-  // Create layout context
+  // Find body element, or use root if not found
+  let render_root = match find_body(doc.root) {
+    Some(body) => body
+    None => doc.root
+  }
+
+  // Convert to node tree with stylesheet styles applied
+  let root = element_to_node_with_styles(render_root, None, ctx, stylesheets)
+
+  // Create layout context - subtract root margin from available space
+  let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
+  let available_width = ctx.viewport_width - root_margin.left - root_margin.right
+  let available_height = ctx.viewport_height - root_margin.top - root_margin.bottom
+
   let layout_ctx : @node.LayoutContext = {
-    available_width: ctx.viewport_width,
-    available_height: Some(ctx.viewport_height),
+    available_width,
+    available_height: Some(available_height),
     sizing_mode: @node.SizingMode::Definite,
   }
 
-  // Compute layout based on display type
-  match root.style.display {
-    @style.Display::Flex => @flex.compute(root, layout_ctx)
-    _ => @block.compute(root, layout_ctx)
+  // Initialize the layout dispatcher for cross-layout-type support
+  @dispatch.setup()
+
+  // Compute layout using dispatcher (handles display type switching)
+  let layout = @dispatch.compute(root, layout_ctx)
+
+  // Apply root margin as position offset
+  // For margin:auto, center horizontally
+  let margin_left_is_auto = match root.style.margin.left {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let margin_right_is_auto = match root.style.margin.right {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+
+  let x_offset = if margin_left_is_auto && margin_right_is_auto {
+    // Center horizontally
+    (ctx.viewport_width - layout.width) / 2.0
+  } else if margin_left_is_auto {
+    // Push to right
+    ctx.viewport_width - layout.width - root_margin.right
+  } else {
+    // Use left margin
+    root_margin.left
+  }
+
+  {
+    id: layout.id,
+    x: x_offset,
+    y: root_margin.top,
+    width: layout.width,
+    height: layout.height,
+    margin: layout.margin,
+    padding: layout.padding,
+    border: layout.border,
+    children: layout.children,
+  }
+}
+
+///|
+/// Convert HTML Element to Node tree, applying viewport dimensions to root
+fn element_to_node_with_viewport(
+  elem : @html.Element,
+  parent_style : @style.Style?,
+  ctx : RenderContext
+) -> @node.Node {
+  // Compute style from inline style attribute
+  let compute_ctx = @computed.ComputeContext::new()
+  let mut style = match elem.style {
+    Some(css) => @computed.compute_inline(css, compute_ctx)
+    None => @style.Style::default()
+  }
+
+  // Apply viewport dimensions if this is the root (body) element
+  if parent_style is None {
+    // Set width to viewport width if not specified
+    match style.width {
+      @types.Dimension::Auto =>
+        style = { ..style, width: @types.Dimension::Length(ctx.viewport_width) }
+      _ => ()
+    }
+    // height: auto - let block layout calculate from content
+  }
+
+  // Convert children
+  let children : Array[@node.Node] = []
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        let child_node = element_to_node(child_elem, Some(style))
+        children.push(child_node)
+      }
+      @html.Node::Text(_text) => ()
+    }
+  }
+
+  // Create node ID
+  let node_id = match elem.id {
+    Some(id) => elem.tag + "#" + id
+    None =>
+      if elem.classes.length() > 0 {
+        elem.tag + "." + elem.classes[0]
+      } else {
+        elem.tag
+      }
+  }
+
+  if children.is_empty() {
+    @node.Node::leaf(node_id, style)
+  } else {
+    @node.Node::new(node_id, style, children)
+  }
+}
+
+///|
+/// Convert HTML Element to Node tree with stylesheet styles applied
+fn element_to_node_with_styles(
+  elem : @html.Element,
+  parent : @selector.Element?,
+  ctx : RenderContext,
+  stylesheets : Array[@cascade.Stylesheet]
+) -> @node.Node {
+  // Convert HTML element to selector element for matching
+  let selector_elem = html_to_selector_element(elem, parent)
+
+  // Get style from stylesheet matching + inline style
+  let style = compute_element_style(selector_elem, elem.style, stylesheets, parent is None, ctx)
+
+  // Convert children
+  let children : Array[@node.Node] = []
+  for i, child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        // Update sibling info on selector element for child processing
+        let child_selector = html_to_selector_element_with_parent(child_elem, selector_elem, i + 1, elem.children.length())
+        let child_node = element_to_node_with_styles_internal(child_elem, child_selector, ctx, stylesheets)
+        children.push(child_node)
+      }
+      @html.Node::Text(text) => {
+        let text_node = create_text_node(text)
+        children.push(text_node)
+      }
+    }
+  }
+
+  // Create node ID
+  let node_id = make_node_id(elem)
+
+  if children.is_empty() {
+    @node.Node::leaf(node_id, style)
+  } else {
+    @node.Node::new(node_id, style, children)
+  }
+}
+
+///|
+/// Internal element conversion with pre-computed selector element
+fn element_to_node_with_styles_internal(
+  elem : @html.Element,
+  selector_elem : @selector.Element,
+  ctx : RenderContext,
+  stylesheets : Array[@cascade.Stylesheet]
+) -> @node.Node {
+  // Get style from stylesheet matching + inline style
+  let style = compute_element_style(selector_elem, elem.style, stylesheets, false, ctx)
+
+  // Convert children
+  let children : Array[@node.Node] = []
+  for i, child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        let child_selector = html_to_selector_element_with_parent(child_elem, selector_elem, i + 1, elem.children.length())
+        let child_node = element_to_node_with_styles_internal(child_elem, child_selector, ctx, stylesheets)
+        children.push(child_node)
+      }
+      @html.Node::Text(text) => {
+        let text_node = create_text_node(text)
+        children.push(text_node)
+      }
+    }
+  }
+
+  let node_id = make_node_id(elem)
+
+  if children.is_empty() {
+    @node.Node::leaf(node_id, style)
+  } else {
+    @node.Node::new(node_id, style, children)
+  }
+}
+
+///|
+/// Convert HTML Element to Selector Element
+fn html_to_selector_element(elem : @html.Element, parent : @selector.Element?) -> @selector.Element {
+  let mut sel_elem = @selector.Element::new(elem.tag)
+
+  // Set ID
+  match elem.id {
+    Some(id) => sel_elem = sel_elem.set_id(id)
+    None => ()
+  }
+
+  // Set classes
+  for cls in elem.classes {
+    sel_elem = sel_elem.add_class(cls)
+  }
+
+  // Set attributes
+  elem.attributes.each(fn(name, value) { sel_elem = sel_elem.set_attribute(name, value) })
+
+  // Set parent
+  match parent {
+    Some(p) => sel_elem = sel_elem.set_parent(p)
+    None => ()
+  }
+
+  sel_elem
+}
+
+///|
+/// Convert HTML Element to Selector Element with parent and sibling info
+fn html_to_selector_element_with_parent(
+  elem : @html.Element,
+  parent : @selector.Element,
+  sibling_index : Int,
+  sibling_count : Int
+) -> @selector.Element {
+  let mut sel_elem = @selector.Element::new(elem.tag)
+
+  // Set ID
+  match elem.id {
+    Some(id) => sel_elem = sel_elem.set_id(id)
+    None => ()
+  }
+
+  // Set classes
+  for cls in elem.classes {
+    sel_elem = sel_elem.add_class(cls)
+  }
+
+  // Set attributes
+  elem.attributes.each(fn(name, value) { sel_elem = sel_elem.set_attribute(name, value) })
+
+  // Set parent and sibling info
+  sel_elem = sel_elem.set_parent(parent)
+  sel_elem = sel_elem.set_sibling_info(sibling_index, sibling_count)
+
+  sel_elem
+}
+
+///|
+///|
+/// Get user-agent default style for an element tag
+fn get_ua_default_style(tag : String) -> @style.Style {
+  let default_style = @style.Style::default()
+
+  // Default margins for block elements (based on typical browser defaults)
+  // Values are in em units, converted to px assuming 16px base font
+  match tag.to_lower() {
+    "p" => {
+      // p has 1em margin-top and margin-bottom
+      ..default_style,
+      margin: @types.Rect::new(@types.Length(16.0), @types.Auto, @types.Length(16.0), @types.Auto)
+    }
+    "h1" => {
+      // h1 has 0.67em margin
+      ..default_style,
+      margin: @types.Rect::new(@types.Length(10.7), @types.Auto, @types.Length(10.7), @types.Auto)
+    }
+    "h2" => {
+      // h2 has 0.83em margin
+      ..default_style,
+      margin: @types.Rect::new(@types.Length(13.3), @types.Auto, @types.Length(13.3), @types.Auto)
+    }
+    "h3" => {
+      // h3 has 1em margin
+      ..default_style,
+      margin: @types.Rect::new(@types.Length(16.0), @types.Auto, @types.Length(16.0), @types.Auto)
+    }
+    "h4" | "h5" | "h6" => {
+      // h4-h6 have 1.33em margin
+      ..default_style,
+      margin: @types.Rect::new(@types.Length(21.3), @types.Auto, @types.Length(21.3), @types.Auto)
+    }
+    "ul" | "ol" => {
+      // Lists have 1em margin and 40px padding-left
+      let mut s = default_style
+      s = { ..s, margin: @types.Rect::new(@types.Length(16.0), @types.Auto, @types.Length(16.0), @types.Auto) }
+      { ..s, padding: @types.Rect::new(@types.Length(0.0), @types.Length(0.0), @types.Length(0.0), @types.Length(40.0)) }
+    }
+    "blockquote" => {
+      // blockquote has 1em margin and 40px horizontal margins
+      ..default_style,
+      margin: @types.Rect::new(@types.Length(16.0), @types.Length(40.0), @types.Length(16.0), @types.Length(40.0))
+    }
+    _ => default_style
+  }
+}
+
+/// Compute element style from stylesheet matches and inline style
+fn compute_element_style(
+  selector_elem : @selector.Element,
+  inline_css : String?,
+  stylesheets : Array[@cascade.Stylesheet],
+  is_root : Bool,
+  ctx : RenderContext
+) -> @style.Style {
+  // Match stylesheets and get cascaded values
+  let cascaded = @cascade.cascade_element(selector_elem, stylesheets, [])
+
+  // Start with user-agent default style based on tag
+  let mut style = get_ua_default_style(selector_elem.tag_name)
+
+  // Apply cascaded values with correct viewport
+  for prop in cascaded.properties() {
+    match cascaded.get_value(prop) {
+      Some(value) => {
+        style = apply_css_property_with_viewport(style, prop, value, ctx.viewport_width, ctx.viewport_height)
+      }
+      None => ()
+    }
+  }
+
+  // Apply inline styles (override stylesheet styles)
+  // Parse inline CSS properties and apply them one by one
+  match inline_css {
+    Some(css) => {
+      style = apply_inline_css(style, css)
+    }
+    None => ()
+  }
+
+  // Apply viewport dimensions if this is the root element
+  if is_root {
+    match style.width {
+      @types.Dimension::Auto =>
+        style = { ..style, width: @types.Dimension::Length(ctx.viewport_width) }
+      _ => ()
+    }
+    // height: auto - let block layout calculate from content
+  }
+
+  style
+}
+
+///|
+/// Apply a CSS property value to a style (internal)
+/// Uses default viewport (1920x1080) for vh/vw resolution
+fn apply_css_property(style : @style.Style, property : String, value : String) -> @style.Style {
+  // Use the inline parser's logic to parse and apply the value
+  let css = property + ": " + value
+  let parsed = @computed.compute_inline(css, @computed.ComputeContext::new())
+
+  // Merge the parsed property into the style
+  merge_style_property(style, parsed, property)
+}
+
+///|
+/// Apply a CSS property value to a style with custom viewport
+fn apply_css_property_with_viewport(style : @style.Style, property : String, value : String, viewport_width : Double, viewport_height : Double) -> @style.Style {
+  // Use the inline parser's logic to parse and apply the value
+  let css = property + ": " + value
+  let ctx = @computed.ComputeContext::with_viewport(viewport_width, viewport_height)
+  let parsed = @computed.compute_inline(css, ctx)
+
+  // Merge the parsed property into the style
+  merge_style_property(style, parsed, property)
+}
+
+///|
+/// Apply a CSS property value to a style (public for testing)
+pub fn apply_css_property_debug(style : @style.Style, property : String, value : String) -> @style.Style {
+  apply_css_property(style, property, value)
+}
+
+///|
+/// Parse inline CSS and apply properties to style
+fn apply_inline_css(target : @style.Style, inline_css : String) -> @style.Style {
+  // Parse the inline CSS to get property/value pairs
+  // Format: "property1: value1; property2: value2"
+  let mut result = target
+  let decls = inline_css.split(";")
+  for decl in decls {
+    let decl_str = decl.trim()
+    if decl_str.length() == 0 {
+      continue
+    }
+    // Find the colon
+    let mut colon_idx = -1
+    for i = 0; i < decl_str.length(); i = i + 1 {
+      if decl_str[i] == ':' {
+        colon_idx = i
+        break
+      }
+    }
+    if colon_idx > 0 {
+      try {
+        let prop = decl_str[0:colon_idx].trim().to_string()
+        let value = decl_str[colon_idx + 1:].trim().to_string()
+        if prop.length() > 0 && value.length() > 0 {
+          result = apply_css_property(result, prop, value)
+        }
+      } catch {
+        _ => ()
+      }
+    }
+  }
+  result
+}
+
+///|
+/// Merge a single property from source style to target
+fn merge_style_property(target : @style.Style, source : @style.Style, property : String) -> @style.Style {
+  // Apply the specific property from source to target
+  if property == "display" {
+    return { ..target, display: source.display }
+  }
+  if property == "width" {
+    return { ..target, width: source.width }
+  }
+  if property == "height" {
+    return { ..target, height: source.height }
+  }
+  if property == "min-width" {
+    return { ..target, min_width: source.min_width }
+  }
+  if property == "min-height" {
+    return { ..target, min_height: source.min_height }
+  }
+  if property == "max-width" {
+    return { ..target, max_width: source.max_width }
+  }
+  if property == "max-height" {
+    return { ..target, max_height: source.max_height }
+  }
+  if property == "flex-direction" {
+    return { ..target, flex_direction: source.flex_direction }
+  }
+  if property == "flex-wrap" {
+    return { ..target, flex_wrap: source.flex_wrap }
+  }
+  if property == "flex-grow" {
+    return { ..target, flex_grow: source.flex_grow }
+  }
+  if property == "flex-shrink" {
+    return { ..target, flex_shrink: source.flex_shrink }
+  }
+  if property == "gap" {
+    return { ..target, row_gap: source.row_gap, column_gap: source.column_gap }
+  }
+  if property == "margin" {
+    return { ..target, margin: source.margin }
+  }
+  if property == "margin-top" {
+    return { ..target, margin: { ..target.margin, top: source.margin.top } }
+  }
+  if property == "margin-bottom" {
+    return { ..target, margin: { ..target.margin, bottom: source.margin.bottom } }
+  }
+  if property == "margin-left" {
+    return { ..target, margin: { ..target.margin, left: source.margin.left } }
+  }
+  if property == "margin-right" {
+    return { ..target, margin: { ..target.margin, right: source.margin.right } }
+  }
+  if property == "padding" {
+    return { ..target, padding: source.padding }
+  }
+  if property == "padding-top" {
+    return { ..target, padding: { ..target.padding, top: source.padding.top } }
+  }
+  if property == "padding-bottom" {
+    return { ..target, padding: { ..target.padding, bottom: source.padding.bottom } }
+  }
+  if property == "padding-left" {
+    return { ..target, padding: { ..target.padding, left: source.padding.left } }
+  }
+  if property == "padding-right" {
+    return { ..target, padding: { ..target.padding, right: source.padding.right } }
+  }
+  // Flexbox alignment properties
+  if property == "justify-content" {
+    return { ..target, justify_content: source.justify_content }
+  }
+  if property == "align-items" {
+    return { ..target, align_items: source.align_items }
+  }
+  if property == "align-content" {
+    return { ..target, align_content: source.align_content }
+  }
+  if property == "align-self" {
+    return { ..target, align_self: source.align_self }
+  }
+
+  target
+}
+
+///|
+/// Create node ID from element
+fn make_node_id(elem : @html.Element) -> String {
+  match elem.id {
+    Some(id) => elem.tag + "#" + id
+    None =>
+      if elem.classes.length() > 0 {
+        elem.tag + "." + elem.classes[0]
+      } else {
+        elem.tag
+      }
   }
 }
 
@@ -123,4 +757,71 @@ pub fn print_layout_tree(layout : @node.Layout, indent : Int) -> Unit {
   for child in layout.children {
     print_layout_tree(child, indent + 1)
   }
+}
+
+///|
+/// Convert Rect to JSON string
+fn rect_to_json(rect : @types.Rect[Double]) -> String {
+  "{\"top\":" +
+  rect.top.to_string() +
+  ",\"right\":" +
+  rect.right.to_string() +
+  ",\"bottom\":" +
+  rect.bottom.to_string() +
+  ",\"left\":" +
+  rect.left.to_string() +
+  "}"
+}
+
+///|
+/// Convert layout to JSON string (with Box Model)
+pub fn layout_to_json(layout : @node.Layout) -> String {
+  let buf = StringBuilder::new()
+  layout_to_json_impl(layout, buf)
+  buf.to_string()
+}
+
+///|
+fn layout_to_json_impl(layout : @node.Layout, buf : StringBuilder) -> Unit {
+  buf.write_string("{\"id\":\"")
+  buf.write_string(escape_json_string(layout.id))
+  buf.write_string("\",\"x\":")
+  buf.write_string(layout.x.to_string())
+  buf.write_string(",\"y\":")
+  buf.write_string(layout.y.to_string())
+  buf.write_string(",\"width\":")
+  buf.write_string(layout.width.to_string())
+  buf.write_string(",\"height\":")
+  buf.write_string(layout.height.to_string())
+  buf.write_string(",\"margin\":")
+  buf.write_string(rect_to_json(layout.margin))
+  buf.write_string(",\"padding\":")
+  buf.write_string(rect_to_json(layout.padding))
+  buf.write_string(",\"border\":")
+  buf.write_string(rect_to_json(layout.border))
+  buf.write_string(",\"children\":[")
+  for i, child in layout.children {
+    if i > 0 {
+      buf.write_string(",")
+    }
+    layout_to_json_impl(child, buf)
+  }
+  buf.write_string("]}")
+}
+
+///|
+/// Escape special characters in JSON string
+fn escape_json_string(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s {
+    match c {
+      '"' => buf.write_string("\\\"")
+      '\\' => buf.write_string("\\\\")
+      '\n' => buf.write_string("\\n")
+      '\r' => buf.write_string("\\r")
+      '\t' => buf.write_string("\\t")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.to_string()
 }
