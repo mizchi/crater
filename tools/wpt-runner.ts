@@ -190,24 +190,24 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
       return { ...layout, x: 0, y: 0 };
     }
 
-    // WPT tests often have a #test element as the main test target
-    const testElement = document.getElementById('test');
+    // WPT tests often have a #test or #container element as the main test target
+    const testElement = document.getElementById('test') || document.getElementById('container');
     if (testElement) {
       return normalizeRoot(extractLayout(testElement));
     }
 
     // Otherwise, find the first meaningful element (skip p, script, etc.)
     const children = Array.from(body.children).filter(
-      el => !['SCRIPT', 'STYLE', 'LINK', 'META', 'P', 'DIV#log'].includes(el.tagName) &&
+      el => !['SCRIPT', 'STYLE', 'LINK', 'META', 'P'].includes(el.tagName) &&
             el.id !== 'log'
     );
     if (children.length === 1) {
       return normalizeRoot(extractLayout(children[0]));
     }
 
-    // If multiple children, try to find a container div
+    // If multiple children, try to find a container div (first one)
     const divChildren = children.filter(el => el.tagName === 'DIV');
-    if (divChildren.length === 1) {
+    if (divChildren.length >= 1) {
       return normalizeRoot(extractLayout(divChildren[0]));
     }
 
@@ -263,8 +263,9 @@ function getCraterLayout(htmlPath: string): LayoutNode {
       );
       let layout = JSON.parse(result.trim()) as LayoutNode;
 
-      // Find #test element if it exists (WPT tests)
-      const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test');
+      // Find #test or #container element if it exists (WPT tests)
+      const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
+                          findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
       if (testElement) {
         return normalizeRoot(testElement);
       }
@@ -278,9 +279,9 @@ function getCraterLayout(htmlPath: string): LayoutNode {
         return normalizeRoot(meaningfulChildren[0]);
       }
 
-      // Try to find a container div
+      // Try to find a container div (first one)
       const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div'));
-      if (divChildren.length === 1) {
+      if (divChildren.length >= 1) {
         return normalizeRoot(divChildren[0]);
       }
 
