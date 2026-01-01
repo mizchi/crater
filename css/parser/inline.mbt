@@ -959,18 +959,18 @@ fn apply_property(
       None => ()
     }
   }
-  // flex-grow
+  // flex-grow (must be non-negative)
   if property == "flex-grow" {
     match parse_number(value_tokens) {
-      Some(v) => return { ..style, flex_grow: v }
-      None => ()
+      Some(v) if v >= 0.0 => return { ..style, flex_grow: v }
+      _ => ()
     }
   }
-  // flex-shrink
+  // flex-shrink (must be non-negative)
   if property == "flex-shrink" {
     match parse_number(value_tokens) {
-      Some(v) => return { ..style, flex_shrink: v }
-      None => ()
+      Some(v) if v >= 0.0 => return { ..style, flex_shrink: v }
+      _ => ()
     }
   }
   // flex-basis

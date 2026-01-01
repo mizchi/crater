@@ -427,8 +427,18 @@ fn apply_property(
     "align-content" => builder.align_content = parse_alignment(value)
     // Flexbox item
     "align-self" => builder.align_self = parse_align_self(value)
-    "flex-grow" => builder.flex_grow = parse_number(value)
-    "flex-shrink" => builder.flex_shrink = parse_number(value)
+    "flex-grow" => {
+      let v = parse_number(value)
+      if v >= 0.0 {
+        builder.flex_grow = v
+      }
+    }
+    "flex-shrink" => {
+      let v = parse_number(value)
+      if v >= 0.0 {
+        builder.flex_shrink = v
+      }
+    }
     "flex-basis" => builder.flex_basis = resolve_dimension(value, ctx)
     "order" => builder.order = parse_integer(value)
     "flex" => {

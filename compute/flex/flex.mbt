@@ -1907,7 +1907,14 @@ fn compute_internal(
       }
       sum + line_total_main_gap
     }
-    let line_free_space = main_size - line_main_used
+    // For auto-sized containers (main_size_defined = false), there's no free space
+    // This is important for is_reverse to work correctly - items should be positioned
+    // from the content end, not from a negative offset
+    let line_free_space = if main_size_defined {
+      main_size - line_main_used
+    } else {
+      0.0
+    }
 
     // Count auto margins on main axis for this line
     let mut auto_margin_count = 0
