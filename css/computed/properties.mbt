@@ -246,6 +246,16 @@ pub fn parse_number(value : String) -> Double {
 }
 
 ///|
+/// Parse an integer value
+pub fn parse_integer(value : String) -> Int {
+  try {
+    @strconv.parse_int(value.trim().to_string())
+  } catch {
+    _ => 0
+  }
+}
+
+///|
 /// Parse aspect-ratio value
 pub fn parse_aspect_ratio(value : String) -> Double? {
   let v = value.trim()

@@ -719,6 +719,15 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
   if property == "flex-shrink" {
     return { ..target, flex_shrink: source.flex_shrink }
   }
+  if property == "flex-basis" {
+    return { ..target, flex_basis: source.flex_basis }
+  }
+  if property == "flex" {
+    return { ..target, flex_grow: source.flex_grow, flex_shrink: source.flex_shrink, flex_basis: source.flex_basis }
+  }
+  if property == "order" {
+    return { ..target, order: source.order }
+  }
   if property == "gap" {
     return { ..target, row_gap: source.row_gap, column_gap: source.column_gap }
   }

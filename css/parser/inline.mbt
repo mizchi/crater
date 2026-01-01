@@ -252,6 +252,85 @@ fn parse_number(tokens : ArrayView[@token.Token]) -> Double? {
 }
 
 ///|
+/// Parse an integer value
+fn parse_integer(tokens : ArrayView[@token.Token]) -> Int? {
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Number(value, _) => Some(value.to_int())
+    _ => None
+  }
+}
+
+///|
+/// Parse flex shorthand property
+/// flex: none | auto | <flex-grow> [<flex-shrink>] [<flex-basis>]
+fn parse_flex_shorthand(tokens : ArrayView[@token.Token]) -> (Double, Double, @types.Dimension)? {
+  let tokens = skip_whitespace(tokens)
+  if tokens.length() == 0 {
+    return None
+  }
+
+  // Check for keyword values
+  match tokens[0] {
+    @token.Token::Ident(s) => {
+      if s == "none" {
+        // flex: none = 0 0 auto
+        return Some((0.0, 0.0, @types.Auto))
+      }
+      if s == "auto" {
+        // flex: auto = 1 1 auto
+        return Some((1.0, 1.0, @types.Auto))
+      }
+      if s == "initial" {
+        // flex: initial = 0 1 auto
+        return Some((0.0, 1.0, @types.Auto))
+      }
+    }
+    _ => ()
+  }
+
+  // Parse numeric values
+  // First value: flex-grow
+  let grow = match parse_number(tokens) {
+    Some(v) => v
+    None => return None
+  }
+
+  let rest = skip_whitespace(tokens[1:])
+  if rest.length() == 0 {
+    // flex: <number> = <number> 1 0%
+    return Some((grow, 1.0, @types.Length(0.0)))
+  }
+
+  // Check if next is a number (flex-shrink) or dimension (flex-basis)
+  match rest[0] {
+    @token.Token::Number(shrink, _) => {
+      // flex-shrink
+      let rest2 = skip_whitespace(rest[1:])
+      if rest2.length() == 0 {
+        // flex: <grow> <shrink> = <grow> <shrink> 0%
+        return Some((grow, shrink, @types.Length(0.0)))
+      }
+      // flex-basis
+      match parse_dimension(rest2) {
+        Some(basis) => Some((grow, shrink, basis))
+        None => Some((grow, shrink, @types.Length(0.0)))
+      }
+    }
+    @token.Token::Dimension(_, _) | @token.Token::Percentage(_) | @token.Token::Ident(_) => {
+      // flex-basis (no shrink specified)
+      match parse_dimension(rest) {
+        Some(basis) => Some((grow, 1.0, basis))
+        None => Some((grow, 1.0, @types.Length(0.0)))
+      }
+    }
+    _ => Some((grow, 1.0, @types.Length(0.0)))
+  }
+}
+
+///|
 /// Parse aspect-ratio property (e.g., "16 / 9" or "1.5")
 fn parse_aspect_ratio(tokens : ArrayView[@token.Token]) -> Double? {
   if tokens.length() == 0 {
@@ -518,6 +597,21 @@ fn apply_property(
   if property == "flex-basis" {
     match parse_dimension(value_tokens) {
       Some(v) => return { ..style, flex_basis: v }
+      None => ()
+    }
+  }
+  // flex shorthand
+  if property == "flex" {
+    match parse_flex_shorthand(value_tokens) {
+      Some((grow, shrink, basis)) =>
+        return { ..style, flex_grow: grow, flex_shrink: shrink, flex_basis: basis }
+      None => ()
+    }
+  }
+  // order
+  if property == "order" {
+    match parse_integer(value_tokens) {
+      Some(v) => return { ..style, order: v }
       None => ()
     }
   }

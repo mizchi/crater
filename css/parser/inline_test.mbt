@@ -100,3 +100,19 @@ test "parse grid-auto-flow" {
   inspect(style.display, content="Grid")
   inspect(style.grid_auto_flow, content="Column")
 }
+
+test "order property" {
+  let style = parse_inline_style("order: 5")
+  inspect(style.order, content="5")
+}
+
+test "order negative" {
+  let style = parse_inline_style("order: -1")
+  inspect(style.order, content="-1")
+}
+
+test "flex shorthand" {
+  let style = parse_inline_style("flex: 1")
+  inspect(style.flex_grow, content="1")
+  inspect(style.flex_shrink, content="1")
+}

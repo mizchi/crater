@@ -87,6 +87,7 @@ priv struct StyleBuilder {
   mut flex_grow : Double
   mut flex_shrink : Double
   mut flex_basis : @types.Dimension
+  mut order : Int
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
   mut aspect_ratio : Double?
@@ -133,6 +134,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     flex_grow: 0.0,
     flex_shrink: 1.0,
     flex_basis: @types.Dimension::Auto,
+    order: 0,
     row_gap: @types.Dimension::Length(0.0),
     column_gap: @types.Dimension::Length(0.0),
     aspect_ratio: None,
@@ -186,6 +188,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     flex_grow: self.flex_grow,
     flex_shrink: self.flex_shrink,
     flex_basis: self.flex_basis,
+    order: self.order,
     row_gap: self.row_gap,
     column_gap: self.column_gap,
     aspect_ratio: self.aspect_ratio,
@@ -423,6 +426,51 @@ fn apply_property(
     "flex-grow" => builder.flex_grow = parse_number(value)
     "flex-shrink" => builder.flex_shrink = parse_number(value)
     "flex-basis" => builder.flex_basis = resolve_dimension(value, ctx)
+    "order" => builder.order = parse_integer(value)
+    "flex" => {
+      // Parse flex shorthand: none | auto | <flex-grow> [<flex-shrink>] [<flex-basis>]
+      let v = value.trim()
+      if v == "none" {
+        builder.flex_grow = 0.0
+        builder.flex_shrink = 0.0
+        builder.flex_basis = @types.Dimension::Auto
+      } else if v == "auto" {
+        builder.flex_grow = 1.0
+        builder.flex_shrink = 1.0
+        builder.flex_basis = @types.Dimension::Auto
+      } else if v == "initial" {
+        builder.flex_grow = 0.0
+        builder.flex_shrink = 1.0
+        builder.flex_basis = @types.Dimension::Auto
+      } else {
+        // Try to parse as number(s)
+        let parts : Array[StringView] = v
+          .split(" ")
+          .filter(fn(s) { not(s.is_empty()) })
+          .collect()
+        match parts.length() {
+          1 => {
+            // flex: <number> = <number> 1 0
+            builder.flex_grow = parse_number(parts[0].to_string())
+            builder.flex_shrink = 1.0
+            builder.flex_basis = @types.Dimension::Length(0.0)
+          }
+          2 => {
+            // flex: <grow> <shrink> = <grow> <shrink> 0
+            builder.flex_grow = parse_number(parts[0].to_string())
+            builder.flex_shrink = parse_number(parts[1].to_string())
+            builder.flex_basis = @types.Dimension::Length(0.0)
+          }
+          3 => {
+            // flex: <grow> <shrink> <basis>
+            builder.flex_grow = parse_number(parts[0].to_string())
+            builder.flex_shrink = parse_number(parts[1].to_string())
+            builder.flex_basis = resolve_dimension(parts[2].to_string(), ctx)
+          }
+          _ => ()
+        }
+      }
+    }
     // Gap
     "gap" => {
       let dim = resolve_dimension(value, ctx)

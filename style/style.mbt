@@ -203,6 +203,7 @@ pub(all) struct Style {
   flex_grow : Double
   flex_shrink : Double
   flex_basis : @types.Dimension
+  order : Int // Flex item order (default 0)
   // Gap
   row_gap : @types.Dimension
   column_gap : @types.Dimension
@@ -270,6 +271,7 @@ pub fn Style::default() -> Style {
     flex_grow: 0.0,
     flex_shrink: 1.0,
     flex_basis: @types.Auto,
+    order: 0,
     row_gap: @types.Length(0.0),
     column_gap: @types.Length(0.0),
     aspect_ratio: None,

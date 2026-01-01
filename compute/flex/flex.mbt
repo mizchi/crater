@@ -1298,6 +1298,7 @@ fn compute_internal(
     }
     let item : FlexItem = {
       index: i,
+      order: child_style.order,
       base_main,
       base_cross,
       final_main: base_main,
@@ -1322,6 +1323,17 @@ fn compute_internal(
     total_flex_grow = total_flex_grow + child_style.flex_grow
     total_flex_shrink = total_flex_shrink + child_style.flex_shrink
   }
+
+  // Sort flex items by order property (stable sort preserves document order for equal orders)
+  flex_items.sort_by(fn(a, b) {
+    let order_cmp = a.order.compare(b.order)
+    if order_cmp != 0 {
+      order_cmp
+    } else {
+      // Equal order: preserve document order
+      a.index.compare(b.index)
+    }
+  })
 
   // For Column flex with height: auto and min_height, only use min_height for GROW (not SHRINK)
   // If content size >= min_height, no flex distribution needed (items keep natural size)
@@ -2764,6 +2776,7 @@ fn compute_nested(
 /// Flex item intermediate data
 priv struct FlexItem {
   index : Int
+  order : Int // CSS order property for visual ordering
   base_main : Double
   base_cross : Double
   final_main : Double

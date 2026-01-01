@@ -248,7 +248,7 @@ function getCraterLayout(htmlPath: string): LayoutNode {
 
     try {
       const result = execSync(
-        `moon run --target native cmd/main -- --json "${tempPath}" 2>/dev/null`,
+        `moon run cmd/main -- --json "${tempPath}" 2>/dev/null`,
         { encoding: 'utf-8', cwd: process.cwd() }
       );
       let layout = JSON.parse(result.trim()) as LayoutNode;
