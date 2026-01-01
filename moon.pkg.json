@@ -3,10 +3,10 @@
     "mizchi/crater/types",
     "mizchi/crater/style",
     "mizchi/crater/node",
-    "mizchi/crater/block",
-    "mizchi/crater/flex",
-    "mizchi/crater/grid",
-    "mizchi/crater/cls",
-    "mizchi/crater/trace"
+    "mizchi/crater/compute/block",
+    "mizchi/crater/compute/flex",
+    "mizchi/crater/compute/grid",
+    "mizchi/crater/compute/trace",
+    "mizchi/crater/cls"
   ]
 }
