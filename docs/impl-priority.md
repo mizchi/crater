@@ -8,8 +8,8 @@
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
 | Flex   | 476    | 123    | 599   | 79.5%      | +10 from stretched child fix |
-| Grid   | 249    | 80     | 329   | 75.7%      | test count reduced |
-| **Total** | **941** | **222** | **1163** | **80.9%** | Native target stable |
+| Grid   | 250    | 79     | 329   | 76.0%      | +1 from intrinsic fix |
+| **Total** | **942** | **221** | **1163** | **81.0%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -99,6 +99,7 @@
 | Block fixes | 204/223 (91.5%) | 445/599 (74.3%) | 248/329 (75%) | 897/1151 (77.9%) |
 | compute_layout + intrinsic | 204/223 (91.5%) | 466/599 (77.8%) | 260/341 (76.2%) | 930/1163 (80.0%) |
 | stretched child fix | 204/223 (91.5%) | 476/599 (79.5%) | 249/329 (75.7%) | 941/1163 (80.9%) |
+| grid intrinsic fix | 204/223 (91.5%) | 476/599 (79.5%) | 250/329 (76.0%) | 942/1163 (81.0%) |
 
 ### これまでの主な修正
 
@@ -158,6 +159,11 @@
   - flex_grow が子コンテナで正しく機能するように
 - 無限大プレースホルダー (1.0e9以上) は除外
 - 単一行 wrap コンテナでも flex_items を flex_lines に同期
+
+**grid intrinsic fix (+1 test)**
+- Grid の compute_child_layout で Flex コンテナの intrinsic sizing を修正
+- 1.0e10 (無限大プレースホルダー) 使用時は MaxContent モードで計算
+- auto 次元には Flex layout の計算結果を使用
 
 ## 技術的な注意点
 
