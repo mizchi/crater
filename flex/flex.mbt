@@ -422,7 +422,7 @@ fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
     @style.Flex =>
       match style.flex_direction {
         @style.Column | @style.ColumnReverse => {
-          // For Column flex: baseline is first child's baseline
+          // For Column flex: baseline is first child's baseline + child's margin-top
           // Find first in-flow child
           for i = 0; i < children.length(); i = i + 1 {
             let child = children[i]
@@ -432,13 +432,18 @@ fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
             if child.style.position == @style.Absolute {
               continue
             }
+            // Get first child's margin-top (contributes to baseline position)
+            let child_margin_top = match child.style.margin.top {
+              @types.Length(v) => v
+              _ => 0.0
+            }
             // Get first child's height
             let child_height = match child.style.height {
               @types.Length(h) => h
               _ => 0.0 // For auto height, use 0 (will be computed later)
             }
-            // Recursively compute child's baseline
-            return compute_node_baseline(child, child_height)
+            // Recursively compute child's baseline, add margin-top
+            return child_margin_top + compute_node_baseline(child, child_height)
           }
           // No in-flow children, use own height
           return node_height
@@ -532,12 +537,8 @@ fn compute_internal(
               // For MaxContent with children, compute intrinsic width
               if node.children.length() > 0 {
                 // Use compute_intrinsic_main_size to get max-content width
-                let intrinsic = compute_intrinsic_main_size(
-                  node,
-                  true,
-                  ctx.available_height,
-                )
-                intrinsic + padding.horizontal_sum() + border.horizontal_sum()
+                // Note: compute_intrinsic_flex_main_size already includes padding/border
+                compute_intrinsic_main_size(node, true, ctx.available_height)
               } else {
                 parent_width - margin.horizontal_sum()
               }
@@ -914,30 +915,48 @@ fn compute_internal(
       _ => false
     }
     let (min_main, max_main) = if is_row {
+      let max_w = match child_style.max_width {
+        @types.Length(v) => v
+        @types.Percent(p) => content_width * p
+        @types.Auto => 1.0e10 // Effectively infinity
+      }
       let min_w = match child_style.min_width {
         @types.Length(v) => v
         @types.Percent(p) => content_width * p
         @types.Auto => {
           // Auto min-width: use intrinsic content size for containers/MeasureFunc
           // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
+          // CSS spec: clamped from above by specified size (width) and max-width
           let has_measure = match child.measure {
             Some(_) => true
             None => false
           }
           if is_overflow_visible && (child.children.length() > 0 || has_measure) {
-            compute_intrinsic_main_size(child, true, content_height)
+            let content_min = compute_intrinsic_main_size(child, true, content_height)
+            // Clamp by specified size (width) if set
+            let specified_clamp = match child_style.width {
+              @types.Length(w) => w
+              @types.Percent(p) => content_width * p
+              @types.Auto => 1.0e10 // No specified size, no clamp
+            }
+            // Clamp by min(specified_size, max_size) per CSS spec
+            min(content_min, min(specified_clamp, max_w))
           } else {
             0.0
           }
         }
       }
-      let max_w = match child_style.max_width {
-        @types.Length(v) => v
-        @types.Percent(p) => content_width * p
-        @types.Auto => 1.0e10 // Effectively infinity
-      }
       (min_w, max_w)
     } else {
+      let max_h = match child_style.max_height {
+        @types.Length(v) => v
+        @types.Percent(p) =>
+          match content_height {
+            Some(ch) => ch * p
+            None => 1.0e10
+          }
+        @types.Auto => 1.0e10
+      }
       let min_h = match child_style.min_height {
         @types.Length(v) => v
         @types.Percent(p) =>
@@ -948,25 +967,29 @@ fn compute_internal(
         @types.Auto => {
           // Auto min-height: use intrinsic content size for containers/MeasureFunc
           // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
+          // CSS spec: clamped from above by specified size (height) and max-height
           let has_measure = match child.measure {
             Some(_) => true
             None => false
           }
           if is_overflow_visible && (child.children.length() > 0 || has_measure) {
-            compute_intrinsic_main_size(child, false, Some(content_width))
+            let content_min = compute_intrinsic_main_size(child, false, Some(content_width))
+            // Clamp by specified size (height) if set
+            let specified_clamp = match child_style.height {
+              @types.Length(h) => h
+              @types.Percent(p) =>
+                match content_height {
+                  Some(ch) => ch * p
+                  None => 1.0e10
+                }
+              @types.Auto => 1.0e10 // No specified size, no clamp
+            }
+            // Clamp by min(specified_size, max_size) per CSS spec
+            min(content_min, min(specified_clamp, max_h))
           } else {
             0.0
           }
         }
-      }
-      let max_h = match child_style.max_height {
-        @types.Length(v) => v
-        @types.Percent(p) =>
-          match content_height {
-            Some(ch) => ch * p
-            None => 1.0e10
-          }
-        @types.Auto => 1.0e10
       }
       (min_h, max_h)
     }
@@ -1227,22 +1250,13 @@ fn compute_internal(
   }
 
   // Apply min/max constraints on main axis
+  // CSS spec: min takes precedence over max, so apply max first, then min
   for i = 0; i < flex_items.length(); i = i + 1 {
     let item = flex_items[i]
     let child_style = children[item.index].style
     let original_main = item.final_main
     let mut final_main = original_main
     if is_row {
-      match child_style.min_width {
-        @types.Length(v) => if final_main < v { final_main = v }
-        @types.Percent(p) => {
-          let v = content_width * p
-          if final_main < v {
-            final_main = v
-          }
-        }
-        @types.Auto => ()
-      }
       match child_style.max_width {
         @types.Length(v) => if final_main > v { final_main = v }
         @types.Percent(p) => {
@@ -1253,21 +1267,17 @@ fn compute_internal(
         }
         @types.Auto => ()
       }
-    } else {
-      match child_style.min_height {
+      match child_style.min_width {
         @types.Length(v) => if final_main < v { final_main = v }
-        @types.Percent(p) =>
-          match content_height {
-            Some(ch) => {
-              let v = ch * p
-              if final_main < v {
-                final_main = v
-              }
-            }
-            None => ()
+        @types.Percent(p) => {
+          let v = content_width * p
+          if final_main < v {
+            final_main = v
           }
+        }
         @types.Auto => ()
       }
+    } else {
       match child_style.max_height {
         @types.Length(v) => if final_main > v { final_main = v }
         @types.Percent(p) =>
@@ -1275,6 +1285,20 @@ fn compute_internal(
             Some(ch) => {
               let v = ch * p
               if final_main > v {
+                final_main = v
+              }
+            }
+            None => ()
+          }
+        @types.Auto => ()
+      }
+      match child_style.min_height {
+        @types.Length(v) => if final_main < v { final_main = v }
+        @types.Percent(p) =>
+          match content_height {
+            Some(ch) => {
+              let v = ch * p
+              if final_main < v {
                 final_main = v
               }
             }
@@ -1335,23 +1359,24 @@ fn compute_internal(
     }
 
     // Apply min/max on cross axis
+    // CSS spec: min takes precedence over max, so apply max first, then min
     let mut constrained_cross = final_cross
     if is_row {
-      match child_style.min_height {
-        @types.Length(v) => if constrained_cross < v { constrained_cross = v }
-        _ => ()
-      }
       match child_style.max_height {
         @types.Length(v) => if constrained_cross > v { constrained_cross = v }
         _ => ()
       }
-    } else {
-      match child_style.min_width {
+      match child_style.min_height {
         @types.Length(v) => if constrained_cross < v { constrained_cross = v }
         _ => ()
       }
+    } else {
       match child_style.max_width {
         @types.Length(v) => if constrained_cross > v { constrained_cross = v }
+        _ => ()
+      }
+      match child_style.min_width {
+        @types.Length(v) => if constrained_cross < v { constrained_cross = v }
         _ => ()
       }
     }
@@ -1620,22 +1645,23 @@ fn compute_internal(
             let child = children[item.index]
             let child_style = child.style
             let mut constrained = stretched
+            // CSS spec: min takes precedence over max, so apply max first, then min
             if is_row {
-              match child_style.min_height {
-                @types.Length(v) => if constrained < v { constrained = v }
-                _ => ()
-              }
               match child_style.max_height {
                 @types.Length(v) => if constrained > v { constrained = v }
                 _ => ()
               }
-            } else {
-              match child_style.min_width {
+              match child_style.min_height {
                 @types.Length(v) => if constrained < v { constrained = v }
                 _ => ()
               }
+            } else {
               match child_style.max_width {
                 @types.Length(v) => if constrained > v { constrained = v }
+                _ => ()
+              }
+              match child_style.min_width {
+                @types.Length(v) => if constrained < v { constrained = v }
                 _ => ()
               }
             }
@@ -1723,7 +1749,7 @@ fn compute_internal(
         main_pos
       }
 
-      let (child_x, child_y) = if is_row {
+      let (base_x, base_y) = if is_row {
         let x = effective_main_pos +
           main_start +
           main_start_auto_margin +
@@ -1747,6 +1773,28 @@ fn compute_internal(
           padding.top +
           border.top
         (x, y)
+      }
+
+      // Apply position: relative inset offsets
+      let child_style = child.style
+      let (child_x, child_y) = if child_style.position == @style.Relative {
+        let inset_left = match child_style.inset.left {
+          @types.Length(v) => v
+          @types.Percent(p) => content_width * p
+          @types.Auto => 0.0
+        }
+        let inset_top = match child_style.inset.top {
+          @types.Length(v) => v
+          @types.Percent(p) =>
+            match content_height {
+              Some(ch) => ch * p
+              None => 0.0
+            }
+          @types.Auto => 0.0
+        }
+        (base_x + inset_left, base_y + inset_top)
+      } else {
+        (base_x, base_y)
       }
       let (child_width, child_height) = if is_row {
         (item.final_main, item_cross)

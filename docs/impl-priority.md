@@ -7,13 +7,13 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 476    | 123    | 599   | 79.5%      | +10 from stretched child fix |
-| Grid   | 251    | 78     | 329   | 76.3%      | +2 from intrinsic/aspect_ratio fix |
-| **Total** | **943** | **220** | **1163** | **81.1%** | Native target stable |
+| Flex   | 489    | 110    | 599   | 81.6%      | +7 from baseline + inset fix |
+| Grid   | 251    | 78     | 329   | 76.3%      | |
+| **Total** | **956** | **207** | **1163** | **82.2%** | Native target stable |
 
 ## 失敗テスト分析
 
-### Flex (156 failures)
+### Flex (110 failures)
 
 | Category | Count | Priority | Note |
 |----------|-------|----------|------|
@@ -101,6 +101,8 @@
 | stretched child fix | 204/223 (91.5%) | 476/599 (79.5%) | 249/329 (75.7%) | 941/1163 (80.9%) |
 | grid intrinsic fix | 204/223 (91.5%) | 476/599 (79.5%) | 250/329 (76.0%) | 942/1163 (81.0%) |
 | grid aspect_ratio fix | 204/223 (91.5%) | 476/599 (79.5%) | 251/329 (76.3%) | 943/1163 (81.1%) |
+| flex min/max + intrinsic | 204/223 (91.5%) | 482/599 (80.5%) | 251/329 (76.3%) | 949/1163 (81.6%) |
+| baseline + inset fix | 204/223 (91.5%) | 489/599 (81.6%) | 251/329 (76.3%) | 956/1163 (82.2%) |
 
 ### これまでの主な修正
 
@@ -170,6 +172,21 @@
 - compute_child_layout で min/max 制約を aspect_ratio 計算前に適用
 - 制約された次元から aspect_ratio で他の次元を導出
 - apply_alignment で aspect_ratio + max 制約がある場合 stretch を抑制
+
+**flex min/max + intrinsic fix (+6 tests)**
+- automatic minimum size を specified size (width/height) で clamp するよう修正
+  - CSS 仕様: min-width: auto は min(content_size, specified_size, max_size)
+- compute_intrinsic_main_size の結果に padding/border の二重加算を修正
+- min/max の適用順序を max → min に修正 (CSS 仕様: min が max を上書き)
+  - cross axis 計算 (Phase 3)
+  - stretch alignment 計算
+  - main axis 計算
+
+**baseline + inset fix (+7 tests)**
+- position: relative の inset (top/left) を Flex item の位置計算に適用
+  - baseline alignment 後に inset offset を加算
+- Column flex container の baseline 計算で first child の margin-top を含める
+  - CSS 仕様: baseline は first child の margin-top + baseline
 
 ## 技術的な注意点
 
