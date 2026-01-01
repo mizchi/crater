@@ -28,6 +28,48 @@ fn min(a : Double, b : Double) -> Double {
 }
 
 ///|
+/// Compute measured cross size with proportional scaling for text-like content.
+/// When the main dimension is constrained below max, the cross dimension scales proportionally.
+/// This simulates text wrapping behavior where content area stays constant.
+/// Parameters:
+///   - intrinsic: The intrinsic size from MeasureFunc
+///   - constrained_main: The actual constrained main dimension
+///   - is_row: true = main is width, cross is height
+fn compute_measured_cross_size(
+  intrinsic : @node.IntrinsicSize,
+  constrained_main : Double,
+  is_row : Bool,
+) -> Double {
+  if is_row {
+    // Computing height based on constrained width
+    let max_width = intrinsic.max_width
+    let max_height = intrinsic.max_height
+    if constrained_main >= max_width || max_width <= 0.0 {
+      max_height
+    } else {
+      // Proportional scaling: content area = max_width * max_height
+      // new_height = area / constrained_width
+      let area = max_width * max_height
+      let scaled = area / constrained_main
+      // Clamp to at least min_height
+      max(intrinsic.min_height, scaled)
+    }
+  } else {
+    // Computing width based on constrained height
+    let max_width = intrinsic.max_width
+    let max_height = intrinsic.max_height
+    if constrained_main >= max_height || max_height <= 0.0 {
+      max_width
+    } else {
+      // Proportional scaling
+      let area = max_width * max_height
+      let scaled = area / constrained_main
+      max(intrinsic.min_width, scaled)
+    }
+  }
+}
+
+///|
 /// Compute the intrinsic (content-based) size of a node on the main axis
 /// This is used when flex-basis and main size are both Auto
 fn compute_intrinsic_main_size(
@@ -44,7 +86,25 @@ fn compute_intrinsic_main_size(
       Some(mf) => {
         // Call MeasureFunc to get intrinsic size
         let intrinsic = (mf.func)(0.0, 0.0)
-        return if is_row { intrinsic.max_width } else { intrinsic.max_height }
+        // For measured nodes, apply proportional scaling when cross is constrained
+        // This simulates text wrapping: when width is constrained, height increases proportionally
+        if is_row {
+          // Computing width - check if height is constrained
+          match available_cross {
+            Some(h) if h < intrinsic.max_height && intrinsic.max_height > 0.0 =>
+              // Width scales proportionally when height is constrained
+              return compute_measured_cross_size(intrinsic, h, false)
+            _ => return intrinsic.max_width
+          }
+        } else {
+          // Computing height - check if width is constrained
+          match available_cross {
+            Some(w) if w < intrinsic.max_width && intrinsic.max_width > 0.0 =>
+              // Height scales proportionally when width is constrained
+              return compute_measured_cross_size(intrinsic, w, true)
+            _ => return intrinsic.max_height
+          }
+        }
       }
       None => return 0.0
     }
@@ -861,9 +921,18 @@ fn compute_internal(
                   match content_height {
                     Some(ch) if is_wrap && is_col_flex =>
                       ch // Use available height for column wrap container
-                    _ =>
+                    _ => {
                       // Compute intrinsic height from children
-                      compute_intrinsic_main_size(child, false, Some(content_width))
+                      // For Column flex, the child's width is constrained by available cross space minus margin
+                      let available_cross_for_child = content_width -
+                        child_margin.left -
+                        child_margin.right
+                      compute_intrinsic_main_size(
+                        child,
+                        false,
+                        Some(available_cross_for_child),
+                      )
+                    }
                   }
                 }
               }
@@ -928,7 +997,14 @@ fn compute_internal(
                   true,
                 )
               } else {
-                (0.0, true)
+                // Leaf node - use MeasureFunc if available
+                match child.measure {
+                  Some(mf) => {
+                    let intrinsic = (mf.func)(content_width, 0.0)
+                    (intrinsic.max_height, true)
+                  }
+                  None => (0.0, true)
+                }
               }
           }
       }
@@ -960,7 +1036,14 @@ fn compute_internal(
                 // Compute intrinsic width for containers with children
                 (compute_intrinsic_main_size(child, true, content_height), true)
               } else {
-                (0.0, true)
+                // Leaf node - use MeasureFunc if available
+                match child.measure {
+                  Some(mf) => {
+                    let intrinsic = (mf.func)(content_width, 0.0)
+                    (intrinsic.max_width, true)
+                  }
+                  None => (0.0, true)
+                }
               }
             }
           }
