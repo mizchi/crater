@@ -422,7 +422,12 @@ fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
     @style.Flex =>
       match style.flex_direction {
         @style.Column | @style.ColumnReverse => {
-          // For Column flex: baseline is first child's baseline + child's margin-top
+          // For Column flex: baseline is padding-top + first child's margin-top + child's baseline
+          // Get container's padding-top
+          let padding_top = match style.padding.top {
+            @types.Length(v) => v
+            _ => 0.0
+          }
           // Find first in-flow child
           for i = 0; i < children.length(); i = i + 1 {
             let child = children[i]
@@ -442,14 +447,35 @@ fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
               @types.Length(h) => h
               _ => 0.0 // For auto height, use 0 (will be computed later)
             }
-            // Recursively compute child's baseline, add margin-top
-            return child_margin_top + compute_node_baseline(child, child_height)
+            // Recursively compute child's baseline, add padding-top and margin-top
+            return padding_top + child_margin_top + compute_node_baseline(child, child_height)
           }
           // No in-flow children, use own height
           return node_height
         }
         _ => node_height // For Row flex: baseline is the bottom
       }
+    @style.Block => {
+      // For Block containers with children: use first in-flow child's baseline
+      for i = 0; i < children.length(); i = i + 1 {
+        let child = children[i]
+        if child.style.display == @style.None {
+          continue
+        }
+        if child.style.position == @style.Absolute {
+          continue
+        }
+        // Get first child's height
+        let child_height = match child.style.height {
+          @types.Length(h) => h
+          _ => 0.0
+        }
+        // Recursively compute child's baseline
+        return compute_node_baseline(child, child_height)
+      }
+      // No in-flow children, use own height
+      node_height
+    }
     _ => node_height
   }
 }
@@ -1953,10 +1979,13 @@ fn compute_internal(
     }
 
     // Use shared absolute module for size calculation
+    // For absolute positioning, the containing block is the padding box (inside border)
+    let padding_box_width = container_width - border.horizontal_sum()
+    let padding_box_height = final_height - border.vertical_sum()
     let params = @absolute.compute_size_params(
       child_style,
-      container_width,
-      final_height,
+      padding_box_width,
+      padding_box_height,
     )
 
     // Apply aspect ratio to calculate missing dimension
@@ -2110,7 +2139,8 @@ fn compute_internal(
           offset
         }
       }
-      params.margin_left + align_offset + border.left
+      // When no inset, child is at content box position (border + padding)
+      params.margin_left + align_offset + border.left + padding.left
     }
 
     let child_y = if has_vertical_inset {
@@ -2156,7 +2186,8 @@ fn compute_internal(
           free_space,
         )
       }
-      params.margin_top + align_offset + border.top
+      // When no inset, child is at content box position (border + padding)
+      params.margin_top + align_offset + border.top + padding.top
     }
 
     let child_margin = @types.resolve_rect(child_style.margin, container_width)

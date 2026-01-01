@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 489    | 110    | 599   | 81.6%      | +7 from baseline + inset fix |
+| Flex   | 493    | 106    | 599   | 82.3%      | +4 from baseline + absolute fix |
 | Grid   | 251    | 78     | 329   | 76.3%      | |
-| **Total** | **956** | **207** | **1163** | **82.2%** | Native target stable |
+| **Total** | **960** | **203** | **1163** | **82.5%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -103,6 +103,7 @@
 | grid aspect_ratio fix | 204/223 (91.5%) | 476/599 (79.5%) | 251/329 (76.3%) | 943/1163 (81.1%) |
 | flex min/max + intrinsic | 204/223 (91.5%) | 482/599 (80.5%) | 251/329 (76.3%) | 949/1163 (81.6%) |
 | baseline + inset fix | 204/223 (91.5%) | 489/599 (81.6%) | 251/329 (76.3%) | 956/1163 (82.2%) |
+| baseline + absolute fix | 204/223 (91.5%) | 493/599 (82.3%) | 251/329 (76.3%) | 960/1163 (82.5%) |
 
 ### これまでの主な修正
 
@@ -187,6 +188,14 @@
   - baseline alignment 後に inset offset を加算
 - Column flex container の baseline 計算で first child の margin-top を含める
   - CSS 仕様: baseline は first child の margin-top + baseline
+
+**baseline + absolute fix (+4 tests)**
+- Column flex baseline 計算で container の padding-top を含める
+  - CSS 仕様: baseline は padding-top + first child margin-top + baseline
+- Block display コンテナの baseline 計算で first child の baseline を使用
+  - 子を持つ Block コンテナは first in-flow child の baseline を返す
+- Absolute positioning の inset percentage を padding box で解決
+  - containing block は padding box (border の内側)
 
 ## 技術的な注意点
 
