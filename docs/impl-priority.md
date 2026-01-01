@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 503    | 96     | 599   | 84.0%      | +7 from align fixes |
+| Flex   | 508    | 91     | 599   | 84.8%      | +5 from max_height fixes |
 | Grid   | 251    | 78     | 329   | 76.3%      | |
-| **Total** | **970** | **193** | **1163** | **83.4%** | Native target stable |
+| **Total** | **975** | **188** | **1163** | **83.8%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -108,6 +108,7 @@
 | baseline Phase 1 | 204/223 (91.5%) | 496/599 (82.8%) | 251/329 (76.3%) | 963/1163 (82.8%) |
 | wrap stretch Phase 2 | 204/223 (91.5%) | 498/599 (83.1%) | 251/329 (76.3%) | 965/1163 (83.0%) |
 | align_items nowrap fix | 204/223 (91.5%) | 503/599 (84.0%) | 251/329 (76.3%) | 970/1163 (83.4%) |
+| max_height fix | 204/223 (91.5%) | 508/599 (84.8%) | 251/329 (76.3%) | 975/1163 (83.8%) |
 
 ### これまでの主な修正
 
@@ -222,6 +223,17 @@
   - cross_size が definite の場合、line.cross_size ではなく container cross_size を使用
   - height:auto + max/min_height 制約がある場合、制約後のサイズを計算
 - align_items: center で子が親より大きい場合に負のオフセットが正しく計算される
+
+**max_height fix (+5 tests)**
+- Phase 3 で cross axis の min/max percentage 制約を追加
+  - Row flex: max_height/min_height percentage を parent container の height で解決
+  - Column flex: max_width/min_width percentage を parent container の width で解決
+- nested Flex container で親から渡された available_height を優先
+  - Definite mode で available_height < style.height の場合、available_height を使用
+- align_cross_for_nowrap で percentage 制約の二重適用を防止
+  - 親で適用済みの percentage 制約を再適用しないよう Length のみ処理
+- wrap container で align_items 計算時に line_cross_size を使用
+  - wrap では常に line_cross_size を使用（nowrap のみ container cross_size を使用）
 
 ## 技術的な注意点
 

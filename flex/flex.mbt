@@ -623,11 +623,22 @@ fn compute_internal(
   // For Definite sizing mode with auto height, use available_height if provided
   // This handles stretched flex items whose height is determined by the parent
   // BUT: avoid using very large values (1e9+) which are used as "infinity" for intrinsic sizing
+  // When available_height is provided in Definite mode, it represents the final constrained size
+  // (e.g., max-height was already applied by parent), so we should respect it.
   let content_height : Double? = match intrinsic_from_measure {
     Some((_, h)) => Some(h - padding.vertical_sum() - border.vertical_sum())
     None =>
       match style.height {
-        @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
+        @types.Length(h) => {
+          let mut height = h
+          // In Definite mode, available_height may represent a constrained size (e.g., max-height applied)
+          // If available_height is smaller than explicit height, use available_height
+          match (ctx.sizing_mode, ctx.available_height) {
+            (@node.Definite, Some(ah)) if ah < 1.0e9 && ah < h => height = ah
+            _ => ()
+          }
+          Some(height - padding.vertical_sum() - border.vertical_sum())
+        }
         @types.Percent(p) =>
           Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
         @types.Auto =>
@@ -1417,23 +1428,61 @@ fn compute_internal(
 
     // Apply min/max on cross axis
     // CSS spec: min takes precedence over max, so apply max first, then min
+    // Note: percentage constraints are resolved against the parent container's cross size
     let mut constrained_cross = final_cross
     if is_row {
       match child_style.max_height {
         @types.Length(v) => if constrained_cross > v { constrained_cross = v }
+        @types.Percent(p) =>
+          match cross_size {
+            Some(cs) => {
+              // Add back padding/border to get the full container height for percentage resolution
+              let container_cross = cs + padding.vertical_sum() + border.vertical_sum()
+              let v = container_cross * p
+              if constrained_cross > v {
+                constrained_cross = v
+              }
+            }
+            None => ()
+          }
         _ => ()
       }
       match child_style.min_height {
         @types.Length(v) => if constrained_cross < v { constrained_cross = v }
+        @types.Percent(p) =>
+          match cross_size {
+            Some(cs) => {
+              let container_cross = cs + padding.vertical_sum() + border.vertical_sum()
+              let v = container_cross * p
+              if constrained_cross < v {
+                constrained_cross = v
+              }
+            }
+            None => ()
+          }
         _ => ()
       }
     } else {
       match child_style.max_width {
         @types.Length(v) => if constrained_cross > v { constrained_cross = v }
+        @types.Percent(p) => {
+          // For column flex, cross axis is width
+          // content_width + padding + border = container_width
+          let v = container_width * p
+          if constrained_cross > v {
+            constrained_cross = v
+          }
+        }
         _ => ()
       }
       match child_style.min_width {
         @types.Length(v) => if constrained_cross < v { constrained_cross = v }
+        @types.Percent(p) => {
+          let v = container_width * p
+          if constrained_cross < v {
+            constrained_cross = v
+          }
+        }
         _ => ()
       }
     }
@@ -1490,43 +1539,28 @@ fn compute_internal(
 
   // Calculate constrained cross size for align-items positioning in nowrap containers
   // This is used when container cross size differs from line cross size due to max/min constraints
-  let align_cross_for_nowrap : Double? = if not(should_wrap) && flex_lines.length() == 1 {
-    match cross_size {
-      Some(cs) => Some(cs) // Container has definite cross size
-      None => {
-        // height:auto with max/min_height constraint - calculate constrained size
-        if is_row {
-          let content_cross = total_lines_cross + padding.vertical_sum() + border.vertical_sum()
-          let mut constrained = content_cross
-          // Apply max_height constraint (reduces size)
-          match style.max_height {
-            @types.Length(v) => if constrained > v { constrained = v }
-            @types.Percent(p) => {
-              let v = parent_height * p
-              if constrained > v { constrained = v }
-            }
-            @types.Auto => ()
-          }
-          // Apply min_height constraint (increases size) - min takes precedence over max
-          match style.min_height {
-            @types.Length(v) => if constrained < v { constrained = v }
-            @types.Percent(p) => {
-              let v = parent_height * p
-              if constrained < v { constrained = v }
-            }
-            @types.Auto => ()
-          }
-          // Only return if actually constrained (different from content)
-          if constrained != content_cross {
-            Some(constrained - padding.vertical_sum() - border.vertical_sum())
-          } else {
-            None
-          }
-        } else {
-          None
-        }
-      }
+  // Note: When ctx.sizing_mode is Definite and available_height is set, the container's cross size
+  // has already been constrained by the parent (e.g., max-height was applied). In this case,
+  // we should use the already-constrained value rather than re-applying percentage constraints.
+  let align_cross_for_nowrap : Double? = if not(should_wrap) && flex_lines.length() == 1 && is_row {
+    // Get the base cross size (content area)
+    let base_cross = match cross_size {
+      Some(cs) => cs + padding.vertical_sum() + border.vertical_sum() // explicit/constrained height
+      None => total_lines_cross + padding.vertical_sum() + border.vertical_sum() // auto height
     }
+    let mut constrained = base_cross
+    // Only apply Length constraints here; Percent constraints should have been applied by parent
+    // when this container was laid out as a flex item
+    match style.max_height {
+      @types.Length(v) => if constrained > v { constrained = v }
+      _ => ()
+    }
+    match style.min_height {
+      @types.Length(v) => if constrained < v { constrained = v }
+      _ => ()
+    }
+    // Return constrained content area size
+    Some(constrained - padding.vertical_sum() - border.vertical_sum())
   } else {
     None
   }
@@ -1807,22 +1841,28 @@ fn compute_internal(
             // For single-line containers with definite cross size,
             // use container cross size when item is larger than container
             // to allow negative alignment offsets
+            // NOTE: This only applies to nowrap containers; wrap containers should always use line_cross_size
             let item_total_cross = item_cross + item.margin_cross
             // For nowrap single-line, use constrained container size for alignment
             let align_cross_size = match align_cross_for_nowrap {
               Some(acs) => acs
               None =>
-                match cross_size {
-                  Some(cs) => {
-                    // Use container cross size when item is larger than container
-                    // This allows proper centering with negative offsets
-                    if is_single_line && item_total_cross > cs {
-                      cs
-                    } else {
-                      line_cross_size
+                if should_wrap {
+                  // Wrap containers: always use line_cross_size for alignment
+                  line_cross_size
+                } else {
+                  match cross_size {
+                    Some(cs) => {
+                      // Use container cross size when item is larger than container
+                      // This allows proper centering with negative offsets
+                      if is_single_line && item_total_cross > cs {
+                        cs
+                      } else {
+                        line_cross_size
+                      }
                     }
+                    None => line_cross_size
                   }
-                  None => line_cross_size
                 }
             }
             compute_align(
