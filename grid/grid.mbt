@@ -2987,6 +2987,7 @@ fn apply_alignment(
     @style.AlignSelf::End => @style.Alignment::End
     @style.AlignSelf::Center => @style.Alignment::Center
     @style.AlignSelf::Stretch => @style.Alignment::Stretch
+    @style.AlignSelf::Baseline => @style.Alignment::Baseline
   }
   // Use justify_self for horizontal alignment
   let justify : @style.Alignment = match child_style.justify_self {
@@ -2995,6 +2996,7 @@ fn apply_alignment(
     @style.AlignSelf::End => @style.Alignment::End
     @style.AlignSelf::Center => @style.Alignment::Center
     @style.AlignSelf::Stretch => @style.Alignment::Stretch
+    @style.AlignSelf::Baseline => @style.Alignment::Baseline
   }
 
   // Check if aspect_ratio constrains dimensions

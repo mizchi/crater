@@ -52,6 +52,7 @@ pub(all) enum AlignSelf {
   End
   Center
   Stretch
+  Baseline // Align item by its baseline
 } derive(Show)
 
 ///|

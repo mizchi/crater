@@ -453,7 +453,27 @@ fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
           // No in-flow children, use own height
           return node_height
         }
-        _ => node_height // For Row flex: baseline is the bottom
+        @style.Row | @style.RowReverse => {
+          // For Row flex: baseline is first in-flow child's baseline
+          for i = 0; i < children.length(); i = i + 1 {
+            let child = children[i]
+            if child.style.display == @style.None {
+              continue
+            }
+            if child.style.position == @style.Absolute {
+              continue
+            }
+            // Get first child's height
+            let child_height = match child.style.height {
+              @types.Length(h) => h
+              _ => 0.0
+            }
+            // Recursively compute child's baseline
+            return compute_node_baseline(child, child_height)
+          }
+          // No in-flow children, use own height
+          node_height
+        }
       }
     @style.Block => {
       // For Block containers with children: use first in-flow child's baseline
@@ -1350,17 +1370,28 @@ fn compute_internal(
     let effective_align = match child_style.align_self {
       @style.Auto => style.align_items
       @style.AlignSelf::Stretch => @style.Stretch
+      @style.AlignSelf::Baseline => @style.Baseline
       _ => @style.Start
-    } // Non-stretch align-self means don't stretch
+    } // Non-stretch/baseline align-self means don't stretch
 
     // For stretch alignment, item takes full cross size only if cross dimension is auto
     // For non-stretch with aspect_ratio, recalculate cross from constrained main dimension
+    // NOTE: For wrap containers, stretch is deferred to Phase 5 where line_cross_size is known
+    let is_wrap = match style.flex_wrap {
+      @style.Wrap | @style.WrapReverse => true
+      @style.NoWrap => false
+    }
     let final_cross = match effective_align {
       @style.Stretch =>
         if item.cross_is_auto {
-          match cross_size {
-            Some(cs) => cs - item.margin_cross
-            None => item.base_cross
+          if is_wrap {
+            // For wrap containers, defer stretch to Phase 5 (use line_cross_size, not container cross_size)
+            item.base_cross
+          } else {
+            match cross_size {
+              Some(cs) => cs - item.margin_cross
+              None => item.base_cross
+            }
           }
         } else {
           item.base_cross
@@ -1433,7 +1464,6 @@ fn compute_internal(
     flex_lines[line_idx] = { ..line, cross_size: new_cross_size }
   }
 
-
   // Phase 4 & 5: Position items and build layouts
   // For multi-line (wrap), we need to process each line separately
   // Use IndexedLayout to preserve DOM order when mixing flex and absolute children
@@ -1456,6 +1486,49 @@ fn compute_internal(
   let effective_cross = match cross_size {
     Some(cs) => cs
     None => total_lines_cross
+  }
+
+  // Calculate constrained cross size for align-items positioning in nowrap containers
+  // This is used when container cross size differs from line cross size due to max/min constraints
+  let align_cross_for_nowrap : Double? = if not(should_wrap) && flex_lines.length() == 1 {
+    match cross_size {
+      Some(cs) => Some(cs) // Container has definite cross size
+      None => {
+        // height:auto with max/min_height constraint - calculate constrained size
+        if is_row {
+          let content_cross = total_lines_cross + padding.vertical_sum() + border.vertical_sum()
+          let mut constrained = content_cross
+          // Apply max_height constraint (reduces size)
+          match style.max_height {
+            @types.Length(v) => if constrained > v { constrained = v }
+            @types.Percent(p) => {
+              let v = parent_height * p
+              if constrained > v { constrained = v }
+            }
+            @types.Auto => ()
+          }
+          // Apply min_height constraint (increases size) - min takes precedence over max
+          match style.min_height {
+            @types.Length(v) => if constrained < v { constrained = v }
+            @types.Percent(p) => {
+              let v = parent_height * p
+              if constrained < v { constrained = v }
+            }
+            @types.Auto => ()
+          }
+          // Only return if actually constrained (different from content)
+          if constrained != content_cross {
+            Some(constrained - padding.vertical_sum() - border.vertical_sum())
+          } else {
+            None
+          }
+        } else {
+          None
+        }
+      }
+    }
+  } else {
+    None
   }
 
   // Calculate line positions using align-content
@@ -1657,6 +1730,7 @@ fn compute_internal(
           @style.AlignSelf::End => @style.End
           @style.AlignSelf::Center => @style.Center
           @style.AlignSelf::Stretch => @style.Stretch
+          @style.AlignSelf::Baseline => @style.Baseline
         }
       }
 
@@ -1734,17 +1808,22 @@ fn compute_internal(
             // use container cross size when item is larger than container
             // to allow negative alignment offsets
             let item_total_cross = item_cross + item.margin_cross
-            let align_cross_size = match cross_size {
-              Some(cs) => {
-                // Use container cross size when item is larger than container
-                // This allows proper centering with negative offsets
-                if is_single_line && item_total_cross > cs {
-                  cs
-                } else {
-                  line_cross_size
+            // For nowrap single-line, use constrained container size for alignment
+            let align_cross_size = match align_cross_for_nowrap {
+              Some(acs) => acs
+              None =>
+                match cross_size {
+                  Some(cs) => {
+                    // Use container cross size when item is larger than container
+                    // This allows proper centering with negative offsets
+                    if is_single_line && item_total_cross > cs {
+                      cs
+                    } else {
+                      line_cross_size
+                    }
+                  }
+                  None => line_cross_size
                 }
-              }
-              None => line_cross_size
             }
             compute_align(
               effective_align,

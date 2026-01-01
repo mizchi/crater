@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 495    | 104    | 599   | 82.6%      | +2 from min_width final fix |
+| Flex   | 503    | 96     | 599   | 84.0%      | +7 from align fixes |
 | Grid   | 251    | 78     | 329   | 76.3%      | |
-| **Total** | **962** | **201** | **1163** | **82.7%** | Native target stable |
+| **Total** | **970** | **193** | **1163** | **83.4%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -105,6 +105,9 @@
 | baseline + inset fix | 204/223 (91.5%) | 489/599 (81.6%) | 251/329 (76.3%) | 956/1163 (82.2%) |
 | baseline + absolute fix | 204/223 (91.5%) | 493/599 (82.3%) | 251/329 (76.3%) | 960/1163 (82.5%) |
 | min_width final fix | 204/223 (91.5%) | 495/599 (82.6%) | 251/329 (76.3%) | 962/1163 (82.7%) |
+| baseline Phase 1 | 204/223 (91.5%) | 496/599 (82.8%) | 251/329 (76.3%) | 963/1163 (82.8%) |
+| wrap stretch Phase 2 | 204/223 (91.5%) | 498/599 (83.1%) | 251/329 (76.3%) | 965/1163 (83.0%) |
+| align_items nowrap fix | 204/223 (91.5%) | 503/599 (84.0%) | 251/329 (76.3%) | 970/1163 (83.4%) |
 
 ### これまでの主な修正
 
@@ -202,6 +205,23 @@
 - Row flex container の最終幅計算に min/max 制約を適用
   - width:auto + child layouts から幅を再計算する場合
   - content width に min_width/max_width を適用
+
+**baseline Phase 1 (+1 test)**
+- AlignSelf に Baseline variant を追加
+- flex.mbt, alignment.mbt, grid.mbt の match 文を更新
+- Row flex の nested baseline 計算を追加
+
+**wrap stretch Phase 2 (+2 tests)**
+- wrap コンテナの Phase 3 で stretch を適用しないよう修正
+  - wrap 時は Phase 5 で line_cross_size を使用して stretch
+  - NoWrap 時のみ Phase 3 で container cross_size を使用
+- align_content != Stretch の場合にアイテムが正しく line height に stretch される
+
+**align_items nowrap fix (+5 tests)**
+- nowrap 単一ライン container の align_items 計算で constrained cross size を使用
+  - cross_size が definite の場合、line.cross_size ではなく container cross_size を使用
+  - height:auto + max/min_height 制約がある場合、制約後のサイズを計算
+- align_items: center で子が親より大きい場合に負のオフセットが正しく計算される
 
 ## 技術的な注意点
 

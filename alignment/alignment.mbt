@@ -82,5 +82,6 @@ pub fn compute_align_self_offset(
     @style.AlignSelf::End => free_space
     @style.AlignSelf::Center => free_space / 2.0
     @style.AlignSelf::Stretch => 0.0 // Stretch handled elsewhere
+    @style.AlignSelf::Baseline => 0.0 // Baseline handled in flex layout
   }
 }
