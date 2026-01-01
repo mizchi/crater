@@ -8,8 +8,8 @@
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
 | Flex   | 476    | 123    | 599   | 79.5%      | +10 from stretched child fix |
-| Grid   | 250    | 79     | 329   | 76.0%      | +1 from intrinsic fix |
-| **Total** | **942** | **221** | **1163** | **81.0%** | Native target stable |
+| Grid   | 251    | 78     | 329   | 76.3%      | +2 from intrinsic/aspect_ratio fix |
+| **Total** | **943** | **220** | **1163** | **81.1%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -100,6 +100,7 @@
 | compute_layout + intrinsic | 204/223 (91.5%) | 466/599 (77.8%) | 260/341 (76.2%) | 930/1163 (80.0%) |
 | stretched child fix | 204/223 (91.5%) | 476/599 (79.5%) | 249/329 (75.7%) | 941/1163 (80.9%) |
 | grid intrinsic fix | 204/223 (91.5%) | 476/599 (79.5%) | 250/329 (76.0%) | 942/1163 (81.0%) |
+| grid aspect_ratio fix | 204/223 (91.5%) | 476/599 (79.5%) | 251/329 (76.3%) | 943/1163 (81.1%) |
 
 ### これまでの主な修正
 
@@ -164,6 +165,11 @@
 - Grid の compute_child_layout で Flex コンテナの intrinsic sizing を修正
 - 1.0e10 (無限大プレースホルダー) 使用時は MaxContent モードで計算
 - auto 次元には Flex layout の計算結果を使用
+
+**grid aspect_ratio fix (+1 test)**
+- compute_child_layout で min/max 制約を aspect_ratio 計算前に適用
+- 制約された次元から aspect_ratio で他の次元を導出
+- apply_alignment で aspect_ratio + max 制約がある場合 stretch を抑制
 
 ## 技術的な注意点
 
