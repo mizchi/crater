@@ -288,9 +288,17 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
   lines.push(`${indent}let ${varName}_style = {`);
   lines.push(`${indent}  ..@style.Style::default(),`);
 
+  // Determine display type
+  // If flex-related properties exist, imply display: flex
+  const hasFlexProps = style.flexDirection || style.flexWrap ||
+    style.flexGrow !== undefined || style.flexShrink !== undefined ||
+    style.flexBasis || style.justifyContent || style.alignItems ||
+    style.alignContent || style.alignSelf || style.gap ||
+    style.rowGap || style.columnGap;
+
   if (style.display === 'grid') {
     lines.push(`${indent}  display: @style.Grid,`);
-  } else if (style.display === 'flex') {
+  } else if (style.display === 'flex' || (style.display === undefined && hasFlexProps)) {
     lines.push(`${indent}  display: @style.Flex,`);
   } else if (style.display === 'none') {
     lines.push(`${indent}  display: @style.None,`);

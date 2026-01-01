@@ -160,8 +160,46 @@ fn compute_intrinsic_flex_main_size(
       total_main + padding.top + padding.bottom + border.top + border.bottom
     }
   } else {
-    // Computing along this container's cross axis: max of children's sizes
-    let mut max_cross = 0.0
+    // Computing along this container's cross axis
+    // For wrap containers, we need to account for multiple lines
+    let is_wrap = match style.flex_wrap {
+      @style.Wrap | @style.WrapReverse => true
+      _ => false
+    }
+
+    // Determine available main size for line breaking
+    // For percentage widths, we need to resolve against available_cross
+    let available_main : Double? = if is_wrap {
+      if child_is_row {
+        // Row wrap: main is width
+        // Use resolved width if explicit, otherwise available_cross
+        match style.width {
+          @types.Length(w) => Some(w)
+          @types.Percent(p) =>
+            match available_cross {
+              Some(ac) => Some(ac * p)
+              None => None
+            }
+          @types.Auto => available_cross
+        }
+      } else {
+        // Column wrap: main is height, available from available_cross parameter
+        // But for column containers, we typically don't have available height
+        None
+      }
+    } else {
+      None
+    }
+
+    // Get gap for line breaking calculation
+    let main_gap = if child_is_row {
+      style.column_gap.resolve_or(child_available_width, 0.0)
+    } else {
+      style.row_gap.resolve_or(0.0, 0.0)
+    }
+
+    // Collect items with their sizes
+    let items : Array[(Double, Double)] = [] // (main_size, cross_size)
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
@@ -173,19 +211,9 @@ fn compute_intrinsic_flex_main_size(
       }
       let child_margin = @types.resolve_rect(child_style.margin, child_available_width)
 
-      let child_cross = if child_is_row {
-        // Cross axis is height (we want height for a Row container)
-        match child_style.height {
-          @types.Length(h) => h + child_margin.top + child_margin.bottom
-          @types.Percent(_) => child_margin.top + child_margin.bottom
-          @types.Auto =>
-            compute_intrinsic_main_size(child, false, Some(child_available_width)) +
-            child_margin.top +
-            child_margin.bottom
-        }
-      } else {
-        // Cross axis is width (we want width for a Column container)
-        match child_style.width {
+      let (child_main, child_cross) = if child_is_row {
+        // Main is width, cross is height
+        let main = match child_style.width {
           @types.Length(w) => w + child_margin.left + child_margin.right
           @types.Percent(p) =>
             child_available_width * p + child_margin.left + child_margin.right
@@ -194,17 +222,99 @@ fn compute_intrinsic_flex_main_size(
             child_margin.left +
             child_margin.right
         }
+        let cross = match child_style.height {
+          @types.Length(h) => h + child_margin.top + child_margin.bottom
+          @types.Percent(_) => child_margin.top + child_margin.bottom
+          @types.Auto =>
+            compute_intrinsic_main_size(child, false, Some(child_available_width)) +
+            child_margin.top +
+            child_margin.bottom
+        }
+        (main, cross)
+      } else {
+        // Main is height, cross is width
+        let main = match child_style.height {
+          @types.Length(h) => h + child_margin.top + child_margin.bottom
+          @types.Percent(_) => child_margin.top + child_margin.bottom
+          @types.Auto =>
+            compute_intrinsic_main_size(child, false, Some(child_available_width)) +
+            child_margin.top +
+            child_margin.bottom
+        }
+        let cross = match child_style.width {
+          @types.Length(w) => w + child_margin.left + child_margin.right
+          @types.Percent(p) =>
+            child_available_width * p + child_margin.left + child_margin.right
+          @types.Auto =>
+            compute_intrinsic_main_size(child, true, None) +
+            child_margin.left +
+            child_margin.right
+        }
+        (main, cross)
       }
-      if child_cross > max_cross {
-        max_cross = child_cross
+      items.push((child_main, child_cross))
+    }
+
+    // Calculate total cross size
+    let total_cross = match available_main {
+      Some(avail) if is_wrap && avail > 0.0 => {
+        // Wrap: distribute items into lines
+        let lines_cross : Array[Double] = []
+        let mut line_main = 0.0
+        let mut line_max_cross = 0.0
+        let mut line_item_count = 0
+        for i = 0; i < items.length(); i = i + 1 {
+          let (item_main, item_cross) = items[i]
+          // Check if adding this item would exceed available main
+          let needed = if line_item_count > 0 {
+            line_main + main_gap + item_main
+          } else {
+            item_main
+          }
+          if line_item_count > 0 && needed > avail {
+            // Start new line
+            lines_cross.push(line_max_cross)
+            line_main = item_main
+            line_max_cross = item_cross
+            line_item_count = 1
+          } else {
+            // Add to current line
+            line_main = needed
+            if item_cross > line_max_cross {
+              line_max_cross = item_cross
+            }
+            line_item_count = line_item_count + 1
+          }
+        }
+        // Add last line
+        if line_item_count > 0 {
+          lines_cross.push(line_max_cross)
+        }
+        // Sum all lines
+        let mut sum = 0.0
+        for line_cross in lines_cross {
+          sum = sum + line_cross
+        }
+        sum
+      }
+      _ => {
+        // No wrap or no available main: max of all cross sizes
+        let mut max_cross = 0.0
+        for i = 0; i < items.length(); i = i + 1 {
+          let (_, item_cross) = items[i]
+          if item_cross > max_cross {
+            max_cross = item_cross
+          }
+        }
+        max_cross
       }
     }
 
     // Add padding and border on cross axis
     if child_is_row {
-      max_cross + padding.top + padding.bottom + border.top + border.bottom
+      total_cross + padding.top + padding.bottom + border.top + border.bottom
     } else {
-      max_cross + padding.left + padding.right + border.left + border.right
+      total_cross + padding.left + padding.right + border.left + border.right
     }
   }
 }
@@ -374,25 +484,33 @@ fn compute_internal(
   let mut container_width = match style.width {
     @types.Length(w) => w
     @types.Percent(p) => parent_width * p
-    @types.Auto => parent_width - margin.horizontal_sum()
+    @types.Auto =>
+      // For Definite sizing mode, parent already computed our content size
+      // Don't subtract margin again (it's already accounted for)
+      match ctx.sizing_mode {
+        @node.Definite => parent_width
+        _ => parent_width - margin.horizontal_sum()
+      }
   }
 
   // Apply min/max width
-  match style.min_width {
-    @types.Length(v) => if container_width < v { container_width = v }
-    @types.Percent(p) => {
-      let v = parent_width * p
-      if container_width < v {
-        container_width = v
-      }
-    }
-    @types.Auto => ()
-  }
+  // CSS spec: min-width takes precedence over max-width when they conflict
+  // So apply max first, then min
   match style.max_width {
     @types.Length(v) => if container_width > v { container_width = v }
     @types.Percent(p) => {
       let v = parent_width * p
       if container_width > v {
+        container_width = v
+      }
+    }
+    @types.Auto => ()
+  }
+  match style.min_width {
+    @types.Length(v) => if container_width < v { container_width = v }
+    @types.Percent(p) => {
+      let v = parent_width * p
+      if container_width < v {
         container_width = v
       }
     }
@@ -423,8 +541,15 @@ fn compute_internal(
   // For main size, if container size is auto, we need special handling
   // min-height should only cause GROW (not SHRINK) when content < min
   // Get initial values (may be adjusted later for Column flex with min_height)
+  // For MaxContent/MinContent sizing, main size is NOT defined for auto-sized containers
+  // (flex-grow/shrink should not be applied during intrinsic sizing)
+  let is_intrinsic_sizing = match ctx.sizing_mode {
+    @node.MaxContent => true
+    _ => false
+  }
   let initial_main_size_defined = if is_row {
-    true
+    // Row flex: main size is defined unless we're doing intrinsic sizing with auto width
+    not(is_intrinsic_sizing && width_is_auto)
   } else {
     content_height != None
   }
@@ -1187,6 +1312,7 @@ fn compute_internal(
     flex_lines[line_idx] = { ..line, cross_size: new_cross_size }
   }
 
+
   // Phase 4 & 5: Position items and build layouts
   // For multi-line (wrap), we need to process each line separately
   // Use IndexedLayout to preserve DOM order when mixing flex and absolute children
@@ -1269,6 +1395,10 @@ fn compute_internal(
   } else {
     line_start_offset
   }
+  // For single-line with definite cross size, we may need container cross size for alignment
+  // when children are larger than parent (to allow negative alignment offsets)
+  let is_single_line = flex_lines.length() == 1
+
   for line_idx = 0; line_idx < flex_lines.length(); line_idx = line_idx + 1 {
     let line = flex_lines[line_idx]
     let line_items = line.items
@@ -1477,13 +1607,30 @@ fn compute_internal(
             }
             max_baseline - item.baseline - cross_start_margin
           }
-          _ =>
+          _ => {
+            // For single-line containers with definite cross size,
+            // use container cross size when item is larger than container
+            // to allow negative alignment offsets
+            let item_total_cross = item_cross + item.margin_cross
+            let align_cross_size = match cross_size {
+              Some(cs) => {
+                // Use container cross size when item is larger than container
+                // This allows proper centering with negative offsets
+                if is_single_line && item_total_cross > cs {
+                  cs
+                } else {
+                  line_cross_size
+                }
+              }
+              None => line_cross_size
+            }
             compute_align(
               effective_align,
               item_cross,
-              line_cross_size,
+              align_cross_size,
               item.margin_cross,
             )
+          }
         }
       }
 
@@ -1639,22 +1786,24 @@ fn compute_internal(
   }
 
   // Apply min/max height
+  // CSS spec: min-height takes precedence over max-height when they conflict
+  // So apply max first, then min
   let mut final_height = container_height
-  match style.min_height {
-    @types.Length(v) => if final_height < v { final_height = v }
-    @types.Percent(p) => {
-      let v = parent_height * p
-      if final_height < v {
-        final_height = v
-      }
-    }
-    @types.Auto => ()
-  }
   match style.max_height {
     @types.Length(v) => if final_height > v { final_height = v }
     @types.Percent(p) => {
       let v = parent_height * p
       if final_height > v {
+        final_height = v
+      }
+    }
+    @types.Auto => ()
+  }
+  match style.min_height {
+    @types.Length(v) => if final_height < v { final_height = v }
+    @types.Percent(p) => {
+      let v = parent_height * p
+      if final_height < v {
         final_height = v
       }
     }

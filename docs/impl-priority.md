@@ -6,107 +6,82 @@
 
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
-| Block  | 198    | 25     | 223   | 88.8%      | |
-| Flex   | 433    | 166    | 599   | 72.3%      | 8 display_none tests excluded (Native crash) |
+| Block  | 204    | 19     | 223   | 91.5%      | |
+| Flex   | 445    | 154    | 599   | 74.3%      | 8 display_none tests excluded |
 | Grid   | 248    | 81     | 329   | 75.4%      | |
-| **Total** | **879** | **272** | **1151** | **76.4%** | Native target now works |
+| **Total** | **897** | **254** | **1151** | **77.9%** | Native target stable |
 
-## 優先度レベル
+## 失敗テスト分析
 
-### P0: 最優先（高頻度使用 + 修正可能） ✅ 完了
+### Flex (156 failures)
 
-#### 1. gentest で margin: auto を HTML からパース ✅
-- **状態**: 完了
-- **改善**: tools/gentest.ts を改善して margin: auto をパース
+| Category | Count | Priority | Note |
+|----------|-------|----------|------|
+| align_* | 31 | P2 | baseline tests remaining |
+| flex_* | 23 | P2 | flex-basis/min-content edge cases |
+| bevy_* | 13 | P2 | 特定のエッジケース |
+| percentage_* | 10 | P2 | indefinite container |
+| padding_* | 8 | P2 | box-sizing edge cases |
+| measure_* | 8 | P2 | MeasureFunc edge cases |
+| intrinsic_* | 8 | P2 | main_size 計算 |
+| multiline_* | 6 | P2 | min/max with wrap |
+| justify_* | 6 | P2 | space distribution edge |
+| gap_* | 6 | P3 | gap + wrap combination |
+| aspect_* | 6 | P3 | aspect_ratio edge |
 
-#### 2. percentage in indefinite containers
-- **影響**: Block 10件, Flex 18件, Grid 12件
-- **理由**: レスポンシブデザインの基本
-- **対策**: 親サイズ不定時の % 解決ロジック修正
-- **難易度**: Medium
+### Block (19 failures)
 
-### P1: 高優先（高頻度使用） ✅ 部分完了
+| Category | Count | Priority | Note |
+|----------|-------|----------|------|
+| margin_y_collapse | 8 | P3 | margin collapsing edge |
+| baseline | 7 | P3 | align_baseline_child |
+| text_align | 2 | P3 | text-align (未対応) |
+| aspect_ratio | 1 | P3 | MeasureFunc edge case |
+| absolute | 1 | P3 | resolved_insets |
 
-#### 3. min/max constraints ✅ 一部完了
-- **状態**: stretch alignment での min/max 対応を修正
-- **残り**: 一部の特殊ケース
+### Grid (81 failures)
 
-#### 4. flex-grow/shrink 計算 ✅ 完了
-- **状態**: CSS spec に準拠した scaled shrink factor を実装
-- **改善**: +3 tests
+| Category | Count | Priority | Note |
+|----------|-------|----------|------|
+| grid_span | 9 | P2 | span calculation |
+| grid_max/min | 13 | P2 | track sizing |
+| grid_percent | 5 | P2 | percentage tracks |
+| grid_fit-content | 4 | P2 | fit-content sizing |
+| blockgrid/gridflex | 9 | P3 | nested layout |
+| absolute | 4 | P2 | absolute in grid |
 
-#### 5. align/justify ✅ 大幅改善
-- **状態**: 複数の修正を実施
-  - align-content の single-line 対応 (+11 tests)
-  - negative space での Space* 処理 (+13 tests)
-- **残り**: baseline alignment (P3), 子が親より大きい場合
+## 推奨: 次に取り組むべき項目
 
-### P2: 中優先（よく使う）
+### 優先度 High (効果大)
 
-#### 6. flex-wrap
-- **影響**: Flex 23件
-- **理由**: 複数行レイアウトで使用
-- **難易度**: Medium-High
+1. **wrap container intrinsic cross size** - bevy_*, multiline_*, intrinsic_* に影響
+   - **根本原因特定済み**: `compute_intrinsic_flex_main_size` が wrap を考慮していない
+   - row wrap container の cross axis (height) 計算時、max(child_cross) を返す
+   - 正しくは wrap で複数行に分かれるので sum of line cross sizes が必要
+   - 影響範囲: bevy_issue_8082, multiline_*, intrinsic_* など
+   - 難易度: Medium
 
-#### 7. padding/border 計算
-- **影響**: Flex 14件, Block 6件
-- **理由**: ボックスモデルの基本
-- **難易度**: Low
+2. **align_* (35 tests)** - Flex で最も多い失敗
+   - 子が親より大きい場合の処理
+   - safe/unsafe alignment
+   - 難易度: Medium
 
-#### 8. gentest で aspect-ratio を HTML からパース
-- **影響**: Block 7件, Flex 12件, Grid 4件
-- **理由**: 画像/動画で使用
-- **対策**: margin: auto と同様に HTML パース
-- **難易度**: Medium
+3. **flex_* (24 tests)** - Flex の基本機能
+   - grow/shrink の frozen 処理
+   - basis 計算エッジケース
+   - 難易度: Medium
 
-### P3: 低優先（特定用途）
+### 優先度 Medium
 
-#### 9. baseline alignment
-- **影響**: Block 7件, Flex 17件, Grid 4件
-- **理由**: テキスト整列の特殊ケース
-- **難易度**: High
+4. **percentage in indefinite (10+ tests)** - 複数パッケージに影響
+5. **padding/border edge cases (8 tests)** - box-sizing 問題
+6. **intrinsic_* (8 tests)** - main_size 計算
 
-#### 10. Block/Flex の absolute positioning
-- **影響**: Block 24件, Flex 13件
-- **理由**: Grid では実装済み、移植が必要
-- **難易度**: Medium (Grid から移植)
+### 優先度 Low (特殊ケース)
 
-## 実装戦略
-
-### Phase 1: Fixture 改善 (P0-1)
-1. gentest.ts を改善して margin: auto と aspect-ratio を HTML からパース
-2. テストを再生成
-3. 実装の問題と fixture の問題を明確に分離
-
-### Phase 2: 基本機能修正 (P1-2)
-1. percentage 解決ロジックの修正
-2. min/max constraints の適用順序修正
-3. flex-grow/shrink の計算修正
-
-### Phase 3: 追加機能 (P2-3)
-1. flex-wrap の改善
-2. baseline alignment
-3. absolute positioning の移植
-
-## 技術的な注意点
-
-### margin: auto の扱い
-- `resolve_rect` で margin を解決すると Auto → 0.0 になる
-- 位置計算時に style から直接 Auto かどうかをチェックする必要がある
-
-### intrinsic sizing
-- 通常ブロック: `width: auto` = fill (親の幅を埋める)
-- 特定コンテキスト: shrink-to-fit が適用される
-  - float
-  - position: absolute (left/right 未指定)
-  - inline-block
-  - flex item / grid item (条件付き)
-
-### percentage の解決
-- 親サイズが definite: 親サイズの % を計算
-- 親サイズが indefinite:
-  - height: percentage は 0 扱い (または無視)
-  - width: 親の利用可能幅を使用
+7. **baseline alignment (7 tests)** - テキストレイアウト特有
+8. **margin_y_collapse (7 tests)** - Block layout 特有
+9. **text_align (3 tests)** - Block layout 特有
 
 ## 進捗履歴
 
@@ -115,43 +90,99 @@
 | 開始時 | 147/223 (66%) | 352/607 (58%) | 241/329 (73%) | 740/1159 (64%) |
 | P0完了 | 157/223 (70%) | 375/607 (62%) | 245/329 (74%) | 777/1159 (67%) |
 | P1完了 | 168/223 (75%) | 409/607 (67%) | 248/329 (75%) | 825/1159 (71%) |
-| P2進行中 | 198/223 (89%) | 435/607 (72%) | 248/329 (75%) | **881/1159 (76.0%)** |
+| P2進行中 | 198/223 (89%) | 433/599 (72%) | 248/329 (75%) | 879/1151 (76.4%) |
+| wrap intrinsic fix | 198/223 (89%) | 434/599 (72.5%) | 248/329 (75%) | 880/1151 (76.5%) |
+| align fixes | 198/223 (89%) | 436/599 (72.8%) | 248/329 (75%) | 882/1151 (76.6%) |
+| flex intrinsic | 198/223 (89%) | 439/599 (73.3%) | 248/329 (75%) | 885/1151 (76.9%) |
+| wrap percent | 198/223 (89%) | 443/599 (73.9%) | 248/329 (75%) | 889/1151 (77.2%) |
+| min/max fix | 199/223 (89.2%) | 443/599 (73.9%) | 248/329 (75%) | 890/1151 (77.3%) |
+| Block fixes | 204/223 (91.5%) | 445/599 (74.3%) | 248/329 (75%) | 897/1151 (77.9%) |
 
-### P1での主な修正 (+48 tests)
+### これまでの主な修正
 
-1. **intrinsic sizing cross-axis fix** (+1): ネスト flex の cross-axis 計算を修正
-2. **flex-shrink scaled factor** (+3): CSS spec に準拠した shrink 計算
-3. **stretch alignment constraints** (+5): min/max 制約の適用
-4. **align-content single-line** (+11): nowrap 時の align-content を Start として扱う
-5. **negative space handling** (+13): Space* の negative space 対応
-6. **test fixes** (+2): reverse テストの期待値修正
+**P1 (+48 tests)**
+- intrinsic sizing cross-axis fix
+- flex-shrink scaled factor
+- stretch alignment constraints
+- align-content single-line
+- negative space handling
 
-### P2での修正 (+65 tests)
+**P2 (+65 tests)**
+- wrap container intrinsic sizing
+- aspect_ratio support
+- Block intrinsic sizing (MaxContent)
+- MeasureFunc intrinsic sizing
+- absolute shrink-to-fit
+- absolute padding/border minimum
 
-1. **wrap container intrinsic sizing** (+3): wrap container は available width を使用
-2. **aspect_ratio support** (+7): Block/Flex で aspect_ratio サポート
-3. **Block intrinsic sizing (MaxContent)** (+11): 2パスレイアウトで intrinsic width 計算
-4. **padding/border override** (+2): padding+border が max-width を超える場合
-5. **percentage intrinsic sizing** (+5): intrinsic sizing で percentage は 0 として解決
-6. **MeasureFunc intrinsic sizing** (+12): leaf ノードの MeasureFunc を intrinsic sizing で使用
-7. **overflow visible min-size** (+1): overflow:visible 時は min-size が intrinsic size
-8. **absolute shrink-to-fit** (+4): absolute positioned 要素で width:auto の場合に shrink-to-fit を使用
-9. **absolute padding/border minimum** (+4): absolute 要素の padding+border が size を override
+**wrap intrinsic fix (+1 test)**
+- テストジェネレータに display: Flex 自動設定を追加
+- compute_intrinsic_flex_main_size で wrap を考慮したライン分割処理を実装
+- bevy_issue_8082 が pass
 
-## 残りの課題 (278 tests remaining)
+**align fixes (+3 tests)**
+- 子が親より大きい場合の負のアライメントオフセット対応
+- Definite sizing mode で margin 二重減算を修正
+- align_items_center_child_without_margin_bigger_than_parent, align_items_flex_end_child_without_margin_bigger_than_parent が pass
 
-| カテゴリ | 影響テスト数 | 優先度 | 備考 |
-|---------|-------------|--------|------|
-| baseline alignment | ~9件 | P3 | align_baseline_child (5), block_align_baseline_child (4) |
-| multiline min/max | 5件 | P2 | CSS box-sizing 問題 (docs/issue_multiline_min_max.md 参照) |
-| bevy issues | 8件 | P2 | bevy_issue (4), bevy_issue_9530 (4) |
-| absolute positioning | ~5件 | P2 | minmax, resolved_insets 等 ✅ 一部修正済み |
-| grid-flex integration | ~6件 | P3 | gridflex_*, grid_min_content_flex_* |
-| margin collapsing edge cases | ~10件 | P3 | margin_y_collapse_* |
-| intrinsic sizing edge | ~6件 | P2 | intrinsic_sizing_main_size_* |
-| ~~Native テストクラッシュ~~ | - | ✅ | display_none テスト除外で解決 (docs/issue_native_crash.md) |
+**flex intrinsic fix (+3 tests)**
+- MaxContent sizing mode で width:auto の Row flex に flex-grow/shrink を適用しないよう修正
+- flex_grow_child が pass
+- intrinsic sizing の正確性向上
 
-### 次に取り組むべき候補
+**wrap percent fix (+4 tests)**
+- wrap コンテナの intrinsic sizing でパーセント幅を正しく解決
+- Row wrap の line breaking 計算時に親幅ではなく解決済み幅を使用
 
-1. **bevy_issue (8件)**: 特定のエッジケース修正
-2. **multiline_min_max (5件)**: CSS box-sizing 問題 (詳細は docs/issue_multiline_min_max.md)
+**min/max precedence fix (+1 test)**
+- CSS 仕様に従い min-width/height が max より優先されるよう修正
+- Block と Flex の両方で max を先に適用し、その後 min を適用
+
+**Block fixes (+7 tests)**
+- inset percentage: 相対配置の top/bottom 百分率を親の高さで解決（auto 時は 0）
+- absolute margin:auto: 子が親より大きい場合、margin-left を 0 にして左位置使用
+- aspect_ratio: height が max_height で制限された後、width を再計算
+
+## 技術的な注意点
+
+### margin: auto
+- `resolve_rect` で Auto → 0.0 になる
+- 位置計算時に style から直接チェックが必要
+
+### intrinsic sizing
+- 通常ブロック: `width: auto` = fill
+- shrink-to-fit: absolute (left/right 未指定), flex item
+
+### percentage の解決
+- 親が definite: 親サイズの % を計算
+- 親が indefinite: height は 0, width は available width
+
+### wrap container intrinsic cross size (調査済み)
+
+**問題**: column parent が row wrap child の height を計算するとき、wrap を考慮していない
+
+**コード位置**: `flex/flex.mbt` の `compute_intrinsic_flex_main_size` (line 66-)
+
+**現在の動作** (cross axis 計算、line 162-209):
+```moonbit
+let mut max_cross = 0.0
+for child in children {
+  let child_cross = ...  // 各子の cross サイズ
+  if child_cross > max_cross { max_cross = child_cross }
+}
+```
+
+**問題点**:
+- wrap container では複数行に分かれる
+- 正しい cross size = sum of (max cross size of each line)
+- 現在は単一行として max を取っている
+
+**例: bevy_issue_8082**:
+- 4 items (70x70 with margin), container width=200
+- 2 items per line → 2 lines
+- Expected: 70 + 70 = 140px
+- Current: max(70, 70, 70, 70) = 70px (then something causes 280px)
+
+**修正方針**:
+- wrap container の cross axis を計算するとき、実際にラインに分割
+- 各ラインの max cross size を合計する

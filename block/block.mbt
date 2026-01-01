@@ -244,22 +244,24 @@ fn compute_with_collapse(
   }
 
   // Apply min/max width constraints
-  match style.min_width {
-    @types.Length(min_w) => if box_width < min_w { box_width = min_w }
-    @types.Percent(p) => {
-      let min_w = parent_width * p
-      if box_width < min_w {
-        box_width = min_w
-      }
-    }
-    @types.Auto => ()
-  }
+  // CSS spec: min-width takes precedence over max-width when they conflict
+  // So apply max first, then min
   match style.max_width {
     @types.Length(max_w) => if box_width > max_w { box_width = max_w }
     @types.Percent(p) => {
       let max_w = parent_width * p
       if box_width > max_w {
         box_width = max_w
+      }
+    }
+    @types.Auto => ()
+  }
+  match style.min_width {
+    @types.Length(min_w) => if box_width < min_w { box_width = min_w }
+    @types.Percent(p) => {
+      let min_w = parent_width * p
+      if box_width < min_w {
+        box_width = min_w
       }
     }
     @types.Auto => ()
@@ -376,23 +378,23 @@ fn compute_with_collapse(
     }
     // Update box_width from max-content
     box_width = max_content_width + padding.horizontal_sum() + border.horizontal_sum()
-    // Re-apply min/max constraints
-    match style.min_width {
-      @types.Length(min_w) => if box_width < min_w { box_width = min_w }
-      @types.Percent(p) => {
-        let min_w = parent_width * p
-        if box_width < min_w {
-          box_width = min_w
-        }
-      }
-      @types.Auto => ()
-    }
+    // Re-apply min/max constraints (max first, then min for precedence)
     match style.max_width {
       @types.Length(max_w) => if box_width > max_w { box_width = max_w }
       @types.Percent(p) => {
         let max_w = parent_width * p
         if box_width > max_w {
           box_width = max_w
+        }
+      }
+      @types.Auto => ()
+    }
+    match style.min_width {
+      @types.Length(min_w) => if box_width < min_w { box_width = min_w }
+      @types.Percent(p) => {
+        let min_w = parent_width * p
+        if box_width < min_w {
+          box_width = min_w
         }
       }
       @types.Auto => ()
@@ -534,6 +536,7 @@ fn compute_with_collapse(
     let (final_x, final_y) = if child_style.position == @style.Relative {
       let inset = child_style.inset
       // X offset: left takes precedence over right
+      // Percentages resolve against containing block width
       let x_offset = match inset.left {
         @types.Length(l) => l
         @types.Percent(p) => box_width * p
@@ -545,13 +548,23 @@ fn compute_with_collapse(
           }
       }
       // Y offset: top takes precedence over bottom
+      // CSS spec: percentages for top/bottom resolve against containing block HEIGHT
+      // If height is auto/indefinite, percentage resolves to 0
       let y_offset = match inset.top {
         @types.Length(t) => t
-        @types.Percent(p) => box_width * p // Use width for percentage (CSS spec)
+        @types.Percent(p) =>
+          match child_available_height {
+            Some(h) => (h + padding.vertical_sum() + border.vertical_sum()) * p
+            None => 0.0 // Height is auto, percentage resolves to 0
+          }
         @types.Auto =>
           match inset.bottom {
             @types.Length(b) => -b
-            @types.Percent(p) => -(box_width * p)
+            @types.Percent(p) =>
+              match child_available_height {
+                Some(h) => -((h + padding.vertical_sum() + border.vertical_sum()) * p)
+                None => 0.0
+              }
             @types.Auto => 0.0
           }
       }
@@ -644,6 +657,44 @@ fn compute_with_collapse(
   let min_box_height = padding.vertical_sum() + border.vertical_sum()
   if box_height < min_box_height {
     box_height = min_box_height
+  }
+
+  // If aspect_ratio is set and height was constrained but width wasn't explicitly set,
+  // recalculate width based on the constrained height
+  match (style.aspect_ratio, style.width, style.height) {
+    (Some(ratio), @types.Auto, @types.Auto) if ratio > 0.0 => {
+      // Check if height was actually constrained by min/max
+      let expected_height_from_width = (box_width - padding.horizontal_sum() - border.horizontal_sum()) /
+        ratio +
+        padding.vertical_sum() +
+        border.vertical_sum()
+      if box_height != expected_height_from_width {
+        // Height was constrained, recalculate width from constrained height
+        let content_height = box_height - padding.vertical_sum() - border.vertical_sum()
+        let new_width = content_height * ratio +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        // Apply min/max width constraints to new width
+        let new_width = match style.max_width {
+          @types.Length(max_w) => if new_width > max_w { max_w } else { new_width }
+          @types.Percent(p) => {
+            let max_w = parent_width * p
+            if new_width > max_w { max_w } else { new_width }
+          }
+          @types.Auto => new_width
+        }
+        let new_width = match style.min_width {
+          @types.Length(min_w) => if new_width < min_w { min_w } else { new_width }
+          @types.Percent(p) => {
+            let min_w = parent_width * p
+            if new_width < min_w { min_w } else { new_width }
+          }
+          @types.Auto => new_width
+        }
+        box_width = new_width
+      }
+    }
+    _ => ()
   }
 
   // Now handle absolute positioned children
@@ -828,9 +879,16 @@ fn layout_absolute_child(
       // Both insets specified
       // Check for margin auto centering behavior
       if margin_left_is_auto && margin_right_is_auto {
-        // Both margins auto: center the element
+        // Both margins auto: try to center the element
         let available = container_width - l - r - child_width
-        l + available / 2.0 + parent_border.left
+        if available >= 0.0 {
+          // Enough space: center by distributing margins equally
+          l + available / 2.0 + parent_border.left
+        } else {
+          // Not enough space: CSS spec says for LTR, margin-left becomes 0
+          // This makes child overflow on the right side
+          l + parent_border.left
+        }
       } else if margin_left_is_auto {
         // Only left margin auto: push to right
         container_width - child_width - r - params.margin_right + parent_border.left
@@ -853,9 +911,16 @@ fn layout_absolute_child(
       // Both insets specified
       // Check for margin auto centering behavior
       if margin_top_is_auto && margin_bottom_is_auto {
-        // Both margins auto: center the element
+        // Both margins auto: try to center the element
         let available = container_height - t - b - child_height
-        t + available / 2.0 + parent_border.top
+        if available >= 0.0 {
+          // Enough space: center by distributing margins equally
+          t + available / 2.0 + parent_border.top
+        } else {
+          // Not enough space: CSS spec says margin-top becomes 0
+          // This makes child overflow on the bottom side
+          t + parent_border.top
+        }
       } else if margin_top_is_auto {
         // Only top margin auto: push to bottom
         container_height - child_height - b - params.margin_bottom + parent_border.top

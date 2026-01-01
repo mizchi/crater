@@ -393,12 +393,11 @@ pub fn resolve_dimensions_with_aspect_ratio(
 
 ///|
 /// Clamp a value between min and max
+/// CSS spec: min takes precedence over max when they conflict
+/// So apply max first (value cannot exceed max), then min (value cannot go below min)
 pub fn clamp(value : Double, min_val : Double, max_val : Double) -> Double {
-  if value < min_val {
-    min_val
-  } else if value > max_val {
-    max_val
-  } else {
-    value
-  }
+  // First apply max constraint
+  let clamped = if value > max_val { max_val } else { value }
+  // Then apply min constraint (min wins if min > max)
+  if clamped < min_val { min_val } else { clamped }
 }
