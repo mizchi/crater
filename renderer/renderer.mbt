@@ -767,16 +767,36 @@ pub fn print_layout_tree(layout : @node.Layout, indent : Int) -> Unit {
 }
 
 ///|
+/// Sanitize a number for JSON output (handle Infinity and NaN)
+fn safe_number(n : Double) -> Double {
+  // Check for Infinity or very large numbers (> 1e10 is likely a placeholder infinity)
+  if n > 1.0e10 || n < -1.0e10 {
+    return 0.0
+  }
+  // Check for NaN (NaN != NaN)
+  if n != n {
+    return 0.0
+  }
+  n
+}
+
+///|
+/// Convert a number to JSON string safely
+fn number_to_json(n : Double) -> String {
+  safe_number(n).to_string()
+}
+
+///|
 /// Convert Rect to JSON string
 fn rect_to_json(rect : @types.Rect[Double]) -> String {
   "{\"top\":" +
-  rect.top.to_string() +
+  number_to_json(rect.top) +
   ",\"right\":" +
-  rect.right.to_string() +
+  number_to_json(rect.right) +
   ",\"bottom\":" +
-  rect.bottom.to_string() +
+  number_to_json(rect.bottom) +
   ",\"left\":" +
-  rect.left.to_string() +
+  number_to_json(rect.left) +
   "}"
 }
 
@@ -793,13 +813,13 @@ fn layout_to_json_impl(layout : @node.Layout, buf : StringBuilder) -> Unit {
   buf.write_string("{\"id\":\"")
   buf.write_string(escape_json_string(layout.id))
   buf.write_string("\",\"x\":")
-  buf.write_string(layout.x.to_string())
+  buf.write_string(number_to_json(layout.x))
   buf.write_string(",\"y\":")
-  buf.write_string(layout.y.to_string())
+  buf.write_string(number_to_json(layout.y))
   buf.write_string(",\"width\":")
-  buf.write_string(layout.width.to_string())
+  buf.write_string(number_to_json(layout.width))
   buf.write_string(",\"height\":")
-  buf.write_string(layout.height.to_string())
+  buf.write_string(number_to_json(layout.height))
   buf.write_string(",\"margin\":")
   buf.write_string(rect_to_json(layout.margin))
   buf.write_string(",\"padding\":")
