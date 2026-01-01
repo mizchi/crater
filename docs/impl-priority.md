@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 493    | 106    | 599   | 82.3%      | +4 from baseline + absolute fix |
+| Flex   | 495    | 104    | 599   | 82.6%      | +2 from min_width final fix |
 | Grid   | 251    | 78     | 329   | 76.3%      | |
-| **Total** | **960** | **203** | **1163** | **82.5%** | Native target stable |
+| **Total** | **962** | **201** | **1163** | **82.7%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -104,6 +104,7 @@
 | flex min/max + intrinsic | 204/223 (91.5%) | 482/599 (80.5%) | 251/329 (76.3%) | 949/1163 (81.6%) |
 | baseline + inset fix | 204/223 (91.5%) | 489/599 (81.6%) | 251/329 (76.3%) | 956/1163 (82.2%) |
 | baseline + absolute fix | 204/223 (91.5%) | 493/599 (82.3%) | 251/329 (76.3%) | 960/1163 (82.5%) |
+| min_width final fix | 204/223 (91.5%) | 495/599 (82.6%) | 251/329 (76.3%) | 962/1163 (82.7%) |
 
 ### これまでの主な修正
 
@@ -196,6 +197,11 @@
   - 子を持つ Block コンテナは first in-flow child の baseline を返す
 - Absolute positioning の inset percentage を padding box で解決
   - containing block は padding box (border の内側)
+
+**min_width final fix (+2 tests)**
+- Row flex container の最終幅計算に min/max 制約を適用
+  - width:auto + child layouts から幅を再計算する場合
+  - content width に min_width/max_width を適用
 
 ## 技術的な注意点
 

@@ -2238,12 +2238,32 @@ fn compute_internal(
         max_x = right_edge
       }
     }
-    if has_flow_children {
+    let content_width = if has_flow_children {
       max_x + padding.horizontal_sum() + border.horizontal_sum()
     } else {
       // No flow children - shrink to content (0) plus padding/border
       padding.horizontal_sum() + border.horizontal_sum()
     }
+    // Apply min/max constraints to final width
+    // CSS spec: min takes precedence over max
+    let mut constrained_width = content_width
+    match style.max_width {
+      @types.Length(v) => if constrained_width > v { constrained_width = v }
+      @types.Percent(p) => {
+        let v = parent_width * p
+        if constrained_width > v { constrained_width = v }
+      }
+      @types.Auto => ()
+    }
+    match style.min_width {
+      @types.Length(v) => if constrained_width < v { constrained_width = v }
+      @types.Percent(p) => {
+        let v = parent_width * p
+        if constrained_width < v { constrained_width = v }
+      }
+      @types.Auto => ()
+    }
+    constrained_width
   } else {
     container_width
   }
