@@ -1,0 +1,12 @@
+{
+  "import": [
+    "mizchi/crater/html",
+    "mizchi/crater/css/computed",
+    "mizchi/crater/node",
+    "mizchi/crater/style",
+    "mizchi/crater/types",
+    "mizchi/crater/compute/block",
+    "mizchi/crater/compute/flex",
+    "mizchi/crater/sixel"
+  ]
+}
