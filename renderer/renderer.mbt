@@ -725,6 +725,9 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
   if property == "flex" {
     return { ..target, flex_grow: source.flex_grow, flex_shrink: source.flex_shrink, flex_basis: source.flex_basis }
   }
+  if property == "flex-flow" {
+    return { ..target, flex_direction: source.flex_direction, flex_wrap: source.flex_wrap }
+  }
   if property == "order" {
     return { ..target, order: source.order }
   }

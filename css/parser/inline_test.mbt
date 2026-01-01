@@ -158,3 +158,21 @@ test "grid-template-columns repeat" {
   inspect(style.grid_template_columns.length(), content="1")
   inspect(style.grid_template_columns[0], content="Repeat(Count(3), [Length(100)])")
 }
+
+test "flex-flow row wrap" {
+  let style = parse_inline_style("flex-flow: row wrap")
+  inspect(style.flex_direction, content="Row")
+  inspect(style.flex_wrap, content="Wrap")
+}
+
+test "flex-flow column nowrap" {
+  let style = parse_inline_style("flex-flow: column nowrap")
+  inspect(style.flex_direction, content="Column")
+  inspect(style.flex_wrap, content="NoWrap")
+}
+
+test "flex-flow wrap-reverse only" {
+  let style = parse_inline_style("flex-flow: wrap-reverse")
+  inspect(style.flex_direction, content="Row") // default
+  inspect(style.flex_wrap, content="WrapReverse")
+}

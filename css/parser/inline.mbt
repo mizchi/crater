@@ -331,6 +331,60 @@ fn parse_flex_shorthand(tokens : ArrayView[@token.Token]) -> (Double, Double, @t
 }
 
 ///|
+/// Parse flex-flow shorthand property
+/// flex-flow: <flex-direction> || <flex-wrap>
+fn parse_flex_flow_shorthand(
+  tokens : ArrayView[@token.Token]
+) -> (@style.FlexDirection, @style.FlexWrap)? {
+  let tokens = skip_whitespace(tokens)
+  if tokens.length() == 0 {
+    return None
+  }
+
+  let mut direction : @style.FlexDirection? = None
+  let mut wrap : @style.FlexWrap? = None
+
+  // Parse up to 2 tokens
+  let mut i = 0
+  while i < tokens.length() {
+    match tokens[i] {
+      @token.Token::Ident(s) => {
+        // Check if it's a flex-direction value
+        if s == "row" {
+          direction = Some(@style.FlexDirection::Row)
+        } else if s == "row-reverse" {
+          direction = Some(@style.FlexDirection::RowReverse)
+        } else if s == "column" {
+          direction = Some(@style.FlexDirection::Column)
+        } else if s == "column-reverse" {
+          direction = Some(@style.FlexDirection::ColumnReverse)
+        // Check if it's a flex-wrap value
+        } else if s == "nowrap" {
+          wrap = Some(@style.FlexWrap::NoWrap)
+        } else if s == "wrap" {
+          wrap = Some(@style.FlexWrap::Wrap)
+        } else if s == "wrap-reverse" {
+          wrap = Some(@style.FlexWrap::WrapReverse)
+        }
+      }
+      @token.Token::Whitespace => ()
+      _ => ()
+    }
+    i += 1
+  }
+
+  // If we found at least one value, return with defaults for the other
+  if direction is Some(_) || wrap is Some(_) {
+    Some((
+      direction.unwrap_or(@style.FlexDirection::Row),
+      wrap.unwrap_or(@style.FlexWrap::NoWrap),
+    ))
+  } else {
+    None
+  }
+}
+
+///|
 /// Parse aspect-ratio property (e.g., "16 / 9" or "1.5")
 fn parse_aspect_ratio(tokens : ArrayView[@token.Token]) -> Double? {
   if tokens.length() == 0 {
@@ -931,6 +985,14 @@ fn apply_property(
     match parse_flex_shorthand(value_tokens) {
       Some((grow, shrink, basis)) =>
         return { ..style, flex_grow: grow, flex_shrink: shrink, flex_basis: basis }
+      None => ()
+    }
+  }
+  // flex-flow shorthand
+  if property == "flex-flow" {
+    match parse_flex_flow_shorthand(value_tokens) {
+      Some((direction, wrap)) =>
+        return { ..style, flex_direction: direction, flex_wrap: wrap }
       None => ()
     }
   }

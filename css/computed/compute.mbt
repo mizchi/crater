@@ -475,6 +475,34 @@ fn apply_property(
         }
       }
     }
+    // flex-flow shorthand: <flex-direction> || <flex-wrap>
+    "flex-flow" => {
+      let parts : Array[StringView] = value
+        .trim()
+        .split(" ")
+        .filter(fn(s) { not(s.is_empty()) })
+        .collect()
+      for part in parts {
+        let p = part.to_string()
+        // Check flex-direction values
+        if p == "row" {
+          builder.flex_direction = @style.FlexDirection::Row
+        } else if p == "row-reverse" {
+          builder.flex_direction = @style.FlexDirection::RowReverse
+        } else if p == "column" {
+          builder.flex_direction = @style.FlexDirection::Column
+        } else if p == "column-reverse" {
+          builder.flex_direction = @style.FlexDirection::ColumnReverse
+        // Check flex-wrap values
+        } else if p == "nowrap" {
+          builder.flex_wrap = @style.FlexWrap::NoWrap
+        } else if p == "wrap" {
+          builder.flex_wrap = @style.FlexWrap::Wrap
+        } else if p == "wrap-reverse" {
+          builder.flex_wrap = @style.FlexWrap::WrapReverse
+        }
+      }
+    }
     // Gap
     "gap" => {
       let dim = resolve_dimension(value, ctx)
