@@ -107,9 +107,12 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
   const page = await browser.newPage();
   await page.setViewport(VIEWPORT);
 
+  // Set timeout for page operations
+  page.setDefaultTimeout(5000);
+
   // Load HTML file with CSS inlining and reset
   const htmlContent = prepareHtmlContent(htmlPath);
-  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+  await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 5000 });
 
   // Extract layout from all elements
   const layout = await page.evaluate(() => {
@@ -512,11 +515,13 @@ async function main(): Promise<void> {
 
   console.log(`Running ${htmlFiles.length} test(s)...\n`);
 
-  // Launch browser
-  const browser = await puppeteer.launch({ headless: true });
+  // Browser restart interval to prevent connection issues
+  const BROWSER_RESTART_INTERVAL = 50;
+  let browser = await puppeteer.launch({ headless: true });
 
   let passed = 0;
   let failed = 0;
+  let testCount = 0;
 
   for (const htmlFile of htmlFiles) {
     if (!fs.existsSync(htmlFile)) {
@@ -525,7 +530,28 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const result = await runTest(browser, htmlFile);
+    // Restart browser periodically to prevent connection issues
+    if (testCount > 0 && testCount % BROWSER_RESTART_INTERVAL === 0) {
+      try {
+        await browser.close();
+      } catch (e) {
+        // Ignore close errors
+      }
+      browser = await puppeteer.launch({ headless: true });
+    }
+
+    // Retry on connection errors
+    let result = await runTest(browser, htmlFile);
+    if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
+      // Restart browser and retry once
+      try {
+        await browser.close();
+      } catch (e) {
+        // Ignore close errors
+      }
+      browser = await puppeteer.launch({ headless: true });
+      result = await runTest(browser, htmlFile);
+    }
     printResult(result);
 
     if (result.passed) {
@@ -533,9 +559,14 @@ async function main(): Promise<void> {
     } else {
       failed++;
     }
+    testCount++;
   }
 
-  await browser.close();
+  try {
+    await browser.close();
+  } catch (e) {
+    // Ignore close errors
+  }
 
   console.log('');
   console.log(`Summary: ${passed} passed, ${failed} failed`);
