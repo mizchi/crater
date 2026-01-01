@@ -1626,23 +1626,30 @@ fn compute_internal(
     max_cross = max(max_cross, constrained_cross + item.margin_cross)
   }
 
-  // Phase 3.5: Sync updated items back to flex_lines and recalculate cross sizes
-  // MoonBit creates new structs on update, so flex_lines[0].items may have stale data
-  // For single-line containers (NoWrap or Wrap with all items in one line), sync items back
-  if flex_lines.length() == 1 {
-    // Copy updated flex_items to flex_lines[0]
-    flex_lines[0] = { ..flex_lines[0], items: flex_items }
-  }
-
-  // Recalculate each line's cross_size based on final_cross
+  // Phase 3.5: Recalculate each line's cross_size based on updated final_cross from flex_items
+  // MoonBit creates new structs on update, so line.items has stale cross data
+  // We use flex_items for accurate cross_size calculation
+  // For single-line: sync items back (needed for Phase 5 stretch)
+  // For multi-line: only update cross_size, keep line.items for Phase 4 main positioning
+  let mut flex_item_idx = 0
   for line_idx = 0; line_idx < flex_lines.length(); line_idx = line_idx + 1 {
     let line = flex_lines[line_idx]
+    let line_item_count = line.items.length()
     let mut new_cross_size = 0.0
-    for i = 0; i < line.items.length(); i = i + 1 {
-      let item = line.items[i]
+    // Calculate cross size from updated flex_items
+    for j = 0; j < line_item_count; j = j + 1 {
+      let item = flex_items[flex_item_idx]
       new_cross_size = max(new_cross_size, item.final_cross + item.margin_cross)
+      flex_item_idx = flex_item_idx + 1
     }
-    flex_lines[line_idx] = { ..line, cross_size: new_cross_size }
+    // Update line with new cross_size
+    if flex_lines.length() == 1 {
+      // Single-line: sync items for Phase 5
+      flex_lines[0] = { items: flex_items, cross_size: new_cross_size }
+    } else {
+      // Multi-line: only update cross_size, preserve line.items
+      flex_lines[line_idx] = { ..line, cross_size: new_cross_size }
+    }
   }
 
   // Phase 4 & 5: Position items and build layouts
