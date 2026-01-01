@@ -580,13 +580,15 @@ fn compute_internal(
           match ctx.sizing_mode {
             @node.Definite => parent_width
             @node.MaxContent =>
-              // For MaxContent with children, compute intrinsic width
+              // For MaxContent, compute intrinsic width
               if node.children.length() > 0 {
                 // Use compute_intrinsic_main_size to get max-content width
                 // Note: compute_intrinsic_flex_main_size already includes padding/border
                 compute_intrinsic_main_size(node, true, ctx.available_height)
               } else {
-                parent_width - margin.horizontal_sum()
+                // Leaf node with no children: intrinsic size is padding + border
+                // (MeasureFunc case is handled by intrinsic_from_measure above)
+                padding.horizontal_sum() + border.horizontal_sum()
               }
           }
       }
@@ -605,15 +607,27 @@ fn compute_internal(
     }
     @types.Auto => ()
   }
+  // CSS spec: padding + border is always the absolute minimum
+  let padding_border_width = padding.horizontal_sum() + border.horizontal_sum()
   match style.min_width {
-    @types.Length(v) => if container_width < v { container_width = v }
-    @types.Percent(p) => {
-      let v = parent_width * p
-      if container_width < v {
-        container_width = v
+    @types.Length(v) => {
+      let effective_min = max(v, padding_border_width)
+      if container_width < effective_min {
+        container_width = effective_min
       }
     }
-    @types.Auto => ()
+    @types.Percent(p) => {
+      let v = parent_width * p
+      let effective_min = max(v, padding_border_width)
+      if container_width < effective_min {
+        container_width = effective_min
+      }
+    }
+    @types.Auto => {
+      if container_width < padding_border_width {
+        container_width = padding_border_width
+      }
+    }
   }
 
   // Content area
@@ -977,9 +991,13 @@ fn compute_internal(
         @types.Percent(p) => content_width * p
         @types.Auto => 1.0e10 // Effectively infinity
       }
+      // CSS spec: padding + border is always the absolute minimum
+      let child_padding = @types.resolve_rect(child_style.padding, content_width)
+      let child_border = @types.resolve_rect(child_style.border, content_width)
+      let padding_border_min = child_padding.horizontal_sum() + child_border.horizontal_sum()
       let min_w = match child_style.min_width {
-        @types.Length(v) => v
-        @types.Percent(p) => content_width * p
+        @types.Length(v) => max(v, padding_border_min) // Explicit min, but padding+border is absolute minimum
+        @types.Percent(p) => max(content_width * p, padding_border_min)
         @types.Auto => {
           // Auto min-width: use intrinsic content size for containers/MeasureFunc
           // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
@@ -997,9 +1015,11 @@ fn compute_internal(
               @types.Auto => 1.0e10 // No specified size, no clamp
             }
             // Clamp by min(specified_size, max_size) per CSS spec
-            min(content_min, min(specified_clamp, max_w))
+            // But padding+border is always the absolute minimum
+            max(padding_border_min, min(content_min, min(specified_clamp, max_w)))
           } else {
-            0.0
+            // No children or MeasureFunc: minimum is padding + border
+            padding_border_min
           }
         }
       }
@@ -1014,12 +1034,16 @@ fn compute_internal(
           }
         @types.Auto => 1.0e10
       }
+      // CSS spec: padding + border is always the absolute minimum
+      let child_padding = @types.resolve_rect(child_style.padding, content_width)
+      let child_border = @types.resolve_rect(child_style.border, content_width)
+      let padding_border_min = child_padding.vertical_sum() + child_border.vertical_sum()
       let min_h = match child_style.min_height {
-        @types.Length(v) => v
+        @types.Length(v) => max(v, padding_border_min) // Explicit min, but padding+border is absolute minimum
         @types.Percent(p) =>
           match content_height {
-            Some(ch) => ch * p
-            None => 0.0
+            Some(ch) => max(ch * p, padding_border_min)
+            None => padding_border_min
           }
         @types.Auto => {
           // Auto min-height: use intrinsic content size for containers/MeasureFunc
@@ -1042,9 +1066,11 @@ fn compute_internal(
               @types.Auto => 1.0e10 // No specified size, no clamp
             }
             // Clamp by min(specified_size, max_size) per CSS spec
-            min(content_min, min(specified_clamp, max_h))
+            // But padding+border is always the absolute minimum
+            max(padding_border_min, min(content_min, min(specified_clamp, max_h)))
           } else {
-            0.0
+            // No children or MeasureFunc: minimum is padding + border
+            padding_border_min
           }
         }
       }
@@ -1308,6 +1334,7 @@ fn compute_internal(
 
   // Apply min/max constraints on main axis
   // CSS spec: min takes precedence over max, so apply max first, then min
+  // For min-width/min-height: auto, use the automatic minimum size (item.min_main)
   for i = 0; i < flex_items.length(); i = i + 1 {
     let item = flex_items[i]
     let child_style = children[item.index].style
@@ -1324,15 +1351,10 @@ fn compute_internal(
         }
         @types.Auto => ()
       }
-      match child_style.min_width {
-        @types.Length(v) => if final_main < v { final_main = v }
-        @types.Percent(p) => {
-          let v = content_width * p
-          if final_main < v {
-            final_main = v
-          }
-        }
-        @types.Auto => ()
+      // CSS spec: item.min_main already includes padding+border as absolute minimum
+      // So always use item.min_main which is max(explicit_min, padding_border_min)
+      if final_main < item.min_main {
+        final_main = item.min_main
       }
     } else {
       match child_style.max_height {
@@ -1349,19 +1371,10 @@ fn compute_internal(
           }
         @types.Auto => ()
       }
-      match child_style.min_height {
-        @types.Length(v) => if final_main < v { final_main = v }
-        @types.Percent(p) =>
-          match content_height {
-            Some(ch) => {
-              let v = ch * p
-              if final_main < v {
-                final_main = v
-              }
-            }
-            None => ()
-          }
-        @types.Auto => ()
+      // CSS spec: item.min_main already includes padding+border as absolute minimum
+      // So always use item.min_main which is max(explicit_min, padding_border_min)
+      if final_main < item.min_main {
+        final_main = item.min_main
       }
     }
 
@@ -1447,20 +1460,40 @@ fn compute_internal(
           }
         _ => ()
       }
+      // CSS spec: padding + border is always the absolute minimum
+      let child_padding = @types.resolve_rect(child_style.padding, content_width)
+      let child_border = @types.resolve_rect(child_style.border, content_width)
+      let padding_border_min = child_padding.vertical_sum() +
+        child_border.vertical_sum()
       match child_style.min_height {
-        @types.Length(v) => if constrained_cross < v { constrained_cross = v }
+        @types.Length(v) => {
+          // Use max of explicit min and padding+border
+          let effective_min = max(v, padding_border_min)
+          if constrained_cross < effective_min {
+            constrained_cross = effective_min
+          }
+        }
         @types.Percent(p) =>
           match cross_size {
             Some(cs) => {
               let container_cross = cs + padding.vertical_sum() + border.vertical_sum()
               let v = container_cross * p
-              if constrained_cross < v {
-                constrained_cross = v
+              let effective_min = max(v, padding_border_min)
+              if constrained_cross < effective_min {
+                constrained_cross = effective_min
               }
             }
-            None => ()
+            None => {
+              if constrained_cross < padding_border_min {
+                constrained_cross = padding_border_min
+              }
+            }
           }
-        _ => ()
+        @types.Auto => {
+          if constrained_cross < padding_border_min {
+            constrained_cross = padding_border_min
+          }
+        }
       }
     } else {
       match child_style.max_width {
@@ -1475,15 +1508,31 @@ fn compute_internal(
         }
         _ => ()
       }
+      // CSS spec: padding + border is always the absolute minimum
+      let child_padding = @types.resolve_rect(child_style.padding, content_width)
+      let child_border = @types.resolve_rect(child_style.border, content_width)
+      let padding_border_min = child_padding.horizontal_sum() +
+        child_border.horizontal_sum()
       match child_style.min_width {
-        @types.Length(v) => if constrained_cross < v { constrained_cross = v }
-        @types.Percent(p) => {
-          let v = container_width * p
-          if constrained_cross < v {
-            constrained_cross = v
+        @types.Length(v) => {
+          // Use max of explicit min and padding+border
+          let effective_min = max(v, padding_border_min)
+          if constrained_cross < effective_min {
+            constrained_cross = effective_min
           }
         }
-        _ => ()
+        @types.Percent(p) => {
+          let v = container_width * p
+          let effective_min = max(v, padding_border_min)
+          if constrained_cross < effective_min {
+            constrained_cross = effective_min
+          }
+        }
+        @types.Auto => {
+          if constrained_cross < padding_border_min {
+            constrained_cross = padding_border_min
+          }
+        }
       }
     }
 
@@ -1780,22 +1829,51 @@ fn compute_internal(
             let child_style = child.style
             let mut constrained = stretched
             // CSS spec: min takes precedence over max, so apply max first, then min
+            // CSS spec: padding + border is always the absolute minimum
+            let child_padding = @types.resolve_rect(child_style.padding, 0.0)
+            let child_border = @types.resolve_rect(child_style.border, 0.0)
             if is_row {
+              let padding_border_min = child_padding.vertical_sum() +
+                child_border.vertical_sum()
               match child_style.max_height {
                 @types.Length(v) => if constrained > v { constrained = v }
                 _ => ()
               }
               match child_style.min_height {
-                @types.Length(v) => if constrained < v { constrained = v }
+                @types.Length(v) => {
+                  // Use max of explicit min and padding+border
+                  let effective_min = max(v, padding_border_min)
+                  if constrained < effective_min {
+                    constrained = effective_min
+                  }
+                }
+                @types.Auto => {
+                  if constrained < padding_border_min {
+                    constrained = padding_border_min
+                  }
+                }
                 _ => ()
               }
             } else {
+              let padding_border_min = child_padding.horizontal_sum() +
+                child_border.horizontal_sum()
               match child_style.max_width {
                 @types.Length(v) => if constrained > v { constrained = v }
                 _ => ()
               }
               match child_style.min_width {
-                @types.Length(v) => if constrained < v { constrained = v }
+                @types.Length(v) => {
+                  // Use max of explicit min and padding+border
+                  let effective_min = max(v, padding_border_min)
+                  if constrained < effective_min {
+                    constrained = effective_min
+                  }
+                }
+                @types.Auto => {
+                  if constrained < padding_border_min {
+                    constrained = padding_border_min
+                  }
+                }
                 _ => ()
               }
             }
@@ -2067,15 +2145,27 @@ fn compute_internal(
     }
     @types.Auto => ()
   }
+  // CSS spec: padding + border is always the absolute minimum
+  let padding_border_height = padding.vertical_sum() + border.vertical_sum()
   match style.min_height {
-    @types.Length(v) => if final_height < v { final_height = v }
-    @types.Percent(p) => {
-      let v = parent_height * p
-      if final_height < v {
-        final_height = v
+    @types.Length(v) => {
+      let effective_min = max(v, padding_border_height)
+      if final_height < effective_min {
+        final_height = effective_min
       }
     }
-    @types.Auto => ()
+    @types.Percent(p) => {
+      let v = parent_height * p
+      let effective_min = max(v, padding_border_height)
+      if final_height < effective_min {
+        final_height = effective_min
+      }
+    }
+    @types.Auto => {
+      if final_height < padding_border_height {
+        final_height = padding_border_height
+      }
+    }
   }
 
   // Process absolutely positioned children

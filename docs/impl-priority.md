@@ -7,9 +7,9 @@
 | Module | Passed | Failed | Total | Percentage | Note |
 |--------|--------|--------|-------|------------|------|
 | Block  | 204    | 19     | 223   | 91.5%      | |
-| Flex   | 508    | 91     | 599   | 84.8%      | +5 from max_height fixes |
+| Flex   | 522    | 77     | 599   | 87.1%      | +14 from padding_border fixes |
 | Grid   | 251    | 78     | 329   | 76.3%      | |
-| **Total** | **975** | **188** | **1163** | **83.8%** | Native target stable |
+| **Total** | **989** | **174** | **1163** | **85.0%** | Native target stable |
 
 ## 失敗テスト分析
 
@@ -109,6 +109,7 @@
 | wrap stretch Phase 2 | 204/223 (91.5%) | 498/599 (83.1%) | 251/329 (76.3%) | 965/1163 (83.0%) |
 | align_items nowrap fix | 204/223 (91.5%) | 503/599 (84.0%) | 251/329 (76.3%) | 970/1163 (83.4%) |
 | max_height fix | 204/223 (91.5%) | 508/599 (84.8%) | 251/329 (76.3%) | 975/1163 (83.8%) |
+| padding_border fix | 204/223 (91.5%) | 522/599 (87.1%) | 251/329 (76.3%) | 989/1163 (85.0%) |
 
 ### これまでの主な修正
 
@@ -234,6 +235,15 @@
   - 親で適用済みの percentage 制約を再適用しないよう Length のみ処理
 - wrap container で align_items 計算時に line_cross_size を使用
   - wrap では常に line_cross_size を使用（nowrap のみ container cross_size を使用）
+
+**padding_border fix (+14 tests)**
+- CSS spec: padding + border は常に絶対最小値
+  - min-width/min-height: Length(0) でも padding+border が優先
+  - min-width/min-height: Auto でも padding+border が最小値
+- Phase 1 (min_main 計算): explicit min と padding+border の max を使用
+- Phase 2.5 (main axis min/max 適用): item.min_main を常に使用
+- Phase 3 (cross axis): min_height/min_width と padding+border の max を使用
+- Phase 5 (stretch sizing): min/max 制約時に padding+border を考慮
 
 ## 技術的な注意点
 
