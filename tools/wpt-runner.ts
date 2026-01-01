@@ -263,6 +263,11 @@ function getCraterLayout(htmlPath: string): LayoutNode {
       );
       let layout = JSON.parse(result.trim()) as LayoutNode;
 
+      // Handle nested body structure from Crater
+      if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
+        layout = layout.children[0];
+      }
+
       // Find #test or #container element if it exists (WPT tests)
       const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
                           findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
@@ -279,8 +284,8 @@ function getCraterLayout(htmlPath: string): LayoutNode {
         return normalizeRoot(meaningfulChildren[0]);
       }
 
-      // Try to find a container div (first one)
-      const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div'));
+      // Try to find a container div (first one, excluding #log)
+      const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div') && c.id !== 'div#log');
       if (divChildren.length >= 1) {
         return normalizeRoot(divChildren[0]);
       }
