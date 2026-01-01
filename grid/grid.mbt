@@ -2748,16 +2748,65 @@ fn compute_child_layout(
   )
 
   // Padding + border creates minimum size
-  let min_width = padding_left + padding_right + border_left + border_right
-  let min_height = padding_top + padding_bottom + border_top + border_bottom
-  if width < min_width {
-    width = min_width
+  let min_box_width = padding_left + padding_right + border_left + border_right
+  let min_box_height = padding_top + padding_bottom + border_top + border_bottom
+  if width < min_box_width {
+    width = min_box_width
   }
-  if height < min_height {
-    height = min_height
+  if height < min_box_height {
+    height = min_box_height
   }
 
-  // Apply aspect_ratio if one dimension is auto
+  // Apply min/max constraints before aspect_ratio
+  // Resolve min/max from style
+  let min_width_constraint = resolve_dimension(
+    child.style.min_width,
+    available_width,
+    0.0,
+  )
+  let max_width_constraint = resolve_dimension(
+    child.style.max_width,
+    available_width,
+    1.0e10,
+  )
+  let min_height_constraint = resolve_dimension(
+    child.style.min_height,
+    available_height,
+    0.0,
+  )
+  let max_height_constraint = resolve_dimension(
+    child.style.max_height,
+    available_height,
+    1.0e10,
+  )
+
+  // Track if dimension was constrained
+  let width_before_constraint = width
+  let height_before_constraint = height
+
+  // Apply constraints
+  if width < min_width_constraint {
+    width = min_width_constraint
+  }
+  if width > max_width_constraint {
+    width = max_width_constraint
+  }
+  if height < min_height_constraint {
+    height = min_height_constraint
+  }
+  if height > max_height_constraint {
+    height = max_height_constraint
+  }
+
+  // Check if dimension was constrained by min/max
+  let width_was_constrained = width != width_before_constraint
+  let height_was_constrained = height != height_before_constraint
+
+  // Apply aspect_ratio
+  // CSS spec: aspect_ratio applies when one dimension is "definite" and other is "auto"
+  // A dimension is "effectively definite" if:
+  //   - It has an explicit value (Length/Percent), OR
+  //   - It was constrained by min/max
   match child.style.aspect_ratio {
     Some(ratio) => {
       let width_is_auto = match child.style.width {
@@ -2768,12 +2817,29 @@ fn compute_child_layout(
         @types.Auto => true
         _ => false
       }
-      if width_is_auto && not(height_is_auto) {
-        // height is explicit, compute width from aspect_ratio
+      let width_is_definite = not(width_is_auto) || width_was_constrained
+      let height_is_definite = not(height_is_auto) || height_was_constrained
+
+      if not(width_is_definite) && height_is_definite {
+        // height is definite, compute width from aspect_ratio
         width = height * ratio
-      } else if height_is_auto && not(width_is_auto) {
-        // width is explicit, compute height from aspect_ratio
+        // Re-apply width constraints
+        if width < min_width_constraint {
+          width = min_width_constraint
+        }
+        if width > max_width_constraint {
+          width = max_width_constraint
+        }
+      } else if not(height_is_definite) && width_is_definite {
+        // width is definite, compute height from aspect_ratio
         height = width / ratio
+        // Re-apply height constraints
+        if height < min_height_constraint {
+          height = min_height_constraint
+        }
+        if height > max_height_constraint {
+          height = max_height_constraint
+        }
       }
     }
     None => ()
@@ -2945,12 +3011,26 @@ fn apply_alignment(
     _ => false
   }
 
+  // Check if min/max constraints are present (which would override stretch)
+  let has_max_width = match child_style.max_width {
+    @types.Auto => false
+    _ => true
+  }
+  let has_max_height = match child_style.max_height {
+    @types.Auto => false
+    _ => true
+  }
+
   // Calculate item size - don't clamp to cell size, allow overflow
   // If aspect_ratio derived a dimension, don't stretch that dimension
+  // Also respect max constraints - if max is set and smaller than available, use computed size
   let mut item_width = match child_style.width {
     @types.Auto =>
       if has_aspect_ratio && not(height_is_auto) {
         // Width derived from aspect_ratio, use computed width
+        child_layout.width
+      } else if has_aspect_ratio && has_max_width && child_layout.width < available_width {
+        // aspect_ratio with max_width constraint, width was derived from height
         child_layout.width
       } else if justify == @style.Alignment::Stretch {
         available_width
@@ -2963,6 +3043,12 @@ fn apply_alignment(
     @types.Auto =>
       if has_aspect_ratio && not(width_is_auto) {
         // Height derived from aspect_ratio, use computed height
+        child_layout.height
+      } else if has_aspect_ratio && has_max_height && child_layout.height < available_height {
+        // aspect_ratio with max_height constraint, height was derived from width
+        child_layout.height
+      } else if has_aspect_ratio && has_max_width && child_layout.height < available_height {
+        // aspect_ratio with max_width: width was constrained, height derived
         child_layout.height
       } else if align == @style.Alignment::Stretch {
         available_height
