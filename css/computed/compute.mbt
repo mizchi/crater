@@ -609,7 +609,7 @@ fn apply_property(
     // Font properties
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
-      builder.line_height = parse_line_height(value, ctx, builder.font_size)
+      builder.line_height = parse_line_height(value, builder.font_size)
     _ => ()
   }
 }
@@ -868,11 +868,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
 
 ///|
 /// Parse line-height value and return computed value in pixels
-fn parse_line_height(
-  value : String,
-  ctx : ComputeContext,
-  font_size : Double,
-) -> Double {
+fn parse_line_height(value : String, font_size : Double) -> Double {
   let v = value.trim()
 
   // Handle unitless number (multiplier of font-size)
@@ -888,7 +884,6 @@ fn parse_line_height(
     }
     pure
   }
-
   if is_pure_number && not(v.is_empty()) {
     let n = @strconv.parse_double(v.to_string()) catch { _ => 1.0 }
     return n * font_size

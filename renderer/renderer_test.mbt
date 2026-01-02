@@ -167,3 +167,134 @@ test "debug stylesheet cascading" {
   inspect(style.display, content="Flex")
   inspect(style.flex_direction, content="Row")
 }
+
+///|
+test "font-size cascading from stylesheet" {
+  let css = "#div1 { font-size: 20px; width: 30px; }"
+  let stylesheet = @parser.parse_stylesheet(css)
+
+  // Create element that matches #div1
+  let elem = @selector.Element::with_id("div", "div1")
+
+  // Match stylesheet
+  let matches = stylesheet.match_element(elem)
+  inspect(matches.length() > 0, content="true")
+  if matches.length() > 0 {
+    let m = matches[0]
+    // Check what declarations were matched
+    let props : Array[String] = []
+    for decl in m.declarations {
+      match decl.value {
+        @cascade.Value(v) => props.push(decl.property + "=" + v)
+        _ => ()
+      }
+    }
+    inspect(
+      props,
+      content=(
+        #|["font-size=20px", "width=30px"]
+      ),
+    )
+  }
+
+  // Check cascaded values
+  let cascaded = @cascade.cascade_element(elem, [stylesheet], [])
+  inspect(
+    cascaded.get_value("font-size"),
+    content=(
+      #|Some("20px")
+    ),
+  )
+
+  // Test apply_css_property
+  let mut style = @style.Style::default()
+  for prop in cascaded.properties() {
+    match cascaded.get_value(prop) {
+      Some(value) =>
+        style = @renderer.apply_css_property_debug(style, prop, value)
+      None => ()
+    }
+  }
+  // Check font_size was applied
+  inspect(style.font_size, content="20")
+}
+
+///|
+test "font-size inheritance in full render" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>#div1 { font-size: 20px; width: 30px; }</style>
+    #|</head>
+    #|<body>
+    #|<div id="div1"><a>aaa</a></div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+
+  // Check div#div1 has font_size = 20
+  let div1 = node.children[0]
+  inspect(div1.id, content="div#div1")
+  inspect(div1.style.font_size, content="20")
+
+  // Check <a> inherited font_size = 20
+  let anchor = div1.children[0]
+  inspect(anchor.id, content="a")
+  inspect(anchor.style.font_size, content="20")
+
+  // Check text node uses parent's font_size
+  let text = anchor.children[0]
+  inspect(text.id, content="#text")
+  inspect(text.style.font_size, content="20")
+}
+
+///|
+test "font-size with nested selectors like WPT" {
+  // Simulate the WPT align-self-006.html structure
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  #test { display: flex; }
+    #|  #test div { align-self: baseline; }
+    #|  #div1 { height: 90px; font-size: 20px; width: 30px; }
+    #|  #div2 { height: 50px; font-size: 10px; width: 30px; }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|  <div id="test">
+    #|    <div id="div1"><a href="#">aaa</a></div>
+    #|    <div id="div2"><a href="#">aaaaa</a></div>
+    #|  </div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+
+  // Find #test
+  let test_div = node.children[0]
+  inspect(test_div.id, content="div#test")
+
+  // Check div#div1 has font_size = 20, line_height = 20
+  let div1 = test_div.children[0]
+  inspect(div1.id, content="div#div1")
+  inspect(div1.style.font_size, content="20")
+  inspect(div1.style.line_height, content="20")
+
+  // Check div#div2 has font_size = 10, line_height = 10
+  let div2 = test_div.children[1]
+  inspect(div2.id, content="div#div2")
+  inspect(div2.style.font_size, content="10")
+  inspect(div2.style.line_height, content="10")
+
+  // Check <a> inside div1 inherits font_size = 20, line_height = 20
+  let anchor1 = div1.children[0]
+  inspect(anchor1.id, content="a")
+  inspect(anchor1.style.font_size, content="20")
+  inspect(anchor1.style.line_height, content="20")
+
+  // Check text node inside <a> has font_size = 20, line_height = 20
+  let text1 = anchor1.children[0]
+  inspect(text1.id, content="#text")
+  inspect(text1.style.font_size, content="20")
+  inspect(text1.style.line_height, content="20")
+}

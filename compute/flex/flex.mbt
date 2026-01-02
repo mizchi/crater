@@ -544,14 +544,22 @@ fn compute_intrinsic_block_main_size(
 
 ///|
 /// Compute the baseline of a node for baseline alignment
-/// For leaf nodes: baseline = height (bottom of box)
+/// For text nodes: baseline = font_size * 0.8 (typical ascent ratio)
+/// For other leaf nodes: baseline = height (bottom of box)
 /// For Column flex containers: baseline = first child's baseline
-/// For Row flex containers: baseline = max baseline of first-row children
+/// For Row flex containers: baseline = first child's baseline
 fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
   let children = node.children
 
-  // Leaf nodes: baseline is the bottom of the box
+  // Leaf nodes: use font-based baseline for text, height for others
   if children.length() == 0 {
+    // For text nodes, baseline is approximately font_size * 0.8 (ascent ratio)
+    // For other leaf nodes (like images), baseline is the bottom of the box
+    let font_size = node.style.font_size
+    if font_size > 0.0 && node.id.has_prefix("#text") {
+      // Text baseline is at the ascent position (about 80% of font-size from top)
+      return font_size * 0.8
+    }
     return node_height
   }
   let style = node.style

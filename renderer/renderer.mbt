@@ -4,11 +4,9 @@
 
 ///|
 /// Text measurement constants (monospace font simulation)
-/// These approximate a typical monospace font at 16px
-let char_width : Double = 9.6 // Average character width at 16px (single-width)
-
-///|
-let line_height : Double = 20.0 // Line height at 16px
+/// Character width ratio for monospace fonts (width / font-size)
+/// Typical monospace fonts have width:height ratio around 0.5-0.55
+let char_width_ratio : Double = 0.5 // Conservative ratio for text fitting
 
 ///|
 let chars_per_line : Int = 80 // Default wrap width in characters (single-width)
@@ -67,13 +65,20 @@ pub fn RenderContext::default() -> RenderContext {
 }
 
 ///|
-/// Create a MeasureFunc for text content
+/// Create a MeasureFunc for text content with font metrics
 /// Calculates text dimensions based on monospace character width
 /// Accounts for East Asian Wide characters (CJK) which take 2 columns
-fn create_text_measure(text : String) -> @node.MeasureFunc {
+fn create_text_measure(
+  text : String,
+  font_size : Double,
+  text_line_height : Double,
+) -> @node.MeasureFunc {
   // Count display width (accounting for wide characters like CJK)
   let trimmed = text.trim()
   let display_width = string_display_width(trimmed)
+
+  // Calculate character width based on font size
+  let char_width = font_size * char_width_ratio
 
   // Calculate intrinsic width (single line, no wrapping)
   let text_max_width = display_width.to_double() * char_width
@@ -112,11 +117,11 @@ fn create_text_measure(text : String) -> @node.MeasureFunc {
       } else {
         1
       }
-      let height = lines.to_double() * line_height
+      let height = lines.to_double() * text_line_height
       {
         min_width: text_min_width,
         max_width: text_max_width,
-        min_height: line_height,
+        min_height: text_line_height,
         max_height: height,
       }
     },
@@ -124,17 +129,26 @@ fn create_text_measure(text : String) -> @node.MeasureFunc {
 }
 
 ///|
-/// Create a node for text content
-fn create_text_node(text : String) -> @node.Node {
+/// Create a node for text content with inherited font properties
+fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   let trimmed = text.trim()
   if trimmed.is_empty() {
     // Return a zero-size node for whitespace-only text
     @node.Node::leaf("#text", @style.Style::default())
   } else {
+    // Use parent's font_size and line_height for text measurement
+    let font_size = parent_style.font_size
+    let text_line_height = parent_style.line_height
+    // Create text style with inherited font properties for baseline calculation
+    let text_style : @style.Style = {
+      ..@style.Style::default(),
+      font_size,
+      line_height: text_line_height,
+    }
     @node.Node::with_measure(
       "#text",
-      @style.Style::default(),
-      create_text_measure(text),
+      text_style,
+      create_text_measure(text, font_size, text_line_height),
     )
   }
 }
@@ -516,6 +530,22 @@ pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
 }
 
 ///|
+/// Render HTML to Node tree (for testing/debugging)
+pub fn render_to_node(html : String, ctx : RenderContext) -> @node.Node {
+  let doc = @html.parse_document(html)
+  let stylesheets : Array[@cascade.Stylesheet] = []
+  for css in doc.stylesheets {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  let render_root = match find_body(doc.root) {
+    Some(body) => body
+    None => doc.root
+  }
+  element_to_node_with_styles(render_root, None, ctx, stylesheets)
+}
+
+///|
 /// Convert HTML Element to Node tree with stylesheet styles applied
 fn element_to_node_with_styles(
   elem : @html.Element,
@@ -533,6 +563,7 @@ fn element_to_node_with_styles(
     stylesheets,
     parent is None,
     ctx,
+    None, // Root element has no parent style
   )
 
   // Convert children
@@ -548,12 +579,16 @@ fn element_to_node_with_styles(
           elem.children.length(),
         )
         let child_node = element_to_node_with_styles_internal(
-          child_elem, child_selector, ctx, stylesheets,
+          child_elem,
+          child_selector,
+          ctx,
+          stylesheets,
+          Some(style),
         )
         children.push(child_node)
       }
       @html.Node::Text(text) => {
-        let text_node = create_text_node(text)
+        let text_node = create_text_node(text, style)
         children.push(text_node)
       }
     }
@@ -575,6 +610,7 @@ fn element_to_node_with_styles_internal(
   selector_elem : @selector.Element,
   ctx : RenderContext,
   stylesheets : Array[@cascade.Stylesheet],
+  parent_style : @style.Style?,
 ) -> @node.Node {
   // Get style from stylesheet matching + inline style
   let style = compute_element_style(
@@ -583,6 +619,7 @@ fn element_to_node_with_styles_internal(
     stylesheets,
     false,
     ctx,
+    parent_style,
   )
 
   // Convert children
@@ -597,12 +634,16 @@ fn element_to_node_with_styles_internal(
           elem.children.length(),
         )
         let child_node = element_to_node_with_styles_internal(
-          child_elem, child_selector, ctx, stylesheets,
+          child_elem,
+          child_selector,
+          ctx,
+          stylesheets,
+          Some(style),
         )
         children.push(child_node)
       }
       @html.Node::Text(text) => {
-        let text_node = create_text_node(text)
+        let text_node = create_text_node(text, style)
         children.push(text_node)
       }
     }
@@ -821,12 +862,33 @@ fn compute_element_style(
   stylesheets : Array[@cascade.Stylesheet],
   is_root : Bool,
   ctx : RenderContext,
+  parent_style : @style.Style?,
 ) -> @style.Style {
   // Match stylesheets and get cascaded values
   let cascaded = @cascade.cascade_element(selector_elem, stylesheets, [])
 
   // Start with user-agent default style based on tag
   let mut style = get_ua_default_style(selector_elem.tag_name)
+
+  // Inherit font properties from parent
+  // CSS line-height inheritance: inherit the ratio, not the absolute value
+  match parent_style {
+    Some(ps) => {
+      // Calculate line-height ratio from parent
+      let lh_ratio = if ps.font_size > 0.0 {
+        ps.line_height / ps.font_size
+      } else {
+        1.2 // Default ratio
+      }
+      // Apply inherited font-size and computed line-height
+      style = {
+        ..style,
+        font_size: ps.font_size,
+        line_height: ps.font_size * lh_ratio,
+      }
+    }
+    None => ()
+  }
 
   // Apply cascaded values with correct viewport
   for prop in cascaded.properties() {
@@ -1079,6 +1141,22 @@ fn merge_style_property(
   }
   if property == "grid-auto-flow" {
     return { ..target, grid_auto_flow: source.grid_auto_flow }
+  }
+  // Font properties (for baseline calculation)
+  if property == "font-size" {
+    // When font-size changes, update line-height proportionally
+    // to maintain the same ratio (typically "normal" = 1.0-1.2)
+    let old_fs = target.font_size
+    let new_fs = source.font_size
+    let lh_ratio = if old_fs > 0.0 {
+      target.line_height / old_fs
+    } else {
+      1.0 // Default to 1.0 ratio for "normal"
+    }
+    return { ..target, font_size: new_fs, line_height: new_fs * lh_ratio }
+  }
+  if property == "line-height" {
+    return { ..target, line_height: source.line_height }
   }
   target
 }

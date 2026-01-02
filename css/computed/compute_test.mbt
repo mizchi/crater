@@ -195,3 +195,10 @@ test "compute_inline grid-template" {
   inspect(style.grid_template_columns[1], content="Fr(1)")
   inspect(style.grid_template_columns[2], content="Length(100)")
 }
+
+///|
+test "font-size parsing" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("font-size: 20px", ctx)
+  inspect(style.font_size, content="20")
+}
