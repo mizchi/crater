@@ -121,6 +121,67 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
 }
 
 ///|
+/// Extract border width from shorthand value
+/// Handles formats like "3px", "solid 3px", "1px solid red", "none", etc.
+pub fn extract_border_width(value : String) -> @types.Dimension {
+  let v = value.trim()
+
+  // Handle "none" case
+  if v == "none" || v == "0" {
+    return @types.Dimension::Length(0.0)
+  }
+
+  // Split by whitespace and look for a dimension value
+  let parts = split_whitespace(v.to_string())
+  for part in parts {
+    // Check if this part looks like a dimension (ends with px or is a number)
+    if part.has_suffix("px") {
+      match part.strip_suffix("px") {
+        Some(num_str) => {
+          let n = @strconv.parse_double(num_str.to_string()) catch {
+            _ => continue
+          }
+          return @types.Dimension::Length(n)
+        }
+        None => continue
+      }
+    }
+    // Try plain number
+    let first_char = part[0].to_int()
+    if first_char >= '0'.to_int() && first_char <= '9'.to_int() {
+      let n = @strconv.parse_double(part) catch {
+        _ => continue
+      }
+      return @types.Dimension::Length(n)
+    }
+  }
+
+  // Default: no border
+  @types.Dimension::Length(0.0)
+}
+
+///|
+/// Split string by whitespace into parts
+fn split_whitespace(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let current = StringBuilder::new()
+  for c in s {
+    if c == ' ' || c == '\t' || c == '\n' {
+      if current.to_string().length() > 0 {
+        result.push(current.to_string())
+        current.reset()
+      }
+    } else {
+      current.write_char(c)
+    }
+  }
+  if current.to_string().length() > 0 {
+    result.push(current.to_string())
+  }
+  result
+}
+
+///|
 /// Parse display value
 pub fn parse_display(value : String) -> @style.Display {
   match value.trim().to_lower() {

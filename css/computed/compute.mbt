@@ -454,6 +454,27 @@ fn apply_property(
       builder.padding_bottom = dim
       builder.padding_left = dim
     }
+    "border-width" => {
+      // Shorthand: border-width (single value for all sides)
+      let dim = resolve_dimension(value, ctx)
+      builder.border_top = dim
+      builder.border_right = dim
+      builder.border_bottom = dim
+      builder.border_left = dim
+    }
+    "border" => {
+      // Shorthand: border: [width] [style] [color]
+      // Extract width value from the shorthand (e.g., "solid 3px", "1px solid red")
+      let width = extract_border_width(value)
+      builder.border_top = width
+      builder.border_right = width
+      builder.border_bottom = width
+      builder.border_left = width
+    }
+    "border-top" => builder.border_top = extract_border_width(value)
+    "border-right" => builder.border_right = extract_border_width(value)
+    "border-bottom" => builder.border_bottom = extract_border_width(value)
+    "border-left" => builder.border_left = extract_border_width(value)
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
     "border-bottom-width" =>

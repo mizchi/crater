@@ -1307,6 +1307,34 @@ fn merge_style_property(
       padding: { ..target.padding, right: source.padding.right },
     }
   }
+  // Border properties
+  if property == "border" {
+    return { ..target, border: source.border }
+  }
+  if property == "border-width" {
+    return { ..target, border: source.border }
+  }
+  if property == "border-top" || property == "border-top-width" {
+    return { ..target, border: { ..target.border, top: source.border.top } }
+  }
+  if property == "border-bottom" || property == "border-bottom-width" {
+    return {
+      ..target,
+      border: { ..target.border, bottom: source.border.bottom },
+    }
+  }
+  if property == "border-left" || property == "border-left-width" {
+    return {
+      ..target,
+      border: { ..target.border, left: source.border.left },
+    }
+  }
+  if property == "border-right" || property == "border-right-width" {
+    return {
+      ..target,
+      border: { ..target.border, right: source.border.right },
+    }
+  }
   // Flexbox alignment properties
   if property == "justify-content" {
     return { ..target, justify_content: source.justify_content }

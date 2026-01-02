@@ -64,6 +64,24 @@ test "parse_aspect_ratio" {
 }
 
 ///|
+test "extract_border_width" {
+  inspect(@computed.extract_border_width("3px"), content="Length(3)")
+  inspect(@computed.extract_border_width("solid 3px"), content="Length(3)")
+  inspect(@computed.extract_border_width("1px solid red"), content="Length(1)")
+  inspect(@computed.extract_border_width("none"), content="Length(0)")
+}
+
+///|
+test "compute_inline border shorthand" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("border: 3px solid red", ctx)
+  inspect(style.border.top, content="Length(3)")
+  inspect(style.border.right, content="Length(3)")
+  inspect(style.border.bottom, content="Length(3)")
+  inspect(style.border.left, content="Length(3)")
+}
+
+///|
 test "compute_inline basic" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("width: 100px; height: 200px", ctx)
