@@ -543,6 +543,34 @@ fn compute_intrinsic_block_main_size(
 }
 
 ///|
+/// Create a zero-sized layout for display: none elements.
+/// Recursively creates zero-sized layouts for all children.
+fn create_hidden_layout(node : @node.Node) -> @node.Layout {
+  let children : Array[@node.Layout] = []
+  for child in node.children {
+    children.push(create_hidden_layout(child))
+  }
+  let zero_rect : @types.Rect[Double] = {
+    top: 0.0,
+    right: 0.0,
+    bottom: 0.0,
+    left: 0.0,
+  }
+  {
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width: 0.0,
+    height: 0.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    children,
+    text: None,
+  }
+}
+
+///|
 /// Compute flex layout for a node and its children
 pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let warnings : Array[@node.LayoutWarning] = []
@@ -595,6 +623,11 @@ fn compute_internal(
   cache : IntrinsicCache,
 ) -> @node.Layout {
   let style = node.style
+
+  // Handle display: none - return zero-sized layout with zero-sized children
+  if style.display == @style.None {
+    return create_hidden_layout(node)
+  }
 
   // Check for unsupported features
   match style.float {
@@ -2733,6 +2766,21 @@ fn compute_internal(
       text: child.text,
     }
     indexed_layouts.push({ dom_index: i, layout: child_layout })
+  }
+
+  // Add display:none children that were skipped during flex item processing
+  // These children need to be in the final layout array with zero size
+  for i = 0; i < child_count; i = i + 1 {
+    let child = children[i]
+    let child_style = child.style
+    // Skip absolute children (already processed above)
+    if child_style.position == @style.Absolute {
+      continue
+    }
+    // Add zero-sized layout for display:none children
+    if child_style.display == @style.None {
+      indexed_layouts.push({ dom_index: i, layout: create_hidden_layout(child) })
+    }
   }
 
   // Sort indexed_layouts by DOM index to restore original child order

@@ -11,6 +11,8 @@ Pure MoonBit implementation of CSS layout calculation.
 
 ## Current Status
 
+**Overall: 1177/1342 tests passing (87.7%)**
+
 - [x] Basic geometry types (Size, Point, Rect, BoundingRect)
 - [x] Dimension (Length, Percent, Auto)
 - [x] Block layout with margin, padding, border
@@ -25,11 +27,13 @@ Pure MoonBit implementation of CSS layout calculation.
   - [x] align-self
   - [x] flex-grow / flex-shrink
   - [x] flex-basis
-  - [x] flex-wrap (wrap, nowrap)
+  - [x] flex-wrap (wrap, nowrap, wrap-reverse)
   - [x] align-content (stretch, start, end, center, space-between, space-around)
   - [x] gap (row-gap, column-gap)
   - [x] margin: auto
-  - [x] aspect-ratio
+  - [x] aspect-ratio (basic)
+  - [ ] display: none (partial)
+  - [ ] Intrinsic sizing with measure functions
 - [x] Grid layout
   - [x] grid-template-columns / grid-template-rows
   - [x] Track sizing: Length, Percent, Fr, Auto, MinContent, MaxContent
@@ -45,47 +49,62 @@ Pure MoonBit implementation of CSS layout calculation.
   - [x] grid-template-areas (named areas)
   - [x] Implicit track creation
   - [x] Negative line indices
-  - [x] aspect-ratio for grid items
+  - [x] aspect-ratio for grid items (basic)
   - [x] Nested Grid/Flex containers
   - [x] Extrinsic definite sizing for stretched items
   - [ ] Baseline alignment (partial)
   - [ ] Auto margins (partial)
   - [ ] Span items intrinsic sizing
   - [ ] Percent resolution in deeply nested grids
+  - [ ] fit-content with indefinite percentages
 
-## Grid Test Status
+## Test Status by Category
 
-**Current: 254/322 tests passing (78.9%)**
+### Block Layout
+- ~21 failing tests
+- Issues: baseline alignment, aspect-ratio with max constraints, margin collapsing edge cases
 
-### Remaining Issues (68 tests)
+### Flex Layout
+- ~79 failing tests
+- Issues: display:none, intrinsic sizing, absolute positioning, baseline multiline, percentage gaps
 
-1. **Baseline Alignment** (~5 tests)
-   - Baseline calculation with padding needs refinement
-   - Multiline baseline handling
+### Grid Layout
+- ~50 failing tests
+- Issues: absolute positioning, baseline, span items, nested percent resolution, fit-content
 
-2. **Auto Margins** (~2 tests)
-   - Margin distribution when both left/right are auto
-   - Interaction with stretch alignment
+### Mixed Layouts
+- ~15 failing tests
+- Issues: block-in-flex, block-in-grid, grid-in-flex, leaf content sizing
 
-3. **Span Items** (~20 tests)
-   - Intrinsic sizing for items spanning multiple tracks
-   - Min-content/max-content calculation for span items
+### Remaining Issues
 
-4. **Percent Items** (~10 tests)
-   - Percent resolution in nested grids with auto-sized parents
-   - Containing block width for percent padding
+1. **display: none** (~7 tests)
+   - Hidden elements should not affect layout
+   - Size should be 0, position should not affect siblings
 
-5. **Intrinsic Sizing** (~15 tests)
-   - Min-content/max-content for nested Grid/Flex containers
-   - Indefinite container sizing with content constraints
+2. **Baseline Alignment** (~10 tests)
+   - Baseline calculation with padding/margin
+   - Multiline baseline handling in flex and grid
 
-6. **Placement** (~5 tests)
-   - Out-of-order item placement
-   - Negative line indices with auto placement
+3. **Absolute Positioning** (~10 tests)
+   - Inset resolution with percentages
+   - Interaction with border/padding
 
-7. **Overflow/Constraints** (~5 tests)
-   - Overflow behavior
-   - Padding/border interaction with max-size
+4. **Intrinsic Sizing** (~20 tests)
+   - Min-content/max-content for nested containers
+   - Measure functions for leaf nodes
+
+5. **Span Items** (~15 tests)
+   - Grid items spanning multiple tracks
+   - Gap calculation for span items
+
+6. **Percent in Nested Layouts** (~15 tests)
+   - Percent resolution in nested grids/flex with auto-sized parents
+   - Cyclic percentage dependencies
+
+7. **Aspect Ratio** (~10 tests)
+   - Interaction with max-width/max-height constraints
+   - Fill mode with constraints
 
 ## Implementation Roadmap
 
@@ -222,11 +241,14 @@ Create tests from common UI patterns:
 
 | Feature | taffy | MDN/Spec | Real-world |
 |---------|-------|----------|------------|
-| Flex row | ✅ | - | - |
-| Flex column | ✅ | - | - |
+| Block layout | ✅ (~95%) | - | - |
+| Flex row | ✅ (~90%) | - | - |
+| Flex column | ✅ (~90%) | - | - |
 | Flex wrap | ✅ | - | - |
 | Gap | ✅ | - | - |
-| Alignment | ✅ | - | - |
-| Grid basic | ✅ (254/322) | - | - |
+| Alignment | ✅ (~85%) | - | - |
+| Grid basic | ✅ (~85%) | - | - |
 | Grid span | ⚠️ partial | - | - |
 | Grid baseline | ⚠️ partial | - | - |
+| display: none | ❌ | - | - |
+| Intrinsic sizing | ⚠️ partial | - | - |

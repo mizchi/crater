@@ -775,9 +775,13 @@ test "flex_display_none" {
   let layout = compute(root, ctx)
 
   // Child1 should expand to fill all space since child2 is display:none
-  inspect(layout.children.length(), content="1")
+  // Note: display:none children are still included in layout with zero size
+  inspect(layout.children.length(), content="2")
   inspect(layout.children[0].width, content="100")
   inspect(layout.children[0].height, content="100")
+  // display:none child has zero size
+  inspect(layout.children[1].width, content="0")
+  inspect(layout.children[1].height, content="0")
 }
 
 ///|
