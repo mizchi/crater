@@ -58,6 +58,7 @@ fn dispatch_compute(
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
         children: [],
+        text: node.text,
       }
   }
 }
@@ -91,6 +92,7 @@ fn dispatch_compute_with_warnings(
           padding: @types.Rect::zero(),
           border: @types.Rect::zero(),
           children: [],
+          text: node.text,
         },
         warnings: [],
       }

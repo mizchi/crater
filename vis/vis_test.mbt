@@ -10,6 +10,7 @@ test "to_svg basic" {
     padding: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     border: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     children: [],
+    text: None,
   }
   let svg = to_svg(layout, 100.0, 50.0)
   inspect(svg.contains("<svg"), content="true")
@@ -29,6 +30,7 @@ test "to_svg nested" {
     padding: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     border: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     children: [],
+    text: None,
   }
   let root : @node.Layout = {
     id: "root",
@@ -40,6 +42,7 @@ test "to_svg nested" {
     padding: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     border: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     children: [child],
+    text: None,
   }
   let svg = to_svg(root, 100.0, 50.0)
   inspect(svg.contains("root"), content="true")

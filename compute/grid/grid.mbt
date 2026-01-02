@@ -802,6 +802,7 @@ fn compute_grid_layout_internal(
         padding: default_rect(),
         border: default_rect(),
         children: [],
+        text: child.text,
       })
       baseline_infos.push({
         index: i,
@@ -868,6 +869,7 @@ fn compute_grid_layout_internal(
       padding: default_rect(),
       border: default_rect(),
       children: child_inner.children,
+      text: child.text,
     })
 
     // Collect baseline info for baseline alignment
@@ -939,6 +941,7 @@ fn compute_grid_layout_internal(
       bottom: border_bottom,
     },
     children: child_layouts,
+    text: node.text,
   }
 }
 
@@ -2991,6 +2994,7 @@ fn compute_child_layout(
     padding: default_rect(),
     border: default_rect(),
     children: child_layouts,
+    text: child.text,
   }
 }
 
@@ -3485,6 +3489,7 @@ fn layout_absolute_child(
     padding: default_rect(),
     border: default_rect(),
     children: child_inner.children,
+    text: child.text,
   }
 }
 

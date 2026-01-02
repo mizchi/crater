@@ -24,6 +24,7 @@ fn main {
         padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         children: [],
+        text: None,
       },
       // Sidebar
       {
@@ -36,6 +37,7 @@ fn main {
         padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         children: [],
+        text: None,
       },
       // Main content
       {
@@ -59,6 +61,7 @@ fn main {
             padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             children: [],
+            text: None,
           },
           {
             id: "box2",
@@ -70,10 +73,13 @@ fn main {
             padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             children: [],
+            text: None,
           },
         ],
+        text: None,
       },
     ],
+    text: None,
   }
   println("Layout visualization (Sixel):")
   println("==============================")

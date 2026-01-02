@@ -41,6 +41,7 @@ test "render_layout simple" {
     padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
     border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
     children: [],
+    text: None,
   }
   let sixel = @sixel.render_layout(layout, 100, 100)
   // Just verify it produces valid sixel output

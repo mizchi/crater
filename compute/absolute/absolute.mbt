@@ -356,5 +356,6 @@ pub fn create_zero_layout(id : String) -> @node.Layout {
     padding: zero_rect,
     border: zero_rect,
     children: [],
+    text: None,
   }
 }

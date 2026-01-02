@@ -22,6 +22,7 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
     padding: zero_rect,
     border: zero_rect,
     children,
+    text: node.text,
   }
 }
 
@@ -98,6 +99,7 @@ fn compute_root_layout(
             padding: child.padding,
             border: child.border,
             children: child.children,
+            text: child.text,
           })
         }
         // Calculate new height including escaped top margin
@@ -116,6 +118,7 @@ fn compute_root_layout(
           padding: layout.padding,
           border: layout.border,
           children: adjusted_children,
+          text: layout.text,
         }
       } else {
         layout
@@ -134,6 +137,7 @@ fn compute_root_layout(
             padding: layout.padding,
             border: layout.border,
             children: layout.children,
+            text: layout.text,
           }
         None => layout
       }
@@ -215,6 +219,7 @@ fn compute_with_collapse(
             padding,
             border,
             children: [],
+            text: node.text,
           },
           collapsed: { top: None, bottom: None },
         }
@@ -614,6 +619,7 @@ fn compute_with_collapse(
       padding: child_inner.padding,
       border: child_inner.border,
       children: child_inner.children,
+      text: child.text,
     }
     float_layouts.push(float_layout)
     layout_map[float_indices[i]] = float_layout
@@ -802,6 +808,7 @@ fn compute_with_collapse(
       padding: child_layout.padding,
       border: child_layout.border,
       children: child_layout.children,
+      text: child_layout.text,
     }
     layout_map[flow_indices[i]] = positioned_layout
 
@@ -989,6 +996,7 @@ fn compute_with_collapse(
     padding,
     border,
     children: child_layouts,
+    text: node.text,
   }
   { layout, collapsed: { top: escaped_top, bottom: escaped_bottom } }
 }
@@ -1212,6 +1220,7 @@ fn layout_absolute_child(
     padding: child_inner.padding,
     border: child_inner.border,
     children: child_inner.children,
+    text: child.text,
   }
 }
 
@@ -1273,6 +1282,7 @@ fn compute_nested(
       padding,
       border,
       children: [],
+      text: node.text,
     }
   }
 
@@ -1340,6 +1350,7 @@ fn compute_nested_intrinsic(
       padding,
       border,
       children: [],
+      text: node.text,
     }
   }
 

@@ -849,6 +849,7 @@ fn compute_internal(
       padding,
       border,
       children: [],
+      text: node.text,
     }
   }
 
@@ -1276,12 +1277,15 @@ fn compute_internal(
     } else {
       base_cross // For column flex, baseline = height (simplified)
     }
+    // Initial final_main is clamped by min/max constraints
+    // This ensures min_main is applied even when flex_grow = 0
+    let initial_final_main = @types.max(min_main, @types.min(base_main, max_main))
     let item : FlexItem = {
       index: i,
       order: child_style.order,
       base_main,
       base_cross,
-      final_main: base_main,
+      final_main: initial_final_main,
       final_cross: base_cross,
       margin_main,
       margin_cross,
@@ -1343,7 +1347,13 @@ fn compute_internal(
     let mut current_line_main = 0.0
     for i = 0; i < flex_items.length(); i = i + 1 {
       let item = flex_items[i]
-      let item_main_with_margin = item.base_main + item.margin_main
+      // Use hypothetical main size (clamped by min/max) for line breaking
+      // CSS Flexbox spec: line breaking uses hypothetical main size, not base size
+      let clamped_main = @types.max(
+        item.min_main,
+        @types.min(item.base_main, item.max_main),
+      )
+      let item_main_with_margin = clamped_main + item.margin_main
       let gap_if_not_first = if current_line_items.length() > 0 {
         main_gap
       } else {
@@ -2259,6 +2269,7 @@ fn compute_internal(
           padding: child_padding,
           border: child_border,
           children: [],
+          text: child.text,
         }
       } else {
         let child_ctx : @node.LayoutContext = {
@@ -2277,6 +2288,7 @@ fn compute_internal(
           padding: nested_layout.padding,
           border: nested_layout.border,
           children: nested_layout.children,
+          text: child.text,
         }
       }
       indexed_layouts.push({ dom_index: item.index, layout: child_layout })
@@ -2677,6 +2689,7 @@ fn compute_internal(
       padding: child_inner.padding,
       border: child_inner.border,
       children: child_inner.children,
+      text: child.text,
     }
     indexed_layouts.push({ dom_index: i, layout: child_layout })
   }
@@ -2767,6 +2780,7 @@ fn compute_internal(
     padding,
     border,
     children: child_layouts,
+    text: node.text,
   }
 }
 
@@ -2830,6 +2844,7 @@ fn compute_nested(
       padding,
       border,
       children: [],
+      text: node.text,
     }
   }
 

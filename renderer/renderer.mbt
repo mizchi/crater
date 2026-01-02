@@ -212,10 +212,12 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       font_size,
       line_height: text_line_height,
     }
-    @node.Node::with_measure(
+    // Use Node::text to store the text content for rendering
+    @node.Node::text(
       "#text",
       text_style,
       create_text_measure(text, font_size, text_line_height),
+      trimmed.to_string(),
     )
   }
 }
@@ -593,6 +595,7 @@ pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
     padding: layout.padding,
     border: layout.border,
     children: layout.children,
+    text: layout.text,
   }
 }
 

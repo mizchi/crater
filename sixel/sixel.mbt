@@ -177,6 +177,127 @@ pub fn Framebuffer::fill_rect_hatched(
 }
 
 ///|
+/// Check if a character is East Asian Wide (CJK characters that take 2 columns)
+fn is_wide_char(c : Char) -> Bool {
+  let cp = c.to_int()
+  // CJK Unified Ideographs (U+4E00–U+9FFF)
+  (cp >= 0x4E00 && cp <= 0x9FFF) ||
+  // CJK Extension A (U+3400–U+4DBF)
+  (cp >= 0x3400 && cp <= 0x4DBF) ||
+  // Hiragana (U+3040–U+309F)
+  (cp >= 0x3040 && cp <= 0x309F) ||
+  // Katakana (U+30A0–U+30FF)
+  (cp >= 0x30A0 && cp <= 0x30FF) ||
+  // Hangul Syllables (U+AC00–U+D7AF)
+  (cp >= 0xAC00 && cp <= 0xD7AF) ||
+  // Fullwidth Forms (U+FF00–U+FFEF)
+  (cp >= 0xFF00 && cp <= 0xFFEF) ||
+  // CJK Symbols and Punctuation (U+3000–U+303F)
+  (cp >= 0x3000 && cp <= 0x303F)
+}
+
+///|
+/// Draw a single character at the given position using bitmap font
+/// Returns the width of the character drawn (in pixels)
+pub fn Framebuffer::draw_char(
+  self : Framebuffer,
+  x : Int,
+  y : Int,
+  c : Char,
+  color : Int,
+  scale : Int,
+) -> Int {
+  // Handle CJK: draw filled rectangle for 2-column width
+  if is_wide_char(c) {
+    let char_w = font_width * 2 * scale
+    let char_h = font_height * scale
+    // Draw filled rectangle for CJK placeholder
+    self.fill_rect(x, y, char_w, char_h, color)
+    return char_w
+  }
+  // Handle ASCII with bitmap font
+  match get_char_bitmap(c) {
+    Some(bitmap) => {
+      for row = 0; row < font_height; row = row + 1 {
+        let row_data = bitmap[row]
+        for col = 0; col < font_width; col = col + 1 {
+          // Check if bit is set (MSB = leftmost pixel)
+          let bit = (row_data >> (7 - col)) & 1
+          if bit == 1 {
+            // Draw scaled pixel
+            for sy = 0; sy < scale; sy = sy + 1 {
+              for sx = 0; sx < scale; sx = sx + 1 {
+                self.set_pixel(
+                  x + col * scale + sx,
+                  y + row * scale + sy,
+                  color,
+                )
+              }
+            }
+          }
+        }
+      }
+      font_width * scale
+    }
+    None => {
+      // Unsupported character: draw small rectangle as placeholder
+      let char_w = font_width * scale
+      let char_h = font_height * scale
+      self.stroke_rect(x + 1, y + 1, char_w - 2, char_h - 2, color)
+      char_w
+    }
+  }
+}
+
+///|
+/// Draw text string at the given position
+/// Handles line wrapping within the given width constraint
+/// Returns the height of the text drawn (in pixels)
+pub fn Framebuffer::draw_text(
+  self : Framebuffer,
+  x : Int,
+  y : Int,
+  text : String,
+  max_width : Int,
+  color : Int,
+  scale : Int,
+) -> Int {
+  let char_h = font_height * scale
+  let mut cur_x = x
+  let mut cur_y = y
+  let mut max_y = y + char_h
+  for c in text {
+    // Handle newline
+    if c == '\n' {
+      cur_x = x
+      cur_y = cur_y + char_h
+      max_y = cur_y + char_h
+      continue
+    }
+    // Skip carriage return
+    if c == '\r' {
+      continue
+    }
+    // Calculate character width
+    let char_w = if is_wide_char(c) {
+      font_width * 2 * scale
+    } else {
+      font_width * scale
+    }
+    // Check for line wrap
+    if max_width > 0 && cur_x + char_w > x + max_width {
+      cur_x = x
+      cur_y = cur_y + char_h
+      max_y = cur_y + char_h
+    }
+    // Draw the character
+    let drawn_w = self.draw_char(cur_x, cur_y, c, color, scale)
+    cur_x = cur_x + drawn_w
+  }
+  max_y - y
+}
+
+///|
 /// Color palette for Sixel output
 priv struct Palette {
   colors : Array[Color]
@@ -403,9 +524,24 @@ fn render_node_simple(
     return
   }
   if is_text_node(layout.id) {
-    // Text nodes: diagonal hatching pattern (white bg with green lines)
-    fb.fill_rect_hatched(x, y, w, h, 0, 7, 3) // White bg, forest green lines, spacing 3
-    fb.stroke_rect(x, y, w, h, 8) // Dark green border
+    // Text nodes: render actual text content if available
+    fb.fill_rect(x, y, w, h, 0) // White background
+    match layout.text {
+      Some(text_content) => {
+        // Draw text using bitmap font (scale 1 = 8x16 pixels per char)
+        // Use the layout width directly without padding reduction
+        // since text measurement already accounts for the exact text width
+        let scale = 1
+        let _ = fb.draw_text(x, y, text_content, w, 7, scale)
+        // Draw border
+        fb.stroke_rect(x, y, w, h, 8) // Dark green border
+      }
+      None => {
+        // Fallback: diagonal hatching for text nodes without content
+        fb.fill_rect_hatched(x, y, w, h, 0, 7, 3)
+        fb.stroke_rect(x, y, w, h, 8)
+      }
+    }
   } else {
     // Container nodes: depth-based blue gradient (1-6, clamped)
     let color_idx = if depth < 6 { depth + 1 } else { 6 }

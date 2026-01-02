@@ -41,6 +41,7 @@ pub struct Node {
   style : @style.Style
   children : Array[Node]
   measure : MeasureFunc?
+  text : String? // Text content for text nodes
 }
 
 ///|
@@ -49,12 +50,12 @@ pub fn Node::new(
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
-  { id, uid: next_uid(), style, children, measure: None }
+  { id, uid: next_uid(), style, children, measure: None, text: None }
 }
 
 ///|
 pub fn Node::leaf(id : String, style : @style.Style) -> Node {
-  { id, uid: next_uid(), style, children: [], measure: None }
+  { id, uid: next_uid(), style, children: [], measure: None, text: None }
 }
 
 ///|
@@ -64,7 +65,32 @@ pub fn Node::with_measure(
   style : @style.Style,
   measure : MeasureFunc,
 ) -> Node {
-  { id, uid: next_uid(), style, children: [], measure: Some(measure) }
+  {
+    id,
+    uid: next_uid(),
+    style,
+    children: [],
+    measure: Some(measure),
+    text: None,
+  }
+}
+
+///|
+/// Create a text node with content
+pub fn Node::text(
+  id : String,
+  style : @style.Style,
+  measure : MeasureFunc,
+  content : String,
+) -> Node {
+  {
+    id,
+    uid: next_uid(),
+    style,
+    children: [],
+    measure: Some(measure),
+    text: Some(content),
+  }
 }
 
 ///|
@@ -81,6 +107,8 @@ pub(all) struct Layout {
   border : @types.Rect[Double]
   // Children layouts
   children : Array[Layout]
+  // Text content for text nodes
+  text : String?
 }
 
 ///|
@@ -173,6 +201,7 @@ pub fn dispatch_layout(node : Node, ctx : LayoutContext) -> Layout {
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
         children: [],
+        text: node.text,
       }
     }
   }
