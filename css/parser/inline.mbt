@@ -4,6 +4,8 @@
 
 // Default viewport size for inline parser vh/vw resolution
 let default_viewport_width : Double = 1000.0
+
+///|
 let default_viewport_height : Double = 1000.0
 
 ///|
@@ -14,7 +16,7 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
     return None
   }
   match tokens[0] {
-    @token.Token::Dimension(value, unit) => {
+    @token.Token::Dimension(value, unit) =>
       if unit == "px" {
         Some(@types.Length(value))
       } else if unit == "%" {
@@ -32,30 +34,25 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
         // Other units treated as px
         Some(@types.Length(value))
       }
-    }
     @token.Token::Percentage(value) => Some(@types.Percent(value / 100.0))
-    @token.Token::Number(value, _) => {
+    @token.Token::Number(value, _) =>
       // Unitless 0 is valid
       if value == 0.0 {
         Some(@types.Length(0.0))
       } else {
         None
       }
-    }
-    @token.Token::Ident(s) => {
-      if s == "auto" {
-        Some(@types.Auto)
-      } else {
-        None
-      }
-    }
+    @token.Token::Ident(s) => if s == "auto" { Some(@types.Auto) } else { None }
     _ => None
   }
 }
 
 ///|
 /// Parse multiple dimension values (for shorthand properties like margin, padding)
-fn parse_multi_dimensions(tokens : ArrayView[@token.Token], max_count : Int) -> Array[@types.Dimension] {
+fn parse_multi_dimensions(
+  tokens : ArrayView[@token.Token],
+  max_count : Int,
+) -> Array[@types.Dimension] {
   let result : Array[@types.Dimension] = []
   let mut rest = tokens
   while result.length() < max_count && rest.length() > 0 {
@@ -165,7 +162,7 @@ fn parse_clear(tokens : ArrayView[@token.Token]) -> @style.Clear? {
 ///|
 /// Parse flex-direction property
 fn parse_flex_direction(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> @style.FlexDirection? {
   if tokens.length() == 0 {
     return None
@@ -266,7 +263,12 @@ fn parse_integer(tokens : ArrayView[@token.Token]) -> Int? {
 ///|
 /// Parse flex shorthand property
 /// flex: none | auto | <flex-grow> [<flex-shrink>] [<flex-basis>]
-fn parse_flex_shorthand(tokens : ArrayView[@token.Token]) -> (Double, Double, @types.Dimension)? {
+/// The values can appear in any order, with these rules:
+/// - Numbers are flex-grow (first) and flex-shrink (second)
+/// - Dimensions/percentages/keywords are flex-basis
+fn parse_flex_shorthand(
+  tokens : ArrayView[@token.Token],
+) -> (Double, Double, @types.Dimension)? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
@@ -291,56 +293,107 @@ fn parse_flex_shorthand(tokens : ArrayView[@token.Token]) -> (Double, Double, @t
     _ => ()
   }
 
-  // Parse numeric values
-  // First value: flex-grow
-  let grow = match parse_number(tokens) {
-    Some(v) => v
-    None => return None
+  // CSS flex shorthand order: <flex-grow> [<flex-shrink>] [<flex-basis>]
+  // Numbers must come first, then optionally a basis value.
+  // Invalid orderings like "1 0% 1" (basis in middle) must return None.
+  let numbers : Array[Double] = []
+  let mut basis : @types.Dimension? = None
+  let mut tokens_view = tokens
+  let mut seen_basis = false
+
+  // First, parse all leading numbers (grow and optionally shrink)
+  while tokens_view.length() > 0 {
+    tokens_view = skip_whitespace(tokens_view)
+    if tokens_view.length() == 0 {
+      break
+    }
+    match tokens_view[0] {
+      @token.Token::Number(v, _) => {
+        if seen_basis {
+          // Number after basis is invalid (e.g., "1 0% 1")
+          return None
+        }
+        numbers.push(v)
+        tokens_view = tokens_view[1:]
+      }
+      @token.Token::Dimension(_, _) | @token.Token::Percentage(_) => {
+        // This is flex-basis
+        if seen_basis {
+          // Second basis value is invalid
+          return None
+        }
+        match parse_dimension(tokens_view) {
+          Some(dim) => {
+            basis = Some(dim)
+            seen_basis = true
+            tokens_view = tokens_view[1:]
+          }
+          None => break
+        }
+      }
+      @token.Token::Ident(s) => {
+        // Could be flex-basis keyword (auto, content, etc.)
+        if s == "auto" || s == "content" {
+          if seen_basis {
+            return None
+          }
+          basis = Some(@types.Auto)
+          seen_basis = true
+          tokens_view = tokens_view[1:]
+        } else {
+          break
+        }
+      }
+      _ => break
+    }
   }
 
-  let rest = skip_whitespace(tokens[1:])
-  if rest.length() == 0 {
-    // flex: <number> = <number> 1 0%
-    return Some((grow, 1.0, @types.Length(0.0)))
+  // Check for trailing tokens (anything after basis is invalid)
+  tokens_view = skip_whitespace(tokens_view)
+  if tokens_view.length() > 0 {
+    // Still have tokens left - could be invalid like "1 0% 1"
+    match tokens_view[0] {
+      @token.Token::Number(_, _) => {
+        // Number after basis is invalid
+        if seen_basis {
+          return None
+        }
+      }
+      _ => ()
+    }
   }
 
-  // Check if next is a number (flex-shrink) or dimension (flex-basis)
-  match rest[0] {
-    @token.Token::Number(shrink, _) => {
-      // flex-shrink
-      let rest2 = skip_whitespace(rest[1:])
-      if rest2.length() == 0 {
-        // flex: <grow> <shrink> = <grow> <shrink> 0%
-        return Some((grow, shrink, @types.Length(0.0)))
+  // Determine values based on what we found
+  let grow = if numbers.length() >= 1 { numbers[0] } else { 1.0 }
+  let shrink = if numbers.length() >= 2 { numbers[1] } else { 1.0 }
+  let final_basis = match basis {
+    Some(b) => b
+    None =>
+      // When only numbers are specified, basis defaults to 0
+      if numbers.length() >= 1 {
+        @types.Length(0.0)
+      } else {
+        @types.Auto
       }
-      // flex-basis
-      match parse_dimension(rest2) {
-        Some(basis) => Some((grow, shrink, basis))
-        None => Some((grow, shrink, @types.Length(0.0)))
-      }
-    }
-    @token.Token::Dimension(_, _) | @token.Token::Percentage(_) | @token.Token::Ident(_) => {
-      // flex-basis (no shrink specified)
-      match parse_dimension(rest) {
-        Some(basis) => Some((grow, 1.0, basis))
-        None => Some((grow, 1.0, @types.Length(0.0)))
-      }
-    }
-    _ => Some((grow, 1.0, @types.Length(0.0)))
   }
+
+  if numbers.length() == 0 && basis is None {
+    return None
+  }
+
+  Some((grow, shrink, final_basis))
 }
 
 ///|
 /// Parse flex-flow shorthand property
 /// flex-flow: <flex-direction> || <flex-wrap>
 fn parse_flex_flow_shorthand(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> (@style.FlexDirection, @style.FlexWrap)? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
   }
-
   let mut direction : @style.FlexDirection? = None
   let mut wrap : @style.FlexWrap? = None
 
@@ -348,7 +401,7 @@ fn parse_flex_flow_shorthand(
   let mut i = 0
   while i < tokens.length() {
     match tokens[i] {
-      @token.Token::Ident(s) => {
+      @token.Token::Ident(s) =>
         // Check if it's a flex-direction value
         if s == "row" {
           direction = Some(@style.FlexDirection::Row)
@@ -358,7 +411,7 @@ fn parse_flex_flow_shorthand(
           direction = Some(@style.FlexDirection::Column)
         } else if s == "column-reverse" {
           direction = Some(@style.FlexDirection::ColumnReverse)
-        // Check if it's a flex-wrap value
+          // Check if it's a flex-wrap value
         } else if s == "nowrap" {
           wrap = Some(@style.FlexWrap::NoWrap)
         } else if s == "wrap" {
@@ -366,7 +419,6 @@ fn parse_flex_flow_shorthand(
         } else if s == "wrap-reverse" {
           wrap = Some(@style.FlexWrap::WrapReverse)
         }
-      }
       @token.Token::Whitespace => ()
       _ => ()
     }
@@ -375,10 +427,12 @@ fn parse_flex_flow_shorthand(
 
   // If we found at least one value, return with defaults for the other
   if direction is Some(_) || wrap is Some(_) {
-    Some((
-      direction.unwrap_or(@style.FlexDirection::Row),
-      wrap.unwrap_or(@style.FlexWrap::NoWrap),
-    ))
+    Some(
+      (
+        direction.unwrap_or(@style.FlexDirection::Row),
+        wrap.unwrap_or(@style.FlexWrap::NoWrap),
+      ),
+    )
   } else {
     None
   }
@@ -422,7 +476,9 @@ fn parse_aspect_ratio(tokens : ArrayView[@token.Token]) -> Double? {
 
 ///|
 /// Parse grid-auto-flow property
-fn parse_grid_auto_flow(tokens : ArrayView[@token.Token]) -> @style.GridAutoFlow? {
+fn parse_grid_auto_flow(
+  tokens : ArrayView[@token.Token],
+) -> @style.GridAutoFlow? {
   if tokens.length() == 0 {
     return None
   }
@@ -446,14 +502,14 @@ fn parse_grid_auto_flow(tokens : ArrayView[@token.Token]) -> @style.GridAutoFlow
 ///|
 /// Parse a single track value for MinTrackSizing
 fn parse_min_track_sizing(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> (@style.MinTrackSizing, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
-    @token.Token::Dimension(value, unit) => {
+    @token.Token::Dimension(value, unit) =>
       if unit == "px" {
         Some((@style.MinTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
@@ -461,7 +517,6 @@ fn parse_min_track_sizing(
       } else {
         Some((@style.MinTrackSizing::Length(value), tokens[1:]))
       }
-    }
     @token.Token::Percentage(value) =>
       Some((@style.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
@@ -487,14 +542,14 @@ fn parse_min_track_sizing(
 ///|
 /// Parse a single track value for MaxTrackSizing
 fn parse_max_track_sizing(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> (@style.MaxTrackSizing, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
-    @token.Token::Dimension(value, unit) => {
+    @token.Token::Dimension(value, unit) =>
       if unit == "px" {
         Some((@style.MaxTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
@@ -504,7 +559,6 @@ fn parse_max_track_sizing(
       } else {
         Some((@style.MaxTrackSizing::Length(value), tokens[1:]))
       }
-    }
     @token.Token::Percentage(value) =>
       Some((@style.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
@@ -530,14 +584,14 @@ fn parse_max_track_sizing(
 ///|
 /// Parse a single track sizing value (without repeat)
 fn parse_single_track_sizing(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> (@style.SingleTrackSizing, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
-    @token.Token::Dimension(value, unit) => {
+    @token.Token::Dimension(value, unit) =>
       if unit == "px" {
         Some((@style.SingleTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
@@ -547,7 +601,6 @@ fn parse_single_track_sizing(
       } else {
         Some((@style.SingleTrackSizing::Length(value), tokens[1:]))
       }
-    }
     @token.Token::Percentage(value) =>
       Some((@style.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
@@ -590,7 +643,10 @@ fn parse_single_track_sizing(
                     @token.Token::RightParen => {
                       let next_tokens = rest6[1:]
                       Some(
-                        (@style.SingleTrackSizing::MinMax(min_val, max_val), next_tokens),
+                        (
+                          @style.SingleTrackSizing::MinMax(min_val, max_val),
+                          next_tokens,
+                        ),
                       )
                     }
                     _ => None
@@ -614,7 +670,7 @@ fn parse_single_track_sizing(
 ///|
 /// Parse a track sizing function (including repeat)
 fn parse_track_sizing_function(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> (@style.TrackSizingFunction, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
@@ -630,8 +686,8 @@ fn parse_track_sizing_function(
           return None
         }
         // Parse repeat count
-        let (count, rest2) : (@style.RepeatCount, ArrayView[@token.Token]) = match rest[
-          0] {
+        let (count, rest2) : (@style.RepeatCount, ArrayView[@token.Token]) = match
+          rest[0] {
           @token.Token::Number(value, _) =>
             (@style.RepeatCount::Count(value.to_int()), rest[1:])
           @token.Token::Ident(s) =>
@@ -666,7 +722,7 @@ fn parse_track_sizing_function(
               remaining = remaining[1:]
               break
             }
-            _ => {
+            _ =>
               match parse_single_track_sizing(remaining) {
                 Some((track, rest)) => {
                   tracks.push(track)
@@ -674,7 +730,6 @@ fn parse_track_sizing_function(
                 }
                 None => break
               }
-            }
           }
         }
         if tracks.length() > 0 {
@@ -692,7 +747,7 @@ fn parse_track_sizing_function(
       } else {
         None
       }
-    @token.Token::Dimension(value, unit) => {
+    @token.Token::Dimension(value, unit) =>
       if unit == "px" {
         Some((@style.TrackSizingFunction::Length(value), tokens[1:]))
       } else if unit == "%" {
@@ -702,7 +757,6 @@ fn parse_track_sizing_function(
       } else {
         Some((@style.TrackSizingFunction::Length(value), tokens[1:]))
       }
-    }
     @token.Token::Percentage(value) =>
       Some((@style.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
@@ -731,7 +785,7 @@ fn parse_track_sizing_function(
 ///|
 /// Parse grid-template-columns or grid-template-rows value
 fn parse_grid_template_tracks(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> Array[@style.TrackSizingFunction] {
   let result : Array[@style.TrackSizingFunction] = []
   let mut remaining = tokens
@@ -755,7 +809,7 @@ fn parse_grid_template_tracks(
             None => break
           }
         }
-      _ => {
+      _ =>
         match parse_track_sizing_function(remaining) {
           Some((track, rest)) => {
             result.push(track)
@@ -763,7 +817,6 @@ fn parse_grid_template_tracks(
           }
           None => break
         }
-      }
     }
   }
   result
@@ -808,7 +861,7 @@ fn skip_whitespace(tokens : ArrayView[@token.Token]) -> ArrayView[@token.Token] 
 ///|
 /// Extract property name and value tokens from a declaration
 fn parse_declaration(
-  tokens : ArrayView[@token.Token]
+  tokens : ArrayView[@token.Token],
 ) -> (String, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
@@ -842,7 +895,6 @@ fn parse_declaration(
       _ => pos += 1
     }
   }
-
   let value_tokens = skip_whitespace(tokens[value_start:pos])
   Some((property_name, value_tokens))
 }
@@ -852,7 +904,7 @@ fn parse_declaration(
 fn apply_property(
   style : @style.Style,
   property : String,
-  value_tokens : ArrayView[@token.Token]
+  value_tokens : ArrayView[@token.Token],
 ) -> @style.Style {
   // display
   if property == "display" {
@@ -984,7 +1036,12 @@ fn apply_property(
   if property == "flex" {
     match parse_flex_shorthand(value_tokens) {
       Some((grow, shrink, basis)) =>
-        return { ..style, flex_grow: grow, flex_shrink: shrink, flex_basis: basis }
+        return {
+          ..style,
+          flex_grow: grow,
+          flex_shrink: shrink,
+          flex_basis: basis,
+        }
       None => ()
     }
   }
@@ -1025,10 +1082,17 @@ fn apply_property(
         let b = dims[2]
         return { ..style, margin: { top: t, right: lr, bottom: b, left: lr } }
       }
-      4 => {
+      4 =>
         // top, right, bottom, left
-        return { ..style, margin: { top: dims[0], right: dims[1], bottom: dims[2], left: dims[3] } }
-      }
+        return {
+          ..style,
+          margin: {
+            top: dims[0],
+            right: dims[1],
+            bottom: dims[2],
+            left: dims[3],
+          },
+        }
       _ => ()
     }
   }
@@ -1071,7 +1135,10 @@ fn apply_property(
       2 => {
         let tb = dims[0]
         let lr = dims[1]
-        return { ..style, padding: { top: tb, right: lr, bottom: tb, left: lr } }
+        return {
+          ..style,
+          padding: { top: tb, right: lr, bottom: tb, left: lr },
+        }
       }
       3 => {
         let t = dims[0]
@@ -1079,9 +1146,16 @@ fn apply_property(
         let b = dims[2]
         return { ..style, padding: { top: t, right: lr, bottom: b, left: lr } }
       }
-      4 => {
-        return { ..style, padding: { top: dims[0], right: dims[1], bottom: dims[2], left: dims[3] } }
-      }
+      4 =>
+        return {
+          ..style,
+          padding: {
+            top: dims[0],
+            right: dims[1],
+            bottom: dims[2],
+            left: dims[3],
+          },
+        }
       _ => ()
     }
   }

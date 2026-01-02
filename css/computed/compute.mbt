@@ -41,7 +41,10 @@ pub fn ComputeContext::with_parent(parent : @style.Style) -> ComputeContext {
 
 ///|
 /// Create context with custom viewport dimensions
-pub fn ComputeContext::with_viewport(viewport_width : Double, viewport_height : Double) -> ComputeContext {
+pub fn ComputeContext::with_viewport(
+  viewport_width : Double,
+  viewport_height : Double,
+) -> ComputeContext {
   {
     parent_style: None,
     root_font_size: 16.0,
@@ -221,7 +224,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
 fn resolve_keyword(
   property : String,
   value : @cascade.PropertyValue,
-  ctx : ComputeContext
+  ctx : ComputeContext,
 ) -> String {
   match value {
     @cascade.PropertyValue::Value(v) => v
@@ -324,7 +327,7 @@ fn dimension_to_string(dim : @types.Dimension) -> String {
 /// Compute a Style from cascaded values
 pub fn compute(
   cascaded : @cascade.CascadedValues,
-  ctx : ComputeContext
+  ctx : ComputeContext,
 ) -> @style.Style {
   let builder = StyleBuilder::new()
 
@@ -342,7 +345,6 @@ pub fn compute(
 
   // Handle inheritance for inherited properties
   apply_inheritance(builder, cascaded, ctx)
-
   builder.build()
 }
 
@@ -352,7 +354,7 @@ fn apply_property(
   builder : StyleBuilder,
   property : String,
   value : String,
-  ctx : ComputeContext
+  ctx : ComputeContext,
 ) -> Unit {
   match property {
     // Display and positioning
@@ -443,6 +445,8 @@ fn apply_property(
     "order" => builder.order = parse_integer(value)
     "flex" => {
       // Parse flex shorthand: none | auto | <flex-grow> [<flex-shrink>] [<flex-basis>]
+      // Order must be: numbers first (grow, shrink), then optionally basis
+      // Invalid orders like "1 0% 1" (basis in middle) must be rejected
       let v = value.trim()
       if v == "none" {
         builder.flex_grow = 0.0
@@ -457,32 +461,74 @@ fn apply_property(
         builder.flex_shrink = 1.0
         builder.flex_basis = @types.Dimension::Auto
       } else {
-        // Try to parse as number(s)
+        // Try to parse as number(s) and optionally a basis
         let parts : Array[StringView] = v
           .split(" ")
           .filter(fn(s) { not(s.is_empty()) })
           .collect()
-        match parts.length() {
-          1 => {
-            // flex: <number> = <number> 1 0
-            builder.flex_grow = parse_number(parts[0].to_string())
-            builder.flex_shrink = 1.0
-            builder.flex_basis = @types.Dimension::Length(0.0)
+        // Validate ordering: numbers first, then basis
+        // A value is a "number" if it's purely numeric (no % or units)
+        // A value is a "basis" if it has %, px, or is "auto"/"content"
+        let mut num_count = 0
+        let mut basis_found = false
+        let mut valid = true
+        for i = 0; i < parts.length(); i = i + 1 {
+          let p = parts[i].to_string()
+          if is_flex_basis_value(p) {
+            if basis_found {
+              // Second basis value is invalid
+              valid = false
+            }
+            basis_found = true
+          } else if is_pure_number(p) {
+            if basis_found {
+              // Number after basis is invalid (e.g., "1 0% 1")
+              valid = false
+            }
+            num_count = num_count + 1
+          } else {
+            // Unknown token
+            valid = false
           }
-          2 => {
-            // flex: <grow> <shrink> = <grow> <shrink> 0
-            builder.flex_grow = parse_number(parts[0].to_string())
-            builder.flex_shrink = parse_number(parts[1].to_string())
-            builder.flex_basis = @types.Dimension::Length(0.0)
-          }
-          3 => {
-            // flex: <grow> <shrink> <basis>
-            builder.flex_grow = parse_number(parts[0].to_string())
-            builder.flex_shrink = parse_number(parts[1].to_string())
-            builder.flex_basis = resolve_dimension(parts[2].to_string(), ctx)
-          }
-          _ => ()
         }
+        if valid {
+          match parts.length() {
+            1 =>
+              if num_count == 1 {
+                // flex: <number> = <number> 1 0
+                builder.flex_grow = parse_number(parts[0].to_string())
+                builder.flex_shrink = 1.0
+                builder.flex_basis = @types.Dimension::Length(0.0)
+              } else if basis_found {
+                // flex: <basis> = 1 1 <basis>
+                builder.flex_grow = 1.0
+                builder.flex_shrink = 1.0
+                builder.flex_basis = resolve_dimension(parts[0].to_string(), ctx)
+              }
+            2 =>
+              if num_count == 2 {
+                // flex: <grow> <shrink> = <grow> <shrink> 0
+                builder.flex_grow = parse_number(parts[0].to_string())
+                builder.flex_shrink = parse_number(parts[1].to_string())
+                builder.flex_basis = @types.Dimension::Length(0.0)
+              } else if num_count == 1 && basis_found {
+                // flex: <grow> <basis>
+                builder.flex_grow = parse_number(parts[0].to_string())
+                builder.flex_shrink = 1.0
+                builder.flex_basis = resolve_dimension(parts[1].to_string(), ctx)
+              }
+            3 =>
+              if num_count == 2 && basis_found {
+                // flex: <grow> <shrink> <basis>
+                builder.flex_grow = parse_number(parts[0].to_string())
+                builder.flex_shrink = parse_number(parts[1].to_string())
+                builder.flex_basis = resolve_dimension(parts[2].to_string(), ctx)
+              }
+            // If num_count != 2 or basis not at end, it's invalid and we do nothing
+            _ => ()
+          }
+        }
+        // If not valid, we don't modify the builder (keep defaults)
       }
     }
     // flex-flow shorthand: <flex-direction> || <flex-wrap>
@@ -503,7 +549,7 @@ fn apply_property(
           builder.flex_direction = @style.FlexDirection::Column
         } else if p == "column-reverse" {
           builder.flex_direction = @style.FlexDirection::ColumnReverse
-        // Check flex-wrap values
+          // Check flex-wrap values
         } else if p == "nowrap" {
           builder.flex_wrap = @style.FlexWrap::NoWrap
         } else if p == "wrap" {
@@ -557,7 +603,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle rem units (check before em)
   match v.strip_suffix("rem") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string()) } catch {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.root_font_size)
@@ -568,7 +614,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle em units
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string()) } catch {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size)
@@ -579,7 +625,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle vw units
   match v.strip_suffix("vw") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string()) } catch {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.viewport_width / 100.0)
@@ -590,7 +636,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle vh units
   match v.strip_suffix("vh") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string()) } catch {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.viewport_height / 100.0)
@@ -603,18 +649,68 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
 }
 
 ///|
+/// Check if a string is a pure number (no units)
+fn is_pure_number(s : String) -> Bool {
+  let v = s.trim()
+  if v.is_empty() {
+    return false
+  }
+  // Try to parse as double - will fail if it has units
+  let _ = @strconv.parse_double(v.to_string()) catch {
+    _ => return false
+  }
+  // Make sure it doesn't have any unit suffixes that parse_double might accept
+  for i = 0; i < v.length(); i = i + 1 {
+    let c = v[i]
+    if not(
+      c == '0' ||
+      c == '1' ||
+      c == '2' ||
+      c == '3' ||
+      c == '4' ||
+      c == '5' ||
+      c == '6' ||
+      c == '7' ||
+      c == '8' ||
+      c == '9' ||
+      c == '.' ||
+      c == '-' ||
+      c == '+',
+    ) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// Check if a string is a flex-basis value (has units, % or is auto/content)
+fn is_flex_basis_value(s : String) -> Bool {
+  let v = s.trim().to_lower()
+  if v == "auto" || v == "content" {
+    return true
+  }
+  // Check for common dimension suffixes
+  v.has_suffix("%") ||
+  v.has_suffix("px") ||
+  v.has_suffix("em") ||
+  v.has_suffix("rem") ||
+  v.has_suffix("vw") ||
+  v.has_suffix("vh")
+}
+
+///|
 /// Apply inheritance for inherited properties not in cascaded values
 fn apply_inheritance(
   builder : StyleBuilder,
   cascaded : @cascade.CascadedValues,
-  ctx : ComputeContext
+  ctx : ComputeContext,
 ) -> Unit {
   // List of inherited properties we support
   let inherited_props = [
-    "direction", "writing-mode", "text-align", "line-height", "font-size",
-    "font-family", "font-weight", "font-style", "color", "visibility",
+    "direction", "writing-mode", "text-align", "line-height", "font-size", "font-family",
+    "font-weight", "font-style", "color", "visibility",
   ]
-
   for prop in inherited_props {
     // If property not in cascaded values, inherit from parent
     if not(cascaded.has(prop)) {
@@ -633,7 +729,7 @@ fn apply_inheritance(
 /// Compute style from inline style string
 pub fn compute_inline(
   inline_css : String,
-  ctx : ComputeContext
+  ctx : ComputeContext,
 ) -> @style.Style {
   // Parse inline style to declarations
   let decls : Array[@cascade.Declaration] = []
@@ -654,12 +750,8 @@ pub fn compute_inline(
       }
     }
     if colon_pos > 0 {
-      let prop = try { pair_str[:colon_pos].to_string().trim() } catch {
-        _ => ""
-      }
-      let val = try { pair_str[colon_pos + 1:].to_string().trim() } catch {
-        _ => ""
-      }
+      let prop = pair_str[:colon_pos].to_string().trim() catch { _ => "" }
+      let val = pair_str[colon_pos + 1:].to_string().trim() catch { _ => "" }
       if not(prop.is_empty()) && not(val.is_empty()) {
         decls.push(
           @cascade.Declaration::with_metadata(

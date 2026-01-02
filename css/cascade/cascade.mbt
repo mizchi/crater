@@ -17,13 +17,19 @@ pub fn CascadedValues::new() -> CascadedValues {
 
 ///|
 /// Get the cascaded value for a property
-pub fn CascadedValues::get(self : CascadedValues, property : String) -> Declaration? {
+pub fn CascadedValues::get(
+  self : CascadedValues,
+  property : String,
+) -> Declaration? {
   self.values.get(property)
 }
 
 ///|
 /// Get the raw value string for a property
-pub fn CascadedValues::get_value(self : CascadedValues, property : String) -> String? {
+pub fn CascadedValues::get_value(
+  self : CascadedValues,
+  property : String,
+) -> String? {
   match self.values.get(property) {
     Some(decl) =>
       match decl.value {
@@ -56,7 +62,6 @@ pub fn cascade(declarations : Array[Declaration]) -> CascadedValues {
 
   // Group declarations by property
   let by_property : Map[String, Array[Declaration]] = {}
-
   for decl in declarations {
     match by_property.get(decl.property) {
       Some(arr) => arr.push(decl)
@@ -72,7 +77,6 @@ pub fn cascade(declarations : Array[Declaration]) -> CascadedValues {
       None => ()
     }
   })
-
   result
 }
 
@@ -82,16 +86,13 @@ fn find_winning_declaration(declarations : Array[Declaration]) -> Declaration? {
   if declarations.is_empty() {
     return None
   }
-
   let mut winner = declarations[0]
-
   for i = 1; i < declarations.length(); i = i + 1 {
     let decl = declarations[i]
     if compare_declarations(decl, winner) > 0 {
       winner = decl
     }
   }
-
   Some(winner)
 }
 
@@ -111,21 +112,22 @@ pub(all) struct RuleMatch {
 /// Build declarations from matched rules
 pub fn collect_declarations(
   matches : Array[RuleMatch],
-  inline_style : Array[Declaration]
+  inline_style : Array[Declaration],
 ) -> Array[Declaration] {
   let result : Array[Declaration] = []
 
   // Add declarations from matched rules
   for rule_match in matches {
     for decl in rule_match.declarations {
-      // Update specificity and source order from the rule
+      // Update specificity from the rule, keep declaration's source_order
+      // (which combines rule order and declaration order for proper cascade)
       let updated : Declaration = {
         property: decl.property,
         value: decl.value,
         origin: decl.origin,
         importance: decl.importance,
         specificity: rule_match.specificity,
-        source_order: rule_match.source_order,
+        source_order: decl.source_order,
       }
       result.push(updated)
     }
@@ -146,7 +148,6 @@ pub fn collect_declarations(
     }
     result.push(updated)
   }
-
   result
 }
 
@@ -183,15 +184,10 @@ pub fn Stylesheet::add_rule(
   self : Stylesheet,
   selector_text : String,
   selector : @selector.ComplexSelector,
-  declarations : Array[Declaration]
+  declarations : Array[Declaration],
 ) -> Unit {
   let source_order = self.rules.length()
-  let rule : CSSRule = {
-    selector_text,
-    selector,
-    declarations,
-    source_order,
-  }
+  let rule : CSSRule = { selector_text, selector, declarations, source_order }
   self.rules.push(rule)
 }
 
@@ -199,14 +195,16 @@ pub fn Stylesheet::add_rule(
 /// Match all rules against an element and return matched rules
 pub fn Stylesheet::match_element(
   self : Stylesheet,
-  element : @selector.Element
+  element : @selector.Element,
 ) -> Array[RuleMatch] {
   let matches : Array[RuleMatch] = []
-
   for rule in self.rules {
     if @selector.matches_complex(element, rule.selector) {
       let specificity = @selector.complex_specificity(rule.selector)
       // Update declarations with stylesheet origin
+      // Combine rule source_order with declaration source_order to preserve
+      // declaration order within rules (important for vendor prefix fallbacks like
+      // "display: -webkit-flex; display: flex;")
       let decls : Array[Declaration] = []
       for decl in rule.declarations {
         decls.push({
@@ -215,13 +213,16 @@ pub fn Stylesheet::match_element(
           origin: self.origin,
           importance: decl.importance,
           specificity,
-          source_order: rule.source_order,
+          source_order: rule.source_order * 10000 + decl.source_order,
         })
       }
-      matches.push({ specificity, declarations: decls, source_order: rule.source_order })
+      matches.push({
+        specificity,
+        declarations: decls,
+        source_order: rule.source_order,
+      })
     }
   }
-
   matches
 }
 
@@ -230,7 +231,7 @@ pub fn Stylesheet::match_element(
 pub fn cascade_element(
   element : @selector.Element,
   stylesheets : Array[Stylesheet],
-  inline_style : Array[Declaration]
+  inline_style : Array[Declaration],
 ) -> CascadedValues {
   let all_matches : Array[RuleMatch] = []
 

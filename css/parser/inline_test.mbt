@@ -90,7 +90,7 @@ test "parse aspect-ratio fraction" {
   // 16/9 ≈ 1.777...
   match style.aspect_ratio {
     Some(v) => assert_true(v > 1.77 && v < 1.78)
-    None => fail!("aspect_ratio should be Some")
+    None => fail("aspect_ratio should be Some")
   }
 }
 
@@ -101,24 +101,30 @@ test "parse grid-auto-flow" {
   inspect(style.grid_auto_flow, content="Column")
 }
 
+///|
 test "order property" {
   let style = parse_inline_style("order: 5")
   inspect(style.order, content="5")
 }
 
+///|
 test "order negative" {
   let style = parse_inline_style("order: -1")
   inspect(style.order, content="-1")
 }
 
+///|
 test "flex shorthand" {
   let style = parse_inline_style("flex: 1")
   inspect(style.flex_grow, content="1")
   inspect(style.flex_shrink, content="1")
 }
 
+///|
 test "grid-template-columns basic" {
-  let style = parse_inline_style("display: grid; grid-template-columns: 100px 200px 1fr")
+  let style = parse_inline_style(
+    "display: grid; grid-template-columns: 100px 200px 1fr",
+  )
   inspect(style.display, content="Grid")
   inspect(style.grid_template_columns.length(), content="3")
   inspect(style.grid_template_columns[0], content="Length(100)")
@@ -126,8 +132,11 @@ test "grid-template-columns basic" {
   inspect(style.grid_template_columns[2], content="Fr(1)")
 }
 
+///|
 test "grid-template-rows basic" {
-  let style = parse_inline_style("display: grid; grid-template-rows: auto 50px 2fr")
+  let style = parse_inline_style(
+    "display: grid; grid-template-rows: auto 50px 2fr",
+  )
   inspect(style.display, content="Grid")
   inspect(style.grid_template_rows.length(), content="3")
   inspect(style.grid_template_rows[0], content="Auto")
@@ -135,6 +144,7 @@ test "grid-template-rows basic" {
   inspect(style.grid_template_rows[2], content="Fr(2)")
 }
 
+///|
 test "grid-template-columns with percentage" {
   let style = parse_inline_style("grid-template-columns: 50% 50%")
   inspect(style.grid_template_columns.length(), content="2")
@@ -142,37 +152,66 @@ test "grid-template-columns with percentage" {
   inspect(style.grid_template_columns[1], content="Percent(0.5)")
 }
 
+///|
 test "grid-template-columns none" {
   let style = parse_inline_style("grid-template-columns: none")
   inspect(style.grid_template_columns.length(), content="0")
 }
 
+///|
 test "grid-template-columns minmax" {
   let style = parse_inline_style("grid-template-columns: minmax(100px, 1fr)")
   inspect(style.grid_template_columns.length(), content="1")
   inspect(style.grid_template_columns[0], content="MinMax(Length(100), Fr(1))")
 }
 
+///|
 test "grid-template-columns repeat" {
   let style = parse_inline_style("grid-template-columns: repeat(3, 100px)")
   inspect(style.grid_template_columns.length(), content="1")
-  inspect(style.grid_template_columns[0], content="Repeat(Count(3), [Length(100)])")
+  inspect(
+    style.grid_template_columns[0],
+    content="Repeat(Count(3), [Length(100)])",
+  )
 }
 
+///|
 test "flex-flow row wrap" {
   let style = parse_inline_style("flex-flow: row wrap")
   inspect(style.flex_direction, content="Row")
   inspect(style.flex_wrap, content="Wrap")
 }
 
+///|
 test "flex-flow column nowrap" {
   let style = parse_inline_style("flex-flow: column nowrap")
   inspect(style.flex_direction, content="Column")
   inspect(style.flex_wrap, content="NoWrap")
 }
 
+///|
 test "flex-flow wrap-reverse only" {
   let style = parse_inline_style("flex-flow: wrap-reverse")
   inspect(style.flex_direction, content="Row") // default
   inspect(style.flex_wrap, content="WrapReverse")
+}
+
+///|
+test "flex: 1 0% 1 (basis in middle - invalid)" {
+  // CSS spec: flex shorthand must be <grow> [<shrink>] [<basis>]
+  // Basis in middle like "1 0% 1" is invalid, so defaults are used
+  let style = parse_inline_style("flex: 1 0% 1")
+  inspect(style.flex_grow, content="0")
+  inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Auto")
+}
+
+///|
+test "flex: 1 auto 1 (basis in middle - invalid)" {
+  // CSS spec: flex shorthand must be <grow> [<shrink>] [<basis>]
+  // Basis in middle like "1 auto 1" is invalid, so defaults are used
+  let style = parse_inline_style("flex: 1 auto 1")
+  inspect(style.flex_grow, content="0")
+  inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Auto")
 }
