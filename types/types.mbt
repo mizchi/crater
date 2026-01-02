@@ -120,6 +120,12 @@ pub fn Rect::zero() -> Rect[Double] {
 }
 
 ///|
+/// Create a rect with all sides set to the same value
+pub fn[T] Rect::all(value : T) -> Rect[T] {
+  { left: value, right: value, top: value, bottom: value }
+}
+
+///|
 pub fn[T, U] Rect::map(self : Rect[T], f : (T) -> U) -> Rect[U] {
   {
     left: f(self.left),
@@ -168,6 +174,24 @@ pub(all) enum Dimension {
   Length(Double)
   Percent(Double) // 0.0 to 1.0
   Auto
+} derive(Eq)
+
+///|
+/// Check if dimension equals a specific length value
+pub fn Dimension::eq_length(self : Dimension, value : Double) -> Bool {
+  match self {
+    Length(v) => (v - value).abs() < 0.0001
+    _ => false
+  }
+}
+
+///|
+/// Check if dimension equals a specific percent value
+pub fn Dimension::eq_percent(self : Dimension, value : Double) -> Bool {
+  match self {
+    Percent(v) => (v - value).abs() < 0.0001
+    _ => false
+  }
 }
 
 ///|

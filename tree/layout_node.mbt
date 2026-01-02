@@ -68,6 +68,12 @@ pub struct LayoutNode {
   mut cached_layout : LayoutCache?
   // Dependencies (computed from style)
   dependencies : DependencyKind
+  // Computed layout results (Yoga-compatible)
+  mut computed_x : Double
+  mut computed_y : Double
+  mut computed_width : Double
+  mut computed_height : Double
+  mut has_new_layout : Bool
 }
 
 ///|
@@ -87,6 +93,11 @@ pub fn LayoutNode::new(
     children_dirty: false,
     cached_layout: None,
     dependencies: analyze_style_dependencies(style),
+    computed_x: 0.0,
+    computed_y: 0.0,
+    computed_width: 0.0,
+    computed_height: 0.0,
+    has_new_layout: false,
   }
 }
 
@@ -103,6 +114,11 @@ pub fn LayoutNode::leaf(id : String, style : @style.Style) -> LayoutNode {
     children_dirty: false,
     cached_layout: None,
     dependencies: analyze_style_dependencies(style),
+    computed_x: 0.0,
+    computed_y: 0.0,
+    computed_width: 0.0,
+    computed_height: 0.0,
+    has_new_layout: false,
   }
 }
 
@@ -123,6 +139,11 @@ pub fn LayoutNode::with_measure(
     children_dirty: false,
     cached_layout: None,
     dependencies: analyze_style_dependencies(style),
+    computed_x: 0.0,
+    computed_y: 0.0,
+    computed_width: 0.0,
+    computed_height: 0.0,
+    has_new_layout: false,
   }
 }
 
@@ -183,5 +204,10 @@ pub fn LayoutNode::from_node(node : @node.Node) -> LayoutNode {
     children_dirty: false,
     cached_layout: None,
     dependencies: analyze_style_dependencies(node.style),
+    computed_x: 0.0,
+    computed_y: 0.0,
+    computed_width: 0.0,
+    computed_height: 0.0,
+    has_new_layout: false,
   }
 }

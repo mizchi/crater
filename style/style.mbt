@@ -23,7 +23,7 @@ pub(all) enum FlexDirection {
   RowReverse
   Column
   ColumnReverse
-} derive(Show)
+} derive(Show, Eq)
 
 ///|
 /// Alignment for justify-content, align-items, etc.
@@ -48,7 +48,7 @@ pub(all) enum FlexWrap {
   NoWrap
   Wrap
   WrapReverse
-} derive(Show)
+} derive(Show, Eq)
 
 ///|
 /// Align-self value (can override align-items for individual items)
@@ -59,7 +59,7 @@ pub(all) enum AlignSelf {
   Center
   Stretch
   Baseline // Align item by its baseline
-} derive(Show)
+} derive(Show, Eq)
 
 ///|
 /// CSS float property
@@ -198,68 +198,69 @@ pub fn GridLine::auto() -> GridLine {
 
 ///|
 /// CSS Style definition for layout computation
+/// All fields are mutable to support Yoga-like setter API
 pub(all) struct Style {
-  display : Display
-  position : Position
-  float : Float
-  clear : Clear
+  mut display : Display
+  mut position : Position
+  mut float : Float
+  mut clear : Clear
   // Box sizing
-  box_sizing : BoxSizing
+  mut box_sizing : BoxSizing
   // Overflow
-  overflow_x : Overflow
-  overflow_y : Overflow
+  mut overflow_x : Overflow
+  mut overflow_y : Overflow
   // Sizing
-  width : @types.Dimension
-  height : @types.Dimension
-  min_width : @types.Dimension
-  min_height : @types.Dimension
-  max_width : @types.Dimension
-  max_height : @types.Dimension
+  mut width : @types.Dimension
+  mut height : @types.Dimension
+  mut min_width : @types.Dimension
+  mut min_height : @types.Dimension
+  mut max_width : @types.Dimension
+  mut max_height : @types.Dimension
   // Box model
-  margin : @types.Rect[@types.Dimension]
-  padding : @types.Rect[@types.Dimension]
-  border : @types.Rect[@types.Dimension]
+  mut margin : @types.Rect[@types.Dimension]
+  mut padding : @types.Rect[@types.Dimension]
+  mut border : @types.Rect[@types.Dimension]
   // Flexbox
-  flex_direction : FlexDirection
-  flex_wrap : FlexWrap
-  justify_content : Alignment
-  align_items : Alignment
-  align_content : Alignment
-  align_self : AlignSelf
-  flex_grow : Double
-  flex_shrink : Double
-  flex_basis : @types.Dimension
-  order : Int // Flex item order (default 0)
+  mut flex_direction : FlexDirection
+  mut flex_wrap : FlexWrap
+  mut justify_content : Alignment
+  mut align_items : Alignment
+  mut align_content : Alignment
+  mut align_self : AlignSelf
+  mut flex_grow : Double
+  mut flex_shrink : Double
+  mut flex_basis : @types.Dimension
+  mut order : Int // Flex item order (default 0)
   // Gap
-  row_gap : @types.Dimension
-  column_gap : @types.Dimension
+  mut row_gap : @types.Dimension
+  mut column_gap : @types.Dimension
   // Aspect ratio (width / height)
-  aspect_ratio : Double?
+  mut aspect_ratio : Double?
   // Inset for position: absolute (left, right, top, bottom)
-  inset : @types.Rect[@types.Dimension]
+  mut inset : @types.Rect[@types.Dimension]
   // Grid container properties
-  grid_template_rows : Array[TrackSizingFunction]
-  grid_template_columns : Array[TrackSizingFunction]
-  grid_auto_rows : Array[TrackSizingFunction]
-  grid_auto_columns : Array[TrackSizingFunction]
-  grid_auto_flow : GridAutoFlow
+  mut grid_template_rows : Array[TrackSizingFunction]
+  mut grid_template_columns : Array[TrackSizingFunction]
+  mut grid_auto_rows : Array[TrackSizingFunction]
+  mut grid_auto_columns : Array[TrackSizingFunction]
+  mut grid_auto_flow : GridAutoFlow
   // Grid template areas (each string is a row, e.g. ["header header", "sidebar main"])
-  grid_template_areas : Array[String]
+  mut grid_template_areas : Array[String]
   // Grid item properties
-  grid_row : GridLine
-  grid_column : GridLine
-  grid_area : String? // Named area for item placement
+  mut grid_row : GridLine
+  mut grid_column : GridLine
+  mut grid_area : String? // Named area for item placement
   // justify-items for grid (different from justify-content)
-  justify_items : Alignment
+  mut justify_items : Alignment
   // justify-self for grid items (horizontal self-alignment)
-  justify_self : AlignSelf
+  mut justify_self : AlignSelf
   // Font properties (for baseline calculation)
-  font_size : Double // Computed font size in pixels (default 16.0)
-  line_height : Double // Computed line height in pixels (default = font_size)
+  mut font_size : Double // Computed font size in pixels (default 16.0)
+  mut line_height : Double // Computed line height in pixels (default = font_size)
   // Paint properties (visual, not layout)
-  visibility : Visibility
-  z_index : ZIndex
-  opacity : Double // 0.0 = transparent, 1.0 = opaque
+  mut visibility : Visibility
+  mut z_index : ZIndex
+  mut opacity : Double // 0.0 = transparent, 1.0 = opaque
 }
 
 ///|
