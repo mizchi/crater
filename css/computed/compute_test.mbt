@@ -202,3 +202,23 @@ test "font-size parsing" {
   let style = @computed.compute_inline("font-size: 20px", ctx)
   inspect(style.font_size, content="20")
 }
+
+///|
+test "font shorthand parsing" {
+  let ctx = @computed.ComputeContext::new()
+
+  // font: size/line-height family
+  let style1 = @computed.compute_inline("font: 100px/1 Ahem", ctx)
+  inspect(style1.font_size, content="100")
+  inspect(style1.line_height, content="100") // 100 * 1 = 100
+
+  // font: size/line-height family (with ratio)
+  let style2 = @computed.compute_inline("font: 20px/1.5 sans-serif", ctx)
+  inspect(style2.font_size, content="20")
+  inspect(style2.line_height, content="30") // 20 * 1.5 = 30
+
+  // font: size family (no line-height)
+  let style3 = @computed.compute_inline("font: 16px Arial", ctx)
+  inspect(style3.font_size, content="16")
+  inspect(style3.line_height, content="16") // default 1:1 ratio
+}

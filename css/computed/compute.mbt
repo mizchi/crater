@@ -610,6 +610,12 @@ fn apply_property(
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
       builder.line_height = parse_line_height(value, builder.font_size)
+    "font" => {
+      // Parse font shorthand: [style] [variant] [weight] size[/line-height] family
+      let (fs, lh) = parse_font_shorthand(value, ctx)
+      builder.font_size = fs
+      builder.line_height = lh
+    }
     _ => ()
   }
 }
@@ -929,4 +935,76 @@ fn parse_line_height(value : String, font_size : Double) -> Double {
 
   // Default to font-size
   font_size
+}
+
+///|
+/// Parse font shorthand and extract font-size and line-height
+/// Supports: [style] [variant] [weight] size[/line-height] family
+fn parse_font_shorthand(
+  value : String,
+  ctx : ComputeContext,
+) -> (Double, Double) {
+  let v = value.trim()
+
+  // Split by whitespace
+  let parts : Array[String] = []
+  let mut current = StringBuilder::new()
+  let mut in_quotes = false
+  for c in v.iter() {
+    if c == '"' || c == '\'' {
+      in_quotes = not(in_quotes)
+      current.write_char(c)
+    } else if (c == ' ' || c == '\t') && not(in_quotes) {
+      let s = current.to_string()
+      if s.length() > 0 {
+        parts.push(s)
+      }
+      current = StringBuilder::new()
+    } else {
+      current.write_char(c)
+    }
+  }
+  let s = current.to_string()
+  if s.length() > 0 {
+    parts.push(s)
+  }
+
+  // Find the part with font-size (and optional /line-height)
+  // Font-size is required and comes before font-family
+  // Look for a part that starts with a digit or contains 'px', 'em', 'rem', '%'
+  let mut font_size = ctx.font_size
+  let mut line_height = ctx.font_size
+  for part in parts {
+    // Check if this part contains size/line-height
+    if part.contains("/") {
+      // Split by /
+      let mut slash_idx = -1
+      for i = 0; i < part.length(); i = i + 1 {
+        if part[i] == '/' {
+          slash_idx = i
+          break
+        }
+      }
+      if slash_idx > 0 {
+        try {
+          let size_part = part[:slash_idx].to_string()
+          let lh_part = part[slash_idx + 1:].to_string()
+          font_size = parse_font_size(size_part, ctx)
+          line_height = parse_line_height(lh_part, font_size)
+          break
+        } catch {
+          _ => ()
+        }
+      }
+    } else {
+      // Check if it's a size value (starts with digit or contains unit)
+      let first_char = if part.length() > 0 { part[0] } else { ' ' }
+      if first_char >= '0' && first_char <= '9' {
+        font_size = parse_font_size(part, ctx)
+        line_height = font_size // Default line-height = font-size (ratio 1)
+        break
+      }
+    }
+  }
+  (font_size, line_height)
 }

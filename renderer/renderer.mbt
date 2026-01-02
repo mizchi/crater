@@ -1158,6 +1158,14 @@ fn merge_style_property(
   if property == "line-height" {
     return { ..target, line_height: source.line_height }
   }
+  // Font shorthand - applies both font-size and line-height
+  if property == "font" {
+    return {
+      ..target,
+      font_size: source.font_size,
+      line_height: source.line_height,
+    }
+  }
   target
 }
 
