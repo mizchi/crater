@@ -479,7 +479,15 @@ fn apply_property(
         builder.flex_shrink = v
       }
     }
-    "flex-basis" => builder.flex_basis = resolve_dimension(value, ctx)
+    "flex-basis" => {
+      // CSS spec: negative values are invalid, keep as auto
+      let dim = resolve_dimension(value, ctx)
+      match dim {
+        @types.Length(v) => if v >= 0.0 { builder.flex_basis = dim }
+        @types.Percent(v) => if v >= 0.0 { builder.flex_basis = dim }
+        @types.Auto => builder.flex_basis = dim
+      }
+    }
     "order" => builder.order = parse_integer(value)
     "flex" => {
       // Parse flex shorthand: none | auto | <flex-grow> [<flex-shrink>] [<flex-basis>]

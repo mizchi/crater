@@ -156,14 +156,18 @@ pub fn compute_size_params(
 
 ///|
 /// Check if a dimension has explicit constraint (min or max)
+/// Note: min-width/height: 0 is not considered a real constraint since it's
+/// typically used to disable auto min-width/height behavior, not to actually
+/// constrain the dimension.
 pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
   if is_width {
     match style.max_width {
       @types.Length(_) | @types.Percent(_) => true
       @types.Auto =>
         match style.min_width {
-          @types.Length(_) | @types.Percent(_) => true
-          @types.Auto => false
+          @types.Length(v) if v > 0.0 => true
+          @types.Percent(p) if p > 0.0 => true
+          _ => false
         }
     }
   } else {
@@ -171,8 +175,9 @@ pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
       @types.Length(_) | @types.Percent(_) => true
       @types.Auto =>
         match style.min_height {
-          @types.Length(_) | @types.Percent(_) => true
-          @types.Auto => false
+          @types.Length(v) if v > 0.0 => true
+          @types.Percent(p) if p > 0.0 => true
+          _ => false
         }
     }
   }

@@ -874,6 +874,8 @@ fn compute_internal(
     let child_margin = @types.resolve_rect(child_style.margin, content_width)
 
     // Get explicit cross dimension value for aspect_ratio calculation
+    // When cross dimension is auto but has a min constraint, use the min value
+    // for aspect-ratio calculation (combined with intrinsic size if available)
     let explicit_cross : Double? = if is_row {
       match child_style.height {
         @types.Length(h) => Some(h)
@@ -882,13 +884,51 @@ fn compute_internal(
             Some(ch) => Some(ch * p)
             None => None
           }
-        @types.Auto => None
+        @types.Auto =>
+          // Check if min-height is set - use it for aspect-ratio calculation
+          match child_style.min_height {
+            @types.Length(min_h) if min_h > 0.0 => {
+              // Get intrinsic height from MeasureFunc if available
+              let intrinsic_h = match child.measure {
+                Some(mf) => {
+                  let intrinsic = (mf.func)(content_width, 0.0)
+                  intrinsic.max_height
+                }
+                None => 0.0
+              }
+              // Use max of intrinsic and min constraint
+              Some(@types.max(intrinsic_h, min_h))
+            }
+            @types.Percent(p) if p > 0.0 =>
+              match content_height {
+                Some(ch) => Some(ch * p)
+                None => None
+              }
+            _ => None
+          }
       }
     } else {
       match child_style.width {
         @types.Length(w) => Some(w)
         @types.Percent(p) => Some(content_width * p)
-        @types.Auto => None
+        @types.Auto =>
+          // Check if min-width is set - use it for aspect-ratio calculation
+          match child_style.min_width {
+            @types.Length(min_w) if min_w > 0.0 => {
+              // Get intrinsic width from MeasureFunc if available
+              let intrinsic_w = match child.measure {
+                Some(mf) => {
+                  let intrinsic = (mf.func)(0.0, 0.0)
+                  intrinsic.max_width
+                }
+                None => 0.0
+              }
+              // Use max of intrinsic and min constraint
+              Some(@types.max(intrinsic_w, min_w))
+            }
+            @types.Percent(p) if p > 0.0 => Some(content_width * p)
+            _ => None
+          }
       }
     }
 
@@ -1279,7 +1319,10 @@ fn compute_internal(
     }
     // Initial final_main is clamped by min/max constraints
     // This ensures min_main is applied even when flex_grow = 0
-    let initial_final_main = @types.max(min_main, @types.min(base_main, max_main))
+    let initial_final_main = @types.max(
+      min_main,
+      @types.min(base_main, max_main),
+    )
     let item : FlexItem = {
       index: i,
       order: child_style.order,
