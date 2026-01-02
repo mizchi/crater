@@ -6,7 +6,9 @@
     "mizchi/crater/compute/block",
     "mizchi/crater/compute/flex",
     "mizchi/crater/compute/grid",
-    "mizchi/crater/cls"
+    "mizchi/crater/cls",
+    "mizchi/crater/tree",
+    "mizchi/crater/compute/dispatch"
   ],
   "test-import": [
     "mizchi/crater/compute/trace",

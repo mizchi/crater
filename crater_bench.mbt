@@ -1571,3 +1571,202 @@ test "bench_large_website_10000" (b : @bench.T) {
     b.keep(compute_layout(node, viewport))
   })
 }
+
+// =============================================================================
+// Incremental Layout Benchmarks
+// =============================================================================
+
+///|
+/// Create LayoutNode tree for incremental benchmarks
+fn create_large_layout_tree(
+  num_sidebar : Int,
+  num_sections : Int,
+  cards_per_section : Int,
+) -> (@tree.LayoutTree, Array[@tree.LayoutNode]) {
+  let all_cards : Array[@tree.LayoutNode] = []
+
+  // Sidebar items
+  let sidebar_items : Array[@tree.LayoutNode] = []
+  for i = 0; i < num_sidebar; i = i + 1 {
+    sidebar_items.push(
+      @tree.LayoutNode::leaf("sidebar_" + i.to_string(), @style.Style::{
+        ..@style.Style::default(),
+        width: @types.Length(180.0),
+        height: @types.Length(40.0),
+      }),
+    )
+  }
+  let sidebar = @tree.LayoutNode::new(
+    "sidebar",
+    @style.Style::{
+      ..@style.Style::default(),
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Auto,
+    },
+    sidebar_items,
+  )
+
+  // Sections with cards
+  let sections : Array[@tree.LayoutNode] = []
+  for s = 0; s < num_sections; s = s + 1 {
+    let cards : Array[@tree.LayoutNode] = []
+    for c = 0; c < cards_per_section; c = c + 1 {
+      let card = @tree.LayoutNode::new(
+        "card_" + s.to_string() + "_" + c.to_string(),
+        @style.Style::{
+          ..@style.Style::default(),
+          display: @style.Flex,
+          flex_direction: @style.Column,
+          width: @types.Length(280.0),
+          height: @types.Length(200.0),
+        },
+        [
+          @tree.LayoutNode::leaf("title", @style.Style::{
+            ..@style.Style::default(),
+            width: @types.Percent(1.0),
+            height: @types.Length(24.0),
+          }),
+          @tree.LayoutNode::leaf("body", @style.Style::{
+            ..@style.Style::default(),
+            width: @types.Percent(1.0),
+            height: @types.Length(100.0),
+          }),
+          @tree.LayoutNode::leaf("footer", @style.Style::{
+            ..@style.Style::default(),
+            width: @types.Percent(1.0),
+            height: @types.Length(32.0),
+          }),
+        ],
+      )
+      cards.push(card)
+      all_cards.push(card)
+    }
+    let section = @tree.LayoutNode::new(
+      "section_" + s.to_string(),
+      @style.Style::{
+        ..@style.Style::default(),
+        display: @style.Flex,
+        flex_wrap: @style.Wrap,
+        width: @types.Percent(1.0),
+        height: @types.Auto,
+      },
+      cards,
+    )
+    sections.push(section)
+  }
+
+  let main = @tree.LayoutNode::new(
+    "main",
+    @style.Style::{
+      ..@style.Style::default(),
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Auto,
+      height: @types.Auto,
+      flex_grow: 1.0,
+    },
+    sections,
+  )
+
+  let body = @tree.LayoutNode::new(
+    "body",
+    @style.Style::{
+      ..@style.Style::default(),
+      display: @style.Flex,
+      width: @types.Percent(1.0),
+      height: @types.Auto,
+      flex_grow: 1.0,
+    },
+    [sidebar, main],
+  )
+
+  let root = @tree.LayoutNode::new(
+    "root",
+    @style.Style::{
+      ..@style.Style::default(),
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(1440.0),
+      height: @types.Length(900.0),
+    },
+    [body],
+  )
+
+  let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
+  (tree, all_cards)
+}
+
+///|
+test "bench_incremental_5000_full" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, _) = create_large_layout_tree(50, 20, 20)
+  b.bench(name="incremental_5000_full", fn() {
+    // Mark root dirty to force full recompute
+    tree.mark_node_dirty(tree.root.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+test "bench_incremental_5000_single_dirty" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, cards) = create_large_layout_tree(50, 20, 20)
+  // Initial full compute
+  let _ = tree.compute_incremental()
+  let target_card = cards[cards.length() / 2]
+
+  b.bench(name="incremental_5000_single", fn() {
+    // Mark single card dirty
+    tree.mark_node_dirty(target_card.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+test "bench_incremental_5000_cached" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, _) = create_large_layout_tree(50, 20, 20)
+  // Initial full compute
+  let _ = tree.compute_incremental()
+
+  b.bench(name="incremental_5000_cached", fn() {
+    // No dirty nodes - pure cache hit
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+test "bench_incremental_10000_full" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, _) = create_large_layout_tree(100, 40, 20)
+  b.bench(name="incremental_10000_full", fn() {
+    tree.mark_node_dirty(tree.root.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+test "bench_incremental_10000_single_dirty" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, cards) = create_large_layout_tree(100, 40, 20)
+  let _ = tree.compute_incremental()
+  let target_card = cards[cards.length() / 2]
+
+  b.bench(name="incremental_10000_single", fn() {
+    tree.mark_node_dirty(target_card.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+test "bench_incremental_10000_cached" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, _) = create_large_layout_tree(100, 40, 20)
+  let _ = tree.compute_incremental()
+
+  b.bench(name="incremental_10000_cached", fn() {
+    b.keep(tree.compute_incremental())
+  })
+}
