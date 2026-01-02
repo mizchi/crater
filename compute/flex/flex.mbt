@@ -111,6 +111,7 @@ pub fn clear_resolved_cache_for_node(uid : Int) -> Unit {
   // Clear common width quantizations (0-5000px in 0.1px steps is too many)
   // Instead, we'll rely on cache being overwritten on recompute
   let _ = cache
+
 }
 
 ///|
@@ -1008,7 +1009,11 @@ fn compute_internal(
       continue
     }
     // Use cached resolved rects for margin
-    let child_resolved = get_resolved_rects(child_style, child.uid, content_width)
+    let child_resolved = get_resolved_rects(
+      child_style,
+      child.uid,
+      content_width,
+    )
     let child_margin = child_resolved.margin
 
     // Get explicit cross dimension value for aspect_ratio calculation

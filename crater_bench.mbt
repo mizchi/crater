@@ -1656,7 +1656,6 @@ fn create_large_layout_tree(
     )
     sections.push(section)
   }
-
   let main = @tree.LayoutNode::new(
     "main",
     @style.Style::{
@@ -1669,7 +1668,6 @@ fn create_large_layout_tree(
     },
     sections,
   )
-
   let body = @tree.LayoutNode::new(
     "body",
     @style.Style::{
@@ -1681,7 +1679,6 @@ fn create_large_layout_tree(
     },
     [sidebar, main],
   )
-
   let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
@@ -1693,7 +1690,6 @@ fn create_large_layout_tree(
     },
     [body],
   )
-
   let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
   (tree, all_cards)
 }
@@ -1716,7 +1712,6 @@ test "bench_incremental_5000_single_dirty" (b : @bench.T) {
   // Initial full compute
   let _ = tree.compute_incremental()
   let target_card = cards[cards.length() / 2]
-
   b.bench(name="incremental_5000_single", fn() {
     // Mark single card dirty
     tree.mark_node_dirty(target_card.uid)
@@ -1730,7 +1725,6 @@ test "bench_incremental_5000_cached" (b : @bench.T) {
   let (tree, _) = create_large_layout_tree(50, 20, 20)
   // Initial full compute
   let _ = tree.compute_incremental()
-
   b.bench(name="incremental_5000_cached", fn() {
     // No dirty nodes - pure cache hit
     b.keep(tree.compute_incremental())
@@ -1753,7 +1747,6 @@ test "bench_incremental_10000_single_dirty" (b : @bench.T) {
   let (tree, cards) = create_large_layout_tree(100, 40, 20)
   let _ = tree.compute_incremental()
   let target_card = cards[cards.length() / 2]
-
   b.bench(name="incremental_10000_single", fn() {
     tree.mark_node_dirty(target_card.uid)
     b.keep(tree.compute_incremental())
@@ -1765,7 +1758,6 @@ test "bench_incremental_10000_cached" (b : @bench.T) {
   @dispatch.setup()
   let (tree, _) = create_large_layout_tree(100, 40, 20)
   let _ = tree.compute_incremental()
-
   b.bench(name="incremental_10000_cached", fn() {
     b.keep(tree.compute_incremental())
   })
