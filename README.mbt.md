@@ -26,7 +26,7 @@ Layout algorithm tests ported from Taffy:
 
 CSS Flexbox tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
-- **145 / 234 tests passing** (62%)
+- **151 / 234 tests passing** (65%)
 - Compares layout output against Chromium reference
 
 ## Features
