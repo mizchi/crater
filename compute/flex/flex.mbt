@@ -1921,13 +1921,11 @@ fn compute_internal(
     None => total_lines_cross
   }
   // Determine if we should use reversed layout
-  // For wrap-reverse with flex-relative alignment, lines are laid out in reverse order
-  // For physical alignment (Start/End), lines are laid out normally (no reversal)
-  let uses_physical_alignment = match style.align_content {
-    @style.Start | @style.End => true
-    _ => false
-  }
-  let uses_reversed_layout = is_wrap_reverse && not(uses_physical_alignment)
+  // For wrap-reverse, lines are ALWAYS laid out in reverse visual order
+  // (array line 0 appears at cross-end, array line n-1 appears at cross-start)
+  // The difference between physical (Start/End) and flex-relative (FlexStart/FlexEnd) alignment
+  // is only in where the lines are packed, not in the line ordering
+  let uses_reversed_layout = is_wrap_reverse
   let mut cross_pos = if uses_reversed_layout {
     // Start from cross-end
     cross_size_resolved - line_start_offset

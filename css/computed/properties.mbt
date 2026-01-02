@@ -149,9 +149,7 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
     // Try plain number
     let first_char = part[0].to_int()
     if first_char >= '0'.to_int() && first_char <= '9'.to_int() {
-      let n = @strconv.parse_double(part) catch {
-        _ => continue
-      }
+      let n = @strconv.parse_double(part) catch { _ => continue }
       return @types.Dimension::Length(n)
     }
   }

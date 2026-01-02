@@ -1324,16 +1324,10 @@ fn merge_style_property(
     }
   }
   if property == "border-left" || property == "border-left-width" {
-    return {
-      ..target,
-      border: { ..target.border, left: source.border.left },
-    }
+    return { ..target, border: { ..target.border, left: source.border.left } }
   }
   if property == "border-right" || property == "border-right-width" {
-    return {
-      ..target,
-      border: { ..target.border, right: source.border.right },
-    }
+    return { ..target, border: { ..target.border, right: source.border.right } }
   }
   // Flexbox alignment properties
   if property == "justify-content" {
