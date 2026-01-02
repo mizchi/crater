@@ -175,7 +175,9 @@ fn parse_html_dimension(value : String) -> Double? {
   }
   // Remove "px" suffix if present
   let num_str = if trimmed.has_suffix("px") {
-    trimmed.substring(end=trimmed.length() - 2)
+    trimmed[:trimmed.length() - 2].to_string() catch {
+      _ => trimmed
+    }
   } else {
     trimmed
   }
@@ -378,7 +380,7 @@ fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
 /// Convert HTML Element to Node tree for layout computation
 pub fn element_to_node(
   elem : @html.Element,
-  parent_style : @style.Style?,
+  _parent_style : @style.Style?,
 ) -> @node.Node {
   // Compute style from inline style attribute
   let ctx = @computed.ComputeContext::new()
@@ -510,60 +512,6 @@ pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
     padding: layout.padding,
     border: layout.border,
     children: layout.children,
-  }
-}
-
-///|
-/// Convert HTML Element to Node tree, applying viewport dimensions to root
-fn element_to_node_with_viewport(
-  elem : @html.Element,
-  parent_style : @style.Style?,
-  ctx : RenderContext,
-) -> @node.Node {
-  // Compute style from inline style attribute
-  let compute_ctx = @computed.ComputeContext::new()
-  let mut style = match elem.style {
-    Some(css) => @computed.compute_inline(css, compute_ctx)
-    None => @style.Style::default()
-  }
-
-  // Apply viewport dimensions if this is the root (body) element
-  if parent_style is None {
-    // Set width to viewport width if not specified
-    match style.width {
-      @types.Dimension::Auto =>
-        style = { ..style, width: @types.Dimension::Length(ctx.viewport_width) }
-      _ => ()
-    }
-    // height: auto - let block layout calculate from content
-  }
-
-  // Convert children
-  let children : Array[@node.Node] = []
-  for child in elem.children {
-    match child {
-      @html.Node::Element(child_elem) => {
-        let child_node = element_to_node(child_elem, Some(style))
-        children.push(child_node)
-      }
-      @html.Node::Text(_text) => ()
-    }
-  }
-
-  // Create node ID
-  let node_id = match elem.id {
-    Some(id) => elem.tag + "#" + id
-    None =>
-      if elem.classes.length() > 0 {
-        elem.tag + "." + elem.classes[0]
-      } else {
-        elem.tag
-      }
-  }
-  if children.is_empty() {
-    @node.Node::leaf(node_id, style)
-  } else {
-    @node.Node::new(node_id, style, children)
   }
 }
 

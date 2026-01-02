@@ -1,9 +1,9 @@
 ///|
 test "parse type selector" {
   let sel = parse_selector_text("div")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
-  inspect(s.head.type_selector.is_some(), content="true")
+  inspect(s.head.type_selector is Some(_), content="true")
   match s.head.type_selector {
     Some(Type(name)) => inspect(name, content="div")
     _ => fail("expected type selector")
@@ -13,7 +13,7 @@ test "parse type selector" {
 ///|
 test "parse class selector" {
   let sel = parse_selector_text(".foo")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   inspect(s.head.subclasses.length(), content="1")
   match s.head.subclasses[0] {
@@ -25,7 +25,7 @@ test "parse class selector" {
 ///|
 test "parse id selector" {
   let sel = parse_selector_text("#bar")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   inspect(s.head.subclasses.length(), content="1")
   match s.head.subclasses[0] {
@@ -37,7 +37,7 @@ test "parse id selector" {
 ///|
 test "parse universal selector" {
   let sel = parse_selector_text("*")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.type_selector {
     Some(Universal) => ()
@@ -48,7 +48,7 @@ test "parse universal selector" {
 ///|
 test "parse compound selector" {
   let sel = parse_selector_text("div.foo#bar")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   // Type selector
   match s.head.type_selector {
@@ -70,7 +70,7 @@ test "parse compound selector" {
 ///|
 test "parse descendant combinator" {
   let sel = parse_selector_text("div p")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   // head should be 'p'
   match s.head.type_selector {
@@ -92,7 +92,7 @@ test "parse descendant combinator" {
 ///|
 test "parse child combinator" {
   let sel = parse_selector_text("div > p")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.tail[0].combinator {
     Child => ()
@@ -103,7 +103,7 @@ test "parse child combinator" {
 ///|
 test "parse adjacent sibling combinator" {
   let sel = parse_selector_text("div + p")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.tail[0].combinator {
     NextSibling => ()
@@ -114,7 +114,7 @@ test "parse adjacent sibling combinator" {
 ///|
 test "parse general sibling combinator" {
   let sel = parse_selector_text("div ~ p")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.tail[0].combinator {
     SubsequentSibling => ()
@@ -125,7 +125,7 @@ test "parse general sibling combinator" {
 ///|
 test "parse attribute exists selector" {
   let sel = parse_selector_text("[disabled]")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.subclasses[0] {
     Attribute(attr) => {
@@ -142,7 +142,7 @@ test "parse attribute exists selector" {
 ///|
 test "parse attribute exact match" {
   let sel = parse_selector_text("[type=button]")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.subclasses[0] {
     Attribute(attr) => {
@@ -159,7 +159,7 @@ test "parse attribute exact match" {
 ///|
 test "parse pseudo-class first-child" {
   let sel = parse_selector_text(":first-child")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.subclasses[0] {
     PseudoClass(FirstChild) => ()
@@ -170,7 +170,7 @@ test "parse pseudo-class first-child" {
 ///|
 test "parse pseudo-class nth-child" {
   let sel = parse_selector_text(":nth-child(2n+1)")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.subclasses[0] {
     PseudoClass(NthChild(expr)) => {
@@ -184,7 +184,7 @@ test "parse pseudo-class nth-child" {
 ///|
 test "parse pseudo-class nth-child odd" {
   let sel = parse_selector_text(":nth-child(odd)")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.subclasses[0] {
     PseudoClass(NthChild(expr)) => {
@@ -198,7 +198,7 @@ test "parse pseudo-class nth-child odd" {
 ///|
 test "parse pseudo-element before" {
   let sel = parse_selector_text("::before")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   match s.head.subclasses[0] {
     PseudoElement(Before) => ()
@@ -209,7 +209,7 @@ test "parse pseudo-element before" {
 ///|
 test "parse selector list" {
   let list = parse_selector_list_text("div, .foo, #bar")
-  inspect(list.is_some(), content="true")
+  inspect(list is Some(_), content="true")
   let l = list.unwrap()
   inspect(l.selectors.length(), content="3")
 }
@@ -217,7 +217,7 @@ test "parse selector list" {
 ///|
 test "parse complex selector chain" {
   let sel = parse_selector_text("nav > ul li a:hover")
-  inspect(sel.is_some(), content="true")
+  inspect(sel is Some(_), content="true")
   let s = sel.unwrap()
   // head should be 'a:hover'
   match s.head.type_selector {

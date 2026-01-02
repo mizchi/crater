@@ -29,14 +29,14 @@ test "trace_simple_layout" {
   let result = @flex.compute_with_trace(parent, ctx)
   // Verify traces were collected
   let parent_trace = result.tracer.get_trace(parent.uid)
-  assert_true(parent_trace.is_some())
+  assert_true(parent_trace is Some(_))
   let pt = parent_trace.unwrap()
   // Check parent output matches layout
   assert_eq(pt.output.width, 200.0)
   assert_eq(pt.output.height, 100.0)
   // Check child trace
   let child_trace = result.tracer.get_trace(child.uid)
-  assert_true(child_trace.is_some())
+  assert_true(child_trace is Some(_))
   let ct = child_trace.unwrap()
   assert_eq(ct.output.width, 50.0)
   assert_eq(ct.output.height, 30.0)
@@ -71,7 +71,7 @@ test "trace_dependencies_recorded" {
   let result = @flex.compute_with_trace(parent, ctx)
   // Parent should have dependencies on children's intrinsic sizes
   let parent_trace = result.tracer.get_trace(parent.uid)
-  assert_true(parent_trace.is_some())
+  assert_true(parent_trace is Some(_))
   let pt = parent_trace.unwrap()
   // Should have ParentWidth and ChildIntrinsicMain dependencies
   assert_true(pt.dependencies.length() >= 1) // At least ParentWidth
@@ -187,9 +187,9 @@ test "trace_nested_structure" {
   }
   let result = @flex.compute_with_trace(parent, ctx)
   // All three nodes should have traces
-  assert_true(result.tracer.get_trace(parent.uid).is_some())
-  assert_true(result.tracer.get_trace(middle.uid).is_some())
-  assert_true(result.tracer.get_trace(leaf.uid).is_some())
+  assert_true(result.tracer.get_trace(parent.uid) is Some(_))
+  assert_true(result.tracer.get_trace(middle.uid) is Some(_))
+  assert_true(result.tracer.get_trace(leaf.uid) is Some(_))
   // Verify traced nodes count
   let traced_nodes = result.tracer.get_traced_nodes()
   assert_eq(traced_nodes.length(), 3)

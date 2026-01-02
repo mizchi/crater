@@ -53,13 +53,13 @@ fn main {
         skip_next = true
       }
     } else if arg.has_prefix("--width=") {
-      width = parse_int(arg.substring(start=8))
+      width = parse_int(arg[8:].to_string() catch { _ => "" })
     } else if arg.has_prefix("--height=") {
-      height = parse_int(arg.substring(start=9))
+      height = parse_int(arg[9:].to_string() catch { _ => "" })
     } else if arg.has_prefix("-w=") {
-      width = parse_int(arg.substring(start=3))
+      width = parse_int(arg[3:].to_string() catch { _ => "" })
     } else if arg.has_prefix("-H=") {
-      height = parse_int(arg.substring(start=3))
+      height = parse_int(arg[3:].to_string() catch { _ => "" })
     } else if input is None {
       input = Some(arg)
     }

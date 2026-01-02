@@ -3,7 +3,7 @@
 test "parse simple element" {
   let html = "<div></div>"
   let elem = @html.parse(html)
-  inspect(elem.is_some(), content="true")
+  inspect(elem is Some(_), content="true")
   match elem {
     Some(e) => inspect(e.tag, content="div")
     None => ()

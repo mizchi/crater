@@ -71,7 +71,7 @@ test "debug node style from stylesheet" {
   }
 
   let body = find_body(doc.root)
-  inspect(body.is_some(), content="true")
+  inspect(body is Some(_), content="true")
   match body {
     Some(body_elem) =>
       // Find div.row

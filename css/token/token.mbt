@@ -9,8 +9,6 @@ pub enum Token {
   Hash(String, HashType) // # followed by name
   String(String)
   BadString
-  Url(String)
-  BadUrl
 
   // Numbers
   Number(Double, NumType)
@@ -59,8 +57,6 @@ pub fn Token::to_string(self : Token) -> String {
     Hash(s, _) => "Hash(\{s})"
     String(s) => "String(\{s})"
     BadString => "BadString"
-    Url(s) => "Url(\{s})"
-    BadUrl => "BadUrl"
     Number(n, t) => {
       let typ = match t {
         Integer => "int"

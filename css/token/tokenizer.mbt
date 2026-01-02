@@ -67,12 +67,6 @@ fn is_digit(c : Char) -> Bool {
 }
 
 ///|
-/// Check if character is a hex digit
-fn is_hex_digit(c : Char) -> Bool {
-  is_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
-}
-
-///|
 /// Check if character is a letter
 fn is_letter(c : Char) -> Bool {
   (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
