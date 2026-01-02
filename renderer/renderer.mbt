@@ -42,16 +42,6 @@ fn char_display_width(c : Char) -> Int {
 }
 
 ///|
-/// Calculate total display width of a string (accounting for wide characters)
-fn string_display_width(s : StringView) -> Int {
-  let mut width = 0
-  for c in s.iter() {
-    width = width + char_display_width(c)
-  }
-  width
-}
-
-///|
 /// Render context with viewport dimensions
 pub(all) struct RenderContext {
   viewport_width : Double
@@ -68,38 +58,59 @@ pub fn RenderContext::default() -> RenderContext {
 /// Create a MeasureFunc for text content with font metrics
 /// Calculates text dimensions based on monospace character width
 /// Accounts for East Asian Wide characters (CJK) which take 2 columns
+/// Handles explicit line breaks (from <br> elements converted to \n)
 fn create_text_measure(
   text : String,
   font_size : Double,
   text_line_height : Double,
 ) -> @node.MeasureFunc {
-  // Count display width (accounting for wide characters like CJK)
   let trimmed = text.trim()
-  let display_width = string_display_width(trimmed)
-
-  // Calculate character width based on font size
   let char_width = font_size * char_width_ratio
 
-  // Calculate intrinsic width (single line, no wrapping)
-  let text_max_width = display_width.to_double() * char_width
-
-  // For min-width, use the longest word (accounting for wide chars)
+  // Split by explicit line breaks and calculate per-line metrics
+  let mut explicit_lines = 1
+  let mut max_line_width = 0
+  let mut current_line_width = 0
   let mut max_word_width = 0
   let mut current_word_width = 0
   for c in trimmed.iter() {
-    if c == ' ' || c == '\n' || c == '\t' {
+    if c == '\n' {
+      // Explicit line break (from <br>)
+      explicit_lines = explicit_lines + 1
+      if current_line_width > max_line_width {
+        max_line_width = current_line_width
+      }
+      if current_word_width > max_word_width {
+        max_word_width = current_word_width
+      }
+      current_line_width = 0
+      current_word_width = 0
+    } else if c == ' ' || c == '\t' {
       if current_word_width > max_word_width {
         max_word_width = current_word_width
       }
       current_word_width = 0
+      current_line_width = current_line_width + 1 // Space width
     } else {
-      current_word_width = current_word_width + char_display_width(c)
+      let cw = char_display_width(c)
+      current_line_width = current_line_width + cw
+      current_word_width = current_word_width + cw
     }
+  }
+  // Handle last line/word
+  if current_line_width > max_line_width {
+    max_line_width = current_line_width
   }
   if current_word_width > max_word_width {
     max_word_width = current_word_width
   }
+
+  // max_width is the widest line (for intrinsic sizing)
+  let text_max_width = max_line_width.to_double() * char_width
+  // min_width is the longest word
   let text_min_width = max_word_width.to_double() * char_width
+  // min_height accounts for explicit line breaks
+  let min_lines = explicit_lines
   {
     func: fn(
       available_width : Double,
@@ -111,20 +122,76 @@ fn create_text_measure(
       } else {
         chars_per_line
       }
-      // Calculate how many lines we need
-      let lines = if cols_available > 0 && display_width > 0 {
-        (display_width + cols_available - 1) / cols_available
+      // Calculate total lines needed (considering both wrapping and explicit breaks)
+      // For each explicit line, calculate how many visual lines it needs
+      let mut total_lines = 0
+      let mut current_line_width = 0
+      for c in trimmed.iter() {
+        if c == '\n' {
+          // End of explicit line
+          let line_visual_lines = if cols_available > 0 &&
+            current_line_width > 0 {
+            (current_line_width + cols_available - 1) / cols_available
+          } else {
+            1
+          }
+          total_lines = total_lines + line_visual_lines
+          current_line_width = 0
+        } else if c == ' ' || c == '\t' {
+          current_line_width = current_line_width + 1
+        } else {
+          current_line_width = current_line_width + char_display_width(c)
+        }
+      }
+      // Handle last line
+      let last_line_visual = if cols_available > 0 && current_line_width > 0 {
+        (current_line_width + cols_available - 1) / cols_available
       } else {
         1
       }
-      let height = lines.to_double() * text_line_height
+      total_lines = total_lines + last_line_visual
+      let height = total_lines.to_double() * text_line_height
+      let min_height = min_lines.to_double() * text_line_height
       {
         min_width: text_min_width,
         max_width: text_max_width,
-        min_height: text_line_height,
+        min_height,
         max_height: height,
       }
     },
+  }
+}
+
+///|
+/// Collect inline content from HTML children, combining text and <br> elements
+/// Returns collected text (with \n for br) and remaining block-level children
+fn collect_inline_content(
+  children : Array[@html.Node],
+) -> (String, Array[@html.Node]) {
+  let text_builder = StringBuilder::new()
+  let remaining : Array[@html.Node] = []
+  let mut has_inline_content = false
+  for child in children {
+    match child {
+      @html.Node::Text(text) => {
+        text_builder.write_string(text)
+        has_inline_content = true
+      }
+      @html.Node::Element(elem) =>
+        if elem.tag.to_lower() == "br" {
+          // Insert newline for <br>
+          text_builder.write_string("\n")
+          has_inline_content = true
+        } else {
+          // Block-level or other elements go to remaining
+          remaining.push(child)
+        }
+    }
+  }
+  if has_inline_content {
+    (text_builder.to_string(), remaining)
+  } else {
+    ("", children)
   }
 }
 
@@ -566,9 +633,18 @@ fn element_to_node_with_styles(
     None, // Root element has no parent style
   )
 
-  // Convert children
+  // Convert children - first collect inline content (text + br)
   let children : Array[@node.Node] = []
-  for i, child in elem.children {
+  let (inline_text, remaining_children) = collect_inline_content(elem.children)
+
+  // Add combined text node if there's inline content
+  if not(inline_text.trim().is_empty()) {
+    let text_node = create_text_node(inline_text, style)
+    children.push(text_node)
+  }
+
+  // Process remaining block-level children
+  for i, child in remaining_children {
     match child {
       @html.Node::Element(child_elem) => {
         // Update sibling info on selector element for child processing
@@ -576,7 +652,7 @@ fn element_to_node_with_styles(
           child_elem,
           selector_elem,
           i + 1,
-          elem.children.length(),
+          remaining_children.length(),
         )
         let child_node = element_to_node_with_styles_internal(
           child_elem,
@@ -587,10 +663,9 @@ fn element_to_node_with_styles(
         )
         children.push(child_node)
       }
-      @html.Node::Text(text) => {
-        let text_node = create_text_node(text, style)
-        children.push(text_node)
-      }
+      @html.Node::Text(_text) =>
+        // Text should have been collected by collect_inline_content
+        ()
     }
   }
 
@@ -622,16 +697,25 @@ fn element_to_node_with_styles_internal(
     parent_style,
   )
 
-  // Convert children
+  // Convert children - first collect inline content (text + br)
   let children : Array[@node.Node] = []
-  for i, child in elem.children {
+  let (inline_text, remaining_children) = collect_inline_content(elem.children)
+
+  // Add combined text node if there's inline content
+  if not(inline_text.trim().is_empty()) {
+    let text_node = create_text_node(inline_text, style)
+    children.push(text_node)
+  }
+
+  // Process remaining block-level children
+  for i, child in remaining_children {
     match child {
       @html.Node::Element(child_elem) => {
         let child_selector = html_to_selector_element_with_parent(
           child_elem,
           selector_elem,
           i + 1,
-          elem.children.length(),
+          remaining_children.length(),
         )
         let child_node = element_to_node_with_styles_internal(
           child_elem,
@@ -642,10 +726,10 @@ fn element_to_node_with_styles_internal(
         )
         children.push(child_node)
       }
-      @html.Node::Text(text) => {
-        let text_node = create_text_node(text, style)
-        children.push(text_node)
-      }
+      @html.Node::Text(_text) =>
+        // Text should have been collected by collect_inline_content
+        // This shouldn't happen, but handle it just in case
+        ()
     }
   }
   let node_id = make_node_id(elem)
@@ -1032,6 +1116,25 @@ fn merge_style_property(
     return { ..target, max_width: source.max_width }
   }
   if property == "max-height" {
+    return { ..target, max_height: source.max_height }
+  }
+  // Logical properties (horizontal-tb writing mode only)
+  if property == "inline-size" {
+    return { ..target, width: source.width }
+  }
+  if property == "block-size" {
+    return { ..target, height: source.height }
+  }
+  if property == "min-inline-size" {
+    return { ..target, min_width: source.min_width }
+  }
+  if property == "min-block-size" {
+    return { ..target, min_height: source.min_height }
+  }
+  if property == "max-inline-size" {
+    return { ..target, max_width: source.max_width }
+  }
+  if property == "max-block-size" {
     return { ..target, max_height: source.max_height }
   }
   if property == "flex-direction" {

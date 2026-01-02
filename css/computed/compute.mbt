@@ -378,6 +378,14 @@ fn apply_property(
     "min-height" => builder.min_height = resolve_dimension(value, ctx)
     "max-width" => builder.max_width = resolve_dimension(value, ctx)
     "max-height" => builder.max_height = resolve_dimension(value, ctx)
+    // Logical sizing properties (horizontal-tb writing mode only)
+    // inline-size -> width, block-size -> height
+    "inline-size" => builder.width = resolve_dimension(value, ctx)
+    "block-size" => builder.height = resolve_dimension(value, ctx)
+    "min-inline-size" => builder.min_width = resolve_dimension(value, ctx)
+    "min-block-size" => builder.min_height = resolve_dimension(value, ctx)
+    "max-inline-size" => builder.max_width = resolve_dimension(value, ctx)
+    "max-block-size" => builder.max_height = resolve_dimension(value, ctx)
     // Box model
     "margin" => {
       // Parse margin shorthand: 1-4 values

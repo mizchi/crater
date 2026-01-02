@@ -298,3 +298,40 @@ test "font-size with nested selectors like WPT" {
   inspect(text1.style.font_size, content="20")
   inspect(text1.style.line_height, content="20")
 }
+
+///|
+test "br element combines text into single node with newlines" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="test" style="font: 20px/1 Ahem">line1<br>line2</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+
+  // Check div#test
+  let test_div = node.children[0]
+  inspect(test_div.id, content="div#test")
+
+  // Should have exactly 1 child: combined text node
+  inspect(test_div.children.length(), content="1")
+  let text_node = test_div.children[0]
+  inspect(text_node.id, content="#text")
+  inspect(text_node.style.font_size, content="20")
+  inspect(text_node.style.line_height, content="20")
+}
+
+///|
+test "logical properties inline-size and block-size" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="test" style="inline-size: 200px; block-size: 100px"></div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html, ctx)
+  let test_div = layout.children[0]
+  inspect(test_div.id, content="div#test")
+  inspect(test_div.width, content="200")
+  inspect(test_div.height, content="100")
+}

@@ -222,3 +222,23 @@ test "font shorthand parsing" {
   inspect(style3.font_size, content="16")
   inspect(style3.line_height, content="16") // default 1:1 ratio
 }
+
+///|
+test "logical properties inline-size and block-size" {
+  let ctx = @computed.ComputeContext::new()
+
+  // inline-size -> width (in horizontal-tb writing mode)
+  let style1 = @computed.compute_inline("inline-size: 200px", ctx)
+  inspect(style1.width, content="Length(200)")
+
+  // block-size -> height (in horizontal-tb writing mode)
+  let style2 = @computed.compute_inline("block-size: 100px", ctx)
+  inspect(style2.height, content="Length(100)")
+
+  // Both together
+  let style3 = @computed.compute_inline(
+    "inline-size: 300px; block-size: 150px", ctx,
+  )
+  inspect(style3.width, content="Length(300)")
+  inspect(style3.height, content="Length(150)")
+}
