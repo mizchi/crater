@@ -240,9 +240,9 @@ pub fn compute_layout(
     sizing_mode: @node.Definite,
   }
   match node.style.display {
-    @style.Flex => @flex.compute(node, ctx)
+    @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
     @style.Block => @block.compute(node, ctx)
-    @style.Grid =>
+    @style.Grid | @style.InlineGrid =>
       compute_grid_layout_internal(
         node, available_width, available_height, false, false,
       )

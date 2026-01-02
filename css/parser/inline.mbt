@@ -85,8 +85,12 @@ fn parse_display(tokens : ArrayView[@token.Token]) -> @style.Display? {
         Some(@style.Block)
       } else if s == "flex" {
         Some(@style.Flex)
+      } else if s == "inline-flex" {
+        Some(@style.InlineFlex)
       } else if s == "grid" {
         Some(@style.Grid)
+      } else if s == "inline-grid" {
+        Some(@style.InlineGrid)
       } else if s == "none" {
         Some(@style.Display::None)
       } else {

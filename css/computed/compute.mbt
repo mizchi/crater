@@ -266,7 +266,9 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.display {
         @style.Display::Block => "block"
         @style.Display::Flex => "flex"
+        @style.Display::InlineFlex => "inline-flex"
         @style.Display::Grid => "grid"
+        @style.Display::InlineGrid => "inline-grid"
         @style.Display::None => "none"
       }
     "position" =>

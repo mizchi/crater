@@ -126,7 +126,9 @@ pub fn parse_display(value : String) -> @style.Display {
   match value.trim().to_lower() {
     "block" => @style.Display::Block
     "flex" => @style.Display::Flex
+    "inline-flex" => @style.Display::InlineFlex
     "grid" => @style.Display::Grid
+    "inline-grid" => @style.Display::InlineGrid
     "none" => @style.Display::None
     _ => @style.Display::Block
   }

@@ -3,7 +3,9 @@
 pub(all) enum Display {
   Block
   Flex
+  InlineFlex
   Grid
+  InlineGrid
   None
 } derive(Show, Eq)
 
