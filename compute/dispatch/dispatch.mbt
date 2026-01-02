@@ -21,3 +21,17 @@ pub fn setup() -> Unit {
     @node.LayoutDispatchFunc(fn(node, ctx) { compute(node, ctx) }),
   )
 }
+
+///|
+/// Clear intrinsic size cache for a specific node.
+/// Call this when a node is marked dirty.
+pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
+  @flex.clear_intrinsic_cache_for_node(uid)
+}
+
+///|
+/// Reset all intrinsic size caches.
+/// Call this for a full re-layout.
+pub fn reset_intrinsic_cache() -> Unit {
+  @flex.reset_intrinsic_cache()
+}

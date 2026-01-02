@@ -1267,3 +1267,307 @@ test "bench_grid_auto_nested_d4" (b : @bench.T) {
     b.keep(compute_layout(node, viewport))
   })
 }
+
+// =============================================================================
+// Large-Scale Website Benchmark (~5000 nodes)
+// =============================================================================
+
+///|
+/// Create a realistic large-scale web page layout (~5000 nodes)
+fn create_large_website_node(
+  num_sidebar_items : Int,
+  num_content_sections : Int,
+  items_per_section : Int,
+) -> @node.Node {
+  let default_style = @style.Style::default()
+
+  // Header
+  let header_items : Array[@node.Node] = []
+  for i = 0; i < 10; i = i + 1 {
+    header_items.push(
+      @node.Node::leaf("header_item\{i}", {
+        ..default_style,
+        width: @types.Length(80.0),
+        height: @types.Length(40.0),
+      }),
+    )
+  }
+  let header = @node.Node::new(
+    "header",
+    {
+      ..default_style,
+      display: @style.Flex,
+      width: @types.Percent(1.0),
+      height: @types.Length(60.0),
+    },
+    header_items,
+  )
+
+  // Sidebar
+  let sidebar_groups : Array[@node.Node] = []
+  for g = 0; g < 5; g = g + 1 {
+    let group_items : Array[@node.Node] = []
+    for i = 0; i < num_sidebar_items / 5; i = i + 1 {
+      let item = @node.Node::new(
+        "sidebar_g\{g}_item\{i}",
+        {
+          ..default_style,
+          display: @style.Flex,
+          width: @types.Percent(1.0),
+          height: @types.Length(36.0),
+        },
+        [
+          @node.Node::leaf("icon_\{g}_\{i}", {
+            ..default_style,
+            width: @types.Length(20.0),
+            height: @types.Length(20.0),
+          }),
+          @node.Node::leaf("label_\{g}_\{i}", {
+            ..default_style,
+            width: @types.Auto,
+            height: @types.Length(20.0),
+            flex_grow: 1.0,
+          }),
+        ],
+      )
+      group_items.push(item)
+    }
+    sidebar_groups.push(
+      @node.Node::new(
+        "sidebar_group\{g}",
+        {
+          ..default_style,
+          display: @style.Flex,
+          flex_direction: @style.Column,
+          width: @types.Percent(1.0),
+        },
+        group_items,
+      ),
+    )
+  }
+  let sidebar = @node.Node::new(
+    "sidebar",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(240.0),
+    },
+    sidebar_groups,
+  )
+
+  // Main content
+  let sections : Array[@node.Node] = []
+  for s = 0; s < num_content_sections; s = s + 1 {
+    let section_header = @node.Node::new(
+      "section_header\{s}",
+      {
+        ..default_style,
+        display: @style.Flex,
+        width: @types.Percent(1.0),
+        height: @types.Length(48.0),
+      },
+      [
+        @node.Node::leaf("section_title\{s}", {
+          ..default_style,
+          width: @types.Auto,
+          height: @types.Length(24.0),
+          flex_grow: 1.0,
+        }),
+        @node.Node::leaf("section_action\{s}", {
+          ..default_style,
+          width: @types.Length(100.0),
+          height: @types.Length(32.0),
+        }),
+      ],
+    )
+    let cards : Array[@node.Node] = []
+    for i = 0; i < items_per_section; i = i + 1 {
+      let card = @node.Node::new(
+        "card\{s}_\{i}",
+        {
+          ..default_style,
+          display: @style.Flex,
+          flex_direction: @style.Column,
+          width: @types.Length(280.0),
+        },
+        [
+          @node.Node::leaf("card_img\{s}_\{i}", {
+            ..default_style,
+            width: @types.Percent(1.0),
+            height: @types.Length(160.0),
+          }),
+          @node.Node::new(
+            "card_body\{s}_\{i}",
+            {
+              ..default_style,
+              display: @style.Flex,
+              flex_direction: @style.Column,
+              width: @types.Percent(1.0),
+            },
+            [
+              @node.Node::leaf("card_title\{s}_\{i}", {
+                ..default_style,
+                width: @types.Percent(1.0),
+                height: @types.Length(24.0),
+              }),
+              @node.Node::leaf("card_desc\{s}_\{i}", {
+                ..default_style,
+                width: @types.Percent(1.0),
+                height: @types.Length(48.0),
+              }),
+              @node.Node::new(
+                "card_meta\{s}_\{i}",
+                {
+                  ..default_style,
+                  display: @style.Flex,
+                  width: @types.Percent(1.0),
+                  height: @types.Length(20.0),
+                },
+                [
+                  @node.Node::leaf("card_date\{s}_\{i}", {
+                    ..default_style,
+                    width: @types.Auto,
+                    height: @types.Length(16.0),
+                    flex_grow: 1.0,
+                  }),
+                  @node.Node::leaf("card_author\{s}_\{i}", {
+                    ..default_style,
+                    width: @types.Length(80.0),
+                    height: @types.Length(16.0),
+                  }),
+                ],
+              ),
+            ],
+          ),
+          @node.Node::new(
+            "card_actions\{s}_\{i}",
+            {
+              ..default_style,
+              display: @style.Flex,
+              width: @types.Percent(1.0),
+              height: @types.Length(40.0),
+            },
+            [
+              @node.Node::leaf("card_btn1\{s}_\{i}", {
+                ..default_style,
+                width: @types.Length(80.0),
+                height: @types.Length(32.0),
+              }),
+              @node.Node::leaf("card_btn2\{s}_\{i}", {
+                ..default_style,
+                width: @types.Length(80.0),
+                height: @types.Length(32.0),
+              }),
+            ],
+          ),
+        ],
+      )
+      cards.push(card)
+    }
+    let section_content = @node.Node::new(
+      "section_content\{s}",
+      {
+        ..default_style,
+        display: @style.Flex,
+        flex_wrap: @style.Wrap,
+        width: @types.Percent(1.0),
+      },
+      cards,
+    )
+    sections.push(
+      @node.Node::new(
+        "section\{s}",
+        {
+          ..default_style,
+          display: @style.Flex,
+          flex_direction: @style.Column,
+          width: @types.Percent(1.0),
+        },
+        [section_header, section_content],
+      ),
+    )
+  }
+  let main_content = @node.Node::new(
+    "main_content",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      flex_grow: 1.0,
+    },
+    sections,
+  )
+
+  // Body
+  let body = @node.Node::new(
+    "body",
+    { ..default_style, display: @style.Flex, flex_grow: 1.0 },
+    [sidebar, main_content],
+  )
+
+  // Footer
+  let footer_items : Array[@node.Node] = []
+  for i = 0; i < 20; i = i + 1 {
+    footer_items.push(
+      @node.Node::leaf("footer_link\{i}", {
+        ..default_style,
+        width: @types.Length(100.0),
+        height: @types.Length(24.0),
+      }),
+    )
+  }
+  let footer = @node.Node::new(
+    "footer",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_wrap: @style.Wrap,
+      width: @types.Percent(1.0),
+    },
+    footer_items,
+  )
+
+  // Root
+  @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(1440.0),
+      height: @types.Length(900.0),
+    },
+    [header, body, footer],
+  )
+}
+
+///|
+test "bench_large_website_5000" (b : @bench.T) {
+  // ~5000 nodes: 50 sidebar items, 20 sections, 20 cards each
+  let node = create_large_website_node(50, 20, 20)
+  let viewport = @types.Size::new(1440.0, 900.0)
+  b.bench(name="large_website_5000", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+test "bench_large_website_2000" (b : @bench.T) {
+  // ~2000 nodes: 30 sidebar items, 10 sections, 15 cards each
+  let node = create_large_website_node(30, 10, 15)
+  let viewport = @types.Size::new(1440.0, 900.0)
+  b.bench(name="large_website_2000", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+test "bench_large_website_10000" (b : @bench.T) {
+  // ~10000 nodes: 100 sidebar items, 40 sections, 20 cards each
+  let node = create_large_website_node(100, 40, 20)
+  let viewport = @types.Size::new(1440.0, 900.0)
+  b.bench(name="large_website_10000", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}

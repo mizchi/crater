@@ -54,6 +54,17 @@ pub fn Node::new(
 }
 
 ///|
+/// Create a node with a specific uid (for incremental layout)
+pub fn Node::with_uid(
+  id : String,
+  uid : Int,
+  style : @style.Style,
+  children : Array[Node],
+) -> Node {
+  { id, uid, style, children, measure: None, text: None }
+}
+
+///|
 pub fn Node::leaf(id : String, style : @style.Style) -> Node {
   { id, uid: next_uid(), style, children: [], measure: None, text: None }
 }
@@ -123,7 +134,7 @@ pub fn Layout::to_bounding_rect(self : Layout) -> @types.BoundingRect {
 pub(all) enum SizingMode {
   Definite
   MaxContent
-}
+} derive(Eq)
 
 ///|
 /// Context for layout computation

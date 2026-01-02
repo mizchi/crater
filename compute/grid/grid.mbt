@@ -2957,7 +2957,11 @@ fn compute_child_layout(
       available_height: Some(height),
       sizing_mode,
     }
-    let nested_layout = @flex.compute(child, ctx)
+    // Use global dispatcher if available for cache support
+    let nested_layout = match @node.get_layout_dispatcher() {
+      Some(_) => @node.dispatch_layout(child, ctx)
+      None => @flex.compute(child, ctx)
+    }
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }

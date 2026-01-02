@@ -23,13 +23,49 @@ fn IntrinsicCache::new() -> IntrinsicCache {
 }
 
 ///|
+/// Global intrinsic cache that persists across incremental layout updates.
+/// This avoids recomputing intrinsic sizes for unchanged nodes.
+let global_intrinsic_cache : Ref[Map[Int, Double]] = { val: {} }
+
+///|
+/// Clear intrinsic cache entries for a specific node.
+/// Call this when a node is marked dirty.
+pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
+  let cache = global_intrinsic_cache.val
+  // Clear both width and height entries (uid*2 and uid*2+1)
+  cache.remove(uid * 2)
+  cache.remove(uid * 2 + 1)
+}
+
+///|
+/// Clear intrinsic cache for a node and all its descendants.
+/// More efficient than clearing entries one by one.
+pub fn clear_intrinsic_cache_for_subtree(node : @node.Node) -> Unit {
+  clear_intrinsic_cache_for_node(node.uid)
+  for child in node.children {
+    clear_intrinsic_cache_for_subtree(child)
+  }
+}
+
+///|
+/// Reset the global intrinsic cache entirely.
+/// Call this for a full re-layout.
+pub fn reset_intrinsic_cache() -> Unit {
+  global_intrinsic_cache.val = {}
+}
+
+///|
 fn IntrinsicCache::get(
   self : IntrinsicCache,
   node_uid : Int,
   is_row : Bool,
 ) -> Double? {
   let key = node_uid * 2 + (if is_row { 1 } else { 0 })
-  self.data.get(key)
+  // Check session cache first, then global cache
+  match self.data.get(key) {
+    Some(v) => Some(v)
+    None => global_intrinsic_cache.val.get(key)
+  }
 }
 
 ///|
@@ -40,7 +76,9 @@ fn IntrinsicCache::set(
   value : Double,
 ) -> Unit {
   let key = node_uid * 2 + (if is_row { 1 } else { 0 })
+  // Update both session and global cache
   self.data.set(key, value)
+  global_intrinsic_cache.val.set(key, value)
 }
 
 ///|
@@ -2942,15 +2980,15 @@ fn compute_nested(
     }
   }
 
-  // For containers, recurse based on display type
-  match style.display {
-    @style.Flex => compute_internal(node, ctx, warnings, cache)
-    _ =>
-      // Use global dispatcher for block containers if available
-      // Fall back to flex layout for compatibility with isolated tests
-      match @node.get_layout_dispatcher() {
-        Some(_) => @node.dispatch_layout(node, ctx)
-        None => compute_internal(node, ctx, warnings, cache)
+  // For containers, use global dispatcher if available
+  // This enables cache hits for nested children
+  match @node.get_layout_dispatcher() {
+    Some(_) => @node.dispatch_layout(node, ctx)
+    None =>
+      // Fall back to direct computation for isolated tests
+      match style.display {
+        @style.Flex => compute_internal(node, ctx, warnings, cache)
+        _ => compute_internal(node, ctx, warnings, cache)
       }
   }
 }
