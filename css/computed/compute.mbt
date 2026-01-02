@@ -101,6 +101,9 @@ priv struct StyleBuilder {
   mut grid_auto_flow : @style.GridAutoFlow
   mut grid_template_columns : Array[@style.TrackSizingFunction]
   mut grid_template_rows : Array[@style.TrackSizingFunction]
+  // Font properties
+  mut font_size : Double
+  mut line_height : Double
 }
 
 ///|
@@ -150,6 +153,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_auto_flow: @style.GridAutoFlow::Row,
     grid_template_columns: [],
     grid_template_rows: [],
+    font_size: 16.0,
+    line_height: 16.0,
   }
 }
 
@@ -216,6 +221,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     grid_area: None,
     justify_items: @style.Alignment::Stretch,
     justify_self: @style.AlignSelf::Auto,
+    font_size: self.font_size,
+    line_height: self.line_height,
   }
 }
 
@@ -599,6 +606,10 @@ fn apply_property(
       builder.grid_template_columns = parse_grid_template_tracks(value)
     "grid-template-rows" =>
       builder.grid_template_rows = parse_grid_template_tracks(value)
+    // Font properties
+    "font-size" => builder.font_size = parse_font_size(value, ctx)
+    "line-height" =>
+      builder.line_height = parse_line_height(value, ctx, builder.font_size)
     _ => ()
   }
 }
@@ -782,4 +793,145 @@ pub fn compute_inline(
 
   // Compute
   compute(cascaded, ctx)
+}
+
+///|
+/// Parse font-size value and return computed value in pixels
+fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
+  let v = value.trim()
+
+  // Handle em units (relative to parent font-size)
+  match v.strip_suffix("em") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      return n * ctx.font_size
+    }
+    None => ()
+  }
+
+  // Handle rem units (relative to root font-size)
+  match v.strip_suffix("rem") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      return n * ctx.root_font_size
+    }
+    None => ()
+  }
+
+  // Handle px units
+  match v.strip_suffix("px") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return ctx.font_size
+      }
+      return n
+    }
+    None => ()
+  }
+
+  // Handle pt units (1pt = 1.333px)
+  match v.strip_suffix("pt") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return ctx.font_size
+      }
+      return n * 1.333
+    }
+    None => ()
+  }
+
+  // Handle percent (relative to parent font-size)
+  match v.strip_suffix("%") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return ctx.font_size
+      }
+      return n / 100.0 * ctx.font_size
+    }
+    None => ()
+  }
+
+  // Handle keyword values
+  match v {
+    "xx-small" => 9.0
+    "x-small" => 10.0
+    "small" => 13.0
+    "medium" => 16.0
+    "large" => 18.0
+    "x-large" => 24.0
+    "xx-large" => 32.0
+    "smaller" => ctx.font_size * 0.833
+    "larger" => ctx.font_size * 1.2
+    _ => ctx.font_size // Default to inherited font-size
+  }
+}
+
+///|
+/// Parse line-height value and return computed value in pixels
+fn parse_line_height(
+  value : String,
+  ctx : ComputeContext,
+  font_size : Double,
+) -> Double {
+  let v = value.trim()
+
+  // Handle unitless number (multiplier of font-size)
+  // Check if it's a pure number
+  let is_pure_number = {
+    let mut pure = true
+    for i = 0; i < v.length(); i = i + 1 {
+      let c = v[i].to_int().unsafe_to_char()
+      if c != '.' && not(c >= '0' && c <= '9') {
+        pure = false
+        break
+      }
+    }
+    pure
+  }
+
+  if is_pure_number && not(v.is_empty()) {
+    let n = @strconv.parse_double(v.to_string()) catch { _ => 1.0 }
+    return n * font_size
+  }
+
+  // Handle px units
+  match v.strip_suffix("px") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return font_size
+      }
+      return n
+    }
+    None => ()
+  }
+
+  // Handle em units
+  match v.strip_suffix("em") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return font_size
+      }
+      return n * font_size
+    }
+    None => ()
+  }
+
+  // Handle percent (relative to font-size)
+  match v.strip_suffix("%") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return font_size
+      }
+      return n / 100.0 * font_size
+    }
+    None => ()
+  }
+
+  // "normal" = 1.2 * font-size typically
+  if v == "normal" {
+    return font_size * 1.2
+  }
+
+  // Default to font-size
+  font_size
 }

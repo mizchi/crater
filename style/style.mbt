@@ -229,6 +229,9 @@ pub(all) struct Style {
   justify_items : Alignment
   // justify-self for grid items (horizontal self-alignment)
   justify_self : AlignSelf
+  // Font properties (for baseline calculation)
+  font_size : Double // Computed font size in pixels (default 16.0)
+  line_height : Double // Computed line height in pixels (default = font_size)
 }
 
 ///|
@@ -294,5 +297,7 @@ pub fn Style::default() -> Style {
     grid_area: None,
     justify_items: Stretch,
     justify_self: Auto,
+    font_size: 16.0,
+    line_height: 16.0,
   }
 }
