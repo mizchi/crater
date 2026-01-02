@@ -907,62 +907,67 @@ fn compute_internal(
     let child_margin = @types.resolve_rect(child_style.margin, content_width)
 
     // Get explicit cross dimension value for aspect_ratio calculation
+    // Only compute this when aspect_ratio is set (optimization: skip for common case)
     // When cross dimension is auto but has a min constraint, use the min value
     // for aspect-ratio calculation (combined with intrinsic size if available)
-    let explicit_cross : Double? = if is_row {
-      match child_style.height {
-        @types.Length(h) => Some(h)
-        @types.Percent(p) =>
-          match content_height {
-            Some(ch) => Some(ch * p)
-            None => None
-          }
-        @types.Auto =>
-          // Check if min-height is set - use it for aspect-ratio calculation
-          match child_style.min_height {
-            @types.Length(min_h) if min_h > 0.0 => {
-              // Get intrinsic height from MeasureFunc if available
-              let intrinsic_h = match child.measure {
-                Some(mf) => {
-                  let intrinsic = (mf.func)(content_width, 0.0)
-                  intrinsic.max_height
-                }
-                None => 0.0
-              }
-              // Use max of intrinsic and min constraint
-              Some(@types.max(intrinsic_h, min_h))
-            }
-            @types.Percent(p) if p > 0.0 =>
+    let explicit_cross : Double? = match child_style.aspect_ratio {
+      None => None // Fast path: skip expensive computation when aspect_ratio not set
+      Some(_) =>
+        if is_row {
+          match child_style.height {
+            @types.Length(h) => Some(h)
+            @types.Percent(p) =>
               match content_height {
                 Some(ch) => Some(ch * p)
                 None => None
               }
-            _ => None
-          }
-      }
-    } else {
-      match child_style.width {
-        @types.Length(w) => Some(w)
-        @types.Percent(p) => Some(content_width * p)
-        @types.Auto =>
-          // Check if min-width is set - use it for aspect-ratio calculation
-          match child_style.min_width {
-            @types.Length(min_w) if min_w > 0.0 => {
-              // Get intrinsic width from MeasureFunc if available
-              let intrinsic_w = match child.measure {
-                Some(mf) => {
-                  let intrinsic = (mf.func)(0.0, 0.0)
-                  intrinsic.max_width
+            @types.Auto =>
+              // Check if min-height is set - use it for aspect-ratio calculation
+              match child_style.min_height {
+                @types.Length(min_h) if min_h > 0.0 => {
+                  // Get intrinsic height from MeasureFunc if available
+                  let intrinsic_h = match child.measure {
+                    Some(mf) => {
+                      let intrinsic = (mf.func)(content_width, 0.0)
+                      intrinsic.max_height
+                    }
+                    None => 0.0
+                  }
+                  // Use max of intrinsic and min constraint
+                  Some(@types.max(intrinsic_h, min_h))
                 }
-                None => 0.0
+                @types.Percent(p) if p > 0.0 =>
+                  match content_height {
+                    Some(ch) => Some(ch * p)
+                    None => None
+                  }
+                _ => None
               }
-              // Use max of intrinsic and min constraint
-              Some(@types.max(intrinsic_w, min_w))
-            }
-            @types.Percent(p) if p > 0.0 => Some(content_width * p)
-            _ => None
           }
-      }
+        } else {
+          match child_style.width {
+            @types.Length(w) => Some(w)
+            @types.Percent(p) => Some(content_width * p)
+            @types.Auto =>
+              // Check if min-width is set - use it for aspect-ratio calculation
+              match child_style.min_width {
+                @types.Length(min_w) if min_w > 0.0 => {
+                  // Get intrinsic width from MeasureFunc if available
+                  let intrinsic_w = match child.measure {
+                    Some(mf) => {
+                      let intrinsic = (mf.func)(0.0, 0.0)
+                      intrinsic.max_width
+                    }
+                    None => 0.0
+                  }
+                  // Use max of intrinsic and min constraint
+                  Some(@types.max(intrinsic_w, min_w))
+                }
+                @types.Percent(p) if p > 0.0 => Some(content_width * p)
+                _ => None
+              }
+          }
+        }
     }
 
     // Calculate base size on main axis (flex-basis takes priority over width/height)
@@ -2997,6 +3002,31 @@ fn compute_line_cross_size(
   align_items : @style.Alignment,
   is_row : Bool,
 ) -> Double {
+  // Fast path: if align_items is not Baseline, check if any item has align_self=Baseline
+  // Most layouts don't use baseline alignment, so we can skip the complex calculation
+  if align_items != @style.Baseline {
+    // Quick scan for any baseline-aligned items
+    let mut has_baseline_item = false
+    for item in items {
+      match item.align_self {
+        @style.AlignSelf::Baseline => {
+          has_baseline_item = true
+          break
+        }
+        _ => ()
+      }
+    }
+    if not(has_baseline_item) {
+      // No baseline items - use simple max calculation
+      let mut max_cross = 0.0
+      for item in items {
+        max_cross = max(max_cross, item.final_cross + item.margin_cross)
+      }
+      return max_cross
+    }
+  }
+
+  // Full baseline-aware calculation
   let mut max_baseline_above = 0.0
   let mut max_baseline_below = 0.0
   let mut max_non_baseline_cross = 0.0
