@@ -27,12 +27,10 @@ fn SelectorParser::peek(self : SelectorParser) -> @token.Token {
 ///|
 fn SelectorParser::is_at_end(self : SelectorParser) -> Bool {
   self.pos >= self.tokens.length() ||
-  (
-    match self.tokens[self.pos] {
-      EOF => true
-      _ => false
-    }
-  )
+  (match self.tokens[self.pos] {
+    EOF => true
+    _ => false
+  })
 }
 
 ///|
@@ -48,6 +46,7 @@ fn SelectorParser::skip_whitespace(self : SelectorParser) -> Unit {
     match self.peek() {
       Whitespace => {
         let _ = self.advance()
+
       }
       _ => break
     }
@@ -56,12 +55,9 @@ fn SelectorParser::skip_whitespace(self : SelectorParser) -> Unit {
 
 ///|
 /// Parse a selector list (comma-separated)
-pub fn parse_selector_list(
-  tokens : Array[@token.Token]
-) -> SelectorList? {
+pub fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
   let parser = SelectorParser::new(tokens)
   parser.skip_whitespace()
-
   let selectors : Array[ComplexSelector] = []
 
   // Parse first selector
@@ -85,8 +81,7 @@ pub fn parse_selector_list(
       _ => break
     }
   }
-
-  Some(SelectorList::{ selectors })
+  Some(SelectorList::{ selectors, })
 }
 
 ///|
@@ -98,16 +93,16 @@ pub fn parse_selector(tokens : Array[@token.Token]) -> ComplexSelector? {
 }
 
 ///|
-fn SelectorParser::parse_complex_selector(self : SelectorParser) -> ComplexSelector? {
+fn SelectorParser::parse_complex_selector(
+  self : SelectorParser,
+) -> ComplexSelector? {
   // Parse the first compound selector
   let first = match self.parse_compound_selector() {
     None => return None
     Some(f) => f
   }
-
   let tail : Array[ComplexSelectorStep] = []
   let mut current = first
-
   while not(self.is_at_end()) {
     // Check for combinator (maybe preceded by whitespace)
     let had_whitespace = match self.peek() {
@@ -143,10 +138,9 @@ fn SelectorParser::parse_complex_selector(self : SelectorParser) -> ComplexSelec
           None
         }
     }
-
     match combinator {
       None => break
-      Some(comb) => {
+      Some(comb) =>
         // Try to parse next compound selector
         match self.parse_compound_selector() {
           None => break
@@ -156,7 +150,6 @@ fn SelectorParser::parse_complex_selector(self : SelectorParser) -> ComplexSelec
             current = next
           }
         }
-      }
     }
   }
 
@@ -165,12 +158,13 @@ fn SelectorParser::parse_complex_selector(self : SelectorParser) -> ComplexSelec
   for i = tail.length() - 1; i >= 0; i = i - 1 {
     reversed_tail.push(tail[i])
   }
-
   Some({ head: current, tail: reversed_tail })
 }
 
 ///|
-fn SelectorParser::parse_compound_selector(self : SelectorParser) -> CompoundSelector? {
+fn SelectorParser::parse_compound_selector(
+  self : SelectorParser,
+) -> CompoundSelector? {
   let mut type_selector : SimpleSelector? = None
   let subclasses : Array[SimpleSelector] = []
 
@@ -207,12 +201,11 @@ fn SelectorParser::parse_compound_selector(self : SelectorParser) -> CompoundSel
         }
       }
       // Attribute selector
-      LeftBracket => {
+      LeftBracket =>
         match self.parse_attribute_selector() {
           Some(attr) => subclasses.push(Attribute(attr))
           None => break
         }
-      }
       // Pseudo-class or pseudo-element
       Colon => {
         let _ = self.advance()
@@ -241,22 +234,21 @@ fn SelectorParser::parse_compound_selector(self : SelectorParser) -> CompoundSel
   if type_selector is None && subclasses.is_empty() {
     return None
   }
-
   Some({ type_selector, subclasses })
 }
 
 ///|
 fn SelectorParser::parse_attribute_selector(
-  self : SelectorParser
+  self : SelectorParser,
 ) -> AttributeSelector? {
   // Consume '['
   match self.peek() {
     LeftBracket => {
       let _ = self.advance()
+
     }
     _ => return None
   }
-
   self.skip_whitespace()
 
   // Get attribute name
@@ -267,7 +259,6 @@ fn SelectorParser::parse_attribute_selector(
     }
     _ => return None
   }
-
   self.skip_whitespace()
 
   // Check for match operator or end
@@ -289,6 +280,7 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
+
         }
         _ => return None
       }
@@ -303,6 +295,7 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
+
         }
         _ => return None
       }
@@ -317,6 +310,7 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
+
         }
         _ => return None
       }
@@ -331,6 +325,7 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
+
         }
         _ => return None
       }
@@ -345,6 +340,7 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
+
         }
         _ => return None
       }
@@ -356,7 +352,6 @@ fn SelectorParser::parse_attribute_selector(
     }
     _ => return None
   }
-
   self.skip_whitespace()
 
   // Check for case-insensitive flag
@@ -380,10 +375,10 @@ fn SelectorParser::parse_attribute_selector(
   match self.peek() {
     RightBracket => {
       let _ = self.advance()
+
     }
     _ => return None
   }
-
   Some({ name, match_type, case_insensitive })
 }
 
@@ -403,7 +398,9 @@ fn SelectorParser::parse_attr_value(self : SelectorParser) -> String? {
 }
 
 ///|
-fn SelectorParser::parse_pseudo_element(self : SelectorParser) -> PseudoElement? {
+fn SelectorParser::parse_pseudo_element(
+  self : SelectorParser,
+) -> PseudoElement? {
   match self.peek() {
     Ident(name) => {
       let _ = self.advance()
@@ -690,16 +687,16 @@ fn SelectorParser::parse_nth_b(self : SelectorParser) -> Int {
 
 ///|
 fn SelectorParser::parse_compound_selector_list_until_paren(
-  self : SelectorParser
+  self : SelectorParser,
 ) -> Array[CompoundSelector] {
   let result : Array[CompoundSelector] = []
-
   while not(self.is_at_end()) {
     self.skip_whitespace()
     match self.peek() {
       RightParen | EOF => break
       Comma => {
         let _ = self.advance()
+
       }
       _ =>
         match self.parse_compound_selector() {
@@ -708,22 +705,21 @@ fn SelectorParser::parse_compound_selector_list_until_paren(
         }
     }
   }
-
   result
 }
 
 ///|
 fn SelectorParser::parse_complex_selector_list_until_paren(
-  self : SelectorParser
+  self : SelectorParser,
 ) -> Array[ComplexSelector] {
   let result : Array[ComplexSelector] = []
-
   while not(self.is_at_end()) {
     self.skip_whitespace()
     match self.peek() {
       RightParen | EOF => break
       Comma => {
         let _ = self.advance()
+
       }
       _ =>
         match self.parse_complex_selector() {
@@ -732,22 +728,21 @@ fn SelectorParser::parse_complex_selector_list_until_paren(
         }
     }
   }
-
   result
 }
 
 ///|
 fn SelectorParser::parse_relative_selector_list_until_paren(
-  self : SelectorParser
+  self : SelectorParser,
 ) -> Array[RelativeSelector] {
   let result : Array[RelativeSelector] = []
-
   while not(self.is_at_end()) {
     self.skip_whitespace()
     match self.peek() {
       RightParen | EOF => break
       Comma => {
         let _ = self.advance()
+
       }
       _ => {
         // Check for optional leading combinator
@@ -769,7 +764,6 @@ fn SelectorParser::parse_relative_selector_list_until_paren(
           }
           _ => None
         }
-
         match self.parse_complex_selector() {
           Some(sel) => result.push({ combinator, selector: sel })
           None => break
@@ -777,7 +771,6 @@ fn SelectorParser::parse_relative_selector_list_until_paren(
       }
     }
   }
-
   result
 }
 

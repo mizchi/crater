@@ -101,10 +101,7 @@ pub impl Show for Declaration with output(self, logger) {
 
 ///|
 /// Create a new declaration with default values
-pub fn Declaration::new(
-  property : String,
-  value : String
-) -> Declaration {
+pub fn Declaration::new(property : String, value : String) -> Declaration {
   {
     property,
     value: Value(value),
@@ -123,7 +120,7 @@ pub fn Declaration::with_metadata(
   origin : Origin,
   importance : Importance,
   specificity : @selector.Specificity,
-  source_order : Int
+  source_order : Int,
 ) -> Declaration {
   { property, value, origin, importance, specificity, source_order }
 }
@@ -133,7 +130,7 @@ pub fn Declaration::with_metadata(
 pub fn Declaration::from_inline(
   property : String,
   value : String,
-  importance : Importance
+  importance : Importance,
 ) -> Declaration {
   {
     property,

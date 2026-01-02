@@ -1,7 +1,6 @@
 ///|
 /// Demo: Sixel layout visualization
 /// Run with: moon run sixel
-
 fn main {
   // Create a sample layout tree (flex container with 3 children)
   let layout : @node.Layout = {
@@ -76,7 +75,6 @@ fn main {
       },
     ],
   }
-
   println("Layout visualization (Sixel):")
   println("==============================")
   println("")
@@ -84,7 +82,6 @@ fn main {
   // Render to Sixel
   let sixel = render_layout(layout, 300, 200)
   println(sixel)
-
   println("")
   println("Layout structure:")
   println("  root (300x200)")

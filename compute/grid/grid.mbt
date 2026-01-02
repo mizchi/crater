@@ -217,7 +217,13 @@ fn calculate_total_track_size(
 /// Compute grid layout with LayoutContext interface (matches flex/block signature)
 pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let available_height = ctx.available_height.unwrap_or(ctx.available_width)
-  compute_grid_layout_internal(node, ctx.available_width, available_height, false, false)
+  compute_grid_layout_internal(
+    node,
+    ctx.available_width,
+    available_height,
+    false,
+    false,
+  )
 }
 
 ///|
@@ -236,7 +242,10 @@ pub fn compute_layout(
   match node.style.display {
     @style.Flex => @flex.compute(node, ctx)
     @style.Block => @block.compute(node, ctx)
-    @style.Grid => compute_grid_layout_internal(node, available_width, available_height, false, false)
+    @style.Grid =>
+      compute_grid_layout_internal(
+        node, available_width, available_height, false, false,
+      )
     @style.None => @absolute.create_zero_layout(node.id)
   }
 }
@@ -807,18 +816,10 @@ fn compute_grid_layout_internal(
     // Handle absolute positioned children
     if child.style.position == @style.Absolute {
       let abs_layout = layout_absolute_child(
-        child,
-        padding_box_left,
-        padding_box_top,
-        padding_box_width,
-        padding_box_height,
+        child, padding_box_left, padding_box_top, padding_box_width, padding_box_height,
         padding_left, // content_box_offset_x = content_box_left - padding_box_left
-        padding_top, // content_box_offset_y = content_box_top - padding_box_top
-        column_tracks,
-        row_tracks,
-        col_offset,
-        row_offset,
-        explicit_column_count,
+         padding_top, // content_box_offset_y = content_box_top - padding_box_top
+         column_tracks, row_tracks, col_offset, row_offset, explicit_column_count,
         explicit_row_count,
       )
       preliminary_layouts.push(abs_layout)
@@ -946,7 +947,7 @@ fn compute_grid_layout_internal(
 fn resolve_dimension(
   dim : @types.Dimension,
   available : Double,
-  default : Double
+  default : Double,
 ) -> Double {
   dim.resolve_or(available, default)
 }
@@ -2892,7 +2893,6 @@ fn compute_child_layout(
       }
       let width_is_definite = not(width_is_auto) || width_was_constrained
       let height_is_definite = not(height_is_auto) || height_was_constrained
-
       if not(width_is_definite) && height_is_definite {
         // height is definite, compute width from aspect_ratio
         width = height * ratio
@@ -3104,7 +3104,9 @@ fn apply_alignment(
       if has_aspect_ratio && not(height_is_auto) {
         // Width derived from aspect_ratio, use computed width
         child_layout.width
-      } else if has_aspect_ratio && has_max_width && child_layout.width < available_width {
+      } else if has_aspect_ratio &&
+        has_max_width &&
+        child_layout.width < available_width {
         // aspect_ratio with max_width constraint, width was derived from height
         child_layout.width
       } else if justify == @style.Alignment::Stretch {
@@ -3119,10 +3121,14 @@ fn apply_alignment(
       if has_aspect_ratio && not(width_is_auto) {
         // Height derived from aspect_ratio, use computed height
         child_layout.height
-      } else if has_aspect_ratio && has_max_height && child_layout.height < available_height {
+      } else if has_aspect_ratio &&
+        has_max_height &&
+        child_layout.height < available_height {
         // aspect_ratio with max_height constraint, height was derived from width
         child_layout.height
-      } else if has_aspect_ratio && has_max_width && child_layout.height < available_height {
+      } else if has_aspect_ratio &&
+        has_max_width &&
+        child_layout.height < available_height {
         // aspect_ratio with max_width: width was constrained, height derived
         child_layout.height
       } else if align == @style.Alignment::Stretch {
@@ -3402,7 +3408,6 @@ fn layout_absolute_child(
     padding_box_top + padding_box_height,
     content_box_offset_y,
   )
-
   let area_width = area_right - area_left
   let area_height = area_bottom - area_top
 
@@ -3468,15 +3473,8 @@ fn layout_absolute_child(
 
   // Compute position using shared module
   let (x, y) = @absolute.compute_inset_position(
-    params,
-    final_width,
-    final_height,
-    area_left,
-    area_top,
-    area_width,
-    area_height,
+    params, final_width, final_height, area_left, area_top, area_width, area_height,
   )
-
   {
     id: child.id,
     x,
@@ -3522,7 +3520,6 @@ fn resolve_absolute_grid_area_x(
       }
     None => default_left
   }
-
   let right = match end_line {
     Some(idx) =>
       if idx >= 0 && idx < column_tracks.length() {
@@ -3536,7 +3533,6 @@ fn resolve_absolute_grid_area_x(
       }
     None => default_right
   }
-
   (left, right)
 }
 
@@ -3572,7 +3568,6 @@ fn resolve_absolute_grid_area_y(
       }
     None => default_top
   }
-
   let bottom = match end_line {
     Some(idx) =>
       if idx >= 0 && idx < row_tracks.length() {
@@ -3586,7 +3581,6 @@ fn resolve_absolute_grid_area_y(
       }
     None => default_bottom
   }
-
   (top, bottom)
 }
 

@@ -469,10 +469,19 @@ test "block_absolute_positioning_works" {
     position: @style.Absolute,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
-    inset: { left: @types.Length(10.0), right: @types.Auto, top: @types.Length(20.0), bottom: @types.Auto },
+    inset: {
+      left: @types.Length(10.0),
+      right: @types.Auto,
+      top: @types.Length(20.0),
+      bottom: @types.Auto,
+    },
   }
   let abs_child = @node.Node::leaf("abs-child", abs_child_style)
-  let root_style = { ..default_style, width: @types.Length(100.0), height: @types.Length(100.0) }
+  let root_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  }
   let root = @node.Node::new("root", root_style, [abs_child])
   let ctx : @node.LayoutContext = {
     available_width: 800.0,

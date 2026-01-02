@@ -54,7 +54,13 @@ pub fn Color::black() -> Color {
 ///|
 /// Get color by depth level
 pub fn get_depth_color(depth : Int) -> Color {
-  let colors = [Color::blue(), Color::green(), Color::yellow(), Color::red(), Color::gray()]
+  let colors = [
+    Color::blue(),
+    Color::green(),
+    Color::yellow(),
+    Color::red(),
+    Color::gray(),
+  ]
   colors[depth % colors.length()]
 }
 
@@ -86,7 +92,12 @@ pub fn Framebuffer::new(width : Int, height : Int) -> Framebuffer {
 }
 
 ///|
-fn Framebuffer::set_pixel(self : Framebuffer, x : Int, y : Int, color : Int) -> Unit {
+fn Framebuffer::set_pixel(
+  self : Framebuffer,
+  x : Int,
+  y : Int,
+  color : Int,
+) -> Unit {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.pixels[y * self.width + x] = color
   }
@@ -109,7 +120,7 @@ pub fn Framebuffer::fill_rect(
   y : Int,
   w : Int,
   h : Int,
-  color : Int
+  color : Int,
 ) -> Unit {
   for py = y; py < y + h; py = py + 1 {
     for px = x; px < x + w; px = px + 1 {
@@ -126,7 +137,7 @@ pub fn Framebuffer::stroke_rect(
   y : Int,
   w : Int,
   h : Int,
-  color : Int
+  color : Int,
 ) -> Unit {
   // Top and bottom edges
   for px = x; px < x + w; px = px + 1 {
@@ -151,7 +162,7 @@ pub fn Framebuffer::fill_rect_hatched(
   h : Int,
   bg_color : Int,
   line_color : Int,
-  spacing : Int
+  spacing : Int,
 ) -> Unit {
   for py = y; py < y + h; py = py + 1 {
     for px = x; px < x + w; px = px + 1 {
@@ -173,7 +184,17 @@ priv struct Palette {
 
 ///|
 fn Palette::new() -> Palette {
-  { colors: [Color::white(), Color::blue(), Color::green(), Color::yellow(), Color::red(), Color::gray(), Color::black()] }
+  {
+    colors: [
+      Color::white(),
+      Color::blue(),
+      Color::green(),
+      Color::yellow(),
+      Color::red(),
+      Color::gray(),
+      Color::black(),
+    ],
+  }
 }
 
 ///|
@@ -223,7 +244,9 @@ pub fn to_sixel(fb : Framebuffer) -> String {
     let y_start = band * 6
 
     // For each color in palette
-    for color_idx = 0; color_idx < palette.colors.length(); color_idx = color_idx + 1 {
+    for color_idx = 0
+        color_idx < palette.colors.length()
+        color_idx = color_idx + 1 {
       // Select color
       buf.write_string("#")
       buf.write_string(color_idx.to_string())
@@ -238,7 +261,7 @@ pub fn to_sixel(fb : Framebuffer) -> String {
           if y < fb.height {
             let pixel = fb.get_pixel(x, y)
             if pixel == color_idx {
-              sixel_value = sixel_value.lor(bit_masks[bit])
+              sixel_value = sixel_value | bit_masks[bit]
             }
           }
         }
@@ -257,7 +280,6 @@ pub fn to_sixel(fb : Framebuffer) -> String {
 
   // Sixel end sequence: ESC \
   buf.write_string("\u001b\\")
-
   buf.to_string()
 }
 
@@ -286,11 +308,11 @@ pub fn to_sixel_extended(fb : Framebuffer) -> String {
   let num_bands = (fb.height + 5) / 6
   for band = 0; band < num_bands; band = band + 1 {
     let y_start = band * 6
-
-    for color_idx = 0; color_idx < palette.colors.length(); color_idx = color_idx + 1 {
+    for color_idx = 0
+        color_idx < palette.colors.length()
+        color_idx = color_idx + 1 {
       buf.write_string("#")
       buf.write_string(color_idx.to_string())
-
       for x = 0; x < fb.width; x = x + 1 {
         let mut sixel_value = 0
         let bit_masks = [1, 2, 4, 8, 16, 32]
@@ -299,7 +321,7 @@ pub fn to_sixel_extended(fb : Framebuffer) -> String {
           if y < fb.height {
             let pixel = fb.get_pixel(x, y)
             if pixel == color_idx {
-              sixel_value = sixel_value.lor(bit_masks[bit])
+              sixel_value = sixel_value | bit_masks[bit]
             }
           }
         }
@@ -310,7 +332,6 @@ pub fn to_sixel_extended(fb : Framebuffer) -> String {
     }
     buf.write_string("-")
   }
-
   buf.write_string("\u001b\\")
   buf.to_string()
 }
@@ -320,7 +341,7 @@ pub fn to_sixel_extended(fb : Framebuffer) -> String {
 pub fn render_layout(
   layout : @node.Layout,
   width : Int,
-  height : Int
+  height : Int,
 ) -> String {
   render_layout_with_options(layout, width, height, false)
 }
@@ -331,7 +352,7 @@ pub fn render_layout_with_options(
   layout : @node.Layout,
   width : Int,
   height : Int,
-  show_box_model : Bool
+  show_box_model : Bool,
 ) -> String {
   let fb = Framebuffer::new(width, height)
   // Fill with white background
@@ -365,11 +386,10 @@ fn render_node_simple(
   layout : @node.Layout,
   parent_x : Double,
   parent_y : Double,
-  depth : Int
+  depth : Int,
 ) -> Unit {
   let abs_x = parent_x + layout.x
   let abs_y = parent_y + layout.y
-
   let x = abs_x.to_int()
   let y = abs_y.to_int()
   let w = layout.width.to_int()
@@ -382,7 +402,6 @@ fn render_node_simple(
     }
     return
   }
-
   if is_text_node(layout.id) {
     // Text nodes: diagonal hatching pattern (white bg with green lines)
     fb.fill_rect_hatched(x, y, w, h, 0, 7, 3) // White bg, forest green lines, spacing 3
@@ -408,11 +427,10 @@ fn render_node_with_box_model(
   parent_x : Double,
   parent_y : Double,
   depth : Int,
-  show_box_model : Bool
+  show_box_model : Bool,
 ) -> Unit {
   let abs_x = parent_x + layout.x
   let abs_y = parent_y + layout.y
-
   let x = abs_x.to_int()
   let y = abs_y.to_int()
   let w = layout.width.to_int()
@@ -422,7 +440,14 @@ fn render_node_with_box_model(
   if w == 0 || h == 0 {
     // Still render children
     for child in layout.children {
-      render_node_with_box_model(fb, child, abs_x, abs_y, depth + 1, show_box_model)
+      render_node_with_box_model(
+        fb,
+        child,
+        abs_x,
+        abs_y,
+        depth + 1,
+        show_box_model,
+      )
     }
     return
   }
@@ -432,82 +457,117 @@ fn render_node_with_box_model(
     // Render text with diagonal hatching pattern
     fb.fill_rect_hatched(x, y, w, h, 0, 5, 3) // White bg, gray lines, spacing 3
     fb.stroke_rect(x, y, w, h, 6) // Black border
-  } else {
     // Show box model: margin (orange), padding (green), content (blue)
-    if show_box_model {
-      let margin_t = layout.margin.top.to_int()
-      let margin_r = layout.margin.right.to_int()
-      let margin_b = layout.margin.bottom.to_int()
-      let margin_l = layout.margin.left.to_int()
-      let padding_t = layout.padding.top.to_int()
-      let padding_r = layout.padding.right.to_int()
-      let padding_b = layout.padding.bottom.to_int()
-      let padding_l = layout.padding.left.to_int()
-      let border_t = layout.border.top.to_int()
-      let border_r = layout.border.right.to_int()
-      let border_b = layout.border.bottom.to_int()
-      let border_l = layout.border.left.to_int()
+  } else if show_box_model {
+    let margin_t = layout.margin.top.to_int()
+    let margin_r = layout.margin.right.to_int()
+    let margin_b = layout.margin.bottom.to_int()
+    let margin_l = layout.margin.left.to_int()
+    let padding_t = layout.padding.top.to_int()
+    let padding_r = layout.padding.right.to_int()
+    let padding_b = layout.padding.bottom.to_int()
+    let padding_l = layout.padding.left.to_int()
+    let border_t = layout.border.top.to_int()
+    let border_r = layout.border.right.to_int()
+    let border_b = layout.border.bottom.to_int()
+    let border_l = layout.border.left.to_int()
 
-      // Draw margin area (orange/yellow) - color 4
-      // Top margin
-      if margin_t > 0 {
-        fb.fill_rect(x - margin_l, y - margin_t, w + margin_l + margin_r, margin_t, 4)
-      }
-      // Bottom margin
-      if margin_b > 0 {
-        fb.fill_rect(x - margin_l, y + h, w + margin_l + margin_r, margin_b, 4)
-      }
-      // Left margin (excluding corners already covered)
-      if margin_l > 0 {
-        fb.fill_rect(x - margin_l, y, margin_l, h, 4)
-      }
-      // Right margin
-      if margin_r > 0 {
-        fb.fill_rect(x + w, y, margin_r, h, 4)
-      }
-
-      // Draw padding area (green) - color 2
-      // Content area starts after border
-      let content_x = x + border_l + padding_l
-      let content_y = y + border_t + padding_t
-      let content_w = w - border_l - border_r - padding_l - padding_r
-      let content_h = h - border_t - border_b - padding_t - padding_b
-
-      // Top padding
-      if padding_t > 0 {
-        fb.fill_rect(x + border_l, y + border_t, w - border_l - border_r, padding_t, 2)
-      }
-      // Bottom padding
-      if padding_b > 0 {
-        fb.fill_rect(x + border_l, y + h - border_b - padding_b, w - border_l - border_r, padding_b, 2)
-      }
-      // Left padding
-      if padding_l > 0 {
-        fb.fill_rect(x + border_l, y + border_t + padding_t, padding_l, content_h, 2)
-      }
-      // Right padding
-      if padding_r > 0 {
-        fb.fill_rect(x + w - border_r - padding_r, y + border_t + padding_t, padding_r, content_h, 2)
-      }
-
-      // Draw content area (blue) - color 1
-      if content_w > 0 && content_h > 0 {
-        fb.fill_rect(content_x, content_y, content_w, content_h, 1)
-      }
-
-      // Draw border (black outline)
-      fb.stroke_rect(x, y, w, h, 6)
-    } else {
-      // Simple rendering: just fill with depth-based color
-      let color = (depth % 5) + 1
-      fb.fill_rect(x, y, w, h, color)
-      fb.stroke_rect(x, y, w, h, 6)
+    // Draw margin area (orange/yellow) - color 4
+    // Top margin
+    if margin_t > 0 {
+      fb.fill_rect(
+        x - margin_l,
+        y - margin_t,
+        w + margin_l + margin_r,
+        margin_t,
+        4,
+      )
     }
+    // Bottom margin
+    if margin_b > 0 {
+      fb.fill_rect(x - margin_l, y + h, w + margin_l + margin_r, margin_b, 4)
+    }
+    // Left margin (excluding corners already covered)
+    if margin_l > 0 {
+      fb.fill_rect(x - margin_l, y, margin_l, h, 4)
+    }
+    // Right margin
+    if margin_r > 0 {
+      fb.fill_rect(x + w, y, margin_r, h, 4)
+    }
+
+    // Draw padding area (green) - color 2
+    // Content area starts after border
+    let content_x = x + border_l + padding_l
+    let content_y = y + border_t + padding_t
+    let content_w = w - border_l - border_r - padding_l - padding_r
+    let content_h = h - border_t - border_b - padding_t - padding_b
+
+    // Top padding
+    if padding_t > 0 {
+      fb.fill_rect(
+        x + border_l,
+        y + border_t,
+        w - border_l - border_r,
+        padding_t,
+        2,
+      )
+    }
+    // Bottom padding
+    if padding_b > 0 {
+      fb.fill_rect(
+        x + border_l,
+        y + h - border_b - padding_b,
+        w - border_l - border_r,
+        padding_b,
+        2,
+      )
+    }
+    // Left padding
+    if padding_l > 0 {
+      fb.fill_rect(
+        x + border_l,
+        y + border_t + padding_t,
+        padding_l,
+        content_h,
+        2,
+      )
+    }
+    // Right padding
+    if padding_r > 0 {
+      fb.fill_rect(
+        x + w - border_r - padding_r,
+        y + border_t + padding_t,
+        padding_r,
+        content_h,
+        2,
+      )
+    }
+
+    // Draw content area (blue) - color 1
+    if content_w > 0 && content_h > 0 {
+      fb.fill_rect(content_x, content_y, content_w, content_h, 1)
+    }
+
+    // Draw border (black outline)
+    fb.stroke_rect(x, y, w, h, 6)
+  } else {
+    // Simple rendering: just fill with depth-based color
+    let color = depth % 5 + 1
+    fb.fill_rect(x, y, w, h, color)
+    fb.stroke_rect(x, y, w, h, 6)
   }
 
   // Render children
   for child in layout.children {
-    render_node_with_box_model(fb, child, abs_x, abs_y, depth + 1, show_box_model)
+    render_node_with_box_model(
+      fb,
+      child,
+      abs_x,
+      abs_y,
+      depth + 1,
+      show_box_model,
+    )
   }
 }
 

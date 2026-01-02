@@ -19,7 +19,6 @@ test "stylesheet flex-direction is applied" {
   let body = layout
   let row_div = body.children[0]
   inspect(row_div.id, content="div.row")
-
   if row_div.children.length() >= 2 {
     let div_a = row_div.children[0]
     let div_b = row_div.children[1]
@@ -60,12 +59,11 @@ test "debug node style from stylesheet" {
     }
     for child in elem.children {
       match child {
-        @html.Node::Element(child_elem) => {
+        @html.Node::Element(child_elem) =>
           match find_body(child_elem) {
             Some(body) => return Some(body)
             None => ()
           }
-        }
         _ => ()
       }
     }
@@ -74,35 +72,39 @@ test "debug node style from stylesheet" {
 
   let body = find_body(doc.root)
   inspect(body.is_some(), content="true")
-
   match body {
-    Some(body_elem) => {
+    Some(body_elem) =>
       // Find div.row
       for child in body_elem.children {
         match child {
-          @html.Node::Element(row_elem) => {
+          @html.Node::Element(row_elem) =>
             if row_elem.classes.length() > 0 && row_elem.classes[0] == "row" {
               // Create selector element
               let sel_elem = @selector.Element::new("div").add_class("row")
 
               // Match against stylesheet
               let cascaded = @cascade.cascade_element(sel_elem, stylesheets, [])
-              inspect(cascaded.get_value("display"), content=(
-                #|Some("flex")
-              ))
-              inspect(cascaded.get_value("flex-direction"), content=(
-                #|Some("row")
-              ))
+              inspect(
+                cascaded.get_value("display"),
+                content=(
+                  #|Some("flex")
+                ),
+              )
+              inspect(
+                cascaded.get_value("flex-direction"),
+                content=(
+                  #|Some("row")
+                ),
+              )
             }
-          }
           _ => ()
         }
       }
-    }
     None => ()
   }
 }
 
+///|
 test "debug stylesheet cascading" {
   let css = ".row { display: flex; flex-direction: row; gap: 10px; }"
   let stylesheet = @parser.parse_stylesheet(css)
@@ -123,30 +125,41 @@ test "debug stylesheet cascading" {
         _ => ()
       }
     }
-    inspect(props, content=(
-      #|["display=flex", "flex-direction=row", "gap=10px"]
-    ))
+    inspect(
+      props,
+      content=(
+        #|["display=flex", "flex-direction=row", "gap=10px"]
+      ),
+    )
   }
 
   // Now test compute_element_style result
   let cascaded = @cascade.cascade_element(elem, [stylesheet], [])
-  inspect(cascaded.get_value("display"), content=(
-    #|Some("flex")
-  ))
-  inspect(cascaded.get_value("flex-direction"), content=(
-    #|Some("row")
-  ))
-  inspect(cascaded.get_value("gap"), content=(
-    #|Some("10px")
-  ))
+  inspect(
+    cascaded.get_value("display"),
+    content=(
+      #|Some("flex")
+    ),
+  )
+  inspect(
+    cascaded.get_value("flex-direction"),
+    content=(
+      #|Some("row")
+    ),
+  )
+  inspect(
+    cascaded.get_value("gap"),
+    content=(
+      #|Some("10px")
+    ),
+  )
 
   // Test apply_css_property
   let mut style = @style.Style::default()
   for prop in cascaded.properties() {
     match cascaded.get_value(prop) {
-      Some(value) => {
+      Some(value) =>
         style = @renderer.apply_css_property_debug(style, prop, value)
-      }
       None => ()
     }
   }

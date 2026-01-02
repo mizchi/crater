@@ -27,7 +27,6 @@ pub fn matches_simple(element : Element, selector : SimpleSelector) -> Bool {
 /// Check if an element matches an attribute selector
 fn matches_attribute(element : Element, selector : AttributeSelector) -> Bool {
   let attr_value = element.get_attribute(selector.name)
-
   match selector.match_type {
     Exists =>
       match attr_value {
@@ -200,8 +199,16 @@ fn matches_pseudo_class(element : Element, pc : PseudoClass) -> Bool {
     // Link pseudo-classes
     Link | Visited | AnyLink => element.tag_name == "a"
     // Form pseudo-classes - would need form element state
-    Enabled | Disabled | Checked | Indeterminate | Required | Optional | Valid | Invalid | ReadOnly | ReadWrite =>
-      false
+    Enabled
+    | Disabled
+    | Checked
+    | Indeterminate
+    | Required
+    | Optional
+    | Valid
+    | Invalid
+    | ReadOnly
+    | ReadWrite => false
   }
 }
 
@@ -229,10 +236,7 @@ fn matches_nth(index : Int, expr : NthExpr) -> Bool {
 pub fn matches_compound(element : Element, selector : CompoundSelector) -> Bool {
   // Check type selector
   match selector.type_selector {
-    Some(type_sel) =>
-      if not(matches_simple(element, type_sel)) {
-        return false
-      }
+    Some(type_sel) => if not(matches_simple(element, type_sel)) { return false }
     None => ()
   }
 
@@ -242,7 +246,6 @@ pub fn matches_compound(element : Element, selector : CompoundSelector) -> Bool 
       return false
     }
   }
-
   true
 }
 
@@ -261,7 +264,6 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
 
   // Walk up the tree following the combinators
   let mut current_element = element
-
   for step in selector.tail {
     match step.combinator {
       Descendant => {
@@ -285,7 +287,7 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
           return false
         }
       }
-      Child => {
+      Child =>
         // Parent must match
         match current_element.parent {
           None => return false
@@ -296,8 +298,7 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
             current_element = parent
           }
         }
-      }
-      NextSibling => {
+      NextSibling =>
         // Previous sibling must match
         match current_element.prev_sibling {
           None => return false
@@ -308,7 +309,6 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
             current_element = prev
           }
         }
-      }
       SubsequentSibling => {
         // Any previous sibling must match
         let mut found = false
@@ -332,7 +332,6 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
       }
     }
   }
-
   true
 }
 

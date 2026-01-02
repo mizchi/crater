@@ -9,7 +9,7 @@
 pub fn compute_justify(
   justify : @style.Alignment,
   free_space : Double,
-  item_count : Int
+  item_count : Int,
 ) -> (Double, Double) {
   if item_count == 0 {
     return (0.0, 0.0)
@@ -51,7 +51,7 @@ pub fn compute_justify(
 /// Used for align-items, align-self, justify-self
 pub fn compute_align_offset(
   align : @style.Alignment,
-  free_space : Double
+  free_space : Double,
 ) -> Double {
   if free_space <= 0.0 {
     return 0.0
@@ -73,7 +73,7 @@ pub fn compute_align_offset(
 pub fn compute_align_self_offset(
   align_self : @style.AlignSelf,
   parent_align : @style.Alignment,
-  free_space : Double
+  free_space : Double,
 ) -> Double {
   if free_space <= 0.0 {
     return 0.0

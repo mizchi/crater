@@ -45,45 +45,42 @@ pub(all) struct FloatContext {
 
 ///|
 /// Create a new float context
-pub fn FloatContext::new(container_width : Double, container_left : Double) -> FloatContext {
-  {
-    container_width,
-    container_left,
-    left_floats: [],
-    right_floats: [],
-  }
+pub fn FloatContext::new(
+  container_width : Double,
+  container_left : Double,
+) -> FloatContext {
+  { container_width, container_left, left_floats: [], right_floats: [] }
 }
 
 ///|
 /// Get the clear Y position for a given clear type
 /// Returns the Y position below all floats that need to be cleared
-pub fn FloatContext::get_clear_y(self : FloatContext, clear : @style.Clear, current_y : Double) -> Double {
+pub fn FloatContext::get_clear_y(
+  self : FloatContext,
+  clear : @style.Clear,
+  current_y : Double,
+) -> Double {
   let mut clear_y = current_y
-
   match clear {
-    @style.Clear::Left | @style.Clear::Both => {
+    @style.Clear::Left | @style.Clear::Both =>
       // Find the bottom of all left floats
       for float in self.left_floats {
         if float.bottom() > clear_y {
           clear_y = float.bottom()
         }
       }
-    }
     _ => ()
   }
-
   match clear {
-    @style.Clear::Right | @style.Clear::Both => {
+    @style.Clear::Right | @style.Clear::Both =>
       // Find the bottom of all right floats
       for float in self.right_floats {
         if float.bottom() > clear_y {
           clear_y = float.bottom()
         }
       }
-    }
     _ => ()
   }
-
   clear_y
 }
 
@@ -93,7 +90,7 @@ pub fn FloatContext::get_clear_y(self : FloatContext, clear : @style.Clear, curr
 pub fn FloatContext::get_available_space(
   self : FloatContext,
   y : Double,
-  height : Double
+  height : Double,
 ) -> (Double, Double) {
   let mut left_edge = self.container_left
   let mut right_edge = self.container_left + self.container_width
@@ -118,7 +115,6 @@ pub fn FloatContext::get_available_space(
       }
     }
   }
-
   (left_edge, right_edge)
 }
 
@@ -129,7 +125,7 @@ pub fn FloatContext::find_y_with_space(
   self : FloatContext,
   start_y : Double,
   required_width : Double,
-  element_height : Double
+  element_height : Double,
 ) -> Double {
   // Collect all Y positions where float regions change
   let y_positions : Array[Double] = [start_y]
@@ -158,7 +154,9 @@ pub fn FloatContext::find_y_with_space(
     if test_y < start_y {
       continue
     }
-    let (left_edge, right_edge) = self.get_available_space(test_y, element_height)
+    let (left_edge, right_edge) = self.get_available_space(
+      test_y, element_height,
+    )
     let available = right_edge - left_edge
     if available >= required_width {
       return test_y
@@ -177,7 +175,6 @@ pub fn FloatContext::find_y_with_space(
       max_bottom = float.bottom()
     }
   }
-
   max_bottom
 }
 
@@ -193,7 +190,7 @@ pub fn FloatContext::place_float(
   margin_right : Double,
   margin_top : Double,
   margin_bottom : Double,
-  current_y : Double
+  current_y : Double,
 ) -> (Double, Double) {
   let total_width = width + margin_left + margin_right
   let total_height = height + margin_top + margin_bottom
@@ -211,26 +208,27 @@ pub fn FloatContext::place_float(
 
   // Add to float list
   let float_box : FloatBox = {
-    x: x - margin_left,  // Store outer box position
+    x: x - margin_left, // Store outer box position
     y,
     width: total_width,
     height: total_height,
     float_type,
   }
-
   match float_type {
     @style.Float::Left => self.left_floats.push(float_box)
     @style.Float::Right => self.right_floats.push(float_box)
     @style.Float::None => ()
   }
-
   (x, y + margin_top)
 }
 
 ///|
 /// Remove floats that are above a given Y position
 /// Called when we've moved past floats
-pub fn FloatContext::prune_floats_above(self : FloatContext, y : Double) -> Unit {
+pub fn FloatContext::prune_floats_above(
+  self : FloatContext,
+  y : Double,
+) -> Unit {
   // Keep only floats that extend below y
   let new_left : Array[FloatBox] = []
   for float in self.left_floats {
@@ -242,7 +240,6 @@ pub fn FloatContext::prune_floats_above(self : FloatContext, y : Double) -> Unit
   for float in new_left {
     self.left_floats.push(float)
   }
-
   let new_right : Array[FloatBox] = []
   for float in self.right_floats {
     if float.bottom() > y {

@@ -7,9 +7,16 @@
 pub fn is_inherited(property : String) -> Bool {
   match property {
     // Text-related properties (inherited)
-    "direction" | "writing-mode" | "text-align" | "line-height" | "font-size" |
-    "font-family" | "font-weight" | "font-style" | "color" | "visibility" =>
-      true
+    "direction"
+    | "writing-mode"
+    | "text-align"
+    | "line-height"
+    | "font-size"
+    | "font-family"
+    | "font-weight"
+    | "font-style"
+    | "color"
+    | "visibility" => true
     // All layout properties are not inherited
     _ => false
   }
@@ -30,13 +37,21 @@ pub fn initial_value(property : String) -> String {
     "width" | "height" | "min-width" | "min-height" => "auto"
     "max-width" | "max-height" => "none"
     // Box model
-    "margin" | "margin-top" | "margin-right" | "margin-bottom" | "margin-left" =>
-      "0"
-    "padding" | "padding-top" | "padding-right" | "padding-bottom" | "padding-left" =>
-      "0"
-    "border-width" | "border-top-width" | "border-right-width" | "border-bottom-width" |
-    "border-left-width" =>
-      "0"
+    "margin"
+    | "margin-top"
+    | "margin-right"
+    | "margin-bottom"
+    | "margin-left" => "0"
+    "padding"
+    | "padding-top"
+    | "padding-right"
+    | "padding-bottom"
+    | "padding-left" => "0"
+    "border-width"
+    | "border-top-width"
+    | "border-right-width"
+    | "border-bottom-width"
+    | "border-left-width" => "0"
     // Flexbox container
     "flex-direction" => "row"
     "flex-wrap" => "nowrap"
@@ -59,8 +74,10 @@ pub fn initial_value(property : String) -> String {
     "grid-auto-rows" | "grid-auto-columns" => "auto"
     "grid-auto-flow" => "row"
     // Grid item
-    "grid-row-start" | "grid-row-end" | "grid-column-start" | "grid-column-end" =>
-      "auto"
+    "grid-row-start"
+    | "grid-row-end"
+    | "grid-column-start"
+    | "grid-column-end" => "auto"
     // Text (inherited)
     "direction" => "ltr"
     "writing-mode" => "horizontal-tb"
@@ -79,9 +96,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   // Try to parse as length (px)
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = try {
-        @strconv.parse_double(num_str.to_string())
-      } catch {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n)
@@ -91,9 +106,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   // Try to parse as percentage
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = try {
-        @strconv.parse_double(num_str.to_string())
-      } catch {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Percent(n / 100.0)
@@ -101,9 +114,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     None => ()
   }
   // Try to parse as plain number (treated as px)
-  let n = try {
-    @strconv.parse_double(v.to_string())
-  } catch {
+  let n = @strconv.parse_double(v.to_string()) catch {
     _ => return @types.Dimension::Auto
   }
   @types.Dimension::Length(n)
@@ -238,9 +249,7 @@ pub fn parse_grid_auto_flow(value : String) -> @style.GridAutoFlow {
 ///|
 /// Parse a number value
 pub fn parse_number(value : String) -> Double {
-  try {
-    @strconv.parse_double(value.trim().to_string())
-  } catch {
+  @strconv.parse_double(value.trim().to_string()) catch {
     _ => 0.0
   }
 }
@@ -248,9 +257,7 @@ pub fn parse_number(value : String) -> Double {
 ///|
 /// Parse an integer value
 pub fn parse_integer(value : String) -> Int {
-  try {
-    @strconv.parse_int(value.trim().to_string())
-  } catch {
+  @strconv.parse_int(value.trim().to_string()) catch {
     _ => 0
   }
 }
@@ -282,7 +289,7 @@ fn parse_single_track(value : String) -> @style.TrackSizingFunction? {
   // fr unit
   match v.strip_suffix("fr") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string().trim()) } catch {
+      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
         _ => return None
       }
       return Some(@style.TrackSizingFunction::Fr(n))
@@ -292,7 +299,7 @@ fn parse_single_track(value : String) -> @style.TrackSizingFunction? {
   // percentage
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string().trim()) } catch {
+      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
         _ => return None
       }
       return Some(@style.TrackSizingFunction::Percent(n / 100.0))
@@ -302,7 +309,7 @@ fn parse_single_track(value : String) -> @style.TrackSizingFunction? {
   // px unit
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = try { @strconv.parse_double(num_str.to_string().trim()) } catch {
+      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
         _ => return None
       }
       return Some(@style.TrackSizingFunction::Length(n))
@@ -310,9 +317,7 @@ fn parse_single_track(value : String) -> @style.TrackSizingFunction? {
     None => ()
   }
   // Plain number (treated as px)
-  let n = try { @strconv.parse_double(v.to_string()) } catch {
-    _ => return None
-  }
+  let n = @strconv.parse_double(v.to_string()) catch { _ => return None }
   Some(@style.TrackSizingFunction::Length(n))
 }
 
@@ -320,7 +325,9 @@ fn parse_single_track(value : String) -> @style.TrackSizingFunction? {
 /// Parse grid-template-columns or grid-template-rows value
 /// Supports space-separated track sizes: "100px 200px 1fr"
 /// Note: minmax() and repeat() are not supported in this simple parser
-pub fn parse_grid_template_tracks(value : String) -> Array[@style.TrackSizingFunction] {
+pub fn parse_grid_template_tracks(
+  value : String,
+) -> Array[@style.TrackSizingFunction] {
   let result : Array[@style.TrackSizingFunction] = []
   let v = value.trim()
   if v.is_empty() || v == "none" {
@@ -360,16 +367,12 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
     }
     if slash_pos > 0 {
       // Use view slicing
-      let width_str = try { v[:slash_pos].to_string().trim() } catch { _ => "" }
-      let height_str = try {
-        v[slash_pos + 1:].to_string().trim()
-      } catch {
-        _ => ""
-      }
-      let w = try { @strconv.parse_double(width_str.to_string()) } catch {
+      let width_str = v[:slash_pos].to_string().trim() catch { _ => "" }
+      let height_str = v[slash_pos + 1:].to_string().trim() catch { _ => "" }
+      let w = @strconv.parse_double(width_str.to_string()) catch {
         _ => return None
       }
-      let h = try { @strconv.parse_double(height_str.to_string()) } catch {
+      let h = @strconv.parse_double(height_str.to_string()) catch {
         _ => return None
       }
       if h != 0.0 {
@@ -379,8 +382,6 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
     }
   }
   // Try parsing as a single number
-  let n = try { @strconv.parse_double(v.to_string()) } catch {
-    _ => return None
-  }
+  let n = @strconv.parse_double(v.to_string()) catch { _ => return None }
   Some(n)
 }

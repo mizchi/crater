@@ -1,12 +1,12 @@
 ///|
 /// Tests for Sixel renderer
-
 test "framebuffer creation" {
   let fb = @sixel.Framebuffer::new(10, 10)
   inspect(fb.width, content="10")
   inspect(fb.height, content="10")
 }
 
+///|
 test "framebuffer fill_rect" {
   let fb = @sixel.Framebuffer::new(10, 10)
   fb.fill_rect(2, 2, 5, 5, 1)
@@ -17,6 +17,7 @@ test "framebuffer fill_rect" {
   inspect(fb.pixels[0], content="0")
 }
 
+///|
 test "to_sixel basic output" {
   let fb = @sixel.Framebuffer::new(4, 6)
   fb.fill_rect(0, 0, 4, 6, 1) // Fill with color 1 (blue)
@@ -27,6 +28,7 @@ test "to_sixel basic output" {
   inspect(result.has_suffix("\u001b\\"), content="true")
 }
 
+///|
 test "render_layout simple" {
   // Create a simple layout
   let layout : @node.Layout = {
@@ -46,6 +48,7 @@ test "render_layout simple" {
   inspect(sixel.has_suffix("\u001b\\"), content="true")
 }
 
+///|
 test "color blend" {
   let white = @sixel.Color::white()
   let blue = @sixel.Color::blue()

@@ -605,7 +605,6 @@ fn create_nested_percent_constraints() -> @node.Node {
     }
     columns.push(@node.Node::new("col\{i}", column_style, column_children))
   }
-
   let root_style = {
     ..default_style,
     display: @style.Flex,
@@ -629,9 +628,7 @@ test "bench_minmax_constraints" (b : @bench.T) {
 test "bench_nested_percent" (b : @bench.T) {
   let node = create_nested_percent_constraints()
   let viewport = @types.Size::new(1000.0, 500.0)
-  b.bench(name="nested_percent", fn() {
-    b.keep(compute_layout(node, viewport))
-  })
+  b.bench(name="nested_percent", fn() { b.keep(compute_layout(node, viewport)) })
 }
 
 // =============================================================================
@@ -699,28 +696,21 @@ fn create_mixed_flex_grid() -> @node.Node {
           }),
         )
       }
-      grid_children.push(@node.Node::new("cell\{i}_\{j}", default_style, cell_children))
+      grid_children.push(
+        @node.Node::new("cell\{i}_\{j}", default_style, cell_children),
+      )
     }
     let grid_style = {
       ..default_style,
       display: @style.Grid,
       flex_grow: 1.0,
-      grid_template_columns: [
-        @style.Fr(1.0),
-        @style.Fr(1.0),
-        @style.Fr(1.0),
-      ],
-      grid_template_rows: [
-        @style.Fr(1.0),
-        @style.Fr(1.0),
-        @style.Fr(1.0),
-      ],
+      grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0), @style.Fr(1.0)],
+      grid_template_rows: [@style.Fr(1.0), @style.Fr(1.0), @style.Fr(1.0)],
       row_gap: @types.Length(5.0),
       column_gap: @types.Length(5.0),
     }
     grids.push(@node.Node::new("grid\{i}", grid_style, grid_children))
   }
-
   let root_style = {
     ..default_style,
     display: @style.Flex,
@@ -834,18 +824,21 @@ fn create_dashboard_layout() -> @node.Node {
       }),
     )
     cards.push(
-      @node.Node::new("card\{i}", {
-        ..default_style,
-        padding: {
-          left: @types.Length(16.0),
-          right: @types.Length(16.0),
-          top: @types.Length(16.0),
-          bottom: @types.Length(16.0),
+      @node.Node::new(
+        "card\{i}",
+        {
+          ..default_style,
+          padding: {
+            left: @types.Length(16.0),
+            right: @types.Length(16.0),
+            top: @types.Length(16.0),
+            bottom: @types.Length(16.0),
+          },
         },
-      }, card_content),
+        card_content,
+      ),
     )
   }
-
   let main_grid = @node.Node::new(
     "main_grid",
     {
@@ -901,7 +894,6 @@ fn create_dashboard_layout() -> @node.Node {
 fn create_form_layout() -> @node.Node {
   let default_style = @style.Style::default()
   let form_fields : Array[@node.Node] = []
-
   for i = 0; i < 10; i = i + 1 {
     let field_children : Array[@node.Node] = []
     // Label
@@ -943,11 +935,7 @@ fn create_form_layout() -> @node.Node {
     }
     let input_row = @node.Node::new(
       "input_row\{i}",
-      {
-        ..default_style,
-        display: @style.Flex,
-        flex_direction: @style.Row,
-      },
+      { ..default_style, display: @style.Flex, flex_direction: @style.Row },
       input_row_children,
     )
     field_children.push(input_row)
@@ -964,20 +952,22 @@ fn create_form_layout() -> @node.Node {
         },
       }),
     )
-
     form_fields.push(
-      @node.Node::new("field\{i}", {
-        ..default_style,
-        margin: {
-          left: @types.Length(0.0),
-          right: @types.Length(0.0),
-          top: @types.Length(0.0),
-          bottom: @types.Length(16.0),
+      @node.Node::new(
+        "field\{i}",
+        {
+          ..default_style,
+          margin: {
+            left: @types.Length(0.0),
+            right: @types.Length(0.0),
+            top: @types.Length(0.0),
+            bottom: @types.Length(16.0),
+          },
         },
-      }, field_children),
+        field_children,
+      ),
     )
   }
-
   @node.Node::new(
     "form",
     {
@@ -1018,7 +1008,6 @@ test "bench_form_layout" (b : @bench.T) {
 /// Deep nesting with mixed display types
 fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
   let default_style = @style.Style::default()
-
   fn build(d : Int) -> @node.Node {
     if d == 0 {
       return @node.Node::leaf("leaf", {
@@ -1027,7 +1016,6 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
         height: @types.Length(20.0),
       })
     }
-
     let children : Array[@node.Node] = []
     for i = 0; i < 3; i = i + 1 {
       children.push(build(d - 1))
@@ -1039,14 +1027,17 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
       1 => @style.Grid
       _ => @style.Block
     }
-
     if display == @style.Grid {
       return @node.Node::new(
         "node_d\{d}",
         {
           ..default_style,
-          display: display,
-          grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0), @style.Fr(1.0)],
+          display,
+          grid_template_columns: [
+            @style.Fr(1.0),
+            @style.Fr(1.0),
+            @style.Fr(1.0),
+          ],
         },
         children,
       )
@@ -1055,8 +1046,12 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
       "node_d\{d}",
       {
         ..default_style,
-        display: display,
-        flex_direction: if d % 2 == 0 { @style.Row } else { @style.Column },
+        display,
+        flex_direction: if d % 2 == 0 {
+          @style.Row
+        } else {
+          @style.Column
+        },
       },
       children,
     )
@@ -1092,7 +1087,6 @@ test "bench_deep_mixed_d6" (b : @bench.T) {
 /// Deep nesting with Flex only (for comparison)
 fn create_deep_flex_nesting(depth : Int) -> @node.Node {
   let default_style = @style.Style::default()
-
   fn build(d : Int) -> @node.Node {
     if d == 0 {
       return @node.Node::leaf("leaf", {
@@ -1101,18 +1095,20 @@ fn create_deep_flex_nesting(depth : Int) -> @node.Node {
         height: @types.Length(20.0),
       })
     }
-
     let children : Array[@node.Node] = []
     for i = 0; i < 3; i = i + 1 {
       children.push(build(d - 1))
     }
-
     @node.Node::new(
       "node_d\{d}",
       {
         ..default_style,
         display: @style.Flex,
-        flex_direction: if d % 2 == 0 { @style.Row } else { @style.Column },
+        flex_direction: if d % 2 == 0 {
+          @style.Row
+        } else {
+          @style.Column
+        },
       },
       children,
     )
@@ -1148,7 +1144,6 @@ test "bench_deep_flex_d6" (b : @bench.T) {
 /// Deep nesting with fixed-size intermediate nodes (baseline for optimization)
 fn create_deep_flex_fixed(depth : Int) -> @node.Node {
   let default_style = @style.Style::default()
-
   fn build(d : Int) -> @node.Node {
     if d == 0 {
       return @node.Node::leaf("leaf", {
@@ -1157,20 +1152,24 @@ fn create_deep_flex_fixed(depth : Int) -> @node.Node {
         height: @types.Length(20.0),
       })
     }
-
     let children : Array[@node.Node] = []
     for i = 0; i < 3; i = i + 1 {
       children.push(build(d - 1))
     }
-
     @node.Node::new(
       "node_d\{d}",
       {
         ..default_style,
         display: @style.Flex,
-        flex_direction: if d % 2 == 0 { @style.Row } else { @style.Column },
-        // Fixed size to skip intrinsic calculation
-        width: @types.Length(100.0 * d.to_double()),
+        flex_direction: if d % 2 == 0 {
+          @style.Row
+        } else {
+          @style.Column
+        },
+        width: @types.Length(
+          // Fixed size to skip intrinsic calculation
+          100.0 * d.to_double(),
+        ),
         height: @types.Length(80.0 * d.to_double()),
       },
       children,
@@ -1193,7 +1192,9 @@ fn create_deep_flex_fixed(depth : Int) -> @node.Node {
 test "bench_deep_flex_fixed_d6" (b : @bench.T) {
   let node = create_deep_flex_fixed(6)
   let viewport = @types.Size::new(800.0, 600.0)
-  b.bench(name="deep_flex_fixed_d6", fn() { b.keep(compute_layout(node, viewport)) })
+  b.bench(name="deep_flex_fixed_d6", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
 }
 
 // =============================================================================
@@ -1204,7 +1205,6 @@ test "bench_deep_flex_fixed_d6" (b : @bench.T) {
 /// Grid with auto-sized columns containing nested flex containers
 fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
   let default_style = @style.Style::default()
-
   fn create_flex_tree(d : Int) -> @node.Node {
     if d == 0 {
       return @node.Node::leaf("leaf", {
@@ -1222,7 +1222,11 @@ fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
       {
         ..default_style,
         display: @style.Flex,
-        flex_direction: if d % 2 == 0 { @style.Row } else { @style.Column },
+        flex_direction: if d % 2 == 0 {
+          @style.Row
+        } else {
+          @style.Column
+        },
       },
       children,
     )
@@ -1233,7 +1237,6 @@ fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
   for i = 0; i < 9; i = i + 1 {
     children.push(create_flex_tree(depth))
   }
-
   @node.Node::new(
     "grid_root",
     {
@@ -1251,12 +1254,16 @@ fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
 test "bench_grid_auto_nested_d3" (b : @bench.T) {
   let node = create_grid_auto_nested_flex(3)
   let viewport = @types.Size::new(800.0, 600.0)
-  b.bench(name="grid_auto_nested_d3", fn() { b.keep(compute_layout(node, viewport)) })
+  b.bench(name="grid_auto_nested_d3", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
 }
 
 ///|
 test "bench_grid_auto_nested_d4" (b : @bench.T) {
   let node = create_grid_auto_nested_flex(4)
   let viewport = @types.Size::new(800.0, 600.0)
-  b.bench(name="grid_auto_nested_d4", fn() { b.keep(compute_layout(node, viewport)) })
+  b.bench(name="grid_auto_nested_d4", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
 }

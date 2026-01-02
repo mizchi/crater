@@ -142,9 +142,7 @@ pub fn LayoutTracer::add_dependency(
     return
   }
   match self.traces.get(node_uid) {
-    Some(trace) => {
-      trace.dependencies.push(kind)
-    }
+    Some(trace) => trace.dependencies.push(kind)
     None => ()
   }
 }
@@ -157,7 +155,10 @@ pub fn LayoutTracer::get_traces(self : LayoutTracer) -> Map[Int, NodeTrace] {
 
 ///|
 /// Get trace for a specific node
-pub fn LayoutTracer::get_trace(self : LayoutTracer, node_uid : Int) -> NodeTrace? {
+pub fn LayoutTracer::get_trace(
+  self : LayoutTracer,
+  node_uid : Int,
+) -> NodeTrace? {
   self.traces.get(node_uid)
 }
 
@@ -254,11 +255,16 @@ pub fn LayoutTracer::collect_from_tree(
     let child_layout = layout.children[i]
     // Child's context is based on parent's content area
     let child_ctx : @node.LayoutContext = {
-      available_width: layout.width - layout.padding.left - layout.padding.right -
-        layout.border.left -
-        layout.border.right,
+      available_width: layout.width -
+      layout.padding.left -
+      layout.padding.right -
+      layout.border.left -
+      layout.border.right,
       available_height: Some(
-        layout.height - layout.padding.top - layout.padding.bottom - layout.border.top -
+        layout.height -
+        layout.padding.top -
+        layout.padding.bottom -
+        layout.border.top -
         layout.border.bottom,
       ),
       sizing_mode: @node.Definite,

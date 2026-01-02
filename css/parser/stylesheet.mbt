@@ -8,21 +8,18 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
   let stylesheet = @cascade.Stylesheet::new(@cascade.Author)
   let tokens = @token.tokenize(css)
   let mut pos = 0
-
   while pos < tokens.length() {
     // Skip whitespace
     pos = skip_ws(tokens, pos)
     if pos >= tokens.length() {
       break
     }
-
     match tokens[pos] {
       @token.Token::EOF => break
-      @token.Token::AtKeyword(_) => {
+      @token.Token::AtKeyword(_) =>
         // Skip @-rules for now (e.g., @media, @import)
         pos = skip_at_rule(tokens, pos)
-      }
-      _ => {
+      _ =>
         // Try to parse a style rule
         match parse_style_rule(tokens, pos) {
           Some((selectors, declarations, new_pos)) => {
@@ -36,10 +33,8 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
           }
           None => pos = pos + 1
         }
-      }
     }
   }
-
   stylesheet
 }
 
@@ -61,7 +56,6 @@ fn skip_ws(tokens : Array[@token.Token], pos : Int) -> Int {
 fn skip_at_rule(tokens : Array[@token.Token], start : Int) -> Int {
   let mut pos = start + 1
   let mut brace_depth = 0
-
   while pos < tokens.length() {
     match tokens[pos] {
       @token.Token::LeftBrace => {
@@ -93,8 +87,12 @@ fn skip_at_rule(tokens : Array[@token.Token], start : Int) -> Int {
 /// Parse a style rule: selector { declarations }
 fn parse_style_rule(
   tokens : Array[@token.Token],
-  start : Int
-) -> (Array[(String, @selector.ComplexSelector)], Array[@cascade.Declaration], Int)? {
+  start : Int,
+) -> (
+  Array[(String, @selector.ComplexSelector)],
+  Array[@cascade.Declaration],
+  Int,
+)? {
   let mut pos = start
 
   // Collect selector tokens until '{'
@@ -106,7 +104,6 @@ fn parse_style_rule(
       _ => pos = pos + 1
     }
   }
-
   if pos >= tokens.length() {
     return None
   }
@@ -126,17 +123,15 @@ fn parse_style_rule(
   // Parse declarations until '}'
   let declarations : Array[@cascade.Declaration] = []
   let mut decl_order = 0
-
   while pos < tokens.length() {
     pos = skip_ws(tokens, pos)
-
     match tokens[pos] {
       @token.Token::RightBrace => {
         pos = pos + 1
         break
       }
       @token.Token::EOF => break
-      _ => {
+      _ =>
         // Parse declaration
         match parse_rule_declaration(tokens, pos) {
           Some((property, value, importance, new_pos)) => {
@@ -154,10 +149,8 @@ fn parse_style_rule(
           }
           None => pos = pos + 1
         }
-      }
     }
   }
-
   Some((selectors, declarations, pos))
 }
 
@@ -165,7 +158,7 @@ fn parse_style_rule(
 /// Parse a declaration within a rule block
 fn parse_rule_declaration(
   tokens : Array[@token.Token],
-  start : Int
+  start : Int,
 ) -> (String, String, @cascade.Importance, Int)? {
   let mut pos = skip_ws(tokens, start)
 
@@ -187,7 +180,6 @@ fn parse_rule_declaration(
   // Collect value tokens until ';' or '}'
   let value_start = pos
   let mut has_important = false
-
   while pos < tokens.length() {
     match tokens[pos] {
       @token.Token::Semicolon | @token.Token::RightBrace => break
@@ -222,8 +214,9 @@ fn parse_rule_declaration(
   } else {
     pos
   }
-
-  let value = tokens_to_string(tokens, value_start, value_end).trim().to_string()
+  let value = tokens_to_string(tokens, value_start, value_end)
+    .trim()
+    .to_string()
 
   // Skip semicolon if present
   if pos < tokens.length() {
@@ -232,19 +225,21 @@ fn parse_rule_declaration(
       _ => ()
     }
   }
-
   let importance = if has_important {
     @cascade.Important
   } else {
     @cascade.Normal
   }
-
   Some((property, value, importance, pos))
 }
 
 ///|
 /// Convert token range to string
-fn tokens_to_string(tokens : Array[@token.Token], start : Int, end : Int) -> String {
+fn tokens_to_string(
+  tokens : Array[@token.Token],
+  start : Int,
+  end : Int,
+) -> String {
   let buf = StringBuilder::new()
   for i = start; i < end; i = i + 1 {
     match tokens[i] {
@@ -288,11 +283,10 @@ fn tokens_to_string(tokens : Array[@token.Token], start : Int, end : Int) -> Str
 ///|
 /// Parse comma-separated selector list
 fn parse_selector_list_text(
-  css : String
+  css : String,
 ) -> Array[(String, @selector.ComplexSelector)] {
   let result : Array[(String, @selector.ComplexSelector)] = []
   let parts = split_by_comma(css)
-
   for part in parts {
     let trimmed = part.trim().to_string()
     if not(trimmed.is_empty()) {
@@ -302,7 +296,6 @@ fn parse_selector_list_text(
       }
     }
   }
-
   result
 }
 
@@ -311,7 +304,6 @@ fn parse_selector_list_text(
 fn split_by_comma(s : String) -> Array[String] {
   let result : Array[String] = []
   let current = StringBuilder::new()
-
   for i = 0; i < s.length(); i = i + 1 {
     let c = s[i].to_int().unsafe_to_char()
     if c == ',' {
@@ -321,10 +313,8 @@ fn split_by_comma(s : String) -> Array[String] {
       current.write_char(c)
     }
   }
-
   if current.to_string().length() > 0 {
     result.push(current.to_string())
   }
-
   result
 }

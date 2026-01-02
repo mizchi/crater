@@ -71,7 +71,10 @@ pub fn Element::with_id(tag_name : String, id : String) -> Element {
 
 ///|
 /// Create an element with classes
-pub fn Element::with_classes(tag_name : String, classes : Array[String]) -> Element {
+pub fn Element::with_classes(
+  tag_name : String,
+  classes : Array[String],
+) -> Element {
   {
     tag_name,
     id: None,
@@ -130,25 +133,25 @@ pub fn Element::set_id(self : Element, id : String) -> Element {
 pub fn Element::add_class(self : Element, class_name : String) -> Element {
   let classes = self.classes.copy()
   classes.push(class_name)
-  { ..self, classes }
+  { ..self, classes, }
 }
 
 ///|
 pub fn Element::set_attribute(
   self : Element,
   name : String,
-  value : String
+  value : String,
 ) -> Element {
   let attributes = self.attributes.copy()
   attributes.push({ name, value })
-  { ..self, attributes }
+  { ..self, attributes, }
 }
 
 ///|
 pub fn Element::set_sibling_info(
   self : Element,
   index : Int,
-  count : Int
+  count : Int,
 ) -> Element {
   { ..self, sibling_index: index, sibling_count: count }
 }

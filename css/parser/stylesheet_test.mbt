@@ -18,7 +18,10 @@ test "parse stylesheet with flex properties" {
       _ => ()
     }
   }
-  inspect(decl_strs, content=(
-    #|["display: flex", "flex-direction: row", "gap: 10px"]
-  ))
+  inspect(
+    decl_strs,
+    content=(
+      #|["display: flex", "flex-direction: row", "gap: 10px"]
+    ),
+  )
 }

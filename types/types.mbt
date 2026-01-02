@@ -216,7 +216,7 @@ pub fn Dimension::resolve_or(
 /// Uses parent_width for percentage resolution (CSS spec: percentages resolve against width)
 pub fn resolve_rect(
   rect : Rect[Dimension],
-  parent_width : Double
+  parent_width : Double,
 ) -> Rect[Double] {
   {
     left: rect.left.resolve_or(parent_width, 0.0),
@@ -237,6 +237,7 @@ pub fn resolve_rect_intrinsic(rect : Rect[Dimension]) -> Rect[Double] {
       Auto => 0.0
     }
   }
+
   {
     left: resolve_intrinsic(rect.left),
     right: resolve_intrinsic(rect.right),
@@ -365,7 +366,7 @@ pub fn resolve_dimensions_with_aspect_ratio(
   match aspect_ratio {
     None => (width, height)
     Some(ar) if ar <= 0.0 => (width, height)
-    Some(ar) => {
+    Some(ar) =>
       match (width, height) {
         (Some(w), Some(_)) => {
           // Both known: aspect ratio overrides height
@@ -387,7 +388,6 @@ pub fn resolve_dimensions_with_aspect_ratio(
         }
         (None, None) => (None, None)
       }
-    }
   }
 }
 
@@ -399,5 +399,9 @@ pub fn clamp(value : Double, min_val : Double, max_val : Double) -> Double {
   // First apply max constraint
   let clamped = if value > max_val { max_val } else { value }
   // Then apply min constraint (min wins if min > max)
-  if clamped < min_val { min_val } else { clamped }
+  if clamped < min_val {
+    min_val
+  } else {
+    clamped
+  }
 }

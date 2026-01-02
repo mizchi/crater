@@ -16,7 +16,7 @@ pub fn resolve_inset(dim : @types.Dimension, available : Double) -> Double? {
 /// Resolve length dimension (margin, etc.) - Auto becomes 0
 pub fn resolve_length_dimension(
   dim : @types.Dimension,
-  available : Double
+  available : Double,
 ) -> Double {
   match dim {
     @types.Length(v) => v
@@ -29,11 +29,19 @@ pub fn resolve_length_dimension(
 /// Clamp a value between min and max
 /// CSS spec: min takes precedence over max when they conflict
 /// So apply max first, then min
-pub fn clamp_value(value : Double, min_val : Double, max_val : Double) -> Double {
+pub fn clamp_value(
+  value : Double,
+  min_val : Double,
+  max_val : Double,
+) -> Double {
   // First apply max constraint
   let clamped = if value > max_val { max_val } else { value }
   // Then apply min constraint (min wins if min > max)
-  if clamped < min_val { min_val } else { clamped }
+  if clamped < min_val {
+    min_val
+  } else {
+    clamped
+  }
 }
 
 ///|
@@ -65,7 +73,7 @@ pub(all) struct AbsoluteSizeParams {
 pub fn compute_size_params(
   style : @style.Style,
   area_width : Double,
-  area_height : Double
+  area_height : Double,
 ) -> AbsoluteSizeParams {
   // Resolve margin values
   let margin_left = resolve_length_dimension(style.margin.left, area_width)
@@ -128,7 +136,6 @@ pub fn compute_size_params(
     @types.Percent(p) => area_height * p
     @types.Auto => @double.infinity
   }
-
   {
     margin_left,
     margin_right,
@@ -181,7 +188,7 @@ pub fn apply_constraints_with_aspect_ratio(
   min_w : Double,
   max_w : Double,
   min_h : Double,
-  max_h : Double
+  max_h : Double,
 ) -> (Double, Double) {
   // Apply min/max constraints
   let clamped_width = clamp_value(width, min_w, max_w)
@@ -214,7 +221,7 @@ pub fn compute_inset_position(
   area_left : Double,
   area_top : Double,
   area_width : Double,
-  area_height : Double
+  area_height : Double,
 ) -> (Double, Double) {
   let area_right = area_left + area_width
   let area_bottom = area_top + area_height
@@ -238,7 +245,6 @@ pub fn compute_inset_position(
         None => area_top + params.margin_top // Default to start
       }
   }
-
   (x, y)
 }
 
@@ -262,11 +268,10 @@ pub fn compute_position_with_margin_auto(
   area_left : Double,
   area_top : Double,
   area_width : Double,
-  area_height : Double
+  area_height : Double,
 ) -> (Double, Double) {
   let area_right = area_left + area_width
   let area_bottom = area_top + area_height
-
   let margin_left_is_auto = is_margin_auto(style.margin.left)
   let margin_right_is_auto = is_margin_auto(style.margin.right)
   let margin_top_is_auto = is_margin_auto(style.margin.top)
@@ -329,7 +334,6 @@ pub fn compute_position_with_margin_auto(
         None => area_top + params.margin_top
       }
   }
-
   (x, y)
 }
 

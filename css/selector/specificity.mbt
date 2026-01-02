@@ -72,7 +72,6 @@ pub fn compound_specificity(sel : CompoundSelector) -> Specificity {
   for sub in sel.subclasses {
     result = result.add(simple_specificity(sub))
   }
-
   result
 }
 
@@ -80,11 +79,9 @@ pub fn compound_specificity(sel : CompoundSelector) -> Specificity {
 /// Calculate specificity of a complex selector
 pub fn complex_specificity(sel : ComplexSelector) -> Specificity {
   let mut result = compound_specificity(sel.head)
-
   for step in sel.tail {
     result = result.add(compound_specificity(step.selector))
   }
-
   result
 }
 

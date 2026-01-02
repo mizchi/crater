@@ -1,6 +1,5 @@
 ///|
 /// Tests for HTML parser
-
 test "parse simple element" {
   let html = "<div></div>"
   let elem = @html.parse(html)
@@ -11,6 +10,7 @@ test "parse simple element" {
   }
 }
 
+///|
 test "parse element with id" {
   let html = "<div id=\"main\"></div>"
   match @html.parse(html) {
@@ -22,6 +22,7 @@ test "parse element with id" {
   }
 }
 
+///|
 test "parse element with classes" {
   let html = "<div class=\"foo bar\"></div>"
   match @html.parse(html) {
@@ -34,16 +35,16 @@ test "parse element with classes" {
   }
 }
 
+///|
 test "parse element with style" {
   let html = "<div style=\"width: 100px; height: 50px\"></div>"
   match @html.parse(html) {
-    Some(e) => {
-      inspect(e.style, content="Some(\"width: 100px; height: 50px\")")
-    }
+    Some(e) => inspect(e.style, content="Some(\"width: 100px; height: 50px\")")
     None => ()
   }
 }
 
+///|
 test "parse nested elements" {
   let html = "<div><span></span><p></p></div>"
   match @html.parse(html) {
@@ -55,16 +56,16 @@ test "parse nested elements" {
   }
 }
 
+///|
 test "parse self-closing element" {
   let html = "<div><br/><hr /></div>"
   match @html.parse(html) {
-    Some(e) => {
-      inspect(e.children.length(), content="2")
-    }
+    Some(e) => inspect(e.children.length(), content="2")
     None => ()
   }
 }
 
+///|
 test "parse void elements without slash" {
   // Void elements like br, hr, img don't need closing tags
   let html = "<div><br><hr><p>text</p></div>"
@@ -90,6 +91,7 @@ test "parse void elements without slash" {
   }
 }
 
+///|
 test "parse complex layout" {
   let html =
     #|<div id="root" style="width: 400px; height: 300px">
@@ -109,6 +111,7 @@ test "parse complex layout" {
   }
 }
 
+///|
 test "parse_document with style tag" {
   let html =
     #|<html>
@@ -122,12 +125,10 @@ test "parse_document with style tag" {
   let doc = @html.parse_document(html)
   inspect(doc.root.tag, content="html")
   inspect(doc.stylesheets.length(), content="1")
-  inspect(
-    doc.stylesheets[0].contains("color: red"),
-    content="true",
-  )
+  inspect(doc.stylesheets[0].contains("color: red"), content="true")
 }
 
+///|
 test "parse_document with link stylesheet" {
   let html =
     #|<html>
@@ -143,6 +144,7 @@ test "parse_document with link stylesheet" {
   inspect(doc.stylesheet_links[1], content="https://example.com/theme.css")
 }
 
+///|
 test "parse html with body and children" {
   let html =
     #|<html>

@@ -137,12 +137,11 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
 
   // Optional sign
   match self.peek() {
-    Some('+') | Some('-') => {
+    Some('+') | Some('-') =>
       match self.consume() {
         Some(c) => buf.write_char(c)
         None => ()
       }
-    }
     _ => ()
   }
 
@@ -180,7 +179,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
 
   // Exponent part
   match self.peek() {
-    Some('e') | Some('E') => {
+    Some('e') | Some('E') =>
       match self.peek_at(1) {
         Some(c) if is_digit(c) || c == '+' || c == '-' => {
           is_integer = false
@@ -189,12 +188,11 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
             None => ()
           }
           match self.peek() {
-            Some('+') | Some('-') => {
+            Some('+') | Some('-') =>
               match self.consume() {
                 Some(sign) => buf.write_char(sign)
                 None => ()
               }
-            }
             _ => ()
           }
           while not(self.is_eof()) {
@@ -210,16 +208,10 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
         }
         _ => ()
       }
-    }
     _ => ()
   }
-
   let num_str = buf.to_string()
-  let value = try {
-    @strconv.parse_double(num_str)
-  } catch {
-    _ => 0.0
-  }
+  let value = @strconv.parse_double(num_str) catch { _ => 0.0 }
   let num_type : NumType = if is_integer { Integer } else { NumType::Number }
   (value, num_type)
 }
@@ -232,7 +224,7 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
     match self.consume() {
       Some(c) if c == quote => return Token::String(buf.to_string())
       Some('\n') | Some('\r') => return BadString
-      Some('\\') => {
+      Some('\\') =>
         match self.peek() {
           Some('\n') => {
             let _ = self.consume()
@@ -244,7 +236,6 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
           }
           None => ()
         }
-      }
       Some(c) => buf.write_char(c)
       None => return Token::String(buf.to_string())
     }
@@ -256,24 +247,21 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
 /// Check if the next characters would start a number
 fn Tokenizer::would_start_number(self : Tokenizer) -> Bool {
   match self.peek() {
-    Some('+') | Some('-') => {
+    Some('+') | Some('-') =>
       match self.peek_at(1) {
         Some(c) if is_digit(c) => true
-        Some('.') => {
+        Some('.') =>
           match self.peek_at(2) {
             Some(c) if is_digit(c) => true
             _ => false
           }
-        }
         _ => false
       }
-    }
-    Some('.') => {
+    Some('.') =>
       match self.peek_at(1) {
         Some(c) if is_digit(c) => true
         _ => false
       }
-    }
     Some(c) if is_digit(c) => true
     _ => false
   }
@@ -283,14 +271,13 @@ fn Tokenizer::would_start_number(self : Tokenizer) -> Bool {
 /// Check if the next characters would start an identifier
 fn Tokenizer::would_start_ident(self : Tokenizer) -> Bool {
   match self.peek() {
-    Some('-') => {
+    Some('-') =>
       match self.peek_at(1) {
         Some('-') => true
         Some(c) if is_name_start(c) => true
         Some('\\') => true
         _ => false
       }
-    }
     Some(c) if is_name_start(c) => true
     Some('\\') => true
     _ => false
@@ -303,7 +290,6 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
   if self.is_eof() {
     return EOF
   }
-
   match self.peek() {
     // Whitespace
     Some(c) if is_whitespace(c) => {
@@ -382,7 +368,7 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
     }
 
     // Numbers and signs
-    Some('+') => {
+    Some('+') =>
       if self.would_start_number() {
         let (value, num_type) = self.consume_number()
         self.finish_numeric_token(value, num_type)
@@ -390,8 +376,7 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
         let _ = self.consume()
         Delim('+')
       }
-    }
-    Some('-') => {
+    Some('-') =>
       if self.would_start_number() {
         let (value, num_type) = self.consume_number()
         self.finish_numeric_token(value, num_type)
@@ -412,8 +397,7 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
           }
         }
       }
-    }
-    Some('.') => {
+    Some('.') =>
       if self.would_start_number() {
         let (value, num_type) = self.consume_number()
         self.finish_numeric_token(value, num_type)
@@ -421,7 +405,6 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
         let _ = self.consume()
         Delim('.')
       }
-    }
 
     // Numbers
     Some(c) if is_digit(c) => {
@@ -447,7 +430,7 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
     }
 
     // Comments (simplified - skip them)
-    Some('/') => {
+    Some('/') =>
       match self.peek_at(1) {
         Some('*') => {
           let _ = self.consume()
@@ -474,10 +457,9 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
           Delim('/')
         }
       }
-    }
 
     // CDO <!--
-    Some('<') => {
+    Some('<') =>
       match (self.peek_at(1), self.peek_at(2), self.peek_at(3)) {
         (Some('!'), Some('-'), Some('-')) => {
           let _ = self.consume()
@@ -491,10 +473,9 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
           Delim('<')
         }
       }
-    }
 
     // Backslash (escape or delim)
-    Some('\\') => {
+    Some('\\') =>
       match self.peek_at(1) {
         Some('\n') => {
           let _ = self.consume()
@@ -505,14 +486,12 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
           self.finish_ident_token(name)
         }
       }
-    }
 
     // Any other character
     Some(c) => {
       let _ = self.consume()
       Delim(c)
     }
-
     None => EOF
   }
 }
@@ -522,7 +501,7 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
 fn Tokenizer::finish_numeric_token(
   self : Tokenizer,
   value : Double,
-  num_type : NumType
+  num_type : NumType,
 ) -> Token {
   match self.peek() {
     Some('%') => {

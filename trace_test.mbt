@@ -5,13 +5,19 @@
 ///|
 test "trace_simple_layout" {
   // Create a simple parent-child structure
-  let child = @node.Node::leaf(
-    "child",
-    { ..@style.Style::default(), width: @types.Length(50.0), height: @types.Length(30.0) },
-  )
+  let child = @node.Node::leaf("child", {
+    ..@style.Style::default(),
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  })
   let parent = @node.Node::new(
     "parent",
-    { ..@style.Style::default(), display: @style.Flex, width: @types.Length(200.0), height: @types.Length(100.0) },
+    {
+      ..@style.Style::default(),
+      display: @style.Flex,
+      width: @types.Length(200.0),
+      height: @types.Length(100.0),
+    },
     [child],
   )
   // Compute layout with tracing
@@ -23,32 +29,38 @@ test "trace_simple_layout" {
   let result = @flex.compute_with_trace(parent, ctx)
   // Verify traces were collected
   let parent_trace = result.tracer.get_trace(parent.uid)
-  assert_true!(parent_trace.is_some())
+  assert_true(parent_trace.is_some())
   let pt = parent_trace.unwrap()
   // Check parent output matches layout
-  assert_eq!(pt.output.width, 200.0)
-  assert_eq!(pt.output.height, 100.0)
+  assert_eq(pt.output.width, 200.0)
+  assert_eq(pt.output.height, 100.0)
   // Check child trace
   let child_trace = result.tracer.get_trace(child.uid)
-  assert_true!(child_trace.is_some())
+  assert_true(child_trace.is_some())
   let ct = child_trace.unwrap()
-  assert_eq!(ct.output.width, 50.0)
-  assert_eq!(ct.output.height, 30.0)
+  assert_eq(ct.output.width, 50.0)
+  assert_eq(ct.output.height, 30.0)
 }
 
 ///|
 test "trace_dependencies_recorded" {
-  let child1 = @node.Node::leaf(
-    "child1",
-    { ..@style.Style::default(), width: @types.Length(50.0), height: @types.Length(30.0) },
-  )
-  let child2 = @node.Node::leaf(
-    "child2",
-    { ..@style.Style::default(), width: @types.Length(60.0), height: @types.Length(40.0) },
-  )
+  let child1 = @node.Node::leaf("child1", {
+    ..@style.Style::default(),
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  })
+  let child2 = @node.Node::leaf("child2", {
+    ..@style.Style::default(),
+    width: @types.Length(60.0),
+    height: @types.Length(40.0),
+  })
   let parent = @node.Node::new(
     "parent",
-    { ..@style.Style::default(), display: @style.Flex, width: @types.Length(200.0) },
+    {
+      ..@style.Style::default(),
+      display: @style.Flex,
+      width: @types.Length(200.0),
+    },
     [child1, child2],
   )
   let ctx : @node.LayoutContext = {
@@ -59,33 +71,39 @@ test "trace_dependencies_recorded" {
   let result = @flex.compute_with_trace(parent, ctx)
   // Parent should have dependencies on children's intrinsic sizes
   let parent_trace = result.tracer.get_trace(parent.uid)
-  assert_true!(parent_trace.is_some())
+  assert_true(parent_trace.is_some())
   let pt = parent_trace.unwrap()
   // Should have ParentWidth and ChildIntrinsicMain dependencies
-  assert_true!(pt.dependencies.length() >= 1) // At least ParentWidth
+  assert_true(pt.dependencies.length() >= 1) // At least ParentWidth
   // Check that ParentWidth is recorded
-  let has_parent_width = pt.dependencies.iter().any(fn(d) {
-    match d {
-      @trace.ParentWidth => true
-      _ => false
-    }
-  })
-  assert_true!(has_parent_width)
+  let has_parent_width = pt.dependencies
+    .iter()
+    .any(fn(d) {
+      match d {
+        @trace.ParentWidth => true
+        _ => false
+      }
+    })
+  assert_true(has_parent_width)
   // Check that children intrinsic dependencies are recorded
-  let child1_dep_found = pt.dependencies.iter().any(fn(d) {
-    match d {
-      @trace.ChildIntrinsicMain(uid) => uid == child1.uid
-      _ => false
-    }
-  })
-  assert_true!(child1_dep_found)
-  let child2_dep_found = pt.dependencies.iter().any(fn(d) {
-    match d {
-      @trace.ChildIntrinsicMain(uid) => uid == child2.uid
-      _ => false
-    }
-  })
-  assert_true!(child2_dep_found)
+  let child1_dep_found = pt.dependencies
+    .iter()
+    .any(fn(d) {
+      match d {
+        @trace.ChildIntrinsicMain(uid) => uid == child1.uid
+        _ => false
+      }
+    })
+  assert_true(child1_dep_found)
+  let child2_dep_found = pt.dependencies
+    .iter()
+    .any(fn(d) {
+      match d {
+        @trace.ChildIntrinsicMain(uid) => uid == child2.uid
+        _ => false
+      }
+    })
+  assert_true(child2_dep_found)
 }
 
 ///|
@@ -95,17 +113,18 @@ test "trace_unique_uids" {
   let child2 = @node.Node::leaf("a", @style.Style::default()) // Same id, different uid
   let child3 = @node.Node::leaf("a", @style.Style::default())
   // All should have different uids
-  assert_true!(child1.uid != child2.uid)
-  assert_true!(child2.uid != child3.uid)
-  assert_true!(child1.uid != child3.uid)
+  assert_true(child1.uid != child2.uid)
+  assert_true(child2.uid != child3.uid)
+  assert_true(child1.uid != child3.uid)
 }
 
 ///|
 test "trace_needs_recompute" {
-  let node = @node.Node::leaf(
-    "test",
-    { ..@style.Style::default(), width: @types.Length(100.0), height: @types.Length(50.0) },
-  )
+  let node = @node.Node::leaf("test", {
+    ..@style.Style::default(),
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  })
   let ctx1 : @node.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
@@ -113,41 +132,52 @@ test "trace_needs_recompute" {
   }
   let result = @flex.compute_with_trace(node, ctx1)
   // Same context should not need recompute
-  assert_eq!(result.tracer.needs_recompute(node.uid, ctx1), false)
+  assert_eq(result.tracer.needs_recompute(node.uid, ctx1), false)
   // Different width should need recompute
   let ctx2 : @node.LayoutContext = {
     available_width: 500.0,
     available_height: Some(300.0),
     sizing_mode: @node.Definite,
   }
-  assert_eq!(result.tracer.needs_recompute(node.uid, ctx2), true)
+  assert_eq(result.tracer.needs_recompute(node.uid, ctx2), true)
   // Different height should need recompute
   let ctx3 : @node.LayoutContext = {
     available_width: 400.0,
     available_height: Some(400.0),
     sizing_mode: @node.Definite,
   }
-  assert_eq!(result.tracer.needs_recompute(node.uid, ctx3), true)
+  assert_eq(result.tracer.needs_recompute(node.uid, ctx3), true)
   // Unknown node should need recompute
   let unknown = @node.Node::leaf("unknown", @style.Style::default())
-  assert_eq!(result.tracer.needs_recompute(unknown.uid, ctx1), true)
+  assert_eq(result.tracer.needs_recompute(unknown.uid, ctx1), true)
 }
 
 ///|
 test "trace_nested_structure" {
   // Create a nested structure: parent -> middle -> leaf
-  let leaf = @node.Node::leaf(
-    "leaf",
-    { ..@style.Style::default(), width: @types.Length(20.0), height: @types.Length(20.0) },
-  )
+  let leaf = @node.Node::leaf("leaf", {
+    ..@style.Style::default(),
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+  })
   let middle = @node.Node::new(
     "middle",
-    { ..@style.Style::default(), display: @style.Flex, width: @types.Length(60.0), height: @types.Length(60.0) },
+    {
+      ..@style.Style::default(),
+      display: @style.Flex,
+      width: @types.Length(60.0),
+      height: @types.Length(60.0),
+    },
     [leaf],
   )
   let parent = @node.Node::new(
     "parent",
-    { ..@style.Style::default(), display: @style.Flex, width: @types.Length(100.0), height: @types.Length(100.0) },
+    {
+      ..@style.Style::default(),
+      display: @style.Flex,
+      width: @types.Length(100.0),
+      height: @types.Length(100.0),
+    },
     [middle],
   )
   let ctx : @node.LayoutContext = {
@@ -157,10 +187,10 @@ test "trace_nested_structure" {
   }
   let result = @flex.compute_with_trace(parent, ctx)
   // All three nodes should have traces
-  assert_true!(result.tracer.get_trace(parent.uid).is_some())
-  assert_true!(result.tracer.get_trace(middle.uid).is_some())
-  assert_true!(result.tracer.get_trace(leaf.uid).is_some())
+  assert_true(result.tracer.get_trace(parent.uid).is_some())
+  assert_true(result.tracer.get_trace(middle.uid).is_some())
+  assert_true(result.tracer.get_trace(leaf.uid).is_some())
   // Verify traced nodes count
   let traced_nodes = result.tracer.get_traced_nodes()
-  assert_eq!(traced_nodes.length(), 3)
+  assert_eq(traced_nodes.length(), 3)
 }

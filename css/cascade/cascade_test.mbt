@@ -216,7 +216,6 @@ test "collect declarations - inline beats rules" {
     source_order: 1,
   }
   let inline = [Declaration::from_inline("width", "200px", Normal)]
-
   let collected = collect_declarations([rule_match], inline)
   let result = cascade(collected)
 
@@ -232,9 +231,10 @@ test "stylesheet match and cascade" {
   // Parse a selector
   let sel = @selector.parse_selector_text("div.foo")
   match sel {
-    Some(selector) => {
-      stylesheet.add_rule("div.foo", selector, [Declaration::new("width", "100px")])
-    }
+    Some(selector) =>
+      stylesheet.add_rule("div.foo", selector, [
+        Declaration::new("width", "100px"),
+      ])
     None => fail("failed to parse selector")
   }
 
@@ -251,9 +251,10 @@ test "stylesheet - non-matching element" {
   let stylesheet = Stylesheet::new(Author)
   let sel = @selector.parse_selector_text("div.bar")
   match sel {
-    Some(selector) => {
-      stylesheet.add_rule("div.bar", selector, [Declaration::new("width", "100px")])
-    }
+    Some(selector) =>
+      stylesheet.add_rule("div.bar", selector, [
+        Declaration::new("width", "100px"),
+      ])
     None => fail("failed to parse selector")
   }
 
@@ -267,18 +268,18 @@ test "stylesheet - non-matching element" {
 test "multiple stylesheets" {
   let ua_stylesheet = Stylesheet::new(UserAgent)
   let author_stylesheet = Stylesheet::new(Author)
-
   let sel = @selector.parse_selector_text("div")
   match sel {
     Some(selector) => {
       // UA sets width: 0
       ua_stylesheet.add_rule("div", selector, [Declaration::new("width", "0")])
       // Author sets width: 100px
-      author_stylesheet.add_rule("div", selector, [Declaration::new("width", "100px")])
+      author_stylesheet.add_rule("div", selector, [
+        Declaration::new("width", "100px"),
+      ])
     }
     None => fail("failed to parse selector")
   }
-
   let element = @selector.Element::new("div")
   let result = cascade_element(element, [ua_stylesheet, author_stylesheet], [])
 

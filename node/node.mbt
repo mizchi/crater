@@ -126,7 +126,7 @@ pub(all) struct LayoutResult {
 ///|
 /// Layout dispatch function type
 /// Used to delegate layout computation to the appropriate algorithm based on display type
-pub(all) struct LayoutDispatchFunc ((Node, LayoutContext) -> Layout)
+pub(all) struct LayoutDispatchFunc((Node, LayoutContext) -> Layout)
 
 ///|
 /// Global layout dispatch function

@@ -13,7 +13,7 @@ fn node_from_css(id : String, css : String) -> @node.Node {
 fn node_from_css_with_children(
   id : String,
   css : String,
-  children : Array[@node.Node]
+  children : Array[@node.Node],
 ) -> @node.Node {
   let style = @parser.parse_inline_style(css)
   @node.Node::new(id, style, children)
@@ -22,7 +22,11 @@ fn node_from_css_with_children(
 ///|
 /// Helper to create layout context
 fn make_ctx(width : Double, height : Double) -> @node.LayoutContext {
-  { available_width: width, available_height: Some(height), sizing_mode: Definite }
+  {
+    available_width: width,
+    available_height: Some(height),
+    sizing_mode: Definite,
+  }
 }
 
 ///|
@@ -139,14 +143,12 @@ test "e2e: nested flex containers" {
     "display: flex; flex-direction: column",
     [inner_child1, inner_child2],
   )
-
   let outer_child = node_from_css("oc1", "width: 100px; height: 100px")
   let outer = node_from_css_with_children(
     "outer",
     "display: flex; width: 300px; height: 150px",
     [inner, outer_child],
   )
-
   let layout = @flex.compute(outer, make_ctx(800.0, 600.0))
 
   // Inner container children should be vertical

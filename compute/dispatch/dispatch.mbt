@@ -17,5 +17,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
 /// Initialize the global layout dispatcher
 /// Call this before performing any layout computations
 pub fn setup() -> Unit {
-  @node.set_layout_dispatcher(@node.LayoutDispatchFunc(fn(node, ctx) { compute(node, ctx) }))
+  @node.set_layout_dispatcher(
+    @node.LayoutDispatchFunc(fn(node, ctx) { compute(node, ctx) }),
+  )
 }

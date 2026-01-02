@@ -11,6 +11,8 @@
 ///|
 /// Default viewport dimensions
 let default_width : Int = 800
+
+///|
 let default_height : Int = 600
 
 ///|
@@ -25,7 +27,6 @@ fn main {
   let mut width : Int? = None
   let mut height : Int? = None
   let mut skip_next = false
-
   for i = 1; i < args.length(); i = i + 1 {
     if skip_next {
       skip_next = false
@@ -67,20 +68,16 @@ fn main {
   // Resolve viewport dimensions
   let viewport_width = width.unwrap_or(default_width)
   let viewport_height = height.unwrap_or(default_height)
-
   let html = match input {
-    Some(path) => {
+    Some(path) =>
       // Read from file
-      try {
-        @fs.read_file_to_string(path)
-      } catch {
+      @fs.read_file_to_string(path) catch {
         e => {
           println("Error: Cannot read file: " + path)
           println("  " + e.to_string())
           return
         }
       }
-    }
     None => get_example_html()
   }
 
@@ -88,16 +85,16 @@ fn main {
   if json_output {
     render_json(html, viewport_width, viewport_height)
   } else {
-    render_html_with_options(html, viewport_width, viewport_height, verbose, box_model)
+    render_html_with_options(
+      html, viewport_width, viewport_height, verbose, box_model,
+    )
   }
 }
 
 ///|
 /// Parse integer from string
 fn parse_int(s : String) -> Int? {
-  try {
-    Some(@strconv.parse_int(s.trim().to_string()))
-  } catch {
+  Some(@strconv.parse_int(s.trim().to_string())) catch {
     _ => None
   }
 }
@@ -115,7 +112,9 @@ fn print_usage() -> Unit {
   println("Options:")
   println("  -w, --width <px>   Viewport width (default: 800)")
   println("  -H, --height <px>  Viewport height (default: 600)")
-  println("  -v, --verbose      Show detailed box model info (margin/padding/border)")
+  println(
+    "  -v, --verbose      Show detailed box model info (margin/padding/border)",
+  )
   println("  -b, --box-model    Show box model visualization (DevTools-style)")
   println("  --json             Output layout as JSON")
   println("  -h, --help         Show this help message")
@@ -157,7 +156,7 @@ fn render_html_with_options(
   width : Int,
   height : Int,
   verbose : Bool,
-  box_model : Bool
+  box_model : Bool,
 ) -> Unit {
   println("=== HTML Input ===")
   // Truncate long HTML for display
@@ -181,7 +180,6 @@ fn render_html_with_options(
     root_font_size: 16.0,
   }
   let layout = @renderer.render(html, ctx)
-
   println("=== Layout Tree ===")
   if verbose {
     println("(verbose mode: showing margin/padding/border)")
@@ -190,12 +188,13 @@ fn render_html_with_options(
     @renderer.print_layout_tree(layout, 0)
   }
   println("")
-
   println("=== Sixel Output ===")
   if box_model {
     println("(box-model mode: margin=yellow, padding=green, content=blue)")
   }
-  let sixel = @sixel.render_layout_with_options(layout, width, height, box_model)
+  let sixel = @sixel.render_layout_with_options(
+    layout, width, height, box_model,
+  )
   println(sixel)
 }
 

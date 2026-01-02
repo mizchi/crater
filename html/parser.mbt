@@ -40,9 +40,20 @@ priv struct Parser {
 /// Check if a tag is a void element (no closing tag required)
 fn is_void_element(tag : String) -> Bool {
   match tag.to_lower() {
-    "area" | "base" | "br" | "col" | "embed" | "hr" | "img" | "input" | "link" |
-    "meta" | "param" | "source" | "track" | "wbr" =>
-      true
+    "area"
+    | "base"
+    | "br"
+    | "col"
+    | "embed"
+    | "hr"
+    | "img"
+    | "input"
+    | "link"
+    | "meta"
+    | "param"
+    | "source"
+    | "track"
+    | "wbr" => true
     _ => false
   }
 }
@@ -93,6 +104,7 @@ fn Parser::skip_whitespace(self : Parser) -> Unit {
     match self.peek() {
       Some(c) if is_whitespace(c) => {
         let _ = self.consume()
+
       }
       _ => break
     }
@@ -119,9 +131,11 @@ fn Parser::skip_doctype(self : Parser) -> Unit {
         // Skip until >
         while self.peek() is Some(c) && c != '>' {
           let _ = self.consume()
+
         }
         if self.peek() is Some('>') {
-          let _ = self.consume() // >
+          let _ = self.consume()
+           // >
         }
         return
       }
@@ -135,8 +149,10 @@ fn Parser::skip_doctype(self : Parser) -> Unit {
 /// Skip HTML comment <!-- ... -->
 fn Parser::skip_comment(self : Parser) -> Bool {
   // Check for <!--
-  if self.peek() is Some('<') && self.peek_at(1) is Some('!') &&
-     self.peek_at(2) is Some('-') && self.peek_at(3) is Some('-') {
+  if self.peek() is Some('<') &&
+    self.peek_at(1) is Some('!') &&
+    self.peek_at(2) is Some('-') &&
+    self.peek_at(3) is Some('-') {
     // Skip <!--
     let _ = self.consume() // <
     let _ = self.consume() // !
@@ -144,13 +160,16 @@ fn Parser::skip_comment(self : Parser) -> Bool {
     let _ = self.consume() // -
     // Skip until -->
     while not(self.is_eof()) {
-      if self.peek() is Some('-') && self.peek_at(1) is Some('-') && self.peek_at(2) is Some('>') {
+      if self.peek() is Some('-') &&
+        self.peek_at(1) is Some('-') &&
+        self.peek_at(2) is Some('>') {
         let _ = self.consume() // -
         let _ = self.consume() // -
         let _ = self.consume() // >
         return true
       }
       let _ = self.consume()
+
     }
     return true
   }
@@ -197,6 +216,7 @@ fn Parser::consume_name(self : Parser) -> String {
       Some(c) if is_name_char(c) => {
         buf.write_char(c)
         let _ = self.consume()
+
       }
       _ => break
     }
@@ -213,6 +233,7 @@ fn Parser::consume_until(self : Parser, end_char : Char) -> String {
       Some(c) => {
         buf.write_char(c)
         let _ = self.consume()
+
       }
       None => break
     }
@@ -247,10 +268,10 @@ fn Parser::parse_element(self : Parser) -> Element? {
   match self.peek() {
     Some('<') => {
       let _ = self.consume()
+
     }
     _ => return None
   }
-
   self.skip_whitespace()
 
   // Check for closing tag
@@ -270,7 +291,6 @@ fn Parser::parse_element(self : Parser) -> Element? {
   let classes : Array[String] = []
   let mut style : String? = None
   let attributes : Map[String, String] = {}
-
   while true {
     self.skip_whitespace()
     match self.peek() {
@@ -285,12 +305,11 @@ fn Parser::parse_element(self : Parser) -> Element? {
         match self.peek() {
           Some('>') => {
             let _ = self.consume()
+
           }
           _ => ()
         }
-        return Some(
-          { tag, id, classes, style, attributes, children: [] },
-        )
+        return Some({ tag, id, classes, style, attributes, children: [] })
       }
       Some(_) => {
         let attr_name = self.consume_name()
@@ -336,19 +355,16 @@ fn Parser::parse_element(self : Parser) -> Element? {
 
   // Parse children
   let children = self.parse_children(tag)
-
   Some({ tag, id, classes, style, attributes, children })
 }
 
 ///|
 fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
   let children : Array[Node] = []
-
   while not(self.is_eof()) {
     self.skip_whitespace()
-
     match self.peek() {
-      Some('<') => {
+      Some('<') =>
         // Check if this is a closing tag
         match self.peek_at(1) {
           Some('/') => {
@@ -361,6 +377,7 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
             match self.peek() {
               Some('>') => {
                 let _ = self.consume()
+
               }
               _ => ()
             }
@@ -380,21 +397,21 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
               None => {
                 // Skip this character and continue
                 let _ = self.consume()
+
               }
             }
           }
-          _ => {
+          _ =>
             // Opening tag - parse child element
             match self.parse_element() {
               Some(elem) => children.push(Node::Element(elem))
               None => {
                 // Skip this character and continue
                 let _ = self.consume()
+
               }
             }
-          }
         }
-      }
       Some(_) => {
         // Text content
         let text = self.parse_text()
@@ -405,7 +422,6 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
       None => break
     }
   }
-
   children
 }
 
@@ -418,6 +434,7 @@ fn Parser::parse_text(self : Parser) -> String {
       Some(c) => {
         buf.write_char(c)
         let _ = self.consume()
+
       }
       None => break
     }
@@ -441,29 +458,24 @@ pub fn parse(html : String) -> Element? {
 fn parse_all_elements(html : String) -> Array[Element] {
   let parser = Parser::new(html)
   let elements : Array[Element] = []
-
   while not(parser.is_eof()) {
     parser.skip_whitespace()
     // Skip DOCTYPE declaration if present
     parser.skip_doctype()
     parser.skip_whitespace()
-
     if parser.is_eof() {
       break
     }
-
     match parser.parse_element() {
       Some(elem) => elements.push(elem)
-      None => {
+      None =>
         // Skip any non-element content
         match parser.consume() {
           Some(_) => ()
           None => break
         }
-      }
     }
   }
-
   elements
 }
 
@@ -480,9 +492,15 @@ fn is_head_element(tag : String) -> Bool {
 /// Parse HTML with a wrapper div if needed
 pub fn parse_fragment(html : String) -> Element {
   let elements = parse_all_elements(html)
-
   if elements.is_empty() {
-    return { tag: "body", id: None, classes: [], style: None, attributes: {}, children: [] }
+    return {
+      tag: "body",
+      id: None,
+      classes: [],
+      style: None,
+      attributes: {},
+      children: [],
+    }
   }
 
   // If first element is html, return it
@@ -498,7 +516,6 @@ pub fn parse_fragment(html : String) -> Element {
   // Otherwise, separate head and body elements and create implicit structure
   let head_children : Array[Node] = []
   let body_children : Array[Node] = []
-
   for elem in elements {
     if is_head_element(elem.tag) {
       head_children.push(Node::Element(elem))
@@ -573,7 +590,7 @@ pub fn parse_document(html : String) -> Document {
 fn extract_stylesheets(
   elem : Element,
   stylesheets : Array[String],
-  links : Array[String]
+  links : Array[String],
 ) -> Unit {
   // Handle <style> tags - extract text content
   if elem.tag == "style" {
@@ -586,12 +603,11 @@ fn extract_stylesheets(
   if elem.tag == "link" {
     let rel = elem.attributes.get("rel")
     match rel {
-      Some(r) if r == "stylesheet" => {
+      Some(r) if r == "stylesheet" =>
         match elem.attributes.get("href") {
           Some(href) => links.push(href)
           None => ()
         }
-      }
       _ => ()
     }
   }
@@ -612,7 +628,8 @@ fn extract_text_content(elem : Element) -> String {
   for child in elem.children {
     match child {
       Node::Text(text) => buf.write_string(text)
-      Node::Element(child_elem) => buf.write_string(extract_text_content(child_elem))
+      Node::Element(child_elem) =>
+        buf.write_string(extract_text_content(child_elem))
     }
   }
   buf.to_string()

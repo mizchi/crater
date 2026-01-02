@@ -6,7 +6,11 @@
 /// Text measurement constants (monospace font simulation)
 /// These approximate a typical monospace font at 16px
 let char_width : Double = 9.6 // Average character width at 16px (single-width)
+
+///|
 let line_height : Double = 20.0 // Line height at 16px
+
+///|
 let chars_per_line : Int = 80 // Default wrap width in characters (single-width)
 
 ///|
@@ -32,7 +36,11 @@ fn is_wide_char(c : Char) -> Bool {
 ///|
 /// Calculate display width of a character (1 for narrow, 2 for wide)
 fn char_display_width(c : Char) -> Int {
-  if is_wide_char(c) { 2 } else { 1 }
+  if is_wide_char(c) {
+    2
+  } else {
+    1
+  }
 }
 
 ///|
@@ -87,9 +95,11 @@ fn create_text_measure(text : String) -> @node.MeasureFunc {
     max_word_width = current_word_width
   }
   let text_min_width = max_word_width.to_double() * char_width
-
   {
-    func: fn(available_width : Double, _available_height : Double) -> @node.IntrinsicSize {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
       // Calculate how many single-width columns fit in available width
       let cols_available = if available_width > 0.0 {
         (available_width / char_width).to_int()
@@ -103,7 +113,6 @@ fn create_text_measure(text : String) -> @node.MeasureFunc {
         1
       }
       let height = lines.to_double() * line_height
-
       {
         min_width: text_min_width,
         max_width: text_max_width,
@@ -122,15 +131,25 @@ fn create_text_node(text : String) -> @node.Node {
     // Return a zero-size node for whitespace-only text
     @node.Node::leaf("#text", @style.Style::default())
   } else {
-    @node.Node::with_measure("#text", @style.Style::default(), create_text_measure(text))
+    @node.Node::with_measure(
+      "#text",
+      @style.Style::default(),
+      create_text_measure(text),
+    )
   }
 }
 
 ///|
 /// Create a MeasureFunc for image with intrinsic dimensions
-fn create_image_measure(intrinsic_width : Double, intrinsic_height : Double) -> @node.MeasureFunc {
+fn create_image_measure(
+  intrinsic_width : Double,
+  intrinsic_height : Double,
+) -> @node.MeasureFunc {
   {
-    func: fn(_available_width : Double, _available_height : Double) -> @node.IntrinsicSize {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
       // If intrinsic size is specified, use it
       // Otherwise default to 0
       let width = if intrinsic_width > 0.0 { intrinsic_width } else { 0.0 }
@@ -160,10 +179,10 @@ fn parse_html_dimension(value : String) -> Double? {
   } else {
     trimmed
   }
-  // Parse as double
-  try {
-    Some(@strconv.parse_double(num_str))
-  } catch {
+  Some(
+    // Parse as double
+    @strconv.parse_double(num_str),
+  ) catch {
     _ => None
   }
 }
@@ -172,7 +191,7 @@ fn parse_html_dimension(value : String) -> Double? {
 /// Convert HTML Element to Node tree for layout computation
 pub fn element_to_node(
   elem : @html.Element,
-  parent_style : @style.Style?
+  parent_style : @style.Style?,
 ) -> @node.Node {
   // Compute style from inline style attribute
   let ctx = @computed.ComputeContext::new()
@@ -189,11 +208,10 @@ pub fn element_to_node(
         let child_node = element_to_node(child_elem, Some(style))
         children.push(child_node)
       }
-      @html.Node::Text(_text) => {
+      @html.Node::Text(_text) =>
         // For now, we ignore text nodes in layout
         // In a real implementation, we'd create inline boxes
         ()
-      }
     }
   }
 
@@ -207,7 +225,6 @@ pub fn element_to_node(
         elem.tag
       }
   }
-
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
   } else {
@@ -223,12 +240,11 @@ fn find_body(elem : @html.Element) -> @html.Element? {
   }
   for child in elem.children {
     match child {
-      @html.Node::Element(child_elem) => {
+      @html.Node::Element(child_elem) =>
         match find_body(child_elem) {
           Some(body) => return Some(body)
           None => ()
         }
-      }
       _ => ()
     }
   }
@@ -237,10 +253,7 @@ fn find_body(elem : @html.Element) -> @html.Element? {
 
 ///|
 /// Render HTML string to Layout
-pub fn render(
-  html : String,
-  ctx : RenderContext
-) -> @node.Layout {
+pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
   // Parse HTML document (includes stylesheet extraction)
   let doc = @html.parse_document(html)
 
@@ -262,9 +275,12 @@ pub fn render(
 
   // Create layout context - subtract root margin from available space
   let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
-  let available_width = ctx.viewport_width - root_margin.left - root_margin.right
-  let available_height = ctx.viewport_height - root_margin.top - root_margin.bottom
-
+  let available_width = ctx.viewport_width -
+    root_margin.left -
+    root_margin.right
+  let available_height = ctx.viewport_height -
+    root_margin.top -
+    root_margin.bottom
   let layout_ctx : @node.LayoutContext = {
     available_width,
     available_height: Some(available_height),
@@ -287,7 +303,6 @@ pub fn render(
     @types.Dimension::Auto => true
     _ => false
   }
-
   let x_offset = if margin_left_is_auto && margin_right_is_auto {
     // Center horizontally
     (ctx.viewport_width - layout.width) / 2.0
@@ -298,7 +313,6 @@ pub fn render(
     // Use left margin
     root_margin.left
   }
-
   {
     id: layout.id,
     x: x_offset,
@@ -317,7 +331,7 @@ pub fn render(
 fn element_to_node_with_viewport(
   elem : @html.Element,
   parent_style : @style.Style?,
-  ctx : RenderContext
+  ctx : RenderContext,
 ) -> @node.Node {
   // Compute style from inline style attribute
   let compute_ctx = @computed.ComputeContext::new()
@@ -359,7 +373,6 @@ fn element_to_node_with_viewport(
         elem.tag
       }
   }
-
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
   } else {
@@ -373,13 +386,19 @@ fn element_to_node_with_styles(
   elem : @html.Element,
   parent : @selector.Element?,
   ctx : RenderContext,
-  stylesheets : Array[@cascade.Stylesheet]
+  stylesheets : Array[@cascade.Stylesheet],
 ) -> @node.Node {
   // Convert HTML element to selector element for matching
   let selector_elem = html_to_selector_element(elem, parent)
 
   // Get style from stylesheet matching + inline style
-  let style = compute_element_style(selector_elem, elem.style, stylesheets, parent is None, ctx)
+  let style = compute_element_style(
+    selector_elem,
+    elem.style,
+    stylesheets,
+    parent is None,
+    ctx,
+  )
 
   // Convert children
   let children : Array[@node.Node] = []
@@ -387,8 +406,15 @@ fn element_to_node_with_styles(
     match child {
       @html.Node::Element(child_elem) => {
         // Update sibling info on selector element for child processing
-        let child_selector = html_to_selector_element_with_parent(child_elem, selector_elem, i + 1, elem.children.length())
-        let child_node = element_to_node_with_styles_internal(child_elem, child_selector, ctx, stylesheets)
+        let child_selector = html_to_selector_element_with_parent(
+          child_elem,
+          selector_elem,
+          i + 1,
+          elem.children.length(),
+        )
+        let child_node = element_to_node_with_styles_internal(
+          child_elem, child_selector, ctx, stylesheets,
+        )
         children.push(child_node)
       }
       @html.Node::Text(text) => {
@@ -400,7 +426,6 @@ fn element_to_node_with_styles(
 
   // Create node ID
   let node_id = make_node_id(elem)
-
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
   } else {
@@ -414,18 +439,31 @@ fn element_to_node_with_styles_internal(
   elem : @html.Element,
   selector_elem : @selector.Element,
   ctx : RenderContext,
-  stylesheets : Array[@cascade.Stylesheet]
+  stylesheets : Array[@cascade.Stylesheet],
 ) -> @node.Node {
   // Get style from stylesheet matching + inline style
-  let style = compute_element_style(selector_elem, elem.style, stylesheets, false, ctx)
+  let style = compute_element_style(
+    selector_elem,
+    elem.style,
+    stylesheets,
+    false,
+    ctx,
+  )
 
   // Convert children
   let children : Array[@node.Node] = []
   for i, child in elem.children {
     match child {
       @html.Node::Element(child_elem) => {
-        let child_selector = html_to_selector_element_with_parent(child_elem, selector_elem, i + 1, elem.children.length())
-        let child_node = element_to_node_with_styles_internal(child_elem, child_selector, ctx, stylesheets)
+        let child_selector = html_to_selector_element_with_parent(
+          child_elem,
+          selector_elem,
+          i + 1,
+          elem.children.length(),
+        )
+        let child_node = element_to_node_with_styles_internal(
+          child_elem, child_selector, ctx, stylesheets,
+        )
         children.push(child_node)
       }
       @html.Node::Text(text) => {
@@ -434,7 +472,6 @@ fn element_to_node_with_styles_internal(
       }
     }
   }
-
   let node_id = make_node_id(elem)
 
   // Handle replaced elements (img, etc.) with intrinsic sizing
@@ -455,7 +492,6 @@ fn element_to_node_with_styles_internal(
       return @node.Node::with_measure(node_id, style, measure)
     }
   }
-
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
   } else {
@@ -465,39 +501,9 @@ fn element_to_node_with_styles_internal(
 
 ///|
 /// Convert HTML Element to Selector Element
-fn html_to_selector_element(elem : @html.Element, parent : @selector.Element?) -> @selector.Element {
-  let mut sel_elem = @selector.Element::new(elem.tag)
-
-  // Set ID
-  match elem.id {
-    Some(id) => sel_elem = sel_elem.set_id(id)
-    None => ()
-  }
-
-  // Set classes
-  for cls in elem.classes {
-    sel_elem = sel_elem.add_class(cls)
-  }
-
-  // Set attributes
-  elem.attributes.each(fn(name, value) { sel_elem = sel_elem.set_attribute(name, value) })
-
-  // Set parent
-  match parent {
-    Some(p) => sel_elem = sel_elem.set_parent(p)
-    None => ()
-  }
-
-  sel_elem
-}
-
-///|
-/// Convert HTML Element to Selector Element with parent and sibling info
-fn html_to_selector_element_with_parent(
+fn html_to_selector_element(
   elem : @html.Element,
-  parent : @selector.Element,
-  sibling_index : Int,
-  sibling_count : Int
+  parent : @selector.Element?,
 ) -> @selector.Element {
   let mut sel_elem = @selector.Element::new(elem.tag)
 
@@ -513,16 +519,52 @@ fn html_to_selector_element_with_parent(
   }
 
   // Set attributes
-  elem.attributes.each(fn(name, value) { sel_elem = sel_elem.set_attribute(name, value) })
+  elem.attributes.each(fn(name, value) {
+    sel_elem = sel_elem.set_attribute(name, value)
+  })
 
-  // Set parent and sibling info
-  sel_elem = sel_elem.set_parent(parent)
-  sel_elem = sel_elem.set_sibling_info(sibling_index, sibling_count)
-
+  // Set parent
+  match parent {
+    Some(p) => sel_elem = sel_elem.set_parent(p)
+    None => ()
+  }
   sel_elem
 }
 
 ///|
+/// Convert HTML Element to Selector Element with parent and sibling info
+fn html_to_selector_element_with_parent(
+  elem : @html.Element,
+  parent : @selector.Element,
+  sibling_index : Int,
+  sibling_count : Int,
+) -> @selector.Element {
+  let mut sel_elem = @selector.Element::new(elem.tag)
+
+  // Set ID
+  match elem.id {
+    Some(id) => sel_elem = sel_elem.set_id(id)
+    None => ()
+  }
+
+  // Set classes
+  for cls in elem.classes {
+    sel_elem = sel_elem.add_class(cls)
+  }
+
+  // Set attributes
+  elem.attributes.each(fn(name, value) {
+    sel_elem = sel_elem.set_attribute(name, value)
+  })
+
+  // Set parent and sibling info
+  sel_elem = sel_elem.set_parent(parent)
+  sel_elem = sel_elem.set_sibling_info(sibling_index, sibling_count)
+  sel_elem
+}
+
+///|
+
 ///|
 /// Get user-agent default style for an element tag
 fn get_ua_default_style(tag : String) -> @style.Style {
@@ -531,53 +573,106 @@ fn get_ua_default_style(tag : String) -> @style.Style {
   // Default margins for block elements (based on typical browser defaults)
   // Values are in em units, converted to px assuming 16px base font
   match tag.to_lower() {
-    "p" => {
-      // p has 1em margin-top and margin-bottom
-      ..default_style,
-      margin: @types.Rect::new(@types.Length(16.0), @types.Auto, @types.Length(16.0), @types.Auto)
-    }
-    "h1" => {
-      // h1 has 0.67em margin
-      ..default_style,
-      margin: @types.Rect::new(@types.Length(10.7), @types.Auto, @types.Length(10.7), @types.Auto)
-    }
-    "h2" => {
-      // h2 has 0.83em margin
-      ..default_style,
-      margin: @types.Rect::new(@types.Length(13.3), @types.Auto, @types.Length(13.3), @types.Auto)
-    }
-    "h3" => {
-      // h3 has 1em margin
-      ..default_style,
-      margin: @types.Rect::new(@types.Length(16.0), @types.Auto, @types.Length(16.0), @types.Auto)
-    }
-    "h4" | "h5" | "h6" => {
-      // h4-h6 have 1.33em margin
-      ..default_style,
-      margin: @types.Rect::new(@types.Length(21.3), @types.Auto, @types.Length(21.3), @types.Auto)
-    }
+    "p" =>
+      {
+        // p has 1em margin-top and margin-bottom
+        ..default_style,
+        margin: @types.Rect::new(
+          @types.Length(16.0),
+          @types.Auto,
+          @types.Length(16.0),
+          @types.Auto,
+        ),
+      }
+    "h1" =>
+      {
+        // h1 has 0.67em margin
+        ..default_style,
+        margin: @types.Rect::new(
+          @types.Length(10.7),
+          @types.Auto,
+          @types.Length(10.7),
+          @types.Auto,
+        ),
+      }
+    "h2" =>
+      {
+        // h2 has 0.83em margin
+        ..default_style,
+        margin: @types.Rect::new(
+          @types.Length(13.3),
+          @types.Auto,
+          @types.Length(13.3),
+          @types.Auto,
+        ),
+      }
+    "h3" =>
+      {
+        // h3 has 1em margin
+        ..default_style,
+        margin: @types.Rect::new(
+          @types.Length(16.0),
+          @types.Auto,
+          @types.Length(16.0),
+          @types.Auto,
+        ),
+      }
+    "h4" | "h5" | "h6" =>
+      {
+        // h4-h6 have 1.33em margin
+        ..default_style,
+        margin: @types.Rect::new(
+          @types.Length(21.3),
+          @types.Auto,
+          @types.Length(21.3),
+          @types.Auto,
+        ),
+      }
     "ul" | "ol" => {
       // Lists have 1em margin and 40px padding-left
       let mut s = default_style
-      s = { ..s, margin: @types.Rect::new(@types.Length(16.0), @types.Auto, @types.Length(16.0), @types.Auto) }
-      { ..s, padding: @types.Rect::new(@types.Length(0.0), @types.Length(0.0), @types.Length(0.0), @types.Length(40.0)) }
+      s = {
+        ..s,
+        margin: @types.Rect::new(
+          @types.Length(16.0),
+          @types.Auto,
+          @types.Length(16.0),
+          @types.Auto,
+        ),
+      }
+      {
+        ..s,
+        padding: @types.Rect::new(
+          @types.Length(0.0),
+          @types.Length(0.0),
+          @types.Length(0.0),
+          @types.Length(40.0),
+        ),
+      }
     }
-    "blockquote" => {
-      // blockquote has 1em margin and 40px horizontal margins
-      ..default_style,
-      margin: @types.Rect::new(@types.Length(16.0), @types.Length(40.0), @types.Length(16.0), @types.Length(40.0))
-    }
+    "blockquote" =>
+      {
+        // blockquote has 1em margin and 40px horizontal margins
+        ..default_style,
+        margin: @types.Rect::new(
+          @types.Length(16.0),
+          @types.Length(40.0),
+          @types.Length(16.0),
+          @types.Length(40.0),
+        ),
+      }
     _ => default_style
   }
 }
 
+///|
 /// Compute element style from stylesheet matches and inline style
 fn compute_element_style(
   selector_elem : @selector.Element,
   inline_css : String?,
   stylesheets : Array[@cascade.Stylesheet],
   is_root : Bool,
-  ctx : RenderContext
+  ctx : RenderContext,
 ) -> @style.Style {
   // Match stylesheets and get cascaded values
   let cascaded = @cascade.cascade_element(selector_elem, stylesheets, [])
@@ -588,9 +683,14 @@ fn compute_element_style(
   // Apply cascaded values with correct viewport
   for prop in cascaded.properties() {
     match cascaded.get_value(prop) {
-      Some(value) => {
-        style = apply_css_property_with_viewport(style, prop, value, ctx.viewport_width, ctx.viewport_height)
-      }
+      Some(value) =>
+        style = apply_css_property_with_viewport(
+          style,
+          prop,
+          value,
+          ctx.viewport_width,
+          ctx.viewport_height,
+        )
       None => ()
     }
   }
@@ -598,9 +698,7 @@ fn compute_element_style(
   // Apply inline styles (override stylesheet styles)
   // Parse inline CSS properties and apply them one by one
   match inline_css {
-    Some(css) => {
-      style = apply_inline_css(style, css)
-    }
+    Some(css) => style = apply_inline_css(style, css)
     None => ()
   }
 
@@ -613,14 +711,17 @@ fn compute_element_style(
     }
     // height: auto - let block layout calculate from content
   }
-
   style
 }
 
 ///|
 /// Apply a CSS property value to a style (internal)
 /// Uses default viewport (1920x1080) for vh/vw resolution
-fn apply_css_property(style : @style.Style, property : String, value : String) -> @style.Style {
+fn apply_css_property(
+  style : @style.Style,
+  property : String,
+  value : String,
+) -> @style.Style {
   // Use the inline parser's logic to parse and apply the value
   let css = property + ": " + value
   let parsed = @computed.compute_inline(css, @computed.ComputeContext::new())
@@ -631,10 +732,18 @@ fn apply_css_property(style : @style.Style, property : String, value : String) -
 
 ///|
 /// Apply a CSS property value to a style with custom viewport
-fn apply_css_property_with_viewport(style : @style.Style, property : String, value : String, viewport_width : Double, viewport_height : Double) -> @style.Style {
+fn apply_css_property_with_viewport(
+  style : @style.Style,
+  property : String,
+  value : String,
+  viewport_width : Double,
+  viewport_height : Double,
+) -> @style.Style {
   // Use the inline parser's logic to parse and apply the value
   let css = property + ": " + value
-  let ctx = @computed.ComputeContext::with_viewport(viewport_width, viewport_height)
+  let ctx = @computed.ComputeContext::with_viewport(
+    viewport_width, viewport_height,
+  )
   let parsed = @computed.compute_inline(css, ctx)
 
   // Merge the parsed property into the style
@@ -643,7 +752,11 @@ fn apply_css_property_with_viewport(style : @style.Style, property : String, val
 
 ///|
 /// Apply a CSS property value to a style (public for testing)
-pub fn apply_css_property_debug(style : @style.Style, property : String, value : String) -> @style.Style {
+pub fn apply_css_property_debug(
+  style : @style.Style,
+  property : String,
+  value : String,
+) -> @style.Style {
   apply_css_property(style, property, value)
 }
 
@@ -684,7 +797,11 @@ fn apply_inline_css(target : @style.Style, inline_css : String) -> @style.Style 
 
 ///|
 /// Merge a single property from source style to target
-fn merge_style_property(target : @style.Style, source : @style.Style, property : String) -> @style.Style {
+fn merge_style_property(
+  target : @style.Style,
+  source : @style.Style,
+  property : String,
+) -> @style.Style {
   // Apply the specific property from source to target
   if property == "display" {
     return { ..target, display: source.display }
@@ -723,10 +840,19 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
     return { ..target, flex_basis: source.flex_basis }
   }
   if property == "flex" {
-    return { ..target, flex_grow: source.flex_grow, flex_shrink: source.flex_shrink, flex_basis: source.flex_basis }
+    return {
+      ..target,
+      flex_grow: source.flex_grow,
+      flex_shrink: source.flex_shrink,
+      flex_basis: source.flex_basis,
+    }
   }
   if property == "flex-flow" {
-    return { ..target, flex_direction: source.flex_direction, flex_wrap: source.flex_wrap }
+    return {
+      ..target,
+      flex_direction: source.flex_direction,
+      flex_wrap: source.flex_wrap,
+    }
   }
   if property == "order" {
     return { ..target, order: source.order }
@@ -741,7 +867,10 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
     return { ..target, margin: { ..target.margin, top: source.margin.top } }
   }
   if property == "margin-bottom" {
-    return { ..target, margin: { ..target.margin, bottom: source.margin.bottom } }
+    return {
+      ..target,
+      margin: { ..target.margin, bottom: source.margin.bottom },
+    }
   }
   if property == "margin-left" {
     return { ..target, margin: { ..target.margin, left: source.margin.left } }
@@ -756,13 +885,22 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
     return { ..target, padding: { ..target.padding, top: source.padding.top } }
   }
   if property == "padding-bottom" {
-    return { ..target, padding: { ..target.padding, bottom: source.padding.bottom } }
+    return {
+      ..target,
+      padding: { ..target.padding, bottom: source.padding.bottom },
+    }
   }
   if property == "padding-left" {
-    return { ..target, padding: { ..target.padding, left: source.padding.left } }
+    return {
+      ..target,
+      padding: { ..target.padding, left: source.padding.left },
+    }
   }
   if property == "padding-right" {
-    return { ..target, padding: { ..target.padding, right: source.padding.right } }
+    return {
+      ..target,
+      padding: { ..target.padding, right: source.padding.right },
+    }
   }
   // Flexbox alignment properties
   if property == "justify-content" {
@@ -794,7 +932,6 @@ fn merge_style_property(target : @style.Style, source : @style.Style, property :
   if property == "grid-auto-flow" {
     return { ..target, grid_auto_flow: source.grid_auto_flow }
   }
-
   target
 }
 
@@ -814,11 +951,7 @@ fn make_node_id(elem : @html.Element) -> String {
 
 ///|
 /// Render HTML to Sixel string
-pub fn render_to_sixel(
-  html : String,
-  width : Int,
-  height : Int
-) -> String {
+pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
   let ctx : RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -839,7 +972,7 @@ pub fn print_layout_tree(layout : @node.Layout, indent : Int) -> Unit {
 pub fn print_layout_tree_with_options(
   layout : @node.Layout,
   indent : Int,
-  show_box_model : Bool
+  show_box_model : Bool,
 ) -> Unit {
   let prefix = "  ".repeat(indent)
   let basic_info = prefix +
@@ -852,7 +985,6 @@ pub fn print_layout_tree_with_options(
     layout.width.to_string() +
     "x" +
     layout.height.to_string()
-
   if show_box_model {
     let m = layout.margin
     let p = layout.padding
@@ -909,7 +1041,6 @@ pub fn print_layout_tree_with_options(
   } else {
     println(basic_info)
   }
-
   for child in layout.children {
     print_layout_tree_with_options(child, indent + 1, show_box_model)
   }
