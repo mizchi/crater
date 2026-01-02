@@ -21,17 +21,27 @@ CSS Flexbox baseline alignment の実装状況をまとめる。
    - `font: 100px/1 Ahem` 形式をサポート
    - font-size と line-height を抽出
 
+4. **`<br>` 要素の処理** (`renderer/renderer.mbt`)
+   - `collect_inline_content` でテキストと `<br>` を連結
+   - `<br>` を改行文字 (`\n`) に変換
+   - `create_text_measure` で明示的な改行を考慮した高さ計算
+
+5. **論理プロパティ** (`css/computed/compute.mbt`, `renderer/renderer.mbt`)
+   - `inline-size` → `width` (horizontal-tb mode)
+   - `block-size` → `height` (horizontal-tb mode)
+   - `min-inline-size`, `max-inline-size`, `min-block-size`, `max-block-size` 対応
+
 ### 動作するケース
 
 - Row flex + `align-items: baseline` (基本ケース)
 - 異なる font-size を持つ flex items の baseline 揃え
 - `align-self: baseline` の個別指定
+- `<br>` を含む複数行テキストの高さ計算
 
 ### テスト結果
 
 ```
-Taffy: 1159/1329 (87%)
-WPT:   157/234  (67%)
+Taffy: 1162/1332 (87%)
 ```
 
 パスするテスト例:
@@ -40,34 +50,31 @@ WPT:   157/234  (67%)
 
 ## 未実装・課題
 
-### 1. `<br>` 要素の処理
+### 1. Column Flex + Wrap + Baseline
 
-**問題**: `line1<br>line2` が2つの独立した text node として処理される
+**問題**: `align_baseline_multiline_column` テストが失敗
 
-```html
-<div>line1<br>line2</div>
+```
+actual: children[2].y = 20
+expected: children[2].y = 0
 ```
 
-現状:
-- `#text "line1"` と `#text "line2"` が別々に測定される
-- 各テキストが独自の高さを持つ
-- 全体の高さが正しく計算されない
+Column flex + wrap + baseline alignment の組み合わせで、
+2番目の line のアイテムの y 座標が正しく計算されていない。
 
-必要な対応:
-- `<br>` を line break として認識
-- 連続するテキストを1つのテキストランとして測定
-- または block レイアウトで `<br>` を改行として処理
+原因調査中:
+- baseline 計算が main axis に影響している可能性
+- wrap 時の line 処理に問題がある可能性
 
-### 2. 論理プロパティ
+### 2. `min-content` / `max-content` sizing
 
 ```css
 inline-size: min-content;
-block-size: 100px;
+width: max-content;
 ```
 
-- `inline-size` → `width` (horizontal) / `height` (vertical)
-- `block-size` → `height` (horizontal) / `width` (vertical)
-- `writing-mode` に依存
+現在 `Dimension` 型は `Auto`、`Length`、`Percent` のみ。
+intrinsic sizing keywords のサポートが必要。
 
 ### 3. Writing Mode
 
@@ -83,17 +90,12 @@ Column baseline テストの多くが依存:
 vertical 時の変更:
 - main axis と cross axis が入れ替わる
 - baseline の計算方向が変わる
-
-### 4. Column Flex Baseline
-
-Row flex と異なる baseline 計算が必要:
-- 横書きでの column: 最初の子の baseline を使用
-- 縦書きでの column: 異なる軸での計算
+- 論理プロパティの解決も変わる
 
 ## 実装優先度
 
-1. **`<br>` 要素** - 多くのテストで使用、比較的独立した機能
-2. **論理プロパティ** - `inline-size`/`block-size` の解析追加
+1. **Column flex baseline 修正** - multiline column baseline の問題を修正
+2. **intrinsic sizing** - `min-content`/`max-content` のサポート
 3. **writing-mode** - 大規模な変更が必要、後回し
 
 ## コード構造
@@ -109,11 +111,14 @@ compute/flex/flex.mbt
 renderer/renderer.mbt
   - font_size/line_height 継承
   - create_text_node()          # テキストノード生成
+  - collect_inline_content()    # <br> 処理
+  - create_text_measure()       # 改行を考慮したテキスト測定
 
 css/computed/compute.mbt
   - parse_font_size()
   - parse_line_height()
   - parse_font_shorthand()
+  - apply_property() に inline-size/block-size 追加
 
 style/style.mbt
   - font_size: Double
