@@ -1556,6 +1556,7 @@ fn compute_internal(
         // Calculate used space and total scaled flex shrink factor
         let mut used_space = 0.0
         let mut total_scaled_shrink = 0.0
+        let mut unfrozen_flex_shrink = 0.0
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
           if item.frozen {
@@ -1565,6 +1566,7 @@ fn compute_internal(
             // Scaled flex shrink factor = flex_shrink * flex_basis
             total_scaled_shrink = total_scaled_shrink +
               item.flex_shrink * item.base_main
+            unfrozen_flex_shrink = unfrozen_flex_shrink + item.flex_shrink
           }
         }
         let overflow = used_space + total_gap_for_grow - main_size
@@ -1572,18 +1574,28 @@ fn compute_internal(
           break
         }
 
+        // CSS spec: If sum of unfrozen flex shrink factors < 1, clamp the shrinkable space
+        let actual_overflow = if total_flex_shrink < 1.0 {
+          overflow * total_flex_shrink
+        } else {
+          overflow
+        }
+
         // Shrink unfrozen items proportionally to their scaled shrink factor
         let mut any_clamped = false
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
           if not(item.frozen) && item.flex_shrink > 0.0 {
-            // Each item's shrink = overflow * (item_scaled_shrink / total_scaled_shrink)
+            // Each item's shrink = actual_overflow * (item_scaled_shrink / total_scaled_shrink)
             let item_scaled_shrink = item.flex_shrink * item.base_main
             let shrink_ratio = item_scaled_shrink / total_scaled_shrink
-            let shrink_amount = overflow * shrink_ratio
-            let target = max(0.0, item.base_main - shrink_amount)
+            let shrink_amount = actual_overflow * shrink_ratio
+            // raw_target may be negative if shrink_amount exceeds base_main
+            let raw_target = item.base_main - shrink_amount
+            let target = max(0.0, raw_target)
             let clamped = max(item.min_main, min(item.max_main, target))
-            if clamped != target {
+            // Freeze if raw calculation was clamped (including negative values)
+            if clamped != raw_target {
               flex_items[i] = { ..item, final_main: clamped, frozen: true }
               any_clamped = true
             } else {
