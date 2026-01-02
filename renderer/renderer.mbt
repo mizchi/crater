@@ -188,6 +188,193 @@ fn parse_html_dimension(value : String) -> Double? {
 }
 
 ///|
+/// Simple URL decode for common SVG data URI characters
+fn url_decode(s : String) -> String {
+  let result = StringBuilder::new()
+  let mut i = 0
+  while i < s.length() {
+    let c = s[i].to_int().unsafe_to_char()
+    if c == '%' && i + 2 < s.length() {
+      // Parse hex value
+      let hex1 = s[i + 1].to_int().unsafe_to_char()
+      let hex2 = s[i + 2].to_int().unsafe_to_char()
+      fn hex_digit(c : Char) -> Int {
+        if c >= '0' && c <= '9' {
+          c.to_int() - '0'.to_int()
+        } else if c >= 'a' && c <= 'f' {
+          c.to_int() - 'a'.to_int() + 10
+        } else if c >= 'A' && c <= 'F' {
+          c.to_int() - 'A'.to_int() + 10
+        } else {
+          0
+        }
+      }
+
+      let value = hex_digit(hex1) * 16 + hex_digit(hex2)
+      result.write_char(value.unsafe_to_char())
+      i = i + 3
+    } else {
+      result.write_char(c)
+      i = i + 1
+    }
+  }
+  result.to_string()
+}
+
+///|
+/// Find index of pattern in string, returns -1 if not found
+fn find_string_index(s : String, pattern : String) -> Int {
+  if pattern.length() == 0 || pattern.length() > s.length() {
+    return -1
+  }
+  for i = 0; i <= s.length() - pattern.length(); i = i + 1 {
+    let mut found = true
+    for j = 0; j < pattern.length(); j = j + 1 {
+      if s[i + j].to_int() != pattern[j].to_int() {
+        found = false
+        break
+      }
+    }
+    if found {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+/// Extract a simple attribute value from SVG string
+fn extract_svg_attribute(svg : String, attr_name : String) -> String? {
+  // Look for attr='value' or attr="value"
+  let patterns = [attr_name + "='", attr_name + "=\""]
+  for pattern in patterns {
+    let idx = find_string_index(svg, pattern)
+    if idx >= 0 {
+      let start = idx + pattern.length()
+      let quote_char = if pattern.has_suffix("'") { '\'' } else { '"' }
+      // Find closing quote
+      for end = start; end < svg.length(); end = end + 1 {
+        if svg[end].to_int().unsafe_to_char() == quote_char {
+          let result = svg[start:end].to_string() catch { _ => "" }
+          if result.length() > 0 {
+            return Some(result)
+          }
+        }
+      }
+    }
+  }
+  None
+}
+
+///|
+/// Parse viewBox attribute (format: "minX minY width height")
+fn parse_viewbox(viewbox : String) -> (Double, Double)? {
+  // Split by spaces
+  let parts : Array[String] = []
+  let mut current = StringBuilder::new()
+  for i = 0; i < viewbox.length(); i = i + 1 {
+    let c = viewbox[i].to_int().unsafe_to_char()
+    if c == ' ' {
+      if current.to_string().length() > 0 {
+        parts.push(current.to_string())
+        current = StringBuilder::new()
+      }
+    } else {
+      current.write_char(c)
+    }
+  }
+  if current.to_string().length() > 0 {
+    parts.push(current.to_string())
+  }
+  if parts.length() >= 4 {
+    let width = @strconv.parse_double(parts[2]) catch { _ => return None }
+    let height = @strconv.parse_double(parts[3]) catch { _ => return None }
+    if width > 0.0 && height > 0.0 {
+      Some((width, height))
+    } else {
+      None
+    }
+  } else {
+    None
+  }
+}
+
+///|
+/// Extract intrinsic size from SVG data URI
+fn parse_svg_data_uri(src : String) -> (Double, Double)? {
+  // Check if it's an SVG data URI
+  if not(src.has_prefix("data:image/svg+xml")) {
+    return None
+  }
+  // Check for base64 encoding (not supported yet)
+  if src.contains(";base64,") {
+    return None
+  }
+  // Find the comma that starts the data
+  let mut comma_idx = -1
+  for i = 0; i < src.length(); i = i + 1 {
+    if src[i].to_int().unsafe_to_char() == ',' {
+      comma_idx = i
+      break
+    }
+  }
+  if comma_idx < 0 {
+    return None
+  }
+  // URL decode the SVG content
+  let svg_encoded = src[comma_idx + 1:].to_string() catch { _ => return None }
+  let svg = url_decode(svg_encoded)
+  // Extract width, height, and viewBox
+  let width_attr = extract_svg_attribute(svg, "width")
+  let height_attr = extract_svg_attribute(svg, "height")
+  let viewbox_attr = extract_svg_attribute(svg, "viewBox")
+  // Parse width and height
+  let parsed_width : Double? = match width_attr {
+    Some(w) => parse_html_dimension(w)
+    None => None
+  }
+  let parsed_height : Double? = match height_attr {
+    Some(h) => parse_html_dimension(h)
+    None => None
+  }
+  // Get aspect ratio from viewBox
+  let viewbox_size : (Double, Double)? = match viewbox_attr {
+    Some(vb) => parse_viewbox(vb)
+    None => None
+  }
+  // Calculate final dimensions
+  match (parsed_width, parsed_height, viewbox_size) {
+    // Both width and height specified
+    (Some(w), Some(h), _) => Some((w, h))
+    // Only width specified, use viewBox aspect ratio
+    (Some(w), None, Some((vb_w, vb_h))) => {
+      let aspect = vb_w / vb_h
+      Some((w, w / aspect))
+    }
+    // Only height specified, use viewBox aspect ratio
+    (None, Some(h), Some((vb_w, vb_h))) => {
+      let aspect = vb_w / vb_h
+      Some((h * aspect, h))
+    }
+    // No width/height but viewBox exists
+    (None, None, Some((vb_w, vb_h))) => Some((vb_w, vb_h))
+    // Width only, no aspect ratio
+    (Some(w), None, None) => Some((w, w))
+    // Height only, no aspect ratio
+    (None, Some(h), None) => Some((h, h))
+    _ => None
+  }
+}
+
+///|
+/// Get intrinsic size from image src attribute
+fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
+  // Only SVG data URI is supported - filename patterns are too unreliable
+  // and can cause issues with tests that expect 0 intrinsic size
+  parse_svg_data_uri(src)
+}
+
+///|
 /// Convert HTML Element to Node tree for layout computation
 pub fn element_to_node(
   elem : @html.Element,
@@ -476,16 +663,29 @@ fn element_to_node_with_styles_internal(
 
   // Handle replaced elements (img, etc.) with intrinsic sizing
   if elem.tag.to_lower() == "img" && children.is_empty() {
-    // Get intrinsic dimensions from HTML attributes
-    let intrinsic_width = match elem.attributes.get("width") {
+    // Get intrinsic dimensions from HTML attributes first
+    let mut intrinsic_width = match elem.attributes.get("width") {
       Some(w) => parse_html_dimension(w).unwrap_or(0.0)
       None => 0.0
     }
-    let intrinsic_height = match elem.attributes.get("height") {
+    let mut intrinsic_height = match elem.attributes.get("height") {
       Some(h) => parse_html_dimension(h).unwrap_or(0.0)
       None => 0.0
     }
-
+    // If no HTML attributes, try to get from src attribute
+    if intrinsic_width == 0.0 && intrinsic_height == 0.0 {
+      match elem.attributes.get("src") {
+        Some(src) =>
+          match get_image_intrinsic_size(src) {
+            Some((w, h)) => {
+              intrinsic_width = w
+              intrinsic_height = h
+            }
+            None => ()
+          }
+        None => ()
+      }
+    }
     // If intrinsic dimensions are specified, create a node with measure function
     if intrinsic_width > 0.0 || intrinsic_height > 0.0 {
       let measure = create_image_measure(intrinsic_width, intrinsic_height)

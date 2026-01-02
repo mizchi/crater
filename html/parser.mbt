@@ -135,7 +135,7 @@ fn Parser::skip_doctype(self : Parser) -> Unit {
         }
         if self.peek() is Some('>') {
           let _ = self.consume()
-           // >
+          // >
         }
         return
       }

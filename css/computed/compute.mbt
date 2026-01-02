@@ -503,7 +503,10 @@ fn apply_property(
                 // flex: <basis> = 1 1 <basis>
                 builder.flex_grow = 1.0
                 builder.flex_shrink = 1.0
-                builder.flex_basis = resolve_dimension(parts[0].to_string(), ctx)
+                builder.flex_basis = resolve_dimension(
+                  parts[0].to_string(),
+                  ctx,
+                )
               }
             2 =>
               if num_count == 2 {
@@ -515,14 +518,20 @@ fn apply_property(
                 // flex: <grow> <basis>
                 builder.flex_grow = parse_number(parts[0].to_string())
                 builder.flex_shrink = 1.0
-                builder.flex_basis = resolve_dimension(parts[1].to_string(), ctx)
+                builder.flex_basis = resolve_dimension(
+                  parts[1].to_string(),
+                  ctx,
+                )
               }
             3 =>
               if num_count == 2 && basis_found {
                 // flex: <grow> <shrink> <basis>
                 builder.flex_grow = parse_number(parts[0].to_string())
                 builder.flex_shrink = parse_number(parts[1].to_string())
-                builder.flex_basis = resolve_dimension(parts[2].to_string(), ctx)
+                builder.flex_basis = resolve_dimension(
+                  parts[2].to_string(),
+                  ctx,
+                )
               }
             // If num_count != 2 or basis not at end, it's invalid and we do nothing
             _ => ()
@@ -656,27 +665,25 @@ fn is_pure_number(s : String) -> Bool {
     return false
   }
   // Try to parse as double - will fail if it has units
-  let _ = @strconv.parse_double(v.to_string()) catch {
-    _ => return false
-  }
+  let _ = @strconv.parse_double(v.to_string()) catch { _ => return false }
   // Make sure it doesn't have any unit suffixes that parse_double might accept
   for i = 0; i < v.length(); i = i + 1 {
     let c = v[i]
     if not(
-      c == '0' ||
-      c == '1' ||
-      c == '2' ||
-      c == '3' ||
-      c == '4' ||
-      c == '5' ||
-      c == '6' ||
-      c == '7' ||
-      c == '8' ||
-      c == '9' ||
-      c == '.' ||
-      c == '-' ||
-      c == '+',
-    ) {
+        c == '0' ||
+        c == '1' ||
+        c == '2' ||
+        c == '3' ||
+        c == '4' ||
+        c == '5' ||
+        c == '6' ||
+        c == '7' ||
+        c == '8' ||
+        c == '9' ||
+        c == '.' ||
+        c == '-' ||
+        c == '+',
+      ) {
       return false
     }
   }

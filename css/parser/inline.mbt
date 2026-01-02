@@ -331,7 +331,7 @@ fn parse_flex_shorthand(
           None => break
         }
       }
-      @token.Token::Ident(s) => {
+      @token.Token::Ident(s) =>
         // Could be flex-basis keyword (auto, content, etc.)
         if s == "auto" || s == "content" {
           if seen_basis {
@@ -343,7 +343,6 @@ fn parse_flex_shorthand(
         } else {
           break
         }
-      }
       _ => break
     }
   }
@@ -353,12 +352,11 @@ fn parse_flex_shorthand(
   if tokens_view.length() > 0 {
     // Still have tokens left - could be invalid like "1 0% 1"
     match tokens_view[0] {
-      @token.Token::Number(_, _) => {
+      @token.Token::Number(_, _) =>
         // Number after basis is invalid
         if seen_basis {
           return None
         }
-      }
       _ => ()
     }
   }
@@ -376,11 +374,9 @@ fn parse_flex_shorthand(
         @types.Auto
       }
   }
-
   if numbers.length() == 0 && basis is None {
     return None
   }
-
   Some((grow, shrink, final_basis))
 }
 
