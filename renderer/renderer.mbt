@@ -1089,7 +1089,78 @@ fn apply_inline_css(target : @style.Style, inline_css : String) -> @style.Style 
       }
     }
   }
-  result
+  // Convert content-box dimensions to border-box dimensions
+  // The layout engine always works with outer (border-box) dimensions
+  adjust_for_box_sizing(result)
+}
+
+///|
+/// Helper to resolve a dimension to pixels (for padding/border calculation)
+fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(_) => 0.0 // Percentages are resolved later
+    @types.Auto => 0.0
+  }
+}
+
+///|
+/// Adjust dimensions for box-sizing: content-box
+/// When box-sizing is content-box (default), specified width/height are content dimensions.
+/// The layout engine expects outer dimensions (border-box), so we adjust here.
+fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
+  match style.box_sizing {
+    @style.BorderBox => style // No adjustment needed
+    @style.ContentBox => {
+      // Calculate padding and border sums
+      let padding_h = resolve_dimension_to_px(style.padding.left) +
+        resolve_dimension_to_px(style.padding.right)
+      let padding_v = resolve_dimension_to_px(style.padding.top) +
+        resolve_dimension_to_px(style.padding.bottom)
+      let border_h = resolve_dimension_to_px(style.border.left) +
+        resolve_dimension_to_px(style.border.right)
+      let border_v = resolve_dimension_to_px(style.border.top) +
+        resolve_dimension_to_px(style.border.bottom)
+
+      // Adjust width and height to include padding+border
+      let adjusted_width = match style.width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_height = match style.height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      // Adjust min/max constraints too
+      let adjusted_min_width = match style.min_width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_min_height = match style.min_height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      let adjusted_max_width = match style.max_width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_max_height = match style.max_height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      {
+        ..style,
+        width: adjusted_width,
+        height: adjusted_height,
+        min_width: adjusted_min_width,
+        min_height: adjusted_min_height,
+        max_width: adjusted_max_width,
+        max_height: adjusted_max_height,
+        // Mark as adjusted (now using border-box semantics internally)
+        box_sizing: @style.BorderBox,
+      }
+    }
+  }
 }
 
 ///|
@@ -1102,6 +1173,9 @@ fn merge_style_property(
   // Apply the specific property from source to target
   if property == "display" {
     return { ..target, display: source.display }
+  }
+  if property == "box-sizing" {
+    return { ..target, box_sizing: source.box_sizing }
   }
   if property == "width" {
     return { ..target, width: source.width }

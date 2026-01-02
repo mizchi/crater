@@ -846,6 +846,25 @@ fn parse_overflow(tokens : ArrayView[@token.Token]) -> @style.Overflow? {
 }
 
 ///|
+/// Parse box-sizing property
+fn parse_box_sizing(tokens : ArrayView[@token.Token]) -> @style.BoxSizing? {
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Ident(s) =>
+      if s == "content-box" {
+        Some(@style.ContentBox)
+      } else if s == "border-box" {
+        Some(@style.BorderBox)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
 /// Skip whitespace tokens and return remaining view
 fn skip_whitespace(tokens : ArrayView[@token.Token]) -> ArrayView[@token.Token] {
   let mut i = 0
@@ -931,6 +950,13 @@ fn apply_property(
   if property == "clear" {
     match parse_clear(value_tokens) {
       Some(v) => return { ..style, clear: v }
+      None => ()
+    }
+  }
+  // box-sizing
+  if property == "box-sizing" {
+    match parse_box_sizing(value_tokens) {
+      Some(v) => return { ..style, box_sizing: v }
       None => ()
     }
   }
@@ -1366,5 +1392,78 @@ pub fn parse_inline_style(css : String) -> @style.Style {
       None => pos += 1
     }
   }
-  style
+  // Convert content-box dimensions to border-box dimensions
+  // The layout engine always works with outer (border-box) dimensions
+  // For content-box (CSS default), width/height specify content area only,
+  // so we need to add padding and border to get the outer dimensions
+  adjust_for_box_sizing(style)
+}
+
+///|
+/// Adjust dimensions for box-sizing: content-box
+/// When box-sizing is content-box (default), specified width/height are content dimensions.
+/// The layout engine expects outer dimensions (border-box), so we adjust here.
+fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
+  match style.box_sizing {
+    @style.BorderBox => style // No adjustment needed
+    @style.ContentBox => {
+      // Calculate padding and border sums
+      let padding_h = resolve_dimension_to_px(style.padding.left) +
+        resolve_dimension_to_px(style.padding.right)
+      let padding_v = resolve_dimension_to_px(style.padding.top) +
+        resolve_dimension_to_px(style.padding.bottom)
+      let border_h = resolve_dimension_to_px(style.border.left) +
+        resolve_dimension_to_px(style.border.right)
+      let border_v = resolve_dimension_to_px(style.border.top) +
+        resolve_dimension_to_px(style.border.bottom)
+
+      // Adjust width and height to include padding+border
+      let adjusted_width = match style.width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_height = match style.height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      // Adjust min/max constraints too
+      let adjusted_min_width = match style.min_width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_min_height = match style.min_height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      let adjusted_max_width = match style.max_width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_max_height = match style.max_height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      {
+        ..style,
+        width: adjusted_width,
+        height: adjusted_height,
+        min_width: adjusted_min_width,
+        min_height: adjusted_min_height,
+        max_width: adjusted_max_width,
+        max_height: adjusted_max_height,
+        // Mark as adjusted (now using border-box semantics internally)
+        box_sizing: @style.BorderBox,
+      }
+    }
+  }
+}
+
+///|
+/// Helper to resolve a dimension to pixels (for padding/border calculation)
+fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(_) => 0.0 // Percentages are resolved later
+    @types.Auto => 0.0
+  }
 }

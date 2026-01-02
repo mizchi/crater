@@ -61,6 +61,7 @@ priv struct StyleBuilder {
   mut position : @style.Position
   mut float : @style.Float
   mut clear : @style.Clear
+  box_sizing : @style.BoxSizing
   mut overflow_x : @style.Overflow
   mut overflow_y : @style.Overflow
   mut width : @types.Dimension
@@ -113,6 +114,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     position: @style.Position::Relative,
     float: @style.Float::None,
     clear: @style.Clear::None,
+    box_sizing: @style.BoxSizing::ContentBox,
     overflow_x: @style.Overflow::Visible,
     overflow_y: @style.Overflow::Visible,
     width: @types.Dimension::Auto,
@@ -165,6 +167,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     position: self.position,
     float: self.float,
     clear: self.clear,
+    box_sizing: self.box_sizing,
     overflow_x: self.overflow_x,
     overflow_y: self.overflow_y,
     width: self.width,
@@ -433,6 +436,14 @@ fn apply_property(
     "padding-right" => builder.padding_right = resolve_dimension(value, ctx)
     "padding-bottom" => builder.padding_bottom = resolve_dimension(value, ctx)
     "padding-left" => builder.padding_left = resolve_dimension(value, ctx)
+    "padding" => {
+      // Shorthand: parse multi-value padding
+      let dim = resolve_dimension(value, ctx)
+      builder.padding_top = dim
+      builder.padding_right = dim
+      builder.padding_bottom = dim
+      builder.padding_left = dim
+    }
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
     "border-bottom-width" =>
@@ -806,7 +817,80 @@ pub fn compute_inline(
   let cascaded = @cascade.cascade(decls)
 
   // Compute
-  compute(cascaded, ctx)
+  let style = compute(cascaded, ctx)
+
+  // Convert content-box dimensions to border-box dimensions
+  // The layout engine always works with outer (border-box) dimensions
+  adjust_for_box_sizing(style)
+}
+
+///|
+/// Adjust dimensions for box-sizing: content-box
+/// When box-sizing is content-box (default), specified width/height are content dimensions.
+/// The layout engine expects outer dimensions (border-box), so we adjust here.
+fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
+  match style.box_sizing {
+    @style.BorderBox => style // No adjustment needed
+    @style.ContentBox => {
+      // Calculate padding and border sums
+      let padding_h = resolve_dimension_to_px(style.padding.left) +
+        resolve_dimension_to_px(style.padding.right)
+      let padding_v = resolve_dimension_to_px(style.padding.top) +
+        resolve_dimension_to_px(style.padding.bottom)
+      let border_h = resolve_dimension_to_px(style.border.left) +
+        resolve_dimension_to_px(style.border.right)
+      let border_v = resolve_dimension_to_px(style.border.top) +
+        resolve_dimension_to_px(style.border.bottom)
+
+      // Adjust width and height to include padding+border
+      let adjusted_width = match style.width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_height = match style.height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      // Adjust min/max constraints too
+      let adjusted_min_width = match style.min_width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_min_height = match style.min_height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      let adjusted_max_width = match style.max_width {
+        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        other => other
+      }
+      let adjusted_max_height = match style.max_height {
+        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        other => other
+      }
+      {
+        ..style,
+        width: adjusted_width,
+        height: adjusted_height,
+        min_width: adjusted_min_width,
+        min_height: adjusted_min_height,
+        max_width: adjusted_max_width,
+        max_height: adjusted_max_height,
+        // Mark as adjusted (now using border-box semantics internally)
+        box_sizing: @style.BorderBox,
+      }
+    }
+  }
+}
+
+///|
+/// Helper to resolve a dimension to pixels (for padding/border calculation)
+fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(_) => 0.0 // Percentages are resolved later
+    @types.Auto => 0.0
+  }
 }
 
 ///|

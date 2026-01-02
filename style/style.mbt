@@ -88,6 +88,13 @@ pub(all) enum Overflow {
 } derive(Show, Eq)
 
 ///|
+/// CSS box-sizing property
+pub(all) enum BoxSizing {
+  ContentBox // width/height = content only (default)
+  BorderBox // width/height = content + padding + border
+} derive(Show, Eq)
+
+///|
 /// Grid auto-flow direction
 pub(all) enum GridAutoFlow {
   Row // Fill rows first (default)
@@ -181,6 +188,8 @@ pub(all) struct Style {
   position : Position
   float : Float
   clear : Clear
+  // Box sizing
+  box_sizing : BoxSizing
   // Overflow
   overflow_x : Overflow
   overflow_y : Overflow
@@ -241,6 +250,7 @@ pub fn Style::default() -> Style {
     position: Relative,
     float: None,
     clear: None,
+    box_sizing: ContentBox,
     overflow_x: Visible,
     overflow_y: Visible,
     width: @types.Auto,

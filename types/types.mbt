@@ -405,3 +405,4 @@ pub fn clamp(value : Double, min_val : Double, max_val : Double) -> Double {
     clamped
   }
 }
+
