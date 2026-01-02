@@ -165,6 +165,60 @@ async function inlineExternalCSS(
 }
 
 /**
+ * Extract image references from HTML
+ */
+function extractImageRefs(html: string): string[] {
+  const imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi;
+  const refs: string[] = [];
+  let match;
+  while ((match = imgRegex.exec(html)) !== null) {
+    const src = match[1];
+    // Only include relative paths (not data URIs or external URLs)
+    if (!src.startsWith('data:') && !src.startsWith('http://') &&
+        !src.startsWith('https://') && !src.startsWith('//')) {
+      refs.push(src);
+    }
+  }
+  return [...new Set(refs)]; // Remove duplicates
+}
+
+/**
+ * Download support files (images) for a module
+ */
+async function fetchSupportFiles(
+  moduleName: string,
+  imageRefs: string[]
+): Promise<void> {
+  if (imageRefs.length === 0) return;
+
+  const supportDir = path.join(OUTPUT_DIR, moduleName, 'support');
+  fs.mkdirSync(supportDir, { recursive: true });
+
+  const uniqueFiles = [...new Set(imageRefs.map(ref => {
+    // Extract filename from path like "support/100x100-green.png"
+    return ref.split('/').pop()!;
+  }))];
+
+  console.log(`  Downloading ${uniqueFiles.length} support files...`);
+
+  for (const filename of uniqueFiles) {
+    const outPath = path.join(supportDir, filename);
+    if (fs.existsSync(outPath)) continue; // Skip if already downloaded
+
+    try {
+      const url = `${WPT_BASE}/css/${moduleName}/support/${filename}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        fs.writeFileSync(outPath, Buffer.from(buffer));
+      }
+    } catch (error) {
+      // Silently skip failed downloads
+    }
+  }
+}
+
+/**
  * Remove WPT-specific script tags
  */
 function removeTestScripts(html: string): string {
@@ -225,6 +279,7 @@ async function fetchModule(
 
   let fetched = 0;
   let failed = 0;
+  const allImageRefs: string[] = [];
 
   for (const file of filesToFetch) {
     const outPath = path.join(outDir, file.name);
@@ -236,6 +291,10 @@ async function fetchModule(
       content = await inlineExternalCSS(content, moduleName);
       content = removeTestScripts(content);
 
+      // Collect image references before saving
+      const imageRefs = extractImageRefs(content);
+      allImageRefs.push(...imageRefs);
+
       fs.writeFileSync(outPath, content);
       fetched++;
       process.stdout.write(`\r  Fetched: ${fetched}/${filesToFetch.length}`);
@@ -246,6 +305,10 @@ async function fetchModule(
   }
 
   console.log("");
+
+  // Download support files (images)
+  await fetchSupportFiles(moduleName, allImageRefs);
+
   console.log(`Done: ${fetched} fetched, ${failed} failed`);
   console.log(`Tests saved to: ${outDir}/`);
 }
