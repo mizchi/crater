@@ -9,6 +9,6 @@
     "mizchi/crater/style",
     "mizchi/crater/types",
     "mizchi/crater/compute/dispatch",
-    "mizchi/crater/sixel"
+    "mizchi/crater/renderer/sixel"
   ]
 }

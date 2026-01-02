@@ -95,6 +95,21 @@ pub(all) enum BoxSizing {
 } derive(Show, Eq)
 
 ///|
+/// CSS visibility property
+pub(all) enum Visibility {
+  Visible // Element is visible (default)
+  Hidden // Element is invisible but takes up space
+  Collapse // Same as hidden for most elements
+} derive(Show, Eq)
+
+///|
+/// CSS z-index property
+pub(all) enum ZIndex {
+  Auto // Stacking order determined by DOM order
+  Value(Int) // Explicit stacking level
+} derive(Show, Eq)
+
+///|
 /// Grid auto-flow direction
 pub(all) enum GridAutoFlow {
   Row // Fill rows first (default)
@@ -241,6 +256,10 @@ pub(all) struct Style {
   // Font properties (for baseline calculation)
   font_size : Double // Computed font size in pixels (default 16.0)
   line_height : Double // Computed line height in pixels (default = font_size)
+  // Paint properties (visual, not layout)
+  visibility : Visibility
+  z_index : ZIndex
+  opacity : Double // 0.0 = transparent, 1.0 = opaque
 }
 
 ///|
@@ -309,5 +328,8 @@ pub fn Style::default() -> Style {
     justify_self: Auto,
     font_size: 16.0,
     line_height: 16.0,
+    visibility: Visible,
+    z_index: Auto,
+    opacity: 1.0,
   }
 }

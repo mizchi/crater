@@ -762,10 +762,25 @@ fn element_to_node_with_styles_internal(
         None => ()
       }
     }
-    // If intrinsic dimensions are specified, create a node with measure function
+    // If intrinsic dimensions are specified, create a node with explicit dimensions
+    // Setting explicit width/height in style prevents flex stretch from overriding
     if intrinsic_width > 0.0 || intrinsic_height > 0.0 {
       let measure = create_image_measure(intrinsic_width, intrinsic_height)
-      return @node.Node::with_measure(node_id, style, measure)
+      // Create a new style with explicit width/height to prevent flex stretch
+      let img_style : @style.Style = {
+        ..style,
+        width: if intrinsic_width > 0.0 {
+          @types.Length(intrinsic_width)
+        } else {
+          style.width
+        },
+        height: if intrinsic_height > 0.0 {
+          @types.Length(intrinsic_height)
+        } else {
+          style.height
+        },
+      }
+      return @node.Node::with_measure(node_id, img_style, measure)
     }
   }
   if children.is_empty() {

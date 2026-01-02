@@ -105,6 +105,10 @@ priv struct StyleBuilder {
   // Font properties
   mut font_size : Double
   mut line_height : Double
+  // Paint properties
+  mut visibility : @style.Visibility
+  mut z_index : @style.ZIndex
+  mut opacity : Double
 }
 
 ///|
@@ -157,6 +161,9 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_template_rows: [],
     font_size: 16.0,
     line_height: 16.0,
+    visibility: @style.Visibility::Visible,
+    z_index: @style.ZIndex::Auto,
+    opacity: 1.0,
   }
 }
 
@@ -226,6 +233,9 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_self: @style.AlignSelf::Auto,
     font_size: self.font_size,
     line_height: self.line_height,
+    visibility: self.visibility,
+    z_index: self.z_index,
+    opacity: self.opacity,
   }
 }
 
@@ -635,6 +645,10 @@ fn apply_property(
       builder.font_size = fs
       builder.line_height = lh
     }
+    // Paint properties (visual, not layout)
+    "visibility" => builder.visibility = parse_visibility(value)
+    "z-index" => builder.z_index = parse_z_index(value)
+    "opacity" => builder.opacity = parse_opacity(value)
     _ => ()
   }
 }
@@ -1099,4 +1113,54 @@ fn parse_font_shorthand(
     }
   }
   (font_size, line_height)
+}
+
+// =============================================================================
+// Paint Property Parsing
+// =============================================================================
+
+///|
+/// Parse visibility property
+fn parse_visibility(value : String) -> @style.Visibility {
+  match value.trim().to_string() {
+    "visible" => @style.Visibility::Visible
+    "hidden" => @style.Visibility::Hidden
+    "collapse" => @style.Visibility::Collapse
+    _ => @style.Visibility::Visible
+  }
+}
+
+///|
+/// Parse z-index property
+fn parse_z_index(value : String) -> @style.ZIndex {
+  let trimmed = value.trim().to_string()
+  if trimmed == "auto" {
+    @style.ZIndex::Auto
+  } else {
+    try {
+      let v = @strconv.parse_int(trimmed)
+      @style.ZIndex::Value(v)
+    } catch {
+      _ => @style.ZIndex::Auto
+    }
+  }
+}
+
+///|
+/// Parse opacity property (0.0 to 1.0)
+fn parse_opacity(value : String) -> Double {
+  let trimmed = value.trim().to_string()
+  try {
+    let v = @strconv.parse_double(trimmed)
+    // Clamp to valid range
+    if v < 0.0 {
+      0.0
+    } else if v > 1.0 {
+      1.0
+    } else {
+      v
+    }
+  } catch {
+    _ => 1.0
+  }
 }
