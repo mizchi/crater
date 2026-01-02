@@ -251,6 +251,7 @@ function alignSelfToMoonBit(value: string | undefined): string {
     case 'end': return '@style.AlignSelf::End';
     case 'center': return '@style.AlignSelf::Center';
     case 'stretch': return '@style.AlignSelf::Stretch';
+    case 'baseline': return '@style.AlignSelf::Baseline';
     default: return '@style.AlignSelf::Auto';
   }
 }

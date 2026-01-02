@@ -1297,6 +1297,7 @@ fn compute_internal(
       margin_cross_start_auto,
       margin_cross_end_auto,
       baseline,
+      align_self: child_style.align_self,
     }
     flex_items.push(item)
     total_base_main = total_base_main + base_main + margin_main
@@ -1340,7 +1341,6 @@ fn compute_internal(
     // Wrap mode: split items into lines based on main size overflow
     let mut current_line_items : Array[FlexItem] = Array::new()
     let mut current_line_main = 0.0
-    let mut current_line_cross = 0.0
     for i = 0; i < flex_items.length(); i = i + 1 {
       let item = flex_items[i]
       let item_main_with_margin = item.base_main + item.margin_main
@@ -1353,14 +1353,15 @@ fn compute_internal(
       // Check if item fits in current line
       if current_line_items.length() > 0 &&
         current_line_main + gap_if_not_first + item_main_with_margin > main_size {
-        // Start new line
-        flex_lines.push({
-          items: current_line_items,
-          cross_size: current_line_cross,
-        })
+        // Start new line - compute cross size considering baseline alignment
+        let line_cross = compute_line_cross_size(
+          current_line_items,
+          style.align_items,
+          is_row,
+        )
+        flex_lines.push({ items: current_line_items, cross_size: line_cross })
         current_line_items = Array::new()
         current_line_main = 0.0
-        current_line_cross = 0.0
       }
 
       // Add item to current line
@@ -1369,25 +1370,24 @@ fn compute_internal(
       }
       current_line_items.push(item)
       current_line_main = current_line_main + item_main_with_margin
-      current_line_cross = max(
-        current_line_cross,
-        item.base_cross + item.margin_cross,
-      )
     }
 
     // Don't forget the last line
     if current_line_items.length() > 0 {
-      flex_lines.push({
-        items: current_line_items,
-        cross_size: current_line_cross,
-      })
+      let line_cross = compute_line_cross_size(
+        current_line_items,
+        style.align_items,
+        is_row,
+      )
+      flex_lines.push({ items: current_line_items, cross_size: line_cross })
     }
   } else {
     // NoWrap: all items in one line
-    let mut line_cross = 0.0
-    for item in flex_items {
-      line_cross = max(line_cross, item.base_cross + item.margin_cross)
-    }
+    let line_cross = compute_line_cross_size(
+      flex_items,
+      style.align_items,
+      is_row,
+    )
     flex_lines.push({ items: flex_items, cross_size: line_cross })
   }
 
@@ -1738,13 +1738,21 @@ fn compute_internal(
   for line_idx = 0; line_idx < flex_lines.length(); line_idx = line_idx + 1 {
     let line = flex_lines[line_idx]
     let line_item_count = line.items.length()
-    let mut new_cross_size = 0.0
-    // Calculate cross size from updated flex_items
+
+    // Collect updated items for this line
+    let line_items : Array[FlexItem] = Array::new()
     for j = 0; j < line_item_count; j = j + 1 {
-      let item = flex_items[flex_item_idx]
-      new_cross_size = max(new_cross_size, item.final_cross + item.margin_cross)
+      line_items.push(flex_items[flex_item_idx])
       flex_item_idx = flex_item_idx + 1
     }
+
+    // Recalculate cross size with baseline alignment consideration
+    let new_cross_size = compute_line_cross_size(
+      line_items,
+      style.align_items,
+      is_row,
+    )
+
     // Update line with new cross_size
     if flex_lines.length() == 1 {
       // Single-line: sync items for Phase 5
@@ -2864,6 +2872,8 @@ priv struct FlexItem {
   margin_cross_end_auto : Bool
   // Baseline for baseline alignment (relative to item's cross start)
   baseline : Double
+  // Align self for this item (resolved from style)
+  align_self : @style.AlignSelf
 }
 
 ///|
@@ -2871,6 +2881,71 @@ priv struct FlexItem {
 priv struct FlexLine {
   items : Array[FlexItem]
   cross_size : Double // Height of this line (in row layout)
+}
+
+///|
+/// Calculate line cross size considering baseline alignment
+/// For baseline alignment, line height = max_baseline_above + max_baseline_below
+/// where baseline_above = margin_top + baseline (distance from cross-start to baseline)
+/// and baseline_below = item_cross - baseline + margin_bottom (distance from baseline to cross-end)
+fn compute_line_cross_size(
+  items : Array[FlexItem],
+  align_items : @style.Alignment,
+  is_row : Bool,
+) -> Double {
+  let mut max_baseline_above = 0.0
+  let mut max_baseline_below = 0.0
+  let mut max_non_baseline_cross = 0.0
+  let mut has_baseline_item = false
+  for item in items {
+    // Determine effective alignment for this item
+    let effective_align = match item.align_self {
+      @style.AlignSelf::Auto => align_items
+      @style.AlignSelf::Baseline => @style.Baseline
+      @style.AlignSelf::Start => @style.Start
+      @style.AlignSelf::End => @style.End
+      @style.AlignSelf::Center => @style.Center
+      @style.AlignSelf::Stretch => @style.Stretch
+    }
+
+    // Check for auto margins which override alignment
+    let has_cross_auto_margin = if is_row {
+      item.margin_cross_start_auto || item.margin_cross_end_auto
+    } else {
+      item.margin_cross_start_auto || item.margin_cross_end_auto
+    }
+
+    // Use final_cross if available (after Phase 3), otherwise base_cross
+    let item_cross = item.final_cross
+    if not(has_cross_auto_margin) && effective_align == @style.Baseline {
+      has_baseline_item = true
+      // For baseline items, calculate above and below baseline
+      let margin_start = if is_row { item.margin.top } else { item.margin.left }
+      let margin_end = if is_row {
+        item.margin.bottom
+      } else {
+        item.margin.right
+      }
+      let baseline_above = margin_start + item.baseline
+      let baseline_below = item_cross - item.baseline + margin_end
+      max_baseline_above = max(max_baseline_above, baseline_above)
+      max_baseline_below = max(max_baseline_below, baseline_below)
+    } else {
+      // Non-baseline items contribute their full cross size
+      max_non_baseline_cross = max(
+        max_non_baseline_cross,
+        item_cross + item.margin_cross,
+      )
+    }
+  }
+  if has_baseline_item {
+    // Line cross size is max of:
+    // 1. baseline_above + baseline_below (for baseline items)
+    // 2. max non-baseline item cross size
+    max(max_baseline_above + max_baseline_below, max_non_baseline_cross)
+  } else {
+    max_non_baseline_cross
+  }
 }
 
 ///|

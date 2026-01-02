@@ -2783,7 +2783,7 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
     display: @style.Flex,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -2867,7 +2867,7 @@ test "taffy/align_baseline_child_multiline_override" {
     display: @style.Flex,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_child1 = @node.Node::leaf("node", root_child1_child1_style)
   root_child1_children.push(root_child1_child1)
@@ -2883,7 +2883,7 @@ test "taffy/align_baseline_child_multiline_override" {
     display: @style.Flex,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -9700,7 +9700,7 @@ test "taffy/align_self_baseline" {
     display: @style.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -9709,7 +9709,7 @@ test "taffy/align_self_baseline" {
     display: @style.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -12967,6 +12967,384 @@ test "taffy/content_size" {
   assert_approx(layout.children[0].children[0].y, -10.0)
   assert_approx(layout.children[0].children[0].width, 100.0)
   assert_approx(layout.children[0].children[0].height, 20.0)
+}
+
+///|
+test "taffy/display_none" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_direction: @style.Row,
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    flex_grow: 1.0,
+  }
+  let root_child1 = @node.Node::leaf("node", root_child1_style)
+  root_children.push(root_child1)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 100.0)
+  assert_approx(layout.children[0].height, 100.0)
+  assert_approx(layout.children[1].x, 0.0)
+  assert_approx(layout.children[1].y, 0.0)
+  assert_approx(layout.children[1].width, 0.0)
+  assert_approx(layout.children[1].height, 0.0)
+}
+
+///|
+test "taffy/display_none_absolute_child" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_direction: @style.Row,
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    position: @style.Position::Absolute,
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+    inset: {
+      left: @types.Length(10.0),
+      right: @types.Auto,
+      top: @types.Length(10.0),
+      bottom: @types.Auto,
+    },
+  }
+  let root_child1 = @node.Node::leaf("node", root_child1_style)
+  root_children.push(root_child1)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 100.0)
+  assert_approx(layout.children[0].height, 100.0)
+  assert_approx(layout.children[1].x, 0.0)
+  assert_approx(layout.children[1].y, 0.0)
+  assert_approx(layout.children[1].width, 0.0)
+  assert_approx(layout.children[1].height, 0.0)
+}
+
+///|
+test "taffy/display_none_fixed_size" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_direction: @style.Row,
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+  }
+  let root_child1 = @node.Node::leaf("node", root_child1_style)
+  root_children.push(root_child1)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 100.0)
+  assert_approx(layout.children[0].height, 100.0)
+  assert_approx(layout.children[1].x, 0.0)
+  assert_approx(layout.children[1].y, 0.0)
+  assert_approx(layout.children[1].width, 0.0)
+  assert_approx(layout.children[1].height, 0.0)
+}
+
+///|
+test "taffy/display_none_only_node" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  }
+  let root = @node.Node::leaf("test-root", root_style)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 0.0)
+  assert_approx(layout.height, 0.0)
+}
+
+///|
+test "taffy/display_none_with_child" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_direction: @style.Row,
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+    flex_basis: @types.Percent(0.0000),
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    flex_direction: @style.Column,
+    flex_grow: 1.0,
+    flex_basis: @types.Percent(0.0000),
+  }
+  let root_child1_children : Array[@node.Node] = []
+  let root_child1_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(20.0),
+    flex_grow: 1.0,
+    flex_basis: @types.Percent(0.0000),
+  }
+  let root_child1_child0 = @node.Node::leaf("node", root_child1_child0_style)
+  root_child1_children.push(root_child1_child0)
+  let root_child1 = @node.Node::new(
+    "node", root_child1_style, root_child1_children,
+  )
+  root_children.push(root_child1)
+  let root_child2_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+    flex_basis: @types.Percent(0.0000),
+  }
+  let root_child2 = @node.Node::leaf("node", root_child2_style)
+  root_children.push(root_child2)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 50.0)
+  assert_approx(layout.children[0].height, 100.0)
+  assert_approx(layout.children[1].x, 0.0)
+  assert_approx(layout.children[1].y, 0.0)
+  assert_approx(layout.children[1].width, 0.0)
+  assert_approx(layout.children[1].height, 0.0)
+  assert_approx(layout.children[1].children[0].x, 0.0)
+  assert_approx(layout.children[1].children[0].y, 0.0)
+  assert_approx(layout.children[1].children[0].width, 0.0)
+  assert_approx(layout.children[1].children[0].height, 0.0)
+  assert_approx(layout.children[2].x, 50.0)
+  assert_approx(layout.children[2].y, 0.0)
+  assert_approx(layout.children[2].width, 50.0)
+  assert_approx(layout.children[2].height, 100.0)
+}
+
+///|
+test "taffy/display_none_with_margin" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_direction: @style.Row,
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+    margin: {
+      left: @types.Length(10.0),
+      right: @types.Length(10.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(10.0),
+    },
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+  }
+  let root_child1 = @node.Node::leaf("node", root_child1_style)
+  root_children.push(root_child1)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 0.0)
+  assert_approx(layout.children[0].height, 0.0)
+  assert_approx(layout.children[1].x, 0.0)
+  assert_approx(layout.children[1].y, 0.0)
+  assert_approx(layout.children[1].width, 100.0)
+  assert_approx(layout.children[1].height, 100.0)
+}
+
+///|
+test "taffy/display_none_with_position" {
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_direction: @style.Row,
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    inset: {
+      left: @types.Auto,
+      right: @types.Auto,
+      top: @types.Length(10.0),
+      bottom: @types.Auto,
+    },
+    flex_grow: 1.0,
+  }
+  let root_child1 = @node.Node::leaf("node", root_child1_style)
+  root_children.push(root_child1)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 100.0)
+  assert_approx(layout.children[0].height, 100.0)
+  assert_approx(layout.children[1].x, 0.0)
+  assert_approx(layout.children[1].y, 0.0)
+  assert_approx(layout.children[1].width, 0.0)
+  assert_approx(layout.children[1].height, 0.0)
+}
+
+///|
+test "taffy/display_none_with_position_absolute" {
+  let root_style = {
+    ..@style.Style::default(),
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  }
+  let root_children : Array[@node.Node] = []
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.None,
+    position: @style.Position::Absolute,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  }
+  let root_child0 = @node.Node::leaf("node", root_child0_style)
+  root_children.push(root_child0)
+  let root = @node.Node::new("test-root", root_style, root_children)
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = compute(root, ctx)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
+  assert_approx(layout.width, 100.0)
+  assert_approx(layout.height, 100.0)
+  assert_approx(layout.children[0].x, 0.0)
+  assert_approx(layout.children[0].y, 0.0)
+  assert_approx(layout.children[0].width, 0.0)
+  assert_approx(layout.children[0].height, 0.0)
 }
 
 ///|
