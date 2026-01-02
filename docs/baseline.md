@@ -38,10 +38,14 @@ CSS Flexbox baseline alignment の実装状況をまとめる。
 - `align-self: baseline` の個別指定
 - `<br>` を含む複数行テキストの高さ計算
 
+6. **Column Flex Baseline** (`compute/flex/flex.mbt`)
+   - Column flex + align-items: baseline を flex-start として処理
+   - CSS 仕様に準拠（column flex では baseline alignment は意味がない）
+
 ### テスト結果
 
 ```
-Taffy: 1162/1332 (87%)
+Taffy: 1164/1332 (87%)
 ```
 
 パスするテスト例:
@@ -50,23 +54,7 @@ Taffy: 1162/1332 (87%)
 
 ## 未実装・課題
 
-### 1. Column Flex + Wrap + Baseline
-
-**問題**: `align_baseline_multiline_column` テストが失敗
-
-```
-actual: children[2].y = 20
-expected: children[2].y = 0
-```
-
-Column flex + wrap + baseline alignment の組み合わせで、
-2番目の line のアイテムの y 座標が正しく計算されていない。
-
-原因調査中:
-- baseline 計算が main axis に影響している可能性
-- wrap 時の line 処理に問題がある可能性
-
-### 2. `min-content` / `max-content` sizing
+### 1. `min-content` / `max-content` sizing
 
 ```css
 inline-size: min-content;
@@ -76,7 +64,7 @@ width: max-content;
 現在 `Dimension` 型は `Auto`、`Length`、`Percent` のみ。
 intrinsic sizing keywords のサポートが必要。
 
-### 3. Writing Mode
+### 2. Writing Mode
 
 ```css
 writing-mode: vertical-rl;
@@ -94,9 +82,8 @@ vertical 時の変更:
 
 ## 実装優先度
 
-1. **Column flex baseline 修正** - multiline column baseline の問題を修正
-2. **intrinsic sizing** - `min-content`/`max-content` のサポート
-3. **writing-mode** - 大規模な変更が必要、後回し
+1. **intrinsic sizing** - `min-content`/`max-content` のサポート
+2. **writing-mode** - 大規模な変更が必要、後回し
 
 ## コード構造
 
