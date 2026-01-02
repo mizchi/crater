@@ -6,7 +6,7 @@ CSS Flexbox baseline alignment の実装状況をまとめる。
 
 ### 完了
 
-1. **テキストノードの baseline 計算** (`compute/flex/flex.mbt`)
+1. **テキストノードの baseline 計算** (`compute/baseline/baseline.mbt`)
    - `compute_node_baseline` でテキストノードを検出
    - baseline = `font_size * 0.8` (typical ascent ratio)
    - 他の leaf ノード (画像など) は bottom of box
@@ -87,13 +87,14 @@ vertical 時の変更:
 
 ## コード構造
 
-現在 baseline 関連コードは分散している:
-
 ```
+compute/baseline/baseline.mbt
+  - compute_node_baseline()     # baseline 値の計算（テキスト・コンテナ再帰処理）
+
 compute/flex/flex.mbt
-  - compute_node_baseline()     # baseline 値の計算
   - FlexLineItem.baseline       # アイテムの baseline 保持
   - baseline alignment 処理
+  - @baseline.compute_node_baseline() を呼び出し
 
 renderer/renderer.mbt
   - font_size/line_height 継承
@@ -112,10 +113,9 @@ style/style.mbt
   - line_height: Double
 ```
 
-将来的に `compute/baseline/` モジュールに分離を検討:
-- baseline 計算ロジック
-- フォントメトリクス関連
-- vertical alignment 計算
+将来的な拡張:
+- フォントメトリクス関連を `compute/baseline/` に集約
+- vertical alignment 計算の追加
 
 ## 参考資料
 
