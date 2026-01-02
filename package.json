@@ -9,6 +9,7 @@
     "render": "node --experimental-strip-types tools/render.ts",
     "wpt": "node --experimental-strip-types tools/wpt-runner.ts",
     "wpt:fetch": "node --experimental-strip-types tools/fetch-wpt.ts",
+    "download": "node --experimental-strip-types tools/download-site.ts",
     "test": "vitest"
   },
   "dependencies": {

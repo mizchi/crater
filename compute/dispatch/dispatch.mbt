@@ -7,8 +7,8 @@
 /// based on the node's display property.
 pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   match node.style.display {
-    @style.Flex => @flex.compute(node, ctx)
-    @style.Grid => @grid.compute(node, ctx)
+    @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
+    @style.Grid | @style.InlineGrid => @grid.compute(node, ctx)
     _ => @block.compute(node, ctx)
   }
 }

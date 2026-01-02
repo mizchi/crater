@@ -19,3 +19,6 @@ fixtures/
 
 # WPT tests (regenerate with npm run fetch-wpt)
 wpt-tests/
+
+# Real-world site downloads (regenerate with npm run download)
+real-world/
