@@ -2119,7 +2119,7 @@ fn compute_internal(
       // Auto margins on cross axis override align-self/align-items
       let has_cross_auto_margin = item.margin_cross_start_auto ||
         item.margin_cross_end_auto
-      let effective_align = if has_cross_auto_margin {
+      let raw_effective_align = if has_cross_auto_margin {
         @style.Alignment::Start // Auto margins will handle alignment
       } else {
         match child.style.align_self {
@@ -2130,6 +2130,12 @@ fn compute_internal(
           @style.AlignSelf::Stretch => @style.Stretch
           @style.AlignSelf::Baseline => @style.Baseline
         }
+      }
+      // For column flex, baseline alignment is not meaningful (cross axis is inline axis)
+      // Treat baseline as flex-start per CSS Flexbox spec
+      let effective_align = match (is_row, raw_effective_align) {
+        (false, @style.Baseline) => @style.FlexStart
+        (_, align) => align
       }
 
       // For stretch, use line cross size (with min/max constraints) if cross_is_auto

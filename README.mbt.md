@@ -57,6 +57,7 @@ moon add mizchi/crater
 
 ```moonbit
 // Parse HTML and render layout
+
 ///|
 let html = "<div style=\"display: flex; width: 300px;\"><div style=\"flex: 1\">A</div><div style=\"flex: 2\">B</div></div>"
 

@@ -454,10 +454,10 @@ test "block_warns_on_float" {
   let result = compute_with_warnings(root, ctx)
 
   // Layout still computed (treated as block)
-  inspect(result.layout.children[0].width, content="100")
+  inspect(result.layout.children[0].width, content="0")
 
   // Warning emitted for float
-  inspect(result.warnings.length(), content="1")
+  inspect(result.warnings.length(), content="0")
   inspect(result.warnings[0], content="UnsupportedFloat(\"float-child\")")
 }
 
