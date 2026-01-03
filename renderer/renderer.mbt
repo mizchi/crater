@@ -1584,6 +1584,10 @@ fn merge_style_property(
   if property == "inset" {
     return { ..target, inset: source.inset }
   }
+  // CSS Containment
+  if property == "contain" {
+    return { ..target, contain: source.contain }
+  }
   target
 }
 

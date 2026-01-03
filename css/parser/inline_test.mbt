@@ -293,3 +293,9 @@ test "contain: inline-size" {
   inspect(style.contain.inline_size, content="true")
   inspect(style.contain.size, content="false")
 }
+
+///|
+test "parse width fit-content" {
+  let style = parse_inline_style("width: fit-content")
+  inspect(style.width, content="FitContent(10000000000)")
+}

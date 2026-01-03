@@ -224,6 +224,25 @@ fn compute_intrinsic_main_size(
   let style = node.style
   let children = node.children
 
+  // CSS Containment: contain: size makes intrinsic size 0 in both axes
+  // contain: inline-size makes intrinsic size 0 only in inline (horizontal) axis
+  // Note: padding and border are still included, only content contribution is 0
+  if style.contain.size || (style.contain.inline_size && is_row) {
+    let available_width = match available_cross {
+      Some(w) if not(is_row) => w
+      _ => 0.0
+    }
+    let padding = @types.resolve_rect(style.padding, available_width)
+    let border = @types.resolve_rect(style.border, available_width)
+    let result = if is_row {
+      padding.horizontal_sum() + border.horizontal_sum()
+    } else {
+      padding.vertical_sum() + border.vertical_sum()
+    }
+    cache.set(node.uid, is_row, result)
+    return result
+  }
+
   // Leaf nodes: use MeasureFunc if available, otherwise 0
   let result = if children.length() == 0 {
     match node.measure {

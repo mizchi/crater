@@ -115,7 +115,7 @@ priv struct StyleBuilder {
   mut z_index : @style.ZIndex
   mut opacity : Double
   // Containment
-  contain : @style.Contain
+  mut contain : @style.Contain
 }
 
 ///|
@@ -485,12 +485,40 @@ fn apply_property(
       builder.padding_right = dim
     }
     "border-width" => {
-      // Shorthand: border-width (single value for all sides)
-      let dim = resolve_dimension(value, ctx)
-      builder.border_top = dim
-      builder.border_right = dim
-      builder.border_bottom = dim
-      builder.border_left = dim
+      // Shorthand: border-width (1, 2, 3, or 4 values)
+      let parts = value.trim().to_string().split(" ")
+      let values : Array[@types.Dimension] = []
+      for part in parts {
+        let p = part.to_string().trim().to_string()
+        if not(p.is_empty()) {
+          values.push(resolve_dimension(p, ctx))
+        }
+      }
+      if values.length() == 1 {
+        // All sides
+        builder.border_top = values[0]
+        builder.border_right = values[0]
+        builder.border_bottom = values[0]
+        builder.border_left = values[0]
+      } else if values.length() == 2 {
+        // top/bottom, left/right
+        builder.border_top = values[0]
+        builder.border_bottom = values[0]
+        builder.border_right = values[1]
+        builder.border_left = values[1]
+      } else if values.length() == 3 {
+        // top, left/right, bottom
+        builder.border_top = values[0]
+        builder.border_right = values[1]
+        builder.border_left = values[1]
+        builder.border_bottom = values[2]
+      } else if values.length() >= 4 {
+        // top, right, bottom, left
+        builder.border_top = values[0]
+        builder.border_right = values[1]
+        builder.border_bottom = values[2]
+        builder.border_left = values[3]
+      }
     }
     "border" => {
       // Shorthand: border: [width] [style] [color]
@@ -734,6 +762,8 @@ fn apply_property(
       builder.font_size = fs
       builder.line_height = lh
     }
+    // CSS Containment
+    "contain" => builder.contain = parse_contain(value)
     // Paint properties (visual, not layout)
     "visibility" => builder.visibility = parse_visibility(value)
     "z-index" => builder.z_index = parse_z_index(value)
@@ -850,6 +880,18 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   let v = value.trim()
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
+  }
+
+  // Handle intrinsic sizing keywords
+  if v == "min-content" {
+    return @types.Dimension::MinContent
+  }
+  if v == "max-content" {
+    return @types.Dimension::MaxContent
+  }
+  if v == "fit-content" {
+    // fit-content without argument is equivalent to fit-content(max-content)
+    return @types.Dimension::FitContent(1.0e10)
   }
 
   // Handle calc() expressions
@@ -1318,6 +1360,43 @@ fn parse_font_shorthand(
 }
 
 // =============================================================================
+// Containment Parsing
+// =============================================================================
+
+///|
+/// Parse contain property
+fn parse_contain(value : String) -> @style.Contain {
+  let v = value.trim().to_string()
+  // Handle keywords
+  if v == "none" {
+    return @style.Contain::none()
+  }
+  if v == "strict" {
+    return @style.Contain::strict()
+  }
+  if v == "content" {
+    return @style.Contain::content()
+  }
+  // Parse space-separated values
+  let mut result = @style.Contain::none()
+  let parts = v.split(" ")
+  for part in parts {
+    let p = part.to_string().trim()
+    if p == "size" {
+      result = { ..result, size: true }
+    } else if p == "inline-size" {
+      result = { ..result, inline_size: true }
+    } else if p == "layout" {
+      result = { ..result, layout: true }
+    } else if p == "paint" {
+      result = { ..result, paint: true }
+    } else if p == "style" {
+      result = { ..result, style: true }
+    }
+  }
+  result
+}
+
 // Paint Property Parsing
 // =============================================================================
 

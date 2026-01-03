@@ -137,7 +137,20 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
       } else {
         None
       }
-    @token.Token::Ident(s) => if s == "auto" { Some(@types.Auto) } else { None }
+    @token.Token::Ident(s) =>
+      if s == "auto" {
+        Some(@types.Auto)
+      } else if s == "min-content" {
+        Some(@types.MinContent)
+      } else if s == "max-content" {
+        Some(@types.MaxContent)
+      } else if s == "fit-content" {
+        // fit-content without argument is equivalent to fit-content(max-content)
+        // Using infinity to represent unbounded
+        Some(@types.FitContent(1.0e10))
+      } else {
+        None
+      }
     _ => None
   }
 }

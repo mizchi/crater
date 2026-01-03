@@ -282,6 +282,7 @@ fn compute_with_collapse(
     (@node.MaxContent, @types.Auto) => true
     (_, @types.MaxContent) => true
     (_, @types.MinContent) => true
+    (_, @types.FitContent(_)) => true
     (_, @types.Auto) if is_inline_block => true
     _ => false
   }
@@ -436,96 +437,103 @@ fn compute_with_collapse(
   // For MaxContent mode, first determine max-content width from children's contributions
   if use_max_content {
     let mut max_content_width = 0.0
-    // Check if root itself has MeasureFunc (leaf node with intrinsic size)
-    match node.measure {
-      Some(mf) => {
-        let intrinsic = (mf.func)(0.0, 0.0)
-        max_content_width = intrinsic.max_width
+    // CSS Containment: contain: inline-size means intrinsic width is 0 (no content contribution)
+    let skip_content_contribution = style.contain.inline_size || style.contain.size
+    if not(skip_content_contribution) {
+      // Check if root itself has MeasureFunc (leaf node with intrinsic size)
+      match node.measure {
+        Some(mf) => {
+          let intrinsic = (mf.func)(0.0, 0.0)
+          max_content_width = intrinsic.max_width
+        }
+        None => ()
       }
-      None => ()
     }
-    for i = 0; i < flow_nodes.length(); i = i + 1 {
-      let child = flow_nodes[i]
-      let child_style = flow_styles[i]
+    // Skip children content calculation when contain: inline-size or size is set
+    if not(skip_content_contribution) {
+      for i = 0; i < flow_nodes.length(); i = i + 1 {
+        let child = flow_nodes[i]
+        let child_style = flow_styles[i]
 
-      // For intrinsic sizing, percentage margins resolve to 0 (CSS spec)
-      // Only fixed margins contribute to intrinsic width
-      let child_margin_left : Double = match child_style.margin.left {
-        @types.Length(l) => l
-        @types.Percent(_) => 0.0
-        @types.Auto
-        | @types.MinContent
-        | @types.MaxContent
-        | @types.FitContent(_) => 0.0
-      }
-      let child_margin_right : Double = match child_style.margin.right {
-        @types.Length(r) => r
-        @types.Percent(_) => 0.0
-        @types.Auto
-        | @types.MinContent
-        | @types.MaxContent
-        | @types.FitContent(_) => 0.0
-      }
-      let child_margin_sum = child_margin_left + child_margin_right
+        // For intrinsic sizing, percentage margins resolve to 0 (CSS spec)
+        // Only fixed margins contribute to intrinsic width
+        let child_margin_left : Double = match child_style.margin.left {
+          @types.Length(l) => l
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_margin_right : Double = match child_style.margin.right {
+          @types.Length(r) => r
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_margin_sum = child_margin_left + child_margin_right
 
-      // Calculate child's intrinsic width contribution
-      // Note: padding+border override explicit width if too small
-      // For intrinsic sizing, percentage padding also resolves to 0
-      let child_padding_left : Double = match child_style.padding.left {
-        @types.Length(l) => l
-        @types.Percent(_) => 0.0
-        @types.Auto
-        | @types.MinContent
-        | @types.MaxContent
-        | @types.FitContent(_) => 0.0
-      }
-      let child_padding_right : Double = match child_style.padding.right {
-        @types.Length(r) => r
-        @types.Percent(_) => 0.0
-        @types.Auto
-        | @types.MinContent
-        | @types.MaxContent
-        | @types.FitContent(_) => 0.0
-      }
-      let child_border = @types.resolve_rect(child_style.border, parent_width)
-      let child_min_box = child_padding_left +
-        child_padding_right +
-        child_border.horizontal_sum()
-      let child_intrinsic_width : Double = match child_style.width {
-        @types.Length(w) => @types.max(w, child_min_box)
-        @types.Percent(_) => child_min_box // At minimum, padding+border
-        @types.Auto =>
-          // For width:auto, use max-content of child's content
-          // Leaf nodes with MeasureFunc use intrinsic size
-          match child.measure {
-            Some(mf) => {
-              let intrinsic = (mf.func)(0.0, 0.0)
-              @types.max(intrinsic.max_width + child_min_box, child_min_box)
-            }
-            None =>
-              if child.children.length() == 0 {
-                child_min_box // Leaf nodes with no content have padding+border as minimum
-              } else {
-                // Recursively compute child's max-content width
-                let intrinsic_ctx : @node.LayoutContext = {
-                  available_width: parent_width, // Use parent_width as reference for percentages
-                  available_height: child_available_height,
-                  sizing_mode: @node.MaxContent,
-                  viewport_width: ctx.viewport_width,
-                  viewport_height: ctx.viewport_height,
-                }
-                let child_result = compute_with_collapse(
-                  child, intrinsic_ctx, warnings,
-                )
-                child_result.layout.width
+        // Calculate child's intrinsic width contribution
+        // Note: padding+border override explicit width if too small
+        // For intrinsic sizing, percentage padding also resolves to 0
+        let child_padding_left : Double = match child_style.padding.left {
+          @types.Length(l) => l
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_padding_right : Double = match child_style.padding.right {
+          @types.Length(r) => r
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_border = @types.resolve_rect(child_style.border, parent_width)
+        let child_min_box = child_padding_left +
+          child_padding_right +
+          child_border.horizontal_sum()
+        let child_intrinsic_width : Double = match child_style.width {
+          @types.Length(w) => @types.max(w, child_min_box)
+          @types.Percent(_) => child_min_box // At minimum, padding+border
+          @types.Auto =>
+            // For width:auto, use max-content of child's content
+            // Leaf nodes with MeasureFunc use intrinsic size
+            match child.measure {
+              Some(mf) => {
+                let intrinsic = (mf.func)(0.0, 0.0)
+                @types.max(intrinsic.max_width + child_min_box, child_min_box)
               }
-          }
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-          child_min_box
-      }
-      let child_contribution = child_intrinsic_width + child_margin_sum
-      if child_contribution > max_content_width {
-        max_content_width = child_contribution
+              None =>
+                if child.children.length() == 0 {
+                  child_min_box // Leaf nodes with no content have padding+border as minimum
+                } else {
+                  // Recursively compute child's max-content width
+                  let intrinsic_ctx : @node.LayoutContext = {
+                    available_width: parent_width, // Use parent_width as reference for percentages
+                    available_height: child_available_height,
+                    sizing_mode: @node.MaxContent,
+                    viewport_width: ctx.viewport_width,
+                    viewport_height: ctx.viewport_height,
+                  }
+                  let child_result = compute_with_collapse(
+                    child, intrinsic_ctx, warnings,
+                  )
+                  child_result.layout.width
+                }
+            }
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            child_min_box
+        }
+        let child_contribution = child_intrinsic_width + child_margin_sum
+        if child_contribution > max_content_width {
+          max_content_width = child_contribution
+        }
       }
     }
     // Update box_width from max-content
