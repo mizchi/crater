@@ -9,6 +9,9 @@ pub fn resolve_inset(dim : @types.Dimension, available : Double) -> Double? {
     @types.Length(v) => Some(v)
     @types.Percent(p) => Some(available * p)
     @types.Auto => None
+    @types.MinContent => None // Inset doesn't use intrinsic sizing
+    @types.MaxContent => None
+    @types.FitContent(_) => None
   }
 }
 
@@ -22,6 +25,9 @@ pub fn resolve_length_dimension(
     @types.Length(v) => v
     @types.Percent(p) => available * p
     @types.Auto => 0.0
+    @types.MinContent => 0.0 // Margin doesn't use intrinsic sizing
+    @types.MaxContent => 0.0
+    @types.FitContent(_) => 0.0
   }
 }
 
@@ -99,6 +105,9 @@ pub fn compute_size_params(
         }
         _ => None
       }
+    @types.MinContent => None // Requires intrinsic sizing
+    @types.MaxContent => None
+    @types.FitContent(_) => None
   }
 
   // Calculate initial height
@@ -113,28 +122,44 @@ pub fn compute_size_params(
         }
         _ => None
       }
+    @types.MinContent => None
+    @types.MaxContent => None
+    @types.FitContent(_) => None
   }
 
   // Resolve min/max constraints
+  // Note: min-content/max-content for min/max-width/height would need intrinsic sizing
   let min_width = match style.min_width {
     @types.Length(v) => v
     @types.Percent(p) => area_width * p
     @types.Auto => 0.0
+    @types.MinContent => 0.0 // Would need intrinsic calculation
+    @types.MaxContent => 0.0
+    @types.FitContent(_) => 0.0
   }
   let max_width = match style.max_width {
     @types.Length(v) => v
     @types.Percent(p) => area_width * p
     @types.Auto => @double.infinity
+    @types.MinContent => @double.infinity // Would need intrinsic calculation
+    @types.MaxContent => @double.infinity
+    @types.FitContent(_) => @double.infinity
   }
   let min_height = match style.min_height {
     @types.Length(v) => v
     @types.Percent(p) => area_height * p
     @types.Auto => 0.0
+    @types.MinContent => 0.0
+    @types.MaxContent => 0.0
+    @types.FitContent(_) => 0.0
   }
   let max_height = match style.max_height {
     @types.Length(v) => v
     @types.Percent(p) => area_height * p
     @types.Auto => @double.infinity
+    @types.MinContent => @double.infinity
+    @types.MaxContent => @double.infinity
+    @types.FitContent(_) => @double.infinity
   }
   {
     margin_left,
@@ -163,20 +188,24 @@ pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
   if is_width {
     match style.max_width {
       @types.Length(_) | @types.Percent(_) => true
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
       @types.Auto =>
         match style.min_width {
           @types.Length(v) if v > 0.0 => true
           @types.Percent(p) if p > 0.0 => true
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
           _ => false
         }
     }
   } else {
     match style.max_height {
       @types.Length(_) | @types.Percent(_) => true
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
       @types.Auto =>
         match style.min_height {
           @types.Length(v) if v > 0.0 => true
           @types.Percent(p) if p > 0.0 => true
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
           _ => false
         }
     }

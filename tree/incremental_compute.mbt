@@ -101,6 +101,10 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
       // Auto depends on available width
       (constraint.available_width - cache.constraint.available_width).abs() <
       0.001
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      // Intrinsic sizing depends on available width for constraint
+      (constraint.available_width - cache.constraint.available_width).abs() <
+      0.001
   }
   if not(width_ok) {
     return false
@@ -118,6 +122,13 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
       }
     @types.Auto =>
       // Auto may depend on available height
+      match (constraint.available_height, cache.constraint.available_height) {
+        (Some(a), Some(b)) => (a - b).abs() < 0.001
+        (None, None) => true
+        _ => false
+      }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      // Intrinsic sizing depends on available height
       match (constraint.available_height, cache.constraint.available_height) {
         (Some(a), Some(b)) => (a - b).abs() < 0.001
         (None, None) => true

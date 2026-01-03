@@ -353,6 +353,8 @@ fn compute_intrinsic_flex_main_size(
           @types.Length(w) => w
           @types.Percent(p) => child_available_width * p
           @types.Auto => compute_intrinsic_main_size(child, true, None, cache)
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            compute_intrinsic_main_size(child, true, None, cache)
         }
         let effective_width = if base_width < child_min_width {
           child_min_width
@@ -366,6 +368,13 @@ fn compute_intrinsic_flex_main_size(
           @types.Length(h) => h
           @types.Percent(_) => 0.0
           @types.Auto =>
+            compute_intrinsic_main_size(
+              child,
+              false,
+              Some(child_available_width),
+              cache,
+            )
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             compute_intrinsic_main_size(
               child,
               false,
@@ -413,6 +422,8 @@ fn compute_intrinsic_flex_main_size(
               None => None
             }
           @types.Auto => available_cross
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            available_cross
         }
       } else {
         // Column wrap: main is height, available from available_cross parameter
@@ -455,11 +466,24 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(child, true, None, cache) +
             child_margin.left +
             child_margin.right
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            compute_intrinsic_main_size(child, true, None, cache) +
+            child_margin.left +
+            child_margin.right
         }
         let cross = match child_style.height {
           @types.Length(h) => h + child_margin.top + child_margin.bottom
           @types.Percent(_) => child_margin.top + child_margin.bottom
           @types.Auto =>
+            compute_intrinsic_main_size(
+              child,
+              false,
+              Some(child_available_width),
+              cache,
+            ) +
+            child_margin.top +
+            child_margin.bottom
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             compute_intrinsic_main_size(
               child,
               false,
@@ -484,12 +508,25 @@ fn compute_intrinsic_flex_main_size(
             ) +
             child_margin.top +
             child_margin.bottom
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            compute_intrinsic_main_size(
+              child,
+              false,
+              Some(child_available_width),
+              cache,
+            ) +
+            child_margin.top +
+            child_margin.bottom
         }
         let cross = match child_style.width {
           @types.Length(w) => w + child_margin.left + child_margin.right
           @types.Percent(p) =>
             child_available_width * p + child_margin.left + child_margin.right
           @types.Auto =>
+            compute_intrinsic_main_size(child, true, None, cache) +
+            child_margin.left +
+            child_margin.right
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             compute_intrinsic_main_size(child, true, None, cache) +
             child_margin.left +
             child_margin.right
@@ -806,6 +843,13 @@ fn compute_internal(
                 padding.horizontal_sum() + border.horizontal_sum()
               }
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          // For intrinsic sizing keywords, compute intrinsic width
+          if node.children.length() > 0 {
+            compute_intrinsic_main_size(node, true, ctx.available_height, cache)
+          } else {
+            padding.horizontal_sum() + border.horizontal_sum()
+          }
       }
   }
 
@@ -821,6 +865,7 @@ fn compute_internal(
       }
     }
     @types.Auto => ()
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
   }
   // CSS spec: padding + border is always the absolute minimum
   let padding_border_width = padding.horizontal_sum() + border.horizontal_sum()
@@ -839,6 +884,10 @@ fn compute_internal(
       }
     }
     @types.Auto =>
+      if container_width < padding_border_width {
+        container_width = padding_border_width
+      }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       if container_width < padding_border_width {
         container_width = padding_border_width
       }
@@ -879,6 +928,7 @@ fn compute_internal(
               Some(ah - padding.vertical_sum() - border.vertical_sum())
             _ => None
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
       }
   }
 
@@ -910,6 +960,7 @@ fn compute_internal(
       @types.Percent(p) =>
         Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
       @types.Auto => None
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
     }
   } else {
     None
@@ -943,6 +994,7 @@ fn compute_internal(
       @types.Percent(p) =>
         Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
       @types.Auto => None
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
     }
   } else {
     None
@@ -974,6 +1026,8 @@ fn compute_internal(
           @types.Length(h) => h
           @types.Percent(p) => parent_height * p
           @types.Auto => padding.vertical_sum() + border.vertical_sum()
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            padding.vertical_sum() + border.vertical_sum()
         }
     }
     return {
@@ -1053,6 +1107,7 @@ fn compute_internal(
                   }
                 _ => None
               }
+            @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
         } else {
           match child_style.width {
@@ -1076,6 +1131,7 @@ fn compute_internal(
                 @types.Percent(p) if p > 0.0 => Some(content_width * p)
                 _ => None
               }
+            @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
         }
     }
@@ -1123,6 +1179,8 @@ fn compute_internal(
                   }
                 }
               }
+            @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+              compute_intrinsic_main_size(child, true, content_height, cache)
           }
         } else {
           match child_style.height {
@@ -1165,7 +1223,32 @@ fn compute_internal(
                   }
                 }
               }
+            @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+              let available_cross_for_child = content_width -
+                child_margin.left -
+                child_margin.right
+              compute_intrinsic_main_size(
+                child,
+                false,
+                Some(available_cross_for_child),
+                cache,
+              )
+            }
           }
+        }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        if is_row {
+          compute_intrinsic_main_size(child, true, content_height, cache)
+        } else {
+          let available_cross_for_child = content_width -
+            child_margin.left -
+            child_margin.right
+          compute_intrinsic_main_size(
+            child,
+            false,
+            Some(available_cross_for_child),
+            cache,
+          )
         }
     }
 
@@ -1179,7 +1262,9 @@ fn compute_internal(
             @types.Length(w) => Some(w)
             @types.Percent(p) => Some(content_width * p)
             @types.Auto => None
+            @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
       }
     } else {
       match child_style.flex_basis {
@@ -1198,7 +1283,9 @@ fn compute_internal(
                 None => None
               }
             @types.Auto => None
+            @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
       }
     }
 
@@ -1241,6 +1328,16 @@ fn compute_internal(
                 }
               }
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          (
+            compute_intrinsic_main_size(
+              child,
+              false,
+              Some(content_width),
+              cache,
+            ),
+            false,
+          )
       }
     } else {
       match child_style.width {
@@ -1286,6 +1383,11 @@ fn compute_internal(
               }
             }
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          (
+            compute_intrinsic_main_size(child, true, content_height, cache),
+            false,
+          )
       }
     }
     let margin_main = if is_row {
@@ -1313,6 +1415,7 @@ fn compute_internal(
         @types.Length(v) => v
         @types.Percent(p) => content_width * p
         @types.Auto => 1.0e10 // Effectively infinity
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 1.0e10 // Effectively infinity
       }
       // CSS spec: padding + border is always the absolute minimum
       // Use cached resolved rects
@@ -1338,6 +1441,8 @@ fn compute_internal(
               @types.Length(w) => w
               @types.Percent(p) => content_width * p
               @types.Auto => 1.0e10 // No specified size, no clamp
+              @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+                1.0e10 // No specified size, no clamp
             }
             // Clamp by min(specified_size, max_size) per CSS spec
             // But padding+border is always the absolute minimum
@@ -1350,6 +1455,8 @@ fn compute_internal(
             padding_border_min
           }
         }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          padding_border_min
       }
       (min_w, max_w)
     } else {
@@ -1361,6 +1468,7 @@ fn compute_internal(
             None => 1.0e10
           }
         @types.Auto => 1.0e10
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 1.0e10
       }
       // CSS spec: padding + border is always the absolute minimum
       // Use cached resolved rects
@@ -1397,6 +1505,8 @@ fn compute_internal(
                   None => 1.0e10
                 }
               @types.Auto => 1.0e10 // No specified size, no clamp
+              @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+                1.0e10 // No specified size, no clamp
             }
             // Clamp by min(specified_size, max_size) per CSS spec
             // But padding+border is always the absolute minimum
@@ -1409,6 +1519,8 @@ fn compute_internal(
             padding_border_min
           }
         }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          padding_border_min
       }
       (min_h, max_h)
     }
@@ -1722,6 +1834,7 @@ fn compute_internal(
           }
         }
         @types.Auto => ()
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
       }
       // CSS spec: item.min_main already includes padding+border as absolute minimum
       // So always use item.min_main which is max(explicit_min, padding_border_min)
@@ -1742,6 +1855,7 @@ fn compute_internal(
             None => ()
           }
         @types.Auto => ()
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
       }
       // CSS spec: item.min_main already includes padding+border as absolute minimum
       // So always use item.min_main which is max(explicit_min, padding_border_min)
@@ -1871,6 +1985,10 @@ fn compute_internal(
           if constrained_cross < padding_border_min {
             constrained_cross = padding_border_min
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          if constrained_cross < padding_border_min {
+            constrained_cross = padding_border_min
+          }
       }
     } else {
       match child_style.max_width {
@@ -1883,7 +2001,8 @@ fn compute_internal(
             constrained_cross = v
           }
         }
-        _ => ()
+        @types.Auto => ()
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
       }
       // CSS spec: padding + border is always the absolute minimum
       let child_padding = @types.resolve_rect(
@@ -1909,6 +2028,10 @@ fn compute_internal(
           }
         }
         @types.Auto =>
+          if constrained_cross < padding_border_min {
+            constrained_cross = padding_border_min
+          }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           if constrained_cross < padding_border_min {
             constrained_cross = padding_border_min
           }
@@ -2414,6 +2537,7 @@ fn compute_internal(
           @types.Length(v) => v
           @types.Percent(p) => content_width * p
           @types.Auto => 0.0
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
         }
         let inset_top = match child_style.inset.top {
           @types.Length(v) => v
@@ -2423,6 +2547,7 @@ fn compute_internal(
               None => 0.0
             }
           @types.Auto => 0.0
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
         }
         (base_x + inset_left, base_y + inset_top)
       } else {
@@ -2542,6 +2667,34 @@ fn compute_internal(
             }
             total_main + padding.vertical_sum() + border.vertical_sum()
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          // Intrinsic sizing - use content height
+          if is_row {
+            total_lines_cross + padding.vertical_sum() + border.vertical_sum()
+          } else {
+            // Column direction: calculate total main size from items
+            let mut total_main = 0.0
+            for line_idx = 0
+                line_idx < flex_lines.length()
+                line_idx = line_idx + 1 {
+              let line = flex_lines[line_idx]
+              let mut line_main = 0.0
+              for item in line.items {
+                // outer_main = final_main + margin_main
+                line_main = line_main + item.final_main + item.margin_main
+              }
+              if line.items.length() > 1 {
+                line_main = line_main +
+                  main_gap * (line.items.length() - 1).to_double()
+              }
+              total_main = total_main + line_main
+            }
+            if flex_lines.length() > 1 {
+              total_main = total_main +
+                cross_gap * (flex_lines.length() - 1).to_double()
+            }
+            total_main + padding.vertical_sum() + border.vertical_sum()
+          }
       }
   }
 
@@ -2558,6 +2711,7 @@ fn compute_internal(
       }
     }
     @types.Auto => ()
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
   }
   // CSS spec: padding + border is always the absolute minimum
   let padding_border_height = padding.vertical_sum() + border.vertical_sum()
@@ -2576,6 +2730,10 @@ fn compute_internal(
       }
     }
     @types.Auto =>
+      if final_height < padding_border_height {
+        final_height = padding_border_height
+      }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       if final_height < padding_border_height {
         final_height = padding_border_height
       }
@@ -2949,6 +3107,7 @@ fn compute_internal(
             }
           }
           @types.Auto => ()
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
         }
         match style.min_width {
           @types.Length(v) => if constrained_width < v { constrained_width = v }
@@ -2959,6 +3118,7 @@ fn compute_internal(
             }
           }
           @types.Auto => ()
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
         }
         constrained_width
       }
@@ -3015,6 +3175,18 @@ fn compute_nested(
             intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
           None => padding.horizontal_sum() + border.horizontal_sum()
         }
+      @types.MinContent =>
+        match intrinsic {
+          Some(intr) =>
+            intr.min_width + padding.horizontal_sum() + border.horizontal_sum()
+          None => padding.horizontal_sum() + border.horizontal_sum()
+        }
+      @types.MaxContent | @types.FitContent(_) =>
+        match intrinsic {
+          Some(intr) =>
+            intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
+          None => padding.horizontal_sum() + border.horizontal_sum()
+        }
     }
     let height = match style.height {
       @types.Length(h) => h
@@ -3024,6 +3196,18 @@ fn compute_nested(
           None => padding.vertical_sum() + border.vertical_sum()
         }
       @types.Auto =>
+        match intrinsic {
+          Some(intr) =>
+            intr.max_height + padding.vertical_sum() + border.vertical_sum()
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      @types.MinContent =>
+        match intrinsic {
+          Some(intr) =>
+            intr.min_height + padding.vertical_sum() + border.vertical_sum()
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      @types.MaxContent | @types.FitContent(_) =>
         match intrinsic {
           Some(intr) =>
             intr.max_height + padding.vertical_sum() + border.vertical_sum()

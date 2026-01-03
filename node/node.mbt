@@ -196,11 +196,17 @@ pub fn dispatch_layout(node : Node, ctx : LayoutContext) -> Layout {
         @types.Length(w) => w
         @types.Percent(p) => ctx.available_width * p
         @types.Auto => ctx.available_width
+        @types.MinContent => 0.0 // Fallback: use minimal size
+        @types.MaxContent => ctx.available_width
+        @types.FitContent(_) => ctx.available_width
       }
       let height = match node.style.height {
         @types.Length(h) => h
         @types.Percent(p) => ctx.available_height.unwrap_or(0.0) * p
         @types.Auto => 0.0
+        @types.MinContent => 0.0
+        @types.MaxContent => 0.0
+        @types.FitContent(_) => 0.0
       }
       {
         id: node.id,

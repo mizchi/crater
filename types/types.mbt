@@ -169,11 +169,14 @@ pub impl[T : Show] Show for Line[T] with output(self, logger) {
 }
 
 ///|
-/// CSS dimension value: length, percentage, or auto
+/// CSS dimension value: length, percentage, auto, or intrinsic sizing keywords
 pub(all) enum Dimension {
   Length(Double)
   Percent(Double) // 0.0 to 1.0
   Auto
+  MinContent // Intrinsic minimum content size
+  MaxContent // Intrinsic maximum content size
+  FitContent(Double) // fit-content(length) - clamp between min-content and max-content
 } derive(Eq)
 
 ///|
@@ -208,17 +211,28 @@ pub impl Show for Dimension with output(self, logger) {
       logger.write_string(")")
     }
     Auto => logger.write_string("Auto")
+    MinContent => logger.write_string("MinContent")
+    MaxContent => logger.write_string("MaxContent")
+    FitContent(v) => {
+      logger.write_string("FitContent(")
+      v.output(logger)
+      logger.write_string(")")
+    }
   }
 }
 
 ///|
 /// Resolve dimension to concrete value
 /// context: parent size for percentage calculation
+/// Note: MinContent, MaxContent, FitContent return None - they need intrinsic size calculation
 pub fn Dimension::resolve(self : Dimension, context : Double) -> Double? {
   match self {
     Length(v) => Some(v)
     Percent(v) => Some(context * v)
     Auto => None
+    MinContent => None // Requires intrinsic size calculation
+    MaxContent => None // Requires intrinsic size calculation
+    FitContent(_) => None // Requires intrinsic size calculation
   }
 }
 
@@ -232,6 +246,41 @@ pub fn Dimension::resolve_or(
   match self.resolve(context) {
     Some(v) => v
     None => fallback
+  }
+}
+
+///|
+/// Check if dimension is a definite value (Length or Percent)
+pub fn Dimension::is_definite(self : Dimension) -> Bool {
+  match self {
+    Length(_) | Percent(_) => true
+    _ => false
+  }
+}
+
+///|
+/// Check if dimension requires intrinsic sizing
+pub fn Dimension::is_intrinsic(self : Dimension) -> Bool {
+  match self {
+    MinContent | MaxContent | FitContent(_) => true
+    _ => false
+  }
+}
+
+///|
+/// Resolve dimension to length, treating intrinsic keywords as fallback
+pub fn Dimension::resolve_or_intrinsic(
+  self : Dimension,
+  context : Double,
+  fallback : Double,
+) -> Double {
+  match self {
+    Length(v) => v
+    Percent(p) => context * p
+    Auto => fallback
+    MinContent => fallback // Intrinsic sizing handled by layout engine
+    MaxContent => fallback
+    FitContent(_) => fallback
   }
 }
 
@@ -259,6 +308,9 @@ pub fn resolve_rect_intrinsic(rect : Rect[Dimension]) -> Rect[Double] {
       Length(v) => v
       Percent(_) => 0.0
       Auto => 0.0
+      MinContent => 0.0 // Not applicable for margin/padding/border
+      MaxContent => 0.0
+      FitContent(_) => 0.0
     }
   }
 

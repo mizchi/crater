@@ -342,6 +342,9 @@ fn dimension_to_string(dim : @types.Dimension) -> String {
         n.to_string() + "px"
       }
     @types.Dimension::Percent(n) => (n * 100.0).to_string() + "%"
+    @types.Dimension::MinContent => "min-content"
+    @types.Dimension::MaxContent => "max-content"
+    @types.Dimension::FitContent(n) => "fit-content(" + n.to_string() + "px)"
   }
 }
 
@@ -507,6 +510,9 @@ fn apply_property(
         @types.Length(v) => if v >= 0.0 { builder.flex_basis = dim }
         @types.Percent(v) => if v >= 0.0 { builder.flex_basis = dim }
         @types.Auto => builder.flex_basis = dim
+        @types.MinContent => builder.flex_basis = dim
+        @types.MaxContent => builder.flex_basis = dim
+        @types.FitContent(_) => builder.flex_basis = dim
       }
     }
     "order" => builder.order = parse_integer(value)
@@ -933,6 +939,9 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
     @types.Length(v) => v
     @types.Percent(_) => 0.0 // Percentages are resolved later
     @types.Auto => 0.0
+    @types.MinContent => 0.0 // Intrinsic sizing resolved during layout
+    @types.MaxContent => 0.0
+    @types.FitContent(_) => 0.0
   }
 }
 

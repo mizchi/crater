@@ -364,13 +364,19 @@ fn compute_grid_layout_internal(
     intrinsic_cache,
   )
 
-  // Determine if container has auto sizing
+  // Determine if container has auto/intrinsic sizing (needs content-based width/height)
   let width_is_auto = match style.width {
-    @types.Auto => true
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => true
     _ => false
   }
   let height_is_auto = match style.height {
-    @types.Auto => true
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => true
     _ => false
   }
 
@@ -548,21 +554,27 @@ fn compute_grid_layout_internal(
     @types.Length(v) => max(v, min_width)
     @types.Percent(p) => max(p * available_width, min_width)
     @types.Auto => min_width
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => min_width
   }
   let resolved_max_width = match style.max_width {
     @types.Length(v) => v
     @types.Percent(p) => p * available_width
     @types.Auto => 1.0e10
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      @double.infinity
   }
   let resolved_min_height = match style.min_height {
     @types.Length(v) => max(v, min_height)
     @types.Percent(p) => max(p * available_height, min_height)
     @types.Auto => min_height
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => min_height
   }
   let resolved_max_height = match style.max_height {
     @types.Length(v) => v
     @types.Percent(p) => p * available_height
     @types.Auto => 1.0e10
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      @double.infinity
   }
   let container_width = if width_is_auto {
     // Sum of track sizes + gaps + padding + border
@@ -1456,6 +1468,9 @@ fn calculate_item_intrinsic_sizes(
                       )
                       (intrinsic.min_width, intrinsic.max_width)
                     }
+                    @types.MinContent
+                    | @types.MaxContent
+                    | @types.FitContent(_) => (0.0, 0.0)
                   }
                   // Add margins
                   let ml = match flex_child.style.margin.left {
@@ -1495,6 +1510,9 @@ fn calculate_item_intrinsic_sizes(
                       )
                       (intrinsic.min_width, intrinsic.max_width)
                     }
+                    @types.MinContent
+                    | @types.MaxContent
+                    | @types.FitContent(_) => (0.0, 0.0)
                   }
                   // Add margins
                   let ml = match flex_child.style.margin.left {
@@ -1525,6 +1543,7 @@ fn calculate_item_intrinsic_sizes(
             }
           }
         }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => (0.0, 0.0)
     }
     // Add padding and border to intrinsic sizes
     let pl = resolve_dimension(child.style.padding.left, container_width, 0.0)
@@ -1549,11 +1568,14 @@ fn calculate_item_intrinsic_sizes(
       @types.Length(v) => v
       @types.Percent(p) => p * container_width
       @types.Auto => 0.0
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
     }
     let style_max_width = match child.style.max_width {
       @types.Length(v) => v
       @types.Percent(p) => p * container_width
       @types.Auto => 1.0e10
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        @double.infinity
     }
     // Effective minimum is max of style min_width and box_size
     let effective_min = max(style_min_width, box_size)
@@ -1648,6 +1670,7 @@ fn calculate_item_intrinsic_sizes(
             }
           }
         }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => (0.0, 0.0)
     }
     // Add padding and border (resolved against WIDTH per CSS spec)
     let pt = resolve_dimension(child.style.padding.top, container_width, 0.0)
@@ -1672,11 +1695,14 @@ fn calculate_item_intrinsic_sizes(
       @types.Length(v) => v
       @types.Percent(p) => p * container_width // percent height resolves against width
       @types.Auto => 0.0
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
     }
     let style_max_height = match child.style.max_height {
       @types.Length(v) => v
       @types.Percent(p) => p * container_width
       @types.Auto => 1.0e10
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        @double.infinity
     }
     // Effective minimum is max of style min_height and box_size
     let effective_min = max(style_min_height, box_size)

@@ -197,6 +197,8 @@ fn compute_with_collapse(
             // Text should not exceed parent width
             @types.min(content_width, parent_width)
           }
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            parent_width
         }
 
         // Calculate height
@@ -207,6 +209,7 @@ fn compute_with_collapse(
             intrinsic.max_height +
             padding.vertical_sum() +
             border.vertical_sum()
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
         }
         return {
           layout: {
@@ -303,6 +306,8 @@ fn compute_with_collapse(
           } else {
             parent_width - margin.horizontal_sum()
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          parent_width - margin.horizontal_sum()
       }
   }
 
@@ -317,7 +322,10 @@ fn compute_with_collapse(
         box_width = max_w
       }
     }
-    @types.Auto => ()
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => ()
   }
   match style.min_width {
     @types.Length(min_w) => if box_width < min_w { box_width = min_w }
@@ -327,7 +335,10 @@ fn compute_with_collapse(
         box_width = min_w
       }
     }
-    @types.Auto => ()
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => ()
   }
 
   // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
@@ -346,7 +357,10 @@ fn compute_with_collapse(
     @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
     @types.Percent(p) =>
       Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
-    @types.Auto => None
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => None
   }
 
   // Map to store layouts by original index
@@ -419,12 +433,18 @@ fn compute_with_collapse(
       let child_margin_left : Double = match child_style.margin.left {
         @types.Length(l) => l
         @types.Percent(_) => 0.0
-        @types.Auto => 0.0
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => 0.0
       }
       let child_margin_right : Double = match child_style.margin.right {
         @types.Length(r) => r
         @types.Percent(_) => 0.0
-        @types.Auto => 0.0
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => 0.0
       }
       let child_margin_sum = child_margin_left + child_margin_right
 
@@ -434,12 +454,18 @@ fn compute_with_collapse(
       let child_padding_left : Double = match child_style.padding.left {
         @types.Length(l) => l
         @types.Percent(_) => 0.0
-        @types.Auto => 0.0
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => 0.0
       }
       let child_padding_right : Double = match child_style.padding.right {
         @types.Length(r) => r
         @types.Percent(_) => 0.0
-        @types.Auto => 0.0
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => 0.0
       }
       let child_border = @types.resolve_rect(child_style.border, parent_width)
       let child_min_box = child_padding_left +
@@ -472,6 +498,8 @@ fn compute_with_collapse(
                 child_result.layout.width
               }
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+          child_min_box
       }
       let child_contribution = child_intrinsic_width + child_margin_sum
       if child_contribution > max_content_width {
@@ -491,7 +519,10 @@ fn compute_with_collapse(
           box_width = max_w
         }
       }
-      @types.Auto => ()
+      @types.Auto
+      | @types.MinContent
+      | @types.MaxContent
+      | @types.FitContent(_) => ()
     }
     match style.min_width {
       @types.Length(min_w) => if box_width < min_w { box_width = min_w }
@@ -501,7 +532,10 @@ fn compute_with_collapse(
           box_width = min_w
         }
       }
-      @types.Auto => ()
+      @types.Auto
+      | @types.MinContent
+      | @types.MaxContent
+      | @types.FitContent(_) => ()
     }
     // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
     if box_width < min_box_width {
@@ -523,10 +557,10 @@ fn compute_with_collapse(
       available_height: child_available_height,
       sizing_mode: @node.Definite,
     }
-    // Flex containers establish a new BFC, so use dispatch for them
+    // Flex and Grid containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
     let child_result = match child.style.display {
-      @style.Flex => {
+      @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid => {
         // Use global dispatcher if available, otherwise use block layout
         // (tests without dispatcher setup will use block layout as fallback)
         let layout = match @node.get_layout_dispatcher() {
@@ -577,6 +611,8 @@ fn compute_with_collapse(
           ).layout
         @types.min(intrinsic_layout.width, actual_child_available_width)
       }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        actual_child_available_width
     }
 
     // Compute child layout with determined width
@@ -767,8 +803,12 @@ fn compute_with_collapse(
           match inset.right {
             @types.Length(r) => -r
             @types.Percent(p) => -(box_width * p)
-            @types.Auto => 0.0
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) => 0.0
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
       }
       // Y offset: top takes precedence over bottom
       // CSS spec: percentages for top/bottom resolve against containing block HEIGHT
@@ -789,8 +829,12 @@ fn compute_with_collapse(
                   -((h + padding.vertical_sum() + border.vertical_sum()) * p)
                 None => 0.0
               }
-            @types.Auto => 0.0
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) => 0.0
           }
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
       }
       (child_x + x_offset, child_y + y_offset)
     } else {
@@ -864,6 +908,8 @@ fn compute_with_collapse(
         }
         None => content_height + padding.vertical_sum() + border.vertical_sum()
       }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      content_height + padding.vertical_sum() + border.vertical_sum()
   }
 
   // Apply min/max height constraints
@@ -875,7 +921,10 @@ fn compute_with_collapse(
         box_height = min_h
       }
     }
-    @types.Auto => ()
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => ()
   }
   match style.max_height {
     @types.Length(max_h) => if box_height > max_h { box_height = max_h }
@@ -885,7 +934,10 @@ fn compute_with_collapse(
         box_height = max_h
       }
     }
-    @types.Auto => ()
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => ()
   }
 
   // Ensure box_height is at least padding + border (CSS rule: padding/border override max-size)
@@ -929,7 +981,10 @@ fn compute_with_collapse(
               new_width
             }
           }
-          @types.Auto => new_width
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => new_width
         }
         let new_width = match style.min_width {
           @types.Length(min_w) =>
@@ -946,7 +1001,10 @@ fn compute_with_collapse(
               new_width
             }
           }
-          @types.Auto => new_width
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => new_width
         }
         box_width = new_width
       }
@@ -1257,6 +1315,8 @@ fn compute_nested(
             intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
           None => padding.horizontal_sum() + border.horizontal_sum()
         }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        padding.horizontal_sum() + border.horizontal_sum()
     }
     let height = match style.height {
       @types.Length(h) => h
@@ -1271,6 +1331,8 @@ fn compute_nested(
             intr.max_height + padding.vertical_sum() + border.vertical_sum()
           None => padding.vertical_sum() + border.vertical_sum()
         }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        padding.vertical_sum() + border.vertical_sum()
     }
     return {
       id: node.id,
@@ -1329,6 +1391,8 @@ fn compute_nested_intrinsic(
             intr.max_width + padding.horizontal_sum() + border.horizontal_sum()
           None => padding.horizontal_sum() + border.horizontal_sum()
         }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        padding.horizontal_sum() + border.horizontal_sum()
     }
     let height = match style.height {
       @types.Length(h) => h
@@ -1339,6 +1403,8 @@ fn compute_nested_intrinsic(
             intr.max_height + padding.vertical_sum() + border.vertical_sum()
           None => padding.vertical_sum() + border.vertical_sum()
         }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        padding.vertical_sum() + border.vertical_sum()
     }
     return {
       id: node.id,

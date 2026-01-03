@@ -93,6 +93,42 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
   }
+  // Intrinsic sizing keywords
+  if v == "min-content" {
+    return @types.Dimension::MinContent
+  }
+  if v == "max-content" {
+    return @types.Dimension::MaxContent
+  }
+  // fit-content(<length-percentage>)
+  if v.has_prefix("fit-content(") && v.has_suffix(")") {
+    // Extract content between "fit-content(" and ")"
+    let v_str = v.to_string()
+    let inner = v_str.substring(start=12, end=v_str.length() - 1)
+    // Parse the inner value as a length
+    match inner.strip_suffix("px") {
+      Some(num_str) => {
+        let n = @strconv.parse_double(num_str.to_string()) catch {
+          _ => return @types.Dimension::Auto
+        }
+        return @types.Dimension::FitContent(n)
+      }
+      None => ()
+    }
+    // Try percentage
+    match inner.strip_suffix("%") {
+      Some(num_str) => {
+        let n = @strconv.parse_double(num_str.to_string()) catch {
+          _ => return @types.Dimension::Auto
+        }
+        // For fit-content, percentage is relative to available space
+        // Store as negative to differentiate from length
+        return @types.Dimension::FitContent(n)
+      }
+      None => ()
+    }
+    return @types.Dimension::Auto
+  }
   // Try to parse as length (px)
   match v.strip_suffix("px") {
     Some(num_str) => {

@@ -22,6 +22,7 @@ const OUTPUT_DIR = "wpt-tests";
 // CSS modules to fetch (subset relevant to layout)
 const CSS_MODULES = [
   "css-flexbox",
+  "css-grid",
   "css-display",
   "css-box",
   "css-sizing",
@@ -32,6 +33,7 @@ const CSS_MODULES = [
 
 // Test file prefixes to include (layout-relevant tests)
 const INCLUDE_PREFIXES = [
+  // Flexbox
   "align-content",
   "align-items",
   "align-self",
@@ -39,6 +41,16 @@ const INCLUDE_PREFIXES = [
   "justify-",
   "order-",
   "gap-",
+  // Grid
+  "grid-",
+  "subgrid-",
+  "grid-template",
+  "grid-auto",
+  "grid-area",
+  "grid-row",
+  "grid-column",
+  "grid-gap",
+  "grid-placement",
 ];
 
 interface GitHubFile {
