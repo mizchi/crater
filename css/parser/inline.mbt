@@ -9,6 +9,91 @@ let default_viewport_width : Double = 1000.0
 let default_viewport_height : Double = 1000.0
 
 ///|
+/// Parse a calc() expression and try to simplify it to a Dimension
+/// Returns Some(dimension) if simplification is possible, None otherwise
+fn parse_calc_expression(
+  tokens : ArrayView[@token.Token],
+) -> (@types.Dimension, ArrayView[@token.Token])? {
+  // Skip the Function("calc") token - we're already past it
+  // Parse tokens until RightParen, collecting values and operators
+  let mut remaining = tokens
+  let mut result_px : Double = 0.0
+  let mut result_pct : Double = 0.0
+  let mut current_op : Char = '+'
+  while remaining.length() > 0 {
+    remaining = skip_whitespace(remaining)
+    if remaining.length() == 0 {
+      break
+    }
+    match remaining[0] {
+      @token.Token::RightParen => {
+        // End of calc expression
+        let next_tokens = remaining[1:]
+        // Determine final dimension type
+        if result_pct.abs() < 0.0001 {
+          // Pure length
+          return Some((@types.Length(result_px), next_tokens))
+        } else if result_px.abs() < 0.0001 {
+          // Pure percentage
+          return Some((@types.Percent(result_pct / 100.0), next_tokens))
+        } else {
+          // Mixed - cannot simplify (return None to fall back to Auto)
+          return None
+        }
+      }
+      @token.Token::Dimension(value, unit) => {
+        if unit == "px" {
+          match current_op {
+            '+' => result_px = result_px + value
+            '-' => result_px = result_px - value
+            '*' => result_px = result_px * value
+            '/' => result_px = result_px / value
+            _ => ()
+          }
+        } else if unit == "%" {
+          match current_op {
+            '+' => result_pct = result_pct + value
+            '-' => result_pct = result_pct - value
+            '*' => result_pct = result_pct * value
+            '/' => result_pct = result_pct / value
+            _ => ()
+          }
+        }
+        remaining = remaining[1:]
+      }
+      @token.Token::Percentage(value) => {
+        match current_op {
+          '+' => result_pct = result_pct + value
+          '-' => result_pct = result_pct - value
+          '*' => result_pct = result_pct * value
+          '/' => result_pct = result_pct / value
+          _ => ()
+        }
+        remaining = remaining[1:]
+      }
+      @token.Token::Number(value, _) =>
+        // Unitless number - treat as px if 0, otherwise ignore
+        if value == 0.0 {
+          // 0 has no effect
+          remaining = remaining[1:]
+        } else {
+          // Non-zero unitless number in calc - skip for now
+          remaining = remaining[1:]
+        }
+      @token.Token::Delim(c) =>
+        if c == '+' || c == '-' || c == '*' || c == '/' {
+          current_op = c
+          remaining = remaining[1:]
+        } else {
+          remaining = remaining[1:]
+        }
+      _ => remaining = remaining[1:]
+    }
+  }
+  None
+}
+
+///|
 /// Parse a dimension value (length, percent, auto)
 /// vh/vw are converted to Length using default viewport (1000x1000)
 fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
@@ -16,6 +101,16 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
     return None
   }
   match tokens[0] {
+    @token.Token::Function(name) =>
+      if name == "calc" {
+        // Try to parse and simplify calc expression
+        match parse_calc_expression(tokens[1:]) {
+          Some((dim, _)) => return Some(dim)
+          None => return Some(@types.Auto) // Fallback for complex calc
+        }
+      } else {
+        None
+      }
     @token.Token::Dimension(value, unit) =>
       if unit == "px" {
         Some(@types.Length(value))
@@ -1312,14 +1407,16 @@ fn apply_property(
   if property == "border-block" {
     // Parse first token as dimension (width)
     match parse_dimension(value_tokens) {
-      Some(v) => return { ..style, border: { ..style.border, top: v, bottom: v } }
+      Some(v) =>
+        return { ..style, border: { ..style.border, top: v, bottom: v } }
       None => ()
     }
   }
   // border-block-width
   if property == "border-block-width" {
     match parse_dimension(value_tokens) {
-      Some(v) => return { ..style, border: { ..style.border, top: v, bottom: v } }
+      Some(v) =>
+        return { ..style, border: { ..style.border, top: v, bottom: v } }
       None => ()
     }
   }

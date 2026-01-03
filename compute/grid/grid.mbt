@@ -632,12 +632,15 @@ fn compute_grid_layout_internal(
           border_right
         let content_height = content_width / ratio
         Some(
-          content_height + padding_top + padding_bottom + border_top + border_bottom,
+          content_height +
+          padding_top +
+          padding_bottom +
+          border_top +
+          border_bottom,
         )
       }
       _ => None
     }
-
     match aspect_height {
       Some(h) => {
         // Apply min/max constraints
@@ -1637,12 +1640,15 @@ fn calculate_item_intrinsic_sizes(
     } else {
       clamped_max
     }
+    // Resolve margins - CSS spec: percentage margins resolve against container width
     let ml = match child.style.margin.left {
       @types.Length(v) => v
+      @types.Percent(p) => p * container_width
       _ => 0.0
     }
     let mr = match child.style.margin.right {
       @types.Length(v) => v
+      @types.Percent(p) => p * container_width
       _ => 0.0
     }
     (final_min, final_max, ml, mr)
@@ -1764,12 +1770,15 @@ fn calculate_item_intrinsic_sizes(
     } else {
       clamped_max
     }
+    // Resolve margins - CSS spec: all percentage margins resolve against container width
     let mt = match child.style.margin.top {
       @types.Length(v) => v
+      @types.Percent(p) => p * container_width
       _ => 0.0
     }
     let mb = match child.style.margin.bottom {
       @types.Length(v) => v
+      @types.Percent(p) => p * container_width
       _ => 0.0
     }
     (final_min, final_max, mt, mb)

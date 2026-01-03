@@ -711,11 +711,121 @@ fn apply_property(
 }
 
 ///|
+/// Parse a calc() expression from a string and try to simplify it
+/// Returns Some(dimension) if simplification is possible, None otherwise
+fn parse_calc_string(expr : String) -> @types.Dimension? {
+  // Extract the expression inside calc(...)
+  let v = expr.trim()
+  if not(v.has_prefix("calc(")) || not(v.has_suffix(")")) {
+    return None
+  }
+  // Extract content: "calc(" has 5 chars, ")" has 1 char
+  let inner = v[5:v.length() - 1].to_string() catch { _ => return None }
+  // Parse simple expressions: accumulate px and % values
+  let mut result_px : Double = 0.0
+  let mut result_pct : Double = 0.0
+  let mut current_op : Char = '+'
+  // Split by operators while preserving them
+  let mut i = 0
+  let mut token_start = 0
+  while i <= inner.length() {
+    let c = if i < inner.length() {
+      inner[i].to_int().unsafe_to_char()
+    } else {
+      ' '
+    } // End of string
+    if c == '+' || c == '-' || c == '*' || c == '/' || i == inner.length() {
+      // Process token before operator
+      if i > token_start {
+        let token = inner[token_start:i].to_string().trim() catch { _ => "" }
+        if not(token.is_empty()) {
+          // Parse the token
+          if token.has_suffix("%") {
+            let num_str = token[:token.length() - 1].to_string() catch {
+              _ => ""
+            }
+            let n = @strconv.parse_double(num_str.to_string()) catch {
+              _ => 0.0
+            }
+            match current_op {
+              '+' => result_pct = result_pct + n
+              '-' => result_pct = result_pct - n
+              '*' => result_pct = result_pct * n
+              '/' => result_pct = result_pct / n
+              _ => ()
+            }
+          } else if token.has_suffix("px") {
+            let num_str = token[:token.length() - 2].to_string() catch {
+              _ => ""
+            }
+            let n = @strconv.parse_double(num_str.to_string()) catch {
+              _ => 0.0
+            }
+            match current_op {
+              '+' => result_px = result_px + n
+              '-' => result_px = result_px - n
+              '*' => result_px = result_px * n
+              '/' => result_px = result_px / n
+              _ => ()
+            }
+          } else {
+            // Try as unitless number (treat as px if 0, otherwise skip)
+            let n = @strconv.parse_double(token) catch { _ => 0.0 }
+            if n == 0.0 {
+              // 0 has no effect on the result
+              ()
+            } else {
+              // Non-zero unitless - treat as multiplier for current values if *, /
+              match current_op {
+                '*' => {
+                  result_px = result_px * n
+                  result_pct = result_pct * n
+                }
+                '/' => {
+                  result_px = result_px / n
+                  result_pct = result_pct / n
+                }
+                _ => ()
+              }
+            }
+          }
+        }
+      }
+      // Save operator for next token
+      if i < inner.length() {
+        current_op = c
+      }
+      token_start = i + 1
+    }
+    i = i + 1
+  }
+  // Determine final dimension type
+  if result_pct.abs() < 0.0001 {
+    // Pure length
+    Some(@types.Length(result_px))
+  } else if result_px.abs() < 0.0001 {
+    // Pure percentage
+    Some(@types.Percent(result_pct / 100.0))
+  } else {
+    // Mixed - cannot simplify
+    None
+  }
+}
+
+///|
 /// Resolve dimension with relative unit conversion
 fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   let v = value.trim()
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
+  }
+
+  // Handle calc() expressions
+  if v.has_prefix("calc(") {
+    match parse_calc_string(v.to_string()) {
+      Some(dim) => return dim
+      None => return @types.Dimension::Auto // Fallback for complex calc
+    }
   }
 
   // Handle rem units (check before em)
