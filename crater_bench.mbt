@@ -1762,3 +1762,485 @@ test "bench_incremental_10000_cached" (b : @bench.T) {
     b.keep(tree.compute_incremental())
   })
 }
+
+// =============================================================================
+// CSS Containment Benchmarks
+// =============================================================================
+// These benchmarks measure the potential performance gains from CSS contain property.
+// contain: size - allows skipping child layout when computing parent size
+// contain: layout - isolates subtree layout from affecting parent
+
+///|
+/// Create a layout with many "cards" that could benefit from contain: size
+/// Each card has a fixed size and contains complex nested content
+fn create_contained_cards(
+  num_cards : Int,
+  items_per_card : Int,
+  use_containment : Bool,
+) -> @node.Node {
+  let default_style = @style.Style::default()
+  let cards : Array[@node.Node] = []
+  for i = 0; i < num_cards; i = i + 1 {
+    // Each card has nested items
+    let items : Array[@node.Node] = []
+    for j = 0; j < items_per_card; j = j + 1 {
+      let item_style = { ..default_style, height: @types.Length(20.0) }
+      items.push(@node.Node::leaf("item_\{i}_\{j}", item_style))
+    }
+    // Card style with optional containment
+    let card_style = if use_containment {
+      {
+        ..default_style,
+        width: @types.Length(200.0),
+        height: @types.Length(300.0),
+        contain: @style.Contain::strict(),
+      }
+    } else {
+      {
+        ..default_style,
+        width: @types.Length(200.0),
+        height: @types.Length(300.0),
+      }
+    }
+    cards.push(@node.Node::new("card_\{i}", card_style, items))
+  }
+  let root_style = {
+    ..default_style,
+    display: @style.Flex,
+    flex_wrap: @style.Wrap,
+    width: @types.Length(1200.0),
+  }
+  @node.Node::new("root", root_style, cards)
+}
+
+///|
+/// Create deeply nested layout with containment at certain levels
+fn create_nested_with_containment(
+  depth : Int,
+  children_per_level : Int,
+  containment_at_depth : Int,
+  use_containment : Bool,
+) -> @node.Node {
+  let default_style = @style.Style::default()
+  fn build(d : Int) -> @node.Node {
+    if d == 0 {
+      let leaf_style = { ..default_style, height: @types.Length(10.0) }
+      return @node.Node::leaf("leaf", leaf_style)
+    }
+    let children : Array[@node.Node] = []
+    for i = 0; i < children_per_level; i = i + 1 {
+      children.push(build(d - 1))
+    }
+    let style = if use_containment && d == containment_at_depth {
+      {
+        ..default_style,
+        padding: {
+          left: @types.Length(5.0),
+          right: @types.Length(5.0),
+          top: @types.Length(5.0),
+          bottom: @types.Length(5.0),
+        },
+        contain: @style.Contain::content(),
+      }
+    } else {
+      {
+        ..default_style,
+        padding: {
+          left: @types.Length(5.0),
+          right: @types.Length(5.0),
+          top: @types.Length(5.0),
+          bottom: @types.Length(5.0),
+        },
+      }
+    }
+    @node.Node::new("node_d\{d}", style, children)
+  }
+
+  let root_style = { ..default_style, width: @types.Length(800.0) }
+  @node.Node::new("root", root_style, [build(depth)])
+}
+
+///|
+/// Benchmark: Cards WITHOUT containment (baseline)
+test "bench_contain_cards_100_no_contain" (b : @bench.T) {
+  @dispatch.setup()
+  let node = create_contained_cards(100, 20, false)
+  let viewport = @types.Size::new(1200.0, 2000.0)
+  b.bench(name="cards_100_no_contain", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+/// Benchmark: Cards WITH contain: strict (should be faster when optimized)
+test "bench_contain_cards_100_with_contain" (b : @bench.T) {
+  @dispatch.setup()
+  let node = create_contained_cards(100, 20, true)
+  let viewport = @types.Size::new(1200.0, 2000.0)
+  b.bench(name="cards_100_with_contain", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+/// Benchmark: Nested layout WITHOUT containment (baseline)
+test "bench_contain_nested_no_contain" (b : @bench.T) {
+  @dispatch.setup()
+  // depth=6, 3 children per level = ~1000 nodes
+  let node = create_nested_with_containment(6, 3, 3, false)
+  let viewport = @types.Size::new(800.0, 2000.0)
+  b.bench(name="nested_no_contain", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+/// Benchmark: Nested layout WITH contain: content at middle level
+test "bench_contain_nested_with_contain" (b : @bench.T) {
+  @dispatch.setup()
+  // depth=6, 3 children per level, containment at depth 3
+  let node = create_nested_with_containment(6, 3, 3, true)
+  let viewport = @types.Size::new(800.0, 2000.0)
+  b.bench(name="nested_with_contain", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+/// Create a layout where parent depends on children's intrinsic size
+/// Cards have width: auto, so intrinsic calculation traverses deeply
+/// When contain: size + explicit size, we skip deep traversal
+fn create_intrinsic_dependent_layout(
+  num_cards : Int,
+  items_per_card : Int,
+  use_containment : Bool,
+) -> @node.Node {
+  let default_style = @style.Style::default()
+  let cards : Array[@node.Node] = []
+  for i = 0; i < num_cards; i = i + 1 {
+    // Each card has nested items with complex content
+    let items : Array[@node.Node] = []
+    for j = 0; j < items_per_card; j = j + 1 {
+      // Items with nested children to create intrinsic size calculation
+      let nested : Array[@node.Node] = []
+      for k = 0; k < 5; k = k + 1 {
+        // Deeply nested structure
+        let deep : Array[@node.Node] = []
+        for l = 0; l < 3; l = l + 1 {
+          let leaf_style = {
+            ..default_style,
+            width: @types.Length(50.0),
+            height: @types.Length(10.0),
+          }
+          deep.push(@node.Node::leaf("leaf_\{i}_\{j}_\{k}_\{l}", leaf_style))
+        }
+        let nested_style = { ..default_style }
+        nested.push(
+          @node.Node::new("nested_\{i}_\{j}_\{k}", nested_style, deep),
+        )
+      }
+      let item_style = { ..default_style }
+      items.push(@node.Node::new("item_\{i}_\{j}", item_style, nested))
+    }
+    // Card: containment version has fixed size, non-containment has width: auto
+    let card_style = if use_containment {
+      {
+        ..default_style,
+        width: @types.Length(200.0),
+        height: @types.Length(300.0),
+        contain: @style.Contain::strict(),
+      }
+    } else {
+      // width: auto forces intrinsic size calculation through nested children
+      { ..default_style, height: @types.Length(300.0) }
+    }
+    cards.push(@node.Node::new("card_\{i}", card_style, items))
+  }
+  // Parent with AUTO width - depends on children's intrinsic sizes
+  let root_style = { ..default_style, display: @style.Flex, width: @types.Auto }
+  @node.Node::new("root", root_style, cards)
+}
+
+///|
+/// Benchmark: Intrinsic-dependent layout WITHOUT containment
+test "bench_intrinsic_no_contain" (b : @bench.T) {
+  @dispatch.setup()
+  let node = create_intrinsic_dependent_layout(50, 10, false)
+  let viewport = @types.Size::new(2000.0, 2000.0)
+  b.bench(name="intrinsic_no_contain", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+/// Benchmark: Intrinsic-dependent layout WITH containment (should be faster)
+test "bench_intrinsic_with_contain" (b : @bench.T) {
+  @dispatch.setup()
+  let node = create_intrinsic_dependent_layout(50, 10, true)
+  let viewport = @types.Size::new(2000.0, 2000.0)
+  b.bench(name="intrinsic_with_contain", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+/// Create simple deep tree to measure pure intrinsic calculation
+fn create_pure_intrinsic_tree(
+  depth : Int,
+  width : Int,
+  use_contain : Bool,
+) -> @node.Node {
+  let default_style = @style.Style::default()
+  fn build(d : Int) -> @node.Node {
+    if d == 0 {
+      return @node.Node::leaf("leaf", {
+        ..default_style,
+        width: @types.Length(50.0),
+        height: @types.Length(20.0),
+      })
+    }
+    let children : Array[@node.Node] = []
+    for i = 0; i < width; i = i + 1 {
+      children.push(build(d - 1))
+    }
+    // At depth 2, apply containment if enabled
+    let style = if use_contain && d == 2 {
+      {
+        ..default_style,
+        width: @types.Length(200.0),
+        height: @types.Length(100.0),
+        contain: @style.Contain::strict(),
+      }
+    } else {
+      default_style
+    }
+    @node.Node::new("node_\{d}", style, children)
+  }
+  // Root with width: auto triggers intrinsic calculation
+  let root = build(depth)
+  @node.Node::new(
+    "root",
+    { ..default_style, display: @style.Flex, width: @types.Auto },
+    [root],
+  )
+}
+
+///|
+test "bench_pure_intrinsic_no_contain" (b : @bench.T) {
+  @dispatch.setup()
+  // depth 5, width 4 = 1365 nodes
+  let node = create_pure_intrinsic_tree(5, 4, false)
+  let viewport = @types.Size::new(2000.0, 2000.0)
+  b.bench(name="pure_intrinsic_no", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+///|
+test "bench_pure_intrinsic_with_contain" (b : @bench.T) {
+  @dispatch.setup()
+  // Same tree but with contain: size at depth 2
+  let node = create_pure_intrinsic_tree(5, 4, true)
+  let viewport = @types.Size::new(2000.0, 2000.0)
+  b.bench(name="pure_intrinsic_yes", fn() {
+    b.keep(compute_layout(node, viewport))
+  })
+}
+
+// =============================================================================
+// Incremental Layout + CSS Containment Benchmarks
+// =============================================================================
+// These benchmarks test the dirty propagation optimization with contain: layout
+// Key: when marking a deep node dirty, contain: layout stops propagation at boundary
+// This means fewer ancestor nodes need recomputation
+
+///|
+/// Create a deep tree for incremental layout testing with containment
+/// Structure: root -> sections (with/without containment) -> cards -> items
+fn create_incremental_containment_tree(
+  num_sections : Int,
+  cards_per_section : Int,
+  items_per_card : Int,
+  use_containment : Bool,
+) -> (@tree.LayoutTree, Array[@tree.LayoutNode]) {
+  let deep_items : Array[@tree.LayoutNode] = []
+  let sections : Array[@tree.LayoutNode] = []
+  for s = 0; s < num_sections; s = s + 1 {
+    let cards : Array[@tree.LayoutNode] = []
+    for c = 0; c < cards_per_section; c = c + 1 {
+      let items : Array[@tree.LayoutNode] = []
+      for i = 0; i < items_per_card; i = i + 1 {
+        let item = @tree.LayoutNode::leaf(
+          "item_" + s.to_string() + "_" + c.to_string() + "_" + i.to_string(),
+          @style.Style::{
+            ..@style.Style::default(),
+            width: @types.Percent(1.0),
+            height: @types.Length(20.0),
+          },
+        )
+        items.push(item)
+        deep_items.push(item)
+      }
+      let card = @tree.LayoutNode::new(
+        "card_" + s.to_string() + "_" + c.to_string(),
+        @style.Style::{
+          ..@style.Style::default(),
+          display: @style.Flex,
+          flex_direction: @style.Column,
+          width: @types.Length(280.0),
+          height: @types.Length(200.0),
+        },
+        items,
+      )
+      cards.push(card)
+    }
+    // Section: with containment or without
+    let section_style = if use_containment {
+      @style.Style::{
+        ..@style.Style::default(),
+        display: @style.Flex,
+        flex_wrap: @style.Wrap,
+        width: @types.Percent(1.0),
+        contain: @style.Contain::content(), // layout + paint + style
+      }
+    } else {
+      @style.Style::{
+        ..@style.Style::default(),
+        display: @style.Flex,
+        flex_wrap: @style.Wrap,
+        width: @types.Percent(1.0),
+      }
+    }
+    let section = @tree.LayoutNode::new(
+      "section_" + s.to_string(),
+      section_style,
+      cards,
+    )
+    sections.push(section)
+  }
+  let main = @tree.LayoutNode::new(
+    "main",
+    @style.Style::{
+      ..@style.Style::default(),
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Percent(1.0),
+      flex_grow: 1.0,
+    },
+    sections,
+  )
+  let root = @tree.LayoutNode::new(
+    "root",
+    @style.Style::{
+      ..@style.Style::default(),
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(1440.0),
+      height: @types.Length(900.0),
+    },
+    [main],
+  )
+  let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
+  (tree, deep_items)
+}
+
+///|
+/// Benchmark: Incremental layout after marking deep item dirty - WITHOUT containment
+/// Dirty flag propagates all the way to root, so more nodes need to be checked
+test "bench_incremental_contain_dirty_no" (b : @bench.T) {
+  @dispatch.setup()
+  // 10 sections, 10 cards each, 5 items per card = 500 items
+  let (tree, items) = create_incremental_containment_tree(10, 10, 5, false)
+  // Initial full compute
+  let _ = tree.compute_incremental()
+  // Target item in middle section
+  let target = items[items.length() / 2]
+  b.bench(name="incr_contain_dirty_no", fn() {
+    // Mark deep item dirty - propagates to root
+    tree.mark_node_dirty(target.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+/// Benchmark: Incremental layout after marking deep item dirty - WITH containment
+/// Dirty flag stops at section boundary due to contain: layout
+test "bench_incremental_contain_dirty_yes" (b : @bench.T) {
+  @dispatch.setup()
+  // Same structure but sections have contain: content (includes layout)
+  let (tree, items) = create_incremental_containment_tree(10, 10, 5, true)
+  // Initial full compute
+  let _ = tree.compute_incremental()
+  // Target item in middle section
+  let target = items[items.length() / 2]
+  b.bench(name="incr_contain_dirty_yes", fn() {
+    // Mark deep item dirty - propagation stops at section boundary
+    tree.mark_node_dirty(target.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+/// Benchmark: Multiple deep items marked dirty - WITHOUT containment
+/// All dirty flags propagate to root, causing wide re-layout
+test "bench_incremental_contain_multi_no" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, items) = create_incremental_containment_tree(10, 10, 5, false)
+  let _ = tree.compute_incremental()
+  // Mark items in different sections dirty
+  let targets = [
+    items[50], // Section 1
+    items[150], // Section 3
+    items[250], // Section 5
+    items[350], // Section 7
+    items[450],
+  ] // Section 9
+  b.bench(name="incr_contain_multi_no", fn() {
+    for t in targets {
+      tree.mark_node_dirty(t.uid)
+    }
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+/// Benchmark: Multiple deep items marked dirty - WITH containment
+/// Each dirty section is isolated, only affected sections need re-layout
+test "bench_incremental_contain_multi_yes" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, items) = create_incremental_containment_tree(10, 10, 5, true)
+  let _ = tree.compute_incremental()
+  let targets = [items[50], items[150], items[250], items[350], items[450]]
+  b.bench(name="incr_contain_multi_yes", fn() {
+    for t in targets {
+      tree.mark_node_dirty(t.uid)
+    }
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+/// Larger scale: 50 sections to see more dramatic difference
+test "bench_incremental_contain_large_no" (b : @bench.T) {
+  @dispatch.setup()
+  // 50 sections, 5 cards each, 4 items per card = 1000 items
+  let (tree, items) = create_incremental_containment_tree(50, 5, 4, false)
+  let _ = tree.compute_incremental()
+  let target = items[items.length() / 2]
+  b.bench(name="incr_contain_large_no", fn() {
+    tree.mark_node_dirty(target.uid)
+    b.keep(tree.compute_incremental())
+  })
+}
+
+///|
+test "bench_incremental_contain_large_yes" (b : @bench.T) {
+  @dispatch.setup()
+  let (tree, items) = create_incremental_containment_tree(50, 5, 4, true)
+  let _ = tree.compute_incremental()
+  let target = items[items.length() / 2]
+  b.bench(name="incr_contain_large_yes", fn() {
+    tree.mark_node_dirty(target.uid)
+    b.keep(tree.compute_incremental())
+  })
+}

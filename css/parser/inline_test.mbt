@@ -234,3 +234,62 @@ test "flex: 1 auto 1 (basis in middle - invalid)" {
   inspect(style.flex_shrink, content="1")
   inspect(style.flex_basis, content="Auto")
 }
+
+///|
+test "contain: none" {
+  let style = parse_inline_style("contain: none")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.layout, content="false")
+  inspect(style.contain.paint, content="false")
+  inspect(style.contain.style, content="false")
+}
+
+///|
+test "contain: strict" {
+  let style = parse_inline_style("contain: strict")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain: content" {
+  let style = parse_inline_style("contain: content")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain: layout" {
+  let style = parse_inline_style("contain: layout")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="false")
+}
+
+///|
+test "contain: layout paint" {
+  let style = parse_inline_style("contain: layout paint")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.size, content="false")
+}
+
+///|
+test "contain: size layout paint style" {
+  let style = parse_inline_style("contain: size layout paint style")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain: inline-size" {
+  let style = parse_inline_style("contain: inline-size")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.size, content="false")
+}

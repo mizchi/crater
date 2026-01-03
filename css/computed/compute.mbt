@@ -114,6 +114,8 @@ priv struct StyleBuilder {
   mut visibility : @style.Visibility
   mut z_index : @style.ZIndex
   mut opacity : Double
+  // Containment
+  contain : @style.Contain
 }
 
 ///|
@@ -173,6 +175,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     visibility: @style.Visibility::Visible,
     z_index: @style.ZIndex::Auto,
     opacity: 1.0,
+    contain: @style.Contain::none(),
   }
 }
 
@@ -245,6 +248,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     visibility: self.visibility,
     z_index: self.z_index,
     opacity: self.opacity,
+    contain: self.contain,
   }
 }
 

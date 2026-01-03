@@ -113,6 +113,39 @@ pub(all) enum ZIndex {
 } derive(Show, Eq)
 
 ///|
+/// CSS contain property - uses flags since multiple values can be combined
+/// e.g., "contain: layout paint" or "contain: strict"
+pub(all) struct Contain {
+  size : Bool // Size containment - element size computed independently
+  inline_size : Bool // Inline-size containment only (mutually exclusive with size)
+  layout : Bool // Layout containment - isolates internal layout
+  paint : Bool // Paint containment - clips overflow, creates stacking context
+  style : Bool // Style containment - scopes counters/quotes
+} derive(Show, Eq)
+
+///|
+pub fn Contain::none() -> Contain {
+  { size: false, inline_size: false, layout: false, paint: false, style: false }
+}
+
+///|
+/// strict = size + layout + paint + style
+pub fn Contain::strict() -> Contain {
+  { size: true, inline_size: false, layout: true, paint: true, style: true }
+}
+
+///|
+/// content = layout + paint + style (no size)
+pub fn Contain::content() -> Contain {
+  { size: false, inline_size: false, layout: true, paint: true, style: true }
+}
+
+///|
+pub fn Contain::has_containment(self : Contain) -> Bool {
+  self.size || self.inline_size || self.layout || self.paint || self.style
+}
+
+///|
 /// Grid auto-flow direction
 pub(all) enum GridAutoFlow {
   Row // Fill rows first (default)
@@ -264,6 +297,8 @@ pub(all) struct Style {
   mut visibility : Visibility
   mut z_index : ZIndex
   mut opacity : Double // 0.0 = transparent, 1.0 = opaque
+  // Containment (for layout optimization)
+  mut contain : Contain
 }
 
 ///|
@@ -335,5 +370,6 @@ pub fn Style::default() -> Style {
     visibility: Visible,
     z_index: Auto,
     opacity: 1.0,
+    contain: Contain::none(),
   }
 }

@@ -72,6 +72,8 @@ pub fn LayoutTree::get_parent(self : LayoutTree, uid : Int) -> LayoutNode? {
 
 ///|
 /// Propagate children_dirty flag up to root
+/// CSS Containment: contain: layout stops propagation since internal layout
+/// changes don't affect ancestors
 fn LayoutTree::propagate_children_dirty(
   self : LayoutTree,
   from_uid : Int,
@@ -83,7 +85,14 @@ fn LayoutTree::propagate_children_dirty(
       Some(parent_uid) =>
         match self.node_map.get(parent_uid) {
           Some(parent) =>
-            if parent.children_dirty {
+            // CSS Containment optimization: contain: layout isolates internal layout
+            // When a node has layout containment, its internal changes don't affect
+            // the layout of its ancestors, so we can stop dirty propagation here
+            if parent.style.contain.layout {
+              // Still mark this parent as children_dirty, but don't propagate further
+              parent.mark_children_dirty()
+              done = true
+            } else if parent.children_dirty {
               done = true
             } else {
               parent.mark_children_dirty()

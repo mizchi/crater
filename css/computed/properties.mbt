@@ -17,6 +17,8 @@ pub fn is_inherited(property : String) -> Bool {
     | "font-style"
     | "color"
     | "visibility" => true
+    // Containment is not inherited
+    "contain" => false
     // All layout properties are not inherited
     _ => false
   }
@@ -81,6 +83,8 @@ pub fn initial_value(property : String) -> String {
     // Text (inherited)
     "direction" => "ltr"
     "writing-mode" => "horizontal-tb"
+    // Containment
+    "contain" => "none"
     // Default
     _ => "auto"
   }

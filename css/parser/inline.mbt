@@ -979,6 +979,42 @@ fn skip_whitespace(tokens : ArrayView[@token.Token]) -> ArrayView[@token.Token] 
 }
 
 ///|
+/// Parse CSS contain property
+/// Supports: none, strict, content, size, inline-size, layout, paint, style
+/// Multiple keywords can be combined (e.g., "layout paint")
+fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
+  let mut result = @style.Contain::none()
+  let mut remaining = skip_whitespace(tokens)
+  while remaining.length() > 0 {
+    match remaining[0] {
+      @token.Token::Ident(s) => {
+        if s == "none" {
+          return @style.Contain::none()
+        } else if s == "strict" {
+          return @style.Contain::strict()
+        } else if s == "content" {
+          return @style.Contain::content()
+        } else if s == "size" {
+          result = { ..result, size: true }
+        } else if s == "inline-size" {
+          result = { ..result, inline_size: true }
+        } else if s == "layout" {
+          result = { ..result, layout: true }
+        } else if s == "paint" {
+          result = { ..result, paint: true }
+        } else if s == "style" {
+          result = { ..result, style: true }
+        }
+        remaining = skip_whitespace(remaining[1:])
+      }
+      @token.Token::Whitespace => remaining = skip_whitespace(remaining[1:])
+      _ => break
+    }
+  }
+  result
+}
+
+///|
 /// Extract property name and value tokens from a declaration
 fn parse_declaration(
   tokens : ArrayView[@token.Token],
@@ -1501,6 +1537,11 @@ fn apply_property(
   if property == "grid-template-rows" {
     let tracks = parse_grid_template_tracks(value_tokens)
     return { ..style, grid_template_rows: tracks }
+  }
+  // contain
+  if property == "contain" {
+    let contain = parse_contain(value_tokens)
+    return { ..style, contain, }
   }
   // Unknown property - ignore
   style
