@@ -613,7 +613,11 @@ fn compute_grid_layout_internal(
     @types.Length(v) => max(v, min_height)
     @types.Percent(p) => max(p * available_height, min_height)
     @types.Auto => min_height
-    @types.MinContent | @types.MaxContent | @types.FitContent(_) => min_height
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+      // For intrinsic min-height, use track heights + padding + border
+      let total_track_height = calculate_total_track_size(row_tracks, row_gap)
+      total_track_height + padding_top + padding_bottom + border_top + border_bottom
+    }
   }
   let resolved_max_height = match style.max_height {
     @types.Length(v) => v
@@ -758,10 +762,20 @@ fn compute_grid_layout_internal(
       }
     }
     // Enforce minimum size from padding + border
-  } else if preliminary_height > min_height {
-    preliminary_height
   } else {
-    min_height
+    // Height is explicitly set - apply min/max constraints
+    let clamped = if preliminary_height > resolved_max_height {
+      resolved_max_height
+    } else {
+      preliminary_height
+    }
+    if clamped < resolved_min_height {
+      resolved_min_height
+    } else if clamped < min_height {
+      min_height
+    } else {
+      clamped
+    }
   }
 
   // Second pass: resolve percent tracks now that container size is known
