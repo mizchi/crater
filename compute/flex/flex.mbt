@@ -2616,23 +2616,39 @@ fn compute_internal(
       // Apply position: relative inset offsets
       let child_style = child.style
       let (child_x, child_y) = if child_style.position == @style.Relative {
-        let inset_left = match child_style.inset.left {
+        // X offset: left takes precedence, otherwise use negative right
+        let x_offset = match child_style.inset.left {
           @types.Length(v) => v
           @types.Percent(p) => content_width * p
-          @types.Auto => 0.0
+          @types.Auto =>
+            match child_style.inset.right {
+              @types.Length(r) => -r
+              @types.Percent(p) => -(content_width * p)
+              _ => 0.0
+            }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
         }
-        let inset_top = match child_style.inset.top {
+        // Y offset: top takes precedence, otherwise use negative bottom
+        let y_offset = match child_style.inset.top {
           @types.Length(v) => v
           @types.Percent(p) =>
             match content_height {
               Some(ch) => ch * p
               None => 0.0
             }
-          @types.Auto => 0.0
+          @types.Auto =>
+            match child_style.inset.bottom {
+              @types.Length(b) => -b
+              @types.Percent(p) =>
+                match content_height {
+                  Some(ch) => -(ch * p)
+                  None => 0.0
+                }
+              _ => 0.0
+            }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
         }
-        (base_x + inset_left, base_y + inset_top)
+        (base_x + x_offset, base_y + y_offset)
       } else {
         (base_x, base_y)
       }

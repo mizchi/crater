@@ -3588,11 +3588,32 @@ fn apply_alignment(
   let _ = final_margin_bottom
 
   // Apply inset for relative positioning
-  let inset_left = resolve_dimension(child_style.inset.left, cell_width, 0.0)
-  let inset_top = resolve_dimension(child_style.inset.top, cell_height, 0.0)
+  // left takes precedence over right, top takes precedence over bottom
+  let inset_x = match child_style.inset.left {
+    @types.Length(v) => v
+    @types.Percent(p) => cell_width * p
+    @types.Auto =>
+      match child_style.inset.right {
+        @types.Length(r) => -r
+        @types.Percent(p) => -(cell_width * p)
+        _ => 0.0
+      }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+  }
+  let inset_y = match child_style.inset.top {
+    @types.Length(v) => v
+    @types.Percent(p) => cell_height * p
+    @types.Auto =>
+      match child_style.inset.bottom {
+        @types.Length(b) => -b
+        @types.Percent(p) => -(cell_height * p)
+        _ => 0.0
+      }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+  }
   (
-    cell_x + final_margin_left + x_offset + inset_left,
-    cell_y + final_margin_top + y_offset + inset_top,
+    cell_x + final_margin_left + x_offset + inset_x,
+    cell_y + final_margin_top + y_offset + inset_y,
     item_width,
     item_height,
   )
