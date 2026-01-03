@@ -163,6 +163,224 @@ pub fn BoxStyle::with_title(title : String) -> BoxStyle {
   { border: true, bg_color: None, fg_color: None, title: Some(title) }
 }
 
+///|
+pub fn BoxStyle::no_border() -> BoxStyle {
+  { border: false, bg_color: None, fg_color: None, title: None }
+}
+
+// =============================================================================
+// Declarative TUI Components
+// =============================================================================
+
+///|
+/// Declarative TUI element for building UI trees
+pub(all) struct TuiBox {
+  id : String
+  title : String?
+  border : Bool
+  content : String?
+  width : Double?
+  height : Double?
+  width_percent : Double?
+  height_percent : Double?
+  flex_grow : Double?
+  children : Array[TuiBox]
+  direction : TuiDirection
+}
+
+///|
+pub(all) enum TuiDirection {
+  None
+  Column
+  Row
+}
+
+///|
+/// Create a box element
+pub fn box_(
+  id~ : String,
+  title? : String? = None,
+  border? : Bool = true,
+  content? : String? = None,
+  width? : Double? = None,
+  height? : Double? = None,
+  width_percent? : Double? = None,
+  height_percent? : Double? = None,
+  flex_grow? : Double? = None,
+  children? : Array[TuiBox] = [],
+) -> TuiBox {
+  {
+    id,
+    title,
+    border,
+    content,
+    width,
+    height,
+    width_percent,
+    height_percent,
+    flex_grow,
+    children,
+    direction: None,
+  }
+}
+
+///|
+/// Create a vertical stack (column direction)
+pub fn vstack(
+  id~ : String,
+  children~ : Array[TuiBox],
+  flex_grow? : Double? = None,
+  gap? : Double? = None,
+) -> TuiBox {
+  let _ = gap // TODO: implement gap
+  {
+    id,
+    title: None,
+    border: false,
+    content: None,
+    width: None,
+    height: None,
+    width_percent: Some(1.0),
+    height_percent: None,
+    flex_grow,
+    children,
+    direction: Column,
+  }
+}
+
+///|
+/// Create a horizontal stack (row direction)
+pub fn hstack(
+  id~ : String,
+  children~ : Array[TuiBox],
+  flex_grow? : Double? = None,
+  gap? : Double? = None,
+) -> TuiBox {
+  let _ = gap // TODO: implement gap
+  {
+    id,
+    title: None,
+    border: false,
+    content: None,
+    width: None,
+    height: None,
+    width_percent: Some(1.0),
+    height_percent: None,
+    flex_grow,
+    children,
+    direction: Row,
+  }
+}
+
+///|
+/// Create a text element (leaf node with content)
+pub fn text(id~ : String, content~ : String) -> TuiBox {
+  {
+    id,
+    title: None,
+    border: false,
+    content: Some(content),
+    width: None,
+    height: None,
+    width_percent: None,
+    height_percent: None,
+    flex_grow: None,
+    children: [],
+    direction: None,
+  }
+}
+
+///|
+/// Convert TuiBox to LayoutNode
+fn TuiBox::to_layout_node(self : TuiBox) -> @tree.LayoutNode {
+  let node = @tree.LayoutNode::create_with_id(self.id)
+
+  // Apply sizing
+  match self.width {
+    Some(w) => {
+      let _ = node.set_width(w)
+
+    }
+    None => ()
+  }
+  match self.height {
+    Some(h) => {
+      let _ = node.set_height(h)
+
+    }
+    None => ()
+  }
+  match self.width_percent {
+    Some(p) => {
+      let _ = node.set_width_percent(p)
+
+    }
+    None => ()
+  }
+  match self.height_percent {
+    Some(p) => {
+      let _ = node.set_height_percent(p)
+
+    }
+    None => ()
+  }
+  match self.flex_grow {
+    Some(g) => {
+      let _ = node.set_flex_grow(g)
+
+    }
+    None => ()
+  }
+
+  // Apply direction
+  match self.direction {
+    Column => {
+      let _ = node.set_display(@style.Flex).set_flex_direction(@style.Column)
+
+    }
+    Row => {
+      let _ = node.set_display(@style.Flex).set_flex_direction(@style.Row)
+
+    }
+    None => ()
+  }
+
+  // Add children recursively
+  for child in self.children {
+    let _ = node.add_child(child.to_layout_node())
+
+  }
+  node
+}
+
+///|
+/// Collect box styles from TuiBox tree
+fn TuiBox::collect_styles(
+  self : TuiBox,
+  styles : Map[String, BoxStyle],
+  contents : Map[String, String],
+) -> Unit {
+  // Set style
+  let style : BoxStyle = {
+    border: self.border,
+    bg_color: None,
+    fg_color: None,
+    title: self.title,
+  }
+  styles[self.id] = style
+
+  // Set content
+  match self.content {
+    Some(c) => contents[self.id] = c
+    None => ()
+  }
+
+  // Recurse
+  for child in self.children {
+    child.collect_styles(styles, contents)
+  }
+}
+
 // =============================================================================
 // TUI Renderer
 // =============================================================================
@@ -183,6 +401,45 @@ pub fn TuiApp::new(
 ) -> TuiApp {
   let tree = @tree.LayoutTree::new(root, width, height)
   { tree, root, box_styles: {}, contents: {} }
+}
+
+///|
+/// Create TuiApp from declarative TuiBox element
+pub fn TuiApp::from_element(
+  element : TuiBox,
+  width : Double,
+  height : Double,
+) -> TuiApp {
+  // Convert to layout node with root sizing
+  let root = element.to_layout_node()
+  let _ = root.set_width(width).set_height(height)
+
+  // Set display/direction for root if it has children
+  if element.children.length() > 0 {
+    match element.direction {
+      Column => {
+        let _ = root.set_display(@style.Flex).set_flex_direction(@style.Column)
+
+      }
+      Row => {
+        let _ = root.set_display(@style.Flex).set_flex_direction(@style.Row)
+
+      }
+      None => {
+        let _ = root.set_display(@style.Flex).set_flex_direction(@style.Column)
+
+      }
+    }
+  }
+
+  // Create tree
+  let tree = @tree.LayoutTree::new(root, width, height)
+
+  // Collect styles and contents
+  let box_styles : Map[String, BoxStyle] = {}
+  let contents : Map[String, String] = {}
+  element.collect_styles(box_styles, contents)
+  { tree, root, box_styles, contents }
 }
 
 ///|
@@ -422,38 +679,40 @@ test "tui_layout/resize" {
 fn main {
   @dispatch.setup()
 
-  // Create layout
-  let root = create_tui_layout(80.0, 24.0)
-  let app = TuiApp::new(root, 80.0, 24.0)
+  // Declarative TUI layout - ink-like API
+  let layout = vstack(id="root", children=[
+    box_(
+      id="header",
+      title=Some("Header"),
+      height=Some(3.0),
+      width_percent=Some(1.0),
+      content=Some("Welcome to Crater TUI!"),
+    ),
+    hstack(id="body", flex_grow=Some(1.0), children=[
+      box_(
+        id="sidebar",
+        title=Some("Menu"),
+        width=Some(20.0),
+        content=Some("1. Home"),
+      ),
+      box_(
+        id="main",
+        title=Some("Content"),
+        flex_grow=Some(1.0),
+        content=Some("Main content area"),
+      ),
+    ]),
+    box_(
+      id="footer",
+      border=false,
+      height=Some(1.0),
+      width_percent=Some(1.0),
+      content=Some(" Press 'q' to quit | Arrow keys to navigate"),
+    ),
+  ])
 
-  // Set box styles with titles
-  app.set_box_style("header", BoxStyle::with_title("Header"))
-  app.set_box_style("sidebar", BoxStyle::with_title("Menu"))
-  app.set_box_style("main", BoxStyle::with_title("Content"))
-  app.set_box_style("footer", {
-    border: false,
-    bg_color: None,
-    fg_color: None,
-    title: None,
-  })
-  app.set_box_style("body", {
-    border: false,
-    bg_color: None,
-    fg_color: None,
-    title: None,
-  })
-  app.set_box_style("root", {
-    border: false,
-    bg_color: None,
-    fg_color: None,
-    title: None,
-  })
-
-  // Set content
-  app.set_content("header", "Welcome to Crater TUI!")
-  app.set_content("sidebar", "1. Home")
-  app.set_content("main", "Main content area")
-  app.set_content("footer", " Press 'q' to quit | Arrow keys to navigate")
+  // Create app from declarative spec
+  let app = TuiApp::from_element(layout, 80.0, 24.0)
 
   // Calculate layout and render
   app.calculate()
