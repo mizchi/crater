@@ -706,10 +706,8 @@ fn apply_property(
     // Grid item placement
     "grid-column-start" =>
       builder.grid_column_start = parse_grid_placement(value)
-    "grid-column-end" =>
-      builder.grid_column_end = parse_grid_placement(value)
-    "grid-row-start" =>
-      builder.grid_row_start = parse_grid_placement(value)
+    "grid-column-end" => builder.grid_column_end = parse_grid_placement(value)
+    "grid-row-start" => builder.grid_row_start = parse_grid_placement(value)
     "grid-row-end" => builder.grid_row_end = parse_grid_placement(value)
     "grid-column" => {
       let (start, end) = parse_grid_line_shorthand(value)

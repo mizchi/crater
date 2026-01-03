@@ -244,7 +244,8 @@ pub fn compute_layout(
   }
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
-    @style.Block | @style.Inline | @style.InlineBlock => @block.compute(node, ctx)
+    @style.Block | @style.Inline | @style.InlineBlock =>
+      @block.compute(node, ctx)
     @style.Grid =>
       compute_grid_layout_internal(
         node,
@@ -616,7 +617,11 @@ fn compute_grid_layout_internal(
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
       // For intrinsic min-height, use track heights + padding + border
       let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-      total_track_height + padding_top + padding_bottom + border_top + border_bottom
+      total_track_height +
+      padding_top +
+      padding_bottom +
+      border_top +
+      border_bottom
     }
   }
   let resolved_max_height = match style.max_height {
@@ -626,7 +631,11 @@ fn compute_grid_layout_internal(
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
       // For intrinsic max-height, use track heights + padding + border
       let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-      total_track_height + padding_top + padding_bottom + border_top + border_bottom
+      total_track_height +
+      padding_top +
+      padding_bottom +
+      border_top +
+      border_bottom
     }
   }
   let container_width = if width_is_auto {

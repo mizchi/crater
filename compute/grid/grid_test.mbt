@@ -1389,9 +1389,7 @@ test "grid_min_content_spanning_fr" {
   let filler = @node.Node::leaf("filler", filler_style)
   let item = @node.Node::new("item", item_style, [filler])
   let root = @node.Node::new("root", root_style, [item])
-
   let layout = compute_grid_layout(root, 800.0, 600.0)
-
   println("root width: \{layout.width}")
   println("item width: \{layout.children[0].width}")
   println("filler width: \{layout.children[0].children[0].width}")
@@ -1416,15 +1414,15 @@ test "grid_fr_sum_less_than_one" {
     height: @types.Length(300.0),
     grid_template_columns: [@style.Fr(0.25), @style.Fr(0.25)],
     grid_template_rows: [@style.Fr(0.2), @style.Fr(0.3)],
-    align_content: @style.Start, // Prevent stretch distribution
-    justify_content: @style.Start, // Prevent stretch distribution
-  }
+    align_content: @style.Start,
+    justify_content: @style.Start,
+  } // Prevent stretch distribution
+  // Prevent stretch distribution
   let item1 = @node.Node::leaf("item1", default_style)
   let item2 = @node.Node::leaf("item2", default_style)
   let item3 = @node.Node::leaf("item3", default_style)
   let item4 = @node.Node::leaf("item4", default_style)
   let root = @node.Node::new("root", root_style, [item1, item2, item3, item4])
-
   let ctx : @node.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),

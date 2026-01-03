@@ -266,10 +266,13 @@ fn compute_with_collapse(
 
   // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
+  // InlineBlock elements also use shrink-to-fit (max-content) when width is auto
+  let is_inline_block = style.display == @style.InlineBlock
   let use_max_content = match (ctx.sizing_mode, style.width) {
     (@node.MaxContent, @types.Auto) => true
     (_, @types.MaxContent) => true
     (_, @types.MinContent) => true
+    (_, @types.Auto) if is_inline_block => true
     _ => false
   }
   // Check if we can calculate width from height + aspect_ratio
@@ -563,10 +566,14 @@ fn compute_with_collapse(
       available_height: child_available_height,
       sizing_mode: @node.Definite,
     }
-    // Flex and Grid containers establish a new BFC, so use dispatch for them
+    // Flex, Grid, and InlineBlock containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
     let child_result = match child.style.display {
-      @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid => {
+      @style.Flex
+      | @style.InlineFlex
+      | @style.Grid
+      | @style.InlineGrid
+      | @style.InlineBlock => {
         // Use global dispatcher if available, otherwise use block layout
         // (tests without dispatcher setup will use block layout as fallback)
         let layout = match @node.get_layout_dispatcher() {
@@ -929,14 +936,18 @@ fn compute_with_collapse(
     }
     @types.MinContent | @types.MaxContent => {
       // min-height: min-content/max-content uses content height
-      let min_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      let min_h = content_height +
+        padding.vertical_sum() +
+        border.vertical_sum()
       if box_height < min_h {
         box_height = min_h
       }
     }
     @types.FitContent(_) => {
       // fit-content for min-height acts like min-content
-      let min_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      let min_h = content_height +
+        padding.vertical_sum() +
+        border.vertical_sum()
       if box_height < min_h {
         box_height = min_h
       }
@@ -953,14 +964,18 @@ fn compute_with_collapse(
     }
     @types.MinContent | @types.MaxContent => {
       // max-height: min-content/max-content caps at content height
-      let max_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      let max_h = content_height +
+        padding.vertical_sum() +
+        border.vertical_sum()
       if box_height > max_h {
         box_height = max_h
       }
     }
     @types.FitContent(_) => {
       // fit-content for max-height acts like max-content
-      let max_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      let max_h = content_height +
+        padding.vertical_sum() +
+        border.vertical_sum()
       if box_height > max_h {
         box_height = max_h
       }

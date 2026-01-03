@@ -769,7 +769,8 @@ fn element_to_node_with_styles_internal(
     }
     // Get intrinsic dimensions based on input type
     // These are approximate browser defaults
-    let (intrinsic_width, intrinsic_height) : (Double, Double) = match input_type {
+    let (intrinsic_width, intrinsic_height) : (Double, Double) = match
+      input_type {
       "radio" | "checkbox" => (13.0, 13.0)
       "button" | "submit" | "reset" => (80.0, 21.0)
       "range" => (129.0, 21.0)

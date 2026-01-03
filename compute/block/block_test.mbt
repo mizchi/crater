@@ -436,11 +436,13 @@ test "block_percentage_margin_vertical" {
 }
 
 ///|
-test "block_warns_on_float" {
+test "block_float_supported" {
+  // Float is now supported - no warnings should be emitted
   let default_style = @style.Style::default()
   let float_child_style = {
     ..default_style,
     float: @style.Left,
+    width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
   let float_child = @node.Node::leaf("float-child", float_child_style)
@@ -453,12 +455,12 @@ test "block_warns_on_float" {
   }
   let result = compute_with_warnings(root, ctx)
 
-  // Layout still computed (treated as block)
-  inspect(result.layout.children[0].width, content="0")
+  // Float is laid out correctly
+  inspect(result.layout.children[0].width, content="50")
+  inspect(result.layout.children[0].height, content="30")
 
-  // Warning emitted for float
+  // No warnings for supported float
   inspect(result.warnings.length(), content="0")
-  inspect(result.warnings[0], content="UnsupportedFloat(\"float-child\")")
 }
 
 ///|
@@ -937,4 +939,48 @@ test "block_deeply_nested" {
   // level2 content = 70 - 6 = 64
   // level3 content = 64 - 4 = 60
   inspect(leaf_layout.width, content="60")
+}
+
+///|
+test "inline_block_shrink_to_fit" {
+  // Test that inline-block elements use shrink-to-fit width
+  let default_style = @style.Style::default()
+
+  // Create a leaf with intrinsic size via MeasureFunc
+  let leaf_style = {
+    ..default_style,
+    height: @types.Length(20.0),
+    width: @types.Length(50.0),
+  }
+  let leaf = @node.Node::leaf("leaf", leaf_style)
+
+  // Create inline-block container with auto width
+  let inline_block_style = {
+    ..default_style,
+    display: @style.InlineBlock,
+    padding: {
+      left: @types.Length(10.0),
+      right: @types.Length(10.0),
+      top: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+    },
+  }
+  let inline_block = @node.Node::new("inline-block", inline_block_style, [leaf])
+
+  // Create parent block container
+  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root = @node.Node::new("root", root_style, [inline_block])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+  }
+  let layout = compute(root, ctx)
+
+  // The inline-block should shrink to fit its content
+  // Width should be: child width (50) + padding (10+10) = 70
+  // NOT the parent width of 400
+  let inline_block_layout = layout.children[0]
+  inspect(inline_block_layout.width, content="70")
+  inspect(inline_block_layout.height, content="30") // 20 + 5 + 5
 }

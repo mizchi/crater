@@ -873,15 +873,16 @@ fn compute_internal(
             @node.Definite =>
               if is_block_level {
                 parent_width - margin.horizontal_sum()
-              } else {
                 // InlineFlex: use content-based sizing
-                if node.children.length() > 0 {
-                  compute_intrinsic_main_size(
-                    node, true, ctx.available_height, cache,
-                  )
-                } else {
-                  padding.horizontal_sum() + border.horizontal_sum()
-                }
+              } else if node.children.length() > 0 {
+                compute_intrinsic_main_size(
+                  node,
+                  true,
+                  ctx.available_height,
+                  cache,
+                )
+              } else {
+                padding.horizontal_sum() + border.horizontal_sum()
               }
             @node.MaxContent =>
               // For MaxContent, compute intrinsic width

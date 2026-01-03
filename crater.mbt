@@ -39,7 +39,8 @@ fn dispatch_compute(
 ) -> @node.Layout {
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
-    @style.Block | @style.Inline | @style.InlineBlock => @block.compute(node, ctx)
+    @style.Block | @style.Inline | @style.InlineBlock =>
+      @block.compute(node, ctx)
     @style.Grid | @style.InlineGrid =>
       @grid.compute_grid_layout(
         node,
