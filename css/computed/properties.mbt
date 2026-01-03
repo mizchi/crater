@@ -220,6 +220,8 @@ fn split_whitespace(s : String) -> Array[String] {
 pub fn parse_display(value : String) -> @style.Display {
   match value.trim().to_lower() {
     "block" => @style.Display::Block
+    "inline" => @style.Display::Inline
+    "inline-block" => @style.Display::InlineBlock
     "flex" => @style.Display::Flex
     "inline-flex" => @style.Display::InlineFlex
     "grid" => @style.Display::Grid

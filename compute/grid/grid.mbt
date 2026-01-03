@@ -244,7 +244,7 @@ pub fn compute_layout(
   }
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
-    @style.Block => @block.compute(node, ctx)
+    @style.Block | @style.Inline | @style.InlineBlock => @block.compute(node, ctx)
     @style.Grid =>
       compute_grid_layout_internal(
         node,

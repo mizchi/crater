@@ -39,7 +39,7 @@ fn dispatch_compute(
 ) -> @node.Layout {
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
-    @style.Block => @block.compute(node, ctx)
+    @style.Block | @style.Inline | @style.InlineBlock => @block.compute(node, ctx)
     @style.Grid | @style.InlineGrid =>
       @grid.compute_grid_layout(
         node,
@@ -71,7 +71,8 @@ fn dispatch_compute_with_warnings(
 ) -> @node.LayoutResult {
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute_with_warnings(node, ctx)
-    @style.Block => @block.compute_with_warnings(node, ctx)
+    @style.Block | @style.Inline | @style.InlineBlock =>
+      @block.compute_with_warnings(node, ctx)
     @style.Grid | @style.InlineGrid => {
       let layout = @grid.compute_grid_layout(
         node,

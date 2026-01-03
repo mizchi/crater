@@ -294,6 +294,8 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "display" =>
       match style.display {
         @style.Display::Block => "block"
+        @style.Display::Inline => "inline"
+        @style.Display::InlineBlock => "inline-block"
         @style.Display::Flex => "flex"
         @style.Display::InlineFlex => "inline-flex"
         @style.Display::Grid => "grid"

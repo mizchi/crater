@@ -2,6 +2,8 @@
 /// CSS display property
 pub(all) enum Display {
   Block
+  Inline
+  InlineBlock
   Flex
   InlineFlex
   Grid
