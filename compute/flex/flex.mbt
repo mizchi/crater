@@ -2266,14 +2266,19 @@ fn compute_internal(
     Some(cs) => cs
     None => total_lines_cross
   }
-  // Determine if we should use reversed layout
-  // For wrap-reverse, lines are ALWAYS laid out in reverse visual order
-  // (array line 0 appears at cross-end, array line n-1 appears at cross-start)
-  // The difference between physical (Start/End) and flex-relative (FlexStart/FlexEnd) alignment
-  // is only in where the lines are packed, not in the line ordering
-  let uses_reversed_layout = is_wrap_reverse
-  let mut cross_pos = if uses_reversed_layout {
-    // Start from cross-end
+  // Determine if we should use reversed layout for line positioning
+  // In wrap-reverse:
+  // - For flex-relative alignment (FlexStart/FlexEnd/Stretch): position from physical end, move backward
+  // - For physical alignment (Start/End): position from physical start, but reverse line ORDER
+  // This means lines are always in reverse visual order, but the starting position differs
+  let is_flex_relative_align = match style.align_content {
+    @style.FlexStart | @style.FlexEnd | @style.Stretch | @style.Center |
+    @style.SpaceBetween | @style.SpaceAround | @style.SpaceEvenly => true
+    @style.Start | @style.End | @style.Baseline => false
+  }
+  let uses_reversed_position = is_wrap_reverse && is_flex_relative_align
+  let mut cross_pos = if uses_reversed_position {
+    // Start from cross-end for flex-relative alignment in wrap-reverse
     cross_size_resolved - line_start_offset
   } else {
     line_start_offset
@@ -2281,13 +2286,22 @@ fn compute_internal(
   // For single-line with definite cross size, we may need container cross size for alignment
   // when children are larger than parent (to allow negative alignment offsets)
   let is_single_line = flex_lines.length() == 1
-  for line_idx = 0; line_idx < flex_lines.length(); line_idx = line_idx + 1 {
+  // For wrap-reverse with physical alignment (Start/End), iterate lines in reverse order
+  // For wrap-reverse with flex-relative alignment, iterate normally but position from end
+  let reverse_line_order = is_wrap_reverse && not(is_flex_relative_align)
+  let line_count_int = flex_lines.length()
+  for iter_idx = 0; iter_idx < line_count_int; iter_idx = iter_idx + 1 {
+    let line_idx = if reverse_line_order {
+      line_count_int - 1 - iter_idx
+    } else {
+      iter_idx
+    }
     let line = flex_lines[line_idx]
     let line_items = line.items
     let line_cross_size = line.cross_size
 
     // For wrap-reverse with flex-relative alignment, adjust cross_pos to position from end of line
-    let line_cross_pos = if uses_reversed_layout {
+    let line_cross_pos = if uses_reversed_position {
       cross_pos - line_cross_size
     } else {
       cross_pos
@@ -2569,9 +2583,10 @@ fn compute_internal(
         }
       }
 
-      // For wrap-reverse with flex-relative alignment, reverse the alignment within the line
+      // For wrap-reverse, reverse the alignment within the line
       // Items that were at cross-start should now be at cross-end
-      let cross_align_offset = if uses_reversed_layout {
+      // This applies to ALL wrap-reverse containers regardless of align-content type
+      let cross_align_offset = if is_wrap_reverse {
         let total_cross_used = item_cross + item.margin_cross
         line_cross_size - total_cross_used - base_cross_align_offset
       } else {
@@ -2724,8 +2739,9 @@ fn compute_internal(
     }
 
     // Advance to next line
-    // For wrap-reverse with flex-relative alignment, we move backwards (toward cross-start)
-    cross_pos = if uses_reversed_layout {
+    // For wrap-reverse with flex-relative alignment, we move backwards (toward physical start)
+    // For wrap-reverse with physical alignment, we move forwards (we iterate lines in reverse)
+    cross_pos = if uses_reversed_position {
       cross_pos - line_cross_size - total_line_gap
     } else {
       cross_pos + line_cross_size + total_line_gap

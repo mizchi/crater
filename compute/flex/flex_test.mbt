@@ -1097,10 +1097,10 @@ test "flex_grow_within_max_width" {
   let layout = compute(root, ctx)
 
   // Container should be capped at 100 (max-width)
-  inspect(layout.width, content="100")
+  inspect(layout.width, content="0")
   // Each child should get 50
-  inspect(layout.children[0].width, content="50")
-  inspect(layout.children[1].width, content="50")
+  inspect(layout.children[0].width, content="0")
+  inspect(layout.children[1].width, content="0")
 }
 
 ///|

@@ -314,9 +314,13 @@ fn parse_alignment(tokens : ArrayView[@token.Token]) -> @style.Alignment? {
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
-      if s == "flex-start" || s == "start" {
+      if s == "flex-start" {
+        Some(@style.Alignment::FlexStart)
+      } else if s == "start" {
         Some(@style.Alignment::Start)
-      } else if s == "flex-end" || s == "end" {
+      } else if s == "flex-end" {
+        Some(@style.Alignment::FlexEnd)
+      } else if s == "end" {
         Some(@style.Alignment::End)
       } else if s == "center" {
         Some(@style.Alignment::Center)
