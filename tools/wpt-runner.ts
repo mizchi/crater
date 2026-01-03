@@ -330,6 +330,30 @@ function filterTextNodes(node: LayoutNode): LayoutNode {
 }
 
 /**
+ * Normalize crater layout to use content-box relative positions for children
+ * Crater outputs positions relative to border-box, but browser uses content-box
+ */
+function normalizeCraterPositions(node: LayoutNode): LayoutNode {
+  // Calculate content-box offset (padding + border)
+  const contentOffsetX = node.padding.left + node.border.left;
+  const contentOffsetY = node.padding.top + node.border.top;
+
+  return {
+    ...node,
+    children: node.children.map(child => {
+      // Adjust child position to be relative to parent's content-box
+      const adjustedChild = {
+        ...child,
+        x: child.x - contentOffsetX,
+        y: child.y - contentOffsetY,
+      };
+      // Recursively normalize child's children
+      return normalizeCraterPositions(adjustedChild);
+    }),
+  };
+}
+
+/**
  * Compare two layout trees
  */
 function compareLayouts(
@@ -430,8 +454,11 @@ async function runTest(
     const browserLayout = await getBrowserLayout(browser, htmlPath);
     const craterLayout = getCraterLayout(htmlPath);
 
+    // Normalize crater positions to content-box relative (browser already uses content-box)
+    const normalizedCraterLayout = normalizeCraterPositions(craterLayout);
+
     // Compare (ignore text nodes and box model for now)
-    const mismatches = compareLayouts(browserLayout, craterLayout, 'root', {
+    const mismatches = compareLayouts(browserLayout, normalizedCraterLayout, 'root', {
       ignoreTextNodes: true,
       ignoreBoxModel: true, // TODO: Fix Crater to populate padding/border in Layout
     });
