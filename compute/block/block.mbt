@@ -557,7 +557,84 @@ fn compute_with_collapse(
     padding.horizontal_sum() -
     border.horizontal_sum()
 
-  // Now compute children's actual layout with the resolved width
+  // Check if we should use Inline Formatting Context (IFC)
+  // IFC is used when all flow children are inline-level elements
+  // Only use IFC when the layout dispatcher is set (needed for proper InlineBlock layout)
+  let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
+    @node.get_layout_dispatcher().is_some()
+  if use_ifc {
+    // Use IFC for inline layout
+    let ifc_result = @inline.compute_ifc(
+      flow_nodes,
+      actual_child_available_width,
+      child_available_height,
+      padding.left + border.left,
+      padding.top + border.top,
+    )
+
+    // Store IFC layouts with original indices
+    for i = 0; i < flow_indices.length(); i = i + 1 {
+      if i < ifc_result.layouts.length() {
+        layout_map[flow_indices[i]] = ifc_result.layouts[i]
+      }
+    }
+
+    // Calculate box height from IFC content
+    let content_height = ifc_result.total_height
+    let mut box_height = match style.height {
+      @types.Length(h) => h
+      @types.Percent(p) => parent_height * p
+      @types.Auto =>
+        content_height + padding.vertical_sum() + border.vertical_sum()
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        content_height + padding.vertical_sum() + border.vertical_sum()
+    }
+
+    // Apply min/max height constraints
+    match style.min_height {
+      @types.Length(min_h) => if box_height < min_h { box_height = min_h }
+      _ => ()
+    }
+    match style.max_height {
+      @types.Length(max_h) => if box_height > max_h { box_height = max_h }
+      _ => ()
+    }
+
+    // Handle absolute children
+    for i = 0; i < node.children.length(); i = i + 1 {
+      let child = node.children[i]
+      if child.style.position == @style.Absolute {
+        let abs_layout = layout_absolute_child(
+          child, box_width, box_height, border, content_height, warnings,
+        )
+        layout_map[i] = abs_layout
+      }
+    }
+
+    // Assemble child_layouts in original order
+    let child_layouts : Array[@node.Layout] = []
+    for i = 0; i < node.children.length(); i = i + 1 {
+      match layout_map.get(i) {
+        Some(layout) => child_layouts.push(layout)
+        None => ()
+      }
+    }
+    let layout : @node.Layout = {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width: box_width,
+      height: box_height,
+      margin,
+      padding,
+      border,
+      children: child_layouts,
+      text: node.text,
+    }
+    return { layout, collapsed: { top: None, bottom: None } }
+  }
+
+  // Now compute children's actual layout with the resolved width (BFC path)
   let flow_children : Array[LayoutWithCollapse] = []
   for i = 0; i < flow_nodes.length(); i = i + 1 {
     let child = flow_nodes[i]
