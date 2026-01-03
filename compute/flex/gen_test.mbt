@@ -44,6 +44,8 @@ test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -84,6 +86,8 @@ test "taffy/absolute_aspect_ratio_fill_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -123,6 +127,8 @@ test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -169,6 +175,8 @@ test "taffy/absolute_aspect_ratio_fill_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -215,6 +223,8 @@ test "taffy/absolute_aspect_ratio_fill_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -249,6 +259,8 @@ test "taffy/absolute_aspect_ratio_fill_min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -283,6 +295,8 @@ test "taffy/absolute_aspect_ratio_fill_min_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -323,6 +337,8 @@ test "taffy/absolute_aspect_ratio_fill_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -362,6 +378,8 @@ test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -402,6 +420,8 @@ test "taffy/absolute_aspect_ratio_height_overrides_inset" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -442,6 +462,8 @@ test "taffy/absolute_aspect_ratio_width_overrides_inset" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -509,6 +531,8 @@ test "taffy/absolute_child_with_cross_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -558,6 +582,8 @@ test "taffy/absolute_child_with_main_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -610,6 +636,8 @@ test "taffy/absolute_child_with_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -667,6 +695,8 @@ test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -748,6 +778,8 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -800,6 +832,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -842,6 +876,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_bottom_po
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -884,6 +920,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_left_posi
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -926,6 +964,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_right_pos
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -968,6 +1008,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_top_posit
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1004,6 +1046,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1039,6 +1083,8 @@ test "taffy/absolute_layout_align_items_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1074,6 +1120,8 @@ test "taffy/absolute_layout_align_items_center_on_child_only" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1124,6 +1172,8 @@ test "taffy/absolute_layout_child_order" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1168,6 +1218,8 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1206,6 +1258,8 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1242,6 +1296,8 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1280,6 +1336,8 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1315,6 +1373,8 @@ test "taffy/absolute_layout_justify_content_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1346,6 +1406,8 @@ test "taffy/absolute_layout_no_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1412,6 +1474,8 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1459,6 +1523,8 @@ test "taffy/absolute_layout_percentage_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1500,6 +1566,8 @@ test "taffy/absolute_layout_row_width_height_end_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1537,6 +1605,8 @@ test "taffy/absolute_layout_start_top_end_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1576,6 +1646,8 @@ test "taffy/absolute_layout_width_height_end_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1615,6 +1687,8 @@ test "taffy/absolute_layout_width_height_start_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1654,6 +1728,8 @@ test "taffy/absolute_layout_width_height_start_top_end_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1759,6 +1835,8 @@ test "taffy/absolute_layout_within_border" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1813,6 +1891,8 @@ test "taffy/absolute_margin_bottom_left" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1854,6 +1934,8 @@ test "taffy/absolute_minmax_bottom_right_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1895,6 +1977,8 @@ test "taffy/absolute_minmax_bottom_right_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1938,6 +2022,8 @@ test "taffy/absolute_minmax_bottom_right_min_max_preferred" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -1977,6 +2063,8 @@ test "taffy/absolute_minmax_top_left_bottom_right_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2018,6 +2106,8 @@ test "taffy/absolute_minmax_top_left_bottom_right_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2059,6 +2149,8 @@ test "taffy/absolute_padding_border_overrides_max_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2100,6 +2192,8 @@ test "taffy/absolute_padding_border_overrides_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2319,6 +2413,8 @@ test "taffy/absolute_resolved_insets" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2412,6 +2508,8 @@ test "taffy/align_baseline" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2470,6 +2568,8 @@ test "taffy/align_baseline_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2544,6 +2644,8 @@ test "taffy/align_baseline_child_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2618,6 +2720,8 @@ test "taffy/align_baseline_child_margin_percent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2698,6 +2802,8 @@ test "taffy/align_baseline_child_multiline" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2796,6 +2902,8 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2896,6 +3004,8 @@ test "taffy/align_baseline_child_multiline_override" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -2982,6 +3092,8 @@ test "taffy/align_baseline_child_padding" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3050,6 +3162,8 @@ test "taffy/align_baseline_child_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3116,6 +3230,8 @@ test "taffy/align_baseline_child_top2" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3166,6 +3282,8 @@ test "taffy/align_baseline_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3232,6 +3350,8 @@ test "taffy/align_baseline_double_nested_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3325,6 +3445,8 @@ test "taffy/align_baseline_multiline" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3426,6 +3548,8 @@ test "taffy/align_baseline_multiline_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3535,6 +3659,8 @@ test "taffy/align_baseline_multiline_column2" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3636,6 +3762,8 @@ test "taffy/align_baseline_multiline_row_and_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3709,6 +3837,8 @@ test "taffy/align_baseline_nested_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3796,6 +3926,8 @@ test "taffy/align_baseline_nested_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3868,6 +4000,8 @@ test "taffy/align_center_should_size_based_on_content" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -3946,6 +4080,8 @@ test "taffy/align_content_center_single_line" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4021,6 +4157,8 @@ test "taffy/align_content_center_single_line_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4082,6 +4220,8 @@ test "taffy/align_content_center_single_line_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4157,6 +4297,8 @@ test "taffy/align_content_center_wrapped" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4251,6 +4393,8 @@ test "taffy/align_content_center_wrapped_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4339,6 +4483,8 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4415,6 +4561,8 @@ test "taffy/align_content_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4486,6 +4634,8 @@ test "taffy/align_content_end_single_line_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4547,6 +4697,8 @@ test "taffy/align_content_end_single_line_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4625,6 +4777,8 @@ test "taffy/align_content_end_wrapped_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4713,6 +4867,8 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4789,6 +4945,8 @@ test "taffy/align_content_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4869,6 +5027,8 @@ test "taffy/align_content_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -4956,6 +5116,8 @@ test "taffy/align_content_flex_start_with_flex" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5033,6 +5195,8 @@ test "taffy/align_content_flex_start_without_height_on_children" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5112,6 +5276,8 @@ test "taffy/align_content_not_stretch_with_align_items_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5194,6 +5360,8 @@ test "taffy/align_content_space_around_single_line" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5269,6 +5437,8 @@ test "taffy/align_content_space_around_single_line_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5330,6 +5500,8 @@ test "taffy/align_content_space_around_single_line_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5405,6 +5577,8 @@ test "taffy/align_content_space_around_wrapped" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5499,6 +5673,8 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5587,6 +5763,8 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5635,6 +5813,8 @@ test "taffy/align_content_space_around_wrapped_single" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5705,6 +5885,8 @@ test "taffy/align_content_space_between_single_line" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5780,6 +5962,8 @@ test "taffy/align_content_space_between_single_line_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5841,6 +6025,8 @@ test "taffy/align_content_space_between_single_line_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -5916,6 +6102,8 @@ test "taffy/align_content_space_between_wrapped" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6010,6 +6198,8 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6098,6 +6288,8 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6146,6 +6338,8 @@ test "taffy/align_content_space_between_wrapped_single" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6216,6 +6410,8 @@ test "taffy/align_content_space_evenly_single_line" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6291,6 +6487,8 @@ test "taffy/align_content_space_evenly_single_line_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6352,6 +6550,8 @@ test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6427,6 +6627,8 @@ test "taffy/align_content_space_evenly_wrapped" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6521,6 +6723,8 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6609,6 +6813,8 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6657,6 +6863,8 @@ test "taffy/align_content_space_evenly_wrapped_single" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6721,6 +6929,8 @@ test "taffy/align_content_spacearound" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6801,6 +7011,8 @@ test "taffy/align_content_spacebetween" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6881,6 +7093,8 @@ test "taffy/align_content_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -6952,6 +7166,8 @@ test "taffy/align_content_start_single_line_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7013,6 +7229,8 @@ test "taffy/align_content_start_single_line_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7091,6 +7309,8 @@ test "taffy/align_content_start_wrapped_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7162,6 +7382,8 @@ test "taffy/align_content_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7253,6 +7475,8 @@ test "taffy/align_content_stretch_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7321,6 +7545,8 @@ test "taffy/align_content_stretch_is_not_overriding_align_items" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7384,6 +7610,8 @@ test "taffy/align_content_stretch_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7472,6 +7700,8 @@ test "taffy/align_content_stretch_row_with_children" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7552,6 +7782,8 @@ test "taffy/align_content_stretch_row_with_fixed_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7633,6 +7865,8 @@ test "taffy/align_content_stretch_row_with_flex" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7715,6 +7949,8 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7802,6 +8038,8 @@ test "taffy/align_content_stretch_row_with_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7878,6 +8116,8 @@ test "taffy/align_content_stretch_row_with_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -7954,6 +8194,8 @@ test "taffy/align_content_stretch_row_with_min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8041,6 +8283,8 @@ test "taffy/align_content_stretch_row_with_padding" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8098,6 +8342,8 @@ test "taffy/align_content_stretch_row_with_single_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8147,6 +8393,8 @@ test "taffy/align_content_stretch_row_wrap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8205,6 +8453,8 @@ test "taffy/align_flex_start_with_shrinking_children" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8268,6 +8518,8 @@ test "taffy/align_flex_start_with_shrinking_children_with_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8330,6 +8582,8 @@ test "taffy/align_flex_start_with_stretching_children" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8372,6 +8626,8 @@ test "taffy/align_items_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8423,6 +8679,8 @@ test "taffy/align_items_center_child_with_margin_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8472,6 +8730,8 @@ test "taffy/align_items_center_child_without_margin_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8544,6 +8804,8 @@ test "taffy/align_items_center_justify_content_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8595,6 +8857,8 @@ test "taffy/align_items_center_min_max_with_padding" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8635,6 +8899,8 @@ test "taffy/align_items_center_with_child_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8675,6 +8941,8 @@ test "taffy/align_items_center_with_child_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8751,6 +9019,8 @@ test "taffy/align_items_center_with_height_with_padding_border_with_wrap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8824,6 +9094,8 @@ test "taffy/align_items_center_with_max_height_percentage_with_align_content_fle
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8874,6 +9146,8 @@ test "taffy/align_items_center_with_max_height_with_align_content_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -8982,6 +9256,8 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9054,6 +9330,8 @@ test "taffy/align_items_center_with_min_height_percentage_with_align_content_fle
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9104,6 +9382,8 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9237,6 +9517,8 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9381,6 +9663,8 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9435,6 +9719,8 @@ test "taffy/align_items_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9486,6 +9772,8 @@ test "taffy/align_items_flex_end_child_with_margin_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9535,6 +9823,8 @@ test "taffy/align_items_flex_end_child_without_margin_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9573,6 +9863,8 @@ test "taffy/align_items_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9609,6 +9901,8 @@ test "taffy/align_items_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9640,6 +9934,8 @@ test "taffy/align_items_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9675,6 +9971,8 @@ test "taffy/align_items_stretch_min_cross" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9728,6 +10026,8 @@ test "taffy/align_self_baseline" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9770,6 +10070,8 @@ test "taffy/align_self_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9813,6 +10115,8 @@ test "taffy/align_self_center_undefined_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9851,6 +10155,8 @@ test "taffy/align_self_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9887,6 +10193,8 @@ test "taffy/align_self_flex_end_override_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9921,6 +10229,8 @@ test "taffy/align_self_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -9975,6 +10285,8 @@ test "taffy/align_stretch_should_size_based_on_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10243,6 +10555,8 @@ test "taffy/android_news_feed" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10470,6 +10784,8 @@ test "taffy/aspect_ratio_flex_column_fill_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10517,6 +10833,8 @@ test "taffy/aspect_ratio_flex_column_fill_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10559,6 +10877,8 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10594,6 +10914,8 @@ test "taffy/aspect_ratio_flex_column_fill_min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10629,6 +10951,8 @@ test "taffy/aspect_ratio_flex_column_fill_min_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10664,6 +10988,8 @@ test "taffy/aspect_ratio_flex_column_fill_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10698,6 +11024,8 @@ test "taffy/aspect_ratio_flex_column_fill_width_flex" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10732,6 +11060,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10778,6 +11108,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10819,6 +11151,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10853,6 +11187,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10887,6 +11223,8 @@ test "taffy/aspect_ratio_flex_row_fill_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10933,6 +11271,8 @@ test "taffy/aspect_ratio_flex_row_fill_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -10974,6 +11314,8 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11008,6 +11350,8 @@ test "taffy/aspect_ratio_flex_row_fill_min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11042,6 +11386,8 @@ test "taffy/aspect_ratio_flex_row_fill_min_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11076,6 +11422,8 @@ test "taffy/aspect_ratio_flex_row_fill_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11110,6 +11458,8 @@ test "taffy/aspect_ratio_flex_row_fill_width_flex" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11143,6 +11493,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11188,6 +11540,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11228,6 +11582,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11261,6 +11617,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11320,6 +11678,8 @@ test "taffy/bevy_issue_10343_block" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11388,6 +11748,8 @@ test "taffy/bevy_issue_10343_flex" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11456,6 +11818,8 @@ test "taffy/bevy_issue_10343_grid" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11527,6 +11891,8 @@ test "taffy/bevy_issue_16304" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11606,6 +11972,8 @@ test "taffy/bevy_issue_21240" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11688,6 +12056,8 @@ test "taffy/bevy_issue_7976_3_level" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11762,6 +12132,8 @@ test "taffy/bevy_issue_7976_4_level" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11802,6 +12174,8 @@ test "taffy/bevy_issue_7976_reduced" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11891,6 +12265,8 @@ test "taffy/bevy_issue_8017" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -11964,6 +12340,8 @@ test "taffy/bevy_issue_8017_reduced" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12071,6 +12449,8 @@ test "taffy/bevy_issue_8082" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12159,6 +12539,8 @@ test "taffy/bevy_issue_8082_percent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12280,6 +12662,8 @@ test "taffy/bevy_issue_9530" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12347,6 +12731,8 @@ test "taffy/bevy_issue_9530_reduced" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12408,6 +12794,8 @@ test "taffy/bevy_issue_9530_reduced2" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12458,6 +12846,8 @@ test "taffy/bevy_issue_9530_reduced3" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12502,6 +12892,8 @@ test "taffy/bevy_issue_9530_reduced4" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12558,6 +12950,8 @@ test "taffy/blitz_issue_88" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12607,6 +13001,8 @@ test "taffy/border_center_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12645,6 +13041,8 @@ test "taffy/border_container_match_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12684,6 +13082,8 @@ test "taffy/border_flex_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12712,6 +13112,8 @@ test "taffy/border_no_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12738,6 +13140,8 @@ test "taffy/border_no_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12771,6 +13175,8 @@ test "taffy/border_stretch_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12819,6 +13225,8 @@ test "taffy/child_min_max_width_flexing" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12865,6 +13273,8 @@ test "taffy/child_with_padding_align_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12893,6 +13303,8 @@ test "taffy/container_with_unsized_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12953,6 +13365,8 @@ test "taffy/content_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -12998,6 +13412,8 @@ test "taffy/display_none" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13051,6 +13467,8 @@ test "taffy/display_none_absolute_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13097,6 +13515,8 @@ test "taffy/display_none_fixed_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13126,6 +13546,8 @@ test "taffy/display_none_only_node" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13186,6 +13608,8 @@ test "taffy/display_none_with_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13246,6 +13670,8 @@ test "taffy/display_none_with_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13297,6 +13723,8 @@ test "taffy/display_none_with_position" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13335,6 +13763,8 @@ test "taffy/display_none_with_position_absolute" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13388,6 +13818,8 @@ test "taffy/do_not_clamp_height_of_absolute_node_to_height_of_its_overflow_hidde
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13438,6 +13870,8 @@ test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13484,6 +13918,8 @@ test "taffy/flex_basis_flex_grow_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13530,6 +13966,8 @@ test "taffy/flex_basis_flex_grow_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13575,6 +14013,8 @@ test "taffy/flex_basis_flex_shrink_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13620,6 +14060,8 @@ test "taffy/flex_basis_flex_shrink_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13668,6 +14110,8 @@ test "taffy/flex_basis_larger_than_content_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13716,6 +14160,8 @@ test "taffy/flex_basis_larger_than_content_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13770,6 +14216,8 @@ test "taffy/flex_basis_overrides_main_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13842,6 +14290,8 @@ test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" 
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13898,6 +14348,8 @@ test "taffy/flex_basis_smaller_than_content_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13946,6 +14398,8 @@ test "taffy/flex_basis_smaller_than_content_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -13985,6 +14439,8 @@ test "taffy/flex_basis_smaller_than_main_dimen_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14020,6 +14476,8 @@ test "taffy/flex_basis_smaller_than_main_dimen_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14084,6 +14542,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14160,6 +14620,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14235,6 +14697,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14311,6 +14775,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14356,6 +14822,8 @@ test "taffy/flex_basis_unconstraint_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14389,6 +14857,8 @@ test "taffy/flex_basis_unconstraint_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14432,6 +14902,8 @@ test "taffy/flex_basis_zero_undefined_main_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14475,6 +14947,8 @@ test "taffy/flex_column_relative_all_sides" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14520,6 +14994,8 @@ test "taffy/flex_direction_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14572,6 +15048,8 @@ test "taffy/flex_direction_column_no_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14625,6 +15103,8 @@ test "taffy/flex_direction_column_reverse" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14677,6 +15157,8 @@ test "taffy/flex_direction_column_reverse_no_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14728,6 +15210,8 @@ test "taffy/flex_direction_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14775,6 +15259,8 @@ test "taffy/flex_direction_row_no_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14828,6 +15314,8 @@ test "taffy/flex_direction_row_reverse" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14929,6 +15417,8 @@ test "taffy/flex_grow_0_min_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -14975,6 +15465,8 @@ test "taffy/flex_grow_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15024,6 +15516,8 @@ test "taffy/flex_grow_flex_basis_percent_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15082,6 +15576,8 @@ test "taffy/flex_grow_height_maximized" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15136,6 +15632,8 @@ test "taffy/flex_grow_in_at_most_container" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15190,6 +15688,8 @@ test "taffy/flex_grow_less_than_factor_one" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15253,6 +15753,8 @@ test "taffy/flex_grow_root_minimized" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15299,6 +15801,8 @@ test "taffy/flex_grow_shrink_at_most" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15344,6 +15848,8 @@ test "taffy/flex_grow_to_min" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15388,6 +15894,8 @@ test "taffy/flex_grow_within_constrained_max_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15443,6 +15951,8 @@ test "taffy/flex_grow_within_constrained_max_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15497,6 +16007,8 @@ test "taffy/flex_grow_within_constrained_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15540,6 +16052,8 @@ test "taffy/flex_grow_within_constrained_min_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15584,6 +16098,8 @@ test "taffy/flex_grow_within_constrained_min_max_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15628,6 +16144,8 @@ test "taffy/flex_grow_within_constrained_min_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15678,6 +16196,8 @@ test "taffy/flex_grow_within_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15724,6 +16244,8 @@ test "taffy/flex_root_ignored" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15765,6 +16287,8 @@ test "taffy/flex_row_relative_all_sides" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15805,6 +16329,8 @@ test "taffy/flex_shrink_by_outer_margin_with_max_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15849,6 +16375,8 @@ test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15896,6 +16424,8 @@ test "taffy/flex_shrink_flex_grow_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15947,6 +16477,8 @@ test "taffy/flex_shrink_to_zero" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -15995,6 +16527,8 @@ test "taffy/flex_wrap_align_stretch_fits_one_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16044,6 +16578,8 @@ test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16112,6 +16648,8 @@ test "taffy/flex_wrap_wrap_to_child_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16194,6 +16732,8 @@ test "taffy/gap_column_gap_child_margins" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16248,6 +16788,8 @@ test "taffy/gap_column_gap_determines_parent_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16309,6 +16851,8 @@ test "taffy/gap_column_gap_flexible" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16369,6 +16913,8 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16423,6 +16969,8 @@ test "taffy/gap_column_gap_inflexible" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16476,6 +17024,8 @@ test "taffy/gap_column_gap_inflexible_undefined_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16531,6 +17081,8 @@ test "taffy/gap_column_gap_justify_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16586,6 +17138,8 @@ test "taffy/gap_column_gap_justify_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16641,6 +17195,8 @@ test "taffy/gap_column_gap_justify_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16696,6 +17252,8 @@ test "taffy/gap_column_gap_justify_space_around" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16751,6 +17309,8 @@ test "taffy/gap_column_gap_justify_space_between" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16806,6 +17366,8 @@ test "taffy/gap_column_gap_justify_space_evenly" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16862,6 +17424,8 @@ test "taffy/gap_column_gap_mixed_flexible" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16921,6 +17485,8 @@ test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -16976,6 +17542,8 @@ test "taffy/gap_column_gap_percentage_cyclic_shrinkable" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17037,6 +17605,8 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17098,6 +17668,8 @@ test "taffy/gap_column_gap_percentage_flexible" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17165,6 +17737,8 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17219,6 +17793,8 @@ test "taffy/gap_column_gap_percentage_inflexible" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17319,6 +17895,8 @@ test "taffy/gap_column_gap_row_gap_wrapping" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17409,6 +17987,8 @@ test "taffy/gap_column_gap_start_index" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17494,6 +18074,8 @@ test "taffy/gap_column_gap_wrap_align_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17587,6 +18169,8 @@ test "taffy/gap_column_gap_wrap_align_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17680,6 +18264,8 @@ test "taffy/gap_column_gap_wrap_align_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17773,6 +18359,8 @@ test "taffy/gap_column_gap_wrap_align_space_around" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17866,6 +18454,8 @@ test "taffy/gap_column_gap_wrap_align_space_between" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -17956,6 +18546,8 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18064,6 +18656,8 @@ test "taffy/gap_column_row_gap_wrapping" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18163,6 +18757,8 @@ test "taffy/gap_row_gap_align_items_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18251,6 +18847,8 @@ test "taffy/gap_row_gap_align_items_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18341,6 +18939,8 @@ test "taffy/gap_row_gap_column_child_margins" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18395,6 +18995,8 @@ test "taffy/gap_row_gap_determines_parent_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18495,6 +19097,8 @@ test "taffy/gap_row_gap_percentage_wrapping" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18592,6 +19196,8 @@ test "taffy/gap_row_gap_row_wrap_child_margins" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18629,6 +19235,8 @@ test "taffy/intrinsic_sizing_cross_size_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18654,6 +19262,8 @@ test "taffy/intrinsic_sizing_main_size_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18689,6 +19299,8 @@ test "taffy/intrinsic_sizing_main_size_column_nested" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18743,6 +19355,8 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18813,6 +19427,8 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 20.0)
@@ -18842,6 +19458,8 @@ test "taffy/intrinsic_sizing_main_size_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18869,6 +19487,8 @@ test "taffy/intrinsic_sizing_main_size_row_nested" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18914,6 +19534,8 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -18964,6 +19586,8 @@ test "taffy/justify_content_column_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19045,6 +19669,8 @@ test "taffy/justify_content_column_center_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19132,6 +19758,8 @@ test "taffy/justify_content_column_center_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19190,6 +19818,8 @@ test "taffy/justify_content_column_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19271,6 +19901,8 @@ test "taffy/justify_content_column_end_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19358,6 +19990,8 @@ test "taffy/justify_content_column_end_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19416,6 +20050,8 @@ test "taffy/justify_content_column_end_reverse" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19470,6 +20106,8 @@ test "taffy/justify_content_column_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19524,6 +20162,8 @@ test "taffy/justify_content_column_flex_end_reverse" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19578,6 +20218,8 @@ test "taffy/justify_content_column_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19632,6 +20274,8 @@ test "taffy/justify_content_column_flex_start_reverse" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19687,6 +20331,8 @@ test "taffy/justify_content_column_max_height_and_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19737,6 +20383,8 @@ test "taffy/justify_content_column_min_height_and_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19781,6 +20429,8 @@ test "taffy/justify_content_column_min_height_and_margin_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19821,6 +20471,8 @@ test "taffy/justify_content_column_min_height_and_margin_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19867,6 +20519,8 @@ test "taffy/justify_content_column_space_around" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -19948,6 +20602,8 @@ test "taffy/justify_content_column_space_around_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20035,6 +20691,8 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20093,6 +20751,8 @@ test "taffy/justify_content_column_space_between" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20174,6 +20834,8 @@ test "taffy/justify_content_column_space_between_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20261,6 +20923,8 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20319,6 +20983,8 @@ test "taffy/justify_content_column_space_evenly" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20400,6 +21066,8 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20487,6 +21155,8 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20545,6 +21215,8 @@ test "taffy/justify_content_column_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20626,6 +21298,8 @@ test "taffy/justify_content_column_start_negative_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20713,6 +21387,8 @@ test "taffy/justify_content_column_start_negative_space_gap" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20771,6 +21447,8 @@ test "taffy/justify_content_column_start_reverse" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20815,6 +21493,8 @@ test "taffy/justify_content_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20885,6 +21565,8 @@ test "taffy/justify_content_min_width_with_padding_child_width_greater_than_pare
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -20963,6 +21645,8 @@ test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21026,6 +21710,8 @@ test "taffy/justify_content_overflow_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21080,6 +21766,8 @@ test "taffy/justify_content_row_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21134,6 +21822,8 @@ test "taffy/justify_content_row_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21188,6 +21878,8 @@ test "taffy/justify_content_row_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21237,6 +21929,8 @@ test "taffy/justify_content_row_max_width_and_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21277,6 +21971,8 @@ test "taffy/justify_content_row_min_width_and_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21323,6 +22019,8 @@ test "taffy/justify_content_row_space_around" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21377,6 +22075,8 @@ test "taffy/justify_content_row_space_between" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21431,6 +22131,8 @@ test "taffy/justify_content_row_space_evenly" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21479,6 +22181,8 @@ test "taffy/margin_and_flex_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21519,6 +22223,8 @@ test "taffy/margin_and_flex_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21559,6 +22265,8 @@ test "taffy/margin_and_stretch_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21599,6 +22307,8 @@ test "taffy/margin_and_stretch_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21646,6 +22356,8 @@ test "taffy/margin_auto_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21697,6 +22409,8 @@ test "taffy/margin_auto_bottom_and_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21748,6 +22462,8 @@ test "taffy/margin_auto_bottom_and_top_justify_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21799,6 +22515,8 @@ test "taffy/margin_auto_left" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21848,6 +22566,8 @@ test "taffy/margin_auto_left_and_right" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21900,6 +22620,8 @@ test "taffy/margin_auto_left_and_right_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -21951,6 +22673,8 @@ test "taffy/margin_auto_left_and_right_column_and_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22003,6 +22727,8 @@ test "taffy/margin_auto_left_and_right_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22047,6 +22773,8 @@ test "taffy/margin_auto_left_child_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22087,6 +22815,8 @@ test "taffy/margin_auto_left_fix_right_child_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22127,6 +22857,8 @@ test "taffy/margin_auto_left_right_child_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22175,6 +22907,8 @@ test "taffy/margin_auto_left_stretching_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22240,6 +22974,8 @@ test "taffy/margin_auto_multiple_children_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22309,6 +23045,8 @@ test "taffy/margin_auto_multiple_children_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22364,6 +23102,8 @@ test "taffy/margin_auto_right" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22415,6 +23155,8 @@ test "taffy/margin_auto_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22467,6 +23209,8 @@ test "taffy/margin_auto_top_and_bottom_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22519,6 +23263,8 @@ test "taffy/margin_auto_top_stretching_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22563,6 +23309,8 @@ test "taffy/margin_bottom" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22603,6 +23351,8 @@ test "taffy/margin_fix_left_auto_right_child_bigger_than_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22642,6 +23392,8 @@ test "taffy/margin_left" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22682,6 +23434,8 @@ test "taffy/margin_right" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22721,6 +23475,8 @@ test "taffy/margin_should_not_be_part_of_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22760,6 +23516,8 @@ test "taffy/margin_should_not_be_part_of_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22799,6 +23557,8 @@ test "taffy/margin_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22846,6 +23606,8 @@ test "taffy/margin_with_sibling_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22897,6 +23659,8 @@ test "taffy/margin_with_sibling_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22935,6 +23699,8 @@ test "taffy/max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22963,6 +23729,8 @@ test "taffy/max_height_overrides_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -22987,6 +23755,8 @@ test "taffy/max_height_overrides_height_on_root" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23017,6 +23787,8 @@ test "taffy/max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23045,6 +23817,8 @@ test "taffy/max_width_overrides_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23069,6 +23843,8 @@ test "taffy/max_width_overrides_width_on_root" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23096,6 +23872,8 @@ test "taffy/measure_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23134,6 +23912,8 @@ test "taffy/measure_child_absolute" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23174,6 +23954,8 @@ test "taffy/measure_child_constraint" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23220,6 +24002,8 @@ test "taffy/measure_child_constraint_padding_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23262,6 +24046,8 @@ test "taffy/measure_child_with_flex_grow" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23308,6 +24094,8 @@ test "taffy/measure_child_with_flex_shrink" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23358,6 +24146,8 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23401,6 +24191,8 @@ test "taffy/measure_child_with_min_size_greater_than_available_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23436,6 +24228,8 @@ test "taffy/measure_flex_basis_overrides_measure" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23470,6 +24264,8 @@ test "taffy/measure_height_overrides_measure" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23514,6 +24310,8 @@ test "taffy/measure_remeasure_child_after_growing" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23564,6 +24362,8 @@ test "taffy/measure_remeasure_child_after_shrinking" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23603,6 +24403,8 @@ test "taffy/measure_remeasure_child_after_stretching" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23628,6 +24430,8 @@ test "taffy/measure_root" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23672,6 +24476,8 @@ test "taffy/measure_stretch_overrides_measure" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23710,6 +24516,8 @@ test "taffy/measure_width_overrides_measure" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23752,6 +24560,8 @@ test "taffy/min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23790,6 +24600,8 @@ test "taffy/min_height_larger_than_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23818,6 +24630,8 @@ test "taffy/min_height_overrides_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23842,6 +24656,8 @@ test "taffy/min_height_overrides_height_on_root" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23866,6 +24682,8 @@ test "taffy/min_height_overrides_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23925,6 +24743,8 @@ test "taffy/min_height_with_nested_fixed_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -23966,6 +24786,8 @@ test "taffy/min_max_percent_different_width_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24003,6 +24825,8 @@ test "taffy/min_max_percent_no_width_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24045,6 +24869,8 @@ test "taffy/min_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24083,6 +24909,8 @@ test "taffy/min_width_larger_than_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24111,6 +24939,8 @@ test "taffy/min_width_overrides_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24139,6 +24969,8 @@ test "taffy/min_width_overrides_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24163,6 +24995,8 @@ test "taffy/min_width_overrides_width_on_root" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24366,6 +25200,8 @@ test "taffy/multiline_column_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24522,6 +25358,8 @@ test "taffy/multiline_min_max_12" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24614,6 +25452,8 @@ test "taffy/multiline_min_max_13" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24706,6 +25546,8 @@ test "taffy/multiline_min_max_14" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24792,6 +25634,8 @@ test "taffy/multiline_min_max_5" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24884,6 +25728,8 @@ test "taffy/multiline_min_max_8" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24934,6 +25780,8 @@ test "taffy/nested_overflowing_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -24980,6 +25828,8 @@ test "taffy/nested_overflowing_child_in_constraint_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25040,6 +25890,8 @@ test "taffy/only_shrinkable_item_with_flex_basis_zero" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25080,6 +25932,8 @@ test "taffy/overflow_cross_axis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25113,6 +25967,8 @@ test "taffy/overflow_main_axis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25153,6 +26009,8 @@ test "taffy/overflow_main_axis_shrink_hidden" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25193,6 +26051,8 @@ test "taffy/overflow_main_axis_shrink_scroll" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25228,6 +26088,8 @@ test "taffy/overflow_main_axis_shrink_visible" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25263,6 +26125,8 @@ test "taffy/overflow_scroll_main_axis_justify_content_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25307,6 +26171,8 @@ test "taffy/overflow_scrollbars_overridden_by_available_space" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25345,6 +26211,8 @@ test "taffy/overflow_scrollbars_overridden_by_max_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25379,6 +26247,8 @@ test "taffy/overflow_scrollbars_overridden_by_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25413,6 +26283,8 @@ test "taffy/overflow_scrollbars_take_up_space_both_axis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25446,6 +26318,8 @@ test "taffy/overflow_scrollbars_take_up_space_cross_axis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25479,6 +26353,8 @@ test "taffy/overflow_scrollbars_take_up_space_main_axis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25520,6 +26396,8 @@ test "taffy/padding_align_end_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25560,6 +26438,8 @@ test "taffy/padding_border_overrides_max_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25600,6 +26480,8 @@ test "taffy/padding_border_overrides_min_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25640,6 +26522,8 @@ test "taffy/padding_border_overrides_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25693,6 +26577,8 @@ test "taffy/padding_border_overrides_size_flex_basis_0_growable" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25737,6 +26623,8 @@ test "taffy/padding_border_overrides_size_root" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25778,6 +26666,8 @@ test "taffy/padding_center_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25816,6 +26706,8 @@ test "taffy/padding_container_match_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25855,6 +26747,8 @@ test "taffy/padding_flex_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25883,6 +26777,8 @@ test "taffy/padding_no_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25907,6 +26803,8 @@ test "taffy/padding_no_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25940,6 +26838,8 @@ test "taffy/padding_stretch_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -25981,6 +26881,8 @@ test "taffy/parent_wrap_child_size_overflowing_parent" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26043,6 +26945,8 @@ test "taffy/percent_absolute_position" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26107,6 +27011,8 @@ test "taffy/percent_within_flex_grow" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26160,6 +27066,8 @@ test "taffy/percentage_absolute_position" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26229,6 +27137,8 @@ test "taffy/percentage_container_in_wrapping_container" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26282,6 +27192,8 @@ test "taffy/percentage_different_width_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26326,6 +27238,8 @@ test "taffy/percentage_different_width_height_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26373,6 +27287,8 @@ test "taffy/percentage_flex_basis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26420,6 +27336,8 @@ test "taffy/percentage_flex_basis_cross" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26469,6 +27387,8 @@ test "taffy/percentage_flex_basis_cross_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26518,6 +27438,8 @@ test "taffy/percentage_flex_basis_cross_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26565,6 +27487,8 @@ test "taffy/percentage_flex_basis_cross_min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26614,6 +27538,8 @@ test "taffy/percentage_flex_basis_cross_min_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26663,6 +27589,8 @@ test "taffy/percentage_flex_basis_main_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26712,6 +27640,8 @@ test "taffy/percentage_flex_basis_main_max_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26761,6 +27691,8 @@ test "taffy/percentage_flex_basis_main_min_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26818,6 +27750,8 @@ test "taffy/percentage_main_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26877,6 +27811,8 @@ test "taffy/percentage_margin_should_calculate_based_only_on_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -26954,6 +27890,8 @@ test "taffy/percentage_moderate_complexity" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27009,6 +27947,8 @@ test "taffy/percentage_moderate_complexity2" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27117,6 +28057,8 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27180,6 +28122,8 @@ test "taffy/percentage_padding_should_calculate_based_only_on_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27224,6 +28168,8 @@ test "taffy/percentage_position_bottom_right" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27264,6 +28210,8 @@ test "taffy/percentage_position_left_top" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27304,6 +28252,8 @@ test "taffy/percentage_size_based_on_parent_inner_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27347,6 +28297,8 @@ test "taffy/percentage_size_of_flex_basis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27388,6 +28340,8 @@ test "taffy/percentage_sizes_should_not_prevent_flex_shrinking" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27426,6 +28380,8 @@ test "taffy/percentage_width_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27458,6 +28414,8 @@ test "taffy/percentage_width_height_undefined_parent_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27492,6 +28450,8 @@ test "taffy/position_root_with_rtl_should_position_withoutdirection" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27543,6 +28503,8 @@ test "taffy/relative_position_should_not_nudge_siblings" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27609,6 +28571,8 @@ test "taffy/rounding_flex_basis_flex_grow_row_prime_number_width" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27673,6 +28637,8 @@ test "taffy/rounding_flex_basis_flex_grow_row_width_of_100" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27729,6 +28695,8 @@ test "taffy/rounding_flex_basis_flex_shrink_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27789,6 +28757,8 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27849,6 +28819,8 @@ test "taffy/rounding_fractial_input_1" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27909,6 +28881,8 @@ test "taffy/rounding_fractial_input_2" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -27969,6 +28943,8 @@ test "taffy/rounding_fractial_input_3" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28029,6 +29005,8 @@ test "taffy/rounding_fractial_input_4" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28078,6 +29056,8 @@ test "taffy/rounding_fractial_input_5" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28153,6 +29133,8 @@ test "taffy/rounding_fractial_input_6" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28294,6 +29276,8 @@ test "taffy/rounding_fractial_input_7" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28431,6 +29415,8 @@ test "taffy/rounding_inner_node_controversy_combined" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28517,6 +29503,8 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28591,6 +29579,8 @@ test "taffy/rounding_inner_node_controversy_vertical" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28655,6 +29645,8 @@ test "taffy/rounding_total_fractial" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28749,6 +29741,8 @@ test "taffy/rounding_total_fractial_nested" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28804,6 +29798,8 @@ test "taffy/scroll_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28886,6 +29882,8 @@ test "taffy/simple_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28956,6 +29954,8 @@ test "taffy/single_flex_child_after_absolute_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -28992,6 +29992,8 @@ test "taffy/size_defined_by_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29028,6 +30030,8 @@ test "taffy/size_defined_by_child_with_border" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29064,6 +30068,8 @@ test "taffy/size_defined_by_child_with_padding" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29098,6 +30104,8 @@ test "taffy/size_defined_by_grand_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29156,6 +30164,8 @@ test "taffy/taffy_issue_696" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29214,6 +30224,8 @@ test "taffy/taffy_issue_696_flex_basis_20" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29270,6 +30282,8 @@ test "taffy/taffy_issue_696_min_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29327,6 +30341,8 @@ test "taffy/taffy_issue_696_no_flex_basis" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29384,6 +30400,8 @@ test "taffy/taffy_issue_696_overflow_hidden" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29422,6 +30440,8 @@ test "taffy/undefined_height_with_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29455,6 +30475,8 @@ test "taffy/undefined_width_with_min_max" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29498,6 +30520,8 @@ test "taffy/undefined_width_with_min_max_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29566,6 +30590,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29642,6 +30668,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29717,6 +30745,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29793,6 +30823,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29837,6 +30869,8 @@ test "taffy/wrap_child" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29893,6 +30927,8 @@ test "taffy/wrap_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -29939,6 +30975,8 @@ test "taffy/wrap_grandchild" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30026,6 +31064,8 @@ test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30125,6 +31165,8 @@ test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30197,6 +31239,8 @@ test "taffy/wrap_reverse_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30273,6 +31317,8 @@ test "taffy/wrap_reverse_column_fixed_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30344,6 +31390,8 @@ test "taffy/wrap_reverse_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30419,6 +31467,8 @@ test "taffy/wrap_reverse_row_align_content_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30498,6 +31548,8 @@ test "taffy/wrap_reverse_row_align_content_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30577,6 +31629,8 @@ test "taffy/wrap_reverse_row_align_content_space_around" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30656,6 +31710,8 @@ test "taffy/wrap_reverse_row_align_content_stretch" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30735,6 +31791,8 @@ test "taffy/wrap_reverse_row_single_line_different_size" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30806,6 +31864,8 @@ test "taffy/wrap_row" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30874,6 +31934,8 @@ test "taffy/wrap_row_align_items_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -30942,6 +32004,8 @@ test "taffy/wrap_row_align_items_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -31013,6 +32077,8 @@ test "taffy/wrapped_column_max_height" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -31086,6 +32152,8 @@ test "taffy/wrapped_column_max_height_flex" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -31147,6 +32215,8 @@ test "taffy/wrapped_row_within_align_items_center" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -31208,6 +32278,8 @@ test "taffy/wrapped_row_within_align_items_flex_end" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)
@@ -31269,6 +32341,8 @@ test "taffy/wrapped_row_within_align_items_flex_start" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = compute(root, ctx)
   assert_approx(layout.x, 0.0)

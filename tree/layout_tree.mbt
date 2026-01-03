@@ -184,6 +184,8 @@ pub fn LayoutTree::compute_full(self : LayoutTree) -> @node.Layout {
     available_width: self.viewport_width,
     available_height: Some(self.viewport_height),
     sizing_mode: @node.Definite,
+    viewport_width: self.viewport_width,
+    viewport_height: self.viewport_height,
   }
   let result = @node.dispatch_layout(node, ctx)
   clear_all_dirty(self.root)

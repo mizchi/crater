@@ -328,7 +328,8 @@ fn compute_intrinsic_flex_main_size(
       if child_style.display == @style.None {
         continue
       }
-      if child_style.position == @style.Absolute {
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
         continue
       }
       let child_margin = @types.resolve_rect(
@@ -451,7 +452,8 @@ fn compute_intrinsic_flex_main_size(
       if child_style.display == @style.None {
         continue
       }
-      if child_style.position == @style.Absolute {
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
         continue
       }
       let child_margin = @types.resolve_rect(
@@ -633,6 +635,8 @@ fn compute_intrinsic_grid_main_size(
     available_width,
     available_height,
     sizing_mode: @node.MaxContent,
+    viewport_width: available_width,
+    viewport_height: available_height.unwrap_or(0.0),
   }
   let layout = @node.dispatch_layout(node, ctx)
   if parent_is_row {
@@ -674,7 +678,8 @@ fn compute_intrinsic_block_main_size(
       if child_style.display == @style.None {
         continue
       }
-      if child_style.position == @style.Absolute {
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
         continue
       }
       let child_margin = @types.resolve_rect(
@@ -700,7 +705,8 @@ fn compute_intrinsic_block_main_size(
       if child_style.display == @style.None {
         continue
       }
-      if child_style.position == @style.Absolute {
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
         continue
       }
       let child_margin = @types.resolve_rect(
@@ -748,6 +754,8 @@ fn create_hidden_layout(node : @node.Node) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
     children,
     text: None,
   }
@@ -1097,6 +1105,8 @@ fn compute_internal(
       margin,
       padding,
       border,
+      overflow_x: style.overflow_x,
+      overflow_y: style.overflow_y,
       children: [],
       text: node.text,
     }
@@ -1117,7 +1127,8 @@ fn compute_internal(
     }
 
     // Skip absolutely positioned children (they don't participate in flex layout)
-    if child_style.position == @style.Absolute {
+    if child_style.position == @style.Absolute ||
+      child_style.position == @style.Fixed {
       continue
     }
     // Use cached resolved rects for margin
@@ -2646,6 +2657,8 @@ fn compute_internal(
           margin: item.margin,
           padding: child_padding,
           border: child_border,
+          overflow_x: child_style.overflow_x,
+          overflow_y: child_style.overflow_y,
           children: [],
           text: child.text,
         }
@@ -2654,6 +2667,8 @@ fn compute_internal(
           available_width: child_width,
           available_height: Some(child_height),
           sizing_mode: @node.Definite,
+          viewport_width: ctx.viewport_width,
+          viewport_height: ctx.viewport_height,
         }
         let nested_layout = compute_nested(child, child_ctx, warnings, cache)
         {
@@ -2665,6 +2680,8 @@ fn compute_internal(
           margin: item.margin,
           padding: nested_layout.padding,
           border: nested_layout.border,
+          overflow_x: nested_layout.overflow_x,
+          overflow_y: nested_layout.overflow_y,
           children: nested_layout.children,
           text: child.text,
         }
@@ -2859,6 +2876,8 @@ fn compute_internal(
             available_width: w,
             available_height: Some(h),
             sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
           },
           warnings,
           cache,
@@ -2872,6 +2891,8 @@ fn compute_internal(
             available_width: w,
             available_height: None,
             sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
           },
           warnings,
           cache,
@@ -2901,6 +2922,8 @@ fn compute_internal(
             available_width: shrink_to_fit_width,
             available_height: Some(h),
             sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
           },
           warnings,
           cache,
@@ -2930,6 +2953,8 @@ fn compute_internal(
             available_width: shrink_to_fit_width,
             available_height: None,
             sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
           },
           warnings,
           cache,
@@ -3099,6 +3124,217 @@ fn compute_internal(
       margin: child_margin,
       padding: child_inner.padding,
       border: child_inner.border,
+      overflow_x: child_style.overflow_x,
+      overflow_y: child_style.overflow_y,
+      children: child_inner.children,
+      text: child.text,
+    }
+    indexed_layouts.push({ dom_index: i, layout: child_layout })
+  }
+
+  // Process fixed positioned children (relative to viewport)
+  for i = 0; i < child_count; i = i + 1 {
+    let child = children[i]
+    let child_style = child.style
+
+    // Only process fixed positioned children
+    if child_style.position != @style.Fixed {
+      continue
+    }
+
+    // Skip display:none children - create zero-sized layout
+    if child_style.display == @style.None {
+      indexed_layouts.push({
+        dom_index: i,
+        layout: @absolute.create_zero_layout(child.id),
+      })
+      continue
+    }
+
+    // Use shared absolute module for size calculation with viewport as containing block
+    let params = @absolute.compute_size_params(
+      child_style,
+      ctx.viewport_width,
+      ctx.viewport_height,
+    )
+
+    // Apply aspect ratio to calculate missing dimension
+    let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
+      params.initial_width,
+      params.initial_height,
+      child_style.aspect_ratio,
+      params.min_width,
+      params.max_width,
+      params.min_height,
+      params.max_height,
+    )
+
+    // Compute intrinsic size if needed
+    let (child_width, child_height, child_inner) = match
+      (initial_width, initial_height) {
+      (Some(w), Some(h)) => {
+        let inner = compute_nested(
+          child,
+          {
+            available_width: w,
+            available_height: Some(h),
+            sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+          },
+          warnings,
+          cache,
+        )
+        (w, h, inner)
+      }
+      (Some(w), None) => {
+        let inner = compute_nested(
+          child,
+          {
+            available_width: w,
+            available_height: None,
+            sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+          },
+          warnings,
+          cache,
+        )
+        (w, inner.height, inner)
+      }
+      (None, Some(h)) => {
+        // Width is auto: use shrink-to-fit approach
+        let intrinsic_width = compute_intrinsic_main_size(
+          child,
+          is_row,
+          Some(h),
+          cache,
+        )
+        let shrink_to_fit_width = if intrinsic_width < ctx.viewport_width {
+          intrinsic_width
+        } else {
+          ctx.viewport_width
+        }
+        let inner = compute_nested(
+          child,
+          {
+            available_width: shrink_to_fit_width,
+            available_height: Some(h),
+            sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+          },
+          warnings,
+          cache,
+        )
+        (shrink_to_fit_width, h, inner)
+      }
+      (None, None) => {
+        // Both auto: use shrink-to-fit approach
+        let intrinsic_width = compute_intrinsic_main_size(
+          child,
+          is_row,
+          None,
+          cache,
+        )
+        let shrink_to_fit_width = if intrinsic_width < ctx.viewport_width {
+          intrinsic_width
+        } else {
+          ctx.viewport_width
+        }
+        let inner = compute_nested(
+          child,
+          {
+            available_width: shrink_to_fit_width,
+            available_height: None,
+            sizing_mode: @node.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+          },
+          warnings,
+          cache,
+        )
+        (shrink_to_fit_width, inner.height, inner)
+      }
+    }
+
+    // Apply min/max constraints
+    let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
+      child_width,
+      child_height,
+      child_style,
+      params.min_width,
+      params.max_width,
+      params.min_height,
+      params.max_height,
+    )
+
+    // Check if margins are Auto (for centering behavior)
+    let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
+    let margin_right_is_auto = @absolute.is_margin_auto(
+      child_style.margin.right,
+    )
+    let margin_top_is_auto = @absolute.is_margin_auto(child_style.margin.top)
+    let margin_bottom_is_auto = @absolute.is_margin_auto(
+      child_style.margin.bottom,
+    )
+
+    // Calculate position relative to viewport
+    let child_x = match (params.inset_left, params.inset_right) {
+      (Some(l), Some(r)) =>
+        if margin_left_is_auto && margin_right_is_auto {
+          let available = ctx.viewport_width - l - r - child_width
+          if available >= 0.0 {
+            l + available / 2.0
+          } else {
+            l
+          }
+        } else if margin_left_is_auto {
+          ctx.viewport_width - child_width - r - params.margin_right
+        } else {
+          l + params.margin_left
+        }
+      (Some(l), None) => l + params.margin_left
+      (None, Some(r)) =>
+        ctx.viewport_width - child_width - r - params.margin_right
+      (None, None) => params.margin_left
+    }
+    let child_y = match (params.inset_top, params.inset_bottom) {
+      (Some(t), Some(b)) =>
+        if margin_top_is_auto && margin_bottom_is_auto {
+          let available = ctx.viewport_height - t - b - child_height
+          if available >= 0.0 {
+            t + available / 2.0
+          } else {
+            t
+          }
+        } else if margin_top_is_auto {
+          ctx.viewport_height - child_height - b - params.margin_bottom
+        } else {
+          t + params.margin_top
+        }
+      (Some(t), None) => t + params.margin_top
+      (None, Some(b)) =>
+        ctx.viewport_height - child_height - b - params.margin_bottom
+      (None, None) => params.margin_top
+    }
+    let child_margin = @types.resolve_rect(
+      child_style.margin,
+      ctx.viewport_width,
+    )
+
+    // Build child layout
+    let child_layout : @node.Layout = {
+      id: child.id,
+      x: child_x,
+      y: child_y,
+      width: child_width,
+      height: child_height,
+      margin: child_margin,
+      padding: child_inner.padding,
+      border: child_inner.border,
+      overflow_x: child_style.overflow_x,
+      overflow_y: child_style.overflow_y,
       children: child_inner.children,
       text: child.text,
     }
@@ -3110,8 +3346,9 @@ fn compute_internal(
   for i = 0; i < child_count; i = i + 1 {
     let child = children[i]
     let child_style = child.style
-    // Skip absolute children (already processed above)
-    if child_style.position == @style.Absolute {
+    // Skip absolute/fixed children (already processed above)
+    if child_style.position == @style.Absolute ||
+      child_style.position == @style.Fixed {
       continue
     }
     // Add zero-sized layout for display:none children
@@ -3146,7 +3383,8 @@ fn compute_internal(
         let mut max_x = 0.0
         let mut has_flow_children = false
         for i = 0; i < child_count; i = i + 1 {
-          if children[i].style.position == @style.Absolute {
+          if children[i].style.position == @style.Absolute ||
+            children[i].style.position == @style.Fixed {
             continue
           }
           if children[i].style.display == @style.None {
@@ -3207,6 +3445,8 @@ fn compute_internal(
     margin,
     padding,
     border,
+    overflow_x: style.overflow_x,
+    overflow_y: style.overflow_y,
     children: child_layouts,
     text: node.text,
   }
@@ -3295,6 +3535,8 @@ fn compute_nested(
       margin: @types.Rect::zero(),
       padding,
       border,
+      overflow_x: node.style.overflow_x,
+      overflow_y: node.style.overflow_y,
       children: [],
       text: node.text,
     }

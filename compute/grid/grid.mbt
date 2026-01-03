@@ -226,6 +226,8 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     false,
     ctx.sizing_mode,
     is_block_level,
+    ctx.viewport_width,
+    ctx.viewport_height,
   )
 }
 
@@ -241,6 +243,8 @@ pub fn compute_layout(
     available_width,
     available_height: Some(available_height),
     sizing_mode: @node.Definite,
+    viewport_width: available_width,
+    viewport_height: available_height,
   }
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
@@ -255,6 +259,8 @@ pub fn compute_layout(
         false,
         @node.Definite,
         true,
+        ctx.viewport_width,
+        ctx.viewport_height,
       )
     @style.InlineGrid =>
       compute_grid_layout_internal(
@@ -265,6 +271,8 @@ pub fn compute_layout(
         false,
         @node.Definite,
         false,
+        ctx.viewport_width,
+        ctx.viewport_height,
       )
     @style.None => @absolute.create_zero_layout(node.id)
   }
@@ -288,6 +296,8 @@ pub fn compute_grid_layout(
     false,
     @node.MaxContent,
     false,
+    available_width, // Use available_width as viewport fallback
+    available_height, // Use available_height as viewport fallback
   )
 }
 
@@ -301,6 +311,8 @@ fn compute_grid_layout_internal(
   height_is_extrinsically_definite : Bool,
   sizing_mode : @node.SizingMode,
   is_block_level : Bool,
+  viewport_width : Double,
+  viewport_height : Double,
 ) -> @node.Layout {
   let style = node.style
   let children = node.children
@@ -943,6 +955,8 @@ fn compute_grid_layout_internal(
         margin: default_rect(),
         padding: default_rect(),
         border: default_rect(),
+        overflow_x: @style.Visible,
+        overflow_y: @style.Visible,
         children: [],
         text: child.text,
       })
@@ -966,6 +980,22 @@ fn compute_grid_layout_internal(
         explicit_row_count,
       )
       preliminary_layouts.push(abs_layout)
+      baseline_infos.push({
+        index: i,
+        row: -1,
+        ascent: 0.0,
+        descent: 0.0,
+        height: 0.0,
+      })
+      continue
+    }
+
+    // Handle fixed positioned children (relative to viewport)
+    if child.style.position == @style.Fixed {
+      let fixed_layout = layout_fixed_child(
+        child, viewport_width, viewport_height,
+      )
+      preliminary_layouts.push(fixed_layout)
       baseline_infos.push({
         index: i,
         row: -1,
@@ -1010,6 +1040,8 @@ fn compute_grid_layout_internal(
       margin: default_rect(),
       padding: default_rect(),
       border: default_rect(),
+      overflow_x: child.style.overflow_x,
+      overflow_y: child.style.overflow_y,
       children: child_inner.children,
       text: child.text,
     })
@@ -1082,6 +1114,8 @@ fn compute_grid_layout_internal(
       top: border_top,
       bottom: border_bottom,
     },
+    overflow_x: style.overflow_x,
+    overflow_y: style.overflow_y,
     children: child_layouts,
     text: node.text,
   }
@@ -1670,12 +1704,16 @@ fn calculate_item_intrinsic_sizes(
                 available_width: 0.0,
                 available_height: None,
                 sizing_mode: @node.MaxContent,
+                viewport_width: container_width,
+                viewport_height: 0.0,
               }
               let min_layout = @block.compute(child, min_ctx)
               let max_ctx : @node.LayoutContext = {
                 available_width: container_width,
                 available_height: None,
                 sizing_mode: @node.MaxContent,
+                viewport_width: container_width,
+                viewport_height: 0.0,
               }
               let max_layout = @block.compute(child, max_ctx)
               (min_layout.width, max_layout.width)
@@ -1797,6 +1835,8 @@ fn calculate_item_intrinsic_sizes(
                     available_width: flex_available_width,
                     available_height: Some(0.0),
                     sizing_mode: @node.MaxContent,
+                    viewport_width: container_width,
+                    viewport_height: 0.0,
                   }
                   let min_layout = @flex.compute(child, min_ctx)
                   cache.set(child.uid, true, false, min_layout.height)
@@ -1811,6 +1851,8 @@ fn calculate_item_intrinsic_sizes(
                     available_width: flex_available_width,
                     available_height: Some(1.0e10),
                     sizing_mode: @node.MaxContent,
+                    viewport_width: container_width,
+                    viewport_height: 0.0,
                   }
                   let max_layout = @flex.compute(child, max_ctx)
                   cache.set(child.uid, true, true, max_layout.height)
@@ -1825,12 +1867,16 @@ fn calculate_item_intrinsic_sizes(
                 available_width: container_width,
                 available_height: Some(0.0),
                 sizing_mode: @node.MaxContent,
+                viewport_width: container_width,
+                viewport_height: 0.0,
               }
               let min_layout = @block.compute(child, min_ctx)
               let max_ctx : @node.LayoutContext = {
                 available_width: container_width,
                 available_height: Some(1.0e10),
                 sizing_mode: @node.MaxContent,
+                viewport_width: container_width,
+                viewport_height: 0.0,
               }
               let max_layout = @block.compute(child, max_ctx)
               (min_layout.height, max_layout.height)
@@ -2560,7 +2606,7 @@ fn place_grid_items(
       continue
     }
     // Skip absolute positioned items - they don't participate in grid placement
-    if style.position == @style.Absolute {
+    if style.position == @style.Absolute || style.position == @style.Fixed {
       continue
     }
 
@@ -2625,7 +2671,7 @@ fn place_grid_items(
       continue
     }
     // Skip absolute positioned items
-    if style.position == @style.Absolute {
+    if style.position == @style.Absolute || style.position == @style.Fixed {
       continue
     }
 
@@ -2705,7 +2751,7 @@ fn place_grid_items(
       continue
     }
     // Skip absolute positioned items
-    if style.position == @style.Absolute {
+    if style.position == @style.Absolute || style.position == @style.Fixed {
       continue
     }
 
@@ -2942,6 +2988,8 @@ fn compute_child_layout(
   child : @node.Node,
   available_width : Double,
   available_height : Double,
+  viewport_width? : Double = 0.0,
+  viewport_height? : Double = 0.0,
 ) -> @node.Layout {
   // For leaf nodes with auto dimensions, use intrinsic sizes
   let intrinsic = get_intrinsic_from_measure(
@@ -3156,6 +3204,8 @@ fn compute_child_layout(
       height_is_extrinsic_definite,
       @node.Definite,
       nested_is_block_level,
+      available_width, // Use available_width as viewport fallback
+      available_height, // Use available_height as viewport fallback
     )
     // The nested layout's children need to be added
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
@@ -3175,6 +3225,8 @@ fn compute_child_layout(
       available_width: width,
       available_height: Some(height),
       sizing_mode,
+      viewport_width: available_width,
+      viewport_height: available_height,
     }
     // Use global dispatcher if available for cache support
     let nested_layout = match @node.get_layout_dispatcher() {
@@ -3216,6 +3268,8 @@ fn compute_child_layout(
     margin: default_rect(),
     padding: default_rect(),
     border: default_rect(),
+    overflow_x: child.style.overflow_x,
+    overflow_y: child.style.overflow_y,
     children: child_layouts,
     text: child.text,
   }
@@ -3711,6 +3765,104 @@ fn layout_absolute_child(
     margin: default_rect(),
     padding: default_rect(),
     border: default_rect(),
+    overflow_x: child.style.overflow_x,
+    overflow_y: child.style.overflow_y,
+    children: child_inner.children,
+    text: child.text,
+  }
+}
+
+///|
+/// Layout a fixed-position child (positioned relative to viewport)
+fn layout_fixed_child(
+  child : @node.Node,
+  viewport_width : Double,
+  viewport_height : Double,
+) -> @node.Layout {
+  let style = child.style
+
+  // Handle display:none - return zero-sized layout
+  if style.display == @style.None {
+    return @absolute.create_zero_layout(child.id)
+  }
+
+  // Use shared absolute module for size calculation with viewport as containing block
+  let params = @absolute.compute_size_params(
+    style, viewport_width, viewport_height,
+  )
+
+  // Apply aspect ratio to calculate missing dimension
+  let (width, height) = @types.resolve_dimensions_with_aspect_ratio(
+    params.initial_width,
+    params.initial_height,
+    style.aspect_ratio,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
+
+  // Compute intrinsic size if needed
+  let (child_width, child_height, child_inner) = match (width, height) {
+    (Some(w), Some(h)) => {
+      let inner = compute_child_layout(child, w, h)
+      (w, h, inner)
+    }
+    (Some(w), None) => {
+      let inner = compute_child_layout(child, w, 1.0e10)
+      let h = match style.aspect_ratio {
+        Some(ar) if ar > 0.0 => w / ar
+        _ => inner.height
+      }
+      (w, h, inner)
+    }
+    (None, Some(h)) => {
+      let inner = compute_child_layout(child, 1.0e10, h)
+      let w = match style.aspect_ratio {
+        Some(ar) if ar > 0.0 => h * ar
+        _ => inner.width
+      }
+      (w, h, inner)
+    }
+    (None, None) => {
+      let inner = compute_child_layout(child, 1.0e10, 1.0e10)
+      match style.aspect_ratio {
+        Some(ar) if ar > 0.0 => {
+          let w = inner.width
+          let h = w / ar
+          (w, h, inner)
+        }
+        _ => (inner.width, inner.height, inner)
+      }
+    }
+  }
+
+  // Apply min/max constraints and re-apply aspect ratio
+  let (final_width, final_height) = @absolute.apply_constraints_with_aspect_ratio(
+    child_width,
+    child_height,
+    style,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
+
+  // Compute position relative to viewport (0, 0)
+  let (x, y) = @absolute.compute_inset_position(
+    params, final_width, final_height, 0.0, 0.0, viewport_width, viewport_height,
+  )
+  {
+    id: child.id,
+    x,
+    y,
+    width: final_width,
+    height: final_height,
+    margin: default_rect(),
+    padding: default_rect(),
+    border: default_rect(),
+    overflow_x: child.style.overflow_x,
+    overflow_y: child.style.overflow_y,
     children: child_inner.children,
     text: child.text,
   }

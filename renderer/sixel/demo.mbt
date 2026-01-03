@@ -12,6 +12,8 @@ fn main {
     margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
     padding: { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 },
     border: { top: 2.0, right: 2.0, bottom: 2.0, left: 2.0 },
+    overflow_x: Visible,
+    overflow_y: Visible,
     children: [
       // Header
       {
@@ -23,6 +25,8 @@ fn main {
         margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+        overflow_x: Visible,
+        overflow_y: Visible,
         children: [],
         text: None,
       },
@@ -36,6 +40,8 @@ fn main {
         margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+        overflow_x: Visible,
+        overflow_y: Visible,
         children: [],
         text: None,
       },
@@ -49,6 +55,8 @@ fn main {
         margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
         padding: { top: 5.0, right: 5.0, bottom: 5.0, left: 5.0 },
         border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+        overflow_x: Visible,
+        overflow_y: Visible,
         children: [
           // Nested box
           {
@@ -60,6 +68,8 @@ fn main {
             margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+            overflow_x: Visible,
+            overflow_y: Visible,
             children: [],
             text: None,
           },
@@ -72,6 +82,8 @@ fn main {
             margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
             border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+            overflow_x: Visible,
+            overflow_y: Visible,
             children: [],
             text: None,
           },

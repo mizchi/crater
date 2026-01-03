@@ -1,6 +1,7 @@
 {
   "import": [
-    "mizchi/crater/node"
+    "mizchi/crater/node",
+    "mizchi/crater/style"
   ],
   "is-main": true
 }

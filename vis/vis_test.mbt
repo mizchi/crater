@@ -9,6 +9,8 @@ test "to_svg basic" {
     margin: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     padding: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     border: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
     children: [],
     text: None,
   }
@@ -29,6 +31,8 @@ test "to_svg nested" {
     margin: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     padding: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     border: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
     children: [],
     text: None,
   }
@@ -41,6 +45,8 @@ test "to_svg nested" {
     margin: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     padding: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
     border: { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
     children: [child],
     text: None,
   }

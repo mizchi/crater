@@ -13,6 +13,8 @@ pub fn compute_layout(
     available_width: viewport.width,
     available_height: Some(viewport.height),
     sizing_mode: @node.MaxContent,
+    viewport_width: viewport.width,
+    viewport_height: viewport.height,
   }
   dispatch_compute(node, ctx)
 }
@@ -27,6 +29,8 @@ pub fn compute_layout_with_warnings(
     available_width: viewport.width,
     available_height: Some(viewport.height),
     sizing_mode: @node.MaxContent,
+    viewport_width: viewport.width,
+    viewport_height: viewport.height,
   }
   dispatch_compute_with_warnings(node, ctx)
 }
@@ -58,6 +62,8 @@ fn dispatch_compute(
         margin: @types.Rect::zero(),
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
+        overflow_x: @style.Visible,
+        overflow_y: @style.Visible,
         children: [],
         text: node.text,
       }
@@ -93,6 +99,8 @@ fn dispatch_compute_with_warnings(
           margin: @types.Rect::zero(),
           padding: @types.Rect::zero(),
           border: @types.Rect::zero(),
+          overflow_x: @style.Visible,
+          overflow_y: @style.Visible,
           children: [],
           text: node.text,
         },

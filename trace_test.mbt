@@ -25,6 +25,8 @@ test "trace_simple_layout" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let result = @flex.compute_with_trace(parent, ctx)
   // Verify traces were collected
@@ -67,6 +69,8 @@ test "trace_dependencies_recorded" {
     available_width: 400.0,
     available_height: None,
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let result = @flex.compute_with_trace(parent, ctx)
   // Parent should have dependencies on children's intrinsic sizes
@@ -129,6 +133,8 @@ test "trace_needs_recompute" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let result = @flex.compute_with_trace(node, ctx1)
   // Same context should not need recompute
@@ -138,6 +144,8 @@ test "trace_needs_recompute" {
     available_width: 500.0,
     available_height: Some(300.0),
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   assert_eq(result.tracer.needs_recompute(node.uid, ctx2), true)
   // Different height should need recompute
@@ -145,6 +153,8 @@ test "trace_needs_recompute" {
     available_width: 400.0,
     available_height: Some(400.0),
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   assert_eq(result.tracer.needs_recompute(node.uid, ctx3), true)
   // Unknown node should need recompute
@@ -184,6 +194,8 @@ test "trace_nested_structure" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let result = @flex.compute_with_trace(parent, ctx)
   // All three nodes should have traces

@@ -579,6 +579,8 @@ pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
     available_width,
     available_height: Some(available_height),
     sizing_mode: @node.SizingMode::Definite,
+    viewport_width: ctx.viewport_width,
+    viewport_height: ctx.viewport_height,
   }
 
   // Initialize the layout dispatcher for cross-layout-type support
@@ -616,6 +618,8 @@ pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
     margin: layout.margin,
     padding: layout.padding,
     border: layout.border,
+    overflow_x: layout.overflow_x,
+    overflow_y: layout.overflow_y,
     children: layout.children,
     text: layout.text,
   }

@@ -30,6 +30,8 @@ fn render_example(name : String, node : @node.Node) -> Unit {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   // Dispatch based on display type
   let layout = match node.style.display {

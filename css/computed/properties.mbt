@@ -236,7 +236,8 @@ pub fn parse_display(value : String) -> @style.Display {
 pub fn parse_position(value : String) -> @style.Position {
   match value.trim().to_lower() {
     "absolute" => @style.Position::Absolute
-    "relative" | "static" | "fixed" | "sticky" => @style.Position::Relative
+    "fixed" => @style.Position::Fixed
+    "relative" | "static" | "sticky" => @style.Position::Relative
     _ => @style.Position::Relative
   }
 }

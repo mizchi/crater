@@ -21,6 +21,8 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
     children,
     text: node.text,
   }
@@ -98,6 +100,8 @@ fn compute_root_layout(
             margin: child.margin,
             padding: child.padding,
             border: child.border,
+            overflow_x: child.overflow_x,
+            overflow_y: child.overflow_y,
             children: child.children,
             text: child.text,
           })
@@ -117,6 +121,8 @@ fn compute_root_layout(
           margin: layout.margin,
           padding: layout.padding,
           border: layout.border,
+          overflow_x: layout.overflow_x,
+          overflow_y: layout.overflow_y,
           children: adjusted_children,
           text: layout.text,
         }
@@ -136,6 +142,8 @@ fn compute_root_layout(
             margin: layout.margin,
             padding: layout.padding,
             border: layout.border,
+            overflow_x: layout.overflow_x,
+            overflow_y: layout.overflow_y,
             children: layout.children,
             text: layout.text,
           }
@@ -221,6 +229,8 @@ fn compute_with_collapse(
             margin,
             padding,
             border,
+            overflow_x: style.overflow_x,
+            overflow_y: style.overflow_y,
             children: [],
             text: node.text,
           },
@@ -394,8 +404,9 @@ fn compute_with_collapse(
       layout_map[i] = create_zero_layout(child)
       continue
     }
-    if child.style.position == @style.Absolute {
-      // Record where this absolute child appears in flow order
+    if child.style.position == @style.Absolute ||
+      child.style.position == @style.Fixed {
+      // Record where this absolute/fixed child appears in flow order
       absolute_static_positions[i] = flow_position
       continue
     }
@@ -500,6 +511,8 @@ fn compute_with_collapse(
                   available_width: parent_width, // Use parent_width as reference for percentages
                   available_height: child_available_height,
                   sizing_mode: @node.MaxContent,
+                  viewport_width: ctx.viewport_width,
+                  viewport_height: ctx.viewport_height,
                 }
                 let child_result = compute_with_collapse(
                   child, intrinsic_ctx, warnings,
@@ -611,6 +624,20 @@ fn compute_with_collapse(
       }
     }
 
+    // Handle fixed children (positioned relative to viewport)
+    for i = 0; i < node.children.length(); i = i + 1 {
+      let child = node.children[i]
+      if child.style.position == @style.Fixed {
+        let fixed_layout = layout_fixed_child(
+          child,
+          ctx.viewport_width,
+          ctx.viewport_height,
+          warnings,
+        )
+        layout_map[i] = fixed_layout
+      }
+    }
+
     // Assemble child_layouts in original order
     let child_layouts : Array[@node.Layout] = []
     for i = 0; i < node.children.length(); i = i + 1 {
@@ -628,6 +655,8 @@ fn compute_with_collapse(
       margin,
       padding,
       border,
+      overflow_x: style.overflow_x,
+      overflow_y: style.overflow_y,
       children: child_layouts,
       text: node.text,
     }
@@ -642,6 +671,8 @@ fn compute_with_collapse(
       available_width: actual_child_available_width,
       available_height: child_available_height,
       sizing_mode: @node.Definite,
+      viewport_width: ctx.viewport_width,
+      viewport_height: ctx.viewport_height,
     }
     // Flex, Grid, and InlineBlock containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
@@ -695,6 +726,8 @@ fn compute_with_collapse(
           available_width: actual_child_available_width,
           available_height: child_available_height,
           sizing_mode: @node.MaxContent,
+          viewport_width: ctx.viewport_width,
+          viewport_height: ctx.viewport_height,
         }
         let intrinsic_layout = compute_with_collapse(
             child, intrinsic_ctx, warnings,
@@ -717,6 +750,8 @@ fn compute_with_collapse(
       },
       available_height: child_available_height,
       sizing_mode: @node.Definite,
+      viewport_width: ctx.viewport_width,
+      viewport_height: ctx.viewport_height,
     }
     let child_inner = compute_with_collapse(child, child_ctx, warnings).layout
 
@@ -744,6 +779,8 @@ fn compute_with_collapse(
       margin: child_margin,
       padding: child_inner.padding,
       border: child_inner.border,
+      overflow_x: child.style.overflow_x,
+      overflow_y: child.style.overflow_y,
       children: child_inner.children,
       text: child.text,
     }
@@ -941,6 +978,8 @@ fn compute_with_collapse(
       margin: child_layout.margin,
       padding: child_layout.padding,
       border: child_layout.border,
+      overflow_x: child_layout.overflow_x,
+      overflow_y: child_layout.overflow_y,
       children: child_layout.children,
       text: child_layout.text,
     }
@@ -1156,6 +1195,20 @@ fn compute_with_collapse(
     }
   }
 
+  // Handle fixed positioned children (relative to viewport)
+  for i = 0; i < node.children.length(); i = i + 1 {
+    let child = node.children[i]
+    if child.style.position == @style.Fixed {
+      let fixed_layout = layout_fixed_child(
+        child,
+        ctx.viewport_width,
+        ctx.viewport_height,
+        warnings,
+      )
+      layout_map[i] = fixed_layout
+    }
+  }
+
   // Assemble child_layouts in original order
   let child_layouts : Array[@node.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
@@ -1173,6 +1226,8 @@ fn compute_with_collapse(
     margin,
     padding,
     border,
+    overflow_x: style.overflow_x,
+    overflow_y: style.overflow_y,
     children: child_layouts,
     text: node.text,
   }
@@ -1397,6 +1452,187 @@ fn layout_absolute_child(
     margin: child_margin,
     padding: child_inner.padding,
     border: child_inner.border,
+    overflow_x: child_style.overflow_x,
+    overflow_y: child_style.overflow_y,
+    children: child_inner.children,
+    text: child.text,
+  }
+}
+
+///|
+/// Layout a fixed-position child (positioned relative to viewport)
+fn layout_fixed_child(
+  child : @node.Node,
+  viewport_width : Double,
+  viewport_height : Double,
+  warnings : Array[@node.LayoutWarning],
+) -> @node.Layout {
+  let child_style = child.style
+
+  // Handle display:none - return zero-sized layout
+  if child_style.display == @style.None {
+    return @absolute.create_zero_layout(child.id)
+  }
+
+  // Use shared absolute module for size calculation with viewport as containing block
+  let params = @absolute.compute_size_params(
+    child_style, viewport_width, viewport_height,
+  )
+
+  // Apply aspect ratio to calculate missing dimension
+  let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
+    params.initial_width,
+    params.initial_height,
+    child_style.aspect_ratio,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
+
+  // Compute intrinsic size if needed, and get child's inner layout
+  let (child_width, child_height, child_inner) = match
+    (initial_width, initial_height) {
+    (Some(w), Some(h)) => {
+      let inner = compute_nested(child, w, Some(h), warnings)
+      (w, h, inner)
+    }
+    (Some(w), None) => {
+      let inner = compute_nested(child, w, None, warnings)
+      let h = match child_style.aspect_ratio {
+        Some(ar) if ar > 0.0 => w / ar
+        _ => inner.height
+      }
+      (w, h, inner)
+    }
+    (None, Some(h)) => {
+      // Width is auto: use shrink-to-fit approach
+      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings)
+      let shrink_to_fit_width = if intrinsic.width < viewport_width {
+        intrinsic.width
+      } else {
+        viewport_width
+      }
+      let w = match child_style.aspect_ratio {
+        Some(ar) if ar > 0.0 => h * ar
+        _ => shrink_to_fit_width
+      }
+      let inner = compute_nested(child, w, Some(h), warnings)
+      (w, h, inner)
+    }
+    (None, None) => {
+      // Both width and height are auto: use shrink-to-fit approach
+      let intrinsic = compute_nested_intrinsic(child, None, warnings)
+      let shrink_to_fit_width = if intrinsic.width < viewport_width {
+        intrinsic.width
+      } else {
+        viewport_width
+      }
+      match child_style.aspect_ratio {
+        Some(ar) if ar > 0.0 => {
+          let w = shrink_to_fit_width
+          let h = w / ar
+          let inner = compute_nested(child, w, Some(h), warnings)
+          (w, h, inner)
+        }
+        _ => {
+          let inner = compute_nested(child, shrink_to_fit_width, None, warnings)
+          (shrink_to_fit_width, inner.height, inner)
+        }
+      }
+    }
+  }
+
+  // Apply min/max constraints and re-apply aspect ratio
+  let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
+    child_width,
+    child_height,
+    child_style,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
+
+  // CSS rule: padding+border override explicit size constraints
+  let child_padding = @types.resolve_rect(child_style.padding, viewport_width)
+  let child_border = @types.resolve_rect(child_style.border, viewport_width)
+  let min_child_width = child_padding.horizontal_sum() +
+    child_border.horizontal_sum()
+  let min_child_height = child_padding.vertical_sum() +
+    child_border.vertical_sum()
+  let child_width = if child_width < min_child_width {
+    min_child_width
+  } else {
+    child_width
+  }
+  let child_height = if child_height < min_child_height {
+    min_child_height
+  } else {
+    child_height
+  }
+
+  // Check if margins are Auto (for centering behavior)
+  let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
+  let margin_right_is_auto = @absolute.is_margin_auto(child_style.margin.right)
+  let margin_top_is_auto = @absolute.is_margin_auto(child_style.margin.top)
+  let margin_bottom_is_auto = @absolute.is_margin_auto(
+    child_style.margin.bottom,
+  )
+
+  // Calculate position relative to viewport (0, 0)
+  let child_x = match (params.inset_left, params.inset_right) {
+    (Some(l), Some(r)) =>
+      if margin_left_is_auto && margin_right_is_auto {
+        let available = viewport_width - l - r - child_width
+        if available >= 0.0 {
+          l + available / 2.0
+        } else {
+          l
+        }
+      } else if margin_left_is_auto {
+        viewport_width - child_width - r - params.margin_right
+      } else if margin_right_is_auto {
+        l + params.margin_left
+      } else {
+        l + params.margin_left
+      }
+    (Some(l), None) => l + params.margin_left
+    (None, Some(r)) => viewport_width - child_width - r - params.margin_right
+    (None, None) => params.margin_left // Default to 0 + margin
+  }
+  let child_y = match (params.inset_top, params.inset_bottom) {
+    (Some(t), Some(b)) =>
+      if margin_top_is_auto && margin_bottom_is_auto {
+        let available = viewport_height - t - b - child_height
+        if available >= 0.0 {
+          t + available / 2.0
+        } else {
+          t
+        }
+      } else if margin_top_is_auto {
+        viewport_height - child_height - b - params.margin_bottom
+      } else if margin_bottom_is_auto {
+        t + params.margin_top
+      } else {
+        t + params.margin_top
+      }
+    (Some(t), None) => t + params.margin_top
+    (None, Some(b)) => viewport_height - child_height - b - params.margin_bottom
+    (None, None) => params.margin_top // Default to 0 + margin
+  }
+  let child_margin = @types.resolve_rect(child_style.margin, viewport_width)
+  {
+    id: child.id,
+    x: child_x,
+    y: child_y,
+    width: child_width,
+    height: child_height,
+    margin: child_margin,
+    padding: child_inner.padding,
+    border: child_inner.border,
+    overflow_x: child_style.overflow_x,
+    overflow_y: child_style.overflow_y,
     children: child_inner.children,
     text: child.text,
   }
@@ -1463,6 +1699,8 @@ fn compute_nested(
       margin: @types.Rect::zero(),
       padding,
       border,
+      overflow_x: node.style.overflow_x,
+      overflow_y: node.style.overflow_y,
       children: [],
       text: node.text,
     }
@@ -1473,6 +1711,8 @@ fn compute_nested(
     available_width,
     available_height,
     sizing_mode: @node.Definite,
+    viewport_width: available_width,
+    viewport_height: available_height.unwrap_or(0.0),
   }
   compute_with_collapse(node, ctx, warnings).layout
 }
@@ -1535,6 +1775,8 @@ fn compute_nested_intrinsic(
       margin: @types.Rect::zero(),
       padding,
       border,
+      overflow_x: node.style.overflow_x,
+      overflow_y: node.style.overflow_y,
       children: [],
       text: node.text,
     }
@@ -1545,6 +1787,8 @@ fn compute_nested_intrinsic(
     available_width: @double.infinity,
     available_height,
     sizing_mode: @node.MaxContent,
+    viewport_width: 0.0,
+    viewport_height: available_height.unwrap_or(0.0),
   }
   compute_with_collapse(node, ctx, warnings).layout
 }

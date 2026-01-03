@@ -1427,6 +1427,8 @@ test "grid_fr_sum_less_than_one" {
     available_width: 200.0,
     available_height: Some(300.0),
     sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 400.0,
   }
   let layout = compute(root, ctx)
 

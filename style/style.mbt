@@ -16,6 +16,7 @@ pub(all) enum Display {
 pub(all) enum Position {
   Relative
   Absolute
+  Fixed
 } derive(Show, Eq)
 
 ///|

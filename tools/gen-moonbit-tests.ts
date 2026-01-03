@@ -504,10 +504,10 @@ function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' | 'block' =
   // Compute layout
   lines.push('');
   if (layoutType === 'flex') {
-    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent }`);
+    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent, viewport_width: ${tc.viewport.width.toFixed(1)}, viewport_height: ${tc.viewport.height.toFixed(1)} }`);
     lines.push(`  let layout = compute(root, ctx)`);
   } else if (layoutType === 'block') {
-    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent }`);
+    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent, viewport_width: ${tc.viewport.width.toFixed(1)}, viewport_height: ${tc.viewport.height.toFixed(1)} }`);
     lines.push(`  let layout = compute(root, ctx)`);
   } else {
     lines.push(`  let layout = compute_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);

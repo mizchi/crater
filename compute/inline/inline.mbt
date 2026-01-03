@@ -159,6 +159,8 @@ pub fn compute_ifc(
         margin: child_margin,
         padding: item.layout.padding,
         border: item.layout.border,
+        overflow_x: item.layout.overflow_x,
+        overflow_y: item.layout.overflow_y,
         children: item.layout.children,
         text: item.layout.text,
       }
@@ -230,6 +232,8 @@ fn compute_inline_child(
         margin: @types.Rect::zero(),
         padding,
         border,
+        overflow_x: style.overflow_x,
+        overflow_y: style.overflow_y,
         children: [],
         text: node.text,
       }
@@ -244,6 +248,8 @@ fn compute_inline_child(
       available_width,
       available_height,
       sizing_mode: @node.MaxContent,
+      viewport_width: available_width,
+      viewport_height: available_height.or(0.0),
     } // Use MaxContent for shrink-to-fit
     let layout = @node.dispatch_layout(node, ctx)
     return layout
@@ -260,6 +266,8 @@ fn compute_inline_child(
     margin: @types.Rect::zero(),
     padding,
     border,
+    overflow_x: style.overflow_x,
+    overflow_y: style.overflow_y,
     children: [],
     text: node.text,
   }
@@ -287,6 +295,8 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
     children,
     text: node.text,
   }

@@ -68,6 +68,13 @@ const INCLUDE_PREFIXES = [
   // Display
   "display-",
   "visibility-",
+  // Position
+  "position-",
+  "sticky-",
+  "fixed-",
+  // Overflow
+  "clip-",
+  "overflow-",
 ];
 
 interface GitHubFile {

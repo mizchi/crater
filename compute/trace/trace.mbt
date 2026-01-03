@@ -268,6 +268,8 @@ pub fn LayoutTracer::collect_from_tree(
         layout.border.bottom,
       ),
       sizing_mode: @node.Definite,
+      viewport_width: ctx.viewport_width,
+      viewport_height: ctx.viewport_height,
     }
     self.collect_from_tree(child_node, child_layout, child_ctx)
   }

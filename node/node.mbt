@@ -116,6 +116,9 @@ pub(all) struct Layout {
   margin : @types.Rect[Double]
   padding : @types.Rect[Double]
   border : @types.Rect[Double]
+  // Overflow clipping info
+  overflow_x : @style.Overflow
+  overflow_y : @style.Overflow
   // Children layouts
   children : Array[Layout]
   // Text content for text nodes
@@ -145,6 +148,10 @@ pub(all) struct LayoutContext {
   available_height : Double?
   /// Sizing mode (defaults to MaxContent for root-level intrinsic sizing)
   sizing_mode : SizingMode
+  /// Viewport width for position: fixed elements
+  viewport_width : Double
+  /// Viewport height for position: fixed elements
+  viewport_height : Double
 }
 
 ///|
@@ -217,6 +224,8 @@ pub fn dispatch_layout(node : Node, ctx : LayoutContext) -> Layout {
         margin: @types.Rect::zero(),
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
+        overflow_x: @style.Visible,
+        overflow_y: @style.Visible,
         children: [],
         text: node.text,
       }

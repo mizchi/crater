@@ -26,6 +26,8 @@ fn make_ctx(width : Double, height : Double) -> @node.LayoutContext {
     available_width: width,
     available_height: Some(height),
     sizing_mode: Definite,
+    viewport_width: width,
+    viewport_height: height,
   }
 }
 

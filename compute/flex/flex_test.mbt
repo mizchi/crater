@@ -23,6 +23,8 @@ test "flex_row_basic" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="200")
@@ -60,6 +62,8 @@ test "flex_column_basic" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="200")
@@ -97,6 +101,8 @@ test "flex_grow" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -127,6 +133,8 @@ test "flex_justify_center" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -165,6 +173,8 @@ test "flex_justify_space_between" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -195,6 +205,8 @@ test "flex_align_center" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -223,6 +235,8 @@ test "flex_align_stretch" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -255,6 +269,8 @@ test "flex_row_reverse" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -293,6 +309,8 @@ test "flex_with_padding" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -337,6 +355,8 @@ test "flex_shrink_to_zero" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -379,6 +399,8 @@ test "flex_justify_space_around" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -432,6 +454,8 @@ test "flex_justify_space_evenly" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -465,6 +489,8 @@ test "flex_align_items_center" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -494,6 +520,8 @@ test "flex_align_items_end" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -527,6 +555,8 @@ test "flex_justify_end" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -560,6 +590,8 @@ test "flex_column_reverse" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -614,6 +646,8 @@ test "flex_nested" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -654,6 +688,8 @@ test "flex_with_margin" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -686,6 +722,8 @@ test "flex_stretch_respects_explicit_height" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -714,6 +752,8 @@ test "flex_min_width_constraint" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -742,6 +782,8 @@ test "flex_max_width_constraint" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -771,6 +813,8 @@ test "flex_display_none" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -805,6 +849,8 @@ test "flex_grow_within_constrained_min_column" {
     available_width: 100.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -849,6 +895,8 @@ test "flex_percentage_max_width_with_grow" {
     available_width: 400.0,
     available_height: Some(500.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -887,6 +935,8 @@ test "flex_grow_child_distribution" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -925,6 +975,8 @@ test "flex_shrink_child_distribution" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -956,6 +1008,8 @@ test "flex_align_items_start" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -997,6 +1051,8 @@ test "flex_container_with_border_and_padding" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1035,6 +1091,8 @@ test "flex_grow_within_max_width" {
     available_width: 200.0, // More than max-width
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1073,6 +1131,8 @@ test "flex_shrink_with_margin" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1119,6 +1179,8 @@ test "flex_grow_less_than_factor_one" {
     available_width: 600.0,
     available_height: Some(400.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1163,6 +1225,8 @@ test "flex_basis_behavior" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1193,6 +1257,8 @@ test "flex_column_align_stretch" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1223,6 +1289,8 @@ test "flex_single_item_center" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1264,6 +1332,8 @@ test "flex_shrink_all_equally" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1321,6 +1391,8 @@ test "flex_nested_mixed_directions" {
     available_width: 400.0,
     available_height: Some(300.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1353,6 +1425,8 @@ test "align_items_center" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -1387,6 +1461,8 @@ test "align_items_flex_end" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].width, content="10")
@@ -1426,6 +1502,8 @@ test "justify_content_space_between" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1466,6 +1544,8 @@ test "justify_content_space_around" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1510,6 +1590,8 @@ test "justify_content_center" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1558,6 +1640,8 @@ test "flex_shrink_middle_to_zero" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1597,6 +1681,8 @@ test "align_self_center" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.children[0].width, content="10")
@@ -1632,6 +1718,8 @@ test "flex_basis_flex_grow_column" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1673,6 +1761,8 @@ test "flex_wrap_fits_one_row" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1720,6 +1810,8 @@ test "nested_overflowing_child" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1767,6 +1859,8 @@ test "gap_column_gap_flexible" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1811,6 +1905,8 @@ test "gap_column_gap_inflexible" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1853,6 +1949,8 @@ test "gap_row_gap_column" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1908,6 +2006,8 @@ test "wrap_row" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -1970,6 +2070,8 @@ test "wrap_column" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2031,6 +2133,8 @@ test "margin_auto_left_and_right" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="200")
@@ -2083,6 +2187,8 @@ test "margin_auto_left" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="200")
@@ -2135,6 +2241,8 @@ test "margin_auto_top" {
     available_width: 200.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="200")
@@ -2178,6 +2286,8 @@ test "aspect_ratio_flex_row_fill_width" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2213,6 +2323,8 @@ test "aspect_ratio_flex_row_fill_height" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2251,6 +2363,8 @@ test "aspect_ratio_flex_row_stretch_fill_height" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2305,6 +2419,8 @@ test "wrap_reverse_row" {
     available_width: 100.0,
     available_height: Some(200.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2362,6 +2478,8 @@ test "wrap_reverse_column" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2414,6 +2532,8 @@ test "absolute_layout_width_height_start_top" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2454,6 +2574,8 @@ test "absolute_layout_start_top_end_bottom" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2499,6 +2621,8 @@ test "absolute_does_not_affect_flex_layout" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2562,6 +2686,8 @@ test "nested_flex_explicit_sizes" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(outer, ctx)
 
@@ -2627,6 +2753,8 @@ test "nested_flex_with_padding_margin" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2689,6 +2817,8 @@ test "nested_row_in_column" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2742,6 +2872,8 @@ test "nested_overflowing_child_unconstrained" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2811,6 +2943,8 @@ test "min_height_with_nested_fixed_height" {
     available_width: 320.0,
     available_height: None,
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2878,6 +3012,8 @@ test "align_baseline_nested_child" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 
@@ -2929,6 +3065,8 @@ test "align_baseline" {
     available_width: 100.0,
     available_height: Some(100.0),
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
   inspect(layout.width, content="100")
@@ -2982,6 +3120,8 @@ test "debug_intrinsic_cross_sizing" {
     available_width: 100.0,
     available_height: None,
     sizing_mode: @node.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
   }
   let layout = compute(root, ctx)
 

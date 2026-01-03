@@ -21,6 +21,8 @@ test "renderer_grid_column" {
     available_width: 800.0,
     available_height: Some(600.0),
     sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
   }
   let layout = @dispatch.compute(root, layout_ctx)
 

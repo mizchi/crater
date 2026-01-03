@@ -28,6 +28,9 @@ pub struct ConstraintSpace {
   // For percentage resolution
   parent_width : Double
   parent_height : Double?
+  // Viewport dimensions for viewport-relative units
+  viewport_width : Double
+  viewport_height : Double
 }
 
 ///|
@@ -37,6 +40,8 @@ pub fn ConstraintSpace::new(
   sizing_mode : @node.SizingMode,
   parent_width : Double,
   parent_height : Double?,
+  viewport_width? : Double = 0.0,
+  viewport_height? : Double = 0.0,
 ) -> ConstraintSpace {
   {
     available_width,
@@ -44,6 +49,8 @@ pub fn ConstraintSpace::new(
     sizing_mode,
     parent_width,
     parent_height,
+    viewport_width,
+    viewport_height,
   }
 }
 
@@ -56,6 +63,8 @@ pub fn ConstraintSpace::to_context(
     available_width: self.available_width,
     available_height: self.available_height,
     sizing_mode: self.sizing_mode,
+    viewport_width: self.viewport_width,
+    viewport_height: self.viewport_height,
   }
 }
 

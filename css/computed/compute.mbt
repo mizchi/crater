@@ -306,6 +306,7 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.position {
         @style.Position::Relative => "relative"
         @style.Position::Absolute => "absolute"
+        @style.Position::Fixed => "fixed"
       }
     "flex-direction" =>
       match style.flex_direction {

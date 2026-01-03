@@ -207,6 +207,8 @@ fn parse_position(tokens : ArrayView[@token.Token]) -> @style.Position? {
         Some(@style.Relative)
       } else if s == "absolute" {
         Some(@style.Absolute)
+      } else if s == "fixed" {
+        Some(@style.Fixed)
       } else {
         None
       }
