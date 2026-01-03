@@ -250,6 +250,28 @@ fn create_image_measure(
 }
 
 ///|
+/// Create a MeasureFunc for input elements with intrinsic dimensions
+fn create_input_measure(
+  intrinsic_width : Double,
+  intrinsic_height : Double,
+) -> @node.MeasureFunc {
+  {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
+      // Input elements have fixed intrinsic dimensions based on type
+      {
+        min_width: intrinsic_width,
+        max_width: intrinsic_width,
+        min_height: intrinsic_height,
+        max_height: intrinsic_height,
+      }
+    },
+  }
+}
+
+///|
 /// Parse dimension from HTML attribute (e.g., "300" or "300px")
 fn parse_html_dimension(value : String) -> Double? {
   let trimmed = value.trim().to_string()
@@ -737,8 +759,42 @@ fn element_to_node_with_styles_internal(
   }
   let node_id = make_node_id(elem)
 
-  // Handle replaced elements (img, etc.) with intrinsic sizing
-  if elem.tag.to_lower() == "img" && children.is_empty() {
+  // Handle replaced elements (img, input, etc.) with intrinsic sizing
+  let tag_lower = elem.tag.to_lower()
+  if tag_lower == "input" && children.is_empty() {
+    // Get input type (default is "text")
+    let input_type = match elem.attributes.get("type") {
+      Some(t) => t.to_lower()
+      None => "text"
+    }
+    // Get intrinsic dimensions based on input type
+    // These are approximate browser defaults
+    let (intrinsic_width, intrinsic_height) : (Double, Double) = match input_type {
+      "radio" | "checkbox" => (13.0, 13.0)
+      "button" | "submit" | "reset" => (80.0, 21.0)
+      "range" => (129.0, 21.0)
+      "color" => (44.0, 23.0)
+      "file" => (238.0, 21.0)
+      // text, password, email, url, tel, search, number, date, etc.
+      _ => (150.0, 21.0)
+    }
+    let measure = create_input_measure(intrinsic_width, intrinsic_height)
+    let input_style : @style.Style = {
+      ..style,
+      width: if style.width == @types.Auto {
+        @types.Length(intrinsic_width)
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        @types.Length(intrinsic_height)
+      } else {
+        style.height
+      },
+    }
+    return @node.Node::with_measure(node_id, input_style, measure)
+  }
+  if tag_lower == "img" && children.is_empty() {
     // Get intrinsic dimensions from HTML attributes first
     let mut intrinsic_width = match elem.attributes.get("width") {
       Some(w) => parse_html_dimension(w).unwrap_or(0.0)
