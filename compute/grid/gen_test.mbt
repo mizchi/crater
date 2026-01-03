@@ -79,7 +79,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -133,7 +133,7 @@ test "taffy/chrome_issue_325928327" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -169,6 +169,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -178,6 +179,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -187,6 +189,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -196,6 +199,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -205,6 +209,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -214,6 +219,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -223,6 +229,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -232,6 +239,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -240,7 +248,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -316,7 +324,7 @@ test "taffy/grid_absolute_column_end" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -364,7 +372,7 @@ test "taffy/grid_absolute_column_start" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -435,7 +443,7 @@ test "taffy/grid_absolute_container_bottom_left" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -546,7 +554,7 @@ test "taffy/grid_absolute_container_bottom_left_margin" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -650,7 +658,7 @@ test "taffy/grid_absolute_container_left_overrides_right" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -753,7 +761,7 @@ test "taffy/grid_absolute_container_left_right" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -862,7 +870,7 @@ test "taffy/grid_absolute_container_left_right_margin" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -974,7 +982,7 @@ test "taffy/grid_absolute_container_negative_position" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -1098,7 +1106,7 @@ test "taffy/grid_absolute_container_negative_position_margin" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -1201,7 +1209,7 @@ test "taffy/grid_absolute_container_top_bottom" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -1310,7 +1318,7 @@ test "taffy/grid_absolute_container_top_bottom_margin" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -1413,7 +1421,7 @@ test "taffy/grid_absolute_container_top_right" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -1522,7 +1530,7 @@ test "taffy/grid_absolute_container_top_right_margin" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -1657,7 +1665,7 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -1786,7 +1794,7 @@ test "taffy/grid_absolute_layout_within_border" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1832,6 +1840,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1842,6 +1851,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1852,6 +1862,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1868,6 +1879,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     position: @style.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1883,7 +1895,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2109,7 +2121,7 @@ test "taffy/grid_absolute_resolved_insets" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -2209,7 +2221,7 @@ test "taffy/grid_absolute_row_end" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -2257,7 +2269,7 @@ test "taffy/grid_absolute_row_start" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -2329,7 +2341,7 @@ test "taffy/grid_absolute_top_overrides_bottom" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -2441,7 +2453,7 @@ test "taffy/grid_absolute_with_padding" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -2565,7 +2577,7 @@ test "taffy/grid_absolute_with_padding_and_margin" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -2656,7 +2668,7 @@ test "taffy/grid_align_content_center" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2767,7 +2779,7 @@ test "taffy/grid_align_content_center_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -2862,7 +2874,7 @@ test "taffy/grid_align_content_end" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2973,7 +2985,7 @@ test "taffy/grid_align_content_end_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -3080,7 +3092,7 @@ test "taffy/grid_align_content_end_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -3171,7 +3183,7 @@ test "taffy/grid_align_content_space_around" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -3282,7 +3294,7 @@ test "taffy/grid_align_content_space_around_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -3389,7 +3401,7 @@ test "taffy/grid_align_content_space_around_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -3480,7 +3492,7 @@ test "taffy/grid_align_content_space_between" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -3591,7 +3603,7 @@ test "taffy/grid_align_content_space_between_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -3698,7 +3710,7 @@ test "taffy/grid_align_content_space_between_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -3789,7 +3801,7 @@ test "taffy/grid_align_content_space_evenly" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -3900,7 +3912,7 @@ test "taffy/grid_align_content_space_evenly_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -4007,7 +4019,7 @@ test "taffy/grid_align_content_space_evenly_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4098,7 +4110,7 @@ test "taffy/grid_align_content_start" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4209,7 +4221,7 @@ test "taffy/grid_align_content_start_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -4316,7 +4328,7 @@ test "taffy/grid_align_content_start_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4386,7 +4398,7 @@ test "taffy/grid_align_items_baseline" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4439,7 +4451,7 @@ test "taffy/grid_align_items_baseline_child" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4508,7 +4520,7 @@ test "taffy/grid_align_items_baseline_child_margin" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4577,7 +4589,7 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4658,7 +4670,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4744,7 +4756,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
     display: @style.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -4753,7 +4765,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4823,7 +4835,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
     display: @style.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_child1 = @node.Node::leaf("node", root_child1_child1_style)
   root_child1_children.push(root_child1_child1)
@@ -4840,7 +4852,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
     display: @style.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Auto,
+    align_self: @style.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -4849,7 +4861,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4930,7 +4942,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4993,7 +5005,7 @@ test "taffy/grid_align_items_baseline_child_top" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5056,7 +5068,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5195,7 +5207,7 @@ test "taffy/grid_align_items_baseline_complex" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -5303,7 +5315,7 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5392,7 +5404,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5489,7 +5501,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5586,7 +5598,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5673,7 +5685,7 @@ test "taffy/grid_align_items_baseline_nested_column" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5741,7 +5753,7 @@ test "taffy/grid_align_items_sized_center" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -5797,7 +5809,7 @@ test "taffy/grid_align_items_sized_end" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -5853,7 +5865,7 @@ test "taffy/grid_align_items_sized_start" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -5909,7 +5921,7 @@ test "taffy/grid_align_items_sized_stretch" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -5945,6 +5957,7 @@ test "taffy/grid_align_self_sized_all" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @style.AlignSelf::Start,
@@ -5953,6 +5966,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @style.AlignSelf::Start,
@@ -5961,6 +5975,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @style.AlignSelf::End,
@@ -5969,6 +5984,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @style.AlignSelf::End,
@@ -5977,6 +5993,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @style.AlignSelf::Center,
@@ -5985,6 +6002,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @style.AlignSelf::Center,
@@ -5993,6 +6011,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @style.AlignSelf::Stretch,
@@ -6001,6 +6020,7 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @style.AlignSelf::Stretch,
@@ -6008,7 +6028,7 @@ test "taffy/grid_align_self_sized_all" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -6070,7 +6090,7 @@ test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_ins
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -6104,7 +6124,7 @@ test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -6138,7 +6158,7 @@ test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -6173,7 +6193,7 @@ test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -6208,7 +6228,7 @@ test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -6243,7 +6263,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_height" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -6282,7 +6302,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_width" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -6314,7 +6334,7 @@ test "taffy/grid_aspect_ratio_fill_child_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6354,7 +6374,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_height" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6389,7 +6409,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_width" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6417,7 +6437,7 @@ test "taffy/grid_aspect_ratio_fill_child_min_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6445,7 +6465,7 @@ test "taffy/grid_aspect_ratio_fill_child_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6474,7 +6494,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6503,7 +6523,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6557,7 +6577,7 @@ test "taffy/grid_auto_columns" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 190.0)
@@ -6666,7 +6686,7 @@ test "taffy/grid_auto_columns_fixed_width" {
   let root_child15 = @node.Node::leaf("node", root_child15_style)
   root_children.push(root_child15)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -6783,7 +6803,7 @@ test "taffy/grid_auto_fill_fixed_size" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -6851,7 +6871,7 @@ test "taffy/grid_auto_fill_with_empty_auto_track" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -6926,7 +6946,7 @@ test "taffy/grid_auto_fit_definite_percentage" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 730.0)
@@ -6994,7 +7014,7 @@ test "taffy/grid_auto_fit_with_empty_auto_track" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -7051,7 +7071,7 @@ test "taffy/grid_auto_rows" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -7138,7 +7158,7 @@ test "taffy/grid_auto_single_item" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -7226,7 +7246,7 @@ test "taffy/grid_auto_single_item_fixed_width" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -7314,7 +7334,7 @@ test "taffy/grid_auto_single_item_fixed_width_with_definite_width" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -7375,7 +7395,7 @@ test "taffy/grid_auto_takes_precedence_over_fr" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -7419,7 +7439,7 @@ test "taffy/grid_available_space_greater_than_max_content" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 160.0)
@@ -7463,7 +7483,7 @@ test "taffy/grid_available_space_smaller_than_max_content" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -7507,7 +7527,7 @@ test "taffy/grid_available_space_smaller_than_min_content" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -7569,7 +7589,7 @@ test "taffy/grid_basic" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -7632,7 +7652,7 @@ test "taffy/grid_basic_implicit_tracks" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -7697,7 +7717,7 @@ test "taffy/grid_basic_with_overflow" {
   let root_child9 = @node.Node::leaf("node", root_child9_style)
   root_children.push(root_child9)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -7795,7 +7815,7 @@ test "taffy/grid_basic_with_padding" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -7847,7 +7867,11 @@ test "taffy/grid_display_none_fixed_size" {
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), flex_grow: 1.0 }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_grow: 1.0,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
@@ -7859,7 +7883,7 @@ test "taffy/grid_display_none_fixed_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -7895,7 +7919,7 @@ test "taffy/grid_fit_content_percent_definite_argument" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -7927,7 +7951,7 @@ test "taffy/grid_fit_content_percent_definite_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -7959,7 +7983,7 @@ test "taffy/grid_fit_content_percent_definite_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -7990,7 +8014,7 @@ test "taffy/grid_fit_content_percent_indefinite_argument" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8021,7 +8045,7 @@ test "taffy/grid_fit_content_percent_indefinite_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -8056,7 +8080,7 @@ test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -8087,7 +8111,7 @@ test "taffy/grid_fit_content_percent_indefinite_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8122,7 +8146,7 @@ test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8153,7 +8177,7 @@ test "taffy/grid_fit_content_points_argument" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -8184,7 +8208,7 @@ test "taffy/grid_fit_content_points_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -8215,7 +8239,7 @@ test "taffy/grid_fit_content_points_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -8250,7 +8274,7 @@ test "taffy/grid_fit_content_points_min_content_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -8281,7 +8305,7 @@ test "taffy/grid_fr_fixed_size_no_content_proportions" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -8317,7 +8341,7 @@ test "taffy/grid_fr_fixed_size_no_content_proportions_sub_1_sum" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -8374,7 +8398,7 @@ test "taffy/grid_fr_fixed_size_single_item" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -8454,7 +8478,7 @@ test "taffy/grid_fr_no_sized_items_indefinite" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -8539,7 +8563,7 @@ test "taffy/grid_fr_single_item_indefinite" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -8605,7 +8629,7 @@ test "taffy/grid_fr_span_2_proportion" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8647,7 +8671,7 @@ test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8695,7 +8719,7 @@ test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -8745,7 +8769,7 @@ test "taffy/grid_fr_span_2_proportion_zero_sum" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8793,7 +8817,7 @@ test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -8869,7 +8893,7 @@ test "taffy/grid_gap" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -8959,7 +8983,7 @@ test "taffy/grid_hidden" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -9050,7 +9074,7 @@ test "taffy/grid_justify_content_center" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9161,7 +9185,7 @@ test "taffy/grid_justify_content_center_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -9268,7 +9292,7 @@ test "taffy/grid_justify_content_center_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9359,7 +9383,7 @@ test "taffy/grid_justify_content_end" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9470,7 +9494,7 @@ test "taffy/grid_justify_content_end_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -9577,7 +9601,7 @@ test "taffy/grid_justify_content_end_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9668,7 +9692,7 @@ test "taffy/grid_justify_content_space_around" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9779,7 +9803,7 @@ test "taffy/grid_justify_content_space_around_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -9886,7 +9910,7 @@ test "taffy/grid_justify_content_space_around_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9977,7 +10001,7 @@ test "taffy/grid_justify_content_space_between" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -10088,7 +10112,7 @@ test "taffy/grid_justify_content_space_between_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -10195,7 +10219,7 @@ test "taffy/grid_justify_content_space_between_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -10286,7 +10310,7 @@ test "taffy/grid_justify_content_space_evenly" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -10397,7 +10421,7 @@ test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -10504,7 +10528,7 @@ test "taffy/grid_justify_content_space_evenly_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -10595,7 +10619,7 @@ test "taffy/grid_justify_content_start" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -10706,7 +10730,7 @@ test "taffy/grid_justify_content_start_negative_space_gap" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 240.0)
@@ -10813,7 +10837,7 @@ test "taffy/grid_justify_content_start_with_padding_border" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -10897,7 +10921,7 @@ test "taffy/grid_justify_items_sized_center" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -10953,7 +10977,7 @@ test "taffy/grid_justify_items_sized_end" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -11009,7 +11033,7 @@ test "taffy/grid_justify_items_sized_start" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -11065,7 +11089,7 @@ test "taffy/grid_justify_items_sized_stretch" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -11164,7 +11188,7 @@ test "taffy/grid_justify_self_sized_all" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -11250,6 +11274,7 @@ test "taffy/grid_margins_auto_margins" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     height: @types.Length(20.0),
     margin: {
       left: @types.Length(0.0),
@@ -11266,6 +11291,7 @@ test "taffy/grid_margins_auto_margins" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11286,7 +11312,7 @@ test "taffy/grid_margins_auto_margins" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -11372,6 +11398,7 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -11397,7 +11424,7 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -11465,6 +11492,7 @@ test "taffy/grid_margins_fixed_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11494,7 +11522,7 @@ test "taffy/grid_margins_fixed_center" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -11550,6 +11578,7 @@ test "taffy/grid_margins_fixed_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11579,7 +11608,7 @@ test "taffy/grid_margins_fixed_end" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -11635,6 +11664,7 @@ test "taffy/grid_margins_fixed_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11664,7 +11694,7 @@ test "taffy/grid_margins_fixed_start" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -11720,6 +11750,7 @@ test "taffy/grid_margins_fixed_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11749,7 +11780,7 @@ test "taffy/grid_margins_fixed_stretch" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 180.0)
@@ -11799,6 +11830,7 @@ test "taffy/grid_margins_percent_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11828,7 +11860,7 @@ test "taffy/grid_margins_percent_center" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -11878,6 +11910,7 @@ test "taffy/grid_margins_percent_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11907,7 +11940,7 @@ test "taffy/grid_margins_percent_end" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -11957,6 +11990,7 @@ test "taffy/grid_margins_percent_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11986,7 +12020,7 @@ test "taffy/grid_margins_percent_start" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -12036,6 +12070,7 @@ test "taffy/grid_margins_percent_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -12065,7 +12100,7 @@ test "taffy/grid_margins_percent_stretch" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -12151,7 +12186,7 @@ test "taffy/grid_max_content_maximum_single_item" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -12246,7 +12281,7 @@ test "taffy/grid_max_content_single_item" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -12349,7 +12384,7 @@ test "taffy/grid_max_content_single_item_margin_auto" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -12452,7 +12487,7 @@ test "taffy/grid_max_content_single_item_margin_fixed" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -12555,7 +12590,7 @@ test "taffy/grid_max_content_single_item_margin_percent" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -12653,7 +12688,7 @@ test "taffy/grid_max_content_single_item_span_2" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -12752,7 +12787,7 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -12852,7 +12887,7 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -12951,7 +12986,7 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13034,7 +13069,7 @@ test "taffy/grid_max_width_greater_than_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 160.0)
@@ -13093,7 +13128,7 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -13152,7 +13187,7 @@ test "taffy/grid_max_width_smaller_than_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -13211,7 +13246,7 @@ test "taffy/grid_max_width_smaller_than_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -13280,7 +13315,7 @@ test "taffy/grid_min_content_flex_column" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -13353,7 +13388,7 @@ test "taffy/grid_min_content_flex_row" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -13431,7 +13466,7 @@ test "taffy/grid_min_content_flex_single_item" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -13537,7 +13572,7 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -13643,7 +13678,7 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -13749,7 +13784,7 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -13843,7 +13878,7 @@ test "taffy/grid_min_content_maximum_single_item" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13938,7 +13973,7 @@ test "taffy/grid_min_content_single_item" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14006,7 +14041,7 @@ test "taffy/grid_minmax_auto_fixed_10px" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -14042,7 +14077,7 @@ test "taffy/grid_minmax_auto_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14078,7 +14113,7 @@ test "taffy/grid_minmax_auto_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -14115,7 +14150,7 @@ test "taffy/grid_minmax_auto_percent_definite" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14151,7 +14186,7 @@ test "taffy/grid_minmax_auto_percent_indefinite" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14211,7 +14246,7 @@ test "taffy/grid_minmax_column_fixed_width_above_range" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 140.0)
@@ -14303,7 +14338,7 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 90.0)
@@ -14395,7 +14430,7 @@ test "taffy/grid_minmax_column_fixed_width_within_range" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -14486,7 +14521,7 @@ test "taffy/grid_minmax_column_indefinite" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -14552,7 +14587,7 @@ test "taffy/grid_minmax_column_with_auto_fixed" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -14590,7 +14625,7 @@ test "taffy/grid_minmax_column_with_fr_fixed" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -14630,7 +14665,7 @@ test "taffy/grid_minmax_max_content_1fr" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14666,7 +14701,7 @@ test "taffy/grid_minmax_max_content_auto" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14702,7 +14737,7 @@ test "taffy/grid_minmax_max_content_fixed_10px" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14738,7 +14773,7 @@ test "taffy/grid_minmax_max_content_min_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14775,7 +14810,7 @@ test "taffy/grid_minmax_max_content_percent_definite" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14811,7 +14846,7 @@ test "taffy/grid_minmax_max_content_percent_indefinite" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14847,7 +14882,7 @@ test "taffy/grid_minmax_min_content_1fr" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14883,7 +14918,7 @@ test "taffy/grid_minmax_min_content_auto" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14919,7 +14954,7 @@ test "taffy/grid_minmax_min_content_fixed_10px" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -14955,7 +14990,7 @@ test "taffy/grid_minmax_min_content_max_content" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -14992,7 +15027,7 @@ test "taffy/grid_minmax_min_content_percent_definite" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15028,7 +15063,7 @@ test "taffy/grid_minmax_min_content_percent_indefinite" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -15104,7 +15139,7 @@ test "taffy/grid_out_of_order_items" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -15171,7 +15206,7 @@ test "taffy/grid_overflow_inline_axis_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -15206,7 +15241,7 @@ test "taffy/grid_overflow_inline_axis_scroll" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -15237,7 +15272,7 @@ test "taffy/grid_overflow_inline_axis_visible" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -15291,7 +15326,7 @@ test "taffy/grid_overflow_rows" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -15346,7 +15381,7 @@ test "taffy/grid_overflow_scrollbars_overridden_by_available_space" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -15376,7 +15411,7 @@ test "taffy/grid_overflow_scrollbars_overridden_by_max_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -15402,7 +15437,7 @@ test "taffy/grid_overflow_scrollbars_overridden_by_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -15428,7 +15463,7 @@ test "taffy/grid_overflow_scrollbars_take_up_space_both_axis" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -15453,7 +15488,7 @@ test "taffy/grid_overflow_scrollbars_take_up_space_x_axis" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -15478,7 +15513,7 @@ test "taffy/grid_overflow_scrollbars_take_up_space_y_axis" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -15514,7 +15549,7 @@ test "taffy/grid_padding_border_overrides_container_max_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -15550,7 +15585,7 @@ test "taffy/grid_padding_border_overrides_container_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -15585,7 +15620,7 @@ test "taffy/grid_padding_border_overrides_max_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -15620,7 +15655,7 @@ test "taffy/grid_padding_border_overrides_min_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -15655,7 +15690,7 @@ test "taffy/grid_padding_border_overrides_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -15689,7 +15724,7 @@ test "taffy/grid_percent_item_inside_stretch_item" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15731,7 +15766,7 @@ test "taffy/grid_percent_items_nested_inside_stretch_alignment" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -15801,7 +15836,7 @@ test "taffy/grid_percent_items_nested_moderate" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -15847,7 +15882,7 @@ test "taffy/grid_percent_items_nested_with_margin" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -15940,7 +15975,7 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -15996,7 +16031,7 @@ test "taffy/grid_percent_items_width_and_margin" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -16028,7 +16063,7 @@ test "taffy/grid_percent_items_width_and_padding" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -16073,7 +16108,7 @@ test "taffy/grid_percent_tracks_definite_overflow" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16138,7 +16173,7 @@ test "taffy/grid_percent_tracks_definite_underflow" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16201,7 +16236,7 @@ test "taffy/grid_percent_tracks_indefinite_only" {
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -16279,7 +16314,7 @@ test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16361,7 +16396,7 @@ test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16425,7 +16460,7 @@ test "taffy/grid_placement_auto_negative" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16476,7 +16511,7 @@ test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negati
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16536,7 +16571,7 @@ test "taffy/grid_placement_definite_primary" {
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -16585,7 +16620,7 @@ test "taffy/grid_relative_all_sides" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16626,7 +16661,7 @@ test "taffy/grid_relayout_vertical_text" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -16684,7 +16719,7 @@ test "taffy/grid_repeat_integer" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16774,7 +16809,7 @@ test "taffy/grid_repeat_mixed" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16838,6 +16873,7 @@ test "taffy/grid_size_child_fixed_tracks" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     align_self: @style.AlignSelf::Start,
     justify_self: @style.AlignSelf::Start,
   }
@@ -16852,6 +16888,7 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     align_self: @style.AlignSelf::Start,
     justify_self: @style.AlignSelf::Start,
   }
@@ -16866,6 +16903,7 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     align_self: @style.AlignSelf::Start,
     justify_self: @style.AlignSelf::Start,
   }
@@ -16880,6 +16918,7 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(20.0),
     align_self: @style.AlignSelf::Start,
     justify_self: @style.AlignSelf::Start,
@@ -16895,6 +16934,7 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     max_width: @types.Length(30.0),
     align_self: @style.AlignSelf::Start,
     justify_self: @style.AlignSelf::Start,
@@ -16909,7 +16949,7 @@ test "taffy/grid_size_child_fixed_tracks" {
   )
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -17033,7 +17073,7 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
   let root_child13 = @node.Node::leaf("node", root_child13_style)
   root_children.push(root_child13)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 322.0)
@@ -17195,7 +17235,7 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
   let root_child13 = @node.Node::leaf("node", root_child13_style)
   root_children.push(root_child13)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 322.0)
@@ -17299,7 +17339,7 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17344,7 +17384,7 @@ test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -17400,7 +17440,7 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17462,7 +17502,7 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17522,7 +17562,7 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17584,7 +17624,7 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17644,7 +17684,7 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17692,7 +17732,7 @@ test "taffy/grid_span_2_min_content_auto_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17742,7 +17782,7 @@ test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17802,7 +17842,7 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -17864,7 +17904,7 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -17924,7 +17964,7 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -17986,7 +18026,7 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 70.0)
@@ -18046,7 +18086,7 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -18108,7 +18148,7 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -18168,7 +18208,7 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -18228,7 +18268,7 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -18295,7 +18335,7 @@ test "taffy/grid_span_6_all_non_flex_indefinite" {
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 160.0)
@@ -18380,7 +18420,7 @@ test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 160.0)
@@ -18471,7 +18511,7 @@ test "taffy/grid_span_8_all_track_types_indefinite" {
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 160.0)
@@ -18558,7 +18598,7 @@ test "taffy/grid_taffy_issue_624" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)

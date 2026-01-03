@@ -510,7 +510,7 @@ function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' | 'block' =
     lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent }`);
     lines.push(`  let layout = compute(root, ctx)`);
   } else {
-    lines.push(`  let layout = compute_grid_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
+    lines.push(`  let layout = compute_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
   }
   lines.push('');
 

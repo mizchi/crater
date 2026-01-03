@@ -4,7 +4,11 @@
 
 ///|
 test "taffy/gridflex_column_integration" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    flex_direction: @style.Column,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -58,7 +62,7 @@ test "taffy/gridflex_column_integration" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -108,7 +112,9 @@ test "taffy/gridflex_kitchen_sink" {
   root_child0_child0_children.push(root_child0_child0_child0)
   let root_child0_child0_child1_style = {
     ..@style.Style::default(),
+    display: @style.Flex,
     width: @types.Length(50.0),
+    flex_grow: 1.0,
   }
   let root_child0_child0_child1_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_style = {
@@ -202,7 +208,7 @@ test "taffy/gridflex_kitchen_sink" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 140.0)
@@ -336,7 +342,7 @@ test "taffy/gridflex_kitchen_sink_minimise" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -357,7 +363,12 @@ test "taffy/gridflex_kitchen_sink_minimise" {
 
 ///|
 test "taffy/gridflex_kitchen_sink_minimise2" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    display: @style.Flex,
+    width: @types.Length(50.0),
+    flex_grow: 1.0,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -378,7 +389,7 @@ test "taffy/gridflex_kitchen_sink_minimise2" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -425,7 +436,7 @@ test "taffy/gridflex_kitchen_sink_minimise3" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -508,7 +519,7 @@ test "taffy/gridflex_row_integration" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
