@@ -19,27 +19,35 @@ This library focuses purely on **layout calculation** - it computes the `x`, `y`
 
 Layout algorithm tests ported from Taffy:
 
-- **1177 / 1342 tests passing** (87.7%)
+- **1185 / 1436 tests passing** (82.5%)
 - Covers Flexbox, Grid, and Block layout
 
 ### Web Platform Tests (WPT)
 
-CSS Flexbox tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
+CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), compared against Chromium reference:
 
-- **151 / 234 tests passing** (65%)
-- Compares layout output against Chromium reference
+| Module | Passed | Total | Rate |
+|--------|--------|-------|------|
+| css-flexbox | 151 | 234 | 65% |
+| css-grid | 16 | 30 | 53% |
+| css-sizing | 18 | 50 | 36% |
+| css-overflow | 5 | 20 | 25% |
+| css-position | 4 | 30 | 13% |
 
 ## Features
 
 - Flexbox layout (direction, wrap, wrap-reverse, alignment, grow/shrink)
 - CSS Grid layout (templates, auto-placement, areas, fr units, minmax, repeat)
 - Block layout with margin collapsing
+- Inline layout with inline-block support
 - Box model (margin, padding, border)
 - Percentage and fixed dimensions
 - `min-width`, `max-width`, `min-height`, `max-height`
 - `gap` property for flex and grid
 - Aspect ratio
 - CSS border shorthand parsing
+- `position: relative/absolute/fixed` positioning
+- `overflow-x`, `overflow-y` properties
 
 ## Limitations
 

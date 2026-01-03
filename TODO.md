@@ -1,6 +1,32 @@
 # TODO
 
-## High Priority (Test Failures)
+## Completed ✅
+
+- [x] `position: fixed` viewport-based positioning
+- [x] `overflow-x`, `overflow-y` in Layout struct
+- [x] Inline layout (display: inline, inline-block)
+- [x] Inline Formatting Context (IFC)
+
+## High Priority (WPT Test Failures)
+
+### Baseline Alignment (~25 WPT tests)
+- [ ] Implement baseline calculation for flex items
+- [ ] Handle baseline with padding/margin
+- [ ] Multiline baseline in flex and grid
+
+### Writing Modes (~20 WPT tests)
+- [ ] vertical-lr, vertical-rl support
+- [ ] Direction-aware layout calculations
+
+### flex-wrap: wrap-reverse
+- [ ] Fix alignment in wrap-reverse mode
+- [ ] Cross-axis positioning for reversed lines
+
+### position: relative with negative offsets
+- [ ] Handle negative top/left values
+- [ ] Proper offset from normal flow position
+
+## Medium Priority (Taffy Test Failures)
 
 ### display: none (~7 tests)
 - [ ] Skip hidden elements in layout calculation
@@ -10,16 +36,6 @@
 - [ ] Fix min-content/max-content for nested containers
 - [ ] Implement proper measure functions for leaf nodes
 - [ ] Handle `Infinity` values correctly in sizing
-
-### Absolute Positioning (~10 tests)
-- [ ] Fix inset resolution with percentages
-- [ ] Correct border/padding interaction with absolute items
-
-### Baseline Alignment (~10 tests)
-- [ ] Fix baseline calculation with padding/margin
-- [ ] Handle multiline baseline in flex and grid
-
-## Medium Priority
 
 ### Span Items in Grid (~15 tests)
 - [ ] Fix intrinsic sizing for items spanning multiple tracks
@@ -33,19 +49,15 @@
 - [ ] Fix interaction with max-width/max-height constraints
 - [ ] Correct fill mode with constraints
 
-### Margin Collapsing Edge Cases
-- [ ] Fix complex margin collapse scenarios
-- [ ] Handle line-box blocking correctly
-
 ## Low Priority (Future Features)
 
-- [ ] Renderer improvements
-- [ ] Sixel renderer
-- [ ] SVG renderer
+- [ ] Table layout (thead, tbody, caption)
+- [ ] Overflow clipping during rendering
+- [ ] z-index stacking context
+- [ ] Renderer improvements (Sixel, SVG)
 - [ ] CLS => Web Vitals metrics
 - [ ] ShadowRoot support
 - [ ] CSS Variables
-- [ ] User Agent default CSS
 
 ## Documentation
 

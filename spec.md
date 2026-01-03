@@ -11,7 +11,7 @@ Pure MoonBit implementation of CSS layout calculation.
 
 ## Current Status
 
-**Overall: 1177/1342 tests passing (87.7%)**
+**Taffy Tests: 1185/1436 tests passing (82.5%)**
 
 - [x] Basic geometry types (Size, Point, Rect, BoundingRect)
 - [x] Dimension (Length, Percent, Auto)
@@ -110,8 +110,9 @@ Pure MoonBit implementation of CSS layout calculation.
 
 1. **Phase 1**: Flex layout ✅
 2. **Phase 2**: Grid layout ✅ (78.9% tests passing)
-3. **Phase 3**: `position: absolute/fixed` (partial - relative positioning done)
-4. **Phase 4**: Float (simplified, if needed)
+3. **Phase 3**: `position: absolute/fixed` ✅ (relative, absolute, fixed positioning)
+4. **Phase 4**: Inline layout ✅ (inline, inline-block, IFC)
+5. **Phase 5**: Float (simplified, if needed)
 
 ## Unsupported Features Policy
 
@@ -186,10 +187,30 @@ Use cases:
 
 ### Future Features
 
-- [ ] `position: absolute` layout
-- [ ] `overflow` handling
+- [x] `position: absolute/fixed` layout ✅
+- [x] `overflow-x/overflow-y` in Layout ✅
 - [ ] `z-index` stacking context (for hit testing order)
-- [ ] CSS Grid tracks and areas
+- [ ] Overflow clipping during rendering
+
+## Web Platform Tests (WPT) Status
+
+Tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), compared against Chromium:
+
+| Module | Passed | Total | Rate |
+|--------|--------|-------|------|
+| css-flexbox | 151 | 234 | 65% |
+| css-grid | 16 | 30 | 53% |
+| css-sizing | 18 | 50 | 36% |
+| css-overflow | 5 | 20 | 25% |
+| css-position | 4 | 30 | 13% |
+
+### WPT Failure Categories
+
+1. **Baseline alignment** - Not yet implemented
+2. **Writing modes** (vertical-lr, vertical-rl) - Not implemented
+3. **flex-wrap: wrap-reverse** - Alignment issues
+4. **position: relative** with negative offsets - Not handled
+5. **Table elements** (thead, tbody, caption) - Not implemented
 
 ## Test Porting Plan
 
