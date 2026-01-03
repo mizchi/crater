@@ -70,6 +70,7 @@ const INCLUDE_PREFIXES = [
   "visibility-",
   // Position
   "position-",
+  "relative-",
   "sticky-",
   "fixed-",
   // Overflow

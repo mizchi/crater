@@ -1,4 +1,11 @@
 ///|
+test "parse negative top left" {
+  let style = parse_inline_style("top: -20px; left: -40px")
+  inspect(style.inset.top, content="Length(-20)")
+  inspect(style.inset.left, content="Length(-40)")
+}
+
+///|
 test "parse basic width and height" {
   let style = parse_inline_style("width: 100px; height: 50px")
   inspect(style.width, content="Length(100)")

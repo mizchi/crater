@@ -1524,6 +1524,26 @@ fn merge_style_property(
   if property == "aspect-ratio" {
     return { ..target, aspect_ratio: source.aspect_ratio }
   }
+  // Position properties
+  if property == "position" {
+    return { ..target, position: source.position }
+  }
+  // Inset properties (top, right, bottom, left)
+  if property == "top" {
+    return { ..target, inset: { ..target.inset, top: source.inset.top } }
+  }
+  if property == "right" {
+    return { ..target, inset: { ..target.inset, right: source.inset.right } }
+  }
+  if property == "bottom" {
+    return { ..target, inset: { ..target.inset, bottom: source.inset.bottom } }
+  }
+  if property == "left" {
+    return { ..target, inset: { ..target.inset, left: source.inset.left } }
+  }
+  if property == "inset" {
+    return { ..target, inset: source.inset }
+  }
   target
 }
 
