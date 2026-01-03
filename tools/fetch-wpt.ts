@@ -51,6 +51,23 @@ const INCLUDE_PREFIXES = [
   "grid-column",
   "grid-gap",
   "grid-placement",
+  // Sizing
+  "aspect-ratio",
+  "block-size",
+  "inline-size",
+  "min-content",
+  "max-content",
+  "fit-content",
+  "intrinsic",
+  "contain-intrinsic",
+  // Box model
+  "margin-",
+  "padding-",
+  "border-",
+  "box-sizing",
+  // Display
+  "display-",
+  "visibility-",
 ];
 
 interface GitHubFile {
