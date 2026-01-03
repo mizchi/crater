@@ -858,6 +858,8 @@ fn compute_internal(
     }
     _ => None
   }
+  // Check if this is a block-level flex container (Flex) vs inline-level (InlineFlex)
+  let is_block_level = style.display == @style.Flex
   let mut container_width = match intrinsic_from_measure {
     Some((w, _)) => w
     None =>
@@ -867,7 +869,20 @@ fn compute_internal(
         @types.Auto =>
           match ctx.sizing_mode {
             // Block-level flex containers with width:auto should fill available width minus margins
-            @node.Definite => parent_width - margin.horizontal_sum()
+            // Inline-level flex (InlineFlex) should use content-based sizing
+            @node.Definite =>
+              if is_block_level {
+                parent_width - margin.horizontal_sum()
+              } else {
+                // InlineFlex: use content-based sizing
+                if node.children.length() > 0 {
+                  compute_intrinsic_main_size(
+                    node, true, ctx.available_height, cache,
+                  )
+                } else {
+                  padding.horizontal_sum() + border.horizontal_sum()
+                }
+              }
             @node.MaxContent =>
               // For MaxContent, compute intrinsic width
               if node.children.length() > 0 {

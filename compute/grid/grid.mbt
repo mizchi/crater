@@ -623,8 +623,11 @@ fn compute_grid_layout_internal(
     @types.Length(v) => v
     @types.Percent(p) => p * available_height
     @types.Auto => 1.0e10
-    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-      @double.infinity
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+      // For intrinsic max-height, use track heights + padding + border
+      let total_track_height = calculate_total_track_size(row_tracks, row_gap)
+      total_track_height + padding_top + padding_bottom + border_top + border_bottom
+    }
   }
   let container_width = if width_is_auto {
     // Block-level Grid in Definite sizing mode expands to fill available width
