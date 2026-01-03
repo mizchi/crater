@@ -921,10 +921,21 @@ fn compute_with_collapse(
         box_height = min_h
       }
     }
-    @types.Auto
-    | @types.MinContent
-    | @types.MaxContent
-    | @types.FitContent(_) => ()
+    @types.MinContent | @types.MaxContent => {
+      // min-height: min-content/max-content uses content height
+      let min_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      if box_height < min_h {
+        box_height = min_h
+      }
+    }
+    @types.FitContent(_) => {
+      // fit-content for min-height acts like min-content
+      let min_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      if box_height < min_h {
+        box_height = min_h
+      }
+    }
+    @types.Auto => ()
   }
   match style.max_height {
     @types.Length(max_h) => if box_height > max_h { box_height = max_h }
@@ -934,10 +945,21 @@ fn compute_with_collapse(
         box_height = max_h
       }
     }
-    @types.Auto
-    | @types.MinContent
-    | @types.MaxContent
-    | @types.FitContent(_) => ()
+    @types.MinContent | @types.MaxContent => {
+      // max-height: min-content/max-content caps at content height
+      let max_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      if box_height > max_h {
+        box_height = max_h
+      }
+    }
+    @types.FitContent(_) => {
+      // fit-content for max-height acts like max-content
+      let max_h = content_height + padding.vertical_sum() + border.vertical_sum()
+      if box_height > max_h {
+        box_height = max_h
+      }
+    }
+    @types.Auto => ()
   }
 
   // Ensure box_height is at least padding + border (CSS rule: padding/border override max-size)
