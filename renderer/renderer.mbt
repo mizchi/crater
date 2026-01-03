@@ -1013,6 +1013,46 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Length(40.0),
         ),
       }
+    // Inline elements - HTML default display: inline
+    "span"
+    | "a"
+    | "em"
+    | "strong"
+    | "i"
+    | "b"
+    | "u"
+    | "s"
+    | "code"
+    | "abbr"
+    | "cite"
+    | "dfn"
+    | "kbd"
+    | "samp"
+    | "var"
+    | "sub"
+    | "sup"
+    | "small"
+    | "mark"
+    | "del"
+    | "ins"
+    | "q"
+    | "time"
+    | "data"
+    | "ruby"
+    | "rt"
+    | "rp"
+    | "bdi"
+    | "bdo"
+    | "wbr" => { ..default_style, display: @style.Inline }
+    // Replaced inline elements - inline by default
+    "img" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" =>
+      { ..default_style, display: @style.Inline }
+    // Form elements - inline-block by default
+    "input" | "button" | "select" | "textarea" =>
+      { ..default_style, display: @style.InlineBlock }
+    "label" => { ..default_style, display: @style.Inline }
+    // br is inline with no width
+    "br" => { ..default_style, display: @style.Inline }
     _ => default_style
   }
 }

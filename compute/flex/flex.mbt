@@ -2272,8 +2272,13 @@ fn compute_internal(
   // - For physical alignment (Start/End): position from physical start, but reverse line ORDER
   // This means lines are always in reverse visual order, but the starting position differs
   let is_flex_relative_align = match style.align_content {
-    @style.FlexStart | @style.FlexEnd | @style.Stretch | @style.Center |
-    @style.SpaceBetween | @style.SpaceAround | @style.SpaceEvenly => true
+    @style.FlexStart
+    | @style.FlexEnd
+    | @style.Stretch
+    | @style.Center
+    | @style.SpaceBetween
+    | @style.SpaceAround
+    | @style.SpaceEvenly => true
     @style.Start | @style.End | @style.Baseline => false
   }
   let uses_reversed_position = is_wrap_reverse && is_flex_relative_align

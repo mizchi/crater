@@ -255,8 +255,36 @@ fn compute_inline_child(
     return layout
   }
 
-  // For plain inline elements (no MeasureFunc), use zero size
-  // This handles wrapper inline elements
+  // For plain inline elements (no MeasureFunc), calculate size based on children
+  // and handle absolute positioned children
+  let children : Array[@node.Layout] = []
+
+  // Process children - handle absolute positioned elements
+  for child in node.children {
+    if child.style.display == @style.None {
+      children.push(create_zero_layout(child))
+    } else if child.style.position == @style.Absolute ||
+      child.style.position == @style.Fixed {
+      // Absolute/fixed children need to be laid out
+      // Use dispatch_layout to get proper sizing
+      let child_ctx : @node.LayoutContext = {
+        available_width,
+        available_height,
+        sizing_mode: @node.MaxContent,
+        viewport_width: available_width,
+        viewport_height: available_height.unwrap_or(0.0),
+      }
+      let child_layout = @node.dispatch_layout(child, child_ctx)
+      children.push(child_layout)
+    } else if is_inline_level(child.style.display) {
+      // Recursively process inline children
+      let child_layout = compute_inline_child(
+        child, available_width, available_height,
+      )
+      children.push(child_layout)
+    }
+    // Block-level children in inline context are not supported (would need anonymous blocks)
+  }
   {
     id: node.id,
     x: 0.0,
@@ -268,7 +296,7 @@ fn compute_inline_child(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
-    children: [],
+    children,
     text: node.text,
   }
 }
