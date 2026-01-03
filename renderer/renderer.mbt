@@ -1386,6 +1386,52 @@ fn merge_style_property(
       line_height: source.line_height,
     }
   }
+  // Logical border properties (block/inline)
+  if property == "border-block" || property == "border-block-width" {
+    return {
+      ..target,
+      border: {
+        ..target.border,
+        top: source.border.top,
+        bottom: source.border.bottom,
+      },
+    }
+  }
+  if property == "border-inline" || property == "border-inline-width" {
+    return {
+      ..target,
+      border: {
+        ..target.border,
+        left: source.border.left,
+        right: source.border.right,
+      },
+    }
+  }
+  // Logical padding properties (block/inline)
+  if property == "padding-block" {
+    return {
+      ..target,
+      padding: {
+        ..target.padding,
+        top: source.padding.top,
+        bottom: source.padding.bottom,
+      },
+    }
+  }
+  if property == "padding-inline" {
+    return {
+      ..target,
+      padding: {
+        ..target.padding,
+        left: source.padding.left,
+        right: source.padding.right,
+      },
+    }
+  }
+  // Aspect ratio
+  if property == "aspect-ratio" {
+    return { ..target, aspect_ratio: source.aspect_ratio }
+  }
   target
 }
 

@@ -457,6 +457,17 @@ fn apply_property(
       builder.padding_bottom = dim
       builder.padding_left = dim
     }
+    // Logical padding properties (block/inline)
+    "padding-block" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.padding_top = dim
+      builder.padding_bottom = dim
+    }
+    "padding-inline" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.padding_left = dim
+      builder.padding_right = dim
+    }
     "border-width" => {
       // Shorthand: border-width (single value for all sides)
       let dim = resolve_dimension(value, ctx)
@@ -483,6 +494,17 @@ fn apply_property(
     "border-bottom-width" =>
       builder.border_bottom = resolve_dimension(value, ctx)
     "border-left-width" => builder.border_left = resolve_dimension(value, ctx)
+    // Logical border properties (block/inline)
+    "border-block" | "border-block-width" => {
+      let width = extract_border_width(value)
+      builder.border_top = width
+      builder.border_bottom = width
+    }
+    "border-inline" | "border-inline-width" => {
+      let width = extract_border_width(value)
+      builder.border_left = width
+      builder.border_right = width
+    }
     // Flexbox container
     "flex-direction" => builder.flex_direction = parse_flex_direction(value)
     "flex-wrap" => builder.flex_wrap = parse_flex_wrap(value)

@@ -1213,6 +1213,22 @@ fn apply_property(
       None => ()
     }
   }
+  // padding-block (logical property: sets top and bottom for horizontal writing mode)
+  if property == "padding-block" {
+    match parse_dimension(value_tokens) {
+      Some(v) =>
+        return { ..style, padding: { ..style.padding, top: v, bottom: v } }
+      None => ()
+    }
+  }
+  // padding-inline (logical property: sets left and right for horizontal writing mode)
+  if property == "padding-inline" {
+    match parse_dimension(value_tokens) {
+      Some(v) =>
+        return { ..style, padding: { ..style.padding, left: v, right: v } }
+      None => ()
+    }
+  }
   // gap
   if property == "gap" {
     match parse_dimension(value_tokens) {
@@ -1288,6 +1304,38 @@ fn apply_property(
   if property == "border-bottom-width" {
     match parse_dimension(value_tokens) {
       Some(v) => return { ..style, border: { ..style.border, bottom: v } }
+      None => ()
+    }
+  }
+  // border-block (logical property: sets top and bottom border width)
+  // Shorthand can be: border-block: 10px | border-block: 10px solid | border-block: 10px solid green
+  if property == "border-block" {
+    // Parse first token as dimension (width)
+    match parse_dimension(value_tokens) {
+      Some(v) => return { ..style, border: { ..style.border, top: v, bottom: v } }
+      None => ()
+    }
+  }
+  // border-block-width
+  if property == "border-block-width" {
+    match parse_dimension(value_tokens) {
+      Some(v) => return { ..style, border: { ..style.border, top: v, bottom: v } }
+      None => ()
+    }
+  }
+  // border-inline (logical property: sets left and right border width)
+  if property == "border-inline" {
+    match parse_dimension(value_tokens) {
+      Some(v) =>
+        return { ..style, border: { ..style.border, left: v, right: v } }
+      None => ()
+    }
+  }
+  // border-inline-width
+  if property == "border-inline-width" {
+    match parse_dimension(value_tokens) {
+      Some(v) =>
+        return { ..style, border: { ..style.border, left: v, right: v } }
       None => ()
     }
   }

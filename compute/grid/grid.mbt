@@ -620,38 +620,77 @@ fn compute_grid_layout_internal(
     min_width
   }
   let container_height = if height_is_auto {
-    let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-
-    // For percent tracks in indefinite containers, use content-based sizing
-    let mut content_max_height = 0.0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
-      if child.style.display == @style.None {
-        continue
+    // Check if aspect-ratio should determine height
+    // CSS spec: aspect-ratio applies when one dimension is definite and other is auto
+    let aspect_height : Double? = match style.aspect_ratio {
+      Some(ratio) if ratio > 0.0 && not(width_is_auto) => {
+        // Width is definite, calculate height from content-box width
+        let content_width = container_width -
+          padding_left -
+          padding_right -
+          border_left -
+          border_right
+        let content_height = content_width / ratio
+        Some(
+          content_height + padding_top + padding_bottom + border_top + border_bottom,
+        )
       }
-      match child.style.height {
-        @types.Length(h) => if h > content_max_height { content_max_height = h }
-        _ => ()
-      }
+      _ => None
     }
 
-    // Use max of track-based and content-based size
-    let effective_height = max(total_track_height, content_max_height)
-    let raw_height = effective_height +
-      padding_top +
-      padding_bottom +
-      border_top +
-      border_bottom
-    // Apply min/max constraints, with padding+border as absolute minimum
-    let clamped = if raw_height > resolved_max_height {
-      resolved_max_height
-    } else {
-      raw_height
-    }
-    if clamped < resolved_min_height {
-      resolved_min_height
-    } else {
-      clamped
+    match aspect_height {
+      Some(h) => {
+        // Apply min/max constraints
+        let clamped = if h > resolved_max_height {
+          resolved_max_height
+        } else {
+          h
+        }
+        if clamped < resolved_min_height {
+          resolved_min_height
+        } else {
+          clamped
+        }
+      }
+      None => {
+        // No aspect-ratio, use content-based sizing
+        let total_track_height = calculate_total_track_size(row_tracks, row_gap)
+
+        // For percent tracks in indefinite containers, use content-based sizing
+        let mut content_max_height = 0.0
+        for i = 0; i < children.length(); i = i + 1 {
+          let child = children[i]
+          if child.style.display == @style.None {
+            continue
+          }
+          match child.style.height {
+            @types.Length(h) =>
+              if h > content_max_height {
+                content_max_height = h
+              }
+            _ => ()
+          }
+        }
+
+        // Use max of track-based and content-based size
+        let effective_height = max(total_track_height, content_max_height)
+        let raw_height = effective_height +
+          padding_top +
+          padding_bottom +
+          border_top +
+          border_bottom
+        // Apply min/max constraints, with padding+border as absolute minimum
+        let clamped = if raw_height > resolved_max_height {
+          resolved_max_height
+        } else {
+          raw_height
+        }
+        if clamped < resolved_min_height {
+          resolved_min_height
+        } else {
+          clamped
+        }
+      }
     }
     // Enforce minimum size from padding + border
   } else if preliminary_height > min_height {
