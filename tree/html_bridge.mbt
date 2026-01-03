@@ -219,15 +219,15 @@ fn parse_dimension(value : String) -> @types.Dimension? {
   if v == "auto" {
     return Some(@types.Auto)
   }
-  if v.has_suffix("px") {
-    let num_str = v.substring(end=v.length() - 2)
+  if v.has_suffix("px") && v.length() > 2 {
+    let num_str = v[:v.length() - 2].to_string() catch { _ => "" }
     match try_parse_double(num_str) {
       Some(n) => return Some(@types.Length(n))
       None => ()
     }
   }
-  if v.has_suffix("%") {
-    let num_str = v.substring(end=v.length() - 1)
+  if v.has_suffix("%") && v.length() > 1 {
+    let num_str = v[:v.length() - 1].to_string() catch { _ => "" }
     match try_parse_double(num_str) {
       Some(n) => return Some(@types.Percent(n / 100.0))
       None => ()
