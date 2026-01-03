@@ -1355,3 +1355,91 @@ test "grid_measure_function_min_content" {
   assert_eq(layout.width, 30.0)
   assert_eq(layout.height, 15.0)
 }
+
+///|
+test "grid_min_content_spanning_fr" {
+  // Grid with 1fr 30px, width: min-content
+  // Spanning item should have width = 0 + 30 = 30 (fr track = 0 for min-content)
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @style.Grid,
+    width: @types.MinContent,
+    border: {
+      left: @types.Length(10.0),
+      right: @types.Length(10.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(10.0),
+    },
+    grid_template_columns: [@style.Fr(1.0), @style.Length(30.0)],
+  }
+
+  // Spanning item: grid-column: 1 / span 2
+  let item_style = {
+    ..default_style,
+    grid_column: { start: @style.Line(1), end: @style.Span(2) },
+  }
+
+  // Filler inside item (300px wide)
+  let filler_style = {
+    ..default_style,
+    width: @types.Length(300.0),
+    height: @types.Length(50.0),
+  }
+  let filler = @node.Node::leaf("filler", filler_style)
+  let item = @node.Node::new("item", item_style, [filler])
+  let root = @node.Node::new("root", root_style, [item])
+
+  let layout = compute_grid_layout(root, 800.0, 600.0)
+
+  println("root width: \{layout.width}")
+  println("item width: \{layout.children[0].width}")
+  println("filler width: \{layout.children[0].children[0].width}")
+
+  // Expected: root width = 30 (tracks) + 20 (border) = 50
+  // Expected: item width = 30 (spanning 1fr + 30px, where 1fr = 0)
+  assert_eq(layout.width, 50.0)
+  assert_eq(layout.children[0].width, 30.0)
+}
+
+///|
+test "grid_fr_sum_less_than_one" {
+  // CSS Grid spec: when fr sum < 1, tracks don't exhaust remaining space
+  // grid-template-columns: 0.25fr 0.25fr (sum = 0.5)
+  // Each 0.25fr should get 25% of available space, not 50%
+  // Use align-content/justify-content: Start to prevent stretch distribution
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @style.Grid,
+    width: @types.Length(200.0),
+    height: @types.Length(300.0),
+    grid_template_columns: [@style.Fr(0.25), @style.Fr(0.25)],
+    grid_template_rows: [@style.Fr(0.2), @style.Fr(0.3)],
+    align_content: @style.Start, // Prevent stretch distribution
+    justify_content: @style.Start, // Prevent stretch distribution
+  }
+  let item1 = @node.Node::leaf("item1", default_style)
+  let item2 = @node.Node::leaf("item2", default_style)
+  let item3 = @node.Node::leaf("item3", default_style)
+  let item4 = @node.Node::leaf("item4", default_style)
+  let root = @node.Node::new("root", root_style, [item1, item2, item3, item4])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+  }
+  let layout = compute(root, ctx)
+
+  // Column widths: 0.25fr + 0.25fr = 0.5, but sum < 1 so use 1.0
+  // Each 0.25fr = 0.25 * 200 = 50
+  assert_eq(layout.children[0].width, 50.0) // item1 (col 1, 0.25fr)
+  assert_eq(layout.children[1].width, 50.0) // item2 (col 2, 0.25fr)
+
+  // Row heights: 0.2fr + 0.3fr = 0.5, but sum < 1 so use 1.0
+  // 0.2fr = 0.2 * 300 = 60
+  // 0.3fr = 0.3 * 300 = 90
+  assert_eq(layout.children[0].height, 60.0) // item1 (row 1, 0.2fr)
+  assert_eq(layout.children[2].height, 90.0) // item3 (row 2, 0.3fr)
+}

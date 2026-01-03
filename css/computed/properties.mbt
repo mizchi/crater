@@ -344,6 +344,49 @@ pub fn parse_grid_auto_flow(value : String) -> @style.GridAutoFlow {
 }
 
 ///|
+/// Parse a grid placement value (for grid-column-start, grid-row-end, etc.)
+/// Supports: auto, <integer>, span <integer>
+pub fn parse_grid_placement(value : String) -> @style.GridPlacement {
+  let v = value.trim().to_lower()
+  if v == "auto" {
+    return @style.GridPlacement::Auto
+  }
+  // Check for "span N" pattern
+  if v.has_prefix("span") {
+    let num_str = v[4:].to_string() catch { _ => "" }
+    let num = @strconv.parse_int(num_str.trim().to_string()) catch { _ => 1 }
+    return @style.GridPlacement::Span(num)
+  }
+  // Otherwise, parse as integer (line number)
+  let line = @strconv.parse_int(v.to_string()) catch { _ => 0 }
+  if line != 0 {
+    @style.GridPlacement::Line(line)
+  } else {
+    @style.GridPlacement::Auto
+  }
+}
+
+///|
+/// Parse grid-column or grid-row shorthand
+/// Formats: <start>, <start> / <end>, <start> / span <n>
+pub fn parse_grid_line_shorthand(
+  value : String,
+) -> (@style.GridPlacement, @style.GridPlacement) {
+  let v = value.trim()
+  // Check for "/" separator
+  let parts = v.split("/").map(fn(s) { s.trim().to_string() }).collect()
+  if parts.length() == 2 {
+    let start = parse_grid_placement(parts[0])
+    let end = parse_grid_placement(parts[1])
+    (start, end)
+  } else {
+    // Single value: applies to start, end is auto
+    let start = parse_grid_placement(v.to_string())
+    (start, @style.GridPlacement::Auto)
+  }
+}
+
+///|
 /// Parse a number value
 pub fn parse_number(value : String) -> Double {
   @strconv.parse_double(value.trim().to_string()) catch {

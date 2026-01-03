@@ -1362,6 +1362,37 @@ fn merge_style_property(
   if property == "grid-auto-flow" {
     return { ..target, grid_auto_flow: source.grid_auto_flow }
   }
+  // Grid placement properties
+  if property == "grid-column" {
+    return { ..target, grid_column: source.grid_column }
+  }
+  if property == "grid-column-start" {
+    return {
+      ..target,
+      grid_column: { ..target.grid_column, start: source.grid_column.start },
+    }
+  }
+  if property == "grid-column-end" {
+    return {
+      ..target,
+      grid_column: { ..target.grid_column, end: source.grid_column.end },
+    }
+  }
+  if property == "grid-row" {
+    return { ..target, grid_row: source.grid_row }
+  }
+  if property == "grid-row-start" {
+    return {
+      ..target,
+      grid_row: { ..target.grid_row, start: source.grid_row.start },
+    }
+  }
+  if property == "grid-row-end" {
+    return {
+      ..target,
+      grid_row: { ..target.grid_row, end: source.grid_row.end },
+    }
+  }
   // Font properties (for baseline calculation)
   if property == "font-size" {
     // When font-size changes, update line-height proportionally

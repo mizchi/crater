@@ -259,6 +259,8 @@ fn compute_intrinsic_main_size(
         compute_intrinsic_flex_main_size(node, is_row, available_cross, cache)
       @style.Block =>
         compute_intrinsic_block_main_size(node, is_row, available_cross, cache)
+      @style.Grid | @style.InlineGrid =>
+        compute_intrinsic_grid_main_size(node, is_row, available_cross)
       _ => 0.0
     }
   }
@@ -602,6 +604,46 @@ fn compute_intrinsic_flex_main_size(
 
 ///|
 /// Compute intrinsic main size for a block container
+fn compute_intrinsic_grid_main_size(
+  node : @node.Node,
+  parent_is_row : Bool,
+  available_cross : Double?,
+) -> Double {
+  // Use the layout dispatcher to compute Grid layout and get its size
+  // For Grid containers as flex items, we need to compute actual layout
+  // to determine intrinsic size
+  let available_width = if parent_is_row {
+    // Computing width - use max-content (large available)
+    1.0e10
+  } else {
+    // Computing height - use available cross as width if provided
+    match available_cross {
+      Some(w) => w
+      None => 1.0e10
+    }
+  }
+  let available_height = if parent_is_row {
+    // Computing width - height comes from available_cross
+    available_cross
+  } else {
+    // Computing height - use max-content
+    None
+  }
+  let ctx : @node.LayoutContext = {
+    available_width,
+    available_height,
+    sizing_mode: @node.MaxContent,
+  }
+  let layout = @node.dispatch_layout(node, ctx)
+  if parent_is_row {
+    layout.width
+  } else {
+    layout.height
+  }
+}
+
+///|
+/// Compute intrinsic size for a block container
 fn compute_intrinsic_block_main_size(
   node : @node.Node,
   parent_is_row : Bool,
@@ -1137,6 +1179,8 @@ fn compute_internal(
     }
 
     // Calculate base size on main axis (flex-basis takes priority over width/height)
+    // CSS spec: If flex-basis is a percentage of an indefinite size, it resolves
+    // to content size (as if flex-basis: content was specified)
     let base_main = match child_style.flex_basis {
       @types.Length(b) => b
       @types.Percent(p) =>
@@ -1145,7 +1189,19 @@ fn compute_internal(
         } else {
           match content_height {
             Some(ch) => ch * p
-            None => 0.0
+            None => {
+              // Percentage of indefinite dimension resolves to content size
+              // Compute intrinsic height from children
+              let available_cross_for_child = content_width -
+                child_margin.left -
+                child_margin.right
+              compute_intrinsic_main_size(
+                child,
+                false,
+                Some(available_cross_for_child),
+                cache,
+              )
+            }
           }
         }
       @types.Auto =>

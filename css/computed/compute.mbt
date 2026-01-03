@@ -102,6 +102,11 @@ priv struct StyleBuilder {
   mut grid_auto_flow : @style.GridAutoFlow
   mut grid_template_columns : Array[@style.TrackSizingFunction]
   mut grid_template_rows : Array[@style.TrackSizingFunction]
+  // Grid item placement
+  mut grid_column_start : @style.GridPlacement
+  mut grid_column_end : @style.GridPlacement
+  mut grid_row_start : @style.GridPlacement
+  mut grid_row_end : @style.GridPlacement
   // Font properties
   mut font_size : Double
   mut line_height : Double
@@ -159,6 +164,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_auto_flow: @style.GridAutoFlow::Row,
     grid_template_columns: [],
     grid_template_rows: [],
+    grid_column_start: @style.GridPlacement::Auto,
+    grid_column_end: @style.GridPlacement::Auto,
+    grid_row_start: @style.GridPlacement::Auto,
+    grid_row_end: @style.GridPlacement::Auto,
     font_size: 16.0,
     line_height: 16.0,
     visibility: @style.Visibility::Visible,
@@ -226,8 +235,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     grid_auto_columns: [],
     grid_auto_flow: self.grid_auto_flow,
     grid_template_areas: [],
-    grid_row: @style.GridLine::auto(),
-    grid_column: @style.GridLine::auto(),
+    grid_row: { start: self.grid_row_start, end: self.grid_row_end },
+    grid_column: { start: self.grid_column_start, end: self.grid_column_end },
     grid_area: None,
     justify_items: @style.Alignment::Stretch,
     justify_self: @style.AlignSelf::Auto,
@@ -692,6 +701,24 @@ fn apply_property(
       builder.grid_template_columns = parse_grid_template_tracks(value)
     "grid-template-rows" =>
       builder.grid_template_rows = parse_grid_template_tracks(value)
+    // Grid item placement
+    "grid-column-start" =>
+      builder.grid_column_start = parse_grid_placement(value)
+    "grid-column-end" =>
+      builder.grid_column_end = parse_grid_placement(value)
+    "grid-row-start" =>
+      builder.grid_row_start = parse_grid_placement(value)
+    "grid-row-end" => builder.grid_row_end = parse_grid_placement(value)
+    "grid-column" => {
+      let (start, end) = parse_grid_line_shorthand(value)
+      builder.grid_column_start = start
+      builder.grid_column_end = end
+    }
+    "grid-row" => {
+      let (start, end) = parse_grid_line_shorthand(value)
+      builder.grid_row_start = start
+      builder.grid_row_end = end
+    }
     // Font properties
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
