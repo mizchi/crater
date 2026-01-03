@@ -103,7 +103,7 @@ fn get_resolved_rects(
 
 ///|
 /// Clear resolved cache for a specific node
-pub fn clear_resolved_cache_for_node(uid : Int) -> Unit {
+pub fn clear_resolved_cache_for_node(_uid : Int) -> Unit {
   // Remove all entries for this node (any parent_width)
   // Since we can't iterate and remove, we'll clear entries as we encounter them
   // For now, just note that the cache may have stale entries which will be overwritten
