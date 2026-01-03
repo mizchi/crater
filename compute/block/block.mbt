@@ -265,9 +265,11 @@ fn compute_with_collapse(
     not(overflow_blocks)
 
   // Box width - depends on sizing mode and aspect_ratio
-  // For MaxContent mode with width:Auto, we need to compute content width
+  // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
   let use_max_content = match (ctx.sizing_mode, style.width) {
     (@node.MaxContent, @types.Auto) => true
+    (_, @types.MaxContent) => true
+    (_, @types.MinContent) => true
     _ => false
   }
   // Check if we can calculate width from height + aspect_ratio
@@ -306,7 +308,11 @@ fn compute_with_collapse(
           } else {
             parent_width - margin.horizontal_sum()
           }
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        @types.MinContent | @types.MaxContent =>
+          // Will be computed from content - use parent_width as initial value
+          parent_width - margin.horizontal_sum()
+        @types.FitContent(_) =>
+          // fit-content: use parent_width, will be clamped later
           parent_width - margin.horizontal_sum()
       }
   }
