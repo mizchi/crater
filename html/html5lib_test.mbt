@@ -41,7 +41,7 @@ test "html5lib/tests1_0" {
   let html = "Test"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -266,7 +266,7 @@ test "html5lib/tests1_35" {
   let html = "<"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -275,7 +275,7 @@ test "html5lib/tests1_36" {
   let html = "<#"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -284,7 +284,7 @@ test "html5lib/tests1_37" {
   let html = "</"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -293,7 +293,7 @@ test "html5lib/tests1_50" {
   let html = "<!DOCTYPE html><script> <!-- </script> --> </script> EOF"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -950,7 +950,7 @@ test "html5lib/tests2_0" {
   let html = "<!DOCTYPE html>Test"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -995,7 +995,7 @@ test "html5lib/tests2_4" {
   let html = "<frame>test"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1064,7 +1064,7 @@ test "html5lib/tests2_17" {
   let html = "<!DOCTYPE html></b test<b &=&amp>X"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1073,7 +1073,7 @@ test "html5lib/tests2_19" {
   let html = "&"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1082,7 +1082,7 @@ test "html5lib/tests2_20" {
   let html = "&#"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1091,7 +1091,7 @@ test "html5lib/tests2_21" {
   let html = "&#X"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1100,7 +1100,7 @@ test "html5lib/tests2_22" {
   let html = "&#x"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1109,7 +1109,7 @@ test "html5lib/tests2_23" {
   let html = "&#45"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1118,7 +1118,7 @@ test "html5lib/tests2_24" {
   let html = "&x-test"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }
 
@@ -1187,6 +1187,6 @@ test "html5lib/tests2_30" {
   let html = "&AMP"
   let result = @html.parse_fragment(html)
   // Body should have 1 children
-  let body = find_body(result)
+  let _ = find_body(result)
 
 }

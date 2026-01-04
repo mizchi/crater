@@ -108,7 +108,9 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   if v.has_prefix("fit-content(") && v.has_suffix(")") {
     // Extract content between "fit-content(" and ")"
     let v_str = v.to_string()
-    let inner = v_str.substring(start=12, end=v_str.length() - 1)
+    let inner = v_str[12:v_str.length() - 1].to_string() catch {
+      _ => return @types.Dimension::Auto
+    }
     // Parse the inner value as a length
     match inner.strip_suffix("px") {
       Some(num_str) => {

@@ -8,7 +8,7 @@ priv struct LineBox {
   items : Array[LineItem] // Items on this line
   mut width : Double // Current width of the line
   mut height : Double // Height of the line (max of all items)
-  mut baseline : Double // Baseline position from top of line
+  // TODO: baseline is reserved for future vertical alignment
 }
 
 ///|
@@ -16,12 +16,12 @@ priv struct LineBox {
 priv struct LineItem {
   index : Int // Original child index
   layout : @node.Layout // Computed layout
-  baseline : Double // Baseline offset from top of item
+  // TODO: baseline is reserved for future vertical alignment
 }
 
 ///|
 fn LineBox::new() -> LineBox {
-  { items: [], width: 0.0, height: 0.0, baseline: 0.0 }
+  { items: [], width: 0.0, height: 0.0 }
 }
 
 ///|
@@ -30,16 +30,15 @@ fn LineBox::add_item(
   self : LineBox,
   index : Int,
   layout : @node.Layout,
-  baseline : Double,
+  _baseline : Double,
   margin_left : Double,
   margin_right : Double,
 ) -> Unit {
-  self.items.push({ index, layout, baseline })
+  self.items.push({ index, layout })
   self.width = self.width + layout.width + margin_left + margin_right
   // Line height is the max of all item heights
   if layout.height > self.height {
     self.height = layout.height
-    self.baseline = baseline
   }
 }
 
@@ -249,7 +248,7 @@ fn compute_inline_child(
       available_height,
       sizing_mode: @node.MaxContent,
       viewport_width: available_width,
-      viewport_height: available_height.or(0.0),
+      viewport_height: available_height.unwrap_or(0.0),
     } // Use MaxContent for shrink-to-fit
     let layout = @node.dispatch_layout(node, ctx)
     return layout

@@ -1,10 +1,12 @@
 {
   "import": [
-    "mizchi/crater/types",
     "mizchi/crater/style",
     "mizchi/crater/node",
     "mizchi/crater/compute/block",
     "mizchi/crater/compute/flex",
     "mizchi/crater/compute/grid"
+  ],
+  "test-import": [
+    "mizchi/crater/types"
   ]
 }

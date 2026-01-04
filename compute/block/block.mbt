@@ -583,7 +583,7 @@ fn compute_with_collapse(
   // IFC is used when all flow children are inline-level elements
   // Only use IFC when the layout dispatcher is set (needed for proper InlineBlock layout)
   let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
-    @node.get_layout_dispatcher().is_some()
+    @node.get_layout_dispatcher() is Some(_)
   if use_ifc {
     // Use IFC for inline layout
     let ifc_result = @inline.compute_ifc(

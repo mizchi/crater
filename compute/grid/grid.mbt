@@ -2988,8 +2988,8 @@ fn compute_child_layout(
   child : @node.Node,
   available_width : Double,
   available_height : Double,
-  viewport_width? : Double = 0.0,
-  viewport_height? : Double = 0.0,
+  _viewport_width? : Double = 0.0,
+  _viewport_height? : Double = 0.0,
 ) -> @node.Layout {
   // For leaf nodes with auto dimensions, use intrinsic sizes
   let intrinsic = get_intrinsic_from_measure(
