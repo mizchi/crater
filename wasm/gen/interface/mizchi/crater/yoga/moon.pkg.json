@@ -1,0 +1,6 @@
+{
+  "import": [
+    { "path": "mizchi/crater-component/interface/mizchi/crater/types", "alias": "types" },
+    { "path": "mizchi/crater/js", "alias": "crater" }
+  ]
+}

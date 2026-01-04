@@ -1,0 +1,198 @@
+package mizchi:crater@0.1.0;
+
+/// Core layout types
+interface types {
+    /// Cache statistics
+    record cache-stats {
+        hits: u32,
+        misses: u32,
+        nodes-computed: u32,
+        hit-rate: f64,
+    }
+
+    /// Flex direction enum values
+    enum flex-direction {
+        row,
+        row-reverse,
+        column,
+        column-reverse,
+    }
+
+    /// Flex wrap enum values
+    enum flex-wrap {
+        no-wrap,
+        wrap,
+        wrap-reverse,
+    }
+
+    /// Justify content enum values
+    enum justify-content {
+        flex-start,
+        flex-end,
+        center,
+        space-between,
+        space-around,
+        space-evenly,
+    }
+
+    /// Align items enum values
+    enum align-items {
+        flex-start,
+        flex-end,
+        center,
+        stretch,
+        baseline,
+    }
+
+    /// Display enum values
+    enum display {
+        flex,
+        none,
+        block,
+        grid,
+    }
+}
+
+/// HTML rendering functions
+interface renderer {
+    /// Render HTML to text layout tree representation
+    render-html: func(html: string, width: u32, height: u32) -> string;
+
+    /// Render HTML to JSON layout tree
+    render-html-to-json: func(html: string, width: u32, height: u32) -> string;
+
+    /// Render HTML to paint tree JSON with visual properties
+    render-html-to-paint-tree: func(html: string, width: u32, height: u32) -> string;
+}
+
+/// Incremental layout API
+interface incremental {
+    /// Create a new layout tree from HTML
+    create-tree: func(html: string, width: u32, height: u32) -> u32;
+
+    /// Compute layout incrementally (uses cache)
+    compute-incremental: func() -> string;
+
+    /// Compute full layout (ignores cache)
+    compute-full: func() -> string;
+
+    /// Mark a node as dirty
+    mark-dirty: func(node-id: string) -> bool;
+
+    /// Update node style with CSS string
+    update-style: func(node-id: string, css: string) -> bool;
+
+    /// Resize viewport
+    resize-viewport: func(width: u32, height: u32);
+
+    /// Get cache statistics as JSON
+    get-cache-stats: func() -> string;
+
+    /// Reset cache statistics
+    reset-cache-stats: func();
+
+    /// Check if tree needs layout
+    needs-layout: func() -> bool;
+
+    /// Destroy the current tree
+    destroy-tree: func();
+}
+
+/// Yoga-compatible style API
+interface yoga {
+    use types.{flex-direction, flex-wrap, justify-content, align-items, display};
+
+    /// Create a new node
+    create-node: func(id: string) -> u32;
+
+    /// Add child to parent
+    add-child: func(parent-id: string, child-id: string) -> bool;
+
+    /// Insert child at index
+    insert-child: func(parent-id: string, child-id: string, index: u32) -> bool;
+
+    /// Remove child at index
+    remove-child: func(parent-id: string, index: u32) -> bool;
+
+    /// Get child count
+    get-child-count: func(node-id: string) -> u32;
+
+    /// Set width in pixels
+    set-width: func(node-id: string, value: f64) -> bool;
+
+    /// Set width as percentage (0-100)
+    set-width-percent: func(node-id: string, value: f64) -> bool;
+
+    /// Set width to auto
+    set-width-auto: func(node-id: string) -> bool;
+
+    /// Set height in pixels
+    set-height: func(node-id: string, value: f64) -> bool;
+
+    /// Set height as percentage (0-100)
+    set-height-percent: func(node-id: string, value: f64) -> bool;
+
+    /// Set height to auto
+    set-height-auto: func(node-id: string) -> bool;
+
+    /// Set flex grow
+    set-flex-grow: func(node-id: string, value: f64) -> bool;
+
+    /// Set flex shrink
+    set-flex-shrink: func(node-id: string, value: f64) -> bool;
+
+    /// Set flex basis in pixels
+    set-flex-basis: func(node-id: string, value: f64) -> bool;
+
+    /// Set flex direction
+    set-flex-direction: func(node-id: string, value: flex-direction) -> bool;
+
+    /// Set flex wrap
+    set-flex-wrap: func(node-id: string, value: flex-wrap) -> bool;
+
+    /// Set justify content
+    set-justify-content: func(node-id: string, value: justify-content) -> bool;
+
+    /// Set align items
+    set-align-items: func(node-id: string, value: align-items) -> bool;
+
+    /// Set display
+    set-display: func(node-id: string, value: display) -> bool;
+
+    /// Set margin on all sides
+    set-margin: func(node-id: string, value: f64) -> bool;
+
+    /// Set padding on all sides
+    set-padding: func(node-id: string, value: f64) -> bool;
+
+    /// Set gap
+    set-gap: func(node-id: string, value: f64) -> bool;
+
+    /// Get computed left (x)
+    get-computed-left: func(node-id: string) -> f64;
+
+    /// Get computed top (y)
+    get-computed-top: func(node-id: string) -> f64;
+
+    /// Get computed width
+    get-computed-width: func(node-id: string) -> f64;
+
+    /// Get computed height
+    get-computed-height: func(node-id: string) -> f64;
+
+    /// Check if node has new layout
+    has-new-layout: func(node-id: string) -> bool;
+
+    /// Mark layout as seen
+    mark-layout-seen: func(node-id: string) -> bool;
+
+    /// Calculate layout
+    calculate-layout: func(width: f64, height: f64) -> string;
+}
+
+/// Main world exporting all interfaces
+world crater {
+    export renderer;
+    export incremental;
+    export yoga;
+}

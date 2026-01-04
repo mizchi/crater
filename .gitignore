@@ -22,3 +22,6 @@ wpt-tests/
 
 # Real-world site downloads (regenerate with npm run download)
 real-world/
+
+# WASM component transpiled output (regenerate with npm run build:wasm-component && npx jco transpile)
+wasm/dist/

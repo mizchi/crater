@@ -11,12 +11,16 @@
     "wpt": "node --experimental-strip-types tools/wpt-runner.ts",
     "wpt:fetch": "node --experimental-strip-types tools/fetch-wpt.ts",
     "download": "node --experimental-strip-types tools/download-site.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "build:wasm-component": "cd wasm && moon build --target wasm && cd .. && wasm-tools component embed --world crater wasm/wit wasm/target/wasm/release/build/gen/gen.wasm -o wasm/target/crater-embedded.wasm && wasm-tools component new wasm/target/crater-embedded.wasm -o wasm/target/crater.wasm",
+    "jco:transpile": "npx jco transpile wasm/target/crater.wasm -o wasm/dist --name crater",
+    "test:wasm-component": "node --test wasm/test/component.test.mjs"
   },
   "dependencies": {
     "puppeteer": "^23.0.0"
   },
   "devDependencies": {
+    "@bytecodealliance/jco": "^1.15.4",
     "tsx": "^4.21.0",
     "vitest": "^3.0.0"
   },
