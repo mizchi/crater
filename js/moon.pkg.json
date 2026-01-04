@@ -4,7 +4,9 @@
     "mizchi/crater/renderer/sixel",
     "mizchi/crater/node",
     "mizchi/crater/paint",
-    "mizchi/crater/types"
+    "mizchi/crater/types",
+    "mizchi/crater/tree",
+    "mizchi/crater/css/computed"
   ],
   "link": {
     "js": {
@@ -13,7 +15,17 @@
         "renderHtmlToJson",
         "renderHtmlToPaintTree",
         "renderHtmlToSixel",
-        "renderHtmlToSixelWithStyles"
+        "renderHtmlToSixelWithStyles",
+        "createTree",
+        "computeIncremental",
+        "computeFull",
+        "markDirty",
+        "updateStyle",
+        "resizeViewport",
+        "getCacheStats",
+        "resetCacheStats",
+        "needsLayout",
+        "destroyTree"
       ],
       "format": "esm"
     },
@@ -23,7 +35,17 @@
         "renderHtmlToJson",
         "renderHtmlToPaintTree",
         "renderHtmlToSixel",
-        "renderHtmlToSixelWithStyles"
+        "renderHtmlToSixelWithStyles",
+        "createTree",
+        "computeIncremental",
+        "computeFull",
+        "markDirty",
+        "updateStyle",
+        "resizeViewport",
+        "getCacheStats",
+        "resetCacheStats",
+        "needsLayout",
+        "destroyTree"
       ],
       "export-memory-name": "memory"
     }

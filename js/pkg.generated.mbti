@@ -2,6 +2,20 @@
 package "mizchi/crater/js"
 
 // Values
+pub fn computeFull() -> String
+
+pub fn computeIncremental() -> String
+
+pub fn createTree(String, Int, Int) -> Int
+
+pub fn destroyTree() -> Unit
+
+pub fn getCacheStats() -> String
+
+pub fn markDirty(String) -> Bool
+
+pub fn needsLayout() -> Bool
+
 pub fn renderHtml(String, Int, Int) -> String
 
 pub fn renderHtmlToJson(String, Int, Int) -> String
@@ -11,6 +25,12 @@ pub fn renderHtmlToPaintTree(String, Int, Int) -> String
 pub fn renderHtmlToSixel(String, Int, Int) -> String
 
 pub fn renderHtmlToSixelWithStyles(String, Int, Int) -> String
+
+pub fn resetCacheStats() -> Unit
+
+pub fn resizeViewport(Int, Int) -> Unit
+
+pub fn updateStyle(String, String) -> Bool
 
 // Errors
 
