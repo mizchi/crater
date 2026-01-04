@@ -2156,8 +2156,10 @@ fn resolve_tracks_with_implicit(
         fixed_size = fixed_size + size
       }
       @style.Fr(fr) => {
+        // Fr tracks start with base size of 0, but min-content is the floor
+        // During flex distribution, tracks cannot shrink below min-content
         base_sizes.push(0.0)
-        min_sizes.push(0.0)
+        min_sizes.push(min_content)
         max_sizes.push(1.0e10) // Effectively unlimited
         total_fr = total_fr + fr
         fr_track_count_phase1 = fr_track_count_phase1 + 1
@@ -2258,17 +2260,54 @@ fn resolve_tracks_with_implicit(
   if fr_track_count_phase1 > 0 {
     if size_is_definite {
       // Container size is definite: distribute remaining space to Fr tracks
+      // CSS Grid spec: Fr tracks cannot shrink below their min-content
+      // Algorithm: iteratively freeze tracks that exceed their hypothetical fr size
       if total_fr > 0.0 {
-        // CSS Grid spec: If the sum of flex factors is less than 1, set it to 1.
-        // This means fr tracks with sum < 1 don't exhaust all remaining space.
-        // e.g., 0.25fr should get 25% of remaining space, not 100%.
-        let effective_total_fr = if total_fr < 1.0 { 1.0 } else { total_fr }
-        let fr_unit = remaining_space / effective_total_fr
-        for i = 0; i < track_count; i = i + 1 {
-          let template = all_templates[i]
-          match template {
-            @style.Fr(fr) => base_sizes[i] = fr * fr_unit
-            _ => ()
+        // Track which fr tracks are frozen (have reached min-content floor)
+        let frozen : Array[Bool] = Array::make(track_count, false)
+        let mut unfrozen_fr = total_fr
+        let mut space_for_fr = remaining_space
+
+        // Iteratively freeze tracks whose min-content exceeds hypothetical fr size
+        let mut changed = true
+        while changed {
+          changed = false
+          let effective_fr = if unfrozen_fr < 1.0 { 1.0 } else { unfrozen_fr }
+          let hypothetical_fr_unit = space_for_fr / effective_fr
+          for i = 0; i < track_count; i = i + 1 {
+            if frozen[i] {
+              continue
+            }
+            match all_templates[i] {
+              @style.Fr(fr) => {
+                let hypothetical_size = fr * hypothetical_fr_unit
+                let min_size = min_sizes[i]
+                if min_size > hypothetical_size {
+                  // This track needs more than its fr share, freeze it
+                  frozen[i] = true
+                  base_sizes[i] = min_size
+                  unfrozen_fr = unfrozen_fr - fr
+                  space_for_fr = space_for_fr - min_size
+                  changed = true
+                }
+              }
+              _ => ()
+            }
+          }
+        }
+
+        // Distribute remaining space to unfrozen tracks
+        if unfrozen_fr > 0.0 {
+          let effective_fr = if unfrozen_fr < 1.0 { 1.0 } else { unfrozen_fr }
+          let fr_unit = space_for_fr / effective_fr
+          for i = 0; i < track_count; i = i + 1 {
+            if frozen[i] {
+              continue
+            }
+            match all_templates[i] {
+              @style.Fr(fr) => base_sizes[i] = fr * fr_unit
+              _ => ()
+            }
           }
         }
       } else {
@@ -2276,7 +2315,7 @@ fn resolve_tracks_with_implicit(
         let per_track = remaining_space / fr_track_count_phase1.to_double()
         for i = 0; i < track_count; i = i + 1 {
           match all_templates[i] {
-            @style.Fr(_) => base_sizes[i] = per_track
+            @style.Fr(_) => base_sizes[i] = max(per_track, min_sizes[i])
             _ => ()
           }
         }
