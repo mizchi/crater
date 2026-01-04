@@ -1,11 +1,13 @@
-# @aspect-io/crater
+# @mizchi/crater
 
 CSS Layout Engine - Box/Flex/Grid layout computation, compiled from MoonBit.
+
+**Taffy-compatible test pass rate: 83% (212/256 Grid tests)**
 
 ## Installation
 
 ```bash
-npm install @aspect-io/crater
+npm install @mizchi/crater
 ```
 
 ## Usage
@@ -16,7 +18,7 @@ import {
   renderHtmlToJson,
   renderHtmlToPaintTree,
   Crater
-} from '@aspect-io/crater';
+} from '@mizchi/crater';
 
 const html = '<div style="width: 200px; display: flex">...</div>';
 
@@ -56,12 +58,12 @@ Parse paint tree JSON to typed object.
 
 ```bash
 # Via npx
-npx @aspect-io/crater input.html
-npx @aspect-io/crater --json input.html
-npx @aspect-io/crater --styles input.html
+npx @mizchi/crater input.html
+npx @mizchi/crater --json input.html
+npx @mizchi/crater --styles input.html
 
 # Or install globally
-npm install -g @aspect-io/crater
+npm install -g @mizchi/crater
 crater input.html
 ```
 
@@ -70,7 +72,7 @@ crater input.html
 For browsers with WASM-GC support (Chrome 119+, Firefox 120+):
 
 ```typescript
-import loadCrater from '@aspect-io/crater/wasm';
+import loadCrater from '@mizchi/crater/wasm';
 
 const crater = await loadCrater();
 const layoutJson = crater.renderHtmlToJson(html, 800, 600);
@@ -86,8 +88,8 @@ Benefits:
 Full TypeScript support with type definitions:
 
 ```typescript
-import type { LayoutNode, PaintNode, BoxEdges } from '@aspect-io/crater';
-import type { CraterWasm } from '@aspect-io/crater/wasm';
+import type { LayoutNode, PaintNode, BoxEdges } from '@mizchi/crater';
+import type { CraterWasm } from '@mizchi/crater/wasm';
 ```
 
 ## Development
