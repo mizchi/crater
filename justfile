@@ -3,6 +3,13 @@
 # Default target
 default: check
 
+# === Setup ===
+
+# Initialize submodules and dependencies
+setup:
+    git submodule update --init --recursive
+    moon update
+
 # === Testing ===
 
 # Run all tests (ignores test failures for CI)
