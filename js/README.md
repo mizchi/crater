@@ -65,12 +65,29 @@ npm install -g @aspect-io/crater
 crater input.html
 ```
 
+## WASM-GC (Experimental)
+
+For browsers with WASM-GC support (Chrome 119+, Firefox 120+):
+
+```typescript
+import loadCrater from '@aspect-io/crater/wasm';
+
+const crater = await loadCrater();
+const layoutJson = crater.renderHtmlToJson(html, 800, 600);
+```
+
+Benefits:
+- Smaller bundle size (326KB vs 1.4MB)
+- Potentially faster execution
+- Requires WASM-GC support
+
 ## TypeScript
 
 Full TypeScript support with type definitions:
 
 ```typescript
 import type { LayoutNode, PaintNode, BoxEdges } from '@aspect-io/crater';
+import type { CraterWasm } from '@aspect-io/crater/wasm';
 ```
 
 ## Development

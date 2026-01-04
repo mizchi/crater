@@ -11,7 +11,13 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./wasm": {
+      "types": "./dist/wasm.d.ts",
+      "import": "./dist/wasm.js",
+      "default": "./dist/wasm.js"
+    },
+    "./crater.wasm": "./dist/crater.wasm"
   },
   "bin": {
     "crater": "./cli/cli.mjs"
@@ -21,8 +27,8 @@
     "cli/"
   ],
   "scripts": {
-    "build": "cd .. && moon build --target js && cd js && npm run copy",
-    "copy": "mkdir -p dist && cp ../target/js/release/build/js/js.js dist/crater.js && cp index.js index.d.ts dist/",
+    "build": "cd .. && moon build --target js && moon build --target wasm-gc && cd js && npm run copy",
+    "copy": "mkdir -p dist && cp ../target/js/release/build/js/js.js dist/crater.js && cp ../target/wasm-gc/release/build/js/js.wasm dist/crater.wasm && cp index.js index.d.ts wasm.js wasm.d.ts dist/",
     "prepublishOnly": "npm run build",
     "test": "node -e \"import('./dist/index.js').then(m => console.log(Object.keys(m)))\""
   },

@@ -16,6 +16,16 @@
         "renderHtmlToSixelWithStyles"
       ],
       "format": "esm"
+    },
+    "wasm-gc": {
+      "exports": [
+        "renderHtml",
+        "renderHtmlToJson",
+        "renderHtmlToPaintTree",
+        "renderHtmlToSixel",
+        "renderHtmlToSixelWithStyles"
+      ],
+      "export-memory-name": "memory"
     }
   }
 }
