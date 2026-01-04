@@ -6,6 +6,7 @@
   "scripts": {
     "gentest": "node --experimental-strip-types tools/gentest.ts",
     "gen-moonbit-tests": "node --experimental-strip-types tools/gen-moonbit-tests.ts",
+    "gen-html5lib-tests": "node --experimental-strip-types tools/gen-html5lib-tests.ts",
     "render": "node --experimental-strip-types tools/render.ts",
     "wpt": "node --experimental-strip-types tools/wpt-runner.ts",
     "wpt:fetch": "node --experimental-strip-types tools/fetch-wpt.ts",

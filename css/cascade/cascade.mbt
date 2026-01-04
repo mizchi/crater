@@ -162,6 +162,8 @@ pub struct CSSRule {
   declarations : Array[Declaration]
   /// Source order
   source_order : Int
+  /// Media query (if this rule is inside @media)
+  media_query : @media.MediaQueryList?
 }
 
 ///|
@@ -187,7 +189,33 @@ pub fn Stylesheet::add_rule(
   declarations : Array[Declaration],
 ) -> Unit {
   let source_order = self.rules.length()
-  let rule : CSSRule = { selector_text, selector, declarations, source_order }
+  let rule : CSSRule = {
+    selector_text,
+    selector,
+    declarations,
+    source_order,
+    media_query: None,
+  }
+  self.rules.push(rule)
+}
+
+///|
+/// Add a rule with a media query to the stylesheet
+pub fn Stylesheet::add_rule_with_media(
+  self : Stylesheet,
+  selector_text : String,
+  selector : @selector.ComplexSelector,
+  declarations : Array[Declaration],
+  media_query : @media.MediaQueryList,
+) -> Unit {
+  let source_order = self.rules.length()
+  let rule : CSSRule = {
+    selector_text,
+    selector,
+    declarations,
+    source_order,
+    media_query: Some(media_query),
+  }
   self.rules.push(rule)
 }
 

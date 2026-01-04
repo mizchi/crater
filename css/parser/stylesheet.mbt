@@ -16,9 +16,14 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
     }
     match tokens[pos] {
       @token.Token::EOF => break
-      @token.Token::AtKeyword(_) =>
-        // Skip @-rules for now (e.g., @media, @import)
-        pos = skip_at_rule(tokens, pos)
+      @token.Token::AtKeyword(name) =>
+        if name.to_lower() == "media" {
+          // Parse @media rule
+          pos = parse_media_rule(stylesheet, tokens, pos)
+        } else {
+          // Skip other @-rules (e.g., @import, @keyframes)
+          pos = skip_at_rule(tokens, pos)
+        }
       _ =>
         // Try to parse a style rule
         match parse_style_rule(tokens, pos) {
@@ -36,6 +41,83 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
     }
   }
   stylesheet
+}
+
+///|
+/// Parse an @media rule and add its rules to the stylesheet
+fn parse_media_rule(
+  stylesheet : @cascade.Stylesheet,
+  tokens : Array[@token.Token],
+  start : Int,
+) -> Int {
+  let mut pos = start + 1 // Skip @media token
+
+  // Collect media query tokens until '{'
+  let query_start = pos
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftBrace => break
+      @token.Token::EOF => return pos
+      _ => pos = pos + 1
+    }
+  }
+  if pos >= tokens.length() {
+    return pos
+  }
+
+  // Extract and parse media query
+  let query_text = tokens_to_string(tokens, query_start, pos).trim().to_string()
+  let media_query = @media.parse_media_query_list(query_text)
+
+  // Skip '{'
+  pos = pos + 1
+
+  // Parse rules inside @media block until '}'
+  let mut brace_depth = 1
+  while pos < tokens.length() && brace_depth > 0 {
+    pos = skip_ws(tokens, pos)
+    if pos >= tokens.length() {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::RightBrace => {
+        brace_depth = brace_depth - 1
+        pos = pos + 1
+        if brace_depth <= 0 {
+          break
+        }
+      }
+      @token.Token::LeftBrace => {
+        // This shouldn't happen at top level, skip past it
+        brace_depth = brace_depth + 1
+        pos = pos + 1
+      }
+      @token.Token::EOF => break
+      @token.Token::AtKeyword(_) =>
+        // Skip nested @-rules inside @media
+        pos = skip_at_rule(tokens, pos)
+      _ =>
+        // Try to parse a style rule
+        match parse_style_rule(tokens, pos) {
+          Some((selectors, declarations, new_pos)) => {
+            // Add rules with media query for each selector
+            for item in selectors {
+              let selector_text = item.0
+              let selector = item.1
+              stylesheet.add_rule_with_media(
+                selector_text,
+                selector,
+                declarations.copy(),
+                media_query,
+              )
+            }
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  pos
 }
 
 ///|

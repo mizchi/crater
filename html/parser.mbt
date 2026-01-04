@@ -59,6 +59,21 @@ fn is_void_element(tag : String) -> Bool {
 }
 
 ///|
+/// Check if a tag is a raw text element (contents treated as text, not HTML)
+fn is_raw_text_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "script" | "style" | "title" | "textarea" | "xmp" => true
+    _ => false
+  }
+}
+
+///|
+/// Check if a tag is plaintext (consumes ALL remaining content as text)
+fn is_plaintext_element(tag : String) -> Bool {
+  tag.to_lower() == "plaintext"
+}
+
+///|
 fn Parser::new(input : String) -> Parser {
   { input, pos: 0, len: input.length() }
 }
@@ -261,6 +276,53 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
 }
 
 ///|
+/// Consume ALL remaining content as text (for plaintext element)
+fn Parser::consume_all_remaining(self : Parser) -> String {
+  let buf = StringBuilder::new()
+  while not(self.is_eof()) {
+    match self.consume() {
+      Some(c) => buf.write_char(c)
+      None => break
+    }
+  }
+  buf.to_string()
+}
+
+///|
+/// Consume raw text content until the closing tag is found
+fn Parser::consume_raw_text(self : Parser, tag : String) -> String {
+  let buf = StringBuilder::new()
+  while not(self.is_eof()) {
+    // Check for closing tag (case-insensitive)
+    if self.peek() is Some('<') && self.peek_at(1) is Some('/') {
+      // Check if this is our closing tag
+      let _ = self.consume() // <
+      let _ = self.consume() // /
+      let close_name = self.consume_name()
+      self.skip_whitespace()
+      if close_name.to_lower() == tag.to_lower() {
+        // Found closing tag, consume '>' and return
+        if self.peek() is Some('>') {
+          let _ = self.consume()
+
+        }
+        return buf.to_string()
+      }
+      // Not our closing tag, add the consumed characters to buffer
+      buf.write_string("</")
+      buf.write_string(close_name)
+      // Don't add the whitespace, continue from current position
+      continue
+    }
+    match self.consume() {
+      Some(c) => buf.write_char(c)
+      None => break
+    }
+  }
+  buf.to_string()
+}
+
+///|
 fn Parser::parse_element(self : Parser) -> Element? {
   self.skip_whitespace()
 
@@ -280,8 +342,8 @@ fn Parser::parse_element(self : Parser) -> Element? {
     _ => ()
   }
 
-  // Parse tag name
-  let tag = self.consume_name()
+  // Parse tag name (normalize to lowercase for HTML)
+  let tag = self.consume_name().to_lower()
   if tag.is_empty() {
     return None
   }
@@ -353,6 +415,28 @@ fn Parser::parse_element(self : Parser) -> Element? {
     return Some({ tag, id, classes, style, attributes, children: [] })
   }
 
+  // Raw text elements: content is treated as text until closing tag
+  if is_raw_text_element(tag) {
+    let text_content = self.consume_raw_text(tag)
+    let children : Array[Node] = if text_content.is_empty() {
+      []
+    } else {
+      [Node::Text(text_content)]
+    }
+    return Some({ tag, id, classes, style, attributes, children })
+  }
+
+  // Plaintext: ALL remaining content is text (including closing tags)
+  if is_plaintext_element(tag) {
+    let text_content = self.consume_all_remaining()
+    let children : Array[Node] = if text_content.is_empty() {
+      []
+    } else {
+      [Node::Text(text_content)]
+    }
+    return Some({ tag, id, classes, style, attributes, children })
+  }
+
   // Parse children
   let children = self.parse_children(tag)
   Some({ tag, id, classes, style, attributes, children })
@@ -368,11 +452,11 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
         // Check if this is a closing tag
         match self.peek_at(1) {
           Some('/') => {
-            // Closing tag - consume it and return
+            // Closing tag - consume it and check
             let _ = self.consume() // <
             let _ = self.consume() // /
             self.skip_whitespace()
-            let close_tag = self.consume_name()
+            let close_tag = self.consume_name().to_lower()
             self.skip_whitespace()
             match self.peek() {
               Some('>') => {
@@ -381,10 +465,41 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
               }
               _ => ()
             }
-            // Verify tag matches (ignore for simplicity)
-            let _ = close_tag
-            let _ = parent_tag
-            return children
+            // HTML5: </br> is treated as <br>
+            if close_tag == "br" {
+              let br_elem : Element = {
+                tag: "br",
+                id: None,
+                classes: [],
+                style: None,
+                attributes: {},
+                children: [],
+              }
+              children.push(Node::Element(br_elem))
+              continue
+            }
+            // HTML5: </p> without matching open creates empty <p>
+            if close_tag == "p" && parent_tag != "p" {
+              let p_elem : Element = {
+                tag: "p",
+                id: None,
+                classes: [],
+                style: None,
+                attributes: {},
+                children: [],
+              }
+              children.push(Node::Element(p_elem))
+              continue
+            }
+            // Normal closing tag - return if it matches parent or is structural
+            if close_tag == parent_tag ||
+              close_tag == "body" ||
+              close_tag == "html" ||
+              close_tag == "head" {
+              return children
+            }
+            // Unmatched closing tag - ignore and continue
+            continue
           }
           Some('!') => {
             // Could be a comment <!-- --> or DOCTYPE (unlikely inside body)
@@ -404,7 +519,18 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
           _ =>
             // Opening tag - parse child element
             match self.parse_element() {
-              Some(elem) => children.push(Node::Element(elem))
+              Some(elem) =>
+                // Skip duplicate structural elements inside body
+                // HTML5: if we see <body> inside body, use its children
+                if parent_tag == "body" &&
+                  (elem.tag == "body" || elem.tag == "html") {
+                  // Add children of the duplicate element
+                  for child in elem.children {
+                    children.push(child)
+                  }
+                } else {
+                  children.push(Node::Element(elem))
+                }
               None => {
                 // Skip this character and continue
                 let _ = self.consume()
@@ -466,6 +592,41 @@ fn parse_all_elements(html : String) -> Array[Element] {
     if parser.is_eof() {
       break
     }
+    // Check for closing tag at top level
+    if parser.peek() is Some('<') && parser.peek_at(1) is Some('/') {
+      let _ = parser.consume() // <
+      let _ = parser.consume() // /
+      parser.skip_whitespace()
+      let close_tag = parser.consume_name().to_lower()
+      parser.skip_whitespace()
+      if parser.peek() is Some('>') {
+        let _ = parser.consume()
+
+      }
+      // HTML5: </br> is treated as <br>
+      if close_tag == "br" {
+        elements.push({
+          tag: "br",
+          id: None,
+          classes: [],
+          style: None,
+          attributes: {},
+          children: [],
+        })
+      } else if close_tag == "p" {
+        // HTML5: </p> without matching open creates empty <p>
+        elements.push({
+          tag: "p",
+          id: None,
+          classes: [],
+          style: None,
+          attributes: {},
+          children: [],
+        })
+      }
+      // Other closing tags are ignored at top level
+      continue
+    }
     match parser.parse_element() {
       Some(elem) => elements.push(elem)
       None =>
@@ -519,6 +680,11 @@ pub fn parse_fragment(html : String) -> Element {
   for elem in elements {
     if is_head_element(elem.tag) {
       head_children.push(Node::Element(elem))
+    } else if elem.tag.to_lower() == "body" {
+      // If we have an explicit <body> element, use its children directly
+      for child in elem.children {
+        body_children.push(child)
+      }
     } else {
       body_children.push(Node::Element(elem))
     }
