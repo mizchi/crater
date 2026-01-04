@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/parser"
+
+import(
+  "mizchi/crater/css/cascade"
+  "mizchi/crater/style"
+)
+
+// Values
+pub fn parse_inline_style(String) -> @style.Style
+
+pub fn parse_stylesheet(String) -> @cascade.Stylesheet
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

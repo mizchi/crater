@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/paint"
+
+import(
+  "mizchi/crater/node"
+  "mizchi/crater/style"
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
+
+pub fn from_layout(@node.Layout) -> PaintNode
+
+pub fn from_node_and_layout(@node.Node, @node.Layout) -> PaintNode
+
+pub fn sort_by_stacking_order(Array[PaintNode]) -> Array[PaintNode]
+
+pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
+
+// Errors
+
+// Types and methods
+pub(all) struct PaintNode {
+  id : String
+  tag : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  paint : PaintProperties
+  stacking_order : Int
+  text : String?
+  children : Array[PaintNode]
+}
+pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?) -> Self
+pub impl Show for PaintNode
+
+pub(all) struct PaintProperties {
+  z_index : @style.ZIndex
+  visibility : @style.Visibility
+  opacity : Double
+  color : @types.Color
+  background_color : @types.Color
+}
+pub fn PaintProperties::default() -> Self
+pub fn PaintProperties::from_style(@style.Style) -> Self
+pub fn PaintProperties::should_render(Self) -> Bool
+pub fn PaintProperties::z_index_value(Self) -> Int
+pub impl Show for PaintProperties
+
+// Type aliases
+
+// Traits
+

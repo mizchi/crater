@@ -1606,7 +1606,7 @@ fn make_node_id(elem : @html.Element) -> String {
 }
 
 ///|
-/// Render HTML to Sixel string
+/// Render HTML to Sixel string (legacy, depth-based colors)
 pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
   let ctx : RenderContext = {
     viewport_width: width.to_double(),
@@ -1615,6 +1615,24 @@ pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
   }
   let layout = render(html, ctx)
   @sixel.render_layout(layout, width, height)
+}
+
+///|
+/// Render HTML to Sixel string with actual CSS colors
+pub fn render_to_sixel_with_styles(
+  html : String,
+  width : Int,
+  height : Int,
+) -> String {
+  let ctx : RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+  }
+  // Get both Node tree (for styles) and Layout (for positions)
+  let node = render_to_node(html, ctx)
+  let layout = render(html, ctx)
+  @sixel.render_with_styles(node, layout, width, height)
 }
 
 ///|

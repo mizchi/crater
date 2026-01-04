@@ -1,0 +1,71 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/renderer/sixel"
+
+import(
+  "mizchi/crater/node"
+  "mizchi/crater/paint"
+)
+
+// Values
+pub let font_height : Int
+
+pub let font_width : Int
+
+pub fn get_char_bitmap(Char) -> Array[Int]?
+
+pub fn get_depth_color(Int) -> Color
+
+pub fn is_font_supported(Char) -> Bool
+
+pub fn print_layout(@node.Layout, Int, Int) -> Unit
+
+pub fn render_layout(@node.Layout, Int, Int) -> String
+
+pub fn render_layout_with_options(@node.Layout, Int, Int, Bool) -> String
+
+pub fn render_paint_node_to_sixel(@paint.PaintNode, Int, Int) -> String
+
+pub fn render_with_styles(@node.Node, @node.Layout, Int, Int) -> String
+
+pub fn to_sixel(Framebuffer) -> String
+
+pub fn to_sixel_dynamic(Framebuffer, DynamicPalette) -> String
+
+pub fn to_sixel_extended(Framebuffer) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+}
+pub fn Color::black() -> Self
+pub fn Color::blend(Self, Self, Int) -> Self
+pub fn Color::blue() -> Self
+pub fn Color::gray() -> Self
+pub fn Color::green() -> Self
+pub fn Color::red() -> Self
+pub fn Color::transparent() -> Self
+pub fn Color::white() -> Self
+pub fn Color::yellow() -> Self
+
+type DynamicPalette
+
+pub struct Framebuffer {
+  width : Int
+  height : Int
+  pixels : Array[Int]
+}
+pub fn Framebuffer::draw_char(Self, Int, Int, Char, Int, Int) -> Int
+pub fn Framebuffer::draw_text(Self, Int, Int, String, Int, Int, Int) -> Int
+pub fn Framebuffer::fill_rect(Self, Int, Int, Int, Int, Int) -> Unit
+pub fn Framebuffer::fill_rect_hatched(Self, Int, Int, Int, Int, Int, Int, Int) -> Unit
+pub fn Framebuffer::new(Int, Int) -> Self
+pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
+
+// Type aliases
+
+// Traits
+

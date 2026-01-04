@@ -114,6 +114,9 @@ priv struct StyleBuilder {
   mut visibility : @style.Visibility
   mut z_index : @style.ZIndex
   mut opacity : Double
+  // Color properties
+  mut color : @types.Color
+  mut background_color : @types.Color
   // Containment
   mut contain : @style.Contain
 }
@@ -175,6 +178,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     visibility: @style.Visibility::Visible,
     z_index: @style.ZIndex::Auto,
     opacity: 1.0,
+    color: @types.Color::black(),
+    background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
   }
 }
@@ -248,6 +253,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     visibility: self.visibility,
     z_index: self.z_index,
     opacity: self.opacity,
+    color: self.color,
+    background_color: self.background_color,
     contain: self.contain,
   }
 }
@@ -342,6 +349,8 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "flex-grow" => style.flex_grow.to_string()
     "flex-shrink" => style.flex_shrink.to_string()
     "flex-basis" => dimension_to_string(style.flex_basis)
+    "color" => style.color.to_hex()
+    "background-color" => style.background_color.to_hex()
     _ => initial_value(property)
   }
 }
@@ -768,6 +777,39 @@ fn apply_property(
     "visibility" => builder.visibility = parse_visibility(value)
     "z-index" => builder.z_index = parse_z_index(value)
     "opacity" => builder.opacity = parse_opacity(value)
+    // Color properties
+    "color" => {
+      let parsed = parse_color(value)
+      match parsed {
+        Resolved(c) => builder.color = c
+        CurrentColor =>
+          // currentColor for 'color' property inherits from parent
+          match ctx.parent_style {
+            Some(parent) => builder.color = parent.color
+            None => () // Keep default (black)
+          }
+        Inherit =>
+          match ctx.parent_style {
+            Some(parent) => builder.color = parent.color
+            None => ()
+          }
+      }
+    }
+    "background-color" | "background" => {
+      // For background shorthand, we only extract the color part
+      let parsed = parse_color(value)
+      match parsed {
+        Resolved(c) => builder.background_color = c
+        CurrentColor =>
+          // currentColor uses the element's computed color
+          builder.background_color = builder.color
+        Inherit =>
+          match ctx.parent_style {
+            Some(parent) => builder.background_color = parent.background_color
+            None => ()
+          }
+      }
+    }
     _ => ()
   }
 }

@@ -1,0 +1,93 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/media"
+
+// Values
+pub fn parse_media_query_list(String) -> MediaQueryList
+
+// Errors
+
+// Types and methods
+pub enum MediaFeature {
+  Color
+  ColorGamut
+  ColorIndex
+  Grid
+  Hover
+  Monochrome
+  Pointer
+  Scripting
+  Update
+  Width(MediaValue?)
+  MinWidth(MediaValue)
+  MaxWidth(MediaValue)
+  Height(MediaValue?)
+  MinHeight(MediaValue)
+  MaxHeight(MediaValue)
+  AspectRatio(MediaValue?)
+  MinAspectRatio(MediaValue)
+  MaxAspectRatio(MediaValue)
+  Resolution(MediaValue?)
+  MinResolution(MediaValue)
+  MaxResolution(MediaValue)
+  WidthRange(RangeOp, MediaValue)
+  HeightRange(RangeOp, MediaValue)
+  Orientation(String)
+  DisplayMode(String)
+  PrefersColorScheme(String)
+  PrefersReducedMotion(String)
+  Custom(String, MediaValue?)
+}
+pub impl Eq for MediaFeature
+pub impl Show for MediaFeature
+
+pub struct MediaQuery {
+  negated : Bool
+  only : Bool
+  media_type : MediaType?
+  conditions : Array[MediaFeature]
+}
+pub fn MediaQuery::default() -> Self
+pub impl Eq for MediaQuery
+pub impl Show for MediaQuery
+
+pub struct MediaQueryList {
+  queries : Array[MediaQuery]
+}
+pub fn MediaQueryList::is_empty(Self) -> Bool
+pub fn MediaQueryList::length(Self) -> Int
+pub fn MediaQueryList::new() -> Self
+pub impl Eq for MediaQueryList
+pub impl Show for MediaQueryList
+
+pub enum MediaType {
+  All
+  Screen
+  Print
+  Speech
+}
+pub impl Eq for MediaType
+pub impl Show for MediaType
+
+pub enum MediaValue {
+  Number(Double)
+  Dimension(Double, String)
+  Ratio(Int, Int)
+  Ident(String)
+}
+pub impl Eq for MediaValue
+pub impl Show for MediaValue
+
+pub enum RangeOp {
+  Eq
+  Lt
+  Le
+  Gt
+  Ge
+}
+pub impl Eq for RangeOp
+pub impl Show for RangeOp
+
+// Type aliases
+
+// Traits
+

@@ -19,6 +19,8 @@ pub(all) struct PaintProperties {
   z_index : @style.ZIndex
   visibility : @style.Visibility
   opacity : Double // 0.0 = transparent, 1.0 = opaque
+  color : @types.Color // Text color (computed)
+  background_color : @types.Color // Background color (computed)
 }
 
 ///|
@@ -27,6 +29,8 @@ pub fn PaintProperties::default() -> PaintProperties {
     z_index: @style.ZIndex::Auto,
     visibility: @style.Visibility::Visible,
     opacity: 1.0,
+    color: @types.Color::black(),
+    background_color: @types.Color::transparent(),
   }
 }
 
@@ -36,6 +40,8 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     z_index: style.z_index,
     visibility: style.visibility,
     opacity: style.opacity,
+    color: style.color,
+    background_color: style.background_color,
   }
 }
 
@@ -47,6 +53,10 @@ pub impl Show for PaintProperties with output(self, logger) {
   self.visibility.output(logger)
   logger.write_string(", opacity: ")
   self.opacity.output(logger)
+  logger.write_string(", color: ")
+  self.color.output(logger)
+  logger.write_string(", background_color: ")
+  self.background_color.output(logger)
   logger.write_string(" }")
 }
 
@@ -87,6 +97,8 @@ pub(all) struct PaintNode {
   paint : PaintProperties
   // Stacking order (computed from z-index)
   stacking_order : Int
+  // Text content (for text nodes)
+  text : String?
   // Children
   children : Array[PaintNode]
 }
@@ -101,6 +113,7 @@ pub fn PaintNode::new(
   height : Double,
   paint : PaintProperties,
   children : Array[PaintNode],
+  text? : String? = None,
 ) -> PaintNode {
   {
     id,
@@ -111,6 +124,7 @@ pub fn PaintNode::new(
     height,
     paint,
     stacking_order: paint.z_index_value(),
+    text,
     children,
   }
 }
@@ -196,4 +210,75 @@ pub fn flatten_for_rendering(node : PaintNode) -> Array[PaintNode] {
 
   collect(node, result)
   result
+}
+
+// =============================================================================
+// Node + Layout → PaintNode Conversion
+// =============================================================================
+
+///|
+/// Convert a Node and its Layout to a PaintNode tree
+/// This combines style information from Node with position from Layout
+pub fn from_node_and_layout(
+  node : @node.Node,
+  layout : @node.Layout,
+) -> PaintNode {
+  let paint = PaintProperties::from_style(node.style)
+  let children : Array[PaintNode] = []
+
+  // Match children by index (assumes same order)
+  let child_count = if node.children.length() < layout.children.length() {
+    node.children.length()
+  } else {
+    layout.children.length()
+  }
+  for i = 0; i < child_count; i = i + 1 {
+    children.push(from_node_and_layout(node.children[i], layout.children[i]))
+  }
+
+  // Determine tag from node id (heuristic: use id or default to "div")
+  let tag = if node.id == "#text" {
+    "#text"
+  } else if node.id.has_prefix("body") {
+    "body"
+  } else if node.id.has_prefix("html") {
+    "html"
+  } else {
+    "div"
+  }
+  PaintNode::new(
+    node.id,
+    tag,
+    layout.x,
+    layout.y,
+    layout.width,
+    layout.height,
+    paint,
+    children,
+    text=layout.text,
+  )
+}
+
+///|
+/// Convert a Layout tree to PaintNode tree using default styles
+/// Use this when Node tree is not available
+pub fn from_layout(layout : @node.Layout) -> PaintNode {
+  let default_style = @style.Style::default()
+  let paint = PaintProperties::from_style(default_style)
+  let children : Array[PaintNode] = []
+  for child in layout.children {
+    children.push(from_layout(child))
+  }
+  let tag = if layout.id == "#text" { "#text" } else { "div" }
+  PaintNode::new(
+    layout.id,
+    tag,
+    layout.x,
+    layout.y,
+    layout.width,
+    layout.height,
+    paint,
+    children,
+    text=layout.text,
+  )
 }

@@ -438,7 +438,8 @@ fn compute_with_collapse(
   if use_max_content {
     let mut max_content_width = 0.0
     // CSS Containment: contain: inline-size means intrinsic width is 0 (no content contribution)
-    let skip_content_contribution = style.contain.inline_size || style.contain.size
+    let skip_content_contribution = style.contain.inline_size ||
+      style.contain.size
     if not(skip_content_contribution) {
       // Check if root itself has MeasureFunc (leaf node with intrinsic size)
       match node.measure {

@@ -297,6 +297,9 @@ pub(all) struct Style {
   mut visibility : Visibility
   mut z_index : ZIndex
   mut opacity : Double // 0.0 = transparent, 1.0 = opaque
+  // Color properties (resolved RGBA values)
+  mut color : @types.Color // Text color (inherited)
+  mut background_color : @types.Color // Background color (not inherited)
   // Containment (for layout optimization)
   mut contain : Contain
 }
@@ -370,6 +373,8 @@ pub fn Style::default() -> Style {
     visibility: Visible,
     z_index: Auto,
     opacity: 1.0,
+    color: @types.Color::black(),
+    background_color: @types.Color::transparent(),
     contain: Contain::none(),
   }
 }

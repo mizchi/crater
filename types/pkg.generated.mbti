@@ -1,0 +1,116 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/types"
+
+// Values
+pub fn apply_aspect_ratio_height(Double, Double?) -> Double?
+
+pub fn apply_aspect_ratio_width(Double, Double?) -> Double?
+
+pub fn clamp(Double, Double, Double) -> Double
+
+pub fn max(Double, Double) -> Double
+
+pub fn min(Double, Double) -> Double
+
+pub fn resolve_dimensions_with_aspect_ratio(Double?, Double?, Double?, Double, Double, Double, Double) -> (Double?, Double?)
+
+pub fn resolve_rect(Rect[Dimension], Double) -> Rect[Double]
+
+pub fn resolve_rect_intrinsic(Rect[Dimension]) -> Rect[Double]
+
+// Errors
+
+// Types and methods
+pub(all) struct BoundingRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+pub fn BoundingRect::area(Self) -> Double
+pub fn BoundingRect::bottom(Self) -> Double
+pub fn BoundingRect::new(Double, Double, Double, Double) -> Self
+pub fn BoundingRect::right(Self) -> Double
+pub fn BoundingRect::union(Self, Self) -> Self
+pub fn BoundingRect::zero() -> Self
+pub impl Show for BoundingRect
+
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+  a : Double
+}
+pub fn Color::black() -> Self
+pub fn Color::is_opaque(Self) -> Bool
+pub fn Color::is_transparent(Self) -> Bool
+pub fn Color::rgb(Int, Int, Int) -> Self
+pub fn Color::rgba(Int, Int, Int, Double) -> Self
+pub fn Color::to_hex(Self) -> String
+pub fn Color::to_rgba_string(Self) -> String
+pub fn Color::transparent() -> Self
+pub fn Color::white() -> Self
+pub impl Eq for Color
+pub impl Show for Color
+
+pub(all) enum Dimension {
+  Length(Double)
+  Percent(Double)
+  Auto
+  MinContent
+  MaxContent
+  FitContent(Double)
+}
+pub fn Dimension::eq_length(Self, Double) -> Bool
+pub fn Dimension::eq_percent(Self, Double) -> Bool
+pub fn Dimension::is_definite(Self) -> Bool
+pub fn Dimension::is_intrinsic(Self) -> Bool
+pub fn Dimension::resolve(Self, Double) -> Double?
+pub fn Dimension::resolve_or(Self, Double, Double) -> Double
+pub fn Dimension::resolve_or_intrinsic(Self, Double, Double) -> Double
+pub impl Eq for Dimension
+pub impl Show for Dimension
+
+pub struct Line[T] {
+  start : T
+  end : T
+}
+pub fn[T] Line::new(T, T) -> Self[T]
+pub impl[T : Show] Show for Line[T]
+
+pub struct Point[T] {
+  x : T
+  y : T
+}
+pub fn[T, U] Point::map(Self[T], (T) -> U) -> Self[U]
+pub fn[T] Point::new(T, T) -> Self[T]
+pub fn Point::zero() -> Self[Double]
+pub impl[T : Show] Show for Point[T]
+
+pub(all) struct Rect[T] {
+  left : T
+  right : T
+  top : T
+  bottom : T
+}
+pub fn[T] Rect::all(T) -> Self[T]
+pub fn Rect::horizontal_sum(Self[Double]) -> Double
+pub fn[T, U] Rect::map(Self[T], (T) -> U) -> Self[U]
+pub fn[T] Rect::new(T, T, T, T) -> Self[T]
+pub fn Rect::vertical_sum(Self[Double]) -> Double
+pub fn Rect::zero() -> Self[Double]
+pub impl[T : Show] Show for Rect[T]
+
+pub struct Size[T] {
+  width : T
+  height : T
+}
+pub fn[T, U] Size::map(Self[T], (T) -> U) -> Self[U]
+pub fn[T] Size::new(T, T) -> Self[T]
+pub fn Size::zero() -> Self[Double]
+pub impl[T : Show] Show for Size[T]
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,90 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/computed"
+
+import(
+  "mizchi/crater/css/cascade"
+  "mizchi/crater/style"
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn compute(@cascade.CascadedValues, ComputeContext) -> @style.Style
+
+pub fn compute_inline(String, ComputeContext) -> @style.Style
+
+pub fn default_background_color() -> @types.Color
+
+pub fn default_color() -> @types.Color
+
+pub fn extract_border_width(String) -> @types.Dimension
+
+pub fn initial_value(String) -> String
+
+pub fn is_inherited(String) -> Bool
+
+pub fn parse_align_self(String) -> @style.AlignSelf
+
+pub fn parse_alignment(String) -> @style.Alignment
+
+pub fn parse_aspect_ratio(String) -> Double?
+
+pub fn parse_clear(String) -> @style.Clear
+
+pub fn parse_color(String) -> CssColorValue
+
+pub fn parse_dimension(String) -> @types.Dimension
+
+pub fn parse_display(String) -> @style.Display
+
+pub fn parse_flex_direction(String) -> @style.FlexDirection
+
+pub fn parse_flex_wrap(String) -> @style.FlexWrap
+
+pub fn parse_float(String) -> @style.Float
+
+pub fn parse_grid_auto_flow(String) -> @style.GridAutoFlow
+
+pub fn parse_grid_line_shorthand(String) -> (@style.GridPlacement, @style.GridPlacement)
+
+pub fn parse_grid_placement(String) -> @style.GridPlacement
+
+pub fn parse_grid_template_tracks(String) -> Array[@style.TrackSizingFunction]
+
+pub fn parse_integer(String) -> Int
+
+pub fn parse_number(String) -> Double
+
+pub fn parse_overflow(String) -> @style.Overflow
+
+pub fn parse_position(String) -> @style.Position
+
+pub fn resolve_current_color(CssColorValue, @types.Color) -> @types.Color
+
+// Errors
+
+// Types and methods
+pub(all) struct ComputeContext {
+  parent_style : @style.Style?
+  root_font_size : Double
+  font_size : Double
+  viewport_width : Double
+  viewport_height : Double
+}
+pub fn ComputeContext::new() -> Self
+pub fn ComputeContext::with_parent(@style.Style) -> Self
+pub fn ComputeContext::with_viewport(Double, Double) -> Self
+
+pub(all) enum CssColorValue {
+  Resolved(@types.Color)
+  CurrentColor
+  Inherit
+}
+pub fn CssColorValue::get_color(Self) -> @types.Color?
+pub fn CssColorValue::is_resolved(Self) -> Bool
+pub fn CssColorValue::or_default(Self, @types.Color) -> @types.Color
+pub impl Show for CssColorValue
+
+// Type aliases
+
+// Traits
+

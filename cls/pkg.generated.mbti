@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/cls"
+
+import(
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> LayoutShift
+
+pub fn compute_total(Array[@types.BoundingRect], Array[@types.BoundingRect], @types.Size[Double]) -> Double
+
+// Errors
+
+// Types and methods
+pub struct LayoutShift {
+  impact_fraction : Double
+  distance_fraction : Double
+  score : Double
+}
+pub impl Show for LayoutShift
+
+// Type aliases
+
+// Traits
+

@@ -8,8 +8,8 @@ blitz
 # Dependencies
 node_modules/
 
-# MoonBit generated files
-*.generated.mbti
+# MoonBit generated files (tracked for publishing)
+# *.generated.mbti
 
 # Generated render results
 render-results/

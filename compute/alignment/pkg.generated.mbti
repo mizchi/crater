@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/compute/alignment"
+
+import(
+  "mizchi/crater/style"
+)
+
+// Values
+pub fn compute_align_offset(@style.Alignment, Double) -> Double
+
+pub fn compute_align_self_offset(@style.AlignSelf, @style.Alignment, Double) -> Double
+
+pub fn compute_justify(@style.Alignment, Double, Int) -> (Double, Double)
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

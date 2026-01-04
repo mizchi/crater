@@ -1,0 +1,207 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/selector"
+
+import(
+  "mizchi/crater/css/token"
+)
+
+// Values
+pub fn complex_specificity(ComplexSelector) -> Specificity
+
+pub fn compound_specificity(CompoundSelector) -> Specificity
+
+pub fn matches_complex(Element, ComplexSelector) -> Bool
+
+pub fn matches_compound(Element, CompoundSelector) -> Bool
+
+pub fn matches_selector_list(Element, SelectorList) -> Bool
+
+pub fn matches_selector_text(Element, String) -> Bool
+
+pub fn matches_simple(Element, SimpleSelector) -> Bool
+
+pub fn parse_selector(Array[@token.Token]) -> ComplexSelector?
+
+pub fn parse_selector_list(Array[@token.Token]) -> SelectorList?
+
+pub fn parse_selector_list_text(String) -> SelectorList?
+
+pub fn parse_selector_text(String) -> ComplexSelector?
+
+pub fn selector_list_specificity(SelectorList) -> Specificity
+
+pub fn simple_specificity(SimpleSelector) -> Specificity
+
+// Errors
+
+// Types and methods
+pub struct Attribute {
+  name : String
+  value : String
+}
+
+pub enum AttributeMatch {
+  Exists
+  Exact(String)
+  Includes(String)
+  DashMatch(String)
+  Prefix(String)
+  Suffix(String)
+  Substring(String)
+}
+pub impl Show for AttributeMatch
+
+pub struct AttributeSelector {
+  name : String
+  match_type : AttributeMatch
+  case_insensitive : Bool
+}
+pub impl Show for AttributeSelector
+
+pub enum Combinator {
+  Descendant
+  Child
+  NextSibling
+  SubsequentSibling
+}
+pub impl Show for Combinator
+
+pub struct ComplexSelector {
+  head : CompoundSelector
+  tail : Array[ComplexSelectorStep]
+}
+pub fn ComplexSelector::simple(CompoundSelector) -> Self
+pub impl Show for ComplexSelector
+
+pub struct ComplexSelectorStep {
+  combinator : Combinator
+  selector : CompoundSelector
+}
+
+pub struct CompoundSelector {
+  type_selector : SimpleSelector?
+  subclasses : Array[SimpleSelector]
+}
+pub fn CompoundSelector::from_class(String) -> Self
+pub fn CompoundSelector::from_id(String) -> Self
+pub fn CompoundSelector::from_type(String) -> Self
+pub fn CompoundSelector::universal() -> Self
+pub impl Show for CompoundSelector
+
+pub(all) struct Element {
+  tag_name : String
+  id : String?
+  classes : Array[String]
+  attributes : Array[Attribute]
+  parent : Element?
+  prev_sibling : Element?
+  next_sibling : Element?
+  children : Array[Element]
+  sibling_index : Int
+  sibling_count : Int
+}
+pub fn Element::add_class(Self, String) -> Self
+pub fn Element::get_attribute(Self, String) -> String?
+pub fn Element::has_class(Self, String) -> Bool
+pub fn Element::is_first_child(Self) -> Bool
+pub fn Element::is_last_child(Self) -> Bool
+pub fn Element::new(String) -> Self
+pub fn Element::set_attribute(Self, String, String) -> Self
+pub fn Element::set_id(Self, String) -> Self
+pub fn Element::set_parent(Self, Self) -> Self
+pub fn Element::set_sibling_info(Self, Int, Int) -> Self
+pub fn Element::with_classes(String, Array[String]) -> Self
+pub fn Element::with_id(String, String) -> Self
+
+pub struct NthExpr {
+  a : Int
+  b : Int
+}
+pub impl Show for NthExpr
+
+pub enum PseudoClass {
+  FirstChild
+  LastChild
+  OnlyChild
+  NthChild(NthExpr)
+  NthLastChild(NthExpr)
+  FirstOfType
+  LastOfType
+  OnlyOfType
+  NthOfType(NthExpr)
+  NthLastOfType(NthExpr)
+  Root
+  Empty
+  Not(Array[CompoundSelector])
+  Is(Array[ComplexSelector])
+  Where(Array[ComplexSelector])
+  Has(Array[RelativeSelector])
+  Hover
+  Active
+  Focus
+  FocusVisible
+  FocusWithin
+  Link
+  Visited
+  AnyLink
+  Enabled
+  Disabled
+  Checked
+  Indeterminate
+  Required
+  Optional
+  Valid
+  Invalid
+  ReadOnly
+  ReadWrite
+}
+pub impl Show for PseudoClass
+
+pub enum PseudoElement {
+  Before
+  After
+  FirstLine
+  FirstLetter
+  Marker
+  Placeholder
+  Selection
+}
+pub impl Show for PseudoElement
+
+pub struct RelativeSelector {
+  combinator : Combinator?
+  selector : ComplexSelector
+}
+
+pub struct SelectorList {
+  selectors : Array[ComplexSelector]
+}
+pub impl Show for SelectorList
+
+pub enum SimpleSelector {
+  Type(String)
+  Universal
+  Id(String)
+  Class(String)
+  Attribute(AttributeSelector)
+  PseudoClass(PseudoClass)
+  PseudoElement(PseudoElement)
+}
+pub impl Show for SimpleSelector
+
+pub(all) struct Specificity {
+  a : Int
+  b : Int
+  c : Int
+}
+pub fn Specificity::add(Self, Self) -> Self
+pub fn Specificity::compare_to(Self, Self) -> Int
+pub fn Specificity::zero() -> Self
+pub impl Compare for Specificity
+pub impl Eq for Specificity
+pub impl Show for Specificity
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,50 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/token"
+
+// Values
+pub fn tokenize(String) -> Array[Token]
+
+// Errors
+
+// Types and methods
+pub enum HashType {
+  Id
+  Unrestricted
+}
+
+pub enum NumType {
+  Integer
+  Number
+}
+
+pub enum Token {
+  Ident(String)
+  Function(String)
+  AtKeyword(String)
+  Hash(String, HashType)
+  String(String)
+  BadString
+  Number(Double, NumType)
+  Percentage(Double)
+  Dimension(Double, String)
+  Delim(Char)
+  Whitespace
+  Colon
+  Semicolon
+  Comma
+  LeftBracket
+  RightBracket
+  LeftParen
+  RightParen
+  LeftBrace
+  RightBrace
+  CDO
+  CDC
+  EOF
+}
+pub fn Token::to_string(Self) -> String
+
+// Type aliases
+
+// Traits
+

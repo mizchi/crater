@@ -24,6 +24,7 @@ fn main {
   let mut json_output = false
   let mut verbose = false
   let mut box_model = false
+  let mut use_styles = false
   let mut width : Int? = None
   let mut height : Int? = None
   let mut skip_next = false
@@ -42,6 +43,8 @@ fn main {
       verbose = true
     } else if arg == "--box-model" || arg == "-b" {
       box_model = true
+    } else if arg == "--styles" || arg == "-s" {
+      use_styles = true
     } else if arg == "--width" || arg == "-w" {
       if i + 1 < args.length() {
         width = parse_int(args[i + 1])
@@ -86,7 +89,7 @@ fn main {
     render_json(html, viewport_width, viewport_height)
   } else {
     render_html_with_options(
-      html, viewport_width, viewport_height, verbose, box_model,
+      html, viewport_width, viewport_height, verbose, box_model, use_styles,
     )
   }
 }
@@ -116,6 +119,9 @@ fn print_usage() -> Unit {
     "  -v, --verbose      Show detailed box model info (margin/padding/border)",
   )
   println("  -b, --box-model    Show box model visualization (DevTools-style)")
+  println(
+    "  -s, --styles       Use actual CSS colors (color, background-color)",
+  )
   println("  --json             Output layout as JSON")
   println("  -h, --help         Show this help message")
   println("")
@@ -133,17 +139,17 @@ fn print_usage() -> Unit {
 ///|
 fn get_example_html() -> String {
   (
-    #|<div style="width: 400px; height: 300px; padding: 10px">
-    #|  <header style="height: 40px; margin-bottom: 10px">
+    #|<div style="width: 400px; height: 300px; padding: 10px; background-color: #f0f0f0">
+    #|  <header style="height: 40px; margin-bottom: 10px; background-color: #3498db; color: white">
     #|    Header
     #|  </header>
     #|  <div style="display: flex">
-    #|    <aside style="width: 80px; height: 200px">
+    #|    <aside style="width: 80px; height: 200px; background-color: #2ecc71; color: white">
     #|      Sidebar
     #|    </aside>
-    #|    <main style="flex-grow: 1; height: 200px; padding: 5px">
-    #|      <div style="width: 100px; height: 60px">Box 1</div>
-    #|      <div style="width: 100px; height: 60px">Box 2</div>
+    #|    <main style="flex-grow: 1; height: 200px; padding: 5px; background-color: #ecf0f1">
+    #|      <div style="width: 100px; height: 60px; background-color: #e74c3c; color: white">Box 1</div>
+    #|      <div style="width: 100px; height: 60px; background-color: #9b59b6; color: white">Box 2</div>
     #|    </main>
     #|  </div>
     #|</div>
@@ -157,6 +163,7 @@ fn render_html_with_options(
   height : Int,
   verbose : Bool,
   box_model : Bool,
+  use_styles : Bool,
 ) -> Unit {
   println("=== HTML Input ===")
   // Truncate long HTML for display
@@ -189,13 +196,19 @@ fn render_html_with_options(
   }
   println("")
   println("=== Sixel Output ===")
-  if box_model {
+  if use_styles {
+    println("(styles mode: using actual CSS colors)")
+    let node = @renderer.render_to_node(html, ctx)
+    let sixel = @sixel.render_with_styles(node, layout, width, height)
+    println(sixel)
+  } else if box_model {
     println("(box-model mode: margin=yellow, padding=green, content=blue)")
+    let sixel = @sixel.render_layout_with_options(layout, width, height, true)
+    println(sixel)
+  } else {
+    let sixel = @sixel.render_layout_with_options(layout, width, height, false)
+    println(sixel)
   }
-  let sixel = @sixel.render_layout_with_options(
-    layout, width, height, box_model,
-  )
-  println(sixel)
 }
 
 ///|

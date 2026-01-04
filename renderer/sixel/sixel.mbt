@@ -713,3 +713,221 @@ pub fn print_layout(layout : @node.Layout, width : Int, height : Int) -> Unit {
   let sixel = render_layout(layout, width, height)
   println(sixel)
 }
+
+// =============================================================================
+// PaintNode-based Rendering with Dynamic Colors
+// =============================================================================
+
+///|
+/// Dynamic color palette that builds from PaintNode colors
+struct DynamicPalette {
+  colors : Array[Color]
+  color_map : Map[Int, Int] // color hash -> palette index
+}
+
+///|
+fn DynamicPalette::new() -> DynamicPalette {
+  let colors : Array[Color] = []
+  // Reserve index 0 for transparent/white background
+  colors.push(Color::white())
+  { colors, color_map: {} }
+}
+
+///|
+/// Convert types.Color to sixel Color
+fn types_color_to_sixel(c : @types.Color) -> Color {
+  { r: c.r, g: c.g, b: c.b }
+}
+
+///|
+/// Hash a color for map lookup
+fn color_hash(c : Color) -> Int {
+  c.r * 65536 + c.g * 256 + c.b
+}
+
+///|
+/// Get or add a color to the palette, returns palette index
+fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
+  let hash = color_hash(c)
+  match self.color_map.get(hash) {
+    Some(idx) => idx
+    None => {
+      let idx = self.colors.length()
+      // Sixel supports up to 256 colors
+      if idx < 256 {
+        self.colors.push(c)
+        self.color_map.set(hash, idx)
+        idx
+      } else {
+        // Fallback: find closest color (simple approach: return last)
+        idx - 1
+      }
+    }
+  }
+}
+
+///|
+/// Collect all colors from PaintNode tree
+fn collect_colors(palette : DynamicPalette, node : @paint.PaintNode) -> Unit {
+  // Add background color if not transparent
+  if not(node.paint.background_color.is_transparent()) {
+    let _ = palette.get_or_add(
+      types_color_to_sixel(node.paint.background_color),
+    )
+
+  }
+  // Add text color
+  let _ = palette.get_or_add(types_color_to_sixel(node.paint.color))
+
+  // Process children
+  for child in node.children {
+    collect_colors(palette, child)
+  }
+}
+
+///|
+/// Render a PaintNode tree to framebuffer
+fn render_paint_node(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  node : @paint.PaintNode,
+  parent_x : Double,
+  parent_y : Double,
+) -> Unit {
+  // Skip invisible nodes
+  if not(node.paint.should_render()) {
+    return
+  }
+  let abs_x = parent_x + node.x
+  let abs_y = parent_y + node.y
+  let x = abs_x.to_int()
+  let y = abs_y.to_int()
+  let w = node.width.to_int()
+  let h = node.height.to_int()
+
+  // Skip zero-sized nodes
+  if w <= 0 || h <= 0 {
+    for child in node.children {
+      render_paint_node(fb, palette, child, abs_x, abs_y)
+    }
+    return
+  }
+
+  // Draw background if not transparent
+  if not(node.paint.background_color.is_transparent()) {
+    let bg_idx = palette.get_or_add(
+      types_color_to_sixel(node.paint.background_color),
+    )
+    fb.fill_rect(x, y, w, h, bg_idx)
+  }
+
+  // Draw text if this is a text node
+  match node.text {
+    Some(text_content) => {
+      let text_idx = palette.get_or_add(types_color_to_sixel(node.paint.color))
+      let scale = 1
+      let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
+
+    }
+    None => ()
+  }
+
+  // Draw border (1px black outline for non-text nodes)
+  if node.tag != "#text" && w > 2 && h > 2 {
+    let border_color : Color = { r: 0, g: 0, b: 0 }
+    let border_idx = palette.get_or_add(border_color)
+    fb.stroke_rect(x, y, w, h, border_idx)
+  }
+
+  // Render children
+  for child in node.children {
+    render_paint_node(fb, palette, child, abs_x, abs_y)
+  }
+}
+
+///|
+/// Convert framebuffer to Sixel string with dynamic palette
+pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
+  let buf = StringBuilder::new()
+
+  // Sixel start sequence: ESC P q
+  buf.write_string("\u001bPq")
+
+  // Define color palette
+  for i, color in palette.colors {
+    buf.write_string("#")
+    buf.write_string(i.to_string())
+    buf.write_string(";2;")
+    buf.write_string((color.r * 100 / 255).to_string())
+    buf.write_string(";")
+    buf.write_string((color.g * 100 / 255).to_string())
+    buf.write_string(";")
+    buf.write_string((color.b * 100 / 255).to_string())
+  }
+
+  // Process in bands of 6 pixels height
+  let num_bands = (fb.height + 5) / 6
+  for band = 0; band < num_bands; band = band + 1 {
+    let y_start = band * 6
+    for color_idx = 0
+        color_idx < palette.colors.length()
+        color_idx = color_idx + 1 {
+      buf.write_string("#")
+      buf.write_string(color_idx.to_string())
+      for x = 0; x < fb.width; x = x + 1 {
+        let mut sixel_value = 0
+        let bit_masks = [1, 2, 4, 8, 16, 32]
+        for bit = 0; bit < 6; bit = bit + 1 {
+          let y = y_start + bit
+          if y < fb.height {
+            let pixel = fb.get_pixel(x, y)
+            if pixel == color_idx {
+              sixel_value = sixel_value | bit_masks[bit]
+            }
+          }
+        }
+        let ch = (63 + sixel_value).unsafe_to_char()
+        buf.write_char(ch)
+      }
+      buf.write_string("$")
+    }
+    buf.write_string("-")
+  }
+  buf.write_string("\u001b\\")
+  buf.to_string()
+}
+
+///|
+/// Render PaintNode tree to Sixel string with actual CSS colors
+pub fn render_paint_node_to_sixel(
+  node : @paint.PaintNode,
+  width : Int,
+  height : Int,
+) -> String {
+  let fb = Framebuffer::new(width, height)
+  let palette = DynamicPalette::new()
+
+  // Fill with white background
+  fb.fill_rect(0, 0, width, height, 0)
+
+  // Collect all colors first
+  collect_colors(palette, node)
+
+  // Render the tree
+  render_paint_node(fb, palette, node, 0.0, 0.0)
+
+  // Convert to Sixel
+  to_sixel_dynamic(fb, palette)
+}
+
+///|
+/// Render Node + Layout to Sixel string with CSS colors
+pub fn render_with_styles(
+  node : @node.Node,
+  layout : @node.Layout,
+  width : Int,
+  height : Int,
+) -> String {
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  render_paint_node_to_sixel(paint_node, width, height)
+}

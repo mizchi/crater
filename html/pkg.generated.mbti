@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/html"
+
+// Values
+pub fn parse(String) -> Element?
+
+pub fn parse_document(String) -> Document
+
+pub fn parse_fragment(String) -> Element
+
+// Errors
+
+// Types and methods
+pub(all) struct Document {
+  root : Element
+  stylesheets : Array[String]
+  stylesheet_links : Array[String]
+}
+
+pub(all) struct Element {
+  tag : String
+  id : String?
+  classes : Array[String]
+  style : String?
+  attributes : Map[String, String]
+  children : Array[Node]
+}
+
+pub(all) enum Node {
+  Element(Element)
+  Text(String)
+}
+
+// Type aliases
+
+// Traits
+

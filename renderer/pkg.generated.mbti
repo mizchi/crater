@@ -1,0 +1,42 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/renderer"
+
+import(
+  "mizchi/crater/html"
+  "mizchi/crater/node"
+  "mizchi/crater/style"
+)
+
+// Values
+pub fn apply_css_property_debug(@style.Style, String, String) -> @style.Style
+
+pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
+
+pub fn layout_to_json(@node.Layout) -> String
+
+pub fn print_layout_tree(@node.Layout, Int) -> Unit
+
+pub fn print_layout_tree_with_options(@node.Layout, Int, Bool) -> Unit
+
+pub fn render(String, RenderContext) -> @node.Layout
+
+pub fn render_to_node(String, RenderContext) -> @node.Node
+
+pub fn render_to_sixel(String, Int, Int) -> String
+
+pub fn render_to_sixel_with_styles(String, Int, Int) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct RenderContext {
+  viewport_width : Double
+  viewport_height : Double
+  root_font_size : Double
+}
+pub fn RenderContext::default() -> Self
+
+// Type aliases
+
+// Traits
+

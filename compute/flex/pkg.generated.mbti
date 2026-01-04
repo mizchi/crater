@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/compute/flex"
+
+import(
+  "mizchi/crater/compute/trace"
+  "mizchi/crater/node"
+)
+
+// Values
+pub fn clear_intrinsic_cache_for_node(Int) -> Unit
+
+pub fn clear_intrinsic_cache_for_subtree(@node.Node) -> Unit
+
+pub fn clear_resolved_cache_for_node(Int) -> Unit
+
+pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
+
+pub fn compute_with_trace(@node.Node, @node.LayoutContext) -> TracedLayoutResult
+
+pub fn compute_with_warnings(@node.Node, @node.LayoutContext) -> @node.LayoutResult
+
+pub fn reset_intrinsic_cache() -> Unit
+
+pub fn reset_resolved_cache() -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) struct TracedLayoutResult {
+  layout : @node.Layout
+  warnings : Array[@node.LayoutWarning]
+  tracer : @trace.LayoutTracer
+}
+
+// Type aliases
+
+// Traits
+
