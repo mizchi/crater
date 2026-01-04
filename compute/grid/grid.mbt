@@ -258,7 +258,7 @@ pub fn compute_layout(
         false,
         false,
         @node.Definite,
-        true,
+        false, // Root node uses content-based sizing (taffy behavior)
         ctx.viewport_width,
         ctx.viewport_height,
       )
@@ -467,14 +467,11 @@ fn compute_grid_layout_internal(
     preliminary_width,
     0.0,
   )
-  let padding_top = resolve_dimension(
-    style.padding.top,
-    preliminary_height,
-    0.0,
-  )
+  // CSS spec: percent padding resolves against width, not height
+  let padding_top = resolve_dimension(style.padding.top, preliminary_width, 0.0)
   let padding_bottom = resolve_dimension(
     style.padding.bottom,
-    preliminary_height,
+    preliminary_width,
     0.0,
   )
   let border_left = resolve_dimension(style.border.left, preliminary_width, 0.0)
@@ -1813,9 +1810,12 @@ fn calculate_item_intrinsic_sizes(
           match child.style.display {
             @style.Grid => {
               // Compute grid layout for min-content (with 0 available height)
-              let min_layout = compute_grid_layout(child, 1.0e10, 0.0)
+              // Use container_width for width to correctly resolve percent padding
+              let min_layout = compute_grid_layout(child, container_width, 0.0)
               // Compute grid layout for max-content (with large available height)
-              let max_layout = compute_grid_layout(child, 1.0e10, 1.0e10)
+              let max_layout = compute_grid_layout(
+                child, container_width, 1.0e10,
+              )
               (min_layout.height, max_layout.height)
             }
             @style.Flex => {
@@ -3052,14 +3052,15 @@ fn compute_child_layout(
     available_width,
     0.0,
   )
+  // CSS spec: percent padding resolves against containing block's WIDTH, not height
   let padding_top = resolve_dimension(
     child.style.padding.top,
-    available_height,
+    available_width,
     0.0,
   )
   let padding_bottom = resolve_dimension(
     child.style.padding.bottom,
-    available_height,
+    available_width,
     0.0,
   )
   let border_left = resolve_dimension(
@@ -3377,6 +3378,8 @@ fn apply_alignment(
     _ => true
   }
 
+  // CSS spec: auto margins override stretch alignment
+  let has_horizontal_auto_margin = margin_left_is_auto || margin_right_is_auto
   // Calculate item size - don't clamp to cell size, allow overflow
   // If aspect_ratio derived a dimension, don't stretch that dimension
   // Also respect max constraints - if max is set and smaller than available, use computed size
@@ -3390,13 +3393,17 @@ fn apply_alignment(
         child_layout.width < available_width {
         // aspect_ratio with max_width constraint, width was derived from height
         child_layout.width
-      } else if justify == @style.Alignment::Stretch {
+      } else if justify == @style.Alignment::Stretch &&
+        not(has_horizontal_auto_margin) {
+        // Stretch only if no auto margins
         available_width
       } else {
         child_layout.width
       }
     _ => child_layout.width // Keep explicit size, don't clamp
   }
+  // CSS spec: auto margins override stretch alignment
+  let has_vertical_auto_margin = margin_top_is_auto || margin_bottom_is_auto
   let mut item_height = match child_style.height {
     @types.Auto =>
       if has_aspect_ratio && not(width_is_auto) {
@@ -3412,7 +3419,9 @@ fn apply_alignment(
         child_layout.height < available_height {
         // aspect_ratio with max_width: width was constrained, height derived
         child_layout.height
-      } else if align == @style.Alignment::Stretch {
+      } else if align == @style.Alignment::Stretch &&
+        not(has_vertical_auto_margin) {
+        // Stretch only if no auto margins
         available_height
       } else {
         child_layout.height
@@ -3774,9 +3783,40 @@ fn layout_absolute_child(
   )
 
   // Compute position using shared module
-  let (x, y) = @absolute.compute_inset_position(
+  let (base_x, base_y) = @absolute.compute_inset_position(
     params, final_width, final_height, area_left, area_top, area_width, area_height,
   )
+
+  // Apply align-self/justify-self for absolute children when insets are not specified
+  // Grid absolute children use align-self/justify-self for positioning within grid area
+  let x = if params.inset_left is None && params.inset_right is None {
+    // No horizontal insets - apply justify-self
+    match style.justify_self {
+      @style.AlignSelf::End =>
+        area_left + area_width - final_width - params.margin_right
+      @style.AlignSelf::Center => area_left + (area_width - final_width) / 2.0
+      @style.AlignSelf::Auto
+      | @style.AlignSelf::Start
+      | @style.AlignSelf::Stretch
+      | @style.AlignSelf::Baseline => base_x
+    }
+  } else {
+    base_x
+  }
+  let y = if params.inset_top is None && params.inset_bottom is None {
+    // No vertical insets - apply align-self
+    match style.align_self {
+      @style.AlignSelf::End =>
+        area_top + area_height - final_height - params.margin_bottom
+      @style.AlignSelf::Center => area_top + (area_height - final_height) / 2.0
+      @style.AlignSelf::Auto
+      | @style.AlignSelf::Start
+      | @style.AlignSelf::Stretch
+      | @style.AlignSelf::Baseline => base_y
+    }
+  } else {
+    base_y
+  }
   {
     id: child.id,
     x,
