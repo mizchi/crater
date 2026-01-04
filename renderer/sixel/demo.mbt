@@ -1,7 +1,6 @@
 ///|
 /// Demo: Sixel layout visualization
-/// Run with: moon run sixel
-fn main {
+test "sixel demo layout" {
   // Create a sample layout tree (flex container with 3 children)
   let layout : @node.Layout = {
     id: "root",

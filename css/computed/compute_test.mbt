@@ -1,5 +1,29 @@
 ///|
 /// Tests for CSS computed values
+
+///|
+test "compute_inline background-color hex" {
+  let css = "background-color: #ff0000"
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(css, ctx)
+  // Should be red
+  inspect(style.background_color.r, content="255")
+  inspect(style.background_color.g, content="0")
+  inspect(style.background_color.b, content="0")
+}
+
+///|
+test "compute_inline background-color named" {
+  let css = "background-color: red"
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(css, ctx)
+  // Should be red
+  inspect(style.background_color.r, content="255")
+  inspect(style.background_color.g, content="0")
+  inspect(style.background_color.b, content="0")
+}
+
+///|
 test "parse_dimension basic" {
   let auto = @computed.parse_dimension("auto")
   inspect(auto, content="Auto")

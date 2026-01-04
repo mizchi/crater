@@ -167,9 +167,8 @@ fn create_text_measure(
 fn is_inline_element(tag : String) -> Bool {
   let inline_tags = [
     "a", "abbr", "acronym", "b", "bdo", "big", "br", "cite", "code", "dfn", "em",
-    "font", "i", "img", "input", "kbd", "label", "q", "s", "samp", "select",
-    "small", "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u",
-    "var",
+    "font", "i", "img", "input", "kbd", "label", "q", "s", "samp", "select", "small",
+    "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
   ]
   inline_tags.contains(tag.to_lower())
 }
@@ -1620,6 +1619,13 @@ fn merge_style_property(
   // CSS Containment
   if property == "contain" {
     return { ..target, contain: source.contain }
+  }
+  // Color properties
+  if property == "background-color" || property == "background" {
+    return { ..target, background_color: source.background_color }
+  }
+  if property == "color" {
+    return { ..target, color: source.color }
   }
   target
 }

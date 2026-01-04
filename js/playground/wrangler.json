@@ -1,0 +1,7 @@
+{
+  "name": "crater-playground",
+  "compatibility_date":"2026-01-04",
+  "assets": {
+    "directory": "./dist"
+  }
+}

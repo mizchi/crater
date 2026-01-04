@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crater Playground</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+    }
+    h1 {
+      margin: 0 0 20px 0;
+      color: #00d9ff;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      height: calc(100vh - 100px);
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-code {
+      flex: 1;
+      min-width: 300px;
+    }
+    .panel-preview {
+      flex: 0 0 auto;
+      width: 400px;
+    }
+    .panel-json {
+      flex: 1;
+      min-width: 250px;
+    }
+    .panel h2 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #888;
+      text-transform: uppercase;
+    }
+    textarea {
+      flex: 1;
+      background: #16213e;
+      color: #eee;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+      resize: none;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+    #preview {
+      flex: 1;
+      background: #0f0f1a;
+      border-radius: 8px;
+      position: relative;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 12px;
+    }
+    #canvas {
+      border-radius: 4px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #00d9ff;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #00b8d9;
+    }
+    .size-input {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #888;
+      font-size: 12px;
+    }
+    .size-input input {
+      width: 60px;
+      background: #16213e;
+      color: #eee;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+    #json-output {
+      flex: 1;
+      background: #16213e;
+      color: #7ec8e3;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 11px;
+      overflow: auto;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <h1>Crater Playground</h1>
+  <div class="controls">
+    <button id="render-btn">Render</button>
+    <div class="size-input">
+      <label>Width:</label>
+      <input type="number" id="width" value="375">
+      <label>Height:</label>
+      <input type="number" id="height" value="812">
+    </div>
+  </div>
+  <div class="container">
+    <div class="panel panel-code">
+      <h2>HTML Input</h2>
+      <textarea id="html-input"><div style="width: 375px; display: flex; flex-direction: column; background-color: #1e1e2e">
+  <header style="display: flex; justify-content: space-between; align-items: center; height: 56px; padding: 0 16px; background-color: #313244">
+    <span style="color: #89b4fa">Crater App</span>
+    <div style="width: 32px; height: 32px; background-color: #45475a"></div>
+  </header>
+  <div style="flex: 1; padding: 16px">
+    <div style="margin-bottom: 16px; padding: 16px; background-color: #313244">
+      <div style="margin-bottom: 8px; color: #cdd6f4">Welcome</div>
+      <div style="color: #a6adc8">A layout engine in MoonBit</div>
+    </div>
+    <div style="display: flex; gap: 12px; margin-bottom: 16px">
+      <div style="flex: 1; height: 80px; padding: 12px; background-color: #f38ba8; color: #1e1e2e">Card A</div>
+      <div style="flex: 1; height: 80px; padding: 12px; background-color: #a6e3a1; color: #1e1e2e">Card B</div>
+    </div>
+    <div style="padding: 16px; background-color: #313244">
+      <div style="margin-bottom: 12px; color: #f9e2af">Grid Items</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <div style="width: 48px; height: 48px; background-color: #fab387"></div>
+        <div style="width: 48px; height: 48px; background-color: #f9e2af"></div>
+        <div style="width: 48px; height: 48px; background-color: #a6e3a1"></div>
+        <div style="width: 48px; height: 48px; background-color: #89dceb"></div>
+        <div style="width: 48px; height: 48px; background-color: #89b4fa"></div>
+        <div style="width: 48px; height: 48px; background-color: #cba6f7"></div>
+      </div>
+    </div>
+    <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px">
+      <div style="height: 44px; padding: 0 16px; display: flex; align-items: center; background-color: #45475a; color: #cdd6f4">List Item 1</div>
+      <div style="height: 44px; padding: 0 16px; display: flex; align-items: center; background-color: #45475a; color: #cdd6f4">List Item 2</div>
+      <div style="height: 44px; padding: 0 16px; display: flex; align-items: center; background-color: #89b4fa; color: #1e1e2e">Selected</div>
+    </div>
+  </div>
+  <nav style="height: 56px; display: flex; background-color: #313244">
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #89b4fa">Home</div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #6c7086">Search</div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #6c7086">Profile</div>
+  </nav>
+</div></textarea>
+    </div>
+    <div class="panel panel-preview">
+      <h2>Canvas Preview</h2>
+      <div id="preview">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+    <div class="panel panel-json">
+      <h2>Layout JSON</h2>
+      <div id="json-output"></div>
+    </div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

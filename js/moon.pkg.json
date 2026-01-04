@@ -1,0 +1,18 @@
+{
+  "import": [
+    "mizchi/crater/renderer",
+    "mizchi/crater/node",
+    "mizchi/crater/paint",
+    "mizchi/crater/types"
+  ],
+  "link": {
+    "js": {
+      "exports": [
+        "renderHtml",
+        "renderHtmlToJson",
+        "renderHtmlToPaintTree"
+      ],
+      "format": "esm"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "crater-playground",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:moonbit": "cd ../.. && moon build --target js"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
