@@ -35,6 +35,18 @@ Layout algorithm tests ported from [Taffy](https://github.com/DioxusLabs/taffy):
 | CSS Media Query | 38 | 38 | 100% |
 | HTML Parser | 106 | 111 | 95.5% |
 
+### Web Platform Tests (WPT)
+
+CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), compared against Chromium:
+
+| Module | Passed | Total | Rate |
+|--------|--------|-------|------|
+| css-flexbox | 148 | 234 | 63.2% |
+| css-grid | 17 | 30 | 56.7% |
+| css-sizing | 23 | 50 | 46.0% |
+| css-overflow | 8 | 20 | 40.0% |
+| css-position | 11 | 30 | 36.7% |
+
 ## Features
 
 ### Layout Modes
