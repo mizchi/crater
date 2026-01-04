@@ -1,0 +1,10 @@
+{
+  "name": "crater-lightpanda-example",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}

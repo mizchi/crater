@@ -145,6 +145,45 @@ test "parse_document with link stylesheet" {
 }
 
 ///|
+test "parse anchor with text" {
+  let html = "<a href=\"test\">Learn more</a>"
+  match @html.parse(html) {
+    Some(e) => {
+      inspect(e.tag, content="a")
+      inspect(e.children.length(), content="1")
+      match e.children[0] {
+        @html.Node::Text(t) => inspect(t, content="Learn more")
+        @html.Node::Element(_) => inspect(false, content="should be text")
+      }
+    }
+    None => inspect(false, content="should parse")
+  }
+}
+
+///|
+test "parse paragraph with nested anchor" {
+  let html = "<p><a href=\"test\">Learn more</a></p>"
+  match @html.parse(html) {
+    Some(p) => {
+      inspect(p.tag, content="p")
+      inspect(p.children.length(), content="1")
+      match p.children[0] {
+        @html.Node::Element(a) => {
+          inspect(a.tag, content="a")
+          inspect(a.children.length(), content="1")
+          match a.children[0] {
+            @html.Node::Text(t) => inspect(t, content="Learn more")
+            _ => inspect(false, content="a should have text child")
+          }
+        }
+        _ => inspect(false, content="p should have element child")
+      }
+    }
+    None => inspect(false, content="should parse")
+  }
+}
+
+///|
 test "parse html with body and children" {
   let html =
     #|<html>

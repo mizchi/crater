@@ -163,6 +163,35 @@ fn create_text_measure(
 }
 
 ///|
+/// Check if an element is an inline-level element
+fn is_inline_element(tag : String) -> Bool {
+  let inline_tags = [
+    "a", "abbr", "acronym", "b", "bdo", "big", "br", "cite", "code", "dfn", "em",
+    "font", "i", "img", "input", "kbd", "label", "q", "s", "samp", "select",
+    "small", "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u",
+    "var",
+  ]
+  inline_tags.contains(tag.to_lower())
+}
+
+///|
+/// Recursively collect text from inline elements
+fn collect_text_from_inline(elem : @html.Element, buf : StringBuilder) -> Unit {
+  for child in elem.children {
+    match child {
+      @html.Node::Text(text) => buf.write_string(text)
+      @html.Node::Element(child_elem) =>
+        if child_elem.tag.to_lower() == "br" {
+          buf.write_string("\n")
+        } else if is_inline_element(child_elem.tag) {
+          // Recursively collect text from nested inline elements
+          collect_text_from_inline(child_elem, buf)
+        }
+    }
+  }
+}
+
+///|
 /// Collect inline content from HTML children, combining text and <br> elements
 /// Returns collected text (with \n for br) and remaining block-level children
 fn collect_inline_content(
@@ -182,8 +211,12 @@ fn collect_inline_content(
           // Insert newline for <br>
           text_builder.write_string("\n")
           has_inline_content = true
+        } else if is_inline_element(elem.tag) {
+          // Recursively collect text from inline elements (a, span, em, etc.)
+          collect_text_from_inline(elem, text_builder)
+          has_inline_content = true
         } else {
-          // Block-level or other elements go to remaining
+          // Block-level elements go to remaining
           remaining.push(child)
         }
     }

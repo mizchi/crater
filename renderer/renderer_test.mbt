@@ -251,13 +251,8 @@ test "font-size inheritance in full render" {
   inspect(div1.id, content="div#div1")
   inspect(div1.style.font_size, content="20")
 
-  // Check <a> inherited font_size = 20
-  let anchor = div1.children[0]
-  inspect(anchor.id, content="a")
-  inspect(anchor.style.font_size, content="20")
-
-  // Check text node uses parent's font_size
-  let text = anchor.children[0]
+  // Text inside <a> is now collected to parent div (inline element text collection)
+  let text = div1.children[0]
   inspect(text.id, content="#text")
   inspect(text.style.font_size, content="20")
 }
@@ -300,14 +295,9 @@ test "font-size with nested selectors like WPT" {
   inspect(div2.style.font_size, content="10")
   inspect(div2.style.line_height, content="10")
 
-  // Check <a> inside div1 inherits font_size = 20, line_height = 20
-  let anchor1 = div1.children[0]
-  inspect(anchor1.id, content="a")
-  inspect(anchor1.style.font_size, content="20")
-  inspect(anchor1.style.line_height, content="20")
-
-  // Check text node inside <a> has font_size = 20, line_height = 20
-  let text1 = anchor1.children[0]
+  // Text inside <a> is now collected to parent div (inline element text collection)
+  // div1 should have a #text child with the text from <a>
+  let text1 = div1.children[0]
   inspect(text1.id, content="#text")
   inspect(text1.style.font_size, content="20")
   inspect(text1.style.line_height, content="20")
