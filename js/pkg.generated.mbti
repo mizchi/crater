@@ -2,9 +2,15 @@
 package "mizchi/crater/js"
 
 // Values
+pub fn addChild(String, String) -> Bool
+
+pub fn calculateLayout(Double, Double) -> String
+
 pub fn computeFull() -> String
 
 pub fn computeIncremental() -> String
+
+pub fn createNode(String) -> Int
 
 pub fn createTree(String, Int, Int) -> Int
 
@@ -12,9 +18,27 @@ pub fn destroyTree() -> Unit
 
 pub fn getCacheStats() -> String
 
+pub fn getChildCount(String) -> Int
+
+pub fn getComputedHeight(String) -> Double
+
+pub fn getComputedLeft(String) -> Double
+
+pub fn getComputedTop(String) -> Double
+
+pub fn getComputedWidth(String) -> Double
+
+pub fn hasNewLayout(String) -> Bool
+
+pub fn insertChild(String, String, Int) -> Bool
+
 pub fn markDirty(String) -> Bool
 
+pub fn markLayoutSeen(String) -> Bool
+
 pub fn needsLayout() -> Bool
+
+pub fn removeChild(String, Int) -> Bool
 
 pub fn renderHtml(String, Int, Int) -> String
 
@@ -29,6 +53,40 @@ pub fn renderHtmlToSixelWithStyles(String, Int, Int) -> String
 pub fn resetCacheStats() -> Unit
 
 pub fn resizeViewport(Int, Int) -> Unit
+
+pub fn setAlignItems(String, Int) -> Bool
+
+pub fn setDisplay(String, Int) -> Bool
+
+pub fn setFlexBasis(String, Double) -> Bool
+
+pub fn setFlexDirection(String, Int) -> Bool
+
+pub fn setFlexGrow(String, Double) -> Bool
+
+pub fn setFlexShrink(String, Double) -> Bool
+
+pub fn setFlexWrap(String, Int) -> Bool
+
+pub fn setGap(String, Double) -> Bool
+
+pub fn setHeight(String, Double) -> Bool
+
+pub fn setHeightAuto(String) -> Bool
+
+pub fn setHeightPercent(String, Double) -> Bool
+
+pub fn setJustifyContent(String, Int) -> Bool
+
+pub fn setMargin(String, Double) -> Bool
+
+pub fn setPadding(String, Double) -> Bool
+
+pub fn setWidth(String, Double) -> Bool
+
+pub fn setWidthAuto(String) -> Bool
+
+pub fn setWidthPercent(String, Double) -> Bool
 
 pub fn updateStyle(String, String) -> Bool
 

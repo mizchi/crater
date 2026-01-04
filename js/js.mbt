@@ -347,3 +347,488 @@ pub fn destroyTree() -> Unit {
   global_tree.val = None
   global_stats.val = None
 }
+
+// =============================================================================
+// Yoga-compatible Node API
+// =============================================================================
+
+///|
+/// Create a new node with optional ID
+/// Returns the node's UID
+pub fn createNode(id : String) -> Int {
+  let node = @tree.LayoutNode::create_with_id(id)
+  node.uid
+}
+
+///|
+/// Add a child node to parent (appends to end)
+/// Returns true if successful
+pub fn addChild(parent_id : String, child_id : String) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match (tree.find_node_by_id(parent_id), tree.find_node_by_id(child_id)) {
+        (Some(parent), Some(child)) => {
+          ignore(parent.add_child(child))
+          true
+        }
+        _ => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Insert child at specific index
+pub fn insertChild(parent_id : String, child_id : String, index : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match (tree.find_node_by_id(parent_id), tree.find_node_by_id(child_id)) {
+        (Some(parent), Some(child)) => {
+          ignore(parent.insert_child(child, index))
+          true
+        }
+        _ => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Remove child at index
+pub fn removeChild(parent_id : String, index : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(parent_id) {
+        Some(parent) =>
+          match parent.remove_child_at(index) {
+            Some(_) => true
+            None => false
+          }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Get child count
+pub fn getChildCount(node_id : String) -> Int {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => node.get_child_count()
+        None => 0
+      }
+    None => 0
+  }
+}
+
+// =============================================================================
+// Yoga-compatible Style Setters
+// =============================================================================
+
+///|
+/// Set width in pixels
+pub fn setWidth(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_width(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set width as percentage (0-100)
+pub fn setWidthPercent(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_width_percent(value / 100.0))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set width to auto
+pub fn setWidthAuto(node_id : String) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_width_auto())
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set height in pixels
+pub fn setHeight(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_height(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set height as percentage (0-100)
+pub fn setHeightPercent(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_height_percent(value / 100.0))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set height to auto
+pub fn setHeightAuto(node_id : String) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_height_auto())
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set flex grow
+pub fn setFlexGrow(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_flex_grow(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set flex shrink
+pub fn setFlexShrink(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_flex_shrink(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set flex basis in pixels
+pub fn setFlexBasis(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_flex_basis(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set flex direction: 0=row, 1=row-reverse, 2=column, 3=column-reverse
+pub fn setFlexDirection(node_id : String, value : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          let dir : @style.FlexDirection = match value {
+            0 => Row
+            1 => RowReverse
+            2 => Column
+            3 => ColumnReverse
+            _ => Row
+          }
+          ignore(node.set_flex_direction(dir))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set flex wrap: 0=no-wrap, 1=wrap, 2=wrap-reverse
+pub fn setFlexWrap(node_id : String, value : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          let wrap : @style.FlexWrap = match value {
+            0 => NoWrap
+            1 => Wrap
+            2 => WrapReverse
+            _ => NoWrap
+          }
+          ignore(node.set_flex_wrap(wrap))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set justify content: 0=start, 1=end, 2=center, 3=space-between, 4=space-around, 5=space-evenly
+pub fn setJustifyContent(node_id : String, value : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          let align : @style.Alignment = match value {
+            0 => FlexStart
+            1 => FlexEnd
+            2 => Center
+            3 => SpaceBetween
+            4 => SpaceAround
+            5 => SpaceEvenly
+            _ => FlexStart
+          }
+          ignore(node.set_justify_content(align))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set align items: 0=start, 1=end, 2=center, 3=stretch, 4=baseline
+pub fn setAlignItems(node_id : String, value : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          let align : @style.Alignment = match value {
+            0 => FlexStart
+            1 => FlexEnd
+            2 => Center
+            3 => Stretch
+            4 => Baseline
+            _ => Stretch
+          }
+          ignore(node.set_align_items(align))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set display: 0=flex, 1=none, 2=block, 3=grid
+pub fn setDisplay(node_id : String, value : Int) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          let display : @style.Display = match value {
+            0 => Flex
+            1 => None
+            2 => Block
+            3 => Grid
+            _ => Flex
+          }
+          ignore(node.set_display(display))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set margin on all sides
+pub fn setMargin(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_margin(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set padding on all sides
+pub fn setPadding(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_padding(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Set gap (row and column)
+pub fn setGap(node_id : String, value : Double) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          ignore(node.set_gap(value))
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+// =============================================================================
+// Yoga-compatible Layout Getters
+// =============================================================================
+
+///|
+/// Get computed X position
+pub fn getComputedLeft(node_id : String) -> Double {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => node.get_layout_x()
+        None => 0.0
+      }
+    None => 0.0
+  }
+}
+
+///|
+/// Get computed Y position
+pub fn getComputedTop(node_id : String) -> Double {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => node.get_layout_y()
+        None => 0.0
+      }
+    None => 0.0
+  }
+}
+
+///|
+/// Get computed width
+pub fn getComputedWidth(node_id : String) -> Double {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => node.get_layout_width()
+        None => 0.0
+      }
+    None => 0.0
+  }
+}
+
+///|
+/// Get computed height
+pub fn getComputedHeight(node_id : String) -> Double {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => node.get_layout_height()
+        None => 0.0
+      }
+    None => 0.0
+  }
+}
+
+///|
+/// Check if node has new layout
+pub fn hasNewLayout(node_id : String) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => node.get_has_new_layout()
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Mark layout as seen
+pub fn markLayoutSeen(node_id : String) -> Bool {
+  match global_tree.val {
+    Some(tree) =>
+      match tree.find_node_by_id(node_id) {
+        Some(node) => {
+          node.mark_layout_seen()
+          true
+        }
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Calculate layout (Yoga-compatible name)
+pub fn calculateLayout(width : Double, height : Double) -> String {
+  match global_tree.val {
+    Some(tree) => {
+      let layout = tree.calculate_layout(width, height)
+      @renderer.layout_to_json(layout)
+    }
+    None => "{\"error\":\"No tree created\"}"
+  }
+}

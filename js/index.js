@@ -16,6 +16,38 @@ export {
   resetCacheStats,
   needsLayout,
   destroyTree,
+  // Yoga-compatible Node API
+  createNode,
+  addChild,
+  insertChild,
+  removeChild,
+  getChildCount,
+  // Yoga-compatible Style Setters
+  setWidth,
+  setWidthPercent,
+  setWidthAuto,
+  setHeight,
+  setHeightPercent,
+  setHeightAuto,
+  setFlexGrow,
+  setFlexShrink,
+  setFlexBasis,
+  setFlexDirection,
+  setFlexWrap,
+  setJustifyContent,
+  setAlignItems,
+  setDisplay,
+  setMargin,
+  setPadding,
+  setGap,
+  // Yoga-compatible Layout Getters
+  getComputedLeft,
+  getComputedTop,
+  getComputedWidth,
+  getComputedHeight,
+  hasNewLayout,
+  markLayoutSeen,
+  calculateLayout,
 } from './crater.js';
 
 // Type-safe JSON parsing helpers
