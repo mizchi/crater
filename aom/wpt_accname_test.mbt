@@ -2278,26 +2278,86 @@ test "accname: link name from content" {
 
 ///|
 test "accname: button with alt counter on ::before" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"5051 label\")")
+  let html =
+    #|<style>
+    #|    /*
+    #|    
+    #|          Since the AccName spec is in flux about whitespace joiners, and the implementations don't match,
+    #|          normalize the whitespace (with extra leading/trailing) space.
+    #|    
+    #|          No point in having the same in-flux spec change cause failures the remaining unrelated tests.
+    #|    
+    #|          See more here:
+    #|          https://github.com/w3c/accname/issues/205
+    #|          https://github.com/w3c/accname/projects/1#card-42288231
+    #|    
+    #|        */
+    #|    
+    #|        .alt-counter::before { counter-set: cnt 5051;
+    #|          content: "" / counter(cnt); }
+    #|</style>
+    #|<button class="ex alt-counter">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"5051 label\")")
 }
 
 ///|
 test "accname: heading with alt counter on ::before" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"5051 label\")")
+  let html =
+    #|<style>
+    #|    /*
+    #|    
+    #|          Since the AccName spec is in flux about whitespace joiners, and the implementations don't match,
+    #|          normalize the whitespace (with extra leading/trailing) space.
+    #|    
+    #|          No point in having the same in-flux spec change cause failures the remaining unrelated tests.
+    #|    
+    #|          See more here:
+    #|          https://github.com/w3c/accname/issues/205
+    #|          https://github.com/w3c/accname/projects/1#card-42288231
+    #|    
+    #|        */
+    #|    
+    #|        .alt-counter::before { counter-set: cnt 5051;
+    #|          content: "" / counter(cnt); }
+    #|</style>
+    #|<h3 class="ex alt-counter">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"5051 label\")")
 }
 
 ///|
 test "accname: link with alt counter on ::before" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"5051 label\")")
+  let html =
+    #|<style>
+    #|    /*
+    #|    
+    #|          Since the AccName spec is in flux about whitespace joiners, and the implementations don't match,
+    #|          normalize the whitespace (with extra leading/trailing) space.
+    #|    
+    #|          No point in having the same in-flux spec change cause failures the remaining unrelated tests.
+    #|    
+    #|          See more here:
+    #|          https://github.com/w3c/accname/issues/205
+    #|          https://github.com/w3c/accname/projects/1#card-42288231
+    #|    
+    #|        */
+    #|    
+    #|        .alt-counter::before { counter-set: cnt 5051;
+    #|          content: "" / counter(cnt); }
+    #|</style>
+    #|<a href="#" class="ex alt-counter">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"5051 label\")")
 }
 
 ///|
@@ -2326,195 +2386,411 @@ test "accname: link with multiple alt counters and counter increments" {
 
 ///|
 test "accname: button name from content with ::before" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"before label\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<button class="ex simple-before">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"before label\")")
 }
 
 ///|
 test "accname: heading name from content with ::before" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"before label\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<h3 class="ex simple-before">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"before label\")")
 }
 
 ///|
 test "accname: link name from content with ::before" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"before label\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<a href="#" class="ex simple-before">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"before label\")")
 }
 
 ///|
 test "accname: button name from content with ::after" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"label after\")")
+  let html =
+    #|<style>
+    #|    .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<button class="ex simple-after">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"label after\")")
 }
 
 ///|
 test "accname: heading name from content with ::after" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"label after\")")
+  let html =
+    #|<style>
+    #|    .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<h3 class="ex simple-after">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"label after\")")
 }
 
 ///|
 test "accname: link name from content with ::after" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"label after\")")
+  let html =
+    #|<style>
+    #|    .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<a href="#" class="ex simple-after">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"label after\")")
 }
 
 ///|
 test "accname: button name from content with ::before and ::after" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"before label after\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<button class="ex simple-before simple-after">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"before label after\")")
 }
 
 ///|
 test "accname: heading name from content with ::before and ::after" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"before label after\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<h3 class="ex simple-before simple-after">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"before label after\")")
 }
 
 ///|
 test "accname: link name from content with ::before and ::after" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"before label after\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<a href="#" class="ex simple-before simple-after">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"before label after\")")
 }
 
 ///|
 test "accname: button name from content no space joiners ::before and ::after" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"nospacelabelnospace\")")
+  let html =
+    #|<style>
+    #|    .no-space::before, .no-space::after { content: "nospace"; /* [sic] Unlike the others, NO extra leading/trailing space here. */ }
+    #|</style>
+    #|<button class="ex no-space">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"nospacelabelnospace\")")
 }
 
 ///|
 test "accname: heading name from content no space joiners ::before and ::after" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"nospacelabelnospace\")")
+  let html =
+    #|<style>
+    #|    .no-space::before, .no-space::after { content: "nospace"; /* [sic] Unlike the others, NO extra leading/trailing space here. */ }
+    #|</style>
+    #|<h3 class="ex no-space">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"nospacelabelnospace\")")
 }
 
 ///|
 test "accname: link name from content no space joiners ::before and ::after" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"nospacelabelnospace\")")
+  let html =
+    #|<style>
+    #|    .no-space::before, .no-space::after { content: "nospace"; /* [sic] Unlike the others, NO extra leading/trailing space here. */ }
+    #|</style>
+    #|<a href="#" class="ex no-space">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"nospacelabelnospace\")")
 }
 
 ///|
 test "accname: button name from content with ::before and ::after in rtl" {
-  let html = "<button >اسم</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"من قبل اسم بعد\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<button class="ex simple-before simple-after">اسم</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"من قبل اسم بعد\")")
 }
 
 ///|
 test "accname: heading name from content with ::before and ::after in rtl" {
-  let html = "<h3 >اسم</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"من قبل اسم بعد\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<h3 class="ex simple-before simple-after">اسم</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"من قبل اسم بعد\")")
 }
 
 ///|
 test "accname: link name from content with ::before and ::after in rtl" {
-  let html = "<a href=\"#\" >اسم</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"من قبل اسم بعد\")")
+  let html =
+    #|<style>
+    #|    .simple-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          margin:0 0.1em; }
+    #|        .simple-before::before { content: " من قبل "; /* [sic] leading and trailing space */ }
+    #|        .simple-after::after { content: " بعد "; /* [sic] leading and trailing space */ }
+    #|</style>
+    #|<a href="#" class="ex simple-before simple-after">اسم</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"من قبل اسم بعد\")")
 }
 
 ///|
 test "accname: button name from fallback content with ::before and ::after" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"alt-before label alt-after\")")
+  let html =
+    #|<style>
+    #|    .fallback-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " alt-before "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " alt-after "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-before-empty::before { content: "before"  / ""; }
+    #|        .fallback-before-image-empty::before { content: "before " url(/images/blue.png) / ""; }
+    #|        .fallback-before-mixed::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " start " attr(data-alt-text-before) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after-mixed::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " start " attr(data-alt-text-after) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|</style>
+    #|<button class="ex fallback-before fallback-after">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"alt-before label alt-after\")")
 }
 
 ///|
 test "accname: heading name from fallback content with ::before and ::after" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"alt-before label alt-after\")")
+  let html =
+    #|<style>
+    #|    .fallback-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " alt-before "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " alt-after "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-before-empty::before { content: "before"  / ""; }
+    #|        .fallback-before-image-empty::before { content: "before " url(/images/blue.png) / ""; }
+    #|        .fallback-before-mixed::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " start " attr(data-alt-text-before) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after-mixed::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " start " attr(data-alt-text-after) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|</style>
+    #|<h3 class="ex fallback-before fallback-after">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"alt-before label alt-after\")")
 }
 
 ///|
 test "accname: link name from fallback content with ::before and ::after" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"alt-before label alt-after\")")
+  let html =
+    #|<style>
+    #|    .fallback-before::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " alt-before "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " alt-after "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-before-empty::before { content: "before"  / ""; }
+    #|        .fallback-before-image-empty::before { content: "before " url(/images/blue.png) / ""; }
+    #|        .fallback-before-mixed::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " start " attr(data-alt-text-before) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after-mixed::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " start " attr(data-alt-text-after) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|</style>
+    #|<a href="#" class="ex fallback-before fallback-after">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"alt-before label alt-after\")")
 }
 
 ///|
 test "accname: button name from fallback content mixing attr() and strings with ::before and ::after" {
-  let html = "<button data-alt-text-before=\"alt-before\" data-alt-text-after=\"alt-after\" >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let html =
+    #|<style>
+    #|    .fallback-before-mixed::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " start " attr(data-alt-text-before) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after-mixed::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " start " attr(data-alt-text-after) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|</style>
+    #|<button data-alt-text-before="alt-before" data-alt-text-after="alt-after" class="ex fallback-before-mixed fallback-after-mixed">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
   inspect(
-    tree.root.name,
+    name,
     content="Some(\"start alt-before end label start alt-after end\")",
   )
 }
 
 ///|
 test "accname: heading name from fallback content mixing attr() and strings with ::before and ::after" {
-  let html = "<h3 data-alt-text-before=\"alt-before\" data-alt-text-after=\"alt-after\" >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let html =
+    #|<style>
+    #|    .fallback-before-mixed::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " start " attr(data-alt-text-before) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after-mixed::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " start " attr(data-alt-text-after) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|</style>
+    #|<h3 data-alt-text-before="alt-before" data-alt-text-after="alt-after" class="ex fallback-before-mixed fallback-after-mixed">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
   inspect(
-    tree.root.name,
+    name,
     content="Some(\"start alt-before end label start alt-after end\")",
   )
 }
 
 ///|
 test "accname: link name from fallback content mixing attr() and strings with ::before and ::after" {
-  let html = "<a href=\"#\" data-alt-text-before=\"alt-before\" data-alt-text-after=\"alt-after\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let html =
+    #|<style>
+    #|    .fallback-before-mixed::before { content: " before "; /* [sic] leading and trailing space */
+    #|          content: " before " / " start " attr(data-alt-text-before) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|        .fallback-after-mixed::after { content: " after "; /* [sic] leading and trailing space */
+    #|          content: " after " / " start " attr(data-alt-text-after) " end "; /* Override the previous line for engines that support the Alternative Text syntax. */ }
+    #|</style>
+    #|<a href="#" data-alt-text-before="alt-before" data-alt-text-after="alt-after" class="ex fallback-before-mixed fallback-after-mixed">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
   inspect(
-    tree.root.name,
+    name,
     content="Some(\"start alt-before end label start alt-after end\")",
   )
 }
 
 ///|
 test "accname: primitive radio input with ::before containing empty alternative text" {
-  let html = "<input type=radio style=appearance:none>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="None")
+  let html =
+    #|<style>
+    #|    .fallback-before-empty::before { content: "before"  / ""; }
+    #|</style>
+    #|<input class="ex fallback-before-empty" type=radio style=appearance:none>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Textbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="None")
 }
 
 ///|
 test "accname: primitive radio input with ::before containing empty alternative text for an image" {
-  let html = "<input type=radio style=appearance:none>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="None")
+  let html =
+    #|<style>
+    #|    .fallback-before-image-empty::before { content: "before " url(/images/blue.png) / ""; }
+    #|</style>
+    #|<input class="ex fallback-before-image-empty" type=radio style=appearance:none>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Textbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="None")
 }
 
 ///|
@@ -2852,26 +3128,47 @@ test "accname: explicit link name from content containing an element explicit wi
 
 ///|
 test "accname: comp_name_from_content_alt_counter_invalidation: button with alt counter on ::before" {
-  let html = "<button >label</button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"228 label\")")
+  let html =
+    #|<style>
+    #|    .alt-counter::before { counter-set: cnt 5051;
+    #|      content: "" / counter(cnt); }
+    #|</style>
+    #|<button class="ex alt-counter">label</button>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"228 label\")")
 }
 
 ///|
 test "accname: comp_name_from_content_alt_counter_invalidation: heading with alt counter on ::before" {
-  let html = "<h3 >label</h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"228 label\")")
+  let html =
+    #|<style>
+    #|    .alt-counter::before { counter-set: cnt 5051;
+    #|      content: "" / counter(cnt); }
+    #|</style>
+    #|<h3 class="ex alt-counter">label</h3>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"228 label\")")
 }
 
 ///|
 test "accname: comp_name_from_content_alt_counter_invalidation: link with alt counter on ::before" {
-  let html = "<a href=\"#\" >label</a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"228 label\")")
+  let html =
+    #|<style>
+    #|    .alt-counter::before { counter-set: cnt 5051;
+    #|      content: "" / counter(cnt); }
+    #|</style>
+    #|<a href="#" class="ex alt-counter">label</a>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"228 label\")")
 }
 
 ///|

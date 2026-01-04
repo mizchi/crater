@@ -20,6 +20,56 @@ interface TestCase {
   expectedRole?: string;
 }
 
+// Extract CSS rules from HTML <style> block
+function extractStyleBlock(html: string): string {
+  const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  return styleMatch ? styleMatch[1] : "";
+}
+
+// Extract CSS rules that match given class names
+function extractRelevantCssRules(cssContent: string, classNames: string[]): string {
+  if (!cssContent || classNames.length === 0) {
+    return "";
+  }
+
+  const rules: string[] = [];
+  // Match CSS rules: selector { declarations }
+  const ruleRegex = /([^{}]+)\{([^{}]*)\}/g;
+  let match;
+
+  while ((match = ruleRegex.exec(cssContent)) !== null) {
+    const selector = match[1].trim();
+    const declarations = match[2].trim();
+
+    // Check if selector contains any of our class names and is a pseudo-element
+    for (const className of classNames) {
+      if (selector.includes(`.${className}`) &&
+          (selector.includes("::before") || selector.includes("::after") ||
+           selector.includes(":before") || selector.includes(":after"))) {
+        // Normalize selector - remove complex parts like :dir() that we don't support
+        let normalizedSelector = selector
+          .replace(/:dir\([^)]*\)/g, "")  // Remove :dir() pseudo-class
+          .replace(/:nth-child\([^)]*\)/g, "")  // Remove :nth-child()
+          .trim();
+
+        if (normalizedSelector) {
+          rules.push(`${normalizedSelector} { ${declarations} }`);
+        }
+        break;
+      }
+    }
+  }
+
+  return rules.join("\n    ");
+}
+
+// Extract class names from an HTML element string
+function extractClassNames(html: string): string[] {
+  const classMatch = html.match(/class="([^"]+)"/);
+  if (!classMatch) return [];
+  return classMatch[1].split(/\s+/).filter(c => c && c !== "ex");
+}
+
 function escapeString(s: string): string {
   return s
     .replace(/\\/g, "\\\\")
@@ -467,6 +517,9 @@ function generateAccnameTests(): string {
       continue;
     }
 
+    // Extract CSS from source HTML file for pseudo-element tests
+    const cssContent = extractStyleBlock(html);
+
     // Get file basename for unique test names
     const fileBase = path.basename(file.file, ".html");
 
@@ -479,14 +532,32 @@ function generateAccnameTests(): string {
         continue;
       }
 
+      // Check if this is a pseudo-element test (::before or ::after)
+      const isPseudoElementTest = tc.testName?.includes("::before") ||
+                                   tc.testName?.includes("::after") ||
+                                   tc.testName?.includes("with ::before") ||
+                                   tc.testName?.includes("with ::after");
+
       // Clean up the HTML - remove metadata and normalize whitespace to single line
-      const cleanHtml = testHtml
+      // Keep class attribute for pseudo-element tests
+      let cleanHtml = testHtml
         .replace(/data-testname="[^"]*"/g, "")
-        .replace(/data-expectedlabel="[^"]*"/g, "")
-        .replace(/class="[^"]*"/g, "")
+        .replace(/data-expectedlabel="[^"]*"/g, "");
+
+      // Extract class names before potentially removing class attribute
+      const classNames = extractClassNames(cleanHtml);
+
+      if (!isPseudoElementTest) {
+        cleanHtml = cleanHtml.replace(/class="[^"]*"/g, "");
+      }
+
+      cleanHtml = cleanHtml
         .replace(/[\r\n]+/g, " ")  // Convert newlines to spaces
         .replace(/\s+/g, " ")
         .trim();
+
+      // For pseudo-element tests, extract relevant CSS rules
+      const relevantCss = isPseudoElementTest ? extractRelevantCssRules(cssContent, classNames) : "";
 
       // Escape for MoonBit string
       const expectedName = tc.expectedLabel === ""
@@ -630,6 +701,23 @@ test "accname: ${safeName}" {
   inspect(name, content="${expectedName}")
 }`);
           }
+        } else if (isPseudoElementTest && relevantCss) {
+          // Pseudo-element test with CSS - use document-level parsing with style block
+          const roleForTest = getRoleForElement(cleanHtml);
+          tests.push(`
+///|
+test "accname: ${safeName}" {
+  let html =
+    #|<style>
+    #|    ${relevantCss.replace(/\n/g, "\n    #|    ")}
+    #|</style>
+    #|${cleanHtml}
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(${roleForTest})
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="${expectedName}")
+}`);
         } else {
           tests.push(`
 ///|

@@ -19,6 +19,8 @@ priv struct TreeBuilderContext {
   encapsulating_label : @html.Element?
   // UID counter for generating unique ids
   mut uid_counter : Int
+  // Parsed stylesheets for pseudo-element content
+  stylesheets : Array[@cascade.Stylesheet]
 }
 
 ///|
@@ -29,7 +31,16 @@ fn TreeBuilderContext::new() -> TreeBuilderContext {
     in_sectioning: false,
     encapsulating_label: None,
     uid_counter: 0,
+    stylesheets: [],
   }
+}
+
+///|
+fn TreeBuilderContext::with_stylesheets(
+  self : TreeBuilderContext,
+  stylesheets : Array[@cascade.Stylesheet],
+) -> TreeBuilderContext {
+  { ..self, stylesheets, }
 }
 
 ///|
@@ -64,6 +75,180 @@ fn TreeBuilderContext::with_encapsulating_label(
 }
 
 // =============================================================================
+// Pseudo-element Content Extraction
+// =============================================================================
+
+///|
+/// Get content of ::before pseudo-element for an element
+fn get_before_content(
+  element : @html.Element,
+  ctx : TreeBuilderContext,
+) -> String? {
+  get_pseudo_element_content(element, ctx, true)
+}
+
+///|
+/// Get content of ::after pseudo-element for an element
+fn get_after_content(
+  element : @html.Element,
+  ctx : TreeBuilderContext,
+) -> String? {
+  get_pseudo_element_content(element, ctx, false)
+}
+
+///|
+/// Get content of a pseudo-element for an element
+/// is_before: true for ::before, false for ::after
+fn get_pseudo_element_content(
+  element : @html.Element,
+  ctx : TreeBuilderContext,
+  is_before : Bool,
+) -> String? {
+  if ctx.stylesheets.is_empty() {
+    return None
+  }
+
+  // Search through stylesheets for matching rules with the pseudo-element
+  for stylesheet in ctx.stylesheets {
+    for rule in stylesheet.rules {
+      // Check selector text for ::before or ::after
+      let has_pseudo = if is_before {
+        rule.selector_text.contains("::before") ||
+        rule.selector_text.contains(":before")
+      } else {
+        rule.selector_text.contains("::after") ||
+        rule.selector_text.contains(":after")
+      }
+      if has_pseudo {
+        // Try to match by checking if base selector matches the element
+        // Use the selector_text to build a simpler match
+        if matches_element_by_class(element, rule.selector_text) {
+          // Found a match, extract content property
+          for decl in rule.declarations {
+            if decl.property == "content" {
+              match decl.value {
+                @cascade.Value(value) => {
+                  // Remove quotes from string value
+                  let content = parse_content_value(value)
+                  if not(content.is_empty()) {
+                    return Some(content)
+                  }
+                }
+                _ => ()
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  None
+}
+
+///|
+/// Simple class-based matching for pseudo-element selectors
+fn matches_element_by_class(
+  element : @html.Element,
+  selector_text : String,
+) -> Bool {
+  // Extract class from selector like ".simple-before::before"
+  // This is a simplified matcher for common patterns
+
+  // Check for class selector
+  let class_patterns = extract_class_patterns(selector_text)
+  for pattern in class_patterns {
+    if element.classes.contains(pattern) {
+      return true
+    }
+  }
+
+  // Check for tag selector
+  let tag = element.tag.to_lower()
+  if selector_text.has_prefix(tag) {
+    return true
+  }
+  false
+}
+
+///|
+/// Extract class names from a selector text
+fn extract_class_patterns(selector_text : String) -> Array[String] {
+  let classes : Array[String] = []
+  let mut i = 0
+  let dot_code = '.'.to_int().to_uint16()
+  let hash_code = '#'.to_int().to_uint16()
+  let colon_code = ':'.to_int().to_uint16()
+  let bracket_code = '['.to_int().to_uint16()
+  let space_code = ' '.to_int().to_uint16()
+  let gt_code = '>'.to_int().to_uint16()
+  let plus_code = '+'.to_int().to_uint16()
+  let tilde_code = '~'.to_int().to_uint16()
+  while i < selector_text.length() {
+    if selector_text[i] == dot_code {
+      // Found a class selector
+      let start = i + 1
+      let mut end = start
+      while end < selector_text.length() {
+        let c = selector_text[end]
+        if c == dot_code ||
+          c == hash_code ||
+          c == colon_code ||
+          c == bracket_code ||
+          c == space_code ||
+          c == gt_code ||
+          c == plus_code ||
+          c == tilde_code {
+          break
+        }
+        end += 1
+      }
+      if end > start {
+        // Build substring manually
+        let buf = StringBuilder::new()
+        for j = start; j < end; j = j + 1 {
+          buf.write_char(selector_text[j].to_int().unsafe_to_char())
+        }
+        classes.push(buf.to_string())
+      }
+      i = end
+    } else {
+      i += 1
+    }
+  }
+  classes
+}
+
+///|
+/// Parse CSS content value (remove quotes, handle escapes)
+fn parse_content_value(value : String) -> String {
+  let trimmed = value.trim().to_string()
+
+  // Check for quoted string
+  if trimmed.length() >= 2 {
+    let first = trimmed[0]
+    let last = trimmed[trimmed.length() - 1]
+    // Check for double or single quotes
+    if (first == '"'.to_int().to_uint16() && last == '"'.to_int().to_uint16()) ||
+      (first == '\''.to_int().to_uint16() && last == '\''.to_int().to_uint16()) {
+      // Remove quotes - build string manually
+      let buf = StringBuilder::new()
+      for i = 1; i < trimmed.length() - 1; i = i + 1 {
+        buf.write_char(trimmed[i].to_int().unsafe_to_char())
+      }
+      return buf.to_string()
+    }
+  }
+
+  // Handle none, normal (no content)
+  if trimmed == "none" || trimmed == "normal" {
+    return ""
+  }
+
+  // Return as-is for other values
+  trimmed
+}
+
+// =============================================================================
 // Main Entry Point
 // =============================================================================
 
@@ -71,6 +256,14 @@ fn TreeBuilderContext::with_encapsulating_label(
 /// Build an AccessibilityTree from an HTML Document
 pub fn build_accessibility_tree(doc : @html.Document) -> AccessibilityTree {
   let ctx = TreeBuilderContext::new()
+
+  // Parse stylesheets from the document
+  let stylesheets : Array[@cascade.Stylesheet] = []
+  for css_text in doc.stylesheets {
+    let stylesheet = @parser.parse_stylesheet(css_text)
+    stylesheets.push(stylesheet)
+  }
+  let ctx = ctx.with_stylesheets(stylesheets)
 
   // First pass: index all elements by id and collect labels
   index_elements(doc.root, ctx)
@@ -172,12 +365,32 @@ fn build_node(
   let find_label_for_id = fn(id : String) -> @html.Element? {
     ctx.label_map.get(id)
   }
-  let name = compute_accessible_name_full(
+  let base_name = compute_accessible_name_full(
     element,
     find_by_id,
     find_label_for_id,
     ctx.encapsulating_label,
   )
+
+  // Add pseudo-element content (::before and ::after)
+  let name = match base_name {
+    Some(n) => {
+      let before = get_before_content(element, ctx)
+      let after = get_after_content(element, ctx)
+      let parts : Array[String] = []
+      match before {
+        Some(b) => parts.push(b.trim().to_string())
+        None => ()
+      }
+      parts.push(n)
+      match after {
+        Some(a) => parts.push(a.trim().to_string())
+        None => ()
+      }
+      Some(parts.join(" ").trim().to_string())
+    }
+    None => None
+  }
 
   // Compute accessible description
   let description = compute_accessible_description(element, find_by_id)
