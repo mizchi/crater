@@ -1,0 +1,208 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/aom"
+
+import(
+  "mizchi/crater/html"
+)
+
+// Values
+pub fn attach_bounds(AccessibilityTree, Map[String, Bounds]) -> AccessibilityTree
+
+pub fn build_accessibility_tree(@html.Document) -> AccessibilityTree
+
+pub fn build_accessibility_tree_from_element(@html.Element) -> AccessibilityTree
+
+pub fn compute_accessible_description(@html.Element, (String) -> @html.Element?) -> String?
+
+pub fn compute_accessible_description_with_label(@html.Element, (String) -> @html.Element?, (String) -> @html.Element?) -> String?
+
+pub fn compute_accessible_name(@html.Element, (String) -> @html.Element?) -> String?
+
+pub fn compute_accessible_name_full(@html.Element, (String) -> @html.Element?, (String) -> @html.Element?, @html.Element?) -> String?
+
+pub fn compute_accessible_name_with_label(@html.Element, (String) -> @html.Element?, (String) -> @html.Element?) -> String?
+
+pub fn compute_role(@html.Element, RoleMappingContext) -> Role
+
+pub fn find_headings(AccessibilityTree) -> Array[AccessibilityNode]
+
+pub fn find_interactive(AccessibilityTree) -> Array[AccessibilityNode]
+
+pub fn find_landmarks(AccessibilityTree) -> Array[AccessibilityNode]
+
+pub fn get_heading_level(@html.Element) -> Int?
+
+pub fn is_sectioning_content(String) -> Bool
+
+pub fn role_is_inherently_focusable(Role) -> Bool
+
+pub fn role_is_landmark(Role) -> Bool
+
+pub fn role_supports_name_from_content(Role) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) struct AccessibilityNode {
+  id : String
+  role : Role
+  name : String?
+  description : String?
+  level : Int?
+  states : Array[State]
+  properties : Map[String, String]
+  bounds : Bounds?
+  children : Array[AccessibilityNode]
+  focusable : Bool
+  source_id : String?
+}
+pub fn AccessibilityNode::add_child(Self, Self) -> Self
+pub fn AccessibilityNode::add_state(Self, State) -> Self
+pub fn AccessibilityNode::new(String, Role) -> Self
+pub fn AccessibilityNode::set_focusable(Self, Bool) -> Self
+pub fn AccessibilityNode::with_bounds(Self, Bounds) -> Self
+pub fn AccessibilityNode::with_level(Self, Int) -> Self
+pub fn AccessibilityNode::with_name(Self, String) -> Self
+
+pub(all) struct AccessibilityTree {
+  root : AccessibilityNode
+  node_map : Map[String, AccessibilityNode]
+}
+pub fn AccessibilityTree::find_by_id(Self, String) -> AccessibilityNode?
+pub fn AccessibilityTree::find_by_role(Self, Role) -> Array[AccessibilityNode]
+pub fn AccessibilityTree::find_by_source_id(Self, String) -> AccessibilityNode?
+pub fn AccessibilityTree::find_focusable(Self) -> Array[AccessibilityNode]
+pub fn AccessibilityTree::new(AccessibilityNode) -> Self
+
+pub(all) struct Bounds {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+pub fn Bounds::default() -> Self
+pub fn Bounds::new(Double, Double, Double, Double) -> Self
+
+pub(all) enum Role {
+  Article
+  Blockquote
+  Caption
+  Cell
+  Code
+  ColumnHeader
+  Definition
+  Deletion
+  Directory
+  Document
+  Emphasis
+  Feed
+  Figure
+  Generic
+  Group
+  Heading
+  Img
+  Insertion
+  List
+  ListItem
+  Mark
+  Math
+  Meter
+  None
+  Note
+  Paragraph
+  Presentation
+  Row
+  RowGroup
+  RowHeader
+  Separator
+  Strong
+  Subscript
+  Superscript
+  Table
+  Term
+  Time
+  Toolbar
+  Tooltip
+  Button
+  Checkbox
+  Combobox
+  GridCell
+  Link
+  Listbox
+  Menu
+  MenuBar
+  MenuItem
+  MenuItemCheckbox
+  MenuItemRadio
+  Option
+  Progressbar
+  Radio
+  RadioGroup
+  Scrollbar
+  SearchBox
+  Slider
+  SpinButton
+  Switch
+  Tab
+  TabList
+  TabPanel
+  Textbox
+  Tree
+  TreeGrid
+  TreeItem
+  Application
+  Banner
+  Complementary
+  ContentInfo
+  Form
+  Main
+  Navigation
+  Region
+  Search
+  Alert
+  AlertDialog
+  Dialog
+  Log
+  Marquee
+  Status
+  Timer
+  Window
+  HtmlAudio
+  HtmlVideo
+  HtmlCanvas
+  HtmlLabel
+  HtmlSummary
+}
+pub fn Role::from_string(String) -> Self?
+pub fn Role::to_string(Self) -> String
+pub impl Eq for Role
+pub impl Show for Role
+
+pub(all) struct RoleMappingContext {
+  parent_tag : String?
+  has_accessible_name : Bool
+  in_sectioning_content : Bool
+}
+pub fn RoleMappingContext::default() -> Self
+
+pub(all) enum State {
+  Busy
+  Checked
+  Disabled
+  Expanded
+  Grabbed
+  Hidden
+  Invalid
+  Pressed
+  Selected
+  CheckedMixed
+  PressedMixed
+}
+pub fn State::to_string(Self) -> String
+pub impl Eq for State
+pub impl Show for State
+
+// Type aliases
+
+// Traits
+

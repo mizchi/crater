@@ -23,8 +23,8 @@ Layout algorithm tests ported from [Taffy](https://github.com/DioxusLabs/taffy):
 |--------|--------|-------|------|
 | Flexbox | 547 | 607 | 90.1% |
 | Block | 204 | 224 | 91.1% |
-| Grid | 162 | 331 | 48.9% |
-| **Total** | **913** | **1162** | **78.6%** |
+| Grid | 266 | 331 | 80.4% |
+| **Total** | **1017** | **1162** | **87.5%** |
 
 ### Parser Tests
 
