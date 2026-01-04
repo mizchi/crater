@@ -4,7 +4,14 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const crater = await import(resolve(__dirname, '../../target/js/release/build/js/js.js'));
+
+// Try dist version first (npm package), fallback to dev path
+let crater;
+try {
+  crater = await import(resolve(__dirname, '../dist/crater.js'));
+} catch {
+  crater = await import(resolve(__dirname, '../../target/js/release/build/js/js.js'));
+}
 
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 600;

@@ -1,0 +1,45 @@
+{
+  "name": "@aspect-io/crater",
+  "version": "0.1.0",
+  "description": "CSS Layout Engine - Box/Flex/Grid layout computation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "crater": "./cli/cli.mjs"
+  },
+  "files": [
+    "dist/",
+    "cli/"
+  ],
+  "scripts": {
+    "build": "cd .. && moon build --target js && cd js && npm run copy",
+    "copy": "mkdir -p dist && cp ../target/js/release/build/js/js.js dist/crater.js && cp index.js index.d.ts dist/",
+    "prepublishOnly": "npm run build",
+    "test": "node -e \"import('./dist/index.js').then(m => console.log(Object.keys(m)))\""
+  },
+  "keywords": [
+    "css",
+    "layout",
+    "flexbox",
+    "grid",
+    "moonbit"
+  ],
+  "author": "mizchi",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aspect-io/crater"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

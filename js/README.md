@@ -1,59 +1,88 @@
-# Crater JavaScript API
+# @aspect-io/crater
 
-MoonBit compiled layout engine for browser use.
+CSS Layout Engine - Box/Flex/Grid layout computation, compiled from MoonBit.
 
-## API Functions
-
-### `renderHtml(html: string, width: number, height: number): string`
-Render HTML to text layout tree representation.
-
-### `renderHtmlToJson(html: string, width: number, height: number): string`
-Render HTML to JSON layout tree.
-
-### `renderHtmlToPaintTree(html: string, width: number, height: number): string`
-Render HTML to paint tree JSON with colors and visual properties.
-
-## Build
+## Installation
 
 ```bash
-# Build MoonBit to JS
-moon build --target js
-
-# Output: target/js/release/build/js/js.js
+npm install @aspect-io/crater
 ```
 
-## Usage in Browser (with bundler)
+## Usage
 
-```javascript
-import { renderHtml, renderHtmlToJson, renderHtmlToPaintTree } from './target/js/release/build/js/js.js';
+```typescript
+import {
+  renderHtml,
+  renderHtmlToJson,
+  renderHtmlToPaintTree,
+  Crater
+} from '@aspect-io/crater';
 
 const html = '<div style="width: 200px; display: flex">...</div>';
+
+// Get layout tree as JSON string
 const layoutJson = renderHtmlToJson(html, 800, 600);
-const layout = JSON.parse(layoutJson);
+const layout = Crater.parseLayout(layoutJson);
+
+// Get paint tree with colors
+const paintJson = renderHtmlToPaintTree(html, 800, 600);
+const paintTree = Crater.parsePaintTree(paintJson);
 ```
 
-## Playground
+## API
 
-Interactive preview with canvas rendering:
+### `renderHtml(html, width, height): string`
+Render HTML to text layout tree representation.
+
+### `renderHtmlToJson(html, width, height): string`
+Render HTML to JSON layout tree.
+
+### `renderHtmlToPaintTree(html, width, height): string`
+Render HTML to paint tree JSON with colors and visual properties.
+
+### `renderHtmlToSixel(html, width, height): string`
+Render HTML to Sixel graphics for terminal display.
+
+### `renderHtmlToSixelWithStyles(html, width, height): string`
+Render HTML to Sixel graphics with actual CSS colors.
+
+### `Crater.parseLayout(json): LayoutNode`
+Parse layout JSON to typed object.
+
+### `Crater.parsePaintTree(json): PaintNode`
+Parse paint tree JSON to typed object.
+
+## CLI
 
 ```bash
-cd js/playground
-npm install
-npm run dev
+# Via npx
+npx @aspect-io/crater input.html
+npx @aspect-io/crater --json input.html
+npx @aspect-io/crater --styles input.html
+
+# Or install globally
+npm install -g @aspect-io/crater
+crater input.html
 ```
 
-Open http://localhost:5173/ to see the layout preview.
+## TypeScript
 
-## File Structure
+Full TypeScript support with type definitions:
 
+```typescript
+import type { LayoutNode, PaintNode, BoxEdges } from '@aspect-io/crater';
 ```
-js/
-├── js.mbt              # MoonBit JS API implementation
-├── moon.pkg.json       # Package config with JS exports
-├── README.md
-└── playground/
-    ├── package.json    # Vite project
-    ├── vite.config.js  # Vite config with alias
-    ├── index.html      # Preview page
-    └── main.js         # Canvas rendering logic
+
+## Development
+
+```bash
+# Build from MoonBit source
+cd js && npm run build
+
+# Run playground
+cd js/playground && npm run dev
 ```
+
+## License
+
+Apache-2.0
