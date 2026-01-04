@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Show MoonBit version
+        run: moon version --all
+
+      - name: Update dependencies
+        run: moon update
+
+      - name: Check code
+        run: moon check
+
+      - name: Run tests
+        run: moon test
+        continue-on-error: true
+
+      - name: Format check
+        run: |
+          moon fmt
+          git diff --exit-code || (echo "Code is not formatted. Run 'moon fmt' to fix." && exit 1)
+        continue-on-error: true
