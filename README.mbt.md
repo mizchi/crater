@@ -17,43 +17,54 @@ This library focuses purely on **layout calculation** - it computes the `x`, `y`
 
 ### Taffy Compatibility Tests
 
-Layout algorithm tests ported from Taffy:
-
-- **1185 / 1436 tests passing** (82.5%)
-- Covers Flexbox, Grid, and Block layout
-
-### Web Platform Tests (WPT)
-
-CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), compared against Chromium reference:
+Layout algorithm tests ported from [Taffy](https://github.com/DioxusLabs/taffy):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| css-flexbox | 151 | 234 | 65% |
-| css-grid | 16 | 30 | 53% |
-| css-sizing | 18 | 50 | 36% |
-| css-overflow | 5 | 20 | 25% |
-| css-position | 4 | 30 | 13% |
+| Flexbox | 547 | 607 | 90.1% |
+| Block | 204 | 224 | 91.1% |
+| Grid | 162 | 331 | 48.9% |
+| **Total** | **913** | **1162** | **78.6%** |
+
+### Parser Tests
+
+| Module | Passed | Total | Rate |
+|--------|--------|-------|------|
+| CSS Parser | 150 | 150 | 100% |
+| CSS Selector | 54 | 54 | 100% |
+| CSS Media Query | 38 | 38 | 100% |
+| HTML Parser | 106 | 111 | 95.5% |
 
 ## Features
 
-- Flexbox layout (direction, wrap, wrap-reverse, alignment, grow/shrink)
-- CSS Grid layout (templates, auto-placement, areas, fr units, minmax, repeat)
-- Block layout with margin collapsing
-- Inline layout with inline-block support
-- Box model (margin, padding, border)
+### Layout Modes
+- **Flexbox** - direction, wrap, wrap-reverse, alignment, grow/shrink
+- **CSS Grid** - templates, auto-placement, areas, fr units, minmax, repeat
+- **Block layout** - margin collapsing
+- **Inline layout** - inline formatting context, inline-block
+
+### Box Model
+- `margin`, `padding`, `border`
 - Percentage and fixed dimensions
 - `min-width`, `max-width`, `min-height`, `max-height`
-- `gap` property for flex and grid
-- Aspect ratio
-- CSS border shorthand parsing
-- `position: relative/absolute/fixed` positioning
-- `overflow-x`, `overflow-y` properties
+- Intrinsic sizing: `min-content`, `max-content`, `fit-content`
+- `box-sizing: border-box`
+
+### Positioning
+- `position: relative`, `absolute`, `fixed`
+- `top`, `right`, `bottom`, `left` (inset properties)
+
+### Other Properties
+- `gap` (row-gap, column-gap)
+- `aspect-ratio`
+- `overflow-x`, `overflow-y`
+- `contain` (size, layout, inline-size)
+- `calc()` CSS function
 
 ## Limitations
 
 - **No font rendering**: Text measurement uses approximate monospace character sizing
 - **No real text layout**: Word wrapping is simplified
-- **display: none**: Not yet fully supported
 - **Baseline alignment**: Partial implementation
 - **Writing modes**: Limited support for vertical text
 
