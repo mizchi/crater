@@ -1390,60 +1390,44 @@ fn calculate_track_intrinsic_sizes(
         continue
       }
 
-      // For spanning items, check if any spanned track is MinContent
-      // If so, use min_content_contrib, otherwise use minimum_contrib
-      let mut has_min_content_track = false
-      for t = start; t < end; t = t + 1 {
-        match track_types[t] {
-          @style.MinContent => has_min_content_track = true
-          _ => ()
-        }
-      }
-      let min_contrib = if has_min_content_track {
-        min_content_contrib
-      } else {
-        minimum_contrib
-      }
-
-      // Calculate current sum of spanned tracks
-      let mut min_sum = 0.0
-      let mut max_sum = 0.0
-      for t = start; t < end; t = t + 1 {
-        min_sum = min_sum + min_sizes[t]
-        max_sum = max_sum + max_sizes[t]
-      }
-
-      // Calculate extra space needed
-      let min_extra = min_contrib - min_sum
-      let max_extra = max_contrib - max_sum
-
-      // Count tracks that can grow for max-content distribution
-      // MinContent tracks should not grow for max-content
-      let mut growable_count = 0
-      for t = start; t < end; t = t + 1 {
-        let can_grow = match track_types[t] {
-          @style.MinContent => false
-          _ => true
-        }
-        if can_grow {
-          growable_count = growable_count + 1
-        }
-      }
-
-      // Check if all spanned tracks are Fr tracks and calculate total fr value
+      // Count track types for distribution
+      let mut min_content_track_count = 0
+      let mut auto_track_count = 0
       let mut all_fr = true
       let mut total_fr_value = 0.0
       for t = start; t < end; t = t + 1 {
         match track_types[t] {
+          @style.MinContent =>
+            min_content_track_count = min_content_track_count + 1
+          @style.Auto => auto_track_count = auto_track_count + 1
+          @style.MaxContent => auto_track_count = auto_track_count + 1
+          @style.FitContentLength(_) => auto_track_count = auto_track_count + 1
+          @style.FitContentPercent(_) => auto_track_count = auto_track_count + 1
           @style.Fr(fr) => total_fr_value = total_fr_value + fr
+          @style.Length(_) => all_fr = false
+          @style.Percent(_) => all_fr = false
+          _ => all_fr = false
+        }
+        match track_types[t] {
+          @style.Fr(_) => ()
           _ => all_fr = false
         }
       }
 
-      // Distribute extra space to min_sizes
-      if min_extra > 0.0 {
-        if all_fr && total_fr_value > 0.0 {
-          // Distribute proportionally based on fr values
+      // Calculate current sum of spanned tracks for min_sizes
+      let mut min_sum = 0.0
+      for t = start; t < end; t = t + 1 {
+        min_sum = min_sum + min_sizes[t]
+      }
+
+      // Distribute to min_sizes based on track type
+      // min-content tracks: need min_content_contrib
+      // auto/max-content/fit-content tracks: need minimum_contrib (respects overflow)
+      // Fr tracks: distribute proportionally
+      if all_fr && total_fr_value > 0.0 {
+        // All Fr tracks: distribute min_content proportionally
+        let min_extra = min_content_contrib - min_sum
+        if min_extra > 0.0 {
           for t = start; t < end; t = t + 1 {
             match track_types[t] {
               @style.Fr(fr) => {
@@ -1453,17 +1437,65 @@ fn calculate_track_intrinsic_sizes(
               _ => ()
             }
           }
+        }
+      } else {
+        // Mixed tracks: distribute based on what each track type needs
+        // When overflow:hidden, min-content tracks get min_content_contrib, auto tracks get 0
+        // When not overflow:hidden (minimum_contrib == min_content_contrib), distribute evenly
+        let has_overflow_hidden = minimum_contrib < min_content_contrib
+        if has_overflow_hidden {
+          // With overflow:hidden: only min-content tracks get contribution
+          // auto/max-content/fit-content tracks get 0 (their minimum is 0 due to overflow)
+          if min_content_track_count > 0 {
+            let per_min_content_track = min_content_contrib /
+              min_content_track_count.to_double()
+            for t = start; t < end; t = t + 1 {
+              let track_contrib = match track_types[t] {
+                @style.MinContent => per_min_content_track
+                _ => 0.0
+              }
+              if track_contrib > min_sizes[t] {
+                min_sizes[t] = track_contrib
+              }
+            }
+          }
+          // If no min-content tracks, min_sizes stay at 0 (or their previous values)
         } else {
-          // Distribute evenly
-          let per_track = min_extra / span.to_double()
+          // Without overflow:hidden: distribute evenly
+          let intrinsic_track_count = min_content_track_count + auto_track_count
+          let per_track = if intrinsic_track_count > 0 {
+            min_content_contrib / intrinsic_track_count.to_double()
+          } else {
+            0.0
+          }
           for t = start; t < end; t = t + 1 {
-            min_sizes[t] = min_sizes[t] + per_track
+            let track_contrib = match track_types[t] {
+              @style.Length(_) | @style.Percent(_) => 0.0
+              _ => per_track
+            }
+            if track_contrib > min_sizes[t] {
+              min_sizes[t] = track_contrib
+            }
           }
         }
       }
 
+      // After distributing min_extra, ensure max_sizes >= min_sizes
+      // and calculate max_extra based on updated state
+      for t = start; t < end; t = t + 1 {
+        if max_sizes[t] < min_sizes[t] {
+          max_sizes[t] = min_sizes[t]
+        }
+      }
+      let mut max_sum = 0.0
+      for t = start; t < end; t = t + 1 {
+        max_sum = max_sum + max_sizes[t]
+      }
+      let max_extra = max_contrib - max_sum
+
       // Distribute extra space to max_sizes
-      // CSS Grid spec: First distribute min-content evenly, then prioritize max-content tracks
+      // CSS Grid spec priority: max-content tracks get priority, then auto tracks
+      // min-content tracks don't grow
       if max_extra > 0.0 {
         if all_fr && total_fr_value > 0.0 {
           // Distribute proportionally based on fr values
@@ -1477,81 +1509,65 @@ fn calculate_track_intrinsic_sizes(
             }
           }
         } else {
-          // Split distribution into two phases:
-          // 1. Distribute up to item's min-content contribution evenly
-          // 2. Distribute remaining (max - min) to MaxContent tracks first
-
-          // Calculate how much of max_extra corresponds to min-content
-          // (min_contrib was already distributed to min_sizes)
-          let min_contribution_base = min_extra + min_sum // item's min-content
-          let max_contribution_base = max_extra + max_sum // item's max-content
-          let beyond_min = max_contribution_base - min_contribution_base // max - min for item
-
-          // First, ensure max_sizes reach at least min_sizes level (evenly distributed)
+          // Count max-content tracks (highest priority)
+          let mut max_content_count = 0
           for t = start; t < end; t = t + 1 {
-            let growth_to_min = min_sizes[t] - max_sizes[t]
-            if growth_to_min > 0.0 {
-              max_sizes[t] = min_sizes[t]
+            match track_types[t] {
+              @style.MaxContent => max_content_count = max_content_count + 1
+              _ => ()
             }
           }
 
-          // Now distribute the beyond_min portion with priority
-          if beyond_min > 0.0 {
-            // Count different track types for prioritized distribution
-            let mut max_content_count = 0
-            let mut auto_count = 0
-            let mut other_growable = 0
+          // Count auto/fit-content tracks (lower priority)
+          let mut auto_count = 0
+          for t = start; t < end; t = t + 1 {
+            match track_types[t] {
+              @style.Auto => auto_count = auto_count + 1
+              @style.FitContentLength(_) => auto_count = auto_count + 1
+              @style.FitContentPercent(_) => auto_count = auto_count + 1
+              _ => ()
+            }
+          }
+          if max_content_count > 0 {
+            // max-content tracks get all the extra space
+            let per_track = max_extra / max_content_count.to_double()
             for t = start; t < end; t = t + 1 {
               match track_types[t] {
-                @style.MaxContent => max_content_count = max_content_count + 1
-                @style.Auto => auto_count = auto_count + 1
-                @style.MinContent => ()
+                @style.MaxContent => max_sizes[t] = max_sizes[t] + per_track
+                _ => ()
+              }
+            }
+          } else if auto_count > 0 {
+            // auto tracks get the extra space if no max-content tracks
+            let per_track = max_extra / auto_count.to_double()
+            for t = start; t < end; t = t + 1 {
+              match track_types[t] {
+                @style.Auto
+                | @style.FitContentLength(_)
+                | @style.FitContentPercent(_) =>
+                  max_sizes[t] = max_sizes[t] + per_track
+                _ => ()
+              }
+            }
+          } else {
+            // Fallback: distribute to all intrinsic tracks
+            let mut intrinsic_count = 0
+            for t = start; t < end; t = t + 1 {
+              match track_types[t] {
                 @style.Length(_) => ()
                 @style.Percent(_) => ()
-                _ => other_growable = other_growable + 1
+                @style.MinContent => ()
+                _ => intrinsic_count = intrinsic_count + 1
               }
             }
-            let mut remaining = beyond_min
-            // First, distribute to MaxContent tracks
-            if max_content_count > 0 && remaining > 0.0 {
-              let per_track = remaining / max_content_count.to_double()
+            if intrinsic_count > 0 {
+              let per_track = max_extra / intrinsic_count.to_double()
               for t = start; t < end; t = t + 1 {
                 match track_types[t] {
-                  @style.MaxContent => {
-                    max_sizes[t] = max_sizes[t] + per_track
-                    remaining = remaining - per_track
-                  }
-                  _ => ()
-                }
-              }
-            }
-            // Then, distribute to Auto tracks
-            if auto_count > 0 && remaining > 0.0 {
-              let per_track = remaining / auto_count.to_double()
-              for t = start; t < end; t = t + 1 {
-                match track_types[t] {
-                  @style.Auto => {
-                    max_sizes[t] = max_sizes[t] + per_track
-                    remaining = remaining - per_track
-                  }
-                  _ => ()
-                }
-              }
-            }
-            // Finally, distribute to other growable tracks
-            if other_growable > 0 && remaining > 0.0 {
-              let per_track = remaining / other_growable.to_double()
-              for t = start; t < end; t = t + 1 {
-                let is_other = match track_types[t] {
-                  @style.MaxContent => false
-                  @style.Auto => false
-                  @style.MinContent => false
-                  @style.Length(_) => false
-                  @style.Percent(_) => false
-                  _ => true
-                }
-                if is_other {
-                  max_sizes[t] = max_sizes[t] + per_track
+                  @style.Length(_) => ()
+                  @style.Percent(_) => ()
+                  @style.MinContent => ()
+                  _ => max_sizes[t] = max_sizes[t] + per_track
                 }
               }
             }
