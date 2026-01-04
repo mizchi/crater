@@ -239,6 +239,17 @@ pub fn compute_layout(
   available_width : Double,
   available_height : Double,
 ) -> @node.Layout {
+  // Setup global layout dispatcher for cross-layout type dispatch
+  // This enables Flex to call Grid layout and vice versa
+  @node.set_layout_dispatcher(
+    @node.LayoutDispatchFunc(fn(n, c) {
+      match n.style.display {
+        @style.Flex | @style.InlineFlex => @flex.compute(n, c)
+        @style.Grid | @style.InlineGrid => compute(n, c)
+        _ => @block.compute(n, c)
+      }
+    }),
+  )
   let ctx : @node.LayoutContext = {
     available_width,
     available_height: Some(available_height),
@@ -247,7 +258,7 @@ pub fn compute_layout(
     viewport_height: available_height,
   }
   match node.style.display {
-    @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
+    @style.Flex | @style.InlineFlex => @flex.compute_root(node, ctx)
     @style.Block | @style.Inline | @style.InlineBlock =>
       @block.compute(node, ctx)
     @style.Grid =>

@@ -789,6 +789,18 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
 }
 
 ///|
+/// Compute flex layout for root-level containers
+/// Root flex containers with width:auto use content-based sizing (taffy behavior)
+pub fn compute_root(
+  node : @node.Node,
+  ctx : @node.LayoutContext,
+) -> @node.Layout {
+  let warnings : Array[@node.LayoutWarning] = []
+  let cache = IntrinsicCache::new()
+  compute_internal(node, ctx, warnings, cache, is_root=true)
+}
+
+///|
 /// Compute flex layout with warnings
 pub fn compute_with_warnings(
   node : @node.Node,
@@ -831,6 +843,7 @@ fn compute_internal(
   ctx : @node.LayoutContext,
   warnings : Array[@node.LayoutWarning],
   cache : IntrinsicCache,
+  is_root? : Bool = false,
 ) -> @node.Layout {
   let style = node.style
 
@@ -897,10 +910,11 @@ fn compute_internal(
           match ctx.sizing_mode {
             // Block-level flex containers with width:auto should fill available width minus margins
             // Inline-level flex (InlineFlex) should use content-based sizing
+            // Root-level flex should use content-based sizing (taffy behavior)
             @node.Definite =>
-              if is_block_level {
+              if is_block_level && not(is_root) {
                 parent_width - margin.horizontal_sum()
-                // InlineFlex: use content-based sizing
+                // InlineFlex or root Flex: use content-based sizing
               } else if node.children.length() > 0 {
                 compute_intrinsic_main_size(
                   node,
