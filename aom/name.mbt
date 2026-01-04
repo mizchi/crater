@@ -402,16 +402,32 @@ fn extract_text_excluding_control_recursive(
         buf.write_char(' ')
       }
       @html.Element(child_elem) => {
-        // Skip the control element itself
+        // Skip the control element itself (the one being labeled)
         if is_same_element(child_elem, control) {
           continue
         }
-        // Skip form control elements (they shouldn't contribute text)
+        // For embedded form controls, extract their value
+        // Check by tag name (native controls)
         let tag = child_elem.tag.to_lower()
-        if tag == "input" ||
+        let is_native_control = tag == "input" ||
           tag == "select" ||
           tag == "textarea" ||
-          tag == "button" {
+          tag == "button"
+        // Also check by role for ARIA widgets
+        let role = compute_role(child_elem, RoleMappingContext::default())
+        let is_aria_widget = match role {
+          Textbox | SearchBox | Combobox | Listbox | Slider | SpinButton => true
+          _ => false
+        }
+        if is_native_control || is_aria_widget {
+          // Get embedded control value (accname Step 2F)
+          match get_embedded_control_value(child_elem) {
+            Some(value) => {
+              buf.write_string(value)
+              buf.write_char(' ')
+            }
+            None => ()
+          }
           continue
         }
         extract_text_excluding_control_recursive(child_elem, control, buf)
@@ -445,6 +461,92 @@ fn find_child_text(element : @html.Element, child_tag : String) -> String {
 }
 
 // =============================================================================
+// Embedded Control Value (accname Step 2F)
+// =============================================================================
+
+///|
+/// Get the value of an embedded control for accessible name computation
+/// Returns Some(value) if the element is an embedded control, None otherwise
+fn get_embedded_control_value(element : @html.Element) -> String? {
+  let tag = element.tag.to_lower()
+  let role = compute_role(element, RoleMappingContext::default())
+
+  // Check if this is an embedded control
+  match role {
+    // Textbox: use value attribute
+    Textbox | SearchBox =>
+      match element.attributes.get("value") {
+        Some(value) if not(value.is_empty()) => Some(value)
+        _ => None
+      }
+
+    // Combobox/Listbox: use selected option text for select, value for input
+    Combobox | Listbox =>
+      if tag == "select" {
+        // Find the selected option
+        for child in element.children {
+          match child {
+            @html.Element(option) =>
+              if option.tag.to_lower() == "option" &&
+                option.attributes.contains("selected") {
+                return Some(extract_all_text(option))
+              }
+            _ => ()
+          }
+        }
+        // If no selected, use first option
+        for child in element.children {
+          match child {
+            @html.Element(option) =>
+              if option.tag.to_lower() == "option" {
+                return Some(extract_all_text(option))
+              }
+            _ => ()
+          }
+        }
+        None
+      } else {
+        // For non-select combobox (input, div, span with role="combobox")
+        // Use value attribute, or text content for non-input elements
+        match element.attributes.get("value") {
+          Some(value) if not(value.is_empty()) => Some(value)
+          _ =>
+            // For span/div with role="combobox", use text content
+            if tag != "input" {
+              let text = extract_all_text(element)
+              if not(text.is_empty()) {
+                Some(text)
+              } else {
+                None
+              }
+            } else {
+              None
+            }
+        }
+      }
+
+    // Slider/Spinbutton: use aria-valuetext, aria-valuenow, or value attribute
+    Slider | SpinButton =>
+      match element.attributes.get("aria-valuetext") {
+        Some(text) if not(text.is_empty()) => Some(text)
+        _ =>
+          match element.attributes.get("aria-valuenow") {
+            Some(value) if not(value.is_empty()) => Some(value)
+            _ =>
+              // For native range/number inputs, use value attribute
+              match element.attributes.get("value") {
+                Some(value) if not(value.is_empty()) => Some(value)
+                _ => None
+              }
+          }
+      }
+
+    // Other form controls
+    _ => None
+  }
+}
+
+// =============================================================================
 // Text Content Extraction
 // =============================================================================
 
@@ -465,19 +567,24 @@ fn compute_text_content(
           parts.push(trimmed)
         }
       }
-      @html.Element(child_elem) => {
-        // Recursively compute name for child elements
-        let child_text = compute_name_step(
-          child_elem,
-          ctx,
-          find_by_id,
-          find_label_for_id,
-          None,
-        )
-        if not(child_text.is_empty()) {
-          parts.push(child_text)
+      @html.Element(child_elem) =>
+        // Step 2F: Check for embedded control value first
+        match get_embedded_control_value(child_elem) {
+          Some(value) => parts.push(value)
+          None => {
+            // Recursively compute name for child elements
+            let child_text = compute_name_step(
+              child_elem,
+              ctx,
+              find_by_id,
+              find_label_for_id,
+              None,
+            )
+            if not(child_text.is_empty()) {
+              parts.push(child_text)
+            }
+          }
         }
-      }
     }
   }
   parts.join(" ")

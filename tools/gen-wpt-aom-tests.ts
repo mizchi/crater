@@ -216,8 +216,8 @@ function extractTestElement(html: string, testName: string): string | null {
   const tagName = openMatch[1];
   let startIdx = openMatch.index!;
 
-  // For encapsulation tests, we need to include the parent <label> element
-  if (testName.includes("encapsulation")) {
+  // For encapsulation or embedded control tests, we need to include the parent <label> element
+  if (testName.includes("encapsulation") || testName.includes("label with embedded")) {
     // Look backwards for the immediately preceding <label> tag (no > between label and input)
     const beforeMatch = html.substring(0, startIdx);
     // Find the last <label> that opens before our element
@@ -586,10 +586,25 @@ ${refElements}    #|  ${cleanHtml}
           totalSkipped++;
         }
       } else {
-        // For encapsulation tests, use document-level parsing
+        // For encapsulation or embedded control tests, use document-level parsing
         const isEncapsulation = tc.testName?.includes("encapsulation");
-        if (isEncapsulation) {
-          const roleForTest = getRoleForElement(cleanHtml);
+        const isEmbeddedLabel = tc.testName?.includes("label with embedded");
+        if (isEncapsulation || isEmbeddedLabel) {
+          // For embedded label tests, extract role from the test name
+          // e.g., "checkbox label with embedded textfield" -> Checkbox
+          let roleForTest: string;
+          if (isEmbeddedLabel) {
+            const testNameLower = tc.testName?.toLowerCase() || "";
+            if (testNameLower.startsWith("checkbox")) {
+              roleForTest = "Checkbox";
+            } else if (testNameLower.startsWith("radio")) {
+              roleForTest = "Radio";
+            } else {
+              roleForTest = getRoleForElement(cleanHtml);
+            }
+          } else {
+            roleForTest = getRoleForElement(cleanHtml);
+          }
           // For Generic role, find the focusable node (the input) since there may be
           // multiple Generic nodes (document root, input, text node)
           if (roleForTest === "Generic") {

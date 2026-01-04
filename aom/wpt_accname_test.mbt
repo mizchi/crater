@@ -80,10 +80,12 @@ test "accname: aria-hidden remains in effect on an element after it is relocated
 
 ///|
 test "accname: checkbox label with embedded textfield" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <input value=\"3\" aria-label=\"number of times\" > times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -96,10 +98,12 @@ test "accname: label of embedded textfield inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded select:not([size])" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <select aria-label=\"number of times\" > <option value=\"1\">1</option> <option value=\"2\">2</option> <option value=\"3\" selected>3</option> <option value=\"4\">4</option> <option value=\"5\">5</option> </select> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -112,10 +116,12 @@ test "accname: label of embedded select:not([size]) inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded select[size]" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <select size=5 aria-label=\"number of times\" > <option value=\"1\">1</option> <option value=\"2\">2</option> <option value=\"3\" selected>3</option> <option value=\"4\">4</option> <option value=\"5\">5</option> </select> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -128,10 +134,12 @@ test "accname: label of embedded select[size] inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded combobox (input[type=text])" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <input role=\"combobox\" value=\"3\" aria-label=\"number of times\" > times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -144,10 +152,12 @@ test "accname: label of embedded combobox (input[type=text]) inside checkbox lab
 
 ///|
 test "accname: checkbox label with embedded combobox (span)" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <span role=\"combobox\" tabindex=\"0\" aria-label=\"number of times\" >3</span> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -160,10 +170,12 @@ test "accname: label of embedded combobox (span) inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded combobox (div)" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <div style=\"display: inline-block;\" role=\"combobox\" tabindex=\"0\" aria-label=\"number of times\" >3</div> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -176,10 +188,12 @@ test "accname: label of embedded combobox (div) inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded input[type=range]" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <input type =\"range\" min=\"1\" max=\"5\" value=\"3\" step=\"1\" aria-label=\"number of times\" > times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -192,10 +206,12 @@ test "accname: label of embedded input[type=range] inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded input[type=number]" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <input type =\"number\" min=\"1\" max=\"5\" value=\"3\" step=\"1\" aria-label=\"number of times\" > times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -208,10 +224,12 @@ test "accname: label of embedded input[type=number] inside checkbox label" {
 
 ///|
 test "accname: checkbox label with embedded ARIA slider (aria-valuenow)" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <span tabindex=\"0\" role=\"slider\" aria-valuemin=\"1\" aria-valuemax=\"5\" aria-valuenow=\"3\" aria-label=\"number of times\" >3.0</span> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -224,10 +242,12 @@ test "accname: label of embedded ARIA slider (aria-valuenow) inside checkbox lab
 
 ///|
 test "accname: checkbox label with embedded ARIA slider (aria-valuetext)" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <span tabindex=\"0\" role=\"slider\" aria-valuemin=\"1.0\" aria-valuemax=\"5.0\" aria-valuenow=\"3.0\" aria-valuetext=\"3\" aria-label=\"number of times\" >3.0</span> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -240,10 +260,12 @@ test "accname: label of embedded ARIA slider (aria-valuetext) inside checkbox la
 
 ///|
 test "accname: checkbox label with embedded ARIA spinbutton (aria-valuenow)" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <span tabindex=\"0\" role=\"spinbutton\" aria-valuemin=\"1\" aria-valuemax=\"5\" aria-valuenow=\"3\" aria-label=\"number of times\" >3.0</span> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
@@ -256,10 +278,12 @@ test "accname: label of embedded ARIA spinbutton (aria-valuenow) inside checkbox
 
 ///|
 test "accname: checkbox label with embedded ARIA spinbutton (aria-valuetext)" {
-  let html = "<input type=\"checkbox\" >"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Flash the screen 3 times\")")
+  let html = "<label> <input type=\"checkbox\" > Flash the screen <span tabindex=\"0\" role=\"spinbutton\" aria-valuemin=\"1.0\" aria-valuemax=\"5.0\" aria-valuenow=\"3.0\" aria-valuetext=\"3\" aria-label=\"number of times\" >3.0</span> times </label>"
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let nodes = tree.find_by_role(Checkbox)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Flash the screen 3 times\")")
 }
 
 ///|
