@@ -8,6 +8,10 @@ pub fn renderHtmlToJson(String, Int, Int) -> String
 
 pub fn renderHtmlToPaintTree(String, Int, Int) -> String
 
+pub fn renderHtmlToSixel(String, Int, Int) -> String
+
+pub fn renderHtmlToSixelWithStyles(String, Int, Int) -> String
+
 // Errors
 
 // Types and methods

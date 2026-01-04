@@ -151,3 +151,32 @@ fn escape_json_string(s : String) -> String {
   }
   buf.to_string()
 }
+
+///|
+/// Render HTML to Sixel graphics string
+pub fn renderHtmlToSixel(html : String, width : Int, height : Int) -> String {
+  let ctx : @renderer.RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+  }
+  let layout = @renderer.render(html, ctx)
+  @sixel.render_layout_with_options(layout, width, height, false)
+}
+
+///|
+/// Render HTML to Sixel with actual CSS colors
+pub fn renderHtmlToSixelWithStyles(
+  html : String,
+  width : Int,
+  height : Int,
+) -> String {
+  let ctx : @renderer.RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+  }
+  let node = @renderer.render_to_node(html, ctx)
+  let layout = @renderer.render(html, ctx)
+  @sixel.render_with_styles(node, layout, width, height)
+}

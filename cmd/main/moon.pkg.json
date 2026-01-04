@@ -1,8 +1,0 @@
-{
-  "is-main": true,
-  "import": [
-    "mizchi/crater/renderer",
-    "mizchi/crater/renderer/sixel",
-    "moonbitlang/x/fs"
-  ]
-}

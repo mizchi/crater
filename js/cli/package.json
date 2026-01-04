@@ -1,0 +1,12 @@
+{
+  "name": "crater-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "crater": "./cli.mjs"
+  },
+  "scripts": {
+    "build": "cd ../.. && moon build --target js",
+    "crater": "node cli.mjs"
+  }
+}
