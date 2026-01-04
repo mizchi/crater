@@ -2,15 +2,15 @@
 package "mizchi/crater"
 
 import(
-  "mizchi/crater/cls"
   "mizchi/crater/node"
   "mizchi/crater/types"
+  "mizchi/crater/webvitals"
 )
 
 // Values
 pub fn compute_block_layout(@node.Node, @node.LayoutContext) -> @node.Layout
 
-pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @cls.LayoutShift
+pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @webvitals.LayoutShift
 
 pub fn compute_flex_layout(@node.Node, @node.LayoutContext) -> @node.Layout
 

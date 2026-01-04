@@ -1,12 +1,15 @@
 {
   "name": "mizchi/crater",
   "version": "0.1.0",
+  "description": "CSS Layout Engine that implements Box/Flex/Grid",
   "deps": {
     "moonbitlang/x": "0.4.38"
   },
   "readme": "README.mbt.md",
   "repository": "",
   "license": "Apache-2.0",
-  "keywords": [],
-  "description": ""
+  "keywords": [
+    "css",
+    "browser"
+  ],
 }

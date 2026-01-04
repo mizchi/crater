@@ -133,8 +133,8 @@ pub fn compute_element_shift(
   before : @types.BoundingRect,
   after : @types.BoundingRect,
   viewport : @types.Size[Double],
-) -> @cls.LayoutShift {
-  @cls.compute_element_shift(before, after, viewport)
+) -> @webvitals.LayoutShift {
+  @webvitals.compute_element_shift(before, after, viewport)
 }
 
 ///|
@@ -144,5 +144,5 @@ pub fn compute_total_cls(
   after : Array[@types.BoundingRect],
   viewport : @types.Size[Double],
 ) -> Double {
-  @cls.compute_total(before, after, viewport)
+  @webvitals.compute_total(before, after, viewport)
 }
