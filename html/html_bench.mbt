@@ -91,7 +91,9 @@ fn generate_table_html(rows : Int, cols : Int) -> String {
 /// Generate a complex page layout (header, nav, main, footer)
 fn generate_page_layout(sidebar_items : Int, content_sections : Int) -> String {
   let buf = StringBuilder::new()
-  buf.write_string("<!DOCTYPE html><html><head><title>Page</title></head><body>")
+  buf.write_string(
+    "<!DOCTYPE html><html><head><title>Page</title></head><body>",
+  )
 
   // Header
   buf.write_string("<header><nav><ul>")
@@ -117,7 +119,9 @@ fn generate_page_layout(sidebar_items : Int, content_sections : Int) -> String {
     for p = 0; p < 3; p = p + 1 {
       buf.write_string("<p>Paragraph ")
       buf.write_string(p.to_string())
-      buf.write_string(" with <strong>bold</strong> and <em>italic</em> text.</p>")
+      buf.write_string(
+        " with <strong>bold</strong> and <em>italic</em> text.</p>",
+      )
     }
     buf.write_string("</section>")
   }
@@ -158,7 +162,9 @@ fn generate_resource_heavy_html(styles : Int, scripts : Int) -> String {
   for i = 0; i < styles; i = i + 1 {
     buf.write_string("<style>.class")
     buf.write_string(i.to_string())
-    buf.write_string(" { color: red; background: blue; margin: 10px; padding: 5px; }</style>")
+    buf.write_string(
+      " { color: red; background: blue; margin: 10px; padding: 5px; }</style>",
+    )
   }
   buf.write_string("</head><body>")
   buf.write_string("<div>Content</div>")
@@ -455,16 +461,23 @@ fn generate_card_grid(cards : Int) -> String {
     "<div class=\"grid\" style=\"display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;\">",
   )
   for i = 0; i < cards; i = i + 1 {
-    buf.write_string("<div class=\"card\" style=\"padding: 16px; border: 1px solid #ddd; border-radius: 8px;\">")
     buf.write_string(
-      "<img src=\"/img/")
+      "<div class=\"card\" style=\"padding: 16px; border: 1px solid #ddd; border-radius: 8px;\">",
+    )
+    buf.write_string("<img src=\"/img/")
     buf.write_string(i.to_string())
-    buf.write_string(".jpg\" alt=\"Card image\" style=\"width: 100%; height: 150px;\">")
+    buf.write_string(
+      ".jpg\" alt=\"Card image\" style=\"width: 100%; height: 150px;\">",
+    )
     buf.write_string("<h3 style=\"margin: 12px 0 8px;\">Card Title ")
     buf.write_string(i.to_string())
     buf.write_string("</h3>")
-    buf.write_string("<p style=\"color: #666; font-size: 14px;\">Card description goes here.</p>")
-    buf.write_string("<button style=\"padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;\">Action</button>")
+    buf.write_string(
+      "<p style=\"color: #666; font-size: 14px;\">Card description goes here.</p>",
+    )
+    buf.write_string(
+      "<button style=\"padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;\">Action</button>",
+    )
     buf.write_string("</div>")
   }
   buf.write_string("</div>")
@@ -543,7 +556,10 @@ test "bench_tokenize_styled_100" (b : @bench.T) {
 // =============================================================================
 
 ///|
-fn generate_large_document(sections : Int, paragraphs_per_section : Int) -> String {
+fn generate_large_document(
+  sections : Int,
+  paragraphs_per_section : Int,
+) -> String {
   let buf = StringBuilder::new()
   buf.write_string("<!DOCTYPE html><html><head><title>Large Document</title>")
   buf.write_string("<style>body { font-family: sans-serif; }</style>")

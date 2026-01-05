@@ -93,6 +93,7 @@ pub(all) struct TreeBuilder {
   mut frameset_ok : Bool
   mut head_element : Element?
   mut pending_table_chars : Array[Char]
+  pending_text : StringBuilder
 }
 pub fn TreeBuilder::build(Self) -> Element
 pub fn TreeBuilder::build_document(Self) -> Element
