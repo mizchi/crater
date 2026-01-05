@@ -190,9 +190,16 @@ fn compute_implicit_role(
 ///|
 /// Compute role for <img> element
 fn compute_img_role(element : @html.Element) -> Role {
-  // img with empty alt is presentational
+  // img with empty alt is presentational, unless it has aria-label/aria-labelledby
   match element.attributes.get("alt") {
-    Some(alt) if alt.is_empty() => Presentation
+    Some(alt) if alt.is_empty() =>
+      // Check if element has an accessible name source that overrides presentation
+      if element.attributes.contains("aria-label") ||
+        element.attributes.contains("aria-labelledby") {
+        Img
+      } else {
+        Presentation
+      }
     _ => Img
   }
 }
