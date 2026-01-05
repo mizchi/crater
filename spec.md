@@ -167,6 +167,160 @@ HTML Parser → CSS Parser → Style Cascade → Layout Tree
   Scheduler が全てのタスクを管理・依存解決・実行順序決定
 ```
 
+## Web Vitals Module ✅
+
+Core Web Vitals の計測モジュール。LCP (Largest Contentful Paint) と CLS (Cumulative Layout Shift) を実装。
+
+### ファイル構成
+
+```
+webvitals/
+├── lcp.mbt       # LCP検出・追跡
+├── lcp_test.mbt  # LCPテスト (9テスト)
+├── cls.mbt       # CLS計算
+└── cls_test.mbt  # CLSテスト (3テスト)
+```
+
+### LCP (Largest Contentful Paint)
+
+ページの最大コンテンツ要素がレンダリングされるタイミングを検出。AI TUI Browser で「操作可能タイミング」を判定するために使用。
+
+```moonbit
+/// LCP候補のタイプ
+pub(all) enum LCPElementType {
+  Image(src~ : String)
+  BackgroundImage(url~ : String)
+  Video(poster~ : String?)
+  TextBlock
+}
+
+/// LCPトラッカー
+let tracker = LCPTracker::new(viewport_width, viewport_height)
+
+// 候補を追加
+tracker.add_candidate(candidate)
+
+// リソースロード完了
+tracker.on_resource_loaded(element_id, load_time)
+
+// レンダリング完了
+tracker.on_element_rendered(element_id, render_time)
+
+// ユーザー入力でLCPを確定
+tracker.finalize()
+
+// LCP準備完了を確認
+if tracker.is_lcp_ready() {
+  // 操作可能
+}
+```
+
+### CLS (Cumulative Layout Shift)
+
+レイアウトシフトのスコアを計算。
+
+```moonbit
+/// 単一要素のシフトを計算
+let shift = compute_element_shift(before, after, viewport)
+// shift.score = impact_fraction × distance_fraction
+
+/// 複数要素のCLS合計
+let cls = compute_total(before_rects, after_rects, viewport)
+```
+
+### ContentReadiness
+
+LCP と アクセシビリティの準備状態を統合。
+
+```moonbit
+pub(all) struct ContentReadiness {
+  lcp_ready : Bool
+  lcp_time : Double?
+  critical_resources_loaded : Bool
+  a11y_ready : Bool
+}
+
+/// 操作可能判定
+if readiness.is_interaction_ready() {
+  // LCP完了 && a11y準備完了
+}
+```
+
+## AOM (Accessibility Object Model) Module ✅
+
+HTML からアクセシビリティツリーを構築するモジュール。WAI-ARIA 1.2 と HTML-AAM 1.0 仕様に基づく。
+
+### ファイル構成
+
+```
+aom/
+├── types.mbt          # Role, State, AccessibilityNode, AccessibilityTree
+├── role.mbt           # HTML→Role推論
+├── name.mbt           # Accessible Name計算 (accname spec)
+├── tree.mbt           # ツリー構築
+├── snapshot.mbt       # YAML/JSON出力 (Playwright互換)
+└── *_test.mbt         # テスト群
+```
+
+### 主要機能
+
+| 機能 | 説明 |
+|------|------|
+| `build_accessibility_tree()` | HTML Document → AccessibilityTree |
+| `compute_role()` | 要素の暗黙的/明示的Role推論 |
+| `compute_accessible_name()` | aria-label, alt, title等からの名前計算 |
+| `to_aria_snapshot()` | Playwright互換YAML出力 |
+| `to_aria_json()` | JSON形式出力 |
+| `find_interactive()` | インタラクティブ要素の検索 |
+| `find_landmarks()` | ランドマーク要素の検索 |
+| `find_headings()` | 見出し要素の検索 |
+| `attach_bounds()` | Layoutの座標をアタッチ |
+
+### 使用例
+
+```moonbit
+// HTML → AccessibilityTree
+let tree = build_accessibility_tree(doc)
+
+// ARIA Snapshot (Playwright互換)
+let yaml = tree.to_aria_snapshot()
+// Output:
+// - navigation "Main Nav":
+//   - link "Home"
+//   - link "Products"
+// - main:
+//   - heading "Welcome" [level=1]
+//   - button "Login"
+
+// インタラクティブ要素を取得
+let interactive = find_interactive(tree)
+for node in interactive {
+  // node.role, node.name, node.bounds
+}
+```
+
+### AI TUI Browser との統合
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                      AI Agent                                │
+│   Input: 「ログインボタンをクリック」                          │
+└──────────────────────────────────────┬───────────────────────┘
+                                       │
+                                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│              AccessibilityTree (AOM)                          │
+│   → role="button" name="ログイン" を検索                      │
+│   → bounds: (300, 100, 400, 140) を取得                      │
+└──────────────────────────────────────┬───────────────────────┘
+                                       │
+                                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│              ContentReadiness (webvitals)                     │
+│   → is_interaction_ready() で操作可能か判定                   │
+└──────────────────────────────────────────────────────────────┘
+```
+
 ## Unsupported Features Policy
 
 ### Float
