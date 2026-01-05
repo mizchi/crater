@@ -81,6 +81,7 @@ pub fn Node::new(String, @style.Style, Array[Self]) -> Self
 pub fn Node::text(String, @style.Style, MeasureFunc, String) -> Self
 pub fn Node::with_measure(String, @style.Style, MeasureFunc) -> Self
 pub fn Node::with_uid(String, Int, @style.Style, Array[Self]) -> Self
+pub fn Node::with_uid_and_measure(String, Int, @style.Style, Array[Self], MeasureFunc?, String?) -> Self
 
 pub(all) enum SizingMode {
   Definite

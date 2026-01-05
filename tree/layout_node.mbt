@@ -59,7 +59,7 @@ pub struct LayoutNode {
   uid : Int
   style : @style.Style
   children : Array[LayoutNode]
-  measure : @node.MeasureFunc?
+  mut measure : @node.MeasureFunc?
   text : String?
   // Dirty bits
   mut dirty : Bool
@@ -74,6 +74,8 @@ pub struct LayoutNode {
   mut computed_width : Double
   mut computed_height : Double
   mut has_new_layout : Bool
+  // Intrinsic state for replaceable elements (images, etc.)
+  mut intrinsic_state : IntrinsicState?
 }
 
 ///|
@@ -98,6 +100,7 @@ pub fn LayoutNode::new(
     computed_width: 0.0,
     computed_height: 0.0,
     has_new_layout: false,
+    intrinsic_state: None,
   }
 }
 
@@ -119,6 +122,7 @@ pub fn LayoutNode::leaf(id : String, style : @style.Style) -> LayoutNode {
     computed_width: 0.0,
     computed_height: 0.0,
     has_new_layout: false,
+    intrinsic_state: None,
   }
 }
 
@@ -144,6 +148,7 @@ pub fn LayoutNode::with_measure(
     computed_width: 0.0,
     computed_height: 0.0,
     has_new_layout: false,
+    intrinsic_state: None,
   }
 }
 
@@ -186,7 +191,14 @@ pub fn LayoutNode::needs_layout(self : LayoutNode) -> Bool {
 /// Preserves uid for cache lookup
 pub fn LayoutNode::to_node(self : LayoutNode) -> @node.Node {
   let children = self.children.map(fn(child) { child.to_node() })
-  @node.Node::with_uid(self.id, self.uid, self.style, children)
+  @node.Node::with_uid_and_measure(
+    self.id,
+    self.uid,
+    self.style,
+    children,
+    self.measure,
+    self.text,
+  )
 }
 
 ///|
@@ -209,5 +221,6 @@ pub fn LayoutNode::from_node(node : @node.Node) -> LayoutNode {
     computed_width: 0.0,
     computed_height: 0.0,
     has_new_layout: false,
+    intrinsic_state: None,
   }
 }

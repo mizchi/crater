@@ -12,6 +12,8 @@ pub struct LayoutTree {
   // Viewport size
   mut viewport_width : Double
   mut viewport_height : Double
+  // Resource management for intrinsic-sized elements
+  resources : ResourceRegistry
 }
 
 ///|
@@ -41,7 +43,14 @@ pub fn LayoutTree::new(
   let parent_map : Map[Int, Int] = {}
   let node_map : Map[Int, LayoutNode] = {}
   build_maps(root, None, parent_map, node_map)
-  { root, parent_map, node_map, viewport_width, viewport_height }
+  {
+    root,
+    parent_map,
+    node_map,
+    viewport_width,
+    viewport_height,
+    resources: ResourceRegistry::new(),
+  }
 }
 
 ///|
@@ -207,4 +216,203 @@ pub fn LayoutTree::compute_full(self : LayoutTree) -> @node.Layout {
 pub fn LayoutTree::compute_incremental(self : LayoutTree) -> @node.Layout {
   let stats = CacheStats::new()
   compute_tree_incremental(self, stats)
+}
+
+// =============================================================================
+// Resource Management API
+// =============================================================================
+
+///|
+/// Register a pending resource for an intrinsic-sized element (e.g., image)
+/// Returns a ResourceId that can be used to resolve the size later
+pub fn LayoutTree::register_resource(
+  self : LayoutTree,
+  node_uid : Int,
+  placeholder_width? : Double = 300.0,
+  placeholder_height? : Double = 150.0,
+) -> ResourceId {
+  let rid = self.resources.next_resource_id()
+  self.resources.add_node(rid, node_uid)
+  self.resources.mark_pending(rid)
+
+  // Set up the node with placeholder measure
+  match self.node_map.get(node_uid) {
+    Some(node) => {
+      node.intrinsic_state = Some(
+        Pending(placeholder_width~, placeholder_height~),
+      )
+      node.measure = Some(
+        create_fixed_measure(placeholder_width, placeholder_height),
+      )
+      node.mark_dirty()
+      self.propagate_children_dirty(node_uid)
+    }
+    None => ()
+  }
+  rid
+}
+
+///|
+/// Attach an additional node to an existing resource (for shared resources like same src)
+pub fn LayoutTree::attach_resource(
+  self : LayoutTree,
+  rid : ResourceId,
+  node_uid : Int,
+  placeholder_width? : Double = 300.0,
+  placeholder_height? : Double = 150.0,
+) -> Unit {
+  self.resources.add_node(rid, node_uid)
+
+  // Set up the node with placeholder measure
+  match self.node_map.get(node_uid) {
+    Some(node) => {
+      node.intrinsic_state = Some(
+        Pending(placeholder_width~, placeholder_height~),
+      )
+      node.measure = Some(
+        create_fixed_measure(placeholder_width, placeholder_height),
+      )
+      node.mark_dirty()
+      self.propagate_children_dirty(node_uid)
+    }
+    None => ()
+  }
+}
+
+///|
+/// Resolve a resource with its actual size
+pub fn LayoutTree::resolve_resource(
+  self : LayoutTree,
+  rid : ResourceId,
+  width : Double,
+  height : Double,
+) -> Unit {
+  self.resources.mark_resolved(rid)
+  let aspect = if height > 0.0 { Some(width / height) } else { None }
+  for node_uid in self.resources.get_nodes(rid) {
+    match self.node_map.get(node_uid) {
+      Some(node) => {
+        node.intrinsic_state = Some(Resolved(width~, height~))
+        node.measure = Some(create_fixed_measure(width, height))
+        // Only set aspect-ratio if not already specified by CSS
+        match node.style.aspect_ratio {
+          None => node.style.aspect_ratio = aspect
+          Some(_) => () // CSS takes precedence
+        }
+        node.mark_dirty()
+        self.propagate_children_dirty(node_uid)
+      }
+      None => ()
+    }
+  }
+}
+
+///|
+/// Mark a resource as failed (e.g., image load error)
+pub fn LayoutTree::fail_resource(self : LayoutTree, rid : ResourceId) -> Unit {
+  self.resources.mark_resolved(rid)
+  for node_uid in self.resources.get_nodes(rid) {
+    match self.node_map.get(node_uid) {
+      Some(node) => {
+        node.intrinsic_state = Some(Error)
+        node.measure = Some(
+          create_fixed_measure(
+            error_placeholder_width, error_placeholder_height,
+          ),
+        )
+        node.mark_dirty()
+        self.propagate_children_dirty(node_uid)
+      }
+      None => ()
+    }
+  }
+}
+
+///|
+/// Check if a resource is still pending
+pub fn LayoutTree::is_resource_pending(
+  self : LayoutTree,
+  rid : ResourceId,
+) -> Bool {
+  self.resources.is_pending(rid)
+}
+
+///|
+/// Get all pending resources
+pub fn LayoutTree::get_pending_resources(
+  self : LayoutTree,
+) -> Array[ResourceId] {
+  self.resources.get_all_pending()
+}
+
+///|
+/// Scan the tree for nodes with Pending intrinsic state and register them as resources
+/// Returns a map from uid (as string) to ResourceId
+/// This is useful after building a tree from HTML to register all pending images
+pub fn LayoutTree::register_pending_images(
+  self : LayoutTree,
+) -> Map[String, ResourceId] {
+  let uid_to_rid : Map[String, ResourceId] = {}
+  self.node_map.each(fn(_uid, node) {
+    match node.intrinsic_state {
+      Some(Pending(_)) => {
+        // This node needs a resource
+        let key = node.uid.to_string()
+        match uid_to_rid.get(key) {
+          Some(_) => () // Already registered
+          None => {
+            // New resource - register it
+            let rid = self.resources.next_resource_id()
+            self.resources.add_node(rid, node.uid)
+            self.resources.mark_pending(rid)
+            uid_to_rid[key] = rid
+          }
+        }
+      }
+      _ => ()
+    }
+  })
+  uid_to_rid
+}
+
+///|
+/// Scan the tree for nodes with Pending intrinsic state and register them as resources
+/// Uses provided src->uid mapping to share resources for same src
+/// Returns a map from src to ResourceId
+pub fn LayoutTree::register_pending_images_with_src(
+  self : LayoutTree,
+  uid_to_src : Map[Int, String],
+) -> Map[String, ResourceId] {
+  let src_to_rid : Map[String, ResourceId] = {}
+  self.node_map.each(fn(uid, node) {
+    match node.intrinsic_state {
+      Some(Pending(_)) =>
+        // Get src for this node
+        match uid_to_src.get(uid) {
+          Some(src) =>
+            match src_to_rid.get(src) {
+              Some(rid) =>
+                // Already have a resource for this src, attach this node
+                self.resources.add_node(rid, node.uid)
+              None => {
+                // New resource - register it
+                let rid = self.resources.next_resource_id()
+                self.resources.add_node(rid, node.uid)
+                self.resources.mark_pending(rid)
+                src_to_rid[src] = rid
+              }
+            }
+          None => {
+            // No src mapping, use uid as key
+            let key = uid.to_string()
+            let rid = self.resources.next_resource_id()
+            self.resources.add_node(rid, node.uid)
+            self.resources.mark_pending(rid)
+            src_to_rid[key] = rid
+          }
+        }
+      _ => ()
+    }
+  })
+  src_to_rid
 }

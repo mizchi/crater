@@ -65,6 +65,19 @@ pub fn Node::with_uid(
 }
 
 ///|
+/// Create a node with a specific uid and measure function
+pub fn Node::with_uid_and_measure(
+  id : String,
+  uid : Int,
+  style : @style.Style,
+  children : Array[Node],
+  measure : MeasureFunc?,
+  text : String?,
+) -> Node {
+  { id, uid, style, children, measure, text }
+}
+
+///|
 pub fn Node::leaf(id : String, style : @style.Style) -> Node {
   { id, uid: next_uid(), style, children: [], measure: None, text: None }
 }

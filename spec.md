@@ -185,6 +185,200 @@ Use cases:
 3. Touch handling: Identify tapped element
 4. Accessibility: Navigate between elements
 
+### Image Resource Lifecycle and Paint Integration
+
+画像リソースのライフサイクル管理と Paint 層との連携設計。
+
+#### Resource States
+
+```
+┌─────────────┐     headers     ┌─────────────┐     complete     ┌──────────┐
+│  Pending    │ ───────────────>│  Sizing     │ ────────────────>│ Complete │
+│ (placeholder)│                 │ (confirmed) │                  │ (render) │
+└─────────────┘                 └─────────────┘                  └──────────┘
+       │                              │                                │
+       │          error               │           error                │
+       └──────────────────────────────┴────────────────────────────────┘
+                                      │
+                                      v
+                               ┌──────────┐
+                               │  Error   │
+                               │ (24x24)  │
+                               └──────────┘
+```
+
+#### State Definitions
+
+```moonbit
+/// Extended resource state for paint layer integration
+pub(all) enum ImageResourceState {
+  /// Initial: No size info, using HTML default placeholder (300x150)
+  /// Or using width/height attributes if specified
+  Pending(placeholder_width~ : Double, placeholder_height~ : Double)
+
+  /// Headers received: Actual dimensions known from response headers
+  /// Layout can use accurate size, but no pixel data yet
+  Sizing(width~ : Double, height~ : Double)
+
+  /// Partial download: Progressive data available
+  /// Contains decode progress (0.0-1.0) for progressive rendering
+  Streaming(width~ : Double, height~ : Double, progress~ : Double)
+
+  /// Complete: Full image data available
+  Complete(width~ : Double, height~ : Double)
+
+  /// Error: Load failed, use error placeholder (24x24)
+  Error
+}
+```
+
+#### Paint Layer Interface
+
+```moonbit
+/// Callback from LayoutTree to Paint layer
+pub(all) struct PaintCallbacks {
+  /// Called when resource state changes and repaint may be needed
+  on_resource_state_change : (ResourceId, ImageResourceState) -> Unit
+
+  /// Called when layout shift occurs (for CLS calculation)
+  on_layout_shift : (node_id : String, old_rect : BoundingRect, new_rect : BoundingRect) -> Unit
+}
+
+/// Paint layer queries
+pub trait PaintQuery {
+  /// Get current paint data for a resource (texture ID, decode state, etc.)
+  get_paint_data(ResourceId) -> PaintData?
+
+  /// Check if resource has renderable content
+  is_renderable(ResourceId) -> Bool
+}
+
+/// Abstract paint data (implementation-specific)
+pub(all) struct PaintData {
+  /// Texture/surface reference for rendering
+  texture_id : Int?
+
+  /// Current decode/render progress (0.0-1.0)
+  progress : Double
+
+  /// Whether progressive rendering is available
+  supports_progressive : Bool
+}
+```
+
+#### LayoutTree Extensions for Paint Integration
+
+```moonbit
+impl LayoutTree {
+  /// Register paint callbacks for state change notifications
+  fn set_paint_callbacks(self, callbacks : PaintCallbacks) -> Unit
+
+  /// Update resource state from network layer
+  /// Triggers paint callback if state changes
+  fn update_resource_state(
+    self,
+    rid : ResourceId,
+    state : ImageResourceState,
+  ) -> Unit
+
+  /// Calculate layout shift score (CLS metric)
+  /// Returns shift score for nodes that moved after resource resolution
+  fn calculate_layout_shift(self) -> Double
+}
+```
+
+#### Typical Flow
+
+```
+External System          LayoutTree              Paint Layer
+      │                       │                       │
+      │  register_resource()  │                       │
+      │──────────────────────>│                       │
+      │  ResourceId           │                       │
+      │<──────────────────────│                       │
+      │                       │                       │
+      │  [HTTP request...]    │                       │
+      │                       │                       │
+      │  update_resource_state│                       │
+      │  (Sizing)             │                       │
+      │──────────────────────>│ on_resource_state_change
+      │                       │──────────────────────>│
+      │                       │ [invalidate region]   │
+      │                       │                       │
+      │  compute_incremental()│                       │
+      │──────────────────────>│                       │
+      │  Layout (with shift)  │                       │
+      │<──────────────────────│ on_layout_shift       │
+      │                       │──────────────────────>│
+      │                       │ [record CLS]          │
+      │                       │                       │
+      │  [Download progress]  │                       │
+      │  update_resource_state│                       │
+      │  (Streaming 0.5)      │                       │
+      │──────────────────────>│ on_resource_state_change
+      │                       │──────────────────────>│
+      │                       │ [progressive repaint] │
+      │                       │                       │
+      │  update_resource_state│                       │
+      │  (Complete)           │                       │
+      │──────────────────────>│ on_resource_state_change
+      │                       │──────────────────────>│
+      │                       │ [final render]        │
+```
+
+#### CLS (Cumulative Layout Shift) Calculation
+
+```moonbit
+/// Track layout shifts for CLS metric
+pub struct LayoutShiftEntry {
+  node_id : String
+  old_rect : BoundingRect
+  new_rect : BoundingRect
+  shift_score : Double  // viewport_fraction * distance_fraction
+}
+
+impl LayoutTree {
+  /// Compute layout and track shifts from previous layout
+  fn compute_with_shift_tracking(self) -> (Layout, Array[LayoutShiftEntry])
+
+  /// Calculate CLS score from shift entries
+  fn calculate_cls(shifts : Array[LayoutShiftEntry], viewport : Size) -> Double
+}
+```
+
+#### Progressive Rendering Support
+
+For formats that support progressive decoding (JPEG, interlaced PNG):
+
+```moonbit
+/// Progressive image data
+pub(all) enum ProgressiveData {
+  /// JPEG: DC coefficients only (very blurry preview)
+  JpegDC
+
+  /// JPEG: First few AC coefficients (blurry)
+  JpegPartial(scans~ : Int)
+
+  /// PNG: Interlace pass (1-7)
+  PngInterlace(pass~ : Int)
+
+  /// Full resolution
+  Complete
+}
+
+/// Paint layer can query decode state for rendering decisions
+impl PaintQuery {
+  fn get_progressive_state(ResourceId) -> ProgressiveData?
+}
+```
+
+#### Implementation Notes
+
+1. **Decoupling**: LayoutTree only manages dimensions and state; actual image data lives in Paint layer
+2. **Lazy Evaluation**: Paint callbacks are optional; layout works standalone for testing
+3. **Batching**: Multiple state changes can be batched before triggering repaint
+4. **Memory**: Only track ResourceId → state mapping; pixel data handled externally
+
 ### Future Features
 
 - [x] `position: absolute/fixed` layout ✅

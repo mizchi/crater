@@ -484,6 +484,11 @@ pub fn LayoutNode::from_html_element(
   // Apply computed styles
   let _ = node.apply_css_values(computed_styles)
 
+  // Handle img elements with intrinsic sizing
+  if element.tag.to_lower() == "img" {
+    setup_image_node(node, element)
+  }
+
   // Recursively convert children
   for html_child in element.children {
     match html_child {
@@ -502,6 +507,83 @@ pub fn LayoutNode::from_html_element(
     }
   }
   node
+}
+
+///|
+/// Setup an img node with intrinsic sizing
+/// If width/height attributes are present, use them as resolved size
+/// Otherwise, set as Pending with placeholder dimensions
+fn setup_image_node(node : LayoutNode, element : @html.Element) -> Unit {
+  // Try to get dimensions from HTML attributes
+  let width : Double? = match element.attributes.get("width") {
+    Some(v) => parse_html_dimension(v)
+    None => None
+  }
+  let height : Double? = match element.attributes.get("height") {
+    Some(v) => parse_html_dimension(v)
+    None => None
+  }
+  match (width, height) {
+    (Some(w), Some(h)) => {
+      // Both dimensions specified - use as resolved
+      node.intrinsic_state = Some(Resolved(width=w, height=h))
+      node.measure = Some(create_fixed_measure(w, h))
+      // Also set explicit style dimensions to prevent flex stretch
+      node.style.width = @types.Length(w)
+      node.style.height = @types.Length(h)
+    }
+    (Some(w), None) => {
+      // Only width - need height from image load (Pending)
+      // Use width as placeholder, set pending for height calculation
+      node.intrinsic_state = Some(
+        Pending(
+          placeholder_width=w,
+          placeholder_height=default_placeholder_height,
+        ),
+      )
+      node.measure = Some(create_fixed_measure(w, default_placeholder_height))
+      node.style.width = @types.Length(w)
+    }
+    (None, Some(h)) => {
+      // Only height - need width from image load (Pending)
+      node.intrinsic_state = Some(
+        Pending(
+          placeholder_width=default_placeholder_width,
+          placeholder_height=h,
+        ),
+      )
+      node.measure = Some(create_fixed_measure(default_placeholder_width, h))
+      node.style.height = @types.Length(h)
+    }
+    (None, None) => {
+      // No dimensions - fully Pending
+      node.intrinsic_state = Some(
+        Pending(
+          placeholder_width=default_placeholder_width,
+          placeholder_height=default_placeholder_height,
+        ),
+      )
+      node.measure = Some(
+        create_fixed_measure(
+          default_placeholder_width, default_placeholder_height,
+        ),
+      )
+    }
+  }
+}
+
+///|
+/// Parse HTML dimension attribute (e.g., "300", "300px")
+fn parse_html_dimension(value : String) -> Double? {
+  // Remove "px" suffix if present
+  let num_str : String = if value.has_suffix("px") && value.length() > 2 {
+    value[:value.length() - 2].to_string() catch {
+      _ => return None
+    }
+  } else {
+    value
+  }
+  try_parse_double(num_str)
 }
 
 // =============================================================================
