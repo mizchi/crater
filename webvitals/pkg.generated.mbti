@@ -2,6 +2,7 @@
 package "mizchi/crater/webvitals"
 
 import(
+  "mizchi/crater/tree"
   "mizchi/crater/types"
 )
 
@@ -10,9 +11,66 @@ pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Si
 
 pub fn compute_total(Array[@types.BoundingRect], Array[@types.BoundingRect], @types.Size[Double]) -> Double
 
+pub fn extract_lcp_candidates(@tree.LayoutTree, Double, Double) -> Array[LCPCandidate]
+
 // Errors
 
 // Types and methods
+pub(all) struct ContentReadiness {
+  lcp_ready : Bool
+  lcp_time : Double?
+  critical_resources_loaded : Bool
+  a11y_ready : Bool
+}
+pub fn ContentReadiness::from_lcp_tracker(LCPTracker, Bool) -> Self
+pub fn ContentReadiness::is_interaction_ready(Self) -> Bool
+pub fn ContentReadiness::new() -> Self
+
+pub(all) struct LCPCandidate {
+  element_id : String
+  element_type : LCPElementType
+  size : Double
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  mut resource_loaded : Bool
+  mut render_time : Double?
+  mut load_time : Double?
+}
+pub fn LCPCandidate::get_lcp_time(Self) -> Double?
+pub fn LCPCandidate::is_rendered(Self) -> Bool
+pub fn LCPCandidate::new(String, LCPElementType, Double, Double, Double, Double) -> Self
+pub fn LCPCandidate::with_load_time(Self, Double) -> Self
+pub fn LCPCandidate::with_render_time(Self, Double) -> Self
+pub fn LCPCandidate::with_resource_loaded(Self, Bool) -> Self
+
+pub(all) enum LCPElementType {
+  Image(src~ : String)
+  BackgroundImage(url~ : String)
+  Video(poster~ : String?)
+  TextBlock
+}
+pub impl Eq for LCPElementType
+pub impl Show for LCPElementType
+
+pub(all) struct LCPTracker {
+  candidates : Array[LCPCandidate]
+  mut current_lcp : LCPCandidate?
+  mut finalized : Bool
+  viewport_width : Double
+  viewport_height : Double
+}
+pub fn LCPTracker::add_candidate(Self, LCPCandidate) -> Unit
+pub fn LCPTracker::finalize(Self) -> Unit
+pub fn LCPTracker::get_lcp(Self) -> LCPCandidate?
+pub fn LCPTracker::get_lcp_time(Self) -> Double?
+pub fn LCPTracker::is_finalized(Self) -> Bool
+pub fn LCPTracker::is_lcp_ready(Self) -> Bool
+pub fn LCPTracker::new(Double, Double) -> Self
+pub fn LCPTracker::on_element_rendered(Self, String, Double) -> Unit
+pub fn LCPTracker::on_resource_loaded(Self, String, Double) -> Unit
+
 pub struct LayoutShift {
   impact_fraction : Double
   distance_fraction : Double

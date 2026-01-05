@@ -1,5 +1,6 @@
 {
   "import": [
-    "mizchi/crater/types"
+    "mizchi/crater/types",
+    "mizchi/crater/tree"
   ]
 }
