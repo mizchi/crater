@@ -1,0 +1,166 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/scheduler"
+
+import(
+  "moonbitlang/core/hashset"
+)
+
+// Values
+pub fn reset_task_id_counter() -> Unit
+
+// Errors
+
+// Types and methods
+type BlockedSources
+
+pub(all) enum ResourceType {
+  Document
+  Stylesheet
+  Script
+  Image
+  Font
+  Other
+}
+pub impl Eq for ResourceType
+pub impl Show for ResourceType
+
+pub struct Scheduler {
+  tasks : Map[Int, Task]
+  ready_queue : TaskQueue
+  source_queues : SourceQueueManager
+  blocked : BlockedSources
+  completed_ids : @hashset.HashSet[Int]
+}
+pub fn Scheduler::apply_blocks(Self, Task) -> Unit
+pub fn Scheduler::cancel(Self, TaskId) -> Unit
+pub fn Scheduler::cleanup(Self) -> Int
+pub fn Scheduler::complete(Self, TaskId, TaskResult) -> Array[TaskId]
+pub fn Scheduler::enqueue(Self, TaskAction, TaskConstraint) -> TaskId
+pub fn Scheduler::enqueue_after(Self, TaskAction, TaskConstraint, Array[TaskId]) -> TaskId
+pub fn Scheduler::enqueue_with_priority(Self, TaskAction, TaskConstraint, Int) -> TaskId
+pub fn Scheduler::fail(Self, TaskId, String) -> Unit
+pub fn Scheduler::find_task(Self, TaskId) -> Task?
+pub fn Scheduler::is_idle(Self) -> Bool
+pub fn Scheduler::is_source_blocked(Self, TaskSource) -> Bool
+pub fn Scheduler::new() -> Self
+pub fn Scheduler::pending_count(Self) -> Int
+pub fn Scheduler::poll_main_thread(Self) -> Task?
+pub fn Scheduler::poll_parallel(Self) -> Array[Task]
+pub fn Scheduler::poll_ready(Self) -> Array[Task]
+pub fn Scheduler::ready_count(Self) -> Int
+pub fn Scheduler::resolve_dependencies(Self) -> Int
+pub fn Scheduler::running_count(Self) -> Int
+pub fn Scheduler::task_count(Self) -> Int
+
+pub struct SourceQueueManager {
+  queues : Map[TaskSource, TaskQueue]
+}
+pub fn SourceQueueManager::cleanup(Self) -> Int
+pub fn SourceQueueManager::find(Self, TaskId) -> Task?
+pub fn SourceQueueManager::get_all_ready(Self) -> Array[Task]
+pub fn SourceQueueManager::get_queue(Self, TaskSource) -> TaskQueue
+pub fn SourceQueueManager::get_ready_by_source(Self, TaskSource) -> Array[Task]
+pub fn SourceQueueManager::new() -> Self
+pub fn SourceQueueManager::push(Self, Task) -> Unit
+pub fn SourceQueueManager::remove(Self, TaskId) -> Task?
+pub fn SourceQueueManager::total_count(Self) -> Int
+
+pub(all) struct Task {
+  id : TaskId
+  source : TaskSource
+  constraint : TaskConstraint
+  dependencies : Array[TaskId]
+  action : TaskAction
+  mut state : TaskState
+  priority : Int
+}
+pub fn Task::is_completed(Self) -> Bool
+pub fn Task::is_parallel(Self) -> Bool
+pub fn Task::is_ready(Self) -> Bool
+pub fn Task::is_terminal(Self) -> Bool
+pub fn Task::mark_cancelled(Self) -> Unit
+pub fn Task::mark_completed(Self) -> Unit
+pub fn Task::mark_failed(Self, String) -> Unit
+pub fn Task::mark_running(Self) -> Unit
+pub fn Task::new(TaskAction, TaskConstraint, dependencies? : Array[TaskId], priority? : Int) -> Self
+
+pub(all) enum TaskAction {
+  ParseHTMLChunk(html~ : String)
+  ParseCSS(source~ : String)
+  ComputeStyle(node_ids~ : Array[String])
+  ComputeLayout
+  FetchResource(url~ : String, resource_type~ : ResourceType)
+  DecodeImage(resource_id~ : Int)
+  ExecuteScript(source~ : String)
+}
+pub fn TaskAction::is_internal(Self) -> Bool
+pub fn TaskAction::source(Self) -> TaskSource
+pub impl Show for TaskAction
+
+pub(all) enum TaskConstraint {
+  MainThreadOnly
+  Parallel
+  Blocking(Array[TaskSource])
+}
+pub fn TaskConstraint::blocks(Self, TaskSource) -> Bool
+pub fn TaskConstraint::is_parallel(Self) -> Bool
+pub impl Show for TaskConstraint
+
+pub(all) struct TaskId(Int)
+#deprecated
+pub fn TaskId::inner(Self) -> Int
+pub impl Eq for TaskId
+pub impl Hash for TaskId
+pub impl Show for TaskId
+
+pub struct TaskQueue {
+  tasks : Array[Task]
+}
+pub fn TaskQueue::cleanup(Self) -> Int
+pub fn TaskQueue::find(Self, TaskId) -> Task?
+pub fn TaskQueue::get_main_thread_ready(Self) -> Array[Task]
+pub fn TaskQueue::get_parallel_ready(Self) -> Array[Task]
+pub fn TaskQueue::get_ready(Self) -> Array[Task]
+pub fn TaskQueue::is_empty(Self) -> Bool
+pub fn TaskQueue::iter(Self) -> Iter[Task]
+pub fn TaskQueue::length(Self) -> Int
+pub fn TaskQueue::new() -> Self
+pub fn TaskQueue::push(Self, Task) -> Unit
+pub fn TaskQueue::remove(Self, TaskId) -> Task?
+pub fn TaskQueue::sort_by_priority(Self) -> Unit
+
+pub(all) enum TaskResult {
+  Success(new_tasks~ : Array[TaskAction])
+  Failure(error~ : String)
+  Cancelled
+}
+pub impl Show for TaskResult
+
+pub(all) enum TaskSource {
+  DOM
+  Styling
+  Layout
+  Networking
+  Scripting
+  ImageDecode
+}
+pub impl Eq for TaskSource
+pub impl Hash for TaskSource
+pub impl Show for TaskSource
+
+pub(all) enum TaskState {
+  Pending
+  Ready
+  Running
+  Completed
+  Cancelled
+  Failed(String)
+}
+pub fn TaskState::is_runnable(Self) -> Bool
+pub fn TaskState::is_terminal(Self) -> Bool
+pub impl Show for TaskState
+
+// Type aliases
+
+// Traits
+
