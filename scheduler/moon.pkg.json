@@ -8,5 +8,6 @@
     "mizchi/crater/node",
     "mizchi/crater/types",
     "mizchi/crater/style"
-  ]
+  ],
+  "wbtest-import": ["mizchi/crater/compute/dispatch"]
 }

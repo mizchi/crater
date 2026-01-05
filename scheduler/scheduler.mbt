@@ -172,6 +172,9 @@ pub fn Scheduler::poll_ready(self : Scheduler) -> Array[Task] {
     not(self.blocked.is_blocked(task.source))
   })
 
+  // 優先度でソート（高い順）
+  unblocked.sort_by(fn(a, b) { b.priority - a.priority })
+
   // 状態を Running に変更
   for task in unblocked {
     task.mark_running()
@@ -188,6 +191,9 @@ pub fn Scheduler::poll_parallel(self : Scheduler) -> Array[Task] {
   let unblocked : Array[Task] = parallel.filter(fn(task) {
     not(self.blocked.is_blocked(task.source))
   })
+
+  // 優先度でソート（高い順）
+  unblocked.sort_by(fn(a, b) { b.priority - a.priority })
 
   // 状態を Running に変更
   for task in unblocked {
