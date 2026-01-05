@@ -45,7 +45,7 @@ fn Tokenizer::peek(self : Tokenizer) -> Char? {
 /// Fast peek without Option wrapping - returns '\x00' for EOF
 fn Tokenizer::peek_fast(self : Tokenizer) -> Char {
   if self.pos >= self.len {
-    '\x00'
+    '\u0000'
   } else {
     self.input[self.pos].to_int().unsafe_to_char()
   }
@@ -152,7 +152,7 @@ fn Tokenizer::consume_name(self : Tokenizer) -> String {
       break
     }
   }
-  self.input.substring(start~, end=self.pos)
+  self.input.unsafe_substring(start~, end=self.pos)
 }
 
 ///|
@@ -167,7 +167,7 @@ fn Tokenizer::consume_name_lower(self : Tokenizer) -> String {
       break
     }
   }
-  self.input.substring(start~, end=self.pos).to_lower()
+  self.input.unsafe_substring(start~, end=self.pos).to_lower()
 }
 
 ///|
@@ -185,11 +185,11 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
       if self.peek_fast() == '"' {
         let end = self.pos
         self.advance()
-        return self.input.substring(start~, end~)
+        return self.input.unsafe_substring(start~, end~)
       }
       self.advance()
     }
-    self.input.substring(start~, end=self.pos)
+    self.input.unsafe_substring(start~, end=self.pos)
   } else if c == '\'' {
     self.advance()
     let start = self.pos
@@ -197,11 +197,11 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
       if self.peek_fast() == '\'' {
         let end = self.pos
         self.advance()
-        return self.input.substring(start~, end~)
+        return self.input.unsafe_substring(start~, end~)
       }
       self.advance()
     }
-    self.input.substring(start~, end=self.pos)
+    self.input.unsafe_substring(start~, end=self.pos)
   } else {
     // Unquoted attribute value
     let start = self.pos
@@ -212,7 +212,7 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
       }
       self.advance()
     }
-    self.input.substring(start~, end=self.pos)
+    self.input.unsafe_substring(start~, end=self.pos)
   }
 }
 
@@ -267,14 +267,14 @@ fn Tokenizer::skip_comment(self : Tokenizer) -> Token? {
     if self.peek_fast() == '-' &&
       self.input[self.pos + 1].to_int().unsafe_to_char() == '-' &&
       self.input[self.pos + 2].to_int().unsafe_to_char() == '>' {
-      let content = self.input.substring(start~, end=self.pos)
+      let content = self.input.unsafe_substring(start~, end=self.pos)
       self.pos += 3 // Skip "-->"
       return Some(Token::Comment(content))
     }
     self.advance()
   }
   // No closing found, return rest as comment
-  let content = self.input.substring(start~, end=self.len)
+  let content = self.input.unsafe_substring(start~, end=self.len)
   self.pos = self.len
   Some(Token::Comment(content))
 }

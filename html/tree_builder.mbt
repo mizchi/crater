@@ -168,23 +168,6 @@ fn TreeBuilder::insert_element(self : TreeBuilder, element : Element) -> Unit {
 }
 
 ///|
-/// Insert element directly into head (for head elements in body mode)
-fn TreeBuilder::insert_element_to_head(
-  self : TreeBuilder,
-  element : Element,
-) -> Unit {
-  match self.head_element {
-    Some(head) => {
-      head.children.push(Node::Element(element))
-      self.open_elements.push(element)
-    }
-    None =>
-      // Fallback: insert into current element
-      self.insert_element(element)
-  }
-}
-
-///|
 /// Insert character at appropriate place - accumulates in pending_text buffer
 fn TreeBuilder::insert_character(self : TreeBuilder, c : Char) -> Unit {
   if self.foster_parenting && is_table_context(self.current_node()) {
@@ -362,30 +345,6 @@ fn TreeBuilder::pop_until(self : TreeBuilder, tag : String) -> Unit {
 }
 
 ///|
-/// Pop elements until we hit one of the specified tags
-fn TreeBuilder::pop_until_one_of(
-  self : TreeBuilder,
-  tags : Array[String],
-) -> Unit {
-  // Flush pending text to current element before popping
-  self.flush_pending_text()
-  while not(self.open_elements.is_empty()) {
-    match self.current_node() {
-      Some(e) => {
-        for tag in tags {
-          if e.tag == tag {
-            return
-          }
-        }
-        let _ = self.open_elements.pop()
-
-      }
-      None => break
-    }
-  }
-}
-
-///|
 /// Generate implied end tags
 fn TreeBuilder::generate_implied_end_tags(self : TreeBuilder) -> Unit {
   while not(self.open_elements.is_empty()) {
@@ -440,28 +399,6 @@ fn TreeBuilder::generate_implied_end_tags_except(
         }
       None => break
     }
-  }
-}
-
-///|
-/// Check if tag is formatting element
-fn is_formatting_element(tag : String) -> Bool {
-  match tag {
-    "a"
-    | "b"
-    | "big"
-    | "code"
-    | "em"
-    | "font"
-    | "i"
-    | "nobr"
-    | "s"
-    | "small"
-    | "strike"
-    | "strong"
-    | "tt"
-    | "u" => true
-    _ => false
   }
 }
 
@@ -551,64 +488,6 @@ fn is_special_element(tag : String) -> Bool {
     | "ul"
     | "wbr"
     | "xmp" => true
-    _ => false
-  }
-}
-
-///|
-/// Check if tag is void element (for tree builder)
-fn tb_is_void_element(tag : String) -> Bool {
-  match tag {
-    "area"
-    | "base"
-    | "br"
-    | "col"
-    | "embed"
-    | "hr"
-    | "img"
-    | "input"
-    | "link"
-    | "meta"
-    | "param"
-    | "source"
-    | "track"
-    | "wbr" => true
-    _ => false
-  }
-}
-
-///|
-/// Check if tag is raw text element (for tree builder)
-fn tb_is_raw_text_element(tag : String) -> Bool {
-  match tag {
-    "script" | "style" => true
-    _ => false
-  }
-}
-
-///|
-/// Check if tag is escapable raw text element
-fn tb_is_escapable_raw_text_element(tag : String) -> Bool {
-  match tag {
-    "textarea" | "title" => true
-    _ => false
-  }
-}
-
-///|
-/// Check if tag is head element (for tree builder)
-fn tb_is_head_element(tag : String) -> Bool {
-  match tag {
-    "base"
-    | "basefont"
-    | "bgsound"
-    | "link"
-    | "meta"
-    | "noframes"
-    | "script"
-    | "style"
-    | "template"
-    | "title" => true
     _ => false
   }
 }
