@@ -185,11 +185,11 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
       if self.peek_fast() == '"' {
         let end = self.pos
         self.advance()
-        return self.input.unsafe_substring(start~, end~)
+        return decode_html_entities(self.input.unsafe_substring(start~, end~))
       }
       self.advance()
     }
-    self.input.unsafe_substring(start~, end=self.pos)
+    decode_html_entities(self.input.unsafe_substring(start~, end=self.pos))
   } else if c == '\'' {
     self.advance()
     let start = self.pos
@@ -197,11 +197,11 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
       if self.peek_fast() == '\'' {
         let end = self.pos
         self.advance()
-        return self.input.unsafe_substring(start~, end~)
+        return decode_html_entities(self.input.unsafe_substring(start~, end~))
       }
       self.advance()
     }
-    self.input.unsafe_substring(start~, end=self.pos)
+    decode_html_entities(self.input.unsafe_substring(start~, end=self.pos))
   } else {
     // Unquoted attribute value
     let start = self.pos
@@ -212,7 +212,7 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
       }
       self.advance()
     }
-    self.input.unsafe_substring(start~, end=self.pos)
+    decode_html_entities(self.input.unsafe_substring(start~, end=self.pos))
   }
 }
 

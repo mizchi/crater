@@ -400,3 +400,212 @@ fn split_by_comma(s : String) -> Array[String] {
   }
   result
 }
+
+///|
+/// Parse result with diagnostics
+pub(all) struct ParseResult {
+  stylesheet : @cascade.Stylesheet
+  diagnostics : @diagnostics.DiagnosticsCollector
+}
+
+///|
+/// Parse a stylesheet and collect diagnostics
+pub fn parse_stylesheet_with_diagnostics(css : String) -> ParseResult {
+  let stylesheet = @cascade.Stylesheet::new(@cascade.Author)
+  let diagnostics = @diagnostics.DiagnosticsCollector::new()
+  let tokens = @token.tokenize(css)
+  let mut pos = 0
+  while pos < tokens.length() {
+    // Skip whitespace
+    pos = skip_ws(tokens, pos)
+    if pos >= tokens.length() {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::EOF => break
+      @token.Token::AtKeyword(name) =>
+        if name.to_lower() == "media" {
+          // Parse @media rule
+          pos = parse_media_rule_with_diagnostics(
+            stylesheet, diagnostics, tokens, pos,
+          )
+        } else {
+          // Skip other @-rules (e.g., @import, @keyframes)
+          pos = skip_at_rule(tokens, pos)
+        }
+      _ =>
+        // Try to parse a style rule
+        match parse_style_rule_with_diagnostics(tokens, pos, diagnostics) {
+          Some((selectors, declarations, new_pos)) => {
+            // Add rules for each selector
+            for item in selectors {
+              let selector_text = item.0
+              let selector = item.1
+              stylesheet.add_rule(selector_text, selector, declarations.copy())
+            }
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  { stylesheet, diagnostics }
+}
+
+///|
+/// Parse an @media rule with diagnostics
+fn parse_media_rule_with_diagnostics(
+  stylesheet : @cascade.Stylesheet,
+  diagnostics : @diagnostics.DiagnosticsCollector,
+  tokens : Array[@token.Token],
+  start : Int,
+) -> Int {
+  let mut pos = start + 1 // Skip @media token
+
+  // Collect media query tokens until '{'
+  let query_start = pos
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftBrace => break
+      @token.Token::EOF => return pos
+      _ => pos = pos + 1
+    }
+  }
+  if pos >= tokens.length() {
+    return pos
+  }
+
+  // Extract and parse media query
+  let query_text = tokens_to_string(tokens, query_start, pos).trim().to_string()
+  let media_query = @media.parse_media_query_list(query_text)
+
+  // Skip '{'
+  pos = pos + 1
+
+  // Parse rules inside @media block until '}'
+  let mut brace_depth = 1
+  while pos < tokens.length() && brace_depth > 0 {
+    pos = skip_ws(tokens, pos)
+    if pos >= tokens.length() {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::RightBrace => {
+        brace_depth = brace_depth - 1
+        pos = pos + 1
+        if brace_depth <= 0 {
+          break
+        }
+      }
+      @token.Token::LeftBrace => {
+        brace_depth = brace_depth + 1
+        pos = pos + 1
+      }
+      @token.Token::EOF => break
+      @token.Token::AtKeyword(_) =>
+        // Skip nested @-rules inside @media
+        pos = skip_at_rule(tokens, pos)
+      _ =>
+        // Try to parse a style rule
+        match parse_style_rule_with_diagnostics(tokens, pos, diagnostics) {
+          Some((selectors, declarations, new_pos)) => {
+            // Add rules with media query for each selector
+            for item in selectors {
+              let selector_text = item.0
+              let selector = item.1
+              stylesheet.add_rule_with_media(
+                selector_text,
+                selector,
+                declarations.copy(),
+                media_query,
+              )
+            }
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  pos
+}
+
+///|
+/// Parse a style rule with diagnostics
+fn parse_style_rule_with_diagnostics(
+  tokens : Array[@token.Token],
+  start : Int,
+  diagnostics : @diagnostics.DiagnosticsCollector,
+) -> (
+  Array[(String, @selector.ComplexSelector)],
+  Array[@cascade.Declaration],
+  Int,
+)? {
+  let mut pos = start
+
+  // Collect selector tokens until '{'
+  let selector_start = pos
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftBrace => break
+      @token.Token::EOF => return None
+      _ => pos = pos + 1
+    }
+  }
+  if pos >= tokens.length() {
+    return None
+  }
+
+  // Extract selector text
+  let selector_text = tokens_to_string(tokens, selector_start, pos)
+
+  // Parse selectors (comma-separated)
+  let selectors = parse_selector_list_text(selector_text)
+  if selectors.is_empty() {
+    return None
+  }
+
+  // Get first selector for diagnostic context
+  let selector_context = if selectors.length() > 0 {
+    selectors[0].0
+  } else {
+    ""
+  }
+
+  // Skip '{'
+  pos = pos + 1
+
+  // Parse declarations until '}'
+  let declarations : Array[@cascade.Declaration] = []
+  let mut decl_order = 0
+  while pos < tokens.length() {
+    pos = skip_ws(tokens, pos)
+    match tokens[pos] {
+      @token.Token::RightBrace => {
+        pos = pos + 1
+        break
+      }
+      @token.Token::EOF => break
+      _ =>
+        // Parse declaration
+        match parse_rule_declaration(tokens, pos) {
+          Some((property, value, importance, new_pos)) => {
+            // Add diagnostic
+            diagnostics.add_property(property, value, selector_context)
+            let decl : @cascade.Declaration = {
+              property,
+              value: @cascade.Value(value),
+              origin: @cascade.Author,
+              importance,
+              specificity: { a: 0, b: 0, c: 0 },
+              source_order: decl_order,
+            }
+            declarations.push(decl)
+            decl_order = decl_order + 1
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  Some((selectors, declarations, pos))
+}

@@ -1,0 +1,75 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/diagnostics"
+
+// Values
+pub fn affects_layout(SupportLevel) -> Bool
+
+pub fn get_support_level(String) -> SupportLevel
+
+pub fn should_warn(SupportLevel) -> Bool
+
+pub fn support_to_severity(SupportLevel) -> Severity
+
+// Errors
+
+// Types and methods
+pub(all) struct Diagnostic {
+  property : String
+  value : String
+  level : SupportLevel
+  severity : Severity
+  selector : String
+}
+pub impl Show for Diagnostic
+
+pub(all) struct DiagnosticSummary {
+  total_properties : Int
+  supported : Int
+  partial : Int
+  unsupported_layout : Int
+  unsupported_visual : Int
+  deprecated : Int
+  unknown : Int
+}
+pub impl Show for DiagnosticSummary
+
+pub struct DiagnosticsCollector {
+  diagnostics : Array[Diagnostic]
+  seen : Map[String, Bool]
+  mut supported_count : Int
+  mut partial_count : Int
+  mut unsupported_layout_count : Int
+  mut unsupported_visual_count : Int
+  mut deprecated_count : Int
+  mut unknown_count : Int
+}
+pub fn DiagnosticsCollector::add_property(Self, String, String, String) -> Unit
+pub fn DiagnosticsCollector::format_compact(Self) -> String
+pub fn DiagnosticsCollector::format_report(Self, Int) -> String
+pub fn DiagnosticsCollector::get_by_severity(Self, Severity) -> Array[Diagnostic]
+pub fn DiagnosticsCollector::get_diagnostics(Self) -> Array[Diagnostic]
+pub fn DiagnosticsCollector::get_layout_affecting(Self) -> Array[Diagnostic]
+pub fn DiagnosticsCollector::get_summary(Self) -> DiagnosticSummary
+pub fn DiagnosticsCollector::new() -> Self
+
+pub(all) enum Severity {
+  Info
+  Warning
+  Error
+}
+pub impl Show for Severity
+
+pub(all) enum SupportLevel {
+  Supported
+  Partial(String)
+  UnsupportedLayout
+  UnsupportedVisual
+  Deprecated(String)
+  Unknown
+}
+pub impl Show for SupportLevel
+
+// Type aliases
+
+// Traits
+

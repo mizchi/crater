@@ -12,6 +12,8 @@ pub fn compute(@cascade.CascadedValues, ComputeContext) -> @style.Style
 
 pub fn compute_inline(String, ComputeContext) -> @style.Style
 
+pub fn compute_with_vars(@cascade.CascadedValues, ComputeContext) -> (@style.Style, Map[String, String])
+
 pub fn default_background_color() -> @types.Color
 
 pub fn default_color() -> @types.Color
@@ -31,6 +33,8 @@ pub fn parse_aspect_ratio(String) -> Double?
 pub fn parse_clear(String) -> @style.Clear
 
 pub fn parse_color(String) -> CssColorValue
+
+pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue
 
 pub fn parse_dimension(String) -> @types.Dimension
 
@@ -69,9 +73,11 @@ pub(all) struct ComputeContext {
   font_size : Double
   viewport_width : Double
   viewport_height : Double
+  custom_properties : Map[String, String]
 }
 pub fn ComputeContext::new() -> Self
 pub fn ComputeContext::with_parent(@style.Style) -> Self
+pub fn ComputeContext::with_parent_and_vars(@style.Style, Map[String, String]) -> Self
 pub fn ComputeContext::with_viewport(Double, Double) -> Self
 
 pub(all) enum CssColorValue {

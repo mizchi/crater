@@ -15,6 +15,8 @@ pub(all) struct ComputeContext {
   viewport_width : Double
   /// Viewport height (for vh units)
   viewport_height : Double
+  /// CSS Custom Properties (variables) - inherited from parent and local
+  custom_properties : Map[String, String]
 }
 
 ///|
@@ -25,6 +27,7 @@ pub fn ComputeContext::new() -> ComputeContext {
     font_size: 16.0,
     viewport_width: 1920.0,
     viewport_height: 1080.0,
+    custom_properties: {},
   }
 }
 
@@ -36,6 +39,28 @@ pub fn ComputeContext::with_parent(parent : @style.Style) -> ComputeContext {
     font_size: 16.0,
     viewport_width: 1920.0,
     viewport_height: 1080.0,
+    custom_properties: {},
+  }
+}
+
+///|
+/// Create context with parent style and inherited custom properties
+pub fn ComputeContext::with_parent_and_vars(
+  parent : @style.Style,
+  parent_vars : Map[String, String],
+) -> ComputeContext {
+  // Copy parent vars for inheritance (custom properties inherit by default)
+  let vars : Map[String, String] = {}
+  for k, v in parent_vars {
+    vars[k] = v
+  }
+  {
+    parent_style: Some(parent),
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: vars,
   }
 }
 
@@ -51,6 +76,7 @@ pub fn ComputeContext::with_viewport(
     font_size: 16.0,
     viewport_width,
     viewport_height,
+    custom_properties: {},
   }
 }
 
@@ -385,21 +411,81 @@ pub fn compute(
 ) -> @style.Style {
   let builder = StyleBuilder::new()
 
-  // Process each property
+  // First pass: collect custom properties (--*)
+  // Custom properties are stored in the context for var() resolution
   let props = cascaded.properties()
   for prop in props {
-    match cascaded.get(prop) {
-      Some(decl) => {
-        let value = resolve_keyword(prop, decl.value, ctx)
-        apply_property(builder, prop, value, ctx)
+    if prop.has_prefix("--") {
+      match cascaded.get(prop) {
+        Some(decl) => {
+          let value = resolve_keyword(prop, decl.value, ctx)
+          // Store custom property in context
+          ctx.custom_properties[prop] = value
+        }
+        None => ()
       }
-      None => ()
+    }
+  }
+
+  // Second pass: apply regular properties with var() resolution
+  for prop in props {
+    if not(prop.has_prefix("--")) {
+      match cascaded.get(prop) {
+        Some(decl) => {
+          let value = resolve_keyword(prop, decl.value, ctx)
+          apply_property(builder, prop, value, ctx)
+        }
+        None => ()
+      }
     }
   }
 
   // Handle inheritance for inherited properties
   apply_inheritance(builder, cascaded, ctx)
   builder.build()
+}
+
+///|
+/// Compute a Style and return updated custom properties
+/// Used when building a style tree to pass custom properties to children
+pub fn compute_with_vars(
+  cascaded : @cascade.CascadedValues,
+  ctx : ComputeContext,
+) -> (@style.Style, Map[String, String]) {
+  let builder = StyleBuilder::new()
+
+  // First pass: collect custom properties (--*)
+  let props = cascaded.properties()
+  for prop in props {
+    if prop.has_prefix("--") {
+      match cascaded.get(prop) {
+        Some(decl) => {
+          let value = resolve_keyword(prop, decl.value, ctx)
+          ctx.custom_properties[prop] = value
+        }
+        None => ()
+      }
+    }
+  }
+
+  // Second pass: apply regular properties
+  for prop in props {
+    if not(prop.has_prefix("--")) {
+      match cascaded.get(prop) {
+        Some(decl) => {
+          let value = resolve_keyword(prop, decl.value, ctx)
+          apply_property(builder, prop, value, ctx)
+        }
+        None => ()
+      }
+    }
+  }
+
+  // Handle inheritance
+  apply_inheritance(builder, cascaded, ctx)
+
+  // Return both the style and the custom properties for children
+  (builder.build(), ctx.custom_properties)
 }
 
 ///|
@@ -474,6 +560,21 @@ fn apply_property(
     "margin-right" => builder.margin_right = resolve_dimension(value, ctx)
     "margin-bottom" => builder.margin_bottom = resolve_dimension(value, ctx)
     "margin-left" => builder.margin_left = resolve_dimension(value, ctx)
+    // Logical margin properties (LTR horizontal-tb writing mode)
+    "margin-inline" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.margin_left = dim
+      builder.margin_right = dim
+    }
+    "margin-inline-start" => builder.margin_left = resolve_dimension(value, ctx)
+    "margin-inline-end" => builder.margin_right = resolve_dimension(value, ctx)
+    "margin-block" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.margin_top = dim
+      builder.margin_bottom = dim
+    }
+    "margin-block-start" => builder.margin_top = resolve_dimension(value, ctx)
+    "margin-block-end" => builder.margin_bottom = resolve_dimension(value, ctx)
     "padding-top" => builder.padding_top = resolve_dimension(value, ctx)
     "padding-right" => builder.padding_right = resolve_dimension(value, ctx)
     "padding-bottom" => builder.padding_bottom = resolve_dimension(value, ctx)
@@ -492,11 +593,18 @@ fn apply_property(
       builder.padding_top = dim
       builder.padding_bottom = dim
     }
+    "padding-block-start" => builder.padding_top = resolve_dimension(value, ctx)
+    "padding-block-end" =>
+      builder.padding_bottom = resolve_dimension(value, ctx)
     "padding-inline" => {
       let dim = resolve_dimension(value, ctx)
       builder.padding_left = dim
       builder.padding_right = dim
     }
+    "padding-inline-start" =>
+      builder.padding_left = resolve_dimension(value, ctx)
+    "padding-inline-end" =>
+      builder.padding_right = resolve_dimension(value, ctx)
     "border-width" => {
       // Shorthand: border-width (1, 2, 3, or 4 values)
       let parts = value.trim().to_string().split(" ")
@@ -557,11 +665,19 @@ fn apply_property(
       builder.border_top = width
       builder.border_bottom = width
     }
+    "border-block-start" | "border-block-start-width" =>
+      builder.border_top = extract_border_width(value)
+    "border-block-end" | "border-block-end-width" =>
+      builder.border_bottom = extract_border_width(value)
     "border-inline" | "border-inline-width" => {
       let width = extract_border_width(value)
       builder.border_left = width
       builder.border_right = width
     }
+    "border-inline-start" | "border-inline-start-width" =>
+      builder.border_left = extract_border_width(value)
+    "border-inline-end" | "border-inline-end-width" =>
+      builder.border_right = extract_border_width(value)
     // Flexbox container
     "flex-direction" => builder.flex_direction = parse_flex_direction(value)
     "flex-wrap" => builder.flex_wrap = parse_flex_wrap(value)
@@ -733,6 +849,28 @@ fn apply_property(
     "right" => builder.inset_right = resolve_dimension(value, ctx)
     "bottom" => builder.inset_bottom = resolve_dimension(value, ctx)
     "left" => builder.inset_left = resolve_dimension(value, ctx)
+    "inset" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.inset_top = dim
+      builder.inset_right = dim
+      builder.inset_bottom = dim
+      builder.inset_left = dim
+    }
+    // Logical inset properties (LTR horizontal-tb writing mode)
+    "inset-inline" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.inset_left = dim
+      builder.inset_right = dim
+    }
+    "inset-inline-start" => builder.inset_left = resolve_dimension(value, ctx)
+    "inset-inline-end" => builder.inset_right = resolve_dimension(value, ctx)
+    "inset-block" => {
+      let dim = resolve_dimension(value, ctx)
+      builder.inset_top = dim
+      builder.inset_bottom = dim
+    }
+    "inset-block-start" => builder.inset_top = resolve_dimension(value, ctx)
+    "inset-block-end" => builder.inset_bottom = resolve_dimension(value, ctx)
     // Aspect ratio
     "aspect-ratio" => builder.aspect_ratio = parse_aspect_ratio(value)
     // Overflow
@@ -784,7 +922,7 @@ fn apply_property(
     "opacity" => builder.opacity = parse_opacity(value)
     // Color properties
     "color" => {
-      let parsed = parse_color(value)
+      let parsed = parse_color_with_ctx(value, ctx)
       match parsed {
         Resolved(c) => builder.color = c
         CurrentColor =>
@@ -802,7 +940,7 @@ fn apply_property(
     }
     "background-color" | "background" => {
       // For background shorthand, we only extract the color part
-      let parsed = parse_color(value)
+      let parsed = parse_color_with_ctx(value, ctx)
       match parsed {
         Resolved(c) => builder.background_color = c
         CurrentColor =>
@@ -1131,9 +1269,132 @@ fn parse_calc_string(expr : String) -> @types.Dimension? {
 }
 
 ///|
+/// Resolve CSS var() function with context lookup
+/// Looks up variable in context, falls back to provided fallback value if not found
+fn resolve_var(value : String, ctx : ComputeContext) -> String {
+  let v = value.trim().to_string()
+  if not(v.has_prefix("var(")) || not(v.has_suffix(")")) {
+    return v
+  }
+  // Extract content inside var(...) - skip "var(" (4 chars) and ")" (1 char)
+  let inner : String = v[4:v.length() - 1].to_string() catch { _ => return v }
+  // Find the comma separating variable name from fallback
+  // Need to handle nested var() and other functions
+  let mut paren_depth = 0
+  let mut comma_pos = -1
+  for i = 0; i < inner.length(); i = i + 1 {
+    let c = inner[i].to_int().unsafe_to_char()
+    if c == '(' {
+      paren_depth += 1
+    } else if c == ')' {
+      paren_depth -= 1
+    } else if c == ',' && paren_depth == 0 {
+      comma_pos = i
+      break
+    }
+  }
+  // Extract variable name as String
+  let var_name : String = if comma_pos > 0 {
+    let slice = inner[:comma_pos].to_string() catch { _ => inner }
+    slice.trim().to_string()
+  } else {
+    inner.trim().to_string()
+  }
+  // Look up variable in context
+  match ctx.custom_properties.get(var_name) {
+    Some(var_value) =>
+      // Variable found - recursively resolve if it contains var()
+      if var_value.contains("var(") {
+        resolve_var(var_value, ctx)
+      } else {
+        var_value
+      }
+    None =>
+      // Variable not found - use fallback if available
+      if comma_pos > 0 {
+        let fallback_slice = inner[comma_pos + 1:].to_string() catch {
+          _ => return ""
+        }
+        let fallback = fallback_slice.trim().to_string()
+        // Recursively resolve fallback (it may also contain var())
+        resolve_var(fallback, ctx)
+      } else {
+        // No fallback and no variable - return empty (invalid value)
+        ""
+      }
+  }
+}
+
+///|
+/// Resolve all var() references in a value string
+fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
+  let v = value.trim()
+  // If no var() in value, return as-is
+  if not(v.contains("var(")) {
+    return v.to_string()
+  }
+  // Simple case: entire value is a var()
+  if v.has_prefix("var(") && v.has_suffix(")") {
+    // Check if there's only one var() (no content after)
+    let mut depth = 0
+    let mut end_pos = 0
+    for i = 0; i < v.length(); i = i + 1 {
+      let c = v[i].to_int().unsafe_to_char()
+      if c == '(' {
+        depth += 1
+      } else if c == ')' {
+        depth -= 1
+        if depth == 0 {
+          end_pos = i
+          break
+        }
+      }
+    }
+    if end_pos == v.length() - 1 {
+      // Entire value is a single var()
+      return resolve_var(v.to_string(), ctx)
+    }
+  }
+  // Complex case: var() embedded in value like "10px var(--gap) 20px"
+  // Need to replace each var() with its resolved value
+  let result = StringBuilder::new()
+  let mut i = 0
+  while i < v.length() {
+    // Look for "var("
+    if i + 4 <= v.length() {
+      let substr = v[i:i + 4].to_string() catch { _ => "" }
+      if substr == "var(" {
+        // Find matching closing paren
+        let mut depth = 1
+        let mut j = i + 4
+        while j < v.length() && depth > 0 {
+          let c = v[j].to_int().unsafe_to_char()
+          if c == '(' {
+            depth += 1
+          } else if c == ')' {
+            depth -= 1
+          }
+          j += 1
+        }
+        // Extract and resolve the var()
+        let var_expr = v[i:j].to_string() catch { _ => "" }
+        let resolved = resolve_var(var_expr, ctx)
+        result.write_string(resolved)
+        i = j
+        continue
+      }
+    }
+    result.write_char(v[i].to_int().unsafe_to_char())
+    i += 1
+  }
+  result.to_string()
+}
+
+///|
 /// Resolve dimension with relative unit conversion
 fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
-  let v = value.trim()
+  // First resolve any var() functions
+  let v = resolve_all_vars(value, ctx).trim()
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
   }
@@ -1331,7 +1592,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   }
 
   // Fall back to simple dimension parsing (px, %)
-  parse_dimension(value)
+  parse_dimension(v.to_string())
 }
 
 ///|

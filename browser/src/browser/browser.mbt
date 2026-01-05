@@ -126,7 +126,126 @@ async fn fetch_external_css(html : String, base_url : String) -> Array[String] {
   println(
     "Loaded " + css_contents.length().to_string() + " stylesheets",
   )
+  // Analyze CSS support
+  analyze_css_support(css_contents)
   css_contents
+}
+
+///|
+/// Analyze CSS support and print diagnostics
+fn analyze_css_support(css_list : Array[String]) -> Unit {
+  // Aggregate summaries from all stylesheets
+  let mut total = 0
+  let mut supported = 0
+  let mut partial = 0
+  let mut unsupported_layout = 0
+  let mut unsupported_visual = 0
+  let mut deprecated = 0
+  let mut unknown = 0
+  let all_diagnostics : Array[@diagnostics.Diagnostic] = []
+  let seen : Map[String, Bool] = {}
+  // Parse all CSS with diagnostics
+  for css in css_list {
+    let result = @parser.parse_stylesheet_with_diagnostics(css)
+    let summary = result.diagnostics.get_summary()
+    // Aggregate counts
+    total += summary.total_properties
+    supported += summary.supported
+    partial += summary.partial
+    unsupported_layout += summary.unsupported_layout
+    unsupported_visual += summary.unsupported_visual
+    deprecated += summary.deprecated
+    unknown += summary.unknown
+    // Collect unique diagnostics (non-supported only)
+    for diag in result.diagnostics.get_diagnostics() {
+      let key = diag.property + ":" + diag.value
+      if not(seen.contains(key)) {
+        seen.set(key, true)
+        all_diagnostics.push(diag)
+      }
+    }
+  }
+  // Print compact summary
+  let buf = StringBuilder::new()
+  buf.write_string("\nCSS: ")
+  buf.write_string(supported.to_string())
+  buf.write_string(" ok")
+  if partial > 0 {
+    buf.write_string(", ")
+    buf.write_string(partial.to_string())
+    buf.write_string(" partial")
+  }
+  if unsupported_visual > 0 {
+    buf.write_string(", ")
+    buf.write_string(unsupported_visual.to_string())
+    buf.write_string(" visual-only")
+  }
+  if unsupported_layout > 0 {
+    buf.write_string(", ")
+    buf.write_string(unsupported_layout.to_string())
+    buf.write_string(" layout!")
+  }
+  if unknown > 0 {
+    buf.write_string(", ")
+    buf.write_string(unknown.to_string())
+    buf.write_string(" unknown!")
+  }
+  println(buf.to_string())
+  // Print detailed report if there are issues
+  if unsupported_layout > 0 || unknown > 0 {
+    println("=== CSS Support Report ===")
+    println("Total properties: " + total.to_string())
+    println("  Supported: " + supported.to_string())
+    if partial > 0 {
+      println("  Partial: " + partial.to_string())
+    }
+    if unsupported_visual > 0 {
+      println("  Unsupported (visual): " + unsupported_visual.to_string())
+    }
+    if unsupported_layout > 0 {
+      println("  Unsupported (layout): " + unsupported_layout.to_string() + " [WARNING]")
+    }
+    if unknown > 0 {
+      println("  Unknown: " + unknown.to_string() + " [ERROR]")
+    }
+    // Print first few layout-affecting issues
+    let layout_issues : Array[@diagnostics.Diagnostic] = []
+    for diag in all_diagnostics {
+      if @diagnostics.affects_layout(diag.level) {
+        layout_issues.push(diag)
+      }
+    }
+    if layout_issues.length() > 0 {
+      println("\n--- Layout-affecting issues ---")
+      let count = if layout_issues.length() > 10 { 10 } else { layout_issues.length() }
+      for i = 0; i < count; i = i + 1 {
+        let diag = layout_issues[i]
+        println("  " + diag.property + ": " + diag.value)
+      }
+      if layout_issues.length() > 10 {
+        println("  ... and " + (layout_issues.length() - 10).to_string() + " more")
+      }
+    }
+    // Print first few unknown properties
+    let unknown_props : Array[@diagnostics.Diagnostic] = []
+    for diag in all_diagnostics {
+      match diag.level {
+        @diagnostics.Unknown => unknown_props.push(diag)
+        _ => ()
+      }
+    }
+    if unknown_props.length() > 0 {
+      println("\n--- Unknown properties ---")
+      let count = if unknown_props.length() > 10 { 10 } else { unknown_props.length() }
+      for i = 0; i < count; i = i + 1 {
+        let diag = unknown_props[i]
+        println("  " + diag.property + ": " + diag.value)
+      }
+      if unknown_props.length() > 10 {
+        println("  ... and " + (unknown_props.length() - 10).to_string() + " more")
+      }
+    }
+  }
 }
 
 ///|

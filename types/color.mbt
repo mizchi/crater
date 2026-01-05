@@ -55,11 +55,21 @@ pub fn Color::is_opaque(self : Color) -> Bool {
 ///|
 /// Convert to CSS hex string (#rrggbb or #rrggbbaa)
 pub fn Color::to_hex(self : Color) -> String {
+  fn hex_char(n : Int) -> Char {
+    if n < 10 {
+      ('0'.to_int() + n).unsafe_to_char()
+    } else {
+      ('a'.to_int() + n - 10).unsafe_to_char()
+    }
+  }
+
   fn hex2(n : Int) -> String {
     let hi = n / 16 % 16
     let lo = n % 16
-    let chars = "0123456789abcdef"
-    chars[hi].to_string() + chars[lo].to_string()
+    let sb = StringBuilder::new()
+    sb.write_char(hex_char(hi))
+    sb.write_char(hex_char(lo))
+    sb.to_string()
   }
 
   let rgb = "#" + hex2(self.r) + hex2(self.g) + hex2(self.b)

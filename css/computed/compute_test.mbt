@@ -132,6 +132,7 @@ test "compute_inline relative units em" {
     font_size: 20.0, // 20px font
     viewport_width: 1920.0,
     viewport_height: 1080.0,
+    custom_properties: {},
   }
   let style = @computed.compute_inline("width: 2em", ctx)
   // 2em * 20px = 40px
@@ -146,6 +147,7 @@ test "compute_inline relative units rem" {
     font_size: 20.0,
     viewport_width: 1920.0,
     viewport_height: 1080.0,
+    custom_properties: {},
   }
   let style = @computed.compute_inline("width: 2rem", ctx)
   // 2rem * 16px = 32px
@@ -160,6 +162,7 @@ test "compute_inline viewport units" {
     font_size: 16.0,
     viewport_width: 1000.0,
     viewport_height: 800.0,
+    custom_properties: {},
   }
   let style = @computed.compute_inline("width: 50vw; height: 25vh", ctx)
   // 50vw = 50% of 1000px = 500px
@@ -293,6 +296,7 @@ test "compute_inline vmin and vmax units" {
     font_size: 16.0,
     viewport_width: 1000.0,
     viewport_height: 800.0,
+    custom_properties: {},
   }
 
   // vmin = min(1000, 800) = 800, so 50vmin = 400px
@@ -312,6 +316,7 @@ test "compute_inline ch and ex units" {
     font_size: 20.0, // 20px font
     viewport_width: 1920.0,
     viewport_height: 1080.0,
+    custom_properties: {},
   }
 
   // ch ≈ 0.5em, so 4ch with 20px font = 4 * 20 * 0.5 = 40px
@@ -410,4 +415,112 @@ test "compute_inline nested math functions" {
     "width: min(max(50px, 100px), 80px)", ctx,
   )
   assert_true(style2.width.eq_length(80.0))
+}
+
+// =============================================================================
+// CSS Custom Properties (Variables) Tests
+// =============================================================================
+
+///|
+test "css variables - basic resolution" {
+  // Create context with pre-defined custom properties
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: { "--my-width": "100px", "--my-margin": "20px" },
+  }
+  // Use var() to reference custom property
+  let style = @computed.compute_inline("width: var(--my-width)", ctx)
+  inspect(style.width, content="Length(100)")
+  let style2 = @computed.compute_inline("margin-left: var(--my-margin)", ctx)
+  inspect(style2.margin.left, content="Length(20)")
+}
+
+///|
+test "css variables - fallback value" {
+  // Create context without the referenced variable
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: {},
+  }
+  // Use var() with fallback
+  let style = @computed.compute_inline("width: var(--undefined, 50px)", ctx)
+  inspect(style.width, content="Length(50)")
+}
+
+///|
+test "css variables - defined variable takes precedence over fallback" {
+  // Variable is defined, fallback should be ignored
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: { "--my-size": "200px" },
+  }
+  let style = @computed.compute_inline("width: var(--my-size, 50px)", ctx)
+  inspect(style.width, content="Length(200)")
+}
+
+///|
+test "css variables - nested var() in fallback" {
+  // Fallback can contain another var()
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: { "--fallback-size": "75px" },
+  }
+  // --undefined is not set, so fallback to var(--fallback-size)
+  let style = @computed.compute_inline(
+    "width: var(--undefined, var(--fallback-size))", ctx,
+  )
+  inspect(style.width, content="Length(75)")
+}
+
+///|
+test "css variables - chained variable references" {
+  // One variable references another
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: {
+      "--base-size": "50px",
+      "--derived-size": "var(--base-size)",
+    },
+  }
+  // Resolving --derived-size should resolve to --base-size value
+  let style = @computed.compute_inline("width: var(--derived-size)", ctx)
+  inspect(style.width, content="Length(50)")
+}
+
+///|
+test "css variables - color values" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: { "--primary-color": "#ff0000", "--bg-color": "blue" },
+  }
+  let style = @computed.compute_inline("color: var(--primary-color)", ctx)
+  inspect(style.color.to_hex(), content="#ff0000")
+  let style2 = @computed.compute_inline(
+    "background-color: var(--bg-color)", ctx,
+  )
+  inspect(style2.background_color.to_hex(), content="#0000ff")
 }

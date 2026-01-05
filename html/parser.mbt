@@ -323,13 +323,13 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
       let _ = self.consume() // opening quote
       let s = self.consume_until('"')
       let _ = self.consume() // closing quote
-      s
+      decode_html_entities(s)
     }
     Some('\'') => {
       let _ = self.consume() // opening quote
       let s = self.consume_until('\'')
       let _ = self.consume() // closing quote
-      s
+      decode_html_entities(s)
     }
     _ => self.consume_name()
   }

@@ -30,6 +30,7 @@ const CSS_MODULES = [
   "css-position",
   "css-overflow",
   "css-contain",
+  "css-variables",
 ];
 
 // Test file prefixes to include (layout-relevant tests)
@@ -79,6 +80,14 @@ const INCLUDE_PREFIXES = [
   "overflow-",
   // Containment
   "contain-",
+  // CSS Variables (Custom Properties)
+  "var-",
+  "variable-",
+  "custom-property",
+  "registered-",
+  "css-variable",
+  "inherit-",
+  "fallback-",
 ];
 
 interface GitHubFile {

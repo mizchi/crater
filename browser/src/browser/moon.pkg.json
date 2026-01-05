@@ -3,6 +3,8 @@
     "mizchi/crater-browser/src/http",
     "mizchi/crater/renderer",
     "mizchi/crater/renderer/sixel",
-    "mizchi/crater/html"
+    "mizchi/crater/html",
+    "mizchi/crater/css/parser",
+    "mizchi/crater/css/diagnostics"
   ]
 }

@@ -3,6 +3,7 @@ package "mizchi/crater/css/parser"
 
 import(
   "mizchi/crater/css/cascade"
+  "mizchi/crater/css/diagnostics"
   "mizchi/crater/style"
 )
 
@@ -11,9 +12,15 @@ pub fn parse_inline_style(String) -> @style.Style
 
 pub fn parse_stylesheet(String) -> @cascade.Stylesheet
 
+pub fn parse_stylesheet_with_diagnostics(String) -> ParseResult
+
 // Errors
 
 // Types and methods
+pub(all) struct ParseResult {
+  stylesheet : @cascade.Stylesheet
+  diagnostics : @diagnostics.DiagnosticsCollector
+}
 
 // Type aliases
 
