@@ -791,3 +791,53 @@ fn find_headings_recursive(
     find_headings_recursive(child, result)
   }
 }
+
+// =============================================================================
+// LayoutTree Integration
+// =============================================================================
+
+///|
+/// Extract bounds from LayoutTree node map into a Map[String, Bounds]
+/// Uses the layout node's id as key (which corresponds to HTML element id)
+pub fn extract_bounds_from_layout(
+  layout_tree : @tree.LayoutTree,
+) -> Map[String, Bounds] {
+  let bounds_map : Map[String, Bounds] = {}
+  extract_bounds_recursive(layout_tree.root, bounds_map)
+  bounds_map
+}
+
+///|
+fn extract_bounds_recursive(
+  node : @tree.LayoutNode,
+  bounds_map : Map[String, Bounds],
+) -> Unit {
+  // Add bounds for this node if it has a non-empty id
+  if not(node.id.is_empty()) {
+    bounds_map[node.id] = Bounds::new(
+      node.computed_x,
+      node.computed_y,
+      node.computed_width,
+      node.computed_height,
+    )
+  }
+  // Recurse into children
+  for child in node.children {
+    extract_bounds_recursive(child, bounds_map)
+  }
+}
+
+///|
+/// Build AccessibilityTree from HTML and attach layout bounds from LayoutTree
+/// This is the main integration function for combining a11y and layout
+pub fn build_accessibility_tree_with_layout(
+  doc : @html.Document,
+  layout_tree : @tree.LayoutTree,
+) -> AccessibilityTree {
+  // Build accessibility tree
+  let a11y_tree = build_accessibility_tree(doc)
+  // Extract bounds from layout tree
+  let bounds_map = extract_bounds_from_layout(layout_tree)
+  // Attach bounds to accessibility nodes
+  attach_bounds(a11y_tree, bounds_map)
+}
