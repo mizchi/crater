@@ -114,6 +114,59 @@ Pure MoonBit implementation of CSS layout calculation.
 4. **Phase 4**: Inline layout ✅ (inline, inline-block, IFC)
 5. **Phase 5**: Float (simplified, if needed)
 
+## Scheduler Module ✅
+
+Browser の Event Loop / Task Scheduler に相当するモジュール。HTML/CSS/Layout の評価タスクをキュー管理し、依存関係を解決する。
+
+### 実装状況
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 1: 基本型定義 | ✅ | TaskId, TaskSource, TaskConstraint, TaskState, TaskAction, Task, TaskResult |
+| Phase 2: キュー管理 | ✅ | TaskQueue, SourceQueueManager, 優先度ソート |
+| Phase 3: スケジューラ本体 | ✅ | enqueue, poll_ready, complete, 依存解決, ブロック管理 |
+| Phase 4: 統合 | ✅ | HTML Parser, CSS Cascade, LayoutTree, ResourceId |
+
+### ファイル構成
+
+```
+scheduler/
+├── task.mbt               # Task型定義
+├── queue.mbt              # TaskQueue管理
+├── scheduler.mbt          # Scheduler本体
+├── html_integration.mbt   # HTML Parser統合
+├── css_integration.mbt    # CSS Cascade統合
+├── layout_integration.mbt # LayoutTree統合
+└── task_wbtest.mbt        # テスト (48テスト)
+```
+
+### 主要コンポーネント
+
+| Component | Description |
+|-----------|-------------|
+| `Scheduler` | タスクキュー管理、依存解決、ポーリング |
+| `DocumentParser` | HTML パースとリソース発見 |
+| `StyleManager` | スタイルシート管理、カスケード計算 |
+| `LayoutManager` | LayoutTree 管理、レイアウトスケジューリング |
+| `DocumentRenderCoordinator` | HTML/CSS/Layout 統合パイプライン |
+
+### 設計方針
+
+1. **外部委譲**: ネットワーク、非同期ランタイム、スクリプト実行は外部に委譲
+2. **内部実行**: スタイル計算、レイアウト計算は同期的に内部実行可能
+3. **依存グラフ**: タスク間の依存関係を明示的に管理
+4. **並列性判定**: 各タスクに並列実行可能かのフラグを付与
+
+### 統合パイプライン
+
+```
+HTML Parser → CSS Parser → Style Cascade → Layout Tree
+     ↓            ↓              ↓              ↓
+  タスク生成    タスク生成    スタイル計算    レイアウト計算
+     ↓            ↓              ↓              ↓
+  Scheduler が全てのタスクを管理・依存解決・実行順序決定
+```
+
 ## Unsupported Features Policy
 
 ### Float
