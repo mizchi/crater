@@ -24,12 +24,14 @@ HTML評価のタスクをキュー管理し、並列実行可能性を判定す�
 
 ```
 scheduler/
-├── README.md          # このファイル
-├── moon.pkg.json      # パッケージ設定
-├── task.mbt           # Task型定義
-├── queue.mbt          # TaskQueue管理
-├── scheduler.mbt      # Scheduler本体
-└── task_test.mbt      # テスト
+├── README.md              # このファイル
+├── moon.pkg.json          # パッケージ設定
+├── pkg.generated.mbti     # 生成された型定義
+├── task.mbt               # Task型定義
+├── queue.mbt              # TaskQueue管理
+├── scheduler.mbt          # Scheduler本体
+├── html_integration.mbt   # HTML Parser統合
+└── task_wbtest.mbt        # テスト (25テスト)
 ```
 
 ## 実装計画
@@ -66,9 +68,9 @@ scheduler/
 - [x] `apply_blocks` / `is_source_blocked` - ブロック管理
 - [x] `cleanup` - 完了タスクのクリーンアップ
 
-### Phase 4: 統合 (TODO)
+### Phase 4: 統合
 
-- [ ] HTML Parser との統合
+- [x] HTML Parser との統合 (html_integration.mbt)
 - [ ] CSS Cascade との統合
 - [ ] LayoutTree との統合
 - [ ] ResourceId との連携
