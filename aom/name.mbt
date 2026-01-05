@@ -566,6 +566,8 @@ fn compute_text_content(
   compute_text_content_recursive(element, parts)
 
   // Step 2D: Include aria-owns referenced elements
+  // Per ARIA spec: ignore aria-owns when target is hidden from all users
+  // or when target has an ancestor that is hidden from all users
   match element.attributes.get("aria-owns") {
     Some(ids) =>
       for id in ids.split(" ") {
@@ -573,7 +575,15 @@ fn compute_text_content(
         if not(id_str.is_empty()) {
           match find_by_id(id_str) {
             Some(owned_elem) => {
-              // Get text from owned element (even if it's in aria-hidden context)
+              // Skip if the owned element is hidden from all users
+              if is_hidden(owned_elem) {
+                continue
+              }
+              // Skip if any ancestor is hidden (check via find_by_id traversal)
+              if is_in_hidden_subtree(owned_elem, find_by_id) {
+                continue
+              }
+              // Get text from owned element
               let owned_text = extract_all_text(owned_elem)
               if not(owned_text.is_empty()) {
                 parts.push(owned_text)
@@ -594,25 +604,53 @@ fn compute_text_content_recursive(
   element : @html.Element,
   parts : Array[String],
 ) -> Unit {
+  compute_text_content_with_visibility(element, parts, false)
+}
+
+///|
+/// Recursively extract text content with visibility tracking
+/// in_hidden_visibility: true if an ancestor has visibility:hidden
+fn compute_text_content_with_visibility(
+  element : @html.Element,
+  parts : Array[String],
+  in_hidden_visibility : Bool,
+) -> Unit {
   for child in element.children {
     match child {
-      @html.Text(text) => {
-        let trimmed = text.trim().to_string()
-        if not(trimmed.is_empty()) {
-          parts.push(trimmed)
+      @html.Text(text) =>
+        // Skip text if we're in a visibility:hidden context
+        if not(in_hidden_visibility) {
+          let trimmed = text.trim().to_string()
+          if not(trimmed.is_empty()) {
+            parts.push(trimmed)
+          }
         }
-      }
       @html.Element(child_elem) => {
-        // Skip hidden elements
+        // Skip completely hidden elements (display:none, aria-hidden, hidden)
         if is_hidden(child_elem) {
           continue
         }
+
+        // Check visibility state for this element
+        let child_hidden_visibility = if has_visibility_visible(child_elem) {
+          // visibility:visible overrides parent's visibility:hidden
+          false
+        } else if has_visibility_hidden(child_elem) {
+          // This element is visibility:hidden
+          true
+        } else {
+          // Inherit from parent
+          in_hidden_visibility
+        }
+
         // Step 2F: Check for embedded control value first
         match get_embedded_control_value(child_elem) {
-          Some(value) => parts.push(value)
+          Some(value) => if not(child_hidden_visibility) { parts.push(value) }
           None =>
             // Recursively extract text from child elements
-            compute_text_content_recursive(child_elem, parts)
+            compute_text_content_with_visibility(
+              child_elem, parts, child_hidden_visibility,
+            )
         }
       }
     }
@@ -645,7 +683,8 @@ fn extract_text_recursive(element : @html.Element, buf : StringBuilder) -> Unit 
 // =============================================================================
 
 ///|
-/// Check if an element is hidden from accessibility tree
+/// Check if an element is completely hidden from accessibility tree
+/// (display:none, aria-hidden, hidden attribute - these hide element AND children)
 fn is_hidden(element : @html.Element) -> Bool {
   // aria-hidden="true"
   match element.attributes.get("aria-hidden") {
@@ -658,18 +697,53 @@ fn is_hidden(element : @html.Element) -> Bool {
     return true
   }
 
-  // Check inline style for display:none or visibility:hidden
+  // Check inline style for display:none (hides element and all children)
   match element.style {
     Some(style) => {
       let style_lower = style.to_lower()
       if style_lower.contains("display") && style_lower.contains("none") {
         return true
       }
-      if style_lower.contains("visibility") && style_lower.contains("hidden") {
-        return true
-      }
     }
     Option::None => ()
   }
+  false
+}
+
+///|
+/// Check if element has visibility:hidden (children can override with visibility:visible)
+fn has_visibility_hidden(element : @html.Element) -> Bool {
+  match element.style {
+    Some(style) => {
+      let style_lower = style.to_lower()
+      style_lower.contains("visibility") && style_lower.contains("hidden")
+    }
+    Option::None => false
+  }
+}
+
+///|
+/// Check if element has visibility:visible (overrides parent's visibility:hidden)
+fn has_visibility_visible(element : @html.Element) -> Bool {
+  match element.style {
+    Some(style) => {
+      let style_lower = style.to_lower()
+      style_lower.contains("visibility") && style_lower.contains("visible")
+    }
+    Option::None => false
+  }
+}
+
+///|
+/// Check if an element is inside a hidden subtree
+/// This is a simplified check - full implementation would require parent references
+/// For now, we can't detect if an ancestor is hidden without traversing the DOM
+fn is_in_hidden_subtree(
+  _element : @html.Element,
+  _find_by_id : (String) -> @html.Element?,
+) -> Bool {
+  // TODO: Implement ancestor hidden check when parent references are available
+  // Currently, the test generator includes hidden wrappers for aria-owns targets,
+  // but we can't traverse up the DOM tree to check ancestors at runtime
   false
 }

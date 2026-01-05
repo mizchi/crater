@@ -590,10 +590,24 @@ function generateAccnameTests(): string {
       for (const ownsId of ariaOwnsIds) {
         if (ownsId.trim()) {
           // Find the element with this id in the full HTML
+          // Also check if it has a hidden ancestor
           const ownsRegex = new RegExp(`<[^>]+id="${ownsId}"[^>]*>([\\s\\S]*?)</[^>]+>`, "i");
           const ownsMatch = html.match(ownsRegex);
           if (ownsMatch) {
-            const singleLine = ownsMatch[0].replace(/[\r\n]+/g, " ").replace(/\s+/g, " ");
+            // Check for hidden ancestor by looking for <...hidden...> before the match
+            const beforeMatch = html.substring(0, ownsMatch.index!);
+            const hiddenDivMatch = beforeMatch.match(/<div[^>]*hidden[^>]*>\s*$/i);
+            const hiddenSpanMatch = beforeMatch.match(/<span[^>]*hidden[^>]*>\s*$/i);
+
+            let elementHtml = ownsMatch[0];
+            if (hiddenDivMatch) {
+              // Wrap the element in a hidden div
+              elementHtml = `<div hidden>${ownsMatch[0]}</div>`;
+            } else if (hiddenSpanMatch) {
+              elementHtml = `<span hidden>${ownsMatch[0]}</span>`;
+            }
+
+            const singleLine = elementHtml.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ");
             ariaOwnsElements += `    #|  ${singleLine}\n`;
           }
         }

@@ -7,7 +7,7 @@
 test "accname: A button using aria-owns to specify its label" {
   let html =
     #|<div>
-    #|  <span id="play">Play</span>
+    #|  <div hidden><span id="play">Play</span></div>
     #|  <button aria-owns="play" > <div aria-hidden="true"> <span id="play">Play</span> <span id="pause">Pause</span> </div> </button>
     #|</div>
   let doc = @html.parse_document(html)
@@ -22,7 +22,7 @@ test "accname: A button using aria-owns to specify its label" {
 test "accname: A link using aria-owns to concatenate extra text" {
   let html =
     #|<div>
-    #|  <span id="new-window-warning-1"> (opens in a new window)</span>
+    #|  <div hidden><span id="new-window-warning-1"> (opens in a new window)</span></div>
     #|  <a href="https://www.w3.org/" target="_blank" aria-owns="new-window-warning-1" > World Wide Web Consortium </a>
     #|</div>
   let doc = @html.parse_document(html)
@@ -101,7 +101,7 @@ test "accname: Ignore aria-owns when it targets an element that is hidden from a
 test "accname: Ignore aria-owns when it targets an element with an ancestor that is hidden from all users" {
   let html =
     #|<div>
-    #|  <span id="new-window-warning-3"> (opens in a new window)</span>
+    #|  <div hidden><span id="new-window-warning-3"> (opens in a new window)</span></div>
     #|  <a href="https://www.w3.org/" aria-owns="new-window-warning-3" > World Wide Web Consortium </a>
     #|</div>
   let doc = @html.parse_document(html)
