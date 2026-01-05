@@ -350,6 +350,8 @@ fn TreeBuilder::foster_parent_character(self : TreeBuilder, c : Char) -> Unit {
 ///|
 /// Pop elements until we hit a specific tag
 fn TreeBuilder::pop_until(self : TreeBuilder, tag : String) -> Unit {
+  // Flush pending text to current element before popping
+  self.flush_pending_text()
   while not(self.open_elements.is_empty()) {
     let elem = self.open_elements.pop()
     match elem {
@@ -365,6 +367,8 @@ fn TreeBuilder::pop_until_one_of(
   self : TreeBuilder,
   tags : Array[String],
 ) -> Unit {
+  // Flush pending text to current element before popping
+  self.flush_pending_text()
   while not(self.open_elements.is_empty()) {
     match self.current_node() {
       Some(e) => {
