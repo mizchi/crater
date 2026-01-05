@@ -7,7 +7,9 @@
     "mizchi/crater/types",
     "mizchi/crater/tree",
     "mizchi/crater/css/computed",
-    "mizchi/crater/style"
+    "mizchi/crater/style",
+    "mizchi/crater/aom",
+    "mizchi/crater/html"
   ],
   "link": {
     "js": {
@@ -55,7 +57,10 @@
         "getComputedHeight",
         "hasNewLayout",
         "markLayoutSeen",
-        "calculateLayout"
+        "calculateLayout",
+        "getAriaSnapshot",
+        "getAriaSnapshotJson",
+        "getAccessibilityTree"
       ],
       "format": "esm"
     },
@@ -104,7 +109,10 @@
         "getComputedHeight",
         "hasNewLayout",
         "markLayoutSeen",
-        "calculateLayout"
+        "calculateLayout",
+        "getAriaSnapshot",
+        "getAriaSnapshotJson",
+        "getAccessibilityTree"
       ],
       "export-memory-name": "memory"
     }

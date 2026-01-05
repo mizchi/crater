@@ -832,3 +832,145 @@ pub fn calculateLayout(width : Double, height : Double) -> String {
     None => "{\"error\":\"No tree created\"}"
   }
 }
+
+// =============================================================================
+// Accessibility API
+// =============================================================================
+
+///|
+/// Get ARIA snapshot in YAML format (Playwright-compatible)
+pub fn getAriaSnapshot(html : String) -> String {
+  let doc = @html.parse_document(html)
+  let tree = @aom.build_accessibility_tree(doc)
+  tree.to_aria_snapshot()
+}
+
+///|
+/// Get ARIA snapshot in JSON format
+pub fn getAriaSnapshotJson(html : String) -> String {
+  let doc = @html.parse_document(html)
+  let tree = @aom.build_accessibility_tree(doc)
+  tree.to_aria_json()
+}
+
+///|
+/// Get full accessibility tree as JSON
+pub fn getAccessibilityTree(html : String) -> String {
+  let doc = @html.parse_document(html)
+  let tree = @aom.build_accessibility_tree(doc)
+  accessibility_tree_to_json(tree)
+}
+
+///|
+fn accessibility_tree_to_json(tree : @aom.AccessibilityTree) -> String {
+  let buf = StringBuilder::new()
+  write_accessibility_node(tree.root, buf, 0)
+  buf.to_string()
+}
+
+///|
+fn write_accessibility_node(
+  node : @aom.AccessibilityNode,
+  buf : StringBuilder,
+  indent : Int,
+) -> Unit {
+  write_json_indent(buf, indent)
+  buf.write_string("{\n")
+
+  // id
+  write_json_indent(buf, indent + 1)
+  buf.write_string("\"id\": \"")
+  buf.write_string(escape_json_string(node.id))
+  buf.write_string("\",\n")
+
+  // role
+  write_json_indent(buf, indent + 1)
+  buf.write_string("\"role\": \"")
+  buf.write_string(node.role.to_string())
+  buf.write_string("\"")
+
+  // name
+  match node.name {
+    Some(name) => {
+      buf.write_string(",\n")
+      write_json_indent(buf, indent + 1)
+      buf.write_string("\"name\": \"")
+      buf.write_string(escape_json_string(name))
+      buf.write_string("\"")
+    }
+    None => ()
+  }
+
+  // description
+  match node.description {
+    Some(desc) => {
+      buf.write_string(",\n")
+      write_json_indent(buf, indent + 1)
+      buf.write_string("\"description\": \"")
+      buf.write_string(escape_json_string(desc))
+      buf.write_string("\"")
+    }
+    None => ()
+  }
+
+  // level
+  match node.level {
+    Some(level) => {
+      buf.write_string(",\n")
+      write_json_indent(buf, indent + 1)
+      buf.write_string("\"level\": ")
+      buf.write_string(level.to_string())
+    }
+    None => ()
+  }
+
+  // focusable
+  if node.focusable {
+    buf.write_string(",\n")
+    write_json_indent(buf, indent + 1)
+    buf.write_string("\"focusable\": true")
+  }
+
+  // states
+  if not(node.states.is_empty()) {
+    buf.write_string(",\n")
+    write_json_indent(buf, indent + 1)
+    buf.write_string("\"states\": [")
+    for i, state in node.states {
+      if i > 0 {
+        buf.write_string(", ")
+      }
+      buf.write_string("\"")
+      buf.write_string(state.to_string())
+      buf.write_string("\"")
+    }
+    buf.write_string("]")
+  }
+
+  // children
+  if not(node.children.is_empty()) {
+    buf.write_string(",\n")
+    write_json_indent(buf, indent + 1)
+    buf.write_string("\"children\": [\n")
+    for i, child in node.children {
+      if i > 0 {
+        buf.write_string(",\n")
+      }
+      write_accessibility_node(child, buf, indent + 2)
+    }
+    buf.write_string("\n")
+    write_json_indent(buf, indent + 1)
+    buf.write_string("]")
+  }
+
+  buf.write_string("\n")
+  write_json_indent(buf, indent)
+  buf.write_string("}")
+}
+
+///|
+fn write_json_indent(buf : StringBuilder, level : Int) -> Unit {
+  for _ in 0..<level {
+    buf.write_string("  ")
+  }
+}

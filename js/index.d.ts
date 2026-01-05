@@ -381,6 +381,41 @@ export function markLayoutSeen(nodeId: string): boolean;
  */
 export function calculateLayout(width: number, height: number): string;
 
+// =============================================================================
+// Accessibility API
+// =============================================================================
+
+/** Accessibility node in the tree */
+export interface AccessibilityNode {
+  id: string;
+  role: string;
+  name?: string;
+  level?: number;
+  states?: string[];
+  children?: AccessibilityNode[];
+}
+
+/**
+ * Get ARIA snapshot in YAML format (Playwright-compatible)
+ * @param html - HTML string
+ * @returns YAML-formatted ARIA snapshot
+ */
+export function getAriaSnapshot(html: string): string;
+
+/**
+ * Get ARIA snapshot in JSON format
+ * @param html - HTML string
+ * @returns JSON-formatted ARIA snapshot
+ */
+export function getAriaSnapshotJson(html: string): string;
+
+/**
+ * Get full accessibility tree as JSON
+ * @param html - HTML string
+ * @returns JSON string of AccessibilityNode tree
+ */
+export function getAccessibilityTree(html: string): string;
+
 // Type-safe JSON parsing helpers
 export namespace Crater {
   /**
