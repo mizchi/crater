@@ -123,22 +123,16 @@ fn Tokenizer::skip_whitespace(self : Tokenizer) -> Unit {
 ///|
 /// Check for a case-insensitive match at current position
 fn Tokenizer::matches_ci(self : Tokenizer, s : String) -> Bool {
-  if self.pos + s.length() > self.len {
+  let slen = s.length()
+  if self.pos + slen > self.len {
     return false
   }
-  for i = 0; i < s.length(); i = i + 1 {
-    let c1 = self.input[self.pos + i].to_int().unsafe_to_char()
-    let c2 = s[i].to_int().unsafe_to_char()
-    let c1_lower = if c1 >= 'A' && c1 <= 'Z' {
-      (c1.to_int() + 32).unsafe_to_char()
-    } else {
-      c1
-    }
-    let c2_lower = if c2 >= 'A' && c2 <= 'Z' {
-      (c2.to_int() + 32).unsafe_to_char()
-    } else {
-      c2
-    }
+  for i = 0; i < slen; i = i + 1 {
+    let c1 = self.input[self.pos + i].to_int()
+    let c2 = s[i].to_int()
+    // Fast lowercase comparison using byte arithmetic
+    let c1_lower = if c1 >= 65 && c1 <= 90 { c1 + 32 } else { c1 }
+    let c2_lower = if c2 >= 65 && c2 <= 90 { c2 + 32 } else { c2 }
     if c1_lower != c2_lower {
       return false
     }
@@ -227,13 +221,11 @@ fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
 fn Tokenizer::skip_doctype(self : Tokenizer) -> Token? {
   if self.matches_ci("<!doctype") {
     // Skip until >
-    while self.peek() is Some(c) && c != '>' {
-      let _ = self.consume()
-
+    while self.pos < self.len && self.peek_fast() != '>' {
+      self.advance()
     }
-    if self.peek() is Some('>') {
-      let _ = self.consume()
-
+    if self.pos < self.len && self.peek_fast() == '>' {
+      self.advance()
     }
     Some(Token::Doctype("html"))
   } else {
@@ -245,43 +237,46 @@ fn Tokenizer::skip_doctype(self : Tokenizer) -> Token? {
 /// Skip comment <!-- ... -->
 /// Handles HTML5 abrupt closing of empty comment (<!--> and <!--->)
 fn Tokenizer::skip_comment(self : Tokenizer) -> Token? {
-  if self.peek() is Some('<') &&
-    self.peek_at(1) is Some('!') &&
-    self.peek_at(2) is Some('-') &&
-    self.peek_at(3) is Some('-') {
-    let _ = self.consume() // <
-    let _ = self.consume() // !
-    let _ = self.consume() // -
-    let _ = self.consume() // -
-    // HTML5: Check for abrupt closing of empty comment (<!--> or <!-->)
-    if self.peek() is Some('>') {
-      let _ = self.consume() // >
-      return Some(Token::Comment(""))
-    }
-    if self.peek() is Some('-') && self.peek_at(1) is Some('>') {
-      let _ = self.consume() // -
-      let _ = self.consume() // >
-      return Some(Token::Comment(""))
-    }
-    let buf = StringBuilder::new()
-    while not(self.is_eof()) {
-      if self.peek() is Some('-') &&
-        self.peek_at(1) is Some('-') &&
-        self.peek_at(2) is Some('>') {
-        let _ = self.consume() // -
-        let _ = self.consume() // -
-        let _ = self.consume() // >
-        return Some(Token::Comment(buf.to_string()))
-      }
-      match self.consume() {
-        Some(c) => buf.write_char(c)
-        None => break
-      }
-    }
-    Some(Token::Comment(buf.to_string()))
-  } else {
-    None
+  // Check for "<!--" prefix
+  if self.pos + 4 > self.len {
+    return None
   }
+  if self.peek_fast() != '<' {
+    return None
+  }
+  if self.input[self.pos + 1].to_int().unsafe_to_char() != '!' ||
+    self.input[self.pos + 2].to_int().unsafe_to_char() != '-' ||
+    self.input[self.pos + 3].to_int().unsafe_to_char() != '-' {
+    return None
+  }
+  self.pos += 4 // Skip "<!--"
+  // HTML5: Check for abrupt closing of empty comment (<!--> or <!-->)
+  if self.pos < self.len && self.peek_fast() == '>' {
+    self.advance()
+    return Some(Token::Comment(""))
+  }
+  if self.pos + 1 < self.len &&
+    self.peek_fast() == '-' &&
+    self.input[self.pos + 1].to_int().unsafe_to_char() == '>' {
+    self.pos += 2
+    return Some(Token::Comment(""))
+  }
+  // Find end of comment "-->"
+  let start = self.pos
+  while self.pos + 2 < self.len {
+    if self.peek_fast() == '-' &&
+      self.input[self.pos + 1].to_int().unsafe_to_char() == '-' &&
+      self.input[self.pos + 2].to_int().unsafe_to_char() == '>' {
+      let content = self.input.substring(start=start, end=self.pos)
+      self.pos += 3 // Skip "-->"
+      return Some(Token::Comment(content))
+    }
+    self.advance()
+  }
+  // No closing found, return rest as comment
+  let content = self.input.substring(start=start, end=self.len)
+  self.pos = self.len
+  Some(Token::Comment(content))
 }
 
 ///|

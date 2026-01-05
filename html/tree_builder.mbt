@@ -48,6 +48,8 @@ pub(all) struct TreeBuilder {
   mut frameset_ok : Bool
   mut head_element : Element?
   mut pending_table_chars : Array[Char]
+  // Text accumulation buffer for efficient character insertion
+  pending_text : StringBuilder
 }
 
 ///|
@@ -62,6 +64,7 @@ pub fn TreeBuilder::new(tokenizer : Tokenizer) -> TreeBuilder {
     frameset_ok: true,
     head_element: None,
     pending_table_chars: [],
+    pending_text: StringBuilder::new(),
   }
 }
 
@@ -151,6 +154,8 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
 ///|
 /// Insert element at appropriate place
 fn TreeBuilder::insert_element(self : TreeBuilder, element : Element) -> Unit {
+  // Flush any pending text before inserting element
+  self.flush_pending_text()
   if self.foster_parenting && is_table_context(self.current_node()) {
     self.foster_parent_element(element)
   } else {
@@ -180,28 +185,42 @@ fn TreeBuilder::insert_element_to_head(
 }
 
 ///|
-/// Insert character at appropriate place
+/// Insert character at appropriate place - accumulates in pending_text buffer
 fn TreeBuilder::insert_character(self : TreeBuilder, c : Char) -> Unit {
   if self.foster_parenting && is_table_context(self.current_node()) {
+    // Flush any pending text before foster parenting
+    self.flush_pending_text()
     self.foster_parent_character(c)
   } else {
-    match self.current_node() {
-      Some(current) => {
-        // Try to append to last text node
-        let len = current.children.length()
-        if len > 0 {
-          match current.children[len - 1] {
-            Node::Text(existing) => {
-              current.children[len - 1] = Node::Text(existing + c.to_string())
-              return
-            }
-            _ => ()
+    // Accumulate character in buffer
+    self.pending_text.write_char(c)
+  }
+}
+
+///|
+/// Flush pending text buffer to current element
+fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
+  if self.pending_text.is_empty() {
+    return
+  }
+  let text = self.pending_text.to_string()
+  self.pending_text.reset()
+  match self.current_node() {
+    Some(current) => {
+      // Try to append to last text node
+      let len = current.children.length()
+      if len > 0 {
+        match current.children[len - 1] {
+          Node::Text(existing) => {
+            current.children[len - 1] = Node::Text(existing + text)
+            return
           }
+          _ => ()
         }
-        current.children.push(Node::Text(c.to_string()))
       }
-      None => ()
+      current.children.push(Node::Text(text))
     }
+    None => ()
   }
 }
 
@@ -591,6 +610,8 @@ pub fn TreeBuilder::build(self : TreeBuilder) -> Element {
       _ => self.process_token(token)
     }
   }
+  // Flush any remaining pending text
+  self.flush_pending_text()
   html_elem
 }
 
@@ -608,6 +629,8 @@ pub fn TreeBuilder::build_document(self : TreeBuilder) -> Element {
       _ => self.process_token(token)
     }
   }
+  // Flush any remaining pending text
+  self.flush_pending_text()
 
   // Return html element (first in open_elements or create one)
   match self.open_elements.get(0) {
@@ -651,7 +674,8 @@ fn TreeBuilder::handle_text(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) => self.insert_character(c)
     Token::EOF => {
-      // Parse error - pop and switch back
+      // Parse error - flush text and pop
+      self.flush_pending_text()
       let _ = self.open_elements.pop()
       match self.original_insertion_mode {
         Some(mode) => self.insertion_mode = mode
@@ -659,6 +683,8 @@ fn TreeBuilder::handle_text(self : TreeBuilder, token : Token) -> Unit {
       }
     }
     Token::EndTag(_) => {
+      // Flush pending text before popping
+      self.flush_pending_text()
       // Pop current element and switch back to original mode
       let _ = self.open_elements.pop()
       match self.original_insertion_mode {
