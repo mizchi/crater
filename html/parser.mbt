@@ -735,8 +735,8 @@ fn is_head_element(tag : String) -> Bool {
 }
 
 ///|
-/// Parse HTML with a wrapper div if needed
-pub fn parse_fragment(html : String) -> Element {
+/// Parse HTML with a wrapper div if needed (legacy implementation)
+fn parse_fragment_legacy(html : String) -> Element {
   let elements = parse_all_elements(html)
   if elements.is_empty() {
     return {
@@ -827,9 +827,17 @@ pub fn parse_fragment(html : String) -> Element {
 }
 
 ///|
+/// Parse full HTML document using document parsing mode
+pub fn parse_document_v2(html : String) -> Element {
+  let tokenizer = Tokenizer::new(html)
+  let builder = TreeBuilder::new(tokenizer)
+  builder.build_document()
+}
+
+///|
 /// Parse HTML and extract stylesheets
 pub fn parse_document(html : String) -> Document {
-  let root = parse_fragment(html)
+  let root = parse_document_v2(html)
   let stylesheets : Array[String] = []
   let stylesheet_links : Array[String] = []
   extract_stylesheets(root, stylesheets, stylesheet_links)
@@ -884,4 +892,18 @@ fn extract_text_content(elem : Element) -> String {
     }
   }
   buf.to_string()
+}
+
+///|
+/// Parse HTML fragment using TreeBuilder (HTML5 compliant)
+pub fn parse_fragment_v2(html : String) -> Element {
+  let tokenizer = Tokenizer::new(html)
+  let builder = TreeBuilder::new(tokenizer)
+  builder.build()
+}
+
+///|
+/// Parse HTML with a wrapper div if needed
+pub fn parse_fragment(html : String) -> Element {
+  parse_fragment_v2(html)
 }

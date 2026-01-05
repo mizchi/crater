@@ -85,7 +85,9 @@ pub fn compute_accessible_name_full(
   if trimmed.is_empty() {
     Option::None
   } else {
-    Some(trimmed)
+    // Apply text-transform from element's style
+    let transformed = apply_text_transform(trimmed, element)
+    Some(transformed)
   }
 }
 
@@ -275,6 +277,14 @@ fn compute_name_steps(
     Some(title) if not(title.is_empty()) => return title
     _ => ()
   }
+
+  // Special case: select element without label or title - use selected option
+  if element.tag.to_lower() == "select" {
+    let option_text = find_selected_option_text(element)
+    if not(option_text.is_empty()) {
+      return option_text
+    }
+  }
   ""
 }
 
@@ -348,8 +358,12 @@ fn compute_native_text_alternative(
     // Button: value attribute for certain types
     "button" => "" // Falls through to content
 
-    // Textarea/Select: associated label
-    "textarea" | "select" =>
+    // Textarea: associated label
+    "textarea" =>
+      find_label_text(element, find_label_for_id, encapsulating_label)
+
+    // Select: associated label only (selected option handled in Step 2E fallback)
+    "select" =>
       find_label_text(element, find_label_for_id, encapsulating_label)
 
     // Table: caption
@@ -521,6 +535,33 @@ fn find_child_text(element : @html.Element, child_tag : String) -> String {
           return extract_all_text(child_elem)
         }
       @html.Text(_) => ()
+    }
+  }
+  ""
+}
+
+///|
+/// Find text of selected option in a select element
+fn find_selected_option_text(element : @html.Element) -> String {
+  // First try to find an option with "selected" attribute
+  for child in element.children {
+    match child {
+      @html.Element(option) =>
+        if option.tag.to_lower() == "option" &&
+          option.attributes.contains("selected") {
+          return extract_all_text(option)
+        }
+      _ => ()
+    }
+  }
+  // If no selected option, return first option's text
+  for child in element.children {
+    match child {
+      @html.Element(option) =>
+        if option.tag.to_lower() == "option" {
+          return extract_all_text(option)
+        }
+      _ => ()
     }
   }
   ""
@@ -739,8 +780,19 @@ fn compute_text_content_recursive(
         }
 
         // Recursively extract text from child elements
+        // Track buffer length to know if child added content
+        let len_before = buf.to_string().length()
+
         // Pass visibility state - children may override with visibility:visible
         compute_text_content_recursive(child_elem, buf, child_hidden_visibility)
+
+        // Add space after child element content only if child had content
+        // This ensures "one" + "two" + "three" becomes "one two three"
+        // but "button<span></span>label" stays "buttonlabel"
+        let len_after = buf.to_string().length()
+        if len_after > len_before {
+          ensure_space_separator(buf)
+        }
       }
     }
   }
@@ -935,5 +987,76 @@ fn role_gets_name_from_heading(role : Role) -> Bool {
   match role {
     AlertDialog | Dialog | Article => true
     _ => false
+  }
+}
+
+// =============================================================================
+// Text Transform
+// =============================================================================
+
+///|
+/// Apply CSS text-transform to a string based on element's style
+fn apply_text_transform(text : String, element : @html.Element) -> String {
+  let transform = get_text_transform(element)
+  match transform {
+    "uppercase" => text.to_upper()
+    "lowercase" => text.to_lower()
+    "capitalize" => capitalize_words(text)
+    _ => text
+  }
+}
+
+///|
+/// Extract text-transform value from element's inline style
+fn get_text_transform(element : @html.Element) -> String {
+  match element.style {
+    Some(style) => {
+      let style_lower = style.to_lower()
+      if style_lower.contains("text-transform") {
+        // Parse text-transform value from style string
+        // e.g. "text-transform:uppercase;" or "text-transform: uppercase"
+        for part in style.split(";") {
+          let part_str = part.to_string().trim().to_string()
+          let part_lower = part_str.to_lower()
+          if part_lower.contains("text-transform") {
+            match part_str.split(":").collect().get(1) {
+              Some(value) => return value.to_string().trim().to_string().to_lower()
+              None => ()
+            }
+          }
+        }
+      }
+      ""
+    }
+    None => ""
+  }
+}
+
+///|
+/// Capitalize first letter of each word
+fn capitalize_words(text : String) -> String {
+  let result : Array[Char] = []
+  let mut capitalize_next = true
+  for c in text {
+    if c == ' ' || c == '\t' || c == '\n' {
+      result.push(c)
+      capitalize_next = true
+    } else if capitalize_next {
+      result.push(char_to_upper(c))
+      capitalize_next = false
+    } else {
+      result.push(c)
+    }
+  }
+  String::from_array(result)
+}
+
+///|
+/// Convert a single character to uppercase
+fn char_to_upper(c : Char) -> Char {
+  if c >= 'a' && c <= 'z' {
+    (c.to_int() - 32).unsafe_to_char()
+  } else {
+    c
   }
 }

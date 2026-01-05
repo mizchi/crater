@@ -6,7 +6,11 @@ pub fn parse(String) -> Element?
 
 pub fn parse_document(String) -> Document
 
+pub fn parse_document_v2(String) -> Element
+
 pub fn parse_fragment(String) -> Element
+
+pub fn parse_fragment_v2(String) -> Element
 
 // Errors
 
@@ -26,10 +30,73 @@ pub(all) struct Element {
   children : Array[Node]
 }
 
+pub(all) enum FormattingElement {
+  Element(Element)
+  Marker
+}
+
+pub(all) enum InsertionMode {
+  Initial
+  BeforeHtml
+  BeforeHead
+  InHead
+  InHeadNoscript
+  AfterHead
+  InBody
+  Text
+  InTable
+  InTableText
+  InCaption
+  InColumnGroup
+  InTableBody
+  InRow
+  InCell
+  InSelect
+  InSelectInTable
+  AfterBody
+  InFrameset
+  AfterFrameset
+  AfterAfterBody
+  AfterAfterFrameset
+}
+
 pub(all) enum Node {
   Element(Element)
   Text(String)
 }
+
+pub(all) enum Token {
+  Doctype(String)
+  StartTag(String, Map[String, String], Bool)
+  EndTag(String)
+  Character(Char)
+  Comment(String)
+  EOF
+}
+
+pub(all) struct Tokenizer {
+  input : String
+  mut pos : Int
+  len : Int
+}
+pub fn Tokenizer::collect_all(Self) -> Array[Token]
+pub fn Tokenizer::new(String) -> Self
+pub fn Tokenizer::next_token(Self) -> Token
+
+pub(all) struct TreeBuilder {
+  tokenizer : Tokenizer
+  mut insertion_mode : InsertionMode
+  mut original_insertion_mode : InsertionMode?
+  open_elements : Array[Element]
+  active_formatting : Array[FormattingElement]
+  mut foster_parenting : Bool
+  mut frameset_ok : Bool
+  mut head_element : Element?
+  mut pending_table_chars : Array[Char]
+}
+pub fn TreeBuilder::build(Self) -> Element
+pub fn TreeBuilder::build_document(Self) -> Element
+pub fn TreeBuilder::new(Tokenizer) -> Self
 
 // Type aliases
 
