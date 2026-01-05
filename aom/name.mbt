@@ -168,11 +168,13 @@ fn compute_name_step(
   // Avoid cycles
   match element.id {
     Some(id) if ctx.is_visited(id) => {
-      // Self-reference case: compute text content, skipping aria-labelledby
-      // Per accname spec, when following aria-labelledby and encountering
-      // the same element, we should use its text content
+      // Self-reference case: skip aria-labelledby but continue with other steps
+      // Per accname spec, when aria-labelledby references itself, skip step 2A
+      // but still check aria-label, native alternatives, etc.
       if ctx.is_referencing {
-        return compute_text_content(element, ctx, find_by_id, find_label_for_id)
+        return compute_name_steps_skip_labelledby(
+          element, ctx, find_by_id, find_label_for_id, encapsulating_label,
+        )
       }
       return ""
     }
@@ -269,6 +271,49 @@ fn compute_name_steps(
   }
 
   // Step 2E: Tooltip (title attribute)
+  match element.attributes.get("title") {
+    Some(title) if not(title.is_empty()) => return title
+    _ => ()
+  }
+  ""
+}
+
+///|
+/// Compute name steps but skip aria-labelledby (for self-reference case)
+fn compute_name_steps_skip_labelledby(
+  element : @html.Element,
+  ctx : NameComputationContext,
+  find_by_id : (String) -> @html.Element?,
+  find_label_for_id : (String) -> @html.Element?,
+  encapsulating_label : @html.Element?,
+) -> String {
+  // Step 2B: aria-label (skip step 2A)
+  match element.attributes.get("aria-label") {
+    Some(label) if not(label.trim().is_empty()) =>
+      return label.trim().to_string()
+    _ => ()
+  }
+
+  // Step 2C: Native text alternatives
+  let native_text = compute_native_text_alternative(
+    element, find_label_for_id, encapsulating_label,
+  )
+  if not(native_text.is_empty()) {
+    return native_text
+  }
+
+  // Step 2D: Name from content
+  let role = compute_role(element, RoleMappingContext::default())
+  if role_supports_name_from_content(role) || ctx.is_referencing {
+    let content = compute_text_content(
+      element, ctx, find_by_id, find_label_for_id,
+    )
+    if not(content.is_empty()) {
+      return content
+    }
+  }
+
+  // Step 2E: Tooltip
   match element.attributes.get("title") {
     Some(title) if not(title.is_empty()) => return title
     _ => ()
