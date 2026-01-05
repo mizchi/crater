@@ -320,7 +320,8 @@ pub fn role_supports_name_from_content(role : Role) -> Bool {
     | ColumnHeader
     | GridCell
     | Row
-    | RowHeader => true
+    | RowHeader
+    | HtmlSummary => true // summary element gets name from contents
     _ => false
   }
 }

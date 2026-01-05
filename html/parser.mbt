@@ -37,6 +37,66 @@ priv struct Parser {
 }
 
 ///|
+/// Check if parent element is an inline context where whitespace is significant
+/// This includes phrasing content containers and interactive elements
+fn is_inline_context(tag : String) -> Bool {
+  match tag.to_lower() {
+    // Interactive elements
+    "button"
+    | "a"
+    | "label"
+    | "summary"
+    // Heading elements
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "h5"
+    | "h6"
+    // Phrasing content containers
+    | "p"
+    | "span"
+    | "strong"
+    | "em"
+    | "b"
+    | "i"
+    | "u"
+    | "s"
+    | "small"
+    | "mark"
+    | "abbr"
+    | "cite"
+    | "code"
+    | "q"
+    | "sub"
+    | "sup"
+    | "time"
+    | "var"
+    | "samp"
+    | "kbd"
+    // List items (often contain inline content)
+    | "li"
+    | "dt"
+    | "dd"
+    // Table cells
+    | "td"
+    | "th"
+    | "caption"
+    // Form elements
+    | "legend"
+    | "option"
+    | "optgroup"
+    // Other inline contexts
+    | "figcaption"
+    | "title"
+    | "dfn"
+    | "bdo"
+    | "bdi" => true
+    _ => false
+  }
+}
+
+///|
 /// Check if a tag is a void element (no closing tag required)
 fn is_void_element(tag : String) -> Bool {
   match tag.to_lower() {
@@ -445,6 +505,8 @@ fn Parser::parse_element(self : Parser) -> Element? {
 ///|
 fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
   let children : Array[Node] = []
+  // Preserve whitespace in inline contexts (phrasing content)
+  let preserve_ws = is_inline_context(parent_tag)
   while not(self.is_eof()) {
     match self.peek() {
       // Whitespace - collect it and decide what to do
@@ -453,8 +515,12 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
         self.skip_whitespace()
         // Check what follows the whitespace
         match (self.peek(), self.peek_at(1)) {
-          // Opening tag (not closing) - discard whitespace (structural)
-          (Some('<'), Some(c)) if c != '/' && c != '!' => ()
+          // Opening tag (not closing) - discard or preserve based on context
+          (Some('<'), Some(c)) if c != '/' && c != '!' =>
+            // In inline contexts, preserve whitespace between elements
+            if preserve_ws && children.length() > 0 {
+              children.push(Node::Text(" "))
+            }
           // Closing tag, comment, EOF, or more text - whitespace is content
           _ => {
             // Rewind and parse as text

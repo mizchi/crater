@@ -244,8 +244,21 @@ fn compute_name_steps(
     return native_text
   }
 
-  // Step 2D: Name from content (if role allows it)
+  // Step 2C.5: Name from heading for dialog-like roles (tentative feature)
   let role = compute_role(element, RoleMappingContext::default())
+  if role_gets_name_from_heading(role) {
+    match find_first_heading(element) {
+      Some(heading) => {
+        let heading_text = extract_all_text(heading)
+        if not(heading_text.is_empty()) {
+          return heading_text
+        }
+      }
+      None => ()
+    }
+  }
+
+  // Step 2D: Name from content (if role allows it)
   if role_supports_name_from_content(role) || ctx.is_referencing {
     let content = compute_text_content(
       element, ctx, find_by_id, find_label_for_id,
@@ -432,11 +445,25 @@ fn extract_text_excluding_control_recursive(
 
 ///|
 fn is_same_element(a : @html.Element, b : @html.Element) -> Bool {
-  // Compare by id if available, otherwise by reference equality
+  // Compare by id if available
   match (a.id, b.id) {
-    (Some(id_a), Some(id_b)) => id_a == id_b
-    _ => false // Can't reliably compare without id
+    (Some(id_a), Some(id_b)) => return id_a == id_b
+    _ => ()
   }
+  // Compare by tag and key attributes for form elements
+  if a.tag.to_lower() != b.tag.to_lower() {
+    return false
+  }
+  // For inputs, compare by type and name
+  let tag = a.tag.to_lower()
+  if tag == "input" || tag == "select" || tag == "textarea" || tag == "button" {
+    let a_type = a.attributes.get("type").unwrap_or("text")
+    let b_type = b.attributes.get("type").unwrap_or("text")
+    let a_name = a.attributes.get("name").unwrap_or("")
+    let b_name = b.attributes.get("name").unwrap_or("")
+    return a_type == b_type && a_name == b_name
+  }
+  false
 }
 
 ///|
@@ -627,19 +654,67 @@ fn compute_text_content_recursive(
           in_hidden_visibility
         }
 
-        // Step 2F: Check for embedded control value first
-        match get_embedded_control_value(child_elem) {
-          Some(value) =>
-            if not(child_hidden_visibility) {
-              buf.write_string(value)
+        // Handle image elements - use alt text (only if visible)
+        let tag = child_elem.tag.to_lower()
+        if (tag == "img" || tag == "area") && not(child_hidden_visibility) {
+          match child_elem.attributes.get("alt") {
+            Some(alt) if not(alt.is_empty()) => {
+              // Add space before image alt if buffer not empty and doesn't end with space
+              ensure_space_separator(buf)
+              buf.write_string(alt)
             }
-          None =>
-            // Recursively extract text from child elements
-            compute_text_content_recursive(
-              child_elem, buf, child_hidden_visibility,
-            )
+            _ => ()
+          }
+          continue
         }
+
+        // Step 2F: Check for embedded control value first (only if visible)
+        if not(child_hidden_visibility) {
+          match get_embedded_control_value(child_elem) {
+            Some(value) => {
+              ensure_space_separator(buf)
+              buf.write_string(value)
+              continue
+            }
+            None => ()
+          }
+        }
+
+        // Per accname spec: when computing text content from descendants,
+        // if a child element has aria-label, use that instead of its content
+        if not(child_hidden_visibility) {
+          match child_elem.attributes.get("aria-label") {
+            Some(label) if not(label.trim().is_empty()) => {
+              ensure_space_separator(buf)
+              buf.write_string(label.trim().to_string())
+              continue
+            }
+            _ => ()
+          }
+        }
+
+        // Recursively extract text from child elements
+        // Pass visibility state - children may override with visibility:visible
+        compute_text_content_recursive(child_elem, buf, child_hidden_visibility)
       }
+    }
+  }
+}
+
+///|
+/// Ensure there's a space separator before adding new content
+/// Does nothing if buffer is empty or already ends with whitespace
+fn ensure_space_separator(buf : StringBuilder) -> Unit {
+  let s = buf.to_string()
+  if s.is_empty() {
+    return
+  }
+  // Check if last char is whitespace
+  let chars = s.to_array()
+  if chars.length() > 0 {
+    let last = chars[chars.length() - 1]
+    if last != ' ' && last != '\t' && last != '\n' && last != '\r' {
+      buf.write_char(' ')
     }
   }
 }
@@ -664,7 +739,18 @@ fn extract_text_recursive(element : @html.Element, buf : StringBuilder) -> Unit 
   for child in element.children {
     match child {
       @html.Text(text) => buf.write_string(text)
-      @html.Element(child_elem) => extract_text_recursive(child_elem, buf)
+      @html.Element(child_elem) => {
+        // Handle image elements - use alt text
+        let tag = child_elem.tag.to_lower()
+        if tag == "img" || tag == "area" {
+          match child_elem.attributes.get("alt") {
+            Some(alt) if not(alt.is_empty()) => buf.write_string(alt)
+            _ => ()
+          }
+        } else {
+          extract_text_recursive(child_elem, buf)
+        }
+      }
     }
   }
 }
@@ -688,6 +774,7 @@ fn normalize_whitespace(s : String) -> String {
   // Trim trailing space
   while chars.length() > 0 && chars[chars.length() - 1] == ' ' {
     let _ = chars.pop()
+
   }
   String::from_array(chars)
 }
@@ -760,4 +847,48 @@ fn is_in_hidden_subtree(
   // Currently, the test generator includes hidden wrappers for aria-owns targets,
   // but we can't traverse up the DOM tree to check ancestors at runtime
   false
+}
+
+///|
+/// Find the first heading inside an element (h1-h6 or role="heading")
+/// Used for dialog-like roles that get name from first heading (tentative feature)
+fn find_first_heading(element : @html.Element) -> @html.Element? {
+  // Depth-first search for first heading
+  for child in element.children {
+    match child {
+      @html.Element(child_elem) => {
+        let tag = child_elem.tag.to_lower()
+        // Check for heading elements (h1-h6)
+        if tag == "h1" ||
+          tag == "h2" ||
+          tag == "h3" ||
+          tag == "h4" ||
+          tag == "h5" ||
+          tag == "h6" {
+          return Some(child_elem)
+        }
+        // Check for role="heading"
+        match child_elem.attributes.get("role") {
+          Some(r) if r.to_lower() == "heading" => return Some(child_elem)
+          _ => ()
+        }
+        // Recurse into children
+        match find_first_heading(child_elem) {
+          Some(h) => return Some(h)
+          None => ()
+        }
+      }
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
+/// Check if role should get name from first heading (dialog-like roles)
+fn role_gets_name_from_heading(role : Role) -> Bool {
+  match role {
+    AlertDialog | Dialog | Article => true
+    _ => false
+  }
 }
