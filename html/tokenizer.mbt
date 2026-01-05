@@ -34,10 +34,20 @@ fn Tokenizer::is_eof(self : Tokenizer) -> Bool {
 
 ///|
 fn Tokenizer::peek(self : Tokenizer) -> Char? {
-  if self.is_eof() {
+  if self.pos >= self.len {
     None
   } else {
     Some(self.input[self.pos].to_int().unsafe_to_char())
+  }
+}
+
+///|
+/// Fast peek without Option wrapping - returns '\x00' for EOF
+fn Tokenizer::peek_fast(self : Tokenizer) -> Char {
+  if self.pos >= self.len {
+    '\x00'
+  } else {
+    self.input[self.pos].to_int().unsafe_to_char()
   }
 }
 
@@ -53,13 +63,19 @@ fn Tokenizer::peek_at(self : Tokenizer, offset : Int) -> Char? {
 
 ///|
 fn Tokenizer::consume(self : Tokenizer) -> Char? {
-  if self.is_eof() {
+  if self.pos >= self.len {
     None
   } else {
     let c = self.input[self.pos].to_int().unsafe_to_char()
     self.pos += 1
     Some(c)
   }
+}
+
+///|
+/// Fast consume - advances position and returns the character (caller must check bounds)
+fn Tokenizer::advance(self : Tokenizer) -> Unit {
+  self.pos += 1
 }
 
 ///|
@@ -94,13 +110,12 @@ fn is_unquoted_attr_end(c : Char) -> Bool {
 
 ///|
 fn Tokenizer::skip_whitespace(self : Tokenizer) -> Unit {
-  while not(self.is_eof()) {
-    match self.peek() {
-      Some(c) if tok_is_whitespace(c) => {
-        let _ = self.consume()
-
-      }
-      _ => break
+  while self.pos < self.len {
+    let c = self.peek_fast()
+    if tok_is_whitespace(c) {
+      self.advance()
+    } else {
+      break
     }
   }
 }
@@ -134,79 +149,76 @@ fn Tokenizer::matches_ci(self : Tokenizer, s : String) -> Bool {
 ///|
 /// Consume characters matching a name (tag name, attribute name)
 fn Tokenizer::consume_name(self : Tokenizer) -> String {
-  let buf = StringBuilder::new()
-  while not(self.is_eof()) {
-    match self.peek() {
-      Some(c) if tok_is_name_char(c) => {
-        buf.write_char(c)
-        let _ = self.consume()
-
-      }
-      _ => break
+  let start = self.pos
+  while self.pos < self.len {
+    let c = self.peek_fast()
+    if tok_is_name_char(c) {
+      self.advance()
+    } else {
+      break
     }
   }
-  buf.to_string()
+  self.input.substring(start=start, end=self.pos)
+}
+
+///|
+/// Consume name and convert to lowercase (for tag names)
+fn Tokenizer::consume_name_lower(self : Tokenizer) -> String {
+  let start = self.pos
+  while self.pos < self.len {
+    let c = self.peek_fast()
+    if tok_is_name_char(c) {
+      self.advance()
+    } else {
+      break
+    }
+  }
+  self.input.substring(start=start, end=self.pos).to_lower()
 }
 
 ///|
 /// Consume a quoted or unquoted attribute value
 fn Tokenizer::consume_attribute_value(self : Tokenizer) -> String {
   self.skip_whitespace()
-  match self.peek() {
-    Some('"') => {
-      let _ = self.consume()
-      let buf = StringBuilder::new()
-      while not(self.is_eof()) {
-        match self.peek() {
-          Some('"') => {
-            let _ = self.consume()
-            break
-          }
-          Some(c) => {
-            buf.write_char(c)
-            let _ = self.consume()
-
-          }
-          None => break
-        }
+  if self.pos >= self.len {
+    return ""
+  }
+  let c = self.peek_fast()
+  if c == '"' {
+    self.advance()
+    let start = self.pos
+    while self.pos < self.len {
+      if self.peek_fast() == '"' {
+        let end = self.pos
+        self.advance()
+        return self.input.substring(start=start, end=end)
       }
-      buf.to_string()
+      self.advance()
     }
-    Some('\'') => {
-      let _ = self.consume()
-      let buf = StringBuilder::new()
-      while not(self.is_eof()) {
-        match self.peek() {
-          Some('\'') => {
-            let _ = self.consume()
-            break
-          }
-          Some(c) => {
-            buf.write_char(c)
-            let _ = self.consume()
-
-          }
-          None => break
-        }
+    self.input.substring(start=start, end=self.pos)
+  } else if c == '\'' {
+    self.advance()
+    let start = self.pos
+    while self.pos < self.len {
+      if self.peek_fast() == '\'' {
+        let end = self.pos
+        self.advance()
+        return self.input.substring(start=start, end=end)
       }
-      buf.to_string()
+      self.advance()
     }
-    _ => {
-      // Unquoted attribute value
-      let buf = StringBuilder::new()
-      while not(self.is_eof()) {
-        match self.peek() {
-          Some(c) if is_unquoted_attr_end(c) => break
-          Some(c) => {
-            buf.write_char(c)
-            let _ = self.consume()
-
-          }
-          None => break
-        }
+    self.input.substring(start=start, end=self.pos)
+  } else {
+    // Unquoted attribute value
+    let start = self.pos
+    while self.pos < self.len {
+      let ch = self.peek_fast()
+      if is_unquoted_attr_end(ch) {
+        break
       }
-      buf.to_string()
+      self.advance()
     }
+    self.input.substring(start=start, end=self.pos)
   }
 }
 
@@ -275,43 +287,40 @@ fn Tokenizer::skip_comment(self : Tokenizer) -> Token? {
 ///|
 /// Parse a start tag
 fn Tokenizer::parse_start_tag(self : Tokenizer) -> Token {
-  let tag = self.consume_name().to_lower()
+  let tag = self.consume_name_lower()
   let attrs : Map[String, String] = {}
   let mut self_closing = false
   // Parse attributes
-  while true {
+  while self.pos < self.len {
     self.skip_whitespace()
-    match self.peek() {
-      Some('>') => {
-        let _ = self.consume()
-        break
+    if self.pos >= self.len {
+      break
+    }
+    let c = self.peek_fast()
+    if c == '>' {
+      self.advance()
+      break
+    } else if c == '/' {
+      self.advance()
+      self.skip_whitespace()
+      if self.pos < self.len && self.peek_fast() == '>' {
+        self.advance()
+        self_closing = true
       }
-      Some('/') => {
-        let _ = self.consume()
-        self.skip_whitespace()
-        if self.peek() is Some('>') {
-          let _ = self.consume()
-          self_closing = true
-        }
-        break
+      break
+    } else if tok_is_name_char(c) {
+      let attr_name = self.consume_name()
+      self.skip_whitespace()
+      let attr_value = if self.pos < self.len && self.peek_fast() == '=' {
+        self.advance()
+        self.consume_attribute_value()
+      } else {
+        ""
       }
-      Some(c) if tok_is_name_char(c) => {
-        let attr_name = self.consume_name()
-        self.skip_whitespace()
-        let attr_value = if self.peek() is Some('=') {
-          let _ = self.consume()
-          self.consume_attribute_value()
-        } else {
-          ""
-        }
-        attrs.set(attr_name, attr_value)
-      }
-      None => break
-      _ => {
-        // Skip unknown character
-        let _ = self.consume()
-
-      }
+      attrs.set(attr_name, attr_value)
+    } else {
+      // Skip unknown character
+      self.advance()
     }
   }
   Token::StartTag(tag, attrs, self_closing)
@@ -320,11 +329,10 @@ fn Tokenizer::parse_start_tag(self : Tokenizer) -> Token {
 ///|
 /// Parse an end tag
 fn Tokenizer::parse_end_tag(self : Tokenizer) -> Token {
-  let tag = self.consume_name().to_lower()
+  let tag = self.consume_name_lower()
   self.skip_whitespace()
-  if self.peek() is Some('>') {
-    let _ = self.consume()
-
+  if self.pos < self.len && self.peek_fast() == '>' {
+    self.advance()
   }
   Token::EndTag(tag)
 }
