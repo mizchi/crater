@@ -2,16 +2,67 @@
 package "mizchi/crater/scheduler"
 
 import(
+  "mizchi/crater/html"
   "moonbitlang/core/hashset"
 )
 
 // Values
+pub fn discover_resources(@html.Element) -> ResourceDiscoveryResult
+
+pub fn parse_and_schedule(Scheduler, String, base_url? : String) -> ParseCompleteResult
+
 pub fn reset_task_id_counter() -> Unit
 
 // Errors
 
 // Types and methods
 type BlockedSources
+
+pub(all) struct DiscoveredResource {
+  url : String
+  resource_type : ResourceType
+  blocking : Bool
+  is_defer : Bool
+  is_async : Bool
+}
+
+pub struct DocumentParser {
+  scheduler : Scheduler
+  mut parsed_root : @html.Element?
+  mut discovered : ResourceDiscoveryResult?
+  base_url : String
+}
+pub fn DocumentParser::get_discovered_resources(Self) -> ResourceDiscoveryResult?
+pub fn DocumentParser::get_root(Self) -> @html.Element?
+pub fn DocumentParser::new(Scheduler, base_url? : String) -> Self
+pub fn DocumentParser::on_parse_complete(Self, String) -> ParseCompleteResult
+pub fn DocumentParser::start_parse(Self, String) -> TaskId
+
+pub(all) struct InlineScript {
+  source : String
+  blocking : Bool
+}
+
+pub(all) struct ParseCompleteResult {
+  root : @html.Element
+  fetch_tasks : Array[TaskId]
+  style_tasks : Array[TaskId]
+  script_tasks : Array[TaskId]
+  blocking_tasks : Array[TaskId]
+  resource_count : Int
+  inline_style_count : Int
+  inline_script_count : Int
+}
+
+pub(all) struct ResourceDiscoveryResult {
+  resources : Array[DiscoveredResource]
+  inline_styles : Array[String]
+  inline_scripts : Array[InlineScript]
+}
+pub fn ResourceDiscoveryResult::filter_by_type(Self, ResourceType) -> Array[DiscoveredResource]
+pub fn ResourceDiscoveryResult::get_blocking(Self) -> Array[DiscoveredResource]
+pub fn ResourceDiscoveryResult::get_urls(Self) -> Array[String]
+pub fn ResourceDiscoveryResult::new() -> Self
 
 pub(all) enum ResourceType {
   Document

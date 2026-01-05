@@ -279,3 +279,114 @@ test "Scheduler task failure" {
     None => panic()
   }
 }
+
+// =============================================================================
+// HTML Integration Tests
+// =============================================================================
+
+///|
+test "discover_resources finds images" {
+  let html = "<div><img src=\"test.png\"><img src=\"test2.jpg\"></div>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.resources.length(), content="2")
+  inspect(result.resources[0].url, content="test.png")
+  inspect(result.resources[0].resource_type, content="Image")
+  inspect(result.resources[1].url, content="test2.jpg")
+}
+
+///|
+test "discover_resources finds stylesheets" {
+  let html = "<head><link rel=\"stylesheet\" href=\"style.css\"></head>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.resources.length(), content="1")
+  inspect(result.resources[0].url, content="style.css")
+  inspect(result.resources[0].resource_type, content="Stylesheet")
+  inspect(result.resources[0].blocking, content="true")
+}
+
+///|
+test "discover_resources finds external scripts" {
+  let html = "<script src=\"app.js\"></script>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.resources.length(), content="1")
+  inspect(result.resources[0].url, content="app.js")
+  inspect(result.resources[0].resource_type, content="Script")
+  // No async/defer, so blocking
+  inspect(result.resources[0].blocking, content="true")
+}
+
+///|
+test "discover_resources async script is not blocking" {
+  let html = "<script src=\"app.js\" async></script>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.resources.length(), content="1")
+  inspect(result.resources[0].blocking, content="false")
+  inspect(result.resources[0].is_async, content="true")
+}
+
+///|
+test "discover_resources defer script is not blocking" {
+  let html = "<script src=\"app.js\" defer></script>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.resources.length(), content="1")
+  inspect(result.resources[0].blocking, content="false")
+  inspect(result.resources[0].is_defer, content="true")
+}
+
+///|
+test "discover_resources finds inline styles" {
+  let html = "<style>.foo { color: red; }</style>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.inline_styles.length(), content="1")
+  inspect(result.inline_styles[0], content=".foo { color: red; }")
+}
+
+///|
+test "discover_resources finds inline scripts" {
+  let html = "<script>console.log('hello');</script>"
+  let root = @html.parse_fragment_v2(html)
+  let result = discover_resources(root)
+  inspect(result.inline_scripts.length(), content="1")
+  inspect(result.inline_scripts[0].source, content="console.log('hello');")
+  inspect(result.inline_scripts[0].blocking, content="true")
+}
+
+///|
+test "parse_and_schedule creates tasks" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let html = "<div><img src=\"test.png\"><link rel=\"stylesheet\" href=\"style.css\"></div>"
+  let result = parse_and_schedule(scheduler, html)
+  inspect(result.resource_count, content="2")
+  inspect(result.fetch_tasks.length(), content="2")
+  // 2 fetch tasks created
+  inspect(scheduler.task_count(), content="2")
+}
+
+///|
+test "parse_and_schedule with blocking resources" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let html = "<link rel=\"stylesheet\" href=\"style.css\"><script src=\"app.js\"></script>"
+  let result = parse_and_schedule(scheduler, html)
+  // Both stylesheet and script are blocking
+  inspect(result.blocking_tasks.length(), content="2")
+}
+
+///|
+test "parse_and_schedule with inline content" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let html = "<style>.a{}</style><script>x=1</script>"
+  let result = parse_and_schedule(scheduler, html)
+  inspect(result.inline_style_count, content="1")
+  inspect(result.inline_script_count, content="1")
+  inspect(result.style_tasks.length(), content="1")
+  inspect(result.script_tasks.length(), content="1")
+}
