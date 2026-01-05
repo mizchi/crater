@@ -5,29 +5,50 @@
 
 ///|
 test "accname: A button using aria-owns to specify its label" {
-  let html = "<button aria-owns=\"play\" > <div aria-hidden=\"true\"> <span id=\"play\">Play</span> <span id=\"pause\">Pause</span> </div> </button>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Play\")")
+  let html =
+    #|<div>
+    #|  <span id="play">Play</span>
+    #|  <button aria-owns="play" > <div aria-hidden="true"> <span id="play">Play</span> <span id="pause">Pause</span> </div> </button>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Button)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"Play\")")
 }
 
 ///|
 test "accname: A link using aria-owns to concatenate extra text" {
-  let html = "<a href=\"https://www.w3.org/\" target=\"_blank\" aria-owns=\"new-window-warning-1\" > World Wide Web Consortium </a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let html =
+    #|<div>
+    #|  <span id="new-window-warning-1"> (opens in a new window)</span>
+    #|  <a href="https://www.w3.org/" target="_blank" aria-owns="new-window-warning-1" > World Wide Web Consortium </a>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
   inspect(
-    tree.root.name,
+    name,
     content="Some(\"World Wide Web Consortium (opens in a new window)\")",
   )
 }
 
 ///|
 test "accname: Ignore aria-owns when on an element that is hidden from all users" {
-  let html = "<h3 > <span hidden aria-owns=\"treasure\"> This ninja can’t steal the... </span> <mark id=\"treasure\">treasure</mark> </h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"treasure\")")
+  let html =
+    #|<div>
+    #|  <mark id="treasure">treasure</mark>
+    #|  <h3 > <span hidden aria-owns="treasure"> This ninja can’t steal the... </span> <mark id="treasure">treasure</mark> </h3>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"treasure\")")
 }
 
 ///|
@@ -48,34 +69,62 @@ test "accname: Computed name of parent heading excludes content relocated by ari
 
 ///|
 test "accname: Ignore aria-owns when on an element with aria-hidden" {
-  let html = "<h3 > <span aria-hidden=\"true\" aria-owns=\"reflection\"> This vampire can’t see its... </span> <mark id=\"reflection\">reflection</mark> </h3>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"reflection\")")
+  let html =
+    #|<div>
+    #|  <mark id="reflection">reflection</mark>
+    #|  <h3 > <span aria-hidden="true" aria-owns="reflection"> This vampire can’t see its... </span> <mark id="reflection">reflection</mark> </h3>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Heading)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"reflection\")")
 }
 
 ///|
 test "accname: Ignore aria-owns when it targets an element that is hidden from all users" {
-  let html = "<a href=\"https://www.w3.org/\" aria-owns=\"new-window-warning-2\" > World Wide Web Consortium </a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"World Wide Web Consortium\")")
+  let html =
+    #|<div>
+    #|  <span id="new-window-warning-2" hidden> (opens in a new window)</span>
+    #|  <a href="https://www.w3.org/" aria-owns="new-window-warning-2" > World Wide Web Consortium </a>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"World Wide Web Consortium\")")
 }
 
 ///|
 test "accname: Ignore aria-owns when it targets an element with an ancestor that is hidden from all users" {
-  let html = "<a href=\"https://www.w3.org/\" aria-owns=\"new-window-warning-3\" > World Wide Web Consortium </a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"World Wide Web Consortium\")")
+  let html =
+    #|<div>
+    #|  <span id="new-window-warning-3"> (opens in a new window)</span>
+    #|  <a href="https://www.w3.org/" aria-owns="new-window-warning-3" > World Wide Web Consortium </a>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"World Wide Web Consortium\")")
 }
 
 ///|
 test "accname: aria-hidden remains in effect on an element after it is relocated using aria-owns" {
-  let html = "<a href=\"https://www.w3.org/\" aria-owns=\"new-window-warning-4\" > World Wide Web Consortium </a>"
-  let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"World Wide Web Consortium\")")
+  let html =
+    #|<div>
+    #|  <span id="new-window-warning-4" aria-hidden="true"> (opens in a new window)</span>
+    #|  <a href="https://www.w3.org/" aria-owns="new-window-warning-4" > World Wide Web Consortium </a>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  // Find the test element by role
+  let nodes = tree.find_by_role(Link)
+  let name = if nodes.length() > 0 { nodes[0].name } else { None }
+  inspect(name, content="Some(\"World Wide Web Consortium\")")
 }
 
 ///|

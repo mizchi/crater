@@ -583,7 +583,23 @@ function generateAccnameTests(): string {
         }
       }
 
-      const needsDocument = needsAriaLabelledby || labelForElement !== "";
+      // Check for aria-owns references
+      const ariaOwnsMatch = cleanHtml.match(/aria-owns="([^"]+)"/);
+      const ariaOwnsIds = ariaOwnsMatch ? ariaOwnsMatch[1].split(" ") : [];
+      let ariaOwnsElements = "";
+      for (const ownsId of ariaOwnsIds) {
+        if (ownsId.trim()) {
+          // Find the element with this id in the full HTML
+          const ownsRegex = new RegExp(`<[^>]+id="${ownsId}"[^>]*>([\\s\\S]*?)</[^>]+>`, "i");
+          const ownsMatch = html.match(ownsRegex);
+          if (ownsMatch) {
+            const singleLine = ownsMatch[0].replace(/[\r\n]+/g, " ").replace(/\s+/g, " ");
+            ariaOwnsElements += `    #|  ${singleLine}\n`;
+          }
+        }
+      }
+
+      const needsDocument = needsAriaLabelledby || labelForElement !== "" || ariaOwnsElements !== "";
 
       // Sanitize test name for MoonBit and make unique
       let safeName = tc.testName.replace(/"/g, "'");
@@ -612,6 +628,11 @@ function generateAccnameTests(): string {
         // Add label[for] element
         if (labelForElement) {
           refElements += `    #|  ${labelForElement}\n`;
+        }
+
+        // Add aria-owns referenced elements
+        if (ariaOwnsElements) {
+          refElements += ariaOwnsElements;
         }
 
         if (refElements) {

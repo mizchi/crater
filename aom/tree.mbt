@@ -373,21 +373,23 @@ fn build_node(
   )
 
   // Add pseudo-element content (::before and ::after)
+  // Per accname spec, pseudo-element content is concatenated directly
+  // (the content value itself may contain spaces that act as joiners)
   let name = match base_name {
     Some(n) => {
       let before = get_before_content(element, ctx)
       let after = get_after_content(element, ctx)
-      let parts : Array[String] = []
+      let buf = StringBuilder::new()
       match before {
-        Some(b) => parts.push(b.trim().to_string())
+        Some(b) => buf.write_string(b)
         None => ()
       }
-      parts.push(n)
+      buf.write_string(n)
       match after {
-        Some(a) => parts.push(a.trim().to_string())
+        Some(a) => buf.write_string(a)
         None => ()
       }
-      Some(parts.join(" ").trim().to_string())
+      Some(buf.to_string().trim().to_string())
     }
     None => None
   }

@@ -552,13 +552,48 @@ fn get_embedded_control_value(element : @html.Element) -> String? {
 
 ///|
 /// Compute text content from element and children
+/// When extracting text content for name computation, we need to:
+/// 1. Get text from embedded controls (Step 2F)
+/// 2. Recursively extract text from all other elements
+/// 3. Include aria-owns referenced elements (Step 2D)
 fn compute_text_content(
   element : @html.Element,
-  ctx : NameComputationContext,
+  _ctx : NameComputationContext,
   find_by_id : (String) -> @html.Element?,
-  find_label_for_id : (String) -> @html.Element?,
+  _find_label_for_id : (String) -> @html.Element?,
 ) -> String {
   let parts : Array[String] = []
+  compute_text_content_recursive(element, parts)
+
+  // Step 2D: Include aria-owns referenced elements
+  match element.attributes.get("aria-owns") {
+    Some(ids) =>
+      for id in ids.split(" ") {
+        let id_str = id.to_string().trim().to_string()
+        if not(id_str.is_empty()) {
+          match find_by_id(id_str) {
+            Some(owned_elem) => {
+              // Get text from owned element (even if it's in aria-hidden context)
+              let owned_text = extract_all_text(owned_elem)
+              if not(owned_text.is_empty()) {
+                parts.push(owned_text)
+              }
+            }
+            Option::None => ()
+          }
+        }
+      }
+    Option::None => ()
+  }
+  parts.join(" ")
+}
+
+///|
+/// Recursively extract text content, handling embedded controls
+fn compute_text_content_recursive(
+  element : @html.Element,
+  parts : Array[String],
+) -> Unit {
   for child in element.children {
     match child {
       @html.Text(text) => {
@@ -567,27 +602,21 @@ fn compute_text_content(
           parts.push(trimmed)
         }
       }
-      @html.Element(child_elem) =>
+      @html.Element(child_elem) => {
+        // Skip hidden elements
+        if is_hidden(child_elem) {
+          continue
+        }
         // Step 2F: Check for embedded control value first
         match get_embedded_control_value(child_elem) {
           Some(value) => parts.push(value)
-          None => {
-            // Recursively compute name for child elements
-            let child_text = compute_name_step(
-              child_elem,
-              ctx,
-              find_by_id,
-              find_label_for_id,
-              None,
-            )
-            if not(child_text.is_empty()) {
-              parts.push(child_text)
-            }
-          }
+          None =>
+            // Recursively extract text from child elements
+            compute_text_content_recursive(child_elem, parts)
         }
+      }
     }
   }
-  parts.join(" ")
 }
 
 ///|
