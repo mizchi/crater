@@ -31,7 +31,9 @@ scheduler/
 ├── queue.mbt              # TaskQueue管理
 ├── scheduler.mbt          # Scheduler本体
 ├── html_integration.mbt   # HTML Parser統合
-└── task_wbtest.mbt        # テスト (25テスト)
+├── css_integration.mbt    # CSS Cascade統合
+├── layout_integration.mbt # LayoutTree統合
+└── task_wbtest.mbt        # テスト (48テスト)
 ```
 
 ## 実装計画
@@ -68,12 +70,12 @@ scheduler/
 - [x] `apply_blocks` / `is_source_blocked` - ブロック管理
 - [x] `cleanup` - 完了タスクのクリーンアップ
 
-### Phase 4: 統合
+### Phase 4: 統合 ✅
 
 - [x] HTML Parser との統合 (html_integration.mbt)
-- [ ] CSS Cascade との統合
-- [ ] LayoutTree との統合
-- [ ] ResourceId との連携
+- [x] CSS Cascade との統合 (css_integration.mbt)
+- [x] LayoutTree との統合 (layout_integration.mbt)
+- [x] ResourceId との連携 (画像リソース管理)
 
 ## 型設計
 
@@ -181,6 +183,93 @@ loop {
 │  │ Parser  │  │ Parser  │  │         │  │  Tree   │    │
 │  └─────────┘  └─────────┘  └─────────┘  └─────────┘    │
 └─────────────────────────────────────────────────────────┘
+```
+
+## 統合モジュール
+
+### HTML Parser 統合 (html_integration.mbt)
+
+HTMLパーサとスケジューラを統合し、リソース発見とタスク生成を行う。
+
+```moonbit
+// ドキュメントパーサ
+let parser = DocumentParser::new(scheduler)
+let result = parser.on_parse_complete(html)
+// result.fetch_tasks - 外部リソースのフェッチタスク
+// result.style_tasks - インラインスタイルのパースタスク
+// result.script_tasks - スクリプト実行タスク
+```
+
+主要な型:
+- `DocumentParser` - スケジューラ連携のHTMLパーサ
+- `DiscoveredResource` - 発見されたリソース（img, link, script）
+- `ResourceDiscoveryResult` - リソース発見結果
+- `ParseCompleteResult` - パース完了結果
+
+### CSS Cascade 統合 (css_integration.mbt)
+
+CSSカスケードとスケジューラを統合し、スタイル計算を管理する。
+
+```moonbit
+// スタイルマネージャ
+let style_manager = StyleManager::new(scheduler)
+style_manager.add_stylesheet_source(".foo { color: red; }")
+style_manager.add_inline_style("elem1", "margin: 10px")
+
+// スタイル計算
+let cascaded = style_manager.compute_style(selector_elem)
+```
+
+主要な型:
+- `StyleManager` - スタイルシートとカスケード計算を管理
+- `DocumentStyleCoordinator` - HTML+CSS統合調整
+- `CSSParseResult` - CSSパース結果
+
+### LayoutTree 統合 (layout_integration.mbt)
+
+LayoutTreeとスケジューラを統合し、レイアウト計算と画像リソースを管理する。
+
+```moonbit
+// レイアウトマネージャ
+let layout_manager = LayoutManager::new(scheduler)
+layout_manager.build_tree_from_html(doc, 800.0, 600.0)
+
+// レイアウトスケジューリング
+let task_id = layout_manager.schedule_layout()
+let result = layout_manager.execute_layout()
+
+// 画像リソース管理
+let reg = layout_manager.register_and_decode_image(node_uid)
+layout_manager.on_image_decoded(reg.resource_id, 640.0, 480.0)
+```
+
+主要な型:
+- `LayoutManager` - LayoutTreeとスケジューラを統合
+- `DocumentRenderCoordinator` - HTML/CSS/Layout統合パイプライン
+- `LayoutComputeResult` - レイアウト計算結果
+- `ImageRegistration` - 画像登録結果
+- `LayoutStats` - レイアウト統計
+
+### 統合パイプライン
+
+```
+HTML Parser → CSS Parser → Style Cascade → Layout Tree
+     ↓            ↓              ↓              ↓
+  タスク生成    タスク生成    スタイル計算    レイアウト計算
+     ↓            ↓              ↓              ↓
+  Scheduler が全てのタスクを管理・依存解決・実行順序決定
+```
+
+`DocumentRenderCoordinator` を使うと、これらを統合したパイプラインを簡単に構築できる:
+
+```moonbit
+let coordinator = DocumentRenderCoordinator::new(scheduler)
+let result = coordinator.process_html(
+  parse_result, discovered, viewport_width, viewport_height
+)
+// result.style_ready - スタイル計算準備完了か
+// result.layout_task - スケジュールされたレイアウトタスク
+// result.image_decode_tasks - 画像デコードタスク
 ```
 
 ## 注意事項
