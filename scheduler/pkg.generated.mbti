@@ -2,12 +2,18 @@
 package "mizchi/crater/scheduler"
 
 import(
+  "mizchi/crater/css/cascade"
+  "mizchi/crater/css/selector"
   "mizchi/crater/html"
   "moonbitlang/core/hashset"
 )
 
 // Values
+pub fn compute_element_style(StyleManager, @html.Element) -> @cascade.CascadedValues
+
 pub fn discover_resources(@html.Element) -> ResourceDiscoveryResult
+
+pub fn html_element_to_selector(@html.Element) -> @selector.Element
 
 pub fn parse_and_schedule(Scheduler, String, base_url? : String) -> ParseCompleteResult
 
@@ -17,6 +23,12 @@ pub fn reset_task_id_counter() -> Unit
 
 // Types and methods
 type BlockedSources
+
+pub(all) struct CSSParseResult {
+  stylesheet : @cascade.Stylesheet
+  recompute_task : TaskId?
+  rule_count : Int
+}
 
 pub(all) struct DiscoveredResource {
   url : String
@@ -37,6 +49,20 @@ pub fn DocumentParser::get_root(Self) -> @html.Element?
 pub fn DocumentParser::new(Scheduler, base_url? : String) -> Self
 pub fn DocumentParser::on_parse_complete(Self, String) -> ParseCompleteResult
 pub fn DocumentParser::start_parse(Self, String) -> TaskId
+
+pub struct DocumentStyleCoordinator {
+  scheduler : Scheduler
+  style_manager : StyleManager
+  mut parsed_stylesheets : Int
+  mut expected_stylesheets : Int
+  mut ready_for_style : Bool
+}
+pub fn DocumentStyleCoordinator::get_style_manager(Self) -> StyleManager
+pub fn DocumentStyleCoordinator::is_ready_for_style(Self) -> Bool
+pub fn DocumentStyleCoordinator::new(Scheduler) -> Self
+pub fn DocumentStyleCoordinator::on_stylesheet_fetched(Self, String) -> CSSParseResult
+pub fn DocumentStyleCoordinator::register_stylesheets(Self, ParseCompleteResult, ResourceDiscoveryResult) -> Unit
+pub fn DocumentStyleCoordinator::schedule_style_computation(Self, Array[String]) -> TaskId
 
 pub(all) struct InlineScript {
   source : String
@@ -115,6 +141,24 @@ pub fn SourceQueueManager::new() -> Self
 pub fn SourceQueueManager::push(Self, Task) -> Unit
 pub fn SourceQueueManager::remove(Self, TaskId) -> Task?
 pub fn SourceQueueManager::total_count(Self) -> Int
+
+pub struct StyleManager {
+  scheduler : Scheduler
+  stylesheets : Array[@cascade.Stylesheet]
+  inline_styles : Map[String, Array[@cascade.Declaration]]
+  computed_styles : Map[String, @cascade.CascadedValues]
+  mut source_order : Int
+}
+pub fn StyleManager::add_inline_style(Self, String, String) -> Unit
+pub fn StyleManager::add_stylesheet(Self, @cascade.Stylesheet) -> Unit
+pub fn StyleManager::add_stylesheet_source(Self, String) -> @cascade.Stylesheet
+pub fn StyleManager::compute_style(Self, @selector.Element) -> @cascade.CascadedValues
+pub fn StyleManager::invalidate_all_styles(Self) -> Unit
+pub fn StyleManager::invalidate_style(Self, String) -> Unit
+pub fn StyleManager::new(Scheduler) -> Self
+pub fn StyleManager::on_css_parsed(Self, String) -> CSSParseResult
+pub fn StyleManager::schedule_compute_style(Self, Array[String]) -> TaskId
+pub fn StyleManager::schedule_parse_css(Self, String) -> TaskId
 
 pub(all) struct Task {
   id : TaskId

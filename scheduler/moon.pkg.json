@@ -1,5 +1,8 @@
 {
   "import": [
-    "mizchi/crater/html"
+    "mizchi/crater/html",
+    "mizchi/crater/css/cascade",
+    "mizchi/crater/css/selector",
+    "mizchi/crater/css/parser"
   ]
 }

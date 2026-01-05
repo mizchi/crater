@@ -390,3 +390,149 @@ test "parse_and_schedule with inline content" {
   inspect(result.style_tasks.length(), content="1")
   inspect(result.script_tasks.length(), content="1")
 }
+
+// =============================================================================
+// CSS Integration Tests
+// =============================================================================
+
+///|
+test "StyleManager add stylesheet source" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let style_manager = StyleManager::new(scheduler)
+  let css = ".foo { color: red; }"
+  let stylesheet = style_manager.add_stylesheet_source(css)
+  inspect(stylesheet.rules.length(), content="1")
+}
+
+///|
+test "StyleManager add inline style" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let style_manager = StyleManager::new(scheduler)
+  style_manager.add_inline_style("elem1", "color: blue; font-size: 16px")
+  // Check inline styles are stored
+  match style_manager.inline_styles.get("elem1") {
+    Some(decls) => inspect(decls.length(), content="2")
+    None => panic()
+  }
+}
+
+///|
+test "StyleManager compute style with element" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let style_manager = StyleManager::new(scheduler)
+
+  // Add a stylesheet
+  let _ = style_manager.add_stylesheet_source(".test { width: 100px; }")
+
+  // Create a selector element with class "test"
+  let elem = @selector.Element::new("div").add_class("test").set_id("myid")
+  let cascaded = style_manager.compute_style(elem)
+
+  // Should have width from the rule
+  inspect(cascaded.has("width"), content="true")
+  inspect(cascaded.get_value("width"), content="Some(\"100px\")")
+}
+
+///|
+test "StyleManager invalidate styles" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let style_manager = StyleManager::new(scheduler)
+
+  // Add a stylesheet
+  let _ = style_manager.add_stylesheet_source(".test { width: 100px; }")
+
+  // Compute style to cache it
+  let elem = @selector.Element::new("div").add_class("test").set_id("myid")
+  let _ = style_manager.compute_style(elem)
+
+  // Cache should have the computed style
+  inspect(style_manager.computed_styles.contains("myid"), content="true")
+
+  // Invalidate
+  style_manager.invalidate_all_styles()
+  inspect(style_manager.computed_styles.is_empty(), content="true")
+}
+
+///|
+test "StyleManager schedule css parse" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let style_manager = StyleManager::new(scheduler)
+  let task_id = style_manager.schedule_parse_css(".foo { color: red; }")
+  inspect(scheduler.task_count(), content="1")
+  match scheduler.find_task(task_id) {
+    Some(task) =>
+      match task.action {
+        ParseCSS(_) => inspect(true, content="true")
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
+test "StyleManager on_css_parsed" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let style_manager = StyleManager::new(scheduler)
+  let result = style_manager.on_css_parsed(".foo { color: red; }")
+  inspect(result.rule_count, content="1")
+  inspect(style_manager.stylesheets.length(), content="1")
+}
+
+///|
+test "html_element_to_selector converts element" {
+  let html_elem : @html.Element = {
+    tag: "div",
+    id: Some("myid"),
+    classes: ["foo", "bar"],
+    style: None,
+    attributes: {},
+    children: [],
+  }
+  let sel_elem = html_element_to_selector(html_elem)
+  inspect(sel_elem.tag_name, content="div")
+  inspect(sel_elem.id, content="Some(\"myid\")")
+  inspect(sel_elem.has_class("foo"), content="true")
+  inspect(sel_elem.has_class("bar"), content="true")
+}
+
+///|
+test "DocumentStyleCoordinator basic flow" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let coordinator = DocumentStyleCoordinator::new(scheduler)
+
+  // Initially not ready (no stylesheets registered yet)
+  inspect(coordinator.is_ready_for_style(), content="false")
+
+  // Simulate fetching a stylesheet
+  let result = coordinator.on_stylesheet_fetched(".test { width: 50px; }")
+  inspect(result.rule_count, content="1")
+}
+
+///|
+test "split_by_semicolon" {
+  let result = split_by_semicolon("a: 1; b: 2; c: 3")
+  inspect(result.length(), content="3")
+  inspect(result[0], content="a: 1")
+  inspect(result[1], content=" b: 2")
+  inspect(result[2], content=" c: 3")
+}
+
+///|
+test "parse_inline_declarations" {
+  let decls = parse_inline_declarations("color: red; font-size: 16px")
+  inspect(decls.length(), content="2")
+}
+
+///|
+test "parse_inline_declarations with important" {
+  let decls = parse_inline_declarations("color: red !important")
+  inspect(decls.length(), content="1")
+  inspect(decls[0].importance, content="Important")
+}
