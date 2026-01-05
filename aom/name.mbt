@@ -386,7 +386,7 @@ fn extract_label_text_excluding_control(
 ) -> String {
   let buf = StringBuilder::new()
   extract_text_excluding_control_recursive(label, control, buf)
-  buf.to_string().trim().to_string()
+  normalize_whitespace(buf.to_string())
 }
 
 ///|
@@ -397,10 +397,7 @@ fn extract_text_excluding_control_recursive(
 ) -> Unit {
   for child in element.children {
     match child {
-      @html.Text(text) => {
-        buf.write_string(text)
-        buf.write_char(' ')
-      }
+      @html.Text(text) => buf.write_string(text)
       @html.Element(child_elem) => {
         // Skip the control element itself (the one being labeled)
         if is_same_element(child_elem, control) {
@@ -422,10 +419,7 @@ fn extract_text_excluding_control_recursive(
         if is_native_control || is_aria_widget {
           // Get embedded control value (accname Step 2F)
           match get_embedded_control_value(child_elem) {
-            Some(value) => {
-              buf.write_string(value)
-              buf.write_char(' ')
-            }
+            Some(value) => buf.write_string(value)
             None => ()
           }
           continue
@@ -562,8 +556,8 @@ fn compute_text_content(
   find_by_id : (String) -> @html.Element?,
   _find_label_for_id : (String) -> @html.Element?,
 ) -> String {
-  let parts : Array[String] = []
-  compute_text_content_recursive(element, parts)
+  let buf = StringBuilder::new()
+  compute_text_content_recursive(element, buf, false)
 
   // Step 2D: Include aria-owns referenced elements
   // Per ARIA spec: ignore aria-owns when target is hidden from all users
@@ -583,10 +577,11 @@ fn compute_text_content(
               if is_in_hidden_subtree(owned_elem, find_by_id) {
                 continue
               }
-              // Get text from owned element
-              let owned_text = extract_all_text(owned_elem)
+              // Get text from owned element - add space before aria-owns content
+              let owned_text = extract_all_text_raw(owned_elem)
               if not(owned_text.is_empty()) {
-                parts.push(owned_text)
+                buf.write_char(' ')
+                buf.write_string(owned_text)
               }
             }
             Option::None => ()
@@ -595,24 +590,15 @@ fn compute_text_content(
       }
     Option::None => ()
   }
-  parts.join(" ")
+  normalize_whitespace(buf.to_string())
 }
 
 ///|
 /// Recursively extract text content, handling embedded controls
+/// Uses StringBuilder to preserve original whitespace, then normalizes at the end
 fn compute_text_content_recursive(
   element : @html.Element,
-  parts : Array[String],
-) -> Unit {
-  compute_text_content_with_visibility(element, parts, false)
-}
-
-///|
-/// Recursively extract text content with visibility tracking
-/// in_hidden_visibility: true if an ancestor has visibility:hidden
-fn compute_text_content_with_visibility(
-  element : @html.Element,
-  parts : Array[String],
+  buf : StringBuilder,
   in_hidden_visibility : Bool,
 ) -> Unit {
   for child in element.children {
@@ -620,10 +606,8 @@ fn compute_text_content_with_visibility(
       @html.Text(text) =>
         // Skip text if we're in a visibility:hidden context
         if not(in_hidden_visibility) {
-          let trimmed = text.trim().to_string()
-          if not(trimmed.is_empty()) {
-            parts.push(trimmed)
-          }
+          // Write text as-is, preserving original whitespace
+          buf.write_string(text)
         }
       @html.Element(child_elem) => {
         // Skip completely hidden elements (display:none, aria-hidden, hidden)
@@ -645,11 +629,14 @@ fn compute_text_content_with_visibility(
 
         // Step 2F: Check for embedded control value first
         match get_embedded_control_value(child_elem) {
-          Some(value) => if not(child_hidden_visibility) { parts.push(value) }
+          Some(value) =>
+            if not(child_hidden_visibility) {
+              buf.write_string(value)
+            }
           None =>
             // Recursively extract text from child elements
-            compute_text_content_with_visibility(
-              child_elem, parts, child_hidden_visibility,
+            compute_text_content_recursive(
+              child_elem, buf, child_hidden_visibility,
             )
         }
       }
@@ -659,23 +646,50 @@ fn compute_text_content_with_visibility(
 
 ///|
 /// Extract all text content from element (simple, non-recursive aware)
+/// Normalizes whitespace in the result
 fn extract_all_text(element : @html.Element) -> String {
+  normalize_whitespace(extract_all_text_raw(element))
+}
+
+///|
+/// Extract all text content from element without normalizing
+fn extract_all_text_raw(element : @html.Element) -> String {
   let buf = StringBuilder::new()
   extract_text_recursive(element, buf)
-  buf.to_string().trim().to_string()
+  buf.to_string()
 }
 
 ///|
 fn extract_text_recursive(element : @html.Element, buf : StringBuilder) -> Unit {
   for child in element.children {
     match child {
-      @html.Text(text) => {
-        buf.write_string(text)
-        buf.write_char(' ')
-      }
+      @html.Text(text) => buf.write_string(text)
       @html.Element(child_elem) => extract_text_recursive(child_elem, buf)
     }
   }
+}
+
+///|
+/// Normalize whitespace: collapse consecutive whitespace to single space, trim
+fn normalize_whitespace(s : String) -> String {
+  let chars : Array[Char] = []
+  let mut last_was_space = true // Start true to skip leading whitespace
+  for c in s {
+    if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+      if not(last_was_space) {
+        chars.push(' ')
+        last_was_space = true
+      }
+    } else {
+      chars.push(c)
+      last_was_space = false
+    }
+  }
+  // Trim trailing space
+  while chars.length() > 0 && chars[chars.length() - 1] == ' ' {
+    let _ = chars.pop()
+  }
+  String::from_array(chars)
 }
 
 // =============================================================================

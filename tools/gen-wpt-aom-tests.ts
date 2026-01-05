@@ -295,14 +295,43 @@ function extractTestElement(html: string, testName: string): string | null {
     return openMatch[0];
   }
 
-  // Find the matching closing tag (simple approach - find first closing tag)
+  // Find the matching closing tag with proper nesting
   const afterOpen = html.substring(startIdx + openMatch[0].length);
-  const closeTagRegex = new RegExp(`<\\/${tagName}>`, "i");
-  const closeMatch = afterOpen.match(closeTagRegex);
+  let depth = 1;
+  let pos = 0;
+  const tagLower = tagName.toLowerCase();
 
-  if (closeMatch) {
-    const endIdx = startIdx + openMatch[0].length + closeMatch.index! + closeMatch[0].length;
-    return html.substring(startIdx, endIdx);
+  while (pos < afterOpen.length && depth > 0) {
+    const remaining = afterOpen.substring(pos);
+
+    // Look for next opening or closing tag of the same type
+    const openTagMatch = remaining.match(new RegExp(`<${tagLower}(?:\\s|>|\\/)`, "i"));
+    const closeTagMatch = remaining.match(new RegExp(`<\\/${tagLower}>`, "i"));
+
+    if (!closeTagMatch) {
+      // No more closing tags
+      break;
+    }
+
+    const closePos = closeTagMatch.index!;
+    const openPos = openTagMatch?.index ?? Infinity;
+
+    if (openPos < closePos) {
+      // Found an opening tag first - check if self-closing
+      const selfClosingTags = ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"];
+      if (!selfClosingTags.includes(tagLower)) {
+        depth++;
+      }
+      pos += openPos + 1;
+    } else {
+      // Found a closing tag
+      depth--;
+      if (depth === 0) {
+        const endIdx = startIdx + openMatch[0].length + pos + closePos + closeTagMatch[0].length;
+        return html.substring(startIdx, endIdx);
+      }
+      pos += closePos + closeTagMatch[0].length;
+    }
   }
 
   // If no closing tag found, return just the opening tag with a placeholder

@@ -446,8 +446,27 @@ fn Parser::parse_element(self : Parser) -> Element? {
 fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
   let children : Array[Node] = []
   while not(self.is_eof()) {
-    self.skip_whitespace()
     match self.peek() {
+      // Whitespace - collect it and decide what to do
+      Some(c) if is_whitespace(c) => {
+        let ws_start = self.pos
+        self.skip_whitespace()
+        // Check what follows the whitespace
+        match (self.peek(), self.peek_at(1)) {
+          // Opening tag (not closing) - discard whitespace (structural)
+          (Some('<'), Some(c)) if c != '/' && c != '!' => ()
+          // Closing tag, comment, EOF, or more text - whitespace is content
+          _ => {
+            // Rewind and parse as text
+            self.pos = ws_start
+            let text = self.parse_text()
+            if not(text.is_empty()) {
+              children.push(Node::Text(text))
+            }
+          }
+        }
+        continue
+      }
       Some('<') =>
         // Check if this is a closing tag
         match self.peek_at(1) {
@@ -565,7 +584,7 @@ fn Parser::parse_text(self : Parser) -> String {
       None => break
     }
   }
-  buf.to_string().trim().to_string()
+  buf.to_string()
 }
 
 ///|
