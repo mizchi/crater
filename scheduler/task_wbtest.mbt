@@ -536,3 +536,177 @@ test "parse_inline_declarations with important" {
   inspect(decls.length(), content="1")
   inspect(decls[0].importance, content="Important")
 }
+
+// =============================================================================
+// Layout Integration Tests
+// =============================================================================
+
+///|
+test "LayoutManager new" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  inspect(manager.get_tree() is None, content="true")
+  let stats = manager.get_stats()
+  inspect(stats.full_layout_count, content="0")
+  inspect(stats.incremental_layout_count, content="0")
+}
+
+///|
+test "LayoutManager schedule layout" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  let task_id = manager.schedule_layout()
+  inspect(scheduler.task_count(), content="1")
+  match scheduler.find_task(task_id) {
+    Some(task) =>
+      match task.action {
+        ComputeLayout => inspect(true, content="true")
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
+test "LayoutManager schedule layout after dependencies" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+
+  // Create dependency tasks
+  let css_task = scheduler.enqueue(ParseCSS(source=".foo {}"), MainThreadOnly)
+  let layout_task = manager.schedule_layout_after([css_task])
+
+  // Layout task should be pending (waiting for CSS)
+  match scheduler.find_task(layout_task) {
+    Some(task) => inspect(task.state, content="Pending")
+    None => panic()
+  }
+
+  // Complete CSS task
+  let _ = scheduler.complete(css_task, Success(new_tasks=[]))
+
+  // Layout task should now be ready
+  match scheduler.find_task(layout_task) {
+    Some(task) => inspect(task.state, content="Ready")
+    None => panic()
+  }
+}
+
+///|
+test "LayoutManager schedule urgent layout" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  let task_id = manager.schedule_layout_urgent()
+  match scheduler.find_task(task_id) {
+    Some(task) => inspect(task.priority, content="100")
+    None => panic()
+  }
+}
+
+///|
+test "LayoutManager execute layout without tree" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  let result = manager.execute_layout()
+  // No tree means we can't do incremental layout
+  inspect(result.was_incremental, content="false")
+  inspect(result.pending_images, content="0")
+  inspect(result.layout.width, content="0")
+}
+
+///|
+test "LayoutManager schedule resize without tree" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  let result = manager.schedule_resize(1024.0, 768.0)
+  inspect(result.resized, content="false")
+  inspect(result.layout_task is None, content="true")
+}
+
+///|
+test "LayoutManager get pending images without tree" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  let pending = manager.get_pending_images()
+  inspect(pending.length(), content="0")
+}
+
+///|
+test "LayoutManager schedule image decode" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let manager = LayoutManager::new(scheduler)
+  let rid = @tree.ResourceId(42)
+  let task_id = manager.schedule_image_decode(rid)
+  inspect(scheduler.task_count(), content="1")
+  match scheduler.find_task(task_id) {
+    Some(task) =>
+      match task.action {
+        DecodeImage(resource_id=id) => inspect(id, content="42")
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
+test "DocumentRenderCoordinator new" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let coordinator = DocumentRenderCoordinator::new(scheduler)
+  inspect(coordinator.is_ready_for_render(), content="false")
+}
+
+///|
+test "DocumentRenderCoordinator on stylesheet fetched" {
+  reset_task_id_counter()
+  let scheduler = Scheduler::new()
+  let coordinator = DocumentRenderCoordinator::new(scheduler)
+  let result = coordinator.on_stylesheet_fetched(".foo { width: 100px; }")
+  inspect(result.rule_count, content="1")
+}
+
+///|
+test "LayoutStats fields" {
+  let stats : LayoutStats = {
+    full_layout_count: 5,
+    incremental_layout_count: 10,
+    pending_images: 3,
+  }
+  inspect(stats.full_layout_count, content="5")
+  inspect(stats.incremental_layout_count, content="10")
+  inspect(stats.pending_images, content="3")
+}
+
+///|
+test "LayoutComputeResult fields" {
+  let layout : @node.Layout = {
+    id: "test",
+    x: 10.0,
+    y: 20.0,
+    width: 100.0,
+    height: 50.0,
+    margin: @types.Rect::all(0.0),
+    padding: @types.Rect::all(0.0),
+    border: @types.Rect::all(0.0),
+    overflow_x: @style.Overflow::Visible,
+    overflow_y: @style.Overflow::Visible,
+    children: [],
+    text: None,
+  }
+  let result : LayoutComputeResult = {
+    layout,
+    was_incremental: true,
+    pending_images: 2,
+  }
+  inspect(result.was_incremental, content="true")
+  inspect(result.pending_images, content="2")
+  inspect(result.layout.width, content="100")
+}

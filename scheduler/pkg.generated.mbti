@@ -5,6 +5,8 @@ import(
   "mizchi/crater/css/cascade"
   "mizchi/crater/css/selector"
   "mizchi/crater/html"
+  "mizchi/crater/node"
+  "mizchi/crater/tree"
   "moonbitlang/core/hashset"
 )
 
@@ -50,6 +52,19 @@ pub fn DocumentParser::new(Scheduler, base_url? : String) -> Self
 pub fn DocumentParser::on_parse_complete(Self, String) -> ParseCompleteResult
 pub fn DocumentParser::start_parse(Self, String) -> TaskId
 
+pub struct DocumentRenderCoordinator {
+  scheduler : Scheduler
+  style_coordinator : DocumentStyleCoordinator
+  layout_manager : LayoutManager
+  mut ready_for_render : Bool
+}
+pub fn DocumentRenderCoordinator::get_layout_manager(Self) -> LayoutManager
+pub fn DocumentRenderCoordinator::get_style_coordinator(Self) -> DocumentStyleCoordinator
+pub fn DocumentRenderCoordinator::is_ready_for_render(Self) -> Bool
+pub fn DocumentRenderCoordinator::new(Scheduler) -> Self
+pub fn DocumentRenderCoordinator::on_stylesheet_fetched(Self, String) -> CSSParseResult
+pub fn DocumentRenderCoordinator::process_html(Self, ParseCompleteResult, ResourceDiscoveryResult, Double, Double) -> RenderPipelineResult
+
 pub struct DocumentStyleCoordinator {
   scheduler : Scheduler
   style_manager : StyleManager
@@ -64,9 +79,55 @@ pub fn DocumentStyleCoordinator::on_stylesheet_fetched(Self, String) -> CSSParse
 pub fn DocumentStyleCoordinator::register_stylesheets(Self, ParseCompleteResult, ResourceDiscoveryResult) -> Unit
 pub fn DocumentStyleCoordinator::schedule_style_computation(Self, Array[String]) -> TaskId
 
+pub(all) struct ImageRegistration {
+  resource_id : @tree.ResourceId
+  decode_task : TaskId
+  registered : Bool
+}
+
 pub(all) struct InlineScript {
   source : String
   blocking : Bool
+}
+
+pub(all) struct LayoutComputeResult {
+  layout : @node.Layout
+  was_incremental : Bool
+  pending_images : Int
+}
+
+pub struct LayoutManager {
+  scheduler : Scheduler
+  mut layout_tree : @tree.LayoutTree?
+  mut last_layout : @node.Layout?
+  mut full_layout_count : Int
+  mut incremental_layout_count : Int
+  image_tasks : Map[Int, TaskId]
+}
+pub fn LayoutManager::batch_update_styles(Self, Array[(String, @cascade.CascadedValues)]) -> Int
+pub fn LayoutManager::build_tree(Self, @node.Node, Double, Double) -> Unit
+pub fn LayoutManager::build_tree_from_html(Self, @html.Document, Double, Double) -> Unit
+pub fn LayoutManager::execute_layout(Self, incremental? : Bool) -> LayoutComputeResult
+pub fn LayoutManager::get_pending_images(Self) -> Array[@tree.ResourceId]
+pub fn LayoutManager::get_stats(Self) -> LayoutStats
+pub fn LayoutManager::get_tree(Self) -> @tree.LayoutTree?
+pub fn LayoutManager::mark_node_dirty(Self, Int) -> Unit
+pub fn LayoutManager::new(Scheduler) -> Self
+pub fn LayoutManager::on_image_decoded(Self, @tree.ResourceId, Double, Double) -> TaskId?
+pub fn LayoutManager::on_image_failed(Self, @tree.ResourceId) -> TaskId?
+pub fn LayoutManager::register_and_decode_image(Self, Int, placeholder_width? : Double, placeholder_height? : Double) -> ImageRegistration
+pub fn LayoutManager::schedule_image_decode(Self, @tree.ResourceId) -> TaskId
+pub fn LayoutManager::schedule_layout(Self) -> TaskId
+pub fn LayoutManager::schedule_layout_after(Self, Array[TaskId]) -> TaskId
+pub fn LayoutManager::schedule_layout_urgent(Self) -> TaskId
+pub fn LayoutManager::schedule_resize(Self, Double, Double) -> ResizeResult
+pub fn LayoutManager::set_tree(Self, @tree.LayoutTree) -> Unit
+pub fn LayoutManager::update_node_style(Self, String, @cascade.CascadedValues) -> Bool
+
+pub(all) struct LayoutStats {
+  full_layout_count : Int
+  incremental_layout_count : Int
+  pending_images : Int
 }
 
 pub(all) struct ParseCompleteResult {
@@ -78,6 +139,17 @@ pub(all) struct ParseCompleteResult {
   resource_count : Int
   inline_style_count : Int
   inline_script_count : Int
+}
+
+pub(all) struct RenderPipelineResult {
+  style_ready : Bool
+  layout_task : TaskId?
+  image_decode_tasks : Array[TaskId]
+}
+
+pub(all) struct ResizeResult {
+  resized : Bool
+  layout_task : TaskId?
 }
 
 pub(all) struct ResourceDiscoveryResult {
