@@ -16,6 +16,8 @@ pub fn compute_node(LayoutNode, ConstraintSpace, CacheStats) -> @node.Layout
 
 pub fn compute_tree_incremental(LayoutTree, CacheStats) -> @node.Layout
 
+pub fn create_fixed_measure(Double, Double) -> @node.MeasureFunc
+
 pub let default_placeholder_height : Double
 
 pub let default_placeholder_width : Double
@@ -30,7 +32,13 @@ pub let error_placeholder_height : Double
 
 pub let error_placeholder_width : Double
 
+pub fn fail_node_resource(ResourceRegistry, (Int) -> LayoutNode?, (Int) -> Unit, ResourceId) -> Unit
+
 pub fn is_static(DependencyKind) -> Bool
+
+pub fn register_node_resource(ResourceRegistry, LayoutNode, (Int) -> Unit, placeholder_width? : Double, placeholder_height? : Double) -> ResourceId
+
+pub fn resolve_node_resource(ResourceRegistry, (Int) -> LayoutNode?, (Int) -> Unit, ResourceId, Double, Double) -> Unit
 
 // Errors
 
@@ -202,6 +210,7 @@ pub fn LayoutTree::from_html_document(@html.Document, Double, Double) -> Self
 pub fn LayoutTree::from_node(@node.Node, Double, Double) -> Self
 pub fn LayoutTree::get_parent(Self, Int) -> LayoutNode?
 pub fn LayoutTree::get_pending_resources(Self) -> Array[ResourceId]
+pub fn LayoutTree::get_resources(Self) -> ResourceRegistry
 pub fn LayoutTree::is_resource_pending(Self, ResourceId) -> Bool
 pub fn LayoutTree::mark_node_dirty(Self, Int) -> Unit
 pub fn LayoutTree::needs_layout(Self) -> Bool
@@ -226,7 +235,14 @@ pub struct ResourceRegistry {
   resource_nodes : Map[Int, Array[Int]]
   pending : @hashset.HashSet[Int]
 }
+pub fn ResourceRegistry::add_node(Self, ResourceId, Int) -> Unit
+pub fn ResourceRegistry::get_all_pending(Self) -> Array[ResourceId]
+pub fn ResourceRegistry::get_nodes(Self, ResourceId) -> Array[Int]
+pub fn ResourceRegistry::is_pending(Self, ResourceId) -> Bool
+pub fn ResourceRegistry::mark_pending(Self, ResourceId) -> Unit
+pub fn ResourceRegistry::mark_resolved(Self, ResourceId) -> Unit
 pub fn ResourceRegistry::new() -> Self
+pub fn ResourceRegistry::next_resource_id(Self) -> ResourceId
 
 pub(all) enum TreeChange {
   AddNode(String, Int, LayoutNode)

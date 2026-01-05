@@ -33,7 +33,10 @@ pub let error_placeholder_height : Double = 24.0
 
 ///|
 /// Create a fixed MeasureFunc for intrinsic sizing
-fn create_fixed_measure(width : Double, height : Double) -> @node.MeasureFunc {
+pub fn create_fixed_measure(
+  width : Double,
+  height : Double,
+) -> @node.MeasureFunc {
   {
     func: fn(_available_width, _available_height) -> @node.IntrinsicSize {
       {
@@ -63,14 +66,18 @@ pub fn ResourceRegistry::new() -> ResourceRegistry {
 }
 
 ///|
-fn ResourceRegistry::next_resource_id(self : ResourceRegistry) -> ResourceId {
+/// Generate a new unique resource ID
+pub fn ResourceRegistry::next_resource_id(
+  self : ResourceRegistry,
+) -> ResourceId {
   let id = self.next_id
   self.next_id += 1
   ResourceId(id)
 }
 
 ///|
-fn ResourceRegistry::add_node(
+/// Associate a node UID with a resource ID
+pub fn ResourceRegistry::add_node(
   self : ResourceRegistry,
   rid : ResourceId,
   node_uid : Int,
@@ -83,7 +90,8 @@ fn ResourceRegistry::add_node(
 }
 
 ///|
-fn ResourceRegistry::mark_pending(
+/// Mark a resource as pending (not yet resolved)
+pub fn ResourceRegistry::mark_pending(
   self : ResourceRegistry,
   rid : ResourceId,
 ) -> Unit {
@@ -92,7 +100,8 @@ fn ResourceRegistry::mark_pending(
 }
 
 ///|
-fn ResourceRegistry::mark_resolved(
+/// Mark a resource as resolved (size known)
+pub fn ResourceRegistry::mark_resolved(
   self : ResourceRegistry,
   rid : ResourceId,
 ) -> Unit {
@@ -101,7 +110,8 @@ fn ResourceRegistry::mark_resolved(
 }
 
 ///|
-fn ResourceRegistry::is_pending(
+/// Check if a resource is still pending
+pub fn ResourceRegistry::is_pending(
   self : ResourceRegistry,
   rid : ResourceId,
 ) -> Bool {
@@ -110,7 +120,8 @@ fn ResourceRegistry::is_pending(
 }
 
 ///|
-fn ResourceRegistry::get_nodes(
+/// Get all node UIDs associated with a resource
+pub fn ResourceRegistry::get_nodes(
   self : ResourceRegistry,
   rid : ResourceId,
 ) -> Array[Int] {
@@ -122,8 +133,91 @@ fn ResourceRegistry::get_nodes(
 }
 
 ///|
-fn ResourceRegistry::get_all_pending(
+/// Get all pending resource IDs
+pub fn ResourceRegistry::get_all_pending(
   self : ResourceRegistry,
 ) -> Array[ResourceId] {
   self.pending.iter().map(fn(id) { ResourceId(id) }).collect()
+}
+
+// =============================================================================
+// Standalone Resource Management Functions
+// These allow decoupled resource management without using LayoutTree methods
+// =============================================================================
+
+///|
+/// Register a new resource and set up a node with placeholder sizing
+/// Returns the ResourceId for later resolution
+pub fn register_node_resource(
+  registry : ResourceRegistry,
+  node : LayoutNode,
+  propagate_dirty : (Int) -> Unit,
+  placeholder_width? : Double = default_placeholder_width,
+  placeholder_height? : Double = default_placeholder_height,
+) -> ResourceId {
+  let rid = registry.next_resource_id()
+  registry.add_node(rid, node.uid)
+  registry.mark_pending(rid)
+  node.intrinsic_state = Some(Pending(placeholder_width~, placeholder_height~))
+  node.measure = Some(
+    create_fixed_measure(placeholder_width, placeholder_height),
+  )
+  node.mark_dirty()
+  propagate_dirty(node.uid)
+  rid
+}
+
+///|
+/// Resolve a resource with its actual size and update all associated nodes
+pub fn resolve_node_resource(
+  registry : ResourceRegistry,
+  find_node : (Int) -> LayoutNode?,
+  propagate_dirty : (Int) -> Unit,
+  rid : ResourceId,
+  width : Double,
+  height : Double,
+) -> Unit {
+  registry.mark_resolved(rid)
+  let aspect = if height > 0.0 { Some(width / height) } else { None }
+  for node_uid in registry.get_nodes(rid) {
+    match find_node(node_uid) {
+      Some(node) => {
+        node.intrinsic_state = Some(Resolved(width~, height~))
+        node.measure = Some(create_fixed_measure(width, height))
+        match node.style.aspect_ratio {
+          None => node.style.aspect_ratio = aspect
+          Some(_) => ()
+        }
+        node.mark_dirty()
+        propagate_dirty(node_uid)
+      }
+      None => ()
+    }
+  }
+}
+
+///|
+/// Mark a resource as failed and update all associated nodes with error placeholder
+pub fn fail_node_resource(
+  registry : ResourceRegistry,
+  find_node : (Int) -> LayoutNode?,
+  propagate_dirty : (Int) -> Unit,
+  rid : ResourceId,
+) -> Unit {
+  registry.mark_resolved(rid)
+  for node_uid in registry.get_nodes(rid) {
+    match find_node(node_uid) {
+      Some(node) => {
+        node.intrinsic_state = Some(Error)
+        node.measure = Some(
+          create_fixed_measure(
+            error_placeholder_width, error_placeholder_height,
+          ),
+        )
+        node.mark_dirty()
+        propagate_dirty(node_uid)
+      }
+      None => ()
+    }
+  }
 }

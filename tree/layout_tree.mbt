@@ -71,6 +71,13 @@ pub fn LayoutTree::find_node(self : LayoutTree, uid : Int) -> LayoutNode? {
 }
 
 ///|
+/// Get the resource registry for external management
+/// This allows decoupling resource management from LayoutTree
+pub fn LayoutTree::get_resources(self : LayoutTree) -> ResourceRegistry {
+  self.resources
+}
+
+///|
 /// Get parent of a node
 pub fn LayoutTree::get_parent(self : LayoutTree, uid : Int) -> LayoutNode? {
   match self.parent_map.get(uid) {
