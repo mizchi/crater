@@ -73,6 +73,27 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), 
 - `contain` (size, layout, inline-size)
 - `calc()` CSS function
 
+### Accessibility
+- **Accessible Name Computation** - WAI-ARIA accname-1.2 algorithm
+- **ARIA Snapshot** - Playwright-compatible YAML/JSON format
+- **Accessibility Tree** - Full tree structure with roles and states
+
+## Performance
+
+HTML parser benchmarks (on Apple Silicon):
+
+| Benchmark | Time |
+|-----------|------|
+| Simple HTML (100 elements) | ~27 µs |
+| Large document (100 sections × 20 paragraphs) | ~5.2 ms |
+| Attribute-heavy (200 elements, 6 attrs each) | ~390 µs |
+| Table (100×20 cells) | ~990 µs |
+
+Run benchmarks:
+```bash
+moon bench -p html
+```
+
 ## Limitations
 
 - **No font rendering**: Text measurement uses approximate monospace character sizing
