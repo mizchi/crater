@@ -254,11 +254,12 @@ HTML からアクセシビリティツリーを構築するモジュール。WAI
 
 ```
 aom/
-├── types.mbt          # Role, State, AccessibilityNode, AccessibilityTree
+├── types.mbt          # Role, State, Bounds, AccessibilityNode, AccessibilityTree
 ├── role.mbt           # HTML→Role推論
 ├── name.mbt           # Accessible Name計算 (accname spec)
-├── tree.mbt           # ツリー構築
+├── tree.mbt           # ツリー構築 + Layout統合
 ├── snapshot.mbt       # YAML/JSON出力 (Playwright互換)
+├── layout_test.mbt    # Layout統合テスト (7テスト)
 └── *_test.mbt         # テスト群
 ```
 
@@ -267,6 +268,7 @@ aom/
 | 機能 | 説明 |
 |------|------|
 | `build_accessibility_tree()` | HTML Document → AccessibilityTree |
+| `build_accessibility_tree_with_layout()` | HTML + LayoutTree → bounds付きAccessibilityTree |
 | `compute_role()` | 要素の暗黙的/明示的Role推論 |
 | `compute_accessible_name()` | aria-label, alt, title等からの名前計算 |
 | `to_aria_snapshot()` | Playwright互換YAML出力 |
@@ -274,7 +276,8 @@ aom/
 | `find_interactive()` | インタラクティブ要素の検索 |
 | `find_landmarks()` | ランドマーク要素の検索 |
 | `find_headings()` | 見出し要素の検索 |
-| `attach_bounds()` | Layoutの座標をアタッチ |
+| `extract_bounds_from_layout()` | LayoutTree から Bounds を抽出 |
+| `attach_bounds()` | Bounds を AccessibilityTree にアタッチ |
 
 ### 使用例
 
@@ -298,6 +301,40 @@ for node in interactive {
   // node.role, node.name, node.bounds
 }
 ```
+
+### Layout 統合
+
+LayoutTree と AccessibilityTree を統合して、各アクセシビリティノードに座標情報を付与。
+
+```moonbit
+// HTML と LayoutTree から bounds 付きツリーを構築
+let layout_tree = @tree.LayoutTree::from_html_document(doc, 800.0, 600.0)
+let _ = layout_tree.calculate_layout(800.0, 600.0)
+let a11y_tree = build_accessibility_tree_with_layout(doc, layout_tree)
+
+// 各ノードは bounds を持つ
+match a11y_tree.find_by_source_id("login-btn") {
+  Some(node) => {
+    // node.role = Button
+    // node.name = Some("ログイン")
+    // node.bounds = Some(Bounds { x: 300, y: 100, width: 100, height: 40 })
+  }
+  None => ()
+}
+
+// または手動で bounds を抽出してアタッチ
+let bounds_map = extract_bounds_from_layout(layout_tree)
+let tree_with_bounds = attach_bounds(a11y_tree, bounds_map)
+```
+
+#### 用途
+
+| 機能 | 説明 |
+|------|------|
+| Hit Testing | 座標からクリック対象を特定 |
+| キーボードナビゲーション | Y座標順にフォーカス移動 |
+| スクリーンリーダー | 要素位置の読み上げ |
+| AI TUI Browser | セマンティクス+座標でUI操作 |
 
 ### AI TUI Browser との統合
 
