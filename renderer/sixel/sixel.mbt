@@ -207,12 +207,12 @@ pub fn Framebuffer::draw_char(
   color : Int,
   scale : Int,
 ) -> Int {
-  // Handle CJK: draw filled rectangle for 2-column width
+  // Handle CJK: draw outlined rectangle for 2-column width (placeholder)
   if is_wide_char(c) {
     let char_w = font_width * 2 * scale
     let char_h = font_height * scale
-    // Draw filled rectangle for CJK placeholder
-    self.fill_rect(x, y, char_w, char_h, color)
+    // Draw outlined rectangle as CJK placeholder (not filled to avoid black blocks)
+    self.stroke_rect(x + 1, y + 1, char_w - 2, char_h - 2, color)
     return char_w
   }
   // Handle ASCII with bitmap font
@@ -930,4 +930,37 @@ pub fn render_with_styles(
 ) -> String {
   let paint_node = @paint.from_node_and_layout(node, layout)
   render_paint_node_to_sixel(paint_node, width, height)
+}
+
+///|
+/// Render PaintNode tree to Sixel string with scroll offset
+pub fn render_paint_node_to_sixel_scrolled(
+  node : @paint.PaintNode,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+) -> String {
+  let fb = Framebuffer::new(width, height)
+  let palette = DynamicPalette::new()
+  // Fill with white background
+  fb.fill_rect(0, 0, width, height, 0)
+  // Collect all colors first
+  collect_colors(palette, node)
+  // Render the tree with scroll offset
+  render_paint_node(fb, palette, node, 0.0, -scroll_y.to_double())
+  // Convert to Sixel
+  to_sixel_dynamic(fb, palette)
+}
+
+///|
+/// Render Node + Layout to Sixel string with CSS colors and scroll offset
+pub fn render_with_styles_scrolled(
+  node : @node.Node,
+  layout : @node.Layout,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+) -> String {
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  render_paint_node_to_sixel_scrolled(paint_node, width, height, scroll_y)
 }

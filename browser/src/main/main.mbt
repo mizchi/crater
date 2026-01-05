@@ -2,10 +2,6 @@
 /// TUI Browser - Main entry point
 
 ///|
-/// Default URL to load
-let default_url : String = "https://example.com"
-
-///|
 /// Default viewport size
 let viewport_width : Int = 375
 
@@ -29,18 +25,37 @@ fn render_page(browser : @browser.Browser) -> Unit {
 }
 
 ///|
+/// Get initial URL from args (required)
+fn get_initial_url() -> String? {
+  let args = @tui.get_args()
+  if args.length() > 0 {
+    Some(args[0])
+  } else {
+    None
+  }
+}
+
+///|
 /// Entry point - async main
 async fn main {
+  let initial_url = match get_initial_url() {
+    Some(url) => url
+    None => {
+      println("Usage: moon run src/main --target js -- <URL>")
+      println("Example: moon run src/main --target js -- https://example.com")
+      return
+    }
+  }
   let browser = @browser.Browser::new(viewport_width, viewport_height)
   // Print welcome message
   @tui.print_raw(@tui.clear_screen())
   @tui.print_raw(@tui.hide_cursor())
   println("TUI Browser MVP")
-  println("Loading " + default_url + "...")
+  println("Loading " + initial_url + "...")
   println("")
-  // Navigate to default URL
+  // Navigate to initial URL
   try {
-    let _ = browser.navigate(default_url)
+    let _ = browser.navigate(initial_url)
     render_page(browser)
   } catch {
     err => {

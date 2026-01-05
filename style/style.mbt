@@ -233,6 +233,19 @@ pub fn GridLine::auto() -> GridLine {
 }
 
 ///|
+/// Vertical alignment for inline elements
+pub(all) enum VerticalAlign {
+  Baseline // Align baseline (default, simplified to bottom for now)
+  Top // Align to top of line box
+  Middle // Align middle
+  Bottom // Align to bottom of line box
+  TextTop // Align to top of parent's font (simplified to Top)
+  TextBottom // Align to bottom of parent's font (simplified to Bottom)
+  Sub // Subscript position
+  Super // Superscript position
+} derive(Show, Eq)
+
+///|
 /// CSS Style definition for layout computation
 /// All fields are mutable to support Yoga-like setter API
 pub(all) struct Style {
@@ -293,6 +306,8 @@ pub(all) struct Style {
   // Font properties (for baseline calculation)
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut line_height : Double // Computed line height in pixels (default = font_size)
+  // Vertical alignment for inline elements
+  mut vertical_align : VerticalAlign
   // Paint properties (visual, not layout)
   mut visibility : Visibility
   mut z_index : ZIndex
@@ -370,6 +385,7 @@ pub fn Style::default() -> Style {
     justify_self: Auto,
     font_size: 16.0,
     line_height: 16.0,
+    vertical_align: Baseline,
     visibility: Visible,
     z_index: Auto,
     opacity: 1.0,

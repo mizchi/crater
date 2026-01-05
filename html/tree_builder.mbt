@@ -186,8 +186,10 @@ fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
   if self.pending_text.is_empty() {
     return
   }
-  let text = self.pending_text.to_string()
+  let raw_text = self.pending_text.to_string()
   self.pending_text.reset()
+  // Decode HTML entities
+  let text = decode_html_entities(raw_text)
   match self.current_node() {
     Some(current) => {
       // Try to append to last text node

@@ -25,7 +25,11 @@ pub fn render_layout_with_options(@node.Layout, Int, Int, Bool) -> String
 
 pub fn render_paint_node_to_sixel(@paint.PaintNode, Int, Int) -> String
 
+pub fn render_paint_node_to_sixel_scrolled(@paint.PaintNode, Int, Int, Int) -> String
+
 pub fn render_with_styles(@node.Node, @node.Layout, Int, Int) -> String
+
+pub fn render_with_styles_scrolled(@node.Node, @node.Layout, Int, Int, Int) -> String
 
 pub fn to_sixel(Framebuffer) -> String
 

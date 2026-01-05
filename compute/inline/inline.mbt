@@ -8,7 +8,7 @@ priv struct LineBox {
   items : Array[LineItem] // Items on this line
   mut width : Double // Current width of the line
   mut height : Double // Height of the line (max of all items)
-  // TODO: baseline is reserved for future vertical alignment
+  mut baseline : Double // Distance from top of line box to baseline
 }
 
 ///|
@@ -16,12 +16,12 @@ priv struct LineBox {
 priv struct LineItem {
   index : Int // Original child index
   layout : @node.Layout // Computed layout
-  // TODO: baseline is reserved for future vertical alignment
+  baseline : Double // Distance from top of item to its baseline
 }
 
 ///|
 fn LineBox::new() -> LineBox {
-  { items: [], width: 0.0, height: 0.0 }
+  { items: [], width: 0.0, height: 0.0, baseline: 0.0 }
 }
 
 ///|
@@ -30,15 +30,35 @@ fn LineBox::add_item(
   self : LineBox,
   index : Int,
   layout : @node.Layout,
-  _baseline : Double,
+  baseline : Double,
   margin_left : Double,
   margin_right : Double,
 ) -> Unit {
-  self.items.push({ index, layout })
+  self.items.push({ index, layout, baseline })
   self.width = self.width + layout.width + margin_left + margin_right
-  // Line height is the max of all item heights
-  if layout.height > self.height {
+
+  // Update line box baseline and height based on baseline alignment
+  // Items are aligned by their baselines, so we need to track:
+  // - max distance from top to baseline (above baseline)
+  // - max distance from baseline to bottom (below baseline)
+  let above_baseline = baseline
+  let below_baseline = layout.height - baseline
+  if self.items.length() == 1 {
+    // First item sets the initial baseline
+    self.baseline = above_baseline
     self.height = layout.height
+  } else {
+    // Adjust line box to accommodate this item's baseline
+    if above_baseline > self.baseline {
+      // This item has more content above baseline
+      self.height = self.height + (above_baseline - self.baseline)
+      self.baseline = above_baseline
+    }
+    let current_below = self.height - self.baseline
+    if below_baseline > current_below {
+      // This item has more content below baseline
+      self.height = self.baseline + below_baseline
+    }
   }
 }
 
@@ -97,8 +117,20 @@ pub fn compute_ifc(
       child, available_width, available_height,
     )
 
-    // Calculate baseline (simplified: bottom of box for now)
-    let baseline = child_layout.height
+    // Calculate baseline based on font metrics
+    // For text nodes, baseline is at font_size * ascender_ratio from top
+    // Typical ascender ratio is ~0.8 (80% of font height is above baseline)
+    let baseline = if child.text is Some(_) {
+      // Text node: use font metrics
+      let font_size = child.style.font_size
+      let ascender_ratio = 0.8 // Standard approximation
+      font_size * ascender_ratio +
+      child_layout.padding.top +
+      child_layout.border.top
+    } else {
+      // Non-text element: baseline is at bottom (last baseline of content)
+      child_layout.height
+    }
 
     // Check if this item fits in the current line
     if current_line.can_fit(
@@ -147,8 +179,32 @@ pub fn compute_ifc(
       // Position at current x with margin
       let x = current_x + child_margin.left
 
-      // Vertical alignment: align to bottom of line box (simplified baseline)
-      let y = current_y + (line.height - item.layout.height)
+      // Vertical alignment based on child's vertical-align property
+      let y = match child.style.vertical_align {
+        @style.VerticalAlign::Top | @style.VerticalAlign::TextTop =>
+          // Align to top of line box
+          current_y
+        @style.VerticalAlign::Middle =>
+          // Align to middle of line box
+          current_y + (line.height - item.layout.height) / 2.0
+        @style.VerticalAlign::Bottom | @style.VerticalAlign::TextBottom =>
+          // Align to bottom of line box
+          current_y + (line.height - item.layout.height)
+        @style.VerticalAlign::Baseline =>
+          // Align item's baseline to line box's baseline
+          // y_offset = line_baseline - item_baseline
+          current_y + (line.baseline - item.baseline)
+        @style.VerticalAlign::Sub => {
+          // Subscript: baseline shifted down by ~30% of font size
+          let baseline_y = current_y + (line.baseline - item.baseline)
+          baseline_y + child.style.font_size * 0.3
+        }
+        @style.VerticalAlign::Super => {
+          // Superscript: baseline shifted up by ~40% of font size
+          let baseline_y = current_y + (line.baseline - item.baseline)
+          baseline_y - child.style.font_size * 0.4
+        }
+      }
       let positioned : @node.Layout = {
         id: item.layout.id,
         x,

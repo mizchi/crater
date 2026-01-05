@@ -19,12 +19,16 @@ pub struct Browser {
   viewport_height : Int
   /// Current HTML content
   mut html_content : String
+  /// External CSS content
+  mut external_css : Array[String]
   /// Links found in current page
   mut links : Array[Link]
   /// Currently focused link index
   mut focused_link : Int
   /// Scroll position (Y offset)
   mut scroll_y : Int
+  /// Content height (for scroll limit)
+  mut content_height : Int
 }
 
 ///|
@@ -35,10 +39,94 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     viewport_width: width,
     viewport_height: height,
     html_content: "",
+    external_css: [],
     links: [],
     focused_link: 0,
     scroll_y: 0,
+    content_height: 0,
   }
+}
+
+///|
+/// Resolve relative URL to absolute
+fn resolve_url(base_url : String, href : String) -> String {
+  // Already absolute
+  if href.has_prefix("http://") || href.has_prefix("https://") {
+    return href
+  }
+  // Protocol-relative
+  if href.has_prefix("//") {
+    let protocol = if base_url.has_prefix("https://") {
+      "https:"
+    } else {
+      "http:"
+    }
+    return protocol + href
+  }
+  // Extract base from URL
+  let protocol_end = match base_url.find("://") {
+    Some(i) => i
+    None => return href
+  }
+  let after_protocol = try {
+    base_url[protocol_end + 3:].to_string()
+  } catch {
+    _ => return href
+  }
+  let path_start = after_protocol.find("/")
+  let origin = match path_start {
+    Some(i) =>
+      try {
+        base_url[:protocol_end + 3 + i].to_string()
+      } catch {
+        _ => base_url
+      }
+    None => base_url
+  }
+  // Root-relative
+  if href.has_prefix("/") {
+    return origin + href
+  }
+  // Relative - append to current path
+  let last_slash = base_url.rev_find("/")
+  match last_slash {
+    Some(i) if i > protocol_end + 2 =>
+      try {
+        base_url[:i + 1].to_string() + href
+      } catch {
+        _ => origin + "/" + href
+      }
+    _ => origin + "/" + href
+  }
+}
+
+///|
+/// Fetch external stylesheets and return CSS array
+async fn fetch_external_css(html : String, base_url : String) -> Array[String] {
+  let doc = @html.parse_document(html)
+  let link_count = doc.stylesheet_links.length()
+  if link_count == 0 {
+    return []
+  }
+  println("Found " + link_count.to_string() + " external stylesheets")
+  // Fetch all external CSS
+  let css_contents : Array[String] = []
+  for link in doc.stylesheet_links {
+    let css_url = resolve_url(base_url, link)
+    println("Fetching CSS: " + css_url)
+    // Try to fetch CSS, ignore errors
+    try {
+      let response = @http.fetch(css_url)
+      css_contents.push(response.body)
+      println("  -> OK (" + response.body.length().to_string() + " bytes)")
+    } catch {
+      err => println("  -> Error: " + err.to_string())
+    }
+  }
+  println(
+    "Loaded " + css_contents.length().to_string() + " stylesheets",
+  )
+  css_contents
 }
 
 ///|
@@ -51,10 +139,23 @@ pub async fn Browser::navigate(
   // Fetch the page
   let response = @http.fetch(url)
   self.html_content = response.body
+  // Fetch external CSS
+  self.external_css = try {
+    fetch_external_css(self.html_content, url)
+  } catch {
+    _ => [] // Fallback to no external CSS on error
+  }
   // Extract links from HTML
   self.links = extract_links(self.html_content)
   self.focused_link = 0
   self.scroll_y = 0
+  // Calculate content height
+  self.content_height = @renderer.get_content_height_with_css(
+    self.html_content,
+    self.viewport_width,
+    self.viewport_height,
+    self.external_css,
+  )
   // Render to Sixel
   self.render()
 }
@@ -65,17 +166,25 @@ pub fn Browser::render(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  @renderer.render_to_sixel_with_styles(
+  @renderer.render_to_sixel_with_css(
     self.html_content,
     self.viewport_width,
     self.viewport_height,
+    self.scroll_y,
+    self.external_css,
   )
+}
+
+///|
+/// Get maximum scroll position
+fn Browser::max_scroll(self : Browser) -> Int {
+  (self.content_height - self.viewport_height).max(0)
 }
 
 ///|
 /// Scroll down
 pub fn Browser::scroll_down(self : Browser, amount : Int) -> Unit {
-  self.scroll_y = self.scroll_y + amount
+  self.scroll_y = (self.scroll_y + amount).min(self.max_scroll())
 }
 
 ///|

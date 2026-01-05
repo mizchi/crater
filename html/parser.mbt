@@ -637,6 +637,135 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
 }
 
 ///|
+/// Decode HTML entities in text
+fn decode_html_entities(text : String) -> String {
+  if not(text.contains("&")) {
+    return text
+  }
+  let buf = StringBuilder::new()
+  let chars = text.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    if chars[i] == '&' {
+      // Try to find entity end
+      let mut j = i + 1
+      while j < len &&
+            j - i < 12 &&
+            chars[j] != ';' &&
+            chars[j] != '&' &&
+            chars[j] != '<' {
+        j = j + 1
+      }
+      if j < len && chars[j] == ';' {
+        // Extract entity name - use String::from_array to convert char slice to string
+        let entity = String::from_array(chars[i + 1:j])
+        match decode_entity(entity) {
+          Some(decoded) => {
+            buf.write_string(decoded)
+            i = j + 1
+            continue
+          }
+          None => ()
+        }
+      }
+    }
+    buf.write_char(chars[i])
+    i = i + 1
+  }
+  buf.to_string()
+}
+
+///|
+/// Decode a single HTML entity (without & and ;)
+fn decode_entity(entity : String) -> String? {
+  // Numeric entities
+  if entity.has_prefix("#x") || entity.has_prefix("#X") {
+    // Hex numeric entity
+    let hex = entity[2:].to_string() catch { _ => return None }
+    match parse_hex(hex) {
+      Some(code) => return Some(code.unsafe_to_char().to_string())
+      None => return None
+    }
+  }
+  if entity.has_prefix("#") {
+    // Decimal numeric entity
+    let num = entity[1:].to_string() catch { _ => return None }
+    match parse_decimal(num) {
+      Some(code) => return Some(code.unsafe_to_char().to_string())
+      None => return None
+    }
+  }
+  // Named entities (common ones)
+  match entity {
+    "nbsp" => Some("\u00A0")
+    "amp" => Some("&")
+    "lt" => Some("<")
+    "gt" => Some(">")
+    "quot" => Some("\"")
+    "apos" => Some("'")
+    "copy" => Some("\u00A9")
+    "reg" => Some("\u00AE")
+    "trade" => Some("\u2122")
+    "mdash" => Some("\u2014")
+    "ndash" => Some("\u2013")
+    "lsquo" => Some("\u2018")
+    "rsquo" => Some("\u2019")
+    "ldquo" => Some("\u201C")
+    "rdquo" => Some("\u201D")
+    "hellip" => Some("\u2026")
+    "bull" => Some("\u2022")
+    "middot" => Some("\u00B7")
+    "cent" => Some("\u00A2")
+    "pound" => Some("\u00A3")
+    "euro" => Some("\u20AC")
+    "yen" => Some("\u00A5")
+    "deg" => Some("\u00B0")
+    "plusmn" => Some("\u00B1")
+    "times" => Some("\u00D7")
+    "divide" => Some("\u00F7")
+    "frac12" => Some("\u00BD")
+    "frac14" => Some("\u00BC")
+    "frac34" => Some("\u00BE")
+    _ => None
+  }
+}
+
+///|
+/// Parse hex string to int
+fn parse_hex(s : String) -> Int? {
+  let chars = s.to_array()
+  let mut result = 0
+  for c in chars {
+    let digit = match c {
+      '0'..='9' => c.to_int() - '0'.to_int()
+      'a'..='f' => c.to_int() - 'a'.to_int() + 10
+      'A'..='F' => c.to_int() - 'A'.to_int() + 10
+      _ => return None
+    }
+    result = result * 16 + digit
+  }
+  Some(result)
+}
+
+///|
+/// Parse decimal string to int
+fn parse_decimal(s : String) -> Int? {
+  let chars = s.to_array()
+  if chars.length() == 0 {
+    return None
+  }
+  let mut result = 0
+  for c in chars {
+    match c {
+      '0'..='9' => result = result * 10 + (c.to_int() - '0'.to_int())
+      _ => return None
+    }
+  }
+  Some(result)
+}
+
+///|
 fn Parser::parse_text(self : Parser) -> String {
   let buf = StringBuilder::new()
   while not(self.is_eof()) {
@@ -650,7 +779,7 @@ fn Parser::parse_text(self : Parser) -> String {
       None => break
     }
   }
-  buf.to_string()
+  decode_html_entities(buf.to_string())
 }
 
 ///|

@@ -225,3 +225,33 @@ test "parse html with body and children" {
     _ => ()
   }
 }
+
+///|
+test "parse html entities in text" {
+  let html = "<p>Hello&nbsp;World &amp; &lt;test&gt;</p>"
+  match @html.parse(html) {
+    Some(e) => {
+      inspect(e.tag, content="p")
+      match e.children[0] {
+        @html.Node::Text(t) =>
+          // nbsp is \u00A0 (non-breaking space)
+          inspect(t, content="Hello World & <test>")
+        _ => inspect(false, content="should be text")
+      }
+    }
+    None => inspect(false, content="should parse")
+  }
+}
+
+///|
+test "parse numeric html entities" {
+  let html = "<p>&#60;&#x3E;</p>"
+  match @html.parse(html) {
+    Some(e) =>
+      match e.children[0] {
+        @html.Node::Text(t) => inspect(t, content="<>")
+        _ => inspect(false, content="should be text")
+      }
+    None => inspect(false, content="should parse")
+  }
+}

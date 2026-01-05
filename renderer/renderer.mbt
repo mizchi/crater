@@ -238,11 +238,12 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     // Use parent's font_size and line_height for text measurement
     let font_size = parent_style.font_size
     let text_line_height = parent_style.line_height
-    // Create text style with inherited font properties for baseline calculation
+    // Create text style with inherited font properties and color for rendering
     let text_style : @style.Style = {
       ..@style.Style::default(),
       font_size,
       line_height: text_line_height,
+      color: parent_style.color,
     }
     // Use Node::text to store the text content for rendering
     @node.Node::text(
@@ -580,11 +581,27 @@ fn find_body(elem : @html.Element) -> @html.Element? {
 ///|
 /// Render HTML string to Layout
 pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
+  render_with_external_css(html, ctx, [])
+}
+
+///|
+/// Render HTML string to Layout with external CSS
+pub fn render_with_external_css(
+  html : String,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> @node.Layout {
   // Parse HTML document (includes stylesheet extraction)
   let doc = @html.parse_document(html)
 
-  // Parse stylesheets from <style> tags
+  // Parse stylesheets from <style> tags and external CSS
   let stylesheets : Array[@cascade.Stylesheet] = []
+  // First add external CSS (lower priority)
+  for css in external_css {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  // Then add inline styles (higher priority)
   for css in doc.stylesheets {
     let stylesheet = @parser.parse_stylesheet(css)
     stylesheets.push(stylesheet)
@@ -660,8 +677,24 @@ pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
 ///|
 /// Render HTML to Node tree (for testing/debugging)
 pub fn render_to_node(html : String, ctx : RenderContext) -> @node.Node {
+  render_to_node_with_external_css(html, ctx, [])
+}
+
+///|
+/// Render HTML to Node tree with external CSS
+pub fn render_to_node_with_external_css(
+  html : String,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> @node.Node {
   let doc = @html.parse_document(html)
   let stylesheets : Array[@cascade.Stylesheet] = []
+  // First add external CSS (lower priority)
+  for css in external_css {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  // Then add inline styles (higher priority)
   for css in doc.stylesheets {
     let stylesheet = @parser.parse_stylesheet(css)
     stylesheets.push(stylesheet)
@@ -671,6 +704,39 @@ pub fn render_to_node(html : String, ctx : RenderContext) -> @node.Node {
     None => doc.root
   }
   element_to_node_with_styles(render_root, None, ctx, stylesheets)
+}
+
+///|
+/// Check if element should be skipped during rendering
+fn should_skip_element(tag : String) -> Bool {
+  match tag {
+    // Script and style elements
+    "script"
+    | "noscript"
+    | "style"
+    // Metadata elements (shouldn't appear in body, but handle invalid HTML)
+    | "head"
+    | "meta"
+    | "link"
+    | "title"
+    | "base"
+    // Template and embedded content
+    | "template"
+    | "iframe"
+    | "object"
+    | "embed"
+    | "applet"
+    // Media elements (not yet supported)
+    | "video"
+    | "audio"
+    | "canvas"
+    | "svg"
+    | "math"
+    // Other non-visual elements
+    | "map"
+    | "area" => true
+    _ => false
+  }
 }
 
 ///|
@@ -708,6 +774,10 @@ fn element_to_node_with_styles(
   for i, child in remaining_children {
     match child {
       @html.Node::Element(child_elem) => {
+        // Skip non-rendered elements
+        if should_skip_element(child_elem.tag) {
+          continue
+        }
         // Update sibling info on selector element for child processing
         let child_selector = html_to_selector_element_with_parent(
           child_elem,
@@ -772,6 +842,10 @@ fn element_to_node_with_styles_internal(
   for i, child in remaining_children {
     match child {
       @html.Node::Element(child_elem) => {
+        // Skip non-rendered elements
+        if should_skip_element(child_elem.tag) {
+          continue
+        }
         let child_selector = html_to_selector_element_with_parent(
           child_elem,
           selector_elem,
@@ -1663,15 +1737,67 @@ pub fn render_to_sixel_with_styles(
   width : Int,
   height : Int,
 ) -> String {
+  render_to_sixel_with_scroll(html, width, height, 0)
+}
+
+///|
+/// Render HTML to Sixel string with actual CSS colors and scroll offset
+pub fn render_to_sixel_with_scroll(
+  html : String,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+) -> String {
+  render_to_sixel_with_css(html, width, height, scroll_y, [])
+}
+
+///|
+/// Render HTML to Sixel with external CSS and scroll offset
+pub fn render_to_sixel_with_css(
+  html : String,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+  external_css : Array[String],
+) -> String {
   let ctx : RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
   }
   // Get both Node tree (for styles) and Layout (for positions)
-  let node = render_to_node(html, ctx)
+  let node = render_to_node_with_external_css(html, ctx, external_css)
+  let layout = render_with_external_css(html, ctx, external_css)
+  @sixel.render_with_styles_scrolled(node, layout, width, height, scroll_y)
+}
+
+///|
+/// Get content height with external CSS
+pub fn get_content_height_with_css(
+  html : String,
+  width : Int,
+  height : Int,
+  external_css : Array[String],
+) -> Int {
+  let ctx : RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+  }
+  let layout = render_with_external_css(html, ctx, external_css)
+  layout.height.to_int()
+}
+
+///|
+/// Get content height from HTML
+pub fn get_content_height(html : String, width : Int, height : Int) -> Int {
+  let ctx : RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+  }
   let layout = render(html, ctx)
-  @sixel.render_with_styles(node, layout, width, height)
+  layout.height.to_int()
 }
 
 ///|

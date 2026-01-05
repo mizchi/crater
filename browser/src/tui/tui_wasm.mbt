@@ -18,3 +18,9 @@ pub fn read_line(_prompt : String) -> String {
 pub fn print_raw(_s : String) -> Unit {
   ()
 }
+
+///|
+/// Get command line arguments - not supported in WASM
+pub fn get_args() -> Array[String] {
+  []
+}

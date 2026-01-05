@@ -110,6 +110,8 @@ priv struct StyleBuilder {
   // Font properties
   mut font_size : Double
   mut line_height : Double
+  // Vertical alignment for inline elements
+  mut vertical_align : @style.VerticalAlign
   // Paint properties
   mut visibility : @style.Visibility
   mut z_index : @style.ZIndex
@@ -175,6 +177,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_row_end: @style.GridPlacement::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    vertical_align: @style.VerticalAlign::Baseline,
     visibility: @style.Visibility::Visible,
     z_index: @style.ZIndex::Auto,
     opacity: 1.0,
@@ -250,6 +253,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_self: @style.AlignSelf::Auto,
     font_size: self.font_size,
     line_height: self.line_height,
+    vertical_align: self.vertical_align,
     visibility: self.visibility,
     z_index: self.z_index,
     opacity: self.opacity,
@@ -765,6 +769,7 @@ fn apply_property(
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
       builder.line_height = parse_line_height(value, builder.font_size)
+    "vertical-align" => builder.vertical_align = parse_vertical_align(value)
     "font" => {
       // Parse font shorthand: [style] [variant] [weight] size[/line-height] family
       let (fs, lh) = parse_font_shorthand(value, ctx)
@@ -1787,6 +1792,22 @@ fn parse_visibility(value : String) -> @style.Visibility {
     "hidden" => @style.Visibility::Hidden
     "collapse" => @style.Visibility::Collapse
     _ => @style.Visibility::Visible
+  }
+}
+
+///|
+/// Parse vertical-align property
+fn parse_vertical_align(value : String) -> @style.VerticalAlign {
+  match value.trim().to_string() {
+    "baseline" => @style.VerticalAlign::Baseline
+    "top" => @style.VerticalAlign::Top
+    "middle" => @style.VerticalAlign::Middle
+    "bottom" => @style.VerticalAlign::Bottom
+    "text-top" => @style.VerticalAlign::TextTop
+    "text-bottom" => @style.VerticalAlign::TextBottom
+    "sub" => @style.VerticalAlign::Sub
+    "super" => @style.VerticalAlign::Super
+    _ => @style.VerticalAlign::Baseline
   }
 }
 

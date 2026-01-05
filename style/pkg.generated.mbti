@@ -233,6 +233,7 @@ pub(all) struct Style {
   mut justify_self : AlignSelf
   mut font_size : Double
   mut line_height : Double
+  mut vertical_align : VerticalAlign
   mut visibility : Visibility
   mut z_index : ZIndex
   mut opacity : Double
@@ -256,6 +257,19 @@ pub(all) enum TrackSizingFunction {
 }
 pub impl Eq for TrackSizingFunction
 pub impl Show for TrackSizingFunction
+
+pub(all) enum VerticalAlign {
+  Baseline
+  Top
+  Middle
+  Bottom
+  TextTop
+  TextBottom
+  Sub
+  Super
+}
+pub impl Eq for VerticalAlign
+pub impl Show for VerticalAlign
 
 pub(all) enum Visibility {
   Visible

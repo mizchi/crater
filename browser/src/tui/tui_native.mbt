@@ -22,3 +22,10 @@ pub fn read_line(_prompt : String) -> String {
 pub fn print_raw(s : String) -> Unit {
   println(s)
 }
+
+///|
+/// Get command line arguments (stub for native)
+pub fn get_args() -> Array[String] {
+  // TODO: implement native argument parsing
+  []
+}

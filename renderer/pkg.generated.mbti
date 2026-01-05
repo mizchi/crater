@@ -12,6 +12,10 @@ pub fn apply_css_property_debug(@style.Style, String, String) -> @style.Style
 
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
+pub fn get_content_height(String, Int, Int) -> Int
+
+pub fn get_content_height_with_css(String, Int, Int, Array[String]) -> Int
+
 pub fn layout_to_json(@node.Layout) -> String
 
 pub fn print_layout_tree(@node.Layout, Int) -> Unit
@@ -22,9 +26,17 @@ pub fn render(String, RenderContext) -> @node.Layout
 
 pub fn render_to_node(String, RenderContext) -> @node.Node
 
+pub fn render_to_node_with_external_css(String, RenderContext, Array[String]) -> @node.Node
+
 pub fn render_to_sixel(String, Int, Int) -> String
 
+pub fn render_to_sixel_with_css(String, Int, Int, Int, Array[String]) -> String
+
+pub fn render_to_sixel_with_scroll(String, Int, Int, Int) -> String
+
 pub fn render_to_sixel_with_styles(String, Int, Int) -> String
+
+pub fn render_with_external_css(String, RenderContext, Array[String]) -> @node.Layout
 
 // Errors
 
