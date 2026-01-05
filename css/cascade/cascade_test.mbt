@@ -286,3 +286,157 @@ test "multiple stylesheets" {
   // Author beats UA
   inspect(result.get_value("width"), content="Some(\"100px\")")
 }
+
+///|
+test "specificity - ID beats class" {
+  let stylesheet = Stylesheet::new(Author)
+
+  // Class selector (0,1,0)
+  let class_sel = @selector.parse_selector_text(".container")
+  match class_sel {
+    Some(selector) =>
+      stylesheet.add_rule(".container", selector, [
+        Declaration::new("width", "100px"),
+      ])
+    None => fail("failed to parse class selector")
+  }
+
+  // ID selector (1,0,0)
+  let id_sel = @selector.parse_selector_text("#main")
+  match id_sel {
+    Some(selector) =>
+      stylesheet.add_rule("#main", selector, [
+        Declaration::new("width", "200px"),
+      ])
+    None => fail("failed to parse id selector")
+  }
+
+  // Element with both class and id
+  let element = @selector.Element::new("div")
+    .set_id("main")
+    .add_class("container")
+  let result = cascade_element(element, [stylesheet], [])
+
+  // ID selector should win (higher specificity)
+  inspect(result.get_value("width"), content="Some(\"200px\")")
+}
+
+///|
+test "specificity - combined selectors" {
+  let stylesheet = Stylesheet::new(Author)
+
+  // Type selector (0,0,1)
+  let type_sel = @selector.parse_selector_text("div")
+  match type_sel {
+    Some(selector) =>
+      stylesheet.add_rule("div", selector, [Declaration::new("color", "red")])
+    None => fail("failed to parse type selector")
+  }
+
+  // Class + type selector (0,1,1)
+  let class_type_sel = @selector.parse_selector_text("div.highlight")
+  match class_type_sel {
+    Some(selector) =>
+      stylesheet.add_rule("div.highlight", selector, [
+        Declaration::new("color", "blue"),
+      ])
+    None => fail("failed to parse class+type selector")
+  }
+
+  // Element with class
+  let element = @selector.Element::new("div").add_class("highlight")
+  let result = cascade_element(element, [stylesheet], [])
+
+  // div.highlight (0,1,1) should beat div (0,0,1)
+  inspect(result.get_value("color"), content="Some(\"blue\")")
+}
+
+///|
+test "cascade order - later declaration wins at same specificity" {
+  let stylesheet = Stylesheet::new(Author)
+
+  // First rule
+  let sel1 = @selector.parse_selector_text(".box")
+  match sel1 {
+    Some(selector) =>
+      stylesheet.add_rule(".box", selector, [Declaration::new("width", "100px")])
+    None => fail("failed to parse selector")
+  }
+
+  // Second rule with same specificity but later
+  let sel2 = @selector.parse_selector_text(".container")
+  match sel2 {
+    Some(selector) =>
+      stylesheet.add_rule(".container", selector, [
+        Declaration::new("width", "200px"),
+      ])
+    None => fail("failed to parse selector")
+  }
+
+  // Element with both classes
+  let element = @selector.Element::new("div")
+    .add_class("box")
+    .add_class("container")
+  let result = cascade_element(element, [stylesheet], [])
+
+  // Later declaration should win
+  inspect(result.get_value("width"), content="Some(\"200px\")")
+}
+
+///|
+test "pseudo-class :not() specificity" {
+  let stylesheet = Stylesheet::new(Author)
+
+  // Simple class (0,1,0)
+  let class_sel = @selector.parse_selector_text(".item")
+  match class_sel {
+    Some(selector) =>
+      stylesheet.add_rule(".item", selector, [Declaration::new("color", "red")])
+    None => fail("failed to parse class selector")
+  }
+
+  // :not(.hidden) with .item (0,2,0 - :not contributes its argument's specificity)
+  let not_sel = @selector.parse_selector_text(".item:not(.hidden)")
+  match not_sel {
+    Some(selector) =>
+      stylesheet.add_rule(".item:not(.hidden)", selector, [
+        Declaration::new("color", "green"),
+      ])
+    None => fail("failed to parse :not selector")
+  }
+
+  // Element with class="item" (not hidden)
+  let element = @selector.Element::new("div").add_class("item")
+  let result = cascade_element(element, [stylesheet], [])
+
+  // :not(.hidden) specificity = 0,2,0 (class + :not argument's class)
+  inspect(result.get_value("color"), content="Some(\"green\")")
+}
+
+///|
+test "pseudo-class :where() has zero specificity" {
+  let stylesheet = Stylesheet::new(Author)
+
+  // :where(.container) has zero specificity
+  let where_sel = @selector.parse_selector_text(":where(.container)")
+  match where_sel {
+    Some(selector) =>
+      stylesheet.add_rule(":where(.container)", selector, [
+        Declaration::new("color", "red"),
+      ])
+    None => fail("failed to parse :where selector")
+  }
+
+  // Simple type selector (0,0,1) - should beat :where()
+  let type_sel = @selector.parse_selector_text("div")
+  match type_sel {
+    Some(selector) =>
+      stylesheet.add_rule("div", selector, [Declaration::new("color", "blue")])
+    None => fail("failed to parse type selector")
+  }
+  let element = @selector.Element::new("div").add_class("container")
+  let result = cascade_element(element, [stylesheet], [])
+
+  // div (0,0,1) should beat :where(.container) (0,0,0)
+  inspect(result.get_value("color"), content="Some(\"blue\")")
+}

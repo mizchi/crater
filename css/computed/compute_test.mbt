@@ -284,3 +284,130 @@ test "logical properties inline-size and block-size" {
   inspect(style3.width, content="Length(300)")
   inspect(style3.height, content="Length(150)")
 }
+
+///|
+test "compute_inline vmin and vmax units" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1000.0,
+    viewport_height: 800.0,
+  }
+
+  // vmin = min(1000, 800) = 800, so 50vmin = 400px
+  let style1 = @computed.compute_inline("width: 50vmin", ctx)
+  inspect(style1.width, content="Length(400)")
+
+  // vmax = max(1000, 800) = 1000, so 50vmax = 500px
+  let style2 = @computed.compute_inline("width: 50vmax", ctx)
+  inspect(style2.width, content="Length(500)")
+}
+
+///|
+test "compute_inline ch and ex units" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 20.0, // 20px font
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+  }
+
+  // ch ≈ 0.5em, so 4ch with 20px font = 4 * 20 * 0.5 = 40px
+  let style1 = @computed.compute_inline("width: 4ch", ctx)
+  inspect(style1.width, content="Length(40)")
+
+  // ex ≈ 0.5em, so 2ex with 20px font = 2 * 20 * 0.5 = 20px
+  let style2 = @computed.compute_inline("height: 2ex", ctx)
+  inspect(style2.height, content="Length(20)")
+}
+
+///|
+test "compute_inline absolute units pt, pc, in, cm, mm" {
+  let ctx = @computed.ComputeContext::new()
+
+  // pt: 1pt = 96/72 px = 1.333...px, so 72pt = 96px
+  let style_pt = @computed.compute_inline("width: 72pt", ctx)
+  assert_true(style_pt.width.eq_length(96.0))
+
+  // pc: 1pc = 16px, so 6pc = 96px
+  let style_pc = @computed.compute_inline("width: 6pc", ctx)
+  assert_true(style_pc.width.eq_length(96.0))
+
+  // in: 1in = 96px
+  let style_in = @computed.compute_inline("width: 1in", ctx)
+  assert_true(style_in.width.eq_length(96.0))
+
+  // cm: 1cm = 96/2.54 px ≈ 37.795px, so 2.54cm = 96px
+  let style_cm = @computed.compute_inline("width: 2.54cm", ctx)
+  assert_true(style_cm.width.eq_length(96.0))
+
+  // mm: 1mm = 96/25.4 px, so 25.4mm = 96px
+  let style_mm = @computed.compute_inline("width: 25.4mm", ctx)
+  assert_true(style_mm.width.eq_length(96.0))
+}
+
+///|
+test "compute_inline min() function" {
+  let ctx = @computed.ComputeContext::new()
+
+  // min(100px, 200px) = 100px
+  let style1 = @computed.compute_inline("width: min(100px, 200px)", ctx)
+  assert_true(style1.width.eq_length(100.0))
+
+  // min(300px, 50px, 150px) = 50px
+  let style2 = @computed.compute_inline("width: min(300px, 50px, 150px)", ctx)
+  assert_true(style2.width.eq_length(50.0))
+}
+
+///|
+test "compute_inline max() function" {
+  let ctx = @computed.ComputeContext::new()
+
+  // max(100px, 200px) = 200px
+  let style1 = @computed.compute_inline("width: max(100px, 200px)", ctx)
+  assert_true(style1.width.eq_length(200.0))
+
+  // max(50px, 300px, 150px) = 300px
+  let style2 = @computed.compute_inline("width: max(50px, 300px, 150px)", ctx)
+  assert_true(style2.width.eq_length(300.0))
+}
+
+///|
+test "compute_inline clamp() function" {
+  let ctx = @computed.ComputeContext::new()
+
+  // clamp(100px, 150px, 200px) = 150px (value is within bounds)
+  let style1 = @computed.compute_inline(
+    "width: clamp(100px, 150px, 200px)", ctx,
+  )
+  assert_true(style1.width.eq_length(150.0))
+
+  // clamp(100px, 50px, 200px) = 100px (value below min)
+  let style2 = @computed.compute_inline("width: clamp(100px, 50px, 200px)", ctx)
+  assert_true(style2.width.eq_length(100.0))
+
+  // clamp(100px, 250px, 200px) = 200px (value above max)
+  let style3 = @computed.compute_inline(
+    "width: clamp(100px, 250px, 200px)", ctx,
+  )
+  assert_true(style3.width.eq_length(200.0))
+}
+
+///|
+test "compute_inline nested math functions" {
+  let ctx = @computed.ComputeContext::new()
+
+  // max(min(100px, 200px), 50px) = max(100px, 50px) = 100px
+  let style1 = @computed.compute_inline(
+    "width: max(min(100px, 200px), 50px)", ctx,
+  )
+  assert_true(style1.width.eq_length(100.0))
+
+  // min(max(50px, 100px), 80px) = min(100px, 80px) = 80px
+  let style2 = @computed.compute_inline(
+    "width: min(max(50px, 100px), 80px)", ctx,
+  )
+  assert_true(style2.width.eq_length(80.0))
+}

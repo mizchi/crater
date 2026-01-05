@@ -815,6 +815,215 @@ fn apply_property(
 }
 
 ///|
+/// Parse a value inside CSS math functions and resolve it to a dimension
+/// Handles recursively nested calc(), min(), max(), clamp()
+fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
+  let v = value.trim()
+  if v.is_empty() {
+    return None
+  }
+
+  // Handle nested calc()
+  if v.has_prefix("calc(") && v.has_suffix(")") {
+    let inner = v[5:v.length() - 1].to_string() catch { _ => return None }
+    return parse_simple_calc_expr(inner, ctx)
+  }
+
+  // Handle nested min()
+  if v.has_prefix("min(") && v.has_suffix(")") {
+    let inner = v[4:v.length() - 1].to_string() catch { _ => return None }
+    let args = split_css_args(inner)
+    let mut min_val : Double? = None
+    for arg in args {
+      match parse_css_value_to_px(arg, ctx) {
+        Some(val) =>
+          match min_val {
+            None => min_val = Some(val)
+            Some(current) => if val < current { min_val = Some(val) }
+          }
+        None => return None
+      }
+    }
+    return min_val
+  }
+
+  // Handle nested max()
+  if v.has_prefix("max(") && v.has_suffix(")") {
+    let inner = v[4:v.length() - 1].to_string() catch { _ => return None }
+    let args = split_css_args(inner)
+    let mut max_val : Double? = None
+    for arg in args {
+      match parse_css_value_to_px(arg, ctx) {
+        Some(val) =>
+          match max_val {
+            None => max_val = Some(val)
+            Some(current) => if val > current { max_val = Some(val) }
+          }
+        None => return None
+      }
+    }
+    return max_val
+  }
+
+  // Handle nested clamp()
+  if v.has_prefix("clamp(") && v.has_suffix(")") {
+    let inner = v[6:v.length() - 1].to_string() catch { _ => return None }
+    let args = split_css_args(inner)
+    if args.length() != 3 {
+      return None
+    }
+    let min_px = parse_css_value_to_px(args[0], ctx)
+    let val_px = parse_css_value_to_px(args[1], ctx)
+    let max_px = parse_css_value_to_px(args[2], ctx)
+    match (min_px, val_px, max_px) {
+      (Some(min_v), Some(val_v), Some(max_v)) => {
+        // clamp(min, val, max) = max(min, min(val, max))
+        let clamped = if val_v < min_v {
+          min_v
+        } else if val_v > max_v {
+          max_v
+        } else {
+          val_v
+        }
+        return Some(clamped)
+      }
+      _ => return None
+    }
+  }
+
+  // Parse simple dimension value
+  let dim = resolve_dimension(v.to_string(), ctx)
+  match dim {
+    @types.Length(px) => Some(px)
+    @types.Percent(_) => None // Cannot simplify percentages
+    @types.Auto => None
+    @types.MinContent => None
+    @types.MaxContent => None
+    @types.FitContent(_) => None
+  }
+}
+
+///|
+/// Split CSS function arguments by comma (handling nested parentheses)
+fn split_css_args(input : String) -> Array[String] {
+  let result : Array[String] = []
+  let mut current = StringBuilder::new()
+  let mut paren_depth = 0
+  for i = 0; i < input.length(); i = i + 1 {
+    let c = input[i].to_int().unsafe_to_char()
+    if c == '(' {
+      paren_depth += 1
+      current.write_char(c)
+    } else if c == ')' {
+      paren_depth -= 1
+      current.write_char(c)
+    } else if c == ',' && paren_depth == 0 {
+      let s = current.to_string().trim().to_string()
+      if not(s.is_empty()) {
+        result.push(s)
+      }
+      current = StringBuilder::new()
+    } else {
+      current.write_char(c)
+    }
+  }
+  let s = current.to_string().trim().to_string()
+  if not(s.is_empty()) {
+    result.push(s)
+  }
+  result
+}
+
+///|
+/// Parse a simple calc expression (handles + - * / with px values)
+fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
+  let mut result : Double = 0.0
+  let mut current_op : Char = '+'
+  let mut i = 0
+  let mut token_start = 0
+  while i <= expr.length() {
+    let c = if i < expr.length() {
+      expr[i].to_int().unsafe_to_char()
+    } else {
+      ' '
+    }
+    if c == '+' || c == '-' || c == '*' || c == '/' || i == expr.length() {
+      if i > token_start {
+        let token = expr[token_start:i].to_string().trim() catch { _ => "" }
+        if not(token.is_empty()) {
+          match parse_css_value_to_px(token.to_string(), ctx) {
+            Some(val) =>
+              match current_op {
+                '+' => result = result + val
+                '-' => result = result - val
+                '*' => result = result * val
+                '/' => result = result / val
+                _ => ()
+              }
+            None => {
+              // Try parsing as unitless number for * and /
+              let n = @strconv.parse_double(token.to_string()) catch {
+                _ => return None
+              }
+              match current_op {
+                '*' => result = result * n
+                '/' => result = result / n
+                '+' | '-' =>
+                  // Unitless number for + or - is invalid unless 0
+                  if n != 0.0 {
+                    return None
+                  }
+                _ => ()
+              }
+            }
+          }
+        }
+      }
+      if i < expr.length() {
+        current_op = c
+      }
+      token_start = i + 1
+    }
+    i = i + 1
+  }
+  Some(result)
+}
+
+///|
+/// Parse min(), max(), clamp() CSS functions
+fn parse_css_math_function(
+  expr : String,
+  ctx : ComputeContext,
+) -> @types.Dimension? {
+  let v = expr.trim()
+
+  // Handle min()
+  if v.has_prefix("min(") && v.has_suffix(")") {
+    match parse_css_value_to_px(v.to_string(), ctx) {
+      Some(px) => return Some(@types.Length(px))
+      None => return None
+    }
+  }
+
+  // Handle max()
+  if v.has_prefix("max(") && v.has_suffix(")") {
+    match parse_css_value_to_px(v.to_string(), ctx) {
+      Some(px) => return Some(@types.Length(px))
+      None => return None
+    }
+  }
+
+  // Handle clamp()
+  if v.has_prefix("clamp(") && v.has_suffix(")") {
+    match parse_css_value_to_px(v.to_string(), ctx) {
+      Some(px) => return Some(@types.Length(px))
+      None => return None
+    }
+  }
+  None
+}
+
+///|
 /// Parse a calc() expression from a string and try to simplify it
 /// Returns Some(dimension) if simplification is possible, None otherwise
 fn parse_calc_string(expr : String) -> @types.Dimension? {
@@ -944,6 +1153,14 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
     }
   }
 
+  // Handle min(), max(), clamp() CSS math functions
+  if v.has_prefix("min(") || v.has_prefix("max(") || v.has_prefix("clamp(") {
+    match parse_css_math_function(v.to_string(), ctx) {
+      Some(dim) => return dim
+      None => return @types.Dimension::Auto // Fallback for complex expressions
+    }
+  }
+
   // Handle rem units (check before em)
   match v.strip_suffix("rem") {
     Some(num_str) => {
@@ -984,6 +1201,126 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.viewport_height / 100.0)
+    }
+    None => ()
+  }
+
+  // Handle vmin units (smaller of vw or vh)
+  match v.strip_suffix("vmin") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      let min_dimension = if ctx.viewport_width < ctx.viewport_height {
+        ctx.viewport_width
+      } else {
+        ctx.viewport_height
+      }
+      return @types.Dimension::Length(n * min_dimension / 100.0)
+    }
+    None => ()
+  }
+
+  // Handle vmax units (larger of vw or vh)
+  match v.strip_suffix("vmax") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      let max_dimension = if ctx.viewport_width > ctx.viewport_height {
+        ctx.viewport_width
+      } else {
+        ctx.viewport_height
+      }
+      return @types.Dimension::Length(n * max_dimension / 100.0)
+    }
+    None => ()
+  }
+
+  // Handle ch units (width of "0" glyph, approximated as 0.5em)
+  match v.strip_suffix("ch") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * ctx.font_size * 0.5)
+    }
+    None => ()
+  }
+
+  // Handle ex units (x-height, approximated as 0.5em)
+  match v.strip_suffix("ex") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * ctx.font_size * 0.5)
+    }
+    None => ()
+  }
+
+  // Handle pt units (1pt = 1/72 inch = 96/72 px ≈ 1.333px)
+  match v.strip_suffix("pt") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * 96.0 / 72.0)
+    }
+    None => ()
+  }
+
+  // Handle pc units (1pc = 12pt = 16px)
+  match v.strip_suffix("pc") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * 16.0)
+    }
+    None => ()
+  }
+
+  // Handle in units (1in = 96px)
+  match v.strip_suffix("in") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * 96.0)
+    }
+    None => ()
+  }
+
+  // Handle cm units (1cm = 96/2.54 px ≈ 37.795px)
+  match v.strip_suffix("cm") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * 96.0 / 2.54)
+    }
+    None => ()
+  }
+
+  // Handle mm units (1mm = 96/25.4 px ≈ 3.7795px)
+  match v.strip_suffix("mm") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * 96.0 / 25.4)
+    }
+    None => ()
+  }
+
+  // Handle Q units (1Q = 1/4mm = 96/101.6 px)
+  match v.strip_suffix("Q") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch {
+        _ => return @types.Dimension::Auto
+      }
+      return @types.Dimension::Length(n * 96.0 / 101.6)
     }
     None => ()
   }

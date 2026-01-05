@@ -162,3 +162,129 @@ test "specificity addition" {
   inspect(sum.b, content="3")
   inspect(sum.c, content="4")
 }
+
+///|
+test "specificity - :where() has zero specificity" {
+  // :where(.foo) = (0, 0, 0)
+  let sel = parse_selector_text(":where(.foo)")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="0")
+      inspect(spec.b, content="0")
+      inspect(spec.c, content="0")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - :where() with multiple classes" {
+  // :where(.foo.bar.baz) = (0, 0, 0) - still zero
+  let sel = parse_selector_text(":where(.foo.bar.baz)")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="0")
+      inspect(spec.b, content="0")
+      inspect(spec.c, content="0")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - :not() takes argument specificity" {
+  // :not(.foo) = (0, 1, 0) - takes the class specificity
+  let sel = parse_selector_text(":not(.foo)")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="0")
+      inspect(spec.b, content="1")
+      inspect(spec.c, content="0")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - :not() with ID" {
+  // :not(#main) = (1, 0, 0)
+  let sel = parse_selector_text(":not(#main)")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="1")
+      inspect(spec.b, content="0")
+      inspect(spec.c, content="0")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - combined :not() with element" {
+  // div:not(.hidden) = (0, 1, 1) - type + :not's class
+  let sel = parse_selector_text("div:not(.hidden)")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="0")
+      inspect(spec.b, content="1")
+      inspect(spec.c, content="1")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - :is() takes highest argument" {
+  // :is(.foo, #bar) = (1, 0, 0) - takes the highest (ID)
+  let sel = parse_selector_text(":is(.foo, #bar)")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="1")
+      inspect(spec.b, content="0")
+      inspect(spec.c, content="0")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - chained pseudo-classes" {
+  // :first-child:last-child = (0, 2, 0)
+  let sel = parse_selector_text(":first-child:last-child")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="0")
+      inspect(spec.b, content="2")
+      inspect(spec.c, content="0")
+    }
+    None => fail("failed to parse")
+  }
+}
+
+///|
+test "specificity - complex real-world selector" {
+  // #header .nav-item:first-child a:hover = (1, 3, 1)
+  // #header = 1,0,0
+  // .nav-item = 0,1,0
+  // :first-child = 0,1,0
+  // a = 0,0,1
+  // :hover = 0,1,0
+  // Total: 1,3,1
+  let sel = parse_selector_text("#header .nav-item:first-child a:hover")
+  match sel {
+    Some(s) => {
+      let spec = complex_specificity(s)
+      inspect(spec.a, content="1")
+      inspect(spec.b, content="3")
+      inspect(spec.c, content="1")
+    }
+    None => fail("failed to parse")
+  }
+}
