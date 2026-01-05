@@ -30,7 +30,10 @@ test "accname: A link using aria-owns to concatenate extra text" {
   // Find the test element by role
   let nodes = tree.find_by_role(Link)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"World Wide Web Consortium (opens in a new window)\")")
+  inspect(
+    name,
+    content="Some(\"World Wide Web Consortium (opens in a new window)\")",
+  )
 }
 
 ///|
@@ -391,7 +394,10 @@ test "accname: link labelled by elements with assorted visibility and a11y tree 
   // Find the test element by role
   let nodes = tree.find_by_role(Link)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"visible to all users, hidden but referenced, hidden from all users but referenced\")")
+  inspect(
+    name,
+    content="Some(\"visible to all users, hidden but referenced, hidden from all users but referenced\")",
+  )
 }
 
 ///|
@@ -399,7 +405,10 @@ test "accname: heading with name from content, containing element that is visibi
   let html = "<h2 > visible to all users, <span style=\"visibility: hidden;\"> hidden from all users, <span style=\"visibility: visible;\">un-hidden for all users</span> </span> </h2>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"visible to all users, un-hidden for all users\")")
+  inspect(
+    tree.root.name,
+    content="Some(\"visible to all users, un-hidden for all users\")",
+  )
 }
 
 ///|
@@ -2759,7 +2768,10 @@ test "accname: button name from fallback content mixing attr() and strings with 
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Button)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"start alt-before end label start alt-after end\")")
+  inspect(
+    name,
+    content="Some(\"start alt-before end label start alt-after end\")",
+  )
 }
 
 ///|
@@ -2776,7 +2788,10 @@ test "accname: heading name from fallback content mixing attr() and strings with
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"start alt-before end label start alt-after end\")")
+  inspect(
+    name,
+    content="Some(\"start alt-before end label start alt-after end\")",
+  )
 }
 
 ///|
@@ -2793,7 +2808,10 @@ test "accname: link name from fallback content mixing attr() and strings with ::
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Link)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"start alt-before end label start alt-after end\")")
+  inspect(
+    name,
+    content="Some(\"start alt-before end label start alt-after end\")",
+  )
 }
 
 ///|
@@ -2901,7 +2919,10 @@ test "accname: heading name from content for each child including nested button 
   let html = "<h3 > heading <button> button <img alt=\"image\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==\"> button </button> heading </h3>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading button image button heading\")")
+  inspect(
+    tree.root.name,
+    content="Some(\"heading button image button heading\")",
+  )
 }
 
 ///|
@@ -3052,7 +3073,10 @@ test "accname: heading name from content with text-transform:full-size-kana" {
   let html = "<h3 lang=\"ja\" style=\"text-transform:full-size-kana;\" >びょういんのかんじゃサービス</h3>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"びょういんのかんじゃサービス\")")
+  inspect(
+    tree.root.name,
+    content="Some(\"びょういんのかんじゃサービス\")",
+  )
 }
 
 ///|
