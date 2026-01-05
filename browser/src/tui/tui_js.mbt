@@ -1,0 +1,76 @@
+///|
+/// TUI implementation for JavaScript/Node.js target
+
+///|
+/// Read a single key from stdin (simplified for MVP)
+extern "js" fn js_read_key() -> @js_async.Promise[String] =
+  #| async () => {
+  #|   if (typeof process === 'undefined') return 'q';
+  #|   if (!process.stdin.isTTY) {
+  #|     // Not a TTY, wait a bit and return empty to allow event loop
+  #|     await new Promise(r => setTimeout(r, 100));
+  #|     return '';
+  #|   }
+  #|   return new Promise((resolve) => {
+  #|     process.stdin.setRawMode(true);
+  #|     process.stdin.resume();
+  #|     process.stdin.setEncoding('utf8');
+  #|     const onData = (key) => {
+  #|       process.stdin.setRawMode(false);
+  #|       process.stdin.pause();
+  #|       process.stdin.removeListener('data', onData);
+  #|       if (key === '\u0003') { resolve('q'); return; } // Ctrl+C
+  #|       if (key === '\u001b[A') { resolve('ArrowUp'); return; }
+  #|       if (key === '\u001b[B') { resolve('ArrowDown'); return; }
+  #|       if (key === '\r' || key === '\n') { resolve('Enter'); return; }
+  #|       if (key === '\t') { resolve('Tab'); return; }
+  #|       if (key === '\u001b') { resolve('Escape'); return; }
+  #|       resolve(key);
+  #|     };
+  #|     process.stdin.on('data', onData);
+  #|   });
+  #| }
+
+///|
+/// Read a line from stdin (for URL input)
+extern "js" fn js_read_line(prompt : String) -> @js_async.Promise[String] =
+  #| async (prompt) => {
+  #|   if (typeof process === 'undefined') return '';
+  #|   if (!process.stdin.isTTY) return '';
+  #|   const readline = require('readline');
+  #|   // Ensure raw mode is off for line input
+  #|   if (process.stdin.setRawMode) process.stdin.setRawMode(false);
+  #|   const rl = readline.createInterface({
+  #|     input: process.stdin,
+  #|     output: process.stdout
+  #|   });
+  #|   return new Promise((resolve) => {
+  #|     rl.question(prompt, (answer) => {
+  #|       rl.close();
+  #|       resolve(answer);
+  #|     });
+  #|   });
+  #| }
+
+///|
+/// Print to stdout
+extern "js" fn js_print(s : String) =
+  #| (s) => process.stdout.write(s)
+
+///|
+/// Read a key asynchronously
+pub async fn read_key() -> String {
+  @js_async.Promise::wait(js_read_key())
+}
+
+///|
+/// Read a line with prompt
+pub async fn read_line(prompt : String) -> String {
+  @js_async.Promise::wait(js_read_line(prompt))
+}
+
+///|
+/// Print string to stdout (no newline)
+pub fn print_raw(s : String) -> Unit {
+  js_print(s)
+}

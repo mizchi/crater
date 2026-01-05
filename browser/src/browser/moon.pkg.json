@@ -1,0 +1,8 @@
+{
+  "import": [
+    "mizchi/crater-browser/src/http",
+    "mizchi/crater/renderer",
+    "mizchi/crater/renderer/sixel",
+    "mizchi/crater/html"
+  ]
+}
