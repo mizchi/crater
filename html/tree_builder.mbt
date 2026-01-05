@@ -218,10 +218,32 @@ fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
           _ => ()
         }
       }
+      // Skip whitespace-only text nodes between elements
+      // (inter-element whitespace is usually insignificant)
+      if is_whitespace_only(text) {
+        return
+      }
       current.children.push(Node::Text(text))
     }
     None => ()
   }
+}
+
+///|
+/// Check if string contains only whitespace
+fn is_whitespace_only(s : String) -> Bool {
+  for c in s {
+    if not(tb_is_whitespace(c)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// Check if character is whitespace
+fn tb_is_whitespace(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
 }
 
 ///|
