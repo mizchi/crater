@@ -106,7 +106,6 @@ fn render_node_json(
     write_indent(buf, indent + 1)
     buf.write_string("]")
   }
-
   buf.write_string("\n")
   write_indent(buf, indent)
   buf.write_string("}")
@@ -179,10 +178,9 @@ fn render_node(
     buf.write_string("\n")
   } else {
     // Check if all children are text-like (no nested structure)
-    let has_complex_children = node.children.iter().any(fn(child) {
-      not(child.children.is_empty()) || child.role != Generic
-    })
-
+    let has_complex_children = node.children
+      .iter()
+      .any(fn(child) { not(child.children.is_empty()) || child.role != Generic })
     if not(has_complex_children) && node.children.length() == 1 {
       // Single simple child - render inline
       match node.children[0].name {

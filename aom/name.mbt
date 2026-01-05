@@ -363,8 +363,7 @@ fn compute_native_text_alternative(
       find_label_text(element, find_label_for_id, encapsulating_label)
 
     // Select: associated label only (selected option handled in Step 2E fallback)
-    "select" =>
-      find_label_text(element, find_label_for_id, encapsulating_label)
+    "select" => find_label_text(element, find_label_for_id, encapsulating_label)
 
     // Table: caption
     "table" => find_child_text(element, "caption")
@@ -1020,7 +1019,8 @@ fn get_text_transform(element : @html.Element) -> String {
           let part_lower = part_str.to_lower()
           if part_lower.contains("text-transform") {
             match part_str.split(":").collect().get(1) {
-              Some(value) => return value.to_string().trim().to_string().to_lower()
+              Some(value) =>
+                return value.to_string().trim().to_string().to_lower()
               None => ()
             }
           }

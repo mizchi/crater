@@ -962,7 +962,6 @@ fn write_accessibility_node(
     write_json_indent(buf, indent + 1)
     buf.write_string("]")
   }
-
   buf.write_string("\n")
   write_json_indent(buf, indent)
   buf.write_string("}")

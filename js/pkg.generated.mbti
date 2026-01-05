@@ -16,6 +16,12 @@ pub fn createTree(String, Int, Int) -> Int
 
 pub fn destroyTree() -> Unit
 
+pub fn getAccessibilityTree(String) -> String
+
+pub fn getAriaSnapshot(String) -> String
+
+pub fn getAriaSnapshotJson(String) -> String
+
 pub fn getCacheStats() -> String
 
 pub fn getChildCount(String) -> Int

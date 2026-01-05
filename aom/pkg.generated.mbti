@@ -60,6 +60,8 @@ pub fn AccessibilityNode::add_child(Self, Self) -> Self
 pub fn AccessibilityNode::add_state(Self, State) -> Self
 pub fn AccessibilityNode::new(String, Role) -> Self
 pub fn AccessibilityNode::set_focusable(Self, Bool) -> Self
+pub fn AccessibilityNode::to_aria_json(Self) -> String
+pub fn AccessibilityNode::to_aria_snapshot(Self) -> String
 pub fn AccessibilityNode::with_bounds(Self, Bounds) -> Self
 pub fn AccessibilityNode::with_level(Self, Int) -> Self
 pub fn AccessibilityNode::with_name(Self, String) -> Self
@@ -73,6 +75,8 @@ pub fn AccessibilityTree::find_by_role(Self, Role) -> Array[AccessibilityNode]
 pub fn AccessibilityTree::find_by_source_id(Self, String) -> AccessibilityNode?
 pub fn AccessibilityTree::find_focusable(Self) -> Array[AccessibilityNode]
 pub fn AccessibilityTree::new(AccessibilityNode) -> Self
+pub fn AccessibilityTree::to_aria_json(Self) -> String
+pub fn AccessibilityTree::to_aria_snapshot(Self) -> String
 
 pub(all) struct Bounds {
   x : Double
