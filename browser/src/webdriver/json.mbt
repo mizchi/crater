@@ -23,17 +23,23 @@ pub fn WebDriverValue::to_json(self : WebDriverValue) -> String {
       for item in arr {
         parts.push(item.to_json())
       }
-      "[" + parts.iter().intersperse(",").fold(init="", fn(acc, s) { acc + s }) + "]"
+      "[" +
+      parts.iter().intersperse(",").fold(init="", fn(acc, s) { acc + s }) +
+      "]"
     }
     Object(map) => {
       let parts : Array[String] = []
       for k, v in map {
         parts.push("\"" + escape_json_string(k) + "\":" + v.to_json())
       }
-      "{" + parts.iter().intersperse(",").fold(init="", fn(acc, s) { acc + s }) + "}"
+      "{" +
+      parts.iter().intersperse(",").fold(init="", fn(acc, s) { acc + s }) +
+      "}"
     }
     Element(element_id~) =>
-      "{\"element-6066-11e4-a52e-4f735466cecf\":\"" + escape_json_string(element_id) + "\"}"
+      "{\"element-6066-11e4-a52e-4f735466cecf\":\"" +
+      escape_json_string(element_id) +
+      "\"}"
   }
 }
 
@@ -53,13 +59,25 @@ pub fn WebDriverError::to_json(self : WebDriverError) -> String {
 /// Serialize Capabilities to JSON string
 pub fn Capabilities::to_json(self : Capabilities) -> String {
   let mut json = "{"
-  json = json + "\"browserName\":\"" + escape_json_string(self.browser_name) + "\""
-  json = json + ",\"browserVersion\":\"" + escape_json_string(self.browser_version) + "\""
-  json = json + ",\"platformName\":\"" + escape_json_string(self.platform_name) + "\""
+  json = json +
+    "\"browserName\":\"" +
+    escape_json_string(self.browser_name) +
+    "\""
+  json = json +
+    ",\"browserVersion\":\"" +
+    escape_json_string(self.browser_version) +
+    "\""
+  json = json +
+    ",\"platformName\":\"" +
+    escape_json_string(self.platform_name) +
+    "\""
   json = json +
     ",\"acceptInsecureCerts\":" +
     (if self.accept_insecure_certs { "true" } else { "false" })
-  json = json + ",\"pageLoadStrategy\":\"" + self.page_load_strategy.to_json_string() + "\""
+  json = json +
+    ",\"pageLoadStrategy\":\"" +
+    self.page_load_strategy.to_json_string() +
+    "\""
   json = json + ",\"timeouts\":" + self.timeouts.to_json()
   json = json + "}"
   json
@@ -178,9 +196,6 @@ pub fn success_object(map : Map[String, WebDriverValue]) -> WebDriverResponse {
 
 ///|
 /// Create error response
-pub fn error_response(
-  code : ErrorCode,
-  message : String
-) -> WebDriverResponse {
+pub fn error_response(code : ErrorCode, message : String) -> WebDriverResponse {
   Error({ error: code, message, stacktrace: "" })
 }

@@ -105,7 +105,9 @@ async fn main {
     Some(opts) => opts
     None => {
       println("Usage: npx @mizchi/crater-browser <URL> [--sixel] [--debug]")
-      println("Example: npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html")
+      println(
+        "Example: npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html",
+      )
       println("")
       println("Options:")
       println(

@@ -1,0 +1,461 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/src/webdriver"
+
+// Values
+pub fn api_error_to_rpc(RpcId, ApiError) -> RpcResponse
+
+pub fn error_response(ErrorCode, String) -> WebDriverResponse
+
+pub fn parse_json_object(String) -> Map[String, String]
+
+pub fn parse_method(String) -> ApiMethod?
+
+pub fn parse_request(String, String, String) -> WebDriverRequest
+
+pub fn rpc_error(RpcId, RpcErrorCode, String) -> RpcResponse
+
+pub fn rpc_error_with_data(RpcId, RpcErrorCode, String, String) -> RpcResponse
+
+pub fn rpc_success_bool(RpcId, Bool) -> RpcResponse
+
+pub fn rpc_success_json(RpcId, String) -> RpcResponse
+
+pub fn rpc_success_null(RpcId) -> RpcResponse
+
+pub fn rpc_success_number(RpcId, Double) -> RpcResponse
+
+pub fn rpc_success_string(RpcId, String) -> RpcResponse
+
+pub fn success_bool(Bool) -> WebDriverResponse
+
+pub fn success_element(String) -> WebDriverResponse
+
+pub fn success_null() -> WebDriverResponse
+
+pub fn success_object(Map[String, WebDriverValue]) -> WebDriverResponse
+
+pub fn success_string(String) -> WebDriverResponse
+
+// Errors
+
+// Types and methods
+pub(all) enum ApiError {
+  ElementNotFound(selector~ : String)
+  PageNotFound(page_id~ : String)
+  ContextNotFound(context_id~ : String)
+  Timeout(message~ : String)
+  NavigationFailed(url~ : String, reason~ : String)
+  ElementNotVisible(element_id~ : String)
+  ElementNotEnabled(element_id~ : String)
+  EvalError(message~ : String)
+  InvalidArgument(message~ : String)
+  NotSupported(message~ : String)
+  InternalError(message~ : String)
+}
+pub impl Show for ApiError
+
+pub(all) enum ApiMethod {
+  NewContext
+  CloseContext(context_id~ : String)
+  NewPage(context_id~ : String)
+  ClosePage(page_id~ : String)
+  Pages(context_id~ : String)
+  Goto(page_id~ : String, url~ : String)
+  GoBack(page_id~ : String)
+  GoForward(page_id~ : String)
+  Reload(page_id~ : String)
+  Url(page_id~ : String)
+  Title(page_id~ : String)
+  Query(page_id~ : String, selector~ : String)
+  QueryAll(page_id~ : String, selector~ : String)
+  WaitFor(page_id~ : String, selector~ : String, timeout~ : Int)
+  BoundingBox(element_id~ : String)
+  TextContent(element_id~ : String)
+  InnerText(element_id~ : String)
+  InnerHtml(element_id~ : String)
+  GetAttribute(element_id~ : String, name~ : String)
+  IsVisible(element_id~ : String)
+  IsEnabled(element_id~ : String)
+  IsChecked(element_id~ : String)
+  Click(element_id~ : String)
+  DblClick(element_id~ : String)
+  RightClick(element_id~ : String)
+  Hover(element_id~ : String)
+  Focus(element_id~ : String)
+  Fill(element_id~ : String, value~ : String)
+  Press(element_id~ : String, key~ : String)
+  Clear(element_id~ : String)
+  SelectOption(element_id~ : String, value~ : String)
+  Check(element_id~ : String)
+  Uncheck(element_id~ : String)
+  MouseMove(page_id~ : String, x~ : Double, y~ : Double)
+  MouseClick(page_id~ : String, x~ : Double, y~ : Double, button~ : String)
+  MouseDown(page_id~ : String, button~ : String)
+  MouseUp(page_id~ : String, button~ : String)
+  KeyboardPress(page_id~ : String, key~ : String)
+  KeyboardType(page_id~ : String, text~ : String)
+  Content(page_id~ : String)
+  SetContent(page_id~ : String, html~ : String)
+  ViewportSize(page_id~ : String)
+  SetViewportSize(page_id~ : String, width~ : Int, height~ : Int)
+  Evaluate(page_id~ : String, expression~ : String)
+  Screenshot(page_id~ : String)
+  ElementScreenshot(element_id~ : String)
+  AccessibilitySnapshot(page_id~ : String)
+}
+pub impl Show for ApiMethod
+
+pub(all) enum ApiResult[T] {
+  Ok(T)
+  Err(ApiError)
+}
+pub impl[T : Show] Show for ApiResult[T]
+
+pub(all) struct Capabilities {
+  browser_name : String
+  browser_version : String
+  platform_name : String
+  accept_insecure_certs : Bool
+  page_load_strategy : PageLoadStrategy
+  proxy : ProxyConfig?
+  timeouts : Timeouts
+}
+pub fn Capabilities::to_json(Self) -> String
+pub impl Show for Capabilities
+
+pub(all) struct ContextId {
+  id : String
+}
+pub impl Eq for ContextId
+pub impl Show for ContextId
+
+pub(all) struct ElementId {
+  id : String
+}
+pub impl Eq for ElementId
+pub impl Show for ElementId
+
+pub(all) struct ElementRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+pub fn ElementRect::to_json(Self) -> String
+pub impl Show for ElementRect
+
+pub(all) enum ErrorCode {
+  ElementClickIntercepted
+  ElementNotInteractable
+  InsecureCertificate
+  InvalidArgument
+  InvalidCookieDomain
+  InvalidElementState
+  InvalidSelector
+  InvalidSessionId
+  JavascriptError
+  MoveTargetOutOfBounds
+  NoSuchAlert
+  NoSuchCookie
+  NoSuchElement
+  NoSuchFrame
+  NoSuchWindow
+  ScriptTimeout
+  SessionNotCreated
+  StaleElementReference
+  Timeout
+  UnableToSetCookie
+  UnableToCaptureScreen
+  UnexpectedAlertOpen
+  UnknownCommand
+  UnknownError
+  UnknownMethod
+  UnsupportedOperation
+}
+pub fn ErrorCode::http_status(Self) -> Int
+pub fn ErrorCode::to_string(Self) -> String
+pub impl Eq for ErrorCode
+pub impl Show for ErrorCode
+
+pub(all) enum HttpMethod {
+  Get
+  Post
+  Delete
+}
+pub impl Eq for HttpMethod
+pub impl Show for HttpMethod
+
+pub(all) enum LocatorStrategy {
+  CssSelector
+  LinkText
+  PartialLinkText
+  TagName
+  XPath
+}
+pub fn LocatorStrategy::from_string(String) -> Self?
+pub fn LocatorStrategy::to_string(Self) -> String
+pub impl Eq for LocatorStrategy
+pub impl Show for LocatorStrategy
+
+pub(all) struct Modifiers {
+  ctrl : Bool
+  shift : Bool
+  alt : Bool
+  meta : Bool
+}
+pub fn Modifiers::none() -> Self
+pub impl Show for Modifiers
+
+pub(all) enum MouseButton {
+  Left
+  Right
+  Middle
+}
+pub impl Eq for MouseButton
+pub impl Show for MouseButton
+
+pub(all) struct PageId {
+  id : String
+}
+pub impl Eq for PageId
+pub impl Show for PageId
+
+pub(all) enum PageLoadStrategy {
+  None
+  Eager
+  Normal
+}
+pub fn PageLoadStrategy::to_json_string(Self) -> String
+pub impl Eq for PageLoadStrategy
+pub impl Show for PageLoadStrategy
+
+pub(all) struct Point {
+  x : Double
+  y : Double
+}
+pub impl Show for Point
+
+pub(all) struct ProxyConfig {
+  proxy_type : String
+  proxy_autoconfig_url : String?
+  ftp_proxy : String?
+  http_proxy : String?
+  no_proxy : Array[String]
+  ssl_proxy : String?
+  socks_proxy : String?
+  socks_version : Int?
+}
+pub impl Show for ProxyConfig
+
+pub(all) struct Rect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+pub impl Show for Rect
+
+pub(all) enum RpcErrorCode {
+  ParseError
+  InvalidRequest
+  MethodNotFound
+  InvalidParams
+  InternalError
+  ElementNotFound
+  PageNotFound
+  Timeout
+  NavigationFailed
+}
+pub fn RpcErrorCode::code(Self) -> Int
+pub impl Eq for RpcErrorCode
+pub impl Show for RpcErrorCode
+
+pub(all) enum RpcId {
+  Num(Int)
+  Str(String)
+  Null
+}
+pub fn RpcId::to_json(Self) -> String
+pub impl Eq for RpcId
+pub impl Show for RpcId
+
+pub(all) struct RpcRequest {
+  jsonrpc : String
+  id : RpcId
+  method_name : String
+  params : Map[String, String]
+}
+pub impl Show for RpcRequest
+
+pub(all) enum RpcResponse {
+  Success(id~ : RpcId, result~ : String)
+  Error(id~ : RpcId, code~ : Int, message~ : String, data~ : String?)
+}
+pub fn RpcResponse::to_json(Self) -> String
+pub impl Show for RpcResponse
+
+pub(all) enum Selector {
+  Css(String)
+  XPath(String)
+  Text(String)
+  TextContains(String)
+  Role(role~ : String, name~ : String?)
+  TestId(String)
+  Label(String)
+  Placeholder(String)
+  AltText(String)
+  Title(String)
+}
+pub fn Selector::to_string(Self) -> String
+pub impl Show for Selector
+
+pub(all) struct Session {
+  id : String
+  capabilities : Capabilities
+}
+pub fn Session::to_json(Self) -> String
+pub impl Show for Session
+
+pub(all) struct SessionManager {
+  sessions : Map[String, SessionState]
+  mut next_id : Int
+}
+pub fn SessionManager::create_session(Self, String) -> WebDriverResponse
+pub fn SessionManager::delete_session(Self, String) -> WebDriverResponse
+pub fn SessionManager::generate_id(Self) -> String
+pub fn SessionManager::get_session(Self, String) -> SessionState?
+pub fn SessionManager::handle_request(Self, WebDriverRequest) -> (Int, WebDriverResponse)
+pub fn SessionManager::new() -> Self
+
+pub(all) struct SessionState {
+  id : String
+  capabilities : Capabilities
+  mut current_url : String
+  mut title : String
+  window_rect : WindowRect
+}
+
+pub(all) struct Timeouts {
+  script : Int
+  page_load : Int
+  implicit : Int
+}
+pub fn Timeouts::default() -> Self
+pub fn Timeouts::to_json(Self) -> String
+pub impl Show for Timeouts
+
+pub(all) struct Viewport {
+  width : Int
+  height : Int
+}
+pub impl Show for Viewport
+
+pub(all) enum WebDriverCommand {
+  Status
+  NewSession
+  DeleteSession(session_id~ : String)
+  GetSession(session_id~ : String)
+  GetTimeouts(session_id~ : String)
+  SetTimeouts(session_id~ : String)
+  NavigateTo(session_id~ : String)
+  GetCurrentUrl(session_id~ : String)
+  Back(session_id~ : String)
+  Forward(session_id~ : String)
+  Refresh(session_id~ : String)
+  GetTitle(session_id~ : String)
+  GetWindowHandle(session_id~ : String)
+  CloseWindow(session_id~ : String)
+  SwitchToWindow(session_id~ : String)
+  GetWindowHandles(session_id~ : String)
+  NewWindow(session_id~ : String)
+  SwitchToFrame(session_id~ : String)
+  SwitchToParentFrame(session_id~ : String)
+  GetWindowRect(session_id~ : String)
+  SetWindowRect(session_id~ : String)
+  MaximizeWindow(session_id~ : String)
+  MinimizeWindow(session_id~ : String)
+  FullscreenWindow(session_id~ : String)
+  FindElement(session_id~ : String)
+  FindElements(session_id~ : String)
+  FindElementFromElement(session_id~ : String, element_id~ : String)
+  FindElementsFromElement(session_id~ : String, element_id~ : String)
+  GetActiveElement(session_id~ : String)
+  IsElementSelected(session_id~ : String, element_id~ : String)
+  GetElementAttribute(session_id~ : String, element_id~ : String, name~ : String)
+  GetElementProperty(session_id~ : String, element_id~ : String, name~ : String)
+  GetElementCssValue(session_id~ : String, element_id~ : String, name~ : String)
+  GetElementText(session_id~ : String, element_id~ : String)
+  GetElementTagName(session_id~ : String, element_id~ : String)
+  GetElementRect(session_id~ : String, element_id~ : String)
+  IsElementEnabled(session_id~ : String, element_id~ : String)
+  ElementClick(session_id~ : String, element_id~ : String)
+  ElementClear(session_id~ : String, element_id~ : String)
+  ElementSendKeys(session_id~ : String, element_id~ : String)
+  GetPageSource(session_id~ : String)
+  ExecuteScript(session_id~ : String)
+  ExecuteAsyncScript(session_id~ : String)
+  GetAllCookies(session_id~ : String)
+  GetNamedCookie(session_id~ : String, name~ : String)
+  AddCookie(session_id~ : String)
+  DeleteCookie(session_id~ : String, name~ : String)
+  DeleteAllCookies(session_id~ : String)
+  PerformActions(session_id~ : String)
+  ReleaseActions(session_id~ : String)
+  DismissAlert(session_id~ : String)
+  AcceptAlert(session_id~ : String)
+  GetAlertText(session_id~ : String)
+  SendAlertText(session_id~ : String)
+  TakeScreenshot(session_id~ : String)
+  TakeElementScreenshot(session_id~ : String, element_id~ : String)
+  PrintPage(session_id~ : String)
+  Unknown(path~ : String)
+}
+pub impl Show for WebDriverCommand
+
+pub(all) struct WebDriverError {
+  error : ErrorCode
+  message : String
+  stacktrace : String
+}
+pub fn WebDriverError::to_json(Self) -> String
+pub impl Show for WebDriverError
+
+pub(all) struct WebDriverRequest {
+  http_method : HttpMethod
+  command : WebDriverCommand
+  body : String
+}
+pub impl Show for WebDriverRequest
+
+pub(all) enum WebDriverResponse {
+  Success(WebDriverValue)
+  Error(WebDriverError)
+}
+pub fn WebDriverResponse::to_json(Self) -> String
+pub impl Show for WebDriverResponse
+
+pub(all) enum WebDriverValue {
+  Null
+  Bool(Bool)
+  String(String)
+  Number(Double)
+  Array(Array[WebDriverValue])
+  Object(Map[String, WebDriverValue])
+  Element(element_id~ : String)
+}
+pub fn WebDriverValue::to_json(Self) -> String
+pub impl Show for WebDriverValue
+
+pub(all) struct WindowRect {
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+}
+pub fn WindowRect::to_json(Self) -> String
+pub impl Show for WindowRect
+
+// Type aliases
+
+// Traits
+

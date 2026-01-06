@@ -25,33 +25,39 @@ pub fn px_to_row(px : Double) -> Int {
 ///|
 /// A clickable link region on screen
 pub(all) struct LinkRegion {
-  col : Int      // Start column
-  row : Int      // Start row
-  width : Int    // Width in characters
-  height : Int   // Height in characters
-  text : String  // Link text (used to match with Browser.links for href)
+  col : Int // Start column
+  row : Int // Start row
+  width : Int // Width in characters
+  height : Int // Height in characters
+  text : String // Link text (used to match with Browser.links for href)
 }
 
 ///|
 /// Hint data for hit-a-hint feature
 pub(all) struct HintData {
-  label : String      // The hint label (e.g., "a", "b", "aa")
-  href : String       // Link URL
-  text : String       // Link text
-  col : Int           // Screen column position
-  row : Int           // Screen row position
+  label : String // The hint label (e.g., "a", "b", "aa")
+  href : String // Link URL
+  text : String // Link text
+  col : Int // Screen column position
+  row : Int // Screen row position
 }
 
 ///|
 /// Check if a point is inside this link region
 pub fn LinkRegion::contains(self : LinkRegion, col : Int, row : Int) -> Bool {
-  col >= self.col && col < self.col + self.width &&
-  row >= self.row && row < self.row + self.height
+  col >= self.col &&
+  col < self.col + self.width &&
+  row >= self.row &&
+  row < self.row + self.height
 }
 
 ///|
 /// Find link at given screen coordinates
-pub fn find_link_at(regions : Array[LinkRegion], col : Int, row : Int) -> String? {
+pub fn find_link_at(
+  regions : Array[LinkRegion],
+  col : Int,
+  row : Int,
+) -> String? {
   for region in regions {
     if region.contains(col, row) {
       return Some(region.text)
@@ -136,13 +142,21 @@ fn render_paint_node(
       // Top border
       if draw_row >= 0 && draw_row < ctx.viewport_height {
         let border_line = String::make(w, '-')
-        let _ = ctx.buffer.write_text(col, draw_row, border_line, border_style, w)
+        let _ = ctx.buffer.write_text(
+          col, draw_row, border_line, border_style, w,
+        )
+
       }
       // Bottom border
       let bottom_row = draw_row + draw_h - 1
-      if bottom_row >= 0 && bottom_row < ctx.viewport_height && bottom_row > draw_row {
+      if bottom_row >= 0 &&
+        bottom_row < ctx.viewport_height &&
+        bottom_row > draw_row {
         let border_line = String::make(w, '-')
-        let _ = ctx.buffer.write_text(col, bottom_row, border_line, border_style, w)
+        let _ = ctx.buffer.write_text(
+          col, bottom_row, border_line, border_style, w,
+        )
+
       }
     }
     // Draw alt text (or "[IMG]" if no alt) centered in the image area
@@ -162,7 +176,8 @@ fn render_paint_node(
       if center_row >= 0 && center_row < ctx.viewport_height {
         // Calculate visible label width (truncate if needed)
         let max_label_width = w - 2 // Leave 1 char margin on each side
-        let visible_label = if label.to_array().length() > max_label_width && max_label_width > 3 {
+        let visible_label = if label.to_array().length() > max_label_width &&
+          max_label_width > 3 {
           // Truncate with "..."
           let chars = label.to_array()
           let truncated_chars = chars[:max_label_width - 3]
@@ -181,6 +196,7 @@ fn render_paint_node(
             label_style,
             w,
           )
+
         }
       }
     }
@@ -268,7 +284,12 @@ pub fn render_to_ansi(
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   // Create context with link regions array
   let link_regions : Array[LinkRegion] = []
-  let ctx : TuiContext = { buffer: buf, scroll_y, viewport_height: height, link_regions }
+  let ctx : TuiContext = {
+    buffer: buf,
+    scroll_y,
+    viewport_height: height,
+    link_regions,
+  }
   // Render (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
   // Return ANSI and link regions
@@ -354,8 +375,8 @@ fn draw_hints(
   viewport_height : Int,
 ) -> Unit {
   let hint_style : TextStyle = {
-    fg: @types.Color::rgb(0, 0, 0),        // Black text
-    bg: @types.Color::rgb(255, 220, 0),    // Bright yellow background
+    fg: @types.Color::rgb(0, 0, 0), // Black text
+    bg: @types.Color::rgb(255, 220, 0), // Bright yellow background
     bold: true,
     underline: false,
   }
@@ -369,7 +390,14 @@ fn draw_hints(
     let label_text = "[" + hint.label + "]"
     // Use display_width to handle full-width characters (CJK)
     let label_col = hint.col + display_width(hint.text)
-    let _ = buf.write_text(label_col, hint.row, label_text, hint_style, label_text.length())
+    let _ = buf.write_text(
+      label_col,
+      hint.row,
+      label_text,
+      hint_style,
+      label_text.length(),
+    )
+
   }
 }
 
@@ -486,4 +514,5 @@ fn draw_hint_mode_status_bar(
   sb.write_string(" | ESC:cancel")
   let status = sb.to_string()
   let _ = buf.write_text(0, y, status, style, buf.width)
+
 }

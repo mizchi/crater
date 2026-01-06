@@ -343,7 +343,9 @@ pub async fn Browser::go_back(self : Browser) -> String? raise @http.HttpError {
 
 ///|
 /// Go forward to next page in history and load it
-pub async fn Browser::go_forward(self : Browser) -> String? raise @http.HttpError {
+pub async fn Browser::go_forward(
+  self : Browser,
+) -> String? raise @http.HttpError {
   if self.forward_history.length() == 0 {
     return None
   }
@@ -559,7 +561,9 @@ fn extract_links(html : String) -> Array[Link] {
           }
           text_end = text_end + 1
         }
-        let text = chars_to_string(chars[text_start:text_end]).trim().to_string()
+        let text = chars_to_string(chars[text_start:text_end])
+          .trim()
+          .to_string()
         if href.length() > 0 {
           links.push({ href, text })
         }

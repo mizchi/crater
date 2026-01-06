@@ -37,7 +37,7 @@ pub fn SessionManager::generate_id(self : SessionManager) -> String {
 /// Create a new session
 pub fn SessionManager::create_session(
   self : SessionManager,
-  _body : String
+  _body : String,
 ) -> WebDriverResponse {
   let id = self.generate_id()
   let capabilities : Capabilities = {
@@ -81,7 +81,7 @@ fn capabilities_to_value(cap : Capabilities) -> WebDriverValue {
 /// Delete a session
 pub fn SessionManager::delete_session(
   self : SessionManager,
-  session_id : String
+  session_id : String,
 ) -> WebDriverResponse {
   match self.sessions.get(session_id) {
     Some(_) => {
@@ -96,7 +96,7 @@ pub fn SessionManager::delete_session(
 /// Get session state
 pub fn SessionManager::get_session(
   self : SessionManager,
-  session_id : String
+  session_id : String,
 ) -> SessionState? {
   self.sessions.get(session_id)
 }
@@ -105,7 +105,7 @@ pub fn SessionManager::get_session(
 /// Handle WebDriver request
 pub fn SessionManager::handle_request(
   self : SessionManager,
-  request : WebDriverRequest
+  request : WebDriverRequest,
 ) -> (Int, WebDriverResponse) {
   match request.command {
     // Status endpoint (no session required)
@@ -216,10 +216,7 @@ pub fn SessionManager::handle_request(
     Unknown(path~) =>
       (404, error_response(UnknownCommand, "Unknown command: " + path))
     _ =>
-      (
-        501,
-        error_response(UnsupportedOperation, "Command not yet implemented"),
-      )
+      (501, error_response(UnsupportedOperation, "Command not yet implemented"))
   }
 }
 

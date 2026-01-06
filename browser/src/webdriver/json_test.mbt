@@ -1,21 +1,23 @@
 ///|
 /// Tests for WebDriver JSON serialization
-
 test "success null response" {
   let resp = success_null()
   inspect(resp.to_json(), content="{\"value\":null}")
 }
 
+///|
 test "success string response" {
   let resp = success_string("https://example.com")
   inspect(resp.to_json(), content="{\"value\":\"https://example.com\"}")
 }
 
+///|
 test "success bool response" {
   let resp = success_bool(true)
   inspect(resp.to_json(), content="{\"value\":true}")
 }
 
+///|
 test "success element response" {
   let resp = success_element("elem-123")
   inspect(
@@ -24,6 +26,7 @@ test "success element response" {
   )
 }
 
+///|
 test "error response" {
   let resp = error_response(NoSuchElement, "Element not found")
   inspect(
@@ -32,6 +35,7 @@ test "error response" {
   )
 }
 
+///|
 test "timeouts to json" {
   let timeouts : Timeouts = { script: 30000, page_load: 300000, implicit: 0 }
   inspect(
@@ -40,11 +44,16 @@ test "timeouts to json" {
   )
 }
 
+///|
 test "window rect to json" {
   let rect : WindowRect = { x: 0, y: 0, width: 800, height: 600 }
-  inspect(rect.to_json(), content="{\"x\":0,\"y\":0,\"width\":800,\"height\":600}")
+  inspect(
+    rect.to_json(),
+    content="{\"x\":0,\"y\":0,\"width\":800,\"height\":600}",
+  )
 }
 
+///|
 test "element rect to json" {
   let rect : ElementRect = { x: 10.5, y: 20.5, width: 100.0, height: 50.0 }
   inspect(
@@ -53,16 +62,19 @@ test "element rect to json" {
   )
 }
 
+///|
 test "escape json string" {
   let value : WebDriverValue = String("hello\nworld\"test")
   inspect(value.to_json(), content="\"hello\\nworld\\\"test\"")
 }
 
+///|
 test "array value to json" {
   let value : WebDriverValue = Array([String("a"), String("b"), Number(42.0)])
   inspect(value.to_json(), content="[\"a\",\"b\",42]")
 }
 
+///|
 test "object value to json" {
   let map : Map[String, WebDriverValue] = {}
   map["name"] = String("test")

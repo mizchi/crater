@@ -1,6 +1,5 @@
 ///|
 /// Tests for WebDriver Server Handler
-
 test "status endpoint returns ready" {
   let manager = SessionManager::new()
   let req = parse_request("GET", "/status", "")
@@ -11,6 +10,7 @@ test "status endpoint returns ready" {
   assert_true(json.contains("Crater WebDriver"))
 }
 
+///|
 test "create new session" {
   let manager = SessionManager::new()
   let req = parse_request("POST", "/session", "{}")
@@ -22,6 +22,7 @@ test "create new session" {
   assert_true(json.contains("crater"))
 }
 
+///|
 test "delete session" {
   let manager = SessionManager::new()
   // Create session first
@@ -34,6 +35,7 @@ test "delete session" {
   inspect(resp.to_json(), content="{\"value\":null}")
 }
 
+///|
 test "delete non-existent session returns error" {
   let manager = SessionManager::new()
   let req = parse_request("DELETE", "/session/invalid-id", "")
@@ -43,6 +45,7 @@ test "delete non-existent session returns error" {
   assert_true(json.contains("invalid session id"))
 }
 
+///|
 test "get current url" {
   let manager = SessionManager::new()
   // Create session
@@ -56,6 +59,7 @@ test "get current url" {
   assert_true(json.contains("about:blank"))
 }
 
+///|
 test "navigate to url" {
   let manager = SessionManager::new()
   // Create session
@@ -63,9 +67,7 @@ test "navigate to url" {
   let (_, _) = manager.handle_request(create_req)
   // Navigate
   let nav_req = parse_request(
-    "POST",
-    "/session/session-1/url",
-    "{\"url\":\"https://example.com\"}",
+    "POST", "/session/session-1/url", "{\"url\":\"https://example.com\"}",
   )
   let (status, _) = manager.handle_request(nav_req)
   inspect(status, content="200")
@@ -76,6 +78,7 @@ test "navigate to url" {
   assert_true(json.contains("example.com"))
 }
 
+///|
 test "get title" {
   let manager = SessionManager::new()
   // Create session
@@ -83,9 +86,7 @@ test "get title" {
   let (_, _) = manager.handle_request(create_req)
   // Navigate
   let nav_req = parse_request(
-    "POST",
-    "/session/session-1/url",
-    "{\"url\":\"https://example.com\"}",
+    "POST", "/session/session-1/url", "{\"url\":\"https://example.com\"}",
   )
   let (_, _) = manager.handle_request(nav_req)
   // Get title
@@ -96,6 +97,7 @@ test "get title" {
   assert_true(json.contains("Example Domain"))
 }
 
+///|
 test "get window rect" {
   let manager = SessionManager::new()
   // Create session
@@ -110,6 +112,7 @@ test "get window rect" {
   assert_true(json.contains("\"height\":600"))
 }
 
+///|
 test "unknown command returns 404" {
   let manager = SessionManager::new()
   let req = parse_request("GET", "/unknown/path", "")
@@ -119,6 +122,7 @@ test "unknown command returns 404" {
   assert_true(json.contains("unknown command"))
 }
 
+///|
 test "unimplemented command returns 501" {
   let manager = SessionManager::new()
   // Create session

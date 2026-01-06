@@ -7,7 +7,7 @@
 pub fn parse_request(
   method_str : String,
   path : String,
-  body : String
+  body : String,
 ) -> WebDriverRequest {
   let http_method = match method_str.to_upper() {
     "GET" => Get
@@ -40,7 +40,6 @@ fn parse_command(http_method : HttpMethod, path : String) -> WebDriverCommand {
     path
   }
   let parts = split_path(path)
-
   match (http_method, parts) {
     // Status
     (Get, ["status"]) => Status
@@ -144,14 +143,12 @@ fn parse_command(http_method : HttpMethod, path : String) -> WebDriverCommand {
       DismissAlert(session_id~)
     (Post, ["session", session_id, "alert", "accept"]) =>
       AcceptAlert(session_id~)
-    (Get, ["session", session_id, "alert", "text"]) =>
-      GetAlertText(session_id~)
+    (Get, ["session", session_id, "alert", "text"]) => GetAlertText(session_id~)
     (Post, ["session", session_id, "alert", "text"]) =>
       SendAlertText(session_id~)
 
     // Screenshot
-    (Get, ["session", session_id, "screenshot"]) =>
-      TakeScreenshot(session_id~)
+    (Get, ["session", session_id, "screenshot"]) => TakeScreenshot(session_id~)
     (Get, ["session", session_id, "element", element_id, "screenshot"]) =>
       TakeElementScreenshot(session_id~, element_id~)
 

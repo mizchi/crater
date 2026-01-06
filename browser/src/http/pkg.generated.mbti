@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/src/http"
+
+// Values
+pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
+
+pub fn headers_to_json(Map[String, String]) -> String
+
+// Errors
+pub suberror HttpError {
+  NetworkError(String)
+  TimeoutError
+  InvalidUrl(String)
+  NotSupported
+}
+pub impl Show for HttpError
+
+// Types and methods
+pub(all) struct FetchOptions {
+  http_method : String
+  headers : Map[String, String]
+  timeout_ms : Int
+}
+pub fn FetchOptions::default() -> Self
+
+pub(all) struct HttpResponse {
+  status : Int
+  headers : Map[String, String]
+  body : String
+}
+
+// Type aliases
+
+// Traits
+

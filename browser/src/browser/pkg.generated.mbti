@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/src/browser"
+
+import(
+  "mizchi/crater-browser/src/http"
+  "mizchi/crater-browser/src/tui"
+)
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Browser {
+  mut current_url : String
+  viewport_width : Int
+  viewport_height : Int
+  mut html_content : String
+  mut external_css : Array[String]
+  mut links : Array[Link]
+  mut focused_link : Int
+  mut scroll_y : Int
+  mut content_height : Int
+  mut link_regions : Array[@tui.LinkRegion]
+  mut hint_mode : Bool
+  mut hints : Array[@tui.HintData]
+  mut hint_input : String
+  back_history : Array[String]
+  forward_history : Array[String]
+}
+pub fn Browser::debug_layout(Self) -> Unit
+pub fn Browser::enter_hint_mode(Self) -> Unit
+pub fn Browser::exit_hint_mode(Self) -> Unit
+pub fn Browser::get_focused_link_url(Self) -> String?
+pub fn Browser::get_link_at(Self, Int, Int) -> String?
+pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
+pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
+pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
+pub fn Browser::new(Int, Int) -> Self
+pub fn Browser::next_link(Self) -> Unit
+pub fn Browser::prev_link(Self) -> Unit
+pub fn Browser::process_hint_char(Self, String) -> String?
+pub fn Browser::render(Self) -> String
+pub fn Browser::render_text(Self) -> String
+pub fn Browser::scroll_down(Self, Int) -> Unit
+pub fn Browser::scroll_up(Self, Int) -> Unit
+
+pub(all) struct Link {
+  href : String
+  text : String
+}
+
+// Type aliases
+
+// Traits
+

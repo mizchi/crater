@@ -1,0 +1,198 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/src/tui"
+
+import(
+  "mizchi/crater/node"
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn ansi_bg_256(Int) -> String
+
+pub fn ansi_bg_color(@types.Color) -> String
+
+pub fn ansi_bold() -> String
+
+pub fn ansi_fg_256(Int) -> String
+
+pub fn ansi_fg_color(@types.Color) -> String
+
+pub fn ansi_move_to(Int, Int) -> String
+
+pub fn ansi_reset() -> String
+
+pub fn ansi_reverse() -> String
+
+pub fn ansi_underline() -> String
+
+pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
+
+pub fn buffer_to_ansi(CharBuffer) -> String
+
+pub fn char_display_width(Char) -> Int
+
+pub fn cleanup_stdin() -> Unit
+
+pub fn clear_screen() -> String
+
+pub fn color_to_256(@types.Color) -> Int
+
+pub fn disable_mouse() -> String
+
+pub fn draw_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @types.Color, @types.Color) -> Unit
+
+pub fn draw_filled_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @types.Color, @types.Color) -> Unit
+
+pub fn draw_heading(CharBuffer, Int, Int, String, Int, Int) -> Int
+
+pub fn draw_hline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
+
+pub fn draw_link(CharBuffer, Int, Int, String, Int, Bool) -> Int
+
+pub fn draw_scrollbar(CharBuffer, Int, Int, Int, Int, Int, Int) -> Unit
+
+pub fn draw_status_bar(CharBuffer, Int, String, Int, Int) -> Unit
+
+pub fn draw_vline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
+
+pub fn enable_mouse() -> String
+
+pub fn enter_alt_screen() -> String
+
+pub fn exit_alt_screen() -> String
+
+pub fn find_link_at(Array[LinkRegion], Int, Int) -> String?
+
+pub fn format_status_bar(String, Int, Int) -> String
+
+pub fn get_args() -> Array[String]
+
+pub fn get_content_height_chars(@node.Layout) -> Int
+
+pub fn get_terminal_size() -> (Int, Int)
+
+pub fn hide_cursor() -> String
+
+pub fn key_to_action(String) -> BrowserAction?
+
+pub fn key_to_hint_action(String) -> BrowserAction?
+
+pub fn move_cursor(Int, Int) -> String
+
+pub fn print_raw(String) -> Unit
+
+pub fn px_to_col(Double) -> Int
+
+pub fn px_to_row(Double) -> Int
+
+pub async fn read_key() -> String
+
+pub async fn read_line(String) -> String
+
+pub fn render_to_ansi(@node.Node, @node.Layout, Int, Int, Int) -> RenderResult
+
+pub fn render_to_ansi_with_hints(@node.Node, @node.Layout, Int, Int, Int, Array[HintData], String) -> RenderResult
+
+pub fn render_to_ansi_with_status(@node.Node, @node.Layout, Int, Int, Int, String, Int, Int) -> RenderResult
+
+pub fn rgb_to_256(Int, Int, Int) -> Int
+
+pub fn show_cursor() -> String
+
+// Errors
+
+// Types and methods
+pub(all) enum BoxStyle {
+  Single
+  Double
+  Rounded
+  Ascii
+}
+
+pub enum BrowserAction {
+  ScrollUp
+  ScrollDown
+  PageUp
+  PageDown
+  NextLink
+  PrevLink
+  ActivateLink
+  GoToUrl(String)
+  Refresh
+  Quit
+  Back
+  Forward
+  MouseClick(Int, Int)
+  EnterHintMode
+  HintChar(String)
+  ExitHintMode
+}
+
+pub struct CharBuffer {
+  width : Int
+  height : Int
+  cells : Array[CharCell]
+}
+pub fn CharBuffer::clear(Self) -> Unit
+pub fn CharBuffer::fill_bg(Self, Int, Int, Int, Int, @types.Color) -> Unit
+pub fn CharBuffer::fill_rect(Self, Int, Int, Int, Int, CharCell) -> Unit
+pub fn CharBuffer::get_cell(Self, Int, Int) -> CharCell
+pub fn CharBuffer::new(Int, Int) -> Self
+pub fn CharBuffer::set_cell(Self, Int, Int, CharCell) -> Unit
+pub fn CharBuffer::write_text(Self, Int, Int, String, TextStyle, Int) -> Int
+pub fn CharBuffer::write_text_wrapped(Self, Int, Int, String, TextStyle, Int, Int) -> Int
+
+pub(all) struct CharCell {
+  char : Char
+  fg : @types.Color
+  bg : @types.Color
+  bold : Bool
+  underline : Bool
+  reverse : Bool
+}
+pub fn CharCell::default() -> Self
+pub fn CharCell::from_char(Char) -> Self
+pub fn CharCell::styled(Char, @types.Color, @types.Color) -> Self
+pub impl Eq for CharCell
+
+pub(all) struct HintData {
+  label : String
+  href : String
+  text : String
+  col : Int
+  row : Int
+}
+
+pub(all) struct LinkRegion {
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+  text : String
+}
+pub fn LinkRegion::contains(Self, Int, Int) -> Bool
+
+pub(all) struct RenderResult {
+  ansi : String
+  link_regions : Array[LinkRegion]
+}
+
+pub(all) struct TextStyle {
+  fg : @types.Color
+  bg : @types.Color
+  bold : Bool
+  underline : Bool
+}
+pub fn TextStyle::default() -> Self
+
+pub struct TuiContext {
+  buffer : CharBuffer
+  scroll_y : Int
+  viewport_height : Int
+  link_regions : Array[LinkRegion]
+}
+
+// Type aliases
+
+// Traits
+

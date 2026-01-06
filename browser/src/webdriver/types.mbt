@@ -74,13 +74,29 @@ pub fn ErrorCode::to_string(self : ErrorCode) -> String {
 /// HTTP status code for error
 pub fn ErrorCode::http_status(self : ErrorCode) -> Int {
   match self {
-    InvalidArgument | InvalidCookieDomain | InvalidElementState | InvalidSelector => 400
-    InvalidSessionId | NoSuchAlert | NoSuchCookie | NoSuchElement | NoSuchFrame |
-    NoSuchWindow | StaleElementReference | UnknownCommand => 404
+    InvalidArgument
+    | InvalidCookieDomain
+    | InvalidElementState
+    | InvalidSelector => 400
+    InvalidSessionId
+    | NoSuchAlert
+    | NoSuchCookie
+    | NoSuchElement
+    | NoSuchFrame
+    | NoSuchWindow
+    | StaleElementReference
+    | UnknownCommand => 404
     UnknownMethod => 405
-    ElementClickIntercepted | ElementNotInteractable | MoveTargetOutOfBounds |
-    UnableToSetCookie | UnableToCaptureScreen | UnexpectedAlertOpen => 400
-    InsecureCertificate | SessionNotCreated | UnknownError | UnsupportedOperation => 500
+    ElementClickIntercepted
+    | ElementNotInteractable
+    | MoveTargetOutOfBounds
+    | UnableToSetCookie
+    | UnableToCaptureScreen
+    | UnexpectedAlertOpen => 400
+    InsecureCertificate
+    | SessionNotCreated
+    | UnknownError
+    | UnsupportedOperation => 500
     JavascriptError | ScriptTimeout | Timeout => 500
   }
 }
@@ -144,7 +160,11 @@ pub(all) enum WebDriverCommand {
   FindElementsFromElement(session_id~ : String, element_id~ : String)
   GetActiveElement(session_id~ : String)
   IsElementSelected(session_id~ : String, element_id~ : String)
-  GetElementAttribute(session_id~ : String, element_id~ : String, name~ : String)
+  GetElementAttribute(
+    session_id~ : String,
+    element_id~ : String,
+    name~ : String
+  )
   GetElementProperty(session_id~ : String, element_id~ : String, name~ : String)
   GetElementCssValue(session_id~ : String, element_id~ : String, name~ : String)
   GetElementText(session_id~ : String, element_id~ : String)
