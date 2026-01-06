@@ -1,6 +1,6 @@
 # Crater Browser (Experimental)
 
-An experimental TUI browser implemented in MoonBit. Renders web pages in the terminal using Sixel graphics.
+An highly experimental TUI browser implemented in MoonBit from scratch.
 
 **Warning: This is an experimental implementation and is not intended for production use.**
 
@@ -8,12 +8,12 @@ An experimental TUI browser implemented in MoonBit. Renders web pages in the ter
 
 - HTML parsing and rendering
 - External CSS fetching and application
-- Sixel graphics output (with `--sixel` flag)
+- [ ] Sixel graphics output (with `--sixel` flag)
 - TUI text mode rendering (with `--text` flag)
   - Image placeholders with alt text display
   - Gray background with borders for image areas
 - Basic keyboard navigation
-- Link navigation with Tab/Shift+Tab
+- [ ] Link navigation with Tab/Shift+Tab
 
 ## Installation
 
@@ -27,7 +27,7 @@ npm install -g @mizchi/crater-browser
 npx @mizchi/crater-browser <URL> [--sixel] [--debug]
 ```
 
-### Example
+### Usage Example
 
 ```bash
 npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html
@@ -51,6 +51,7 @@ moon run src/main --target js -- --debug https://example.com
 ## Key Bindings
 
 ### Navigation
+
 - `j` / `Down`: Scroll down
 - `k` / `Up`: Scroll up
 - `Ctrl-D` / `PageDown`: Page down (scroll by one screen)
