@@ -13,7 +13,8 @@
     "build:moon": "moon build --target js",
     "build:minify": "rolldown target/js/release/build/src/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
     "build": "npm run build:moon && npm run build:minify",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test:webdriver": "tsx tools/webdriver-e2e-test.ts"
   },
   "keywords": [
     "browser",
@@ -33,6 +34,7 @@
     "node": ">=24"
   },
   "devDependencies": {
-    "rolldown": "^1.0.0-beta.58"
+    "rolldown": "^1.0.0-beta.58",
+    "webdriver": "^9.23.0"
   }
 }
