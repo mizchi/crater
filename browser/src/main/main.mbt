@@ -92,6 +92,8 @@ fn parse_args() -> Options? {
   if url.length() == 0 {
     None
   } else {
+    // Default to text mode if neither sixel nor text is specified
+    let text = if not(sixel) && not(text) && not(debug) { true } else { text }
     Some({ url, sixel, text, debug })
   }
 }
@@ -102,14 +104,14 @@ async fn main {
   let options = match parse_args() {
     Some(opts) => opts
     None => {
-      println("Usage: crater <URL> [--sixel|--text] [--debug]")
-      println("Example: crater https://example.com --text")
+      println("Usage: npx @mizchi/crater-browser <URL> [--sixel] [--debug]")
+      println("Example: npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html")
       println("")
       println("Options:")
       println(
         "  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)",
       )
-      println("  --text   Render page as ANSI text (works in any terminal)")
+      println("  --text   Render page as ANSI text (default)")
       println("  --debug  Print layout tree for debugging")
       return
     }

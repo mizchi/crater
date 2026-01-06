@@ -15,29 +15,36 @@ An experimental TUI browser implemented in MoonBit. Renders web pages in the ter
 - Basic keyboard navigation
 - Link navigation with Tab/Shift+Tab
 
+## Installation
+
+```bash
+npm install -g @mizchi/crater-browser
+```
+
 ## Usage
 
 ```bash
-cd browser
-moon run src/main --target js -- [OPTIONS] <URL>
+npx @mizchi/crater-browser <URL> [--sixel] [--debug]
+```
+
+### Example
+
+```bash
+npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html
 ```
 
 ### Options
 
-- `--text`: TUI text mode (default terminal rendering)
+- `--text`: TUI text mode (default)
 - `--sixel`: Sixel graphics mode (requires sixel-capable terminal)
 - `--debug`: Print layout tree for debugging
 
-### Examples
+### Development
 
 ```bash
-# TUI text mode
-moon run src/main --target js -- --text https://example.com
-
-# Sixel graphics mode
+cd browser
+moon run src/main --target js -- https://example.com
 moon run src/main --target js -- --sixel https://example.com
-
-# Debug layout
 moon run src/main --target js -- --debug https://example.com
 ```
 
