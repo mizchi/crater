@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser/src/browser"
+package "mizchi/crater-browser/src/shell"
 
 import(
   "mizchi/crater-browser/src/http"

@@ -41,7 +41,7 @@ struct Options {
 
 ///|
 /// Render and display the current page
-fn render_page(browser : @browser.Browser, options : Options) -> Unit {
+fn render_page(browser : @shell.Browser, options : Options) -> Unit {
   if options.sixel {
     let sixel = browser.render()
     @tui.print_raw(@tui.clear_screen())
@@ -120,7 +120,7 @@ async fn main {
   }
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
-  let browser = @browser.Browser::new(viewport_width, viewport_height)
+  let browser = @shell.Browser::new(viewport_width, viewport_height)
   // Enter TUI mode
   if options.sixel || options.text {
     // Enter alternate screen buffer (like vim/less) for clean display

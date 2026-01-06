@@ -1,5 +1,5 @@
 ///|
-/// TUI Browser state and core functionality
+/// Browser Shell - TUI browser application layer
 
 ///|
 /// Link found in the page
