@@ -7,12 +7,12 @@
 ///|
 /// DOM Domain handler
 pub struct DomDomain {
-  tree : @core.DomTree
+  tree : @dom.DomTree
 }
 
 ///|
 /// Create new DOM domain
-pub fn DomDomain::new(tree : @core.DomTree) -> DomDomain {
+pub fn DomDomain::new(tree : @dom.DomTree) -> DomDomain {
   { tree, }
 }
 
@@ -39,7 +39,7 @@ pub fn DomDomain::request_child_nodes(
   depth : Int?,
 ) -> Result[Array[CdpNode], CdpError] {
   let max_depth = depth.unwrap_or(1)
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_children(node) {
     Ok(children) => {
       let cdp_children : Array[CdpNode] = []
@@ -66,7 +66,7 @@ pub fn DomDomain::query_selector(
   node_id : Int,
   selector : String,
 ) -> Result[Int?, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.query_selector(node, selector) {
     Ok(result) =>
       match result {
@@ -84,7 +84,7 @@ pub fn DomDomain::query_selector_all(
   node_id : Int,
   selector : String,
 ) -> Result[Array[Int], CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.query_selector_all(node, selector) {
     Ok(results) => Ok(results.map(fn(n) { n.to_int() }))
     Err(e) => Err(core_to_cdp_error(e))
@@ -101,7 +101,7 @@ pub fn DomDomain::get_attributes(
   self : DomDomain,
   node_id : Int,
 ) -> Result[Array[String], CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_attributes(node) {
     Ok(attrs) => {
       // CDP returns [name, value, name, value, ...]
@@ -124,7 +124,7 @@ pub fn DomDomain::set_attribute_value(
   name : String,
   value : String,
 ) -> Result[Unit, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.set_attribute(node, name, value) {
     Ok(_) => Ok(())
     Err(e) => Err(core_to_cdp_error(e))
@@ -138,7 +138,7 @@ pub fn DomDomain::remove_attribute(
   node_id : Int,
   name : String,
 ) -> Result[Unit, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.remove_attribute(node, name) {
     Ok(_) => Ok(())
     Err(e) => Err(core_to_cdp_error(e))
@@ -155,12 +155,12 @@ pub fn DomDomain::get_outer_html(
   self : DomDomain,
   node_id : Int,
 ) -> Result[String, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_node_info(node) {
     Ok(info) =>
       match info.node_type {
-        @core.Text => Ok(info.node_value)
-        @core.Element => {
+        @dom.Text => Ok(info.node_value)
+        @dom.Element => {
           // Build outer HTML
           let buf = StringBuilder::new()
           self.build_outer_html(node, buf)
@@ -179,7 +179,7 @@ pub fn DomDomain::set_node_value(
   node_id : Int,
   value : String,
 ) -> Result[Unit, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.set_text_content(node, value) {
     Ok(_) => Ok(())
     Err(e) => Err(core_to_cdp_error(e))
@@ -192,7 +192,7 @@ pub fn DomDomain::remove_node(
   self : DomDomain,
   node_id : Int,
 ) -> Result[Unit, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_parent(node) {
     Ok(Some(parent)) =>
       match self.tree.remove_child(parent, node) {
@@ -215,7 +215,7 @@ pub fn DomDomain::get_box_model(
   self : DomDomain,
   node_id : Int,
 ) -> Result[CdpBoxModel, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_cached_rect(node) {
     Some(rect) => {
       // Convert Rect to box model (simplified - all boxes same)
@@ -259,22 +259,22 @@ pub fn DomDomain::get_box_model(
 /// Convert core NodeId to CDP node representation
 fn DomDomain::node_to_cdp(
   self : DomDomain,
-  node : @core.NodeId,
+  node : @dom.NodeId,
   current_depth : Int,
   max_depth : Int,
 ) -> Result[CdpNode, CdpError] {
   match self.tree.get_node_info(node) {
     Ok(info) => {
       let node_type = match info.node_type {
-        @core.Document => 9
-        @core.Element => 1
-        @core.Text => 3
-        @core.Comment => 8
-        @core.DocumentType => 10
+        @dom.Document => 9
+        @dom.Element => 1
+        @dom.Text => 3
+        @dom.Comment => 8
+        @dom.DocumentType => 10
       }
       // Get attributes for elements
       let attributes : Array[String]? = match info.node_type {
-        @core.Element =>
+        @dom.Element =>
           match self.tree.get_attributes(node) {
             Ok(attrs) => {
               let arr : Array[String] = []
@@ -326,19 +326,19 @@ fn DomDomain::node_to_cdp(
 /// Build outer HTML recursively
 fn DomDomain::build_outer_html(
   self : DomDomain,
-  node : @core.NodeId,
+  node : @dom.NodeId,
   buf : StringBuilder,
 ) -> Unit {
   match self.tree.get_node_info(node) {
     Ok(info) =>
       match info.node_type {
-        @core.Text => buf.write_string(info.node_value)
-        @core.Comment => {
+        @dom.Text => buf.write_string(info.node_value)
+        @dom.Comment => {
           buf.write_string("<!--")
           buf.write_string(info.node_value)
           buf.write_string("-->")
         }
-        @core.Element => {
+        @dom.Element => {
           buf.write_string("<")
           buf.write_string(info.node_name)
           // Add attributes

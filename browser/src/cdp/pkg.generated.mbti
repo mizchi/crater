@@ -2,11 +2,11 @@
 package "mizchi/crater-browser/src/cdp"
 
 import(
-  "mizchi/crater-browser/src/core"
+  "mizchi/crater-browser/src/dom"
 )
 
 // Values
-pub fn core_to_cdp_error(@core.CoreError) -> CdpError
+pub fn core_to_cdp_error(@dom.CoreError) -> CdpError
 
 // Errors
 pub suberror CdpResult CdpError
@@ -84,7 +84,7 @@ pub struct CdpNode {
 pub impl Show for CdpNode
 
 pub struct CdpSession {
-  tree : @core.DomTree
+  tree : @dom.DomTree
   dom : DomDomain
   input : InputDomain
   page : PageDomain
@@ -99,7 +99,7 @@ pub fn CdpSession::get_page(Self) -> PageDomain
 pub fn CdpSession::get_session_id(Self) -> String
 pub fn CdpSession::get_target_id(Self) -> String
 pub fn CdpSession::get_title(Self) -> String
-pub fn CdpSession::get_tree(Self) -> @core.DomTree
+pub fn CdpSession::get_tree(Self) -> @dom.DomTree
 pub fn CdpSession::get_url(Self) -> String
 pub fn CdpSession::navigate_to(Self, String) -> Result[CdpNavigateResult, CdpError]
 pub fn CdpSession::new(String) -> Self
@@ -109,13 +109,13 @@ pub fn CdpSession::set_title(Self, String) -> Unit
 pub fn CdpSession::type_text(Self, String) -> Result[Unit, CdpError]
 
 pub struct DomDomain {
-  tree : @core.DomTree
+  tree : @dom.DomTree
 }
 pub fn DomDomain::get_attributes(Self, Int) -> Result[Array[String], CdpError]
 pub fn DomDomain::get_box_model(Self, Int) -> Result[CdpBoxModel, CdpError]
 pub fn DomDomain::get_document(Self, Int?) -> Result[CdpNode, CdpError]
 pub fn DomDomain::get_outer_html(Self, Int) -> Result[String, CdpError]
-pub fn DomDomain::new(@core.DomTree) -> Self
+pub fn DomDomain::new(@dom.DomTree) -> Self
 pub fn DomDomain::query_selector(Self, Int, String) -> Result[Int?, CdpError]
 pub fn DomDomain::query_selector_all(Self, Int, String) -> Result[Array[Int], CdpError]
 pub fn DomDomain::remove_attribute(Self, Int, String) -> Result[Unit, CdpError]
@@ -125,7 +125,7 @@ pub fn DomDomain::set_attribute_value(Self, Int, String, String) -> Result[Unit,
 pub fn DomDomain::set_node_value(Self, Int, String) -> Result[Unit, CdpError]
 
 pub struct InputDomain {
-  tree : @core.DomTree
+  tree : @dom.DomTree
   mut mouse_x : Double
   mut mouse_y : Double
   mut button_pressed : Bool
@@ -133,10 +133,10 @@ pub struct InputDomain {
 pub fn InputDomain::dispatch_key_event(Self, String, String, String, String?) -> Result[Unit, CdpError]
 pub fn InputDomain::dispatch_mouse_event(Self, String, Double, Double, String, Int) -> Result[Unit, CdpError]
 pub fn InputDomain::insert_text(Self, String) -> Result[Unit, CdpError]
-pub fn InputDomain::new(@core.DomTree) -> Self
+pub fn InputDomain::new(@dom.DomTree) -> Self
 
 pub struct PageDomain {
-  tree : @core.DomTree
+  tree : @dom.DomTree
   mut current_url : String
   mut title : String
   frame_id : String
@@ -151,7 +151,7 @@ pub fn PageDomain::get_url(Self) -> String
 pub fn PageDomain::go_back(Self) -> Result[Bool, CdpError]
 pub fn PageDomain::go_forward(Self) -> Result[Bool, CdpError]
 pub fn PageDomain::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
-pub fn PageDomain::new(@core.DomTree) -> Self
+pub fn PageDomain::new(@dom.DomTree) -> Self
 pub fn PageDomain::reload(Self) -> Result[Unit, CdpError]
 pub fn PageDomain::set_title(Self, String) -> Unit
 

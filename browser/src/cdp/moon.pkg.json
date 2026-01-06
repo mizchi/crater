@@ -1,5 +1,5 @@
 {
   "import": [
-    "mizchi/crater-browser/src/core"
+    "mizchi/crater-browser/src/dom"
   ]
 }

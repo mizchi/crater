@@ -7,7 +7,7 @@
 ///|
 /// Page Domain handler
 pub struct PageDomain {
-  tree : @core.DomTree
+  tree : @dom.DomTree
   /// Current URL
   mut current_url : String
   /// Page title
@@ -24,7 +24,7 @@ pub struct PageDomain {
 
 ///|
 /// Create new Page domain
-pub fn PageDomain::new(tree : @core.DomTree) -> PageDomain {
+pub fn PageDomain::new(tree : @dom.DomTree) -> PageDomain {
   {
     tree,
     current_url: "about:blank",

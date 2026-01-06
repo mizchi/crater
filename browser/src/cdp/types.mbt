@@ -86,23 +86,23 @@ pub fn CdpError::from_code(code : CdpErrorCode, message : String) -> CdpError {
 
 ///|
 /// Convert core error to CDP error
-pub fn core_to_cdp_error(err : @core.CoreError) -> CdpError {
+pub fn core_to_cdp_error(err : @dom.CoreError) -> CdpError {
   match err {
-    @core.NodeNotFound(node_id~) =>
+    @dom.NodeNotFound(node_id~) =>
       CdpError::from_code(
         NodeNotFound,
         "Node not found: " + node_id.to_string(),
       )
-    @core.InvalidSelector(selector~) =>
+    @dom.InvalidSelector(selector~) =>
       CdpError::from_code(InvalidParams, "Invalid selector: " + selector)
-    @core.NavigationFailed(url~, reason~) =>
+    @dom.NavigationFailed(url~, reason~) =>
       CdpError::from_code(
         InternalError,
         "Navigation to " + url + " failed: " + reason,
       )
-    @core.Timeout(operation~) =>
+    @dom.Timeout(operation~) =>
       CdpError::from_code(InternalError, "Timeout: " + operation)
-    @core.InvalidOperation(message~) =>
+    @dom.InvalidOperation(message~) =>
       CdpError::from_code(InvalidParams, message)
   }
 }

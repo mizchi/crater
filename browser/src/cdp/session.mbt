@@ -8,7 +8,7 @@
 /// CDP Session - combines all domains
 pub struct CdpSession {
   /// Shared DOM tree
-  tree : @core.DomTree
+  tree : @dom.DomTree
   /// DOM domain
   dom : DomDomain
   /// Input domain
@@ -24,7 +24,7 @@ pub struct CdpSession {
 ///|
 /// Create new CDP session
 pub fn CdpSession::new(session_id : String) -> CdpSession {
-  let tree = @core.DomTree::new()
+  let tree = @dom.DomTree::new()
   {
     tree,
     dom: DomDomain::new(tree),
@@ -55,7 +55,7 @@ pub fn CdpSession::get_page(self : CdpSession) -> PageDomain {
 
 ///|
 /// Get underlying DOM tree for direct manipulation
-pub fn CdpSession::get_tree(self : CdpSession) -> @core.DomTree {
+pub fn CdpSession::get_tree(self : CdpSession) -> @dom.DomTree {
   self.tree
 }
 
@@ -161,7 +161,7 @@ pub fn CdpSession::focus_element(
   self : CdpSession,
   node_id : Int,
 ) -> Result[Unit, CdpError] {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   // Verify node exists
   match self.tree.get_node_info(node) {
     Ok(_) => {

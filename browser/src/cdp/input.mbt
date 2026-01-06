@@ -7,7 +7,7 @@
 ///|
 /// Input Domain handler
 pub struct InputDomain {
-  tree : @core.DomTree
+  tree : @dom.DomTree
   /// Current mouse position
   mut mouse_x : Double
   mut mouse_y : Double
@@ -17,7 +17,7 @@ pub struct InputDomain {
 
 ///|
 /// Create new Input domain
-pub fn InputDomain::new(tree : @core.DomTree) -> InputDomain {
+pub fn InputDomain::new(tree : @dom.DomTree) -> InputDomain {
   { tree, mouse_x: 0.0, mouse_y: 0.0, button_pressed: false }
 }
 

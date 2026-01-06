@@ -155,7 +155,7 @@ fn verify_link_text(
   strategy : String,
   expected : String,
 ) -> Int? {
-  let node = @core.NodeId::from_int(node_id)
+  let node = @dom.NodeId::from_int(node_id)
   match session.get_tree().get_text_content(node) {
     Ok(text) => {
       let trimmed = text.trim().to_string()
@@ -193,7 +193,7 @@ pub fn handle_get_element_text(
   session : @cdp.CdpSession,
   element_id : Int,
 ) -> Result[String, CdpHandlerError] {
-  let node = @core.NodeId::from_int(element_id)
+  let node = @dom.NodeId::from_int(element_id)
   match session.get_tree().get_text_content(node) {
     Ok(text) => Ok(text)
     Err(e) => Err(InternalCdpError(message=e.to_string()))
@@ -207,7 +207,7 @@ pub fn handle_get_element_attribute(
   element_id : Int,
   name : String,
 ) -> Result[String?, CdpHandlerError] {
-  let node = @core.NodeId::from_int(element_id)
+  let node = @dom.NodeId::from_int(element_id)
   match session.get_tree().get_attribute(node, name) {
     Ok(value) => Ok(value)
     Err(e) => Err(InternalCdpError(message=e.to_string()))
@@ -220,7 +220,7 @@ pub fn handle_get_element_tag_name(
   session : @cdp.CdpSession,
   element_id : Int,
 ) -> Result[String, CdpHandlerError] {
-  let node = @core.NodeId::from_int(element_id)
+  let node = @dom.NodeId::from_int(element_id)
   match session.get_tree().get_tag_name(node) {
     Ok(tag) => Ok(tag)
     Err(e) => Err(InternalCdpError(message=e.to_string()))
