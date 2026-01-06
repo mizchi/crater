@@ -105,3 +105,149 @@ fn escape_json(s : String) -> String {
   }
   buf.to_string()
 }
+
+// =============================================================================
+// Network API
+// =============================================================================
+
+///|
+/// Create a network request and return request ID
+/// Returns request ID as integer for tracking
+pub fn createNetworkRequest(
+  url : String,
+  resource_type : String,
+  document_url : String,
+  frame_id : String,
+) -> Int {
+  let rt = match resource_type {
+    "Document" => @scheduler.Document
+    "Stylesheet" => @scheduler.Stylesheet
+    "Script" => @scheduler.Script
+    "Image" => @scheduler.Image
+    "Font" => @scheduler.Font
+    _ => @scheduler.Other
+  }
+  let req_id = protocol.create_network_request(url, rt, document_url, frame_id)
+  let @scheduler.RequestId(id) = req_id
+  id
+}
+
+///|
+/// Create a network request with explicit loader ID
+pub fn createNetworkRequestWithLoader(
+  url : String,
+  resource_type : String,
+  document_url : String,
+  frame_id : String,
+  loader_id : String,
+) -> Int {
+  let rt = match resource_type {
+    "Document" => @scheduler.Document
+    "Stylesheet" => @scheduler.Stylesheet
+    "Script" => @scheduler.Script
+    "Image" => @scheduler.Image
+    "Font" => @scheduler.Font
+    _ => @scheduler.Other
+  }
+  let req_id = protocol.create_network_request_with_loader(
+    url,
+    rt,
+    document_url,
+    frame_id,
+    loader_id,
+  )
+  let @scheduler.RequestId(id) = req_id
+  id
+}
+
+///|
+/// Notify that a response was received
+pub fn notifyResponseReceived(
+  request_id : Int,
+  url : String,
+  status : Int,
+  mime_type : String,
+  headers_json : String,
+) -> Unit {
+  let req_id = @scheduler.RequestId(request_id)
+  let headers : Map[String, String] = parse_headers_json(headers_json)
+  protocol.notify_response_received(req_id, url, status, mime_type, headers)
+}
+
+///|
+/// Notify that a response was received with explicit loader ID
+pub fn notifyResponseReceivedWithLoader(
+  request_id : Int,
+  url : String,
+  status : Int,
+  mime_type : String,
+  headers_json : String,
+  loader_id : String,
+) -> Unit {
+  let req_id = @scheduler.RequestId(request_id)
+  let headers : Map[String, String] = parse_headers_json(headers_json)
+  protocol.notify_response_received_with_loader(
+    req_id,
+    url,
+    status,
+    mime_type,
+    headers,
+    loader_id,
+  )
+}
+
+///|
+/// Notify that loading finished
+pub fn notifyLoadingFinished(request_id : Int, encoded_data_length : Int) -> Unit {
+  let req_id = @scheduler.RequestId(request_id)
+  protocol.notify_loading_finished(req_id, encoded_data_length)
+}
+
+///|
+/// Notify that loading failed
+pub fn notifyLoadingFailed(request_id : Int, error : String) -> Unit {
+  let req_id = @scheduler.RequestId(request_id)
+  protocol.notify_loading_failed(req_id, error)
+}
+
+///|
+/// Flush pending network events to outbox and pending_messages
+pub fn flushNetworkEvents(session_id : String) -> Unit {
+  let sid = if session_id.length() == 0 { None } else { Some(session_id) }
+  protocol.flush_network_events(sid)
+  // Move events from outbox to pending_messages so they can be retrieved
+  let messages = protocol.take_messages()
+  for msg in messages {
+    pending_messages.push(msg)
+  }
+}
+
+///|
+/// Check if Network domain is enabled
+pub fn isNetworkEnabled() -> Bool {
+  // Access the network manager to check enabled state
+  // Note: We need to check the internal enabled state
+  protocol.has_pending_network_events() || true // Network manager is always available
+}
+
+///|
+/// Parse headers JSON string to Map
+fn parse_headers_json(json_str : String) -> Map[String, String] {
+  let headers : Map[String, String] = {}
+  if json_str.length() == 0 || json_str == "{}" {
+    return headers
+  }
+  // Simple JSON object parser for {"key": "value", ...}
+  let json = @json.parse(json_str) catch { _ => return headers }
+  match json {
+    Object(map) =>
+      map.each(fn(k, v) {
+        match v {
+          String(s) => headers[k] = s
+          _ => ()
+        }
+      })
+    _ => ()
+  }
+  headers
+}

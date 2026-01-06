@@ -19,6 +19,8 @@ pub fn html_element_to_selector(@html.Element) -> @selector.Element
 
 pub fn parse_and_schedule(Scheduler, String, base_url? : String) -> ParseCompleteResult
 
+pub fn reset_request_id_counter() -> Unit
+
 pub fn reset_task_id_counter() -> Unit
 
 // Errors
@@ -79,6 +81,27 @@ pub fn DocumentStyleCoordinator::on_stylesheet_fetched(Self, String) -> CSSParse
 pub fn DocumentStyleCoordinator::register_stylesheets(Self, ParseCompleteResult, ResourceDiscoveryResult) -> Unit
 pub fn DocumentStyleCoordinator::schedule_style_computation(Self, Array[String]) -> TaskId
 
+pub(all) enum FetchResult {
+  Success(response~ : NetworkResponse)
+  Redirect(location~ : String, status~ : Int)
+  Failure(error~ : String)
+}
+pub impl Show for FetchResult
+
+pub(all) enum HttpMethod {
+  GET
+  POST
+  PUT
+  DELETE
+  HEAD
+  OPTIONS
+  PATCH
+}
+pub fn HttpMethod::from_string(String) -> Self
+pub fn HttpMethod::to_string(Self) -> String
+pub impl Eq for HttpMethod
+pub impl Show for HttpMethod
+
 pub(all) struct ImageRegistration {
   resource_id : @tree.ResourceId
   decode_task : TaskId
@@ -130,6 +153,65 @@ pub(all) struct LayoutStats {
   pending_images : Int
 }
 
+pub(all) enum NetworkEvent {
+  RequestWillBeSent(NetworkRequest)
+  ResponseReceived(NetworkResponse)
+  LoadingFinished(request_id~ : RequestId, encoded_data_length~ : Int)
+  LoadingFailed(request_id~ : RequestId, error~ : String)
+}
+pub fn NetworkEvent::request_id(Self) -> RequestId
+pub impl Show for NetworkEvent
+
+pub struct NetworkManager {
+  pending_requests : Map[Int, NetworkRequest]
+  mut pending_events : Array[NetworkEvent]
+  mut enabled : Bool
+}
+pub fn NetworkManager::disable(Self) -> Unit
+pub fn NetworkManager::drain_events(Self) -> Array[NetworkEvent]
+pub fn NetworkManager::enable(Self) -> Unit
+pub fn NetworkManager::fail_loading(Self, RequestId, String) -> Unit
+pub fn NetworkManager::finish_loading(Self, RequestId, Int) -> Unit
+pub fn NetworkManager::has_pending_events(Self) -> Bool
+pub fn NetworkManager::new() -> Self
+pub fn NetworkManager::pending_count(Self) -> Int
+pub fn NetworkManager::receive_response(Self, NetworkResponse) -> Unit
+pub fn NetworkManager::start_request(Self, NetworkRequest) -> Unit
+
+pub(all) struct NetworkRequest {
+  id : RequestId
+  url : String
+  http_method : HttpMethod
+  resource_type : ResourceType
+  headers : Map[String, String]
+  document_url : String
+  frame_id : String
+  loader_id : String
+  timestamp : Double
+}
+pub fn NetworkRequest::new(String, ResourceType, document_url? : String, frame_id? : String, http_method? : HttpMethod) -> Self
+pub fn NetworkRequest::with_headers(Self, Map[String, String]) -> Self
+pub fn NetworkRequest::with_timestamp(Self, Double) -> Self
+pub impl Show for NetworkRequest
+
+pub(all) struct NetworkResponse {
+  request_id : RequestId
+  url : String
+  status : Int
+  status_text : String
+  mime_type : String
+  headers : Map[String, String]
+  body : String?
+  content_length : Int
+  timestamp : Double
+}
+pub fn NetworkResponse::new(RequestId, String, Int) -> Self
+pub fn NetworkResponse::with_body(Self, String) -> Self
+pub fn NetworkResponse::with_headers(Self, Map[String, String]) -> Self
+pub fn NetworkResponse::with_mime_type(Self, String) -> Self
+pub fn NetworkResponse::with_timestamp(Self, Double) -> Self
+pub impl Show for NetworkResponse
+
 pub(all) struct ParseCompleteResult {
   root : @html.Element
   fetch_tasks : Array[TaskId]
@@ -146,6 +228,14 @@ pub(all) struct RenderPipelineResult {
   layout_task : TaskId?
   image_decode_tasks : Array[TaskId]
 }
+
+pub(all) struct RequestId(Int)
+#deprecated
+pub fn RequestId::inner(Self) -> Int
+pub fn RequestId::next() -> Self
+pub impl Eq for RequestId
+pub impl Hash for RequestId
+pub impl Show for RequestId
 
 pub(all) struct ResizeResult {
   resized : Bool

@@ -82,6 +82,8 @@ pub fn CdpOutMessage::event(evt : CdpEvent) -> CdpOutMessage {
 pub struct CdpProtocol {
   /// Target domain
   target : TargetDomain
+  /// Network manager
+  network : @scheduler.NetworkManager
   /// Outgoing message buffer
   outbox : Array[CdpOutMessage]
   /// Enable lifecycle events
@@ -91,7 +93,12 @@ pub struct CdpProtocol {
 ///|
 /// Create new protocol handler
 pub fn CdpProtocol::new() -> CdpProtocol {
-  { target: TargetDomain::new(), outbox: [], lifecycle_events: false }
+  {
+    target: TargetDomain::new(),
+    network: @scheduler.NetworkManager::new(),
+    outbox: [],
+    lifecycle_events: false,
+  }
 }
 
 ///|
@@ -1204,7 +1211,15 @@ fn CdpProtocol::dispatch_network(
   action : String,
 ) -> Result[Unit, String] {
   match action {
-    "enable" | "disable" | "setCacheDisabled" | "setExtraHTTPHeaders" =>
+    "enable" => {
+      self.network.enable()
+      self.send_result(request.id, request.session_id, None)
+    }
+    "disable" => {
+      self.network.disable()
+      self.send_result(request.id, request.session_id, None)
+    }
+    "setCacheDisabled" | "setExtraHTTPHeaders" | "setUserAgentOverride" =>
       self.send_result(request.id, request.session_id, None)
     _ =>
       self.send_error(
@@ -1602,5 +1617,244 @@ fn extract_selector_from_function(func_decl : String) -> String {
         }
         None => ""
       }
+  }
+}
+
+// =============================================================================
+// Network API (外部から呼び出される)
+// =============================================================================
+
+///|
+/// Create a new network request (returns request ID for tracking)
+pub fn CdpProtocol::create_network_request(
+  self : CdpProtocol,
+  url : String,
+  resource_type : @scheduler.ResourceType,
+  document_url : String,
+  frame_id : String,
+) -> @scheduler.RequestId {
+  let request = @scheduler.NetworkRequest::new(
+    url,
+    resource_type,
+    document_url~,
+    frame_id~,
+  )
+  let request_id = request.id
+  self.network.start_request(request)
+  request_id
+}
+
+///|
+/// Create a new network request with explicit loader ID
+pub fn CdpProtocol::create_network_request_with_loader(
+  self : CdpProtocol,
+  url : String,
+  resource_type : @scheduler.ResourceType,
+  document_url : String,
+  frame_id : String,
+  loader_id : String,
+) -> @scheduler.RequestId {
+  let request = @scheduler.NetworkRequest::new(
+    url,
+    resource_type,
+    document_url~,
+    frame_id~,
+  ).with_loader_id(loader_id)
+  let request_id = request.id
+  self.network.start_request(request)
+  request_id
+}
+
+///|
+/// Notify response received
+pub fn CdpProtocol::notify_response_received(
+  self : CdpProtocol,
+  request_id : @scheduler.RequestId,
+  url : String,
+  status : Int,
+  mime_type : String,
+  headers : Map[String, String],
+) -> Unit {
+  let response = @scheduler.NetworkResponse::new(request_id, url, status)
+    .with_mime_type(mime_type)
+    .with_headers(headers)
+  self.network.receive_response(response)
+}
+
+///|
+/// Notify response received with explicit loader ID
+pub fn CdpProtocol::notify_response_received_with_loader(
+  self : CdpProtocol,
+  request_id : @scheduler.RequestId,
+  url : String,
+  status : Int,
+  mime_type : String,
+  headers : Map[String, String],
+  loader_id : String,
+) -> Unit {
+  let response = @scheduler.NetworkResponse::new(request_id, url, status)
+    .with_mime_type(mime_type)
+    .with_headers(headers)
+    .with_loader_id(loader_id)
+  self.network.receive_response(response)
+}
+
+///|
+/// Notify loading finished
+pub fn CdpProtocol::notify_loading_finished(
+  self : CdpProtocol,
+  request_id : @scheduler.RequestId,
+  encoded_data_length : Int,
+) -> Unit {
+  self.network.finish_loading(request_id, encoded_data_length)
+}
+
+///|
+/// Notify loading failed
+pub fn CdpProtocol::notify_loading_failed(
+  self : CdpProtocol,
+  request_id : @scheduler.RequestId,
+  error : String,
+) -> Unit {
+  self.network.fail_loading(request_id, error)
+}
+
+///|
+/// Process pending network events and add them to outbox
+pub fn CdpProtocol::flush_network_events(
+  self : CdpProtocol,
+  session_id : String?,
+) -> Unit {
+  let events = self.network.drain_events()
+  for event in events {
+    let (event_method, params) = network_event_to_cdp(event)
+    self.send_event(event_method, session_id, Some(params))
+  }
+}
+
+///|
+/// Check if there are pending network events
+pub fn CdpProtocol::has_pending_network_events(self : CdpProtocol) -> Bool {
+  self.network.has_pending_events()
+}
+
+///|
+/// Get network manager for direct access
+pub fn CdpProtocol::get_network_manager(
+  self : CdpProtocol,
+) -> @scheduler.NetworkManager {
+  self.network
+}
+
+// =============================================================================
+// Network Event to CDP JSON
+// =============================================================================
+
+///|
+fn network_event_to_cdp(event : @scheduler.NetworkEvent) -> (String, Json) {
+  match event {
+    @scheduler.RequestWillBeSent(req) => (
+      "Network.requestWillBeSent",
+      request_will_be_sent_to_json(req),
+    )
+    @scheduler.ResponseReceived(res) => (
+      "Network.responseReceived",
+      response_received_to_json(res),
+    )
+    @scheduler.LoadingFinished(request_id~, encoded_data_length~) => (
+      "Network.loadingFinished",
+      loading_finished_to_json(request_id, encoded_data_length),
+    )
+    @scheduler.LoadingFailed(request_id~, error~) => (
+      "Network.loadingFailed",
+      loading_failed_to_json(request_id, error),
+    )
+  }
+}
+
+///|
+fn request_will_be_sent_to_json(req : @scheduler.NetworkRequest) -> Json {
+  let @scheduler.RequestId(id) = req.id
+  let request_id = "REQ-\{id}"
+  make_object({
+    "requestId": Json::string(request_id),
+    "loaderId": Json::string(req.loader_id),
+    "documentURL": Json::string(req.document_url),
+    "request": make_object({
+      "url": Json::string(req.url),
+      "method": Json::string(req.http_method.to_string()),
+      "headers": headers_to_json(req.headers),
+    }),
+    "timestamp": Json::number(req.timestamp),
+    "wallTime": Json::number(req.timestamp),
+    "initiator": make_object({ "type": Json::string("other") }),
+    "type": Json::string(resource_type_to_string(req.resource_type)),
+    "frameId": Json::string(req.frame_id),
+  })
+}
+
+///|
+fn response_received_to_json(res : @scheduler.NetworkResponse) -> Json {
+  let @scheduler.RequestId(id) = res.request_id
+  let request_id = "REQ-\{id}"
+  make_object({
+    "requestId": Json::string(request_id),
+    "loaderId": Json::string(res.loader_id),
+    "timestamp": Json::number(res.timestamp),
+    "type": Json::string("Document"),
+    "response": make_object({
+      "url": Json::string(res.url),
+      "status": Json::number(res.status.to_double()),
+      "statusText": Json::string(res.status_text),
+      "headers": headers_to_json(res.headers),
+      "mimeType": Json::string(res.mime_type),
+    }),
+  })
+}
+
+///|
+fn loading_finished_to_json(
+  request_id : @scheduler.RequestId,
+  encoded_data_length : Int,
+) -> Json {
+  let @scheduler.RequestId(id) = request_id
+  make_object({
+    "requestId": Json::string("REQ-\{id}"),
+    "timestamp": Json::number(0.0),
+    "encodedDataLength": Json::number(encoded_data_length.to_double()),
+  })
+}
+
+///|
+fn loading_failed_to_json(
+  request_id : @scheduler.RequestId,
+  error : String,
+) -> Json {
+  let @scheduler.RequestId(id) = request_id
+  make_object({
+    "requestId": Json::string("REQ-\{id}"),
+    "timestamp": Json::number(0.0),
+    "type": Json::string("Document"),
+    "errorText": Json::string(error),
+    "canceled": Json::boolean(false),
+  })
+}
+
+///|
+fn headers_to_json(headers : Map[String, String]) -> Json {
+  let obj : Map[String, Json] = {}
+  headers.each(fn(k, v) { obj[k] = Json::string(v) })
+  make_object(obj)
+}
+
+///|
+fn resource_type_to_string(rt : @scheduler.ResourceType) -> String {
+  match rt {
+    @scheduler.Document => "Document"
+    @scheduler.Stylesheet => "Stylesheet"
+    @scheduler.Script => "Script"
+    @scheduler.Image => "Image"
+    @scheduler.Font => "Font"
+    @scheduler.Other => "Other"
   }
 }
