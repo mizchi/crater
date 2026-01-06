@@ -37,6 +37,7 @@ fn render_paint_node(
   node : @paint.PaintNode,
   parent_x : Double,
   parent_y : Double,
+  inside_link : Bool,
 ) -> Unit {
   // Skip invisible nodes
   if not(node.paint.should_render()) {
@@ -53,15 +54,17 @@ fn render_paint_node(
   // Skip if completely outside viewport
   if row + h < 0 || row >= ctx.viewport_height {
     // Still need to render children that might be visible
+    let child_inside_link = inside_link || node.tag == "a"
     for child in node.children {
-      render_paint_node(ctx, child, abs_x, abs_y)
+      render_paint_node(ctx, child, abs_x, abs_y, child_inside_link)
     }
     return
   }
   // Skip zero-sized nodes
   if w <= 0 || h <= 0 {
+    let child_inside_link = inside_link || node.tag == "a"
     for child in node.children {
-      render_paint_node(ctx, child, abs_x, abs_y)
+      render_paint_node(ctx, child, abs_x, abs_y, child_inside_link)
     }
     return
   }
@@ -147,11 +150,20 @@ fn render_paint_node(
     match node.text {
       Some(text_content) =>
         if row >= 0 && row < ctx.viewport_height {
+          // Check if this is a link or inside a link - force underline and blue color
+          let is_link = node.tag == "a" || inside_link
+          let (fg_color, use_underline) = if is_link {
+            // Force blue color and underline for links in TUI mode
+            // This overrides site CSS to ensure links are always visible
+            (@types.Color::rgb(0, 0, 238), true)
+          } else {
+            (node.paint.color, false)
+          }
           let style : TextStyle = {
-            fg: node.paint.color,
+            fg: fg_color,
             bg: node.paint.background_color,
             bold: false,
-            underline: false,
+            underline: use_underline,
           }
           let _ = ctx.buffer.write_text_wrapped(
             col,
@@ -165,9 +177,10 @@ fn render_paint_node(
       None => ()
     }
   }
-  // Render children
+  // Render children - pass inside_link flag
+  let child_inside_link = inside_link || node.tag == "a"
   for child in node.children {
-    render_paint_node(ctx, child, abs_x, abs_y)
+    render_paint_node(ctx, child, abs_x, abs_y, child_inside_link)
   }
 }
 
@@ -198,8 +211,8 @@ pub fn render_to_ansi(
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   // Create context
   let ctx : TuiContext = { buffer: buf, scroll_y, viewport_height: height }
-  // Render
-  render_paint_node(ctx, sorted, 0.0, 0.0)
+  // Render (start with inside_link=false)
+  render_paint_node(ctx, sorted, 0.0, 0.0, false)
   // Convert to ANSI
   buffer_to_ansi(buf)
 }
@@ -240,8 +253,8 @@ pub fn render_to_ansi_with_status(
     scroll_y,
     viewport_height: content_height,
   }
-  // Render content
-  render_paint_node(ctx, sorted, 0.0, 0.0)
+  // Render content (start with inside_link=false)
+  render_paint_node(ctx, sorted, 0.0, 0.0, false)
   // Draw status bar
   draw_status_bar(buf, content_height, url, link_count, focused_link)
   // Convert to ANSI
