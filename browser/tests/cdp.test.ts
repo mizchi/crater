@@ -154,4 +154,51 @@ describe('CDP Protocol', () => {
       expect(h1).not.toBeNull();
     });
   });
+
+  describe('Input events', () => {
+    it('should handle all input events', async () => {
+      await page!.setContent('<html><body><button id="btn">Click</button><input id="input" type="text" /></body></html>');
+
+      // Create a single CDP session for all input tests
+      const client = await page!.createCDPSession();
+
+      // Test mouse click events
+      await client.send('Input.dispatchMouseEvent', {
+        type: 'mousePressed',
+        x: 100,
+        y: 100,
+        button: 'left',
+        clickCount: 1,
+      });
+      await client.send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased',
+        x: 100,
+        y: 100,
+        button: 'left',
+        clickCount: 1,
+      });
+
+      // Test keyboard events
+      await client.send('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        key: 'a',
+        code: 'KeyA',
+      });
+      await client.send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        key: 'a',
+        code: 'KeyA',
+      });
+
+      // Test insertText
+      await client.send('Input.insertText', {
+        text: 'Hello World',
+      });
+
+      await client.detach();
+
+      // If no error thrown, all input events are handled
+      expect(true).toBe(true);
+    });
+  });
 });

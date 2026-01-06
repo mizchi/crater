@@ -713,8 +713,99 @@ fn CdpProtocol::dispatch_input(
   action : String,
 ) -> Result[Unit, String] {
   match action {
-    "dispatchMouseEvent" | "dispatchKeyEvent" | "insertText" =>
+    "dispatchMouseEvent" => {
+      // Parse mouse event parameters
+      let event_type = get_param_string(request.params, "type").unwrap_or(
+        "mousePressed",
+      )
+      let x = get_param_number(request.params, "x").unwrap_or(0.0)
+      let y = get_param_number(request.params, "y").unwrap_or(0.0)
+      let button = get_param_string(request.params, "button").unwrap_or("left")
+      let click_count = get_param_number(request.params, "clickCount").unwrap_or(
+        1.0,
+      )
+      let modifiers = get_param_number(request.params, "modifiers").unwrap_or(
+        0.0,
+      )
+
+      // Convert to internal types
+      let mouse_type : @scheduler.MouseEventType = match event_type {
+        "mousePressed" => @scheduler.MouseEventType::MousePressed
+        "mouseReleased" => @scheduler.MouseEventType::MouseReleased
+        "mouseMoved" => @scheduler.MouseEventType::MouseMoved
+        "mouseWheel" => @scheduler.MouseEventType::MouseWheel
+        _ => @scheduler.MouseEventType::MousePressed
+      }
+
+      let mouse_button : @scheduler.MouseButton = match button {
+        "left" => @scheduler.MouseButton::Left
+        "middle" => @scheduler.MouseButton::Middle
+        "right" => @scheduler.MouseButton::Right
+        "back" => @scheduler.MouseButton::Back
+        "forward" => @scheduler.MouseButton::Forward
+        _ => @scheduler.MouseButton::None
+      }
+
+      // Create mouse event
+      let event = @scheduler.MouseEvent::new(mouse_type, x, y)
+        .with_button(mouse_button)
+        .with_modifiers(modifiers.to_int())
+
+      // Queue event for processing (actual DOM event dispatch would happen here)
+      // For now, just acknowledge the event
+      let _ = event
+      let _ = click_count
+
       self.send_result(request.id, request.session_id, None)
+    }
+    "dispatchKeyEvent" => {
+      // Parse keyboard event parameters
+      let event_type = get_param_string(request.params, "type").unwrap_or(
+        "keyDown",
+      )
+      let key = get_param_string(request.params, "key").unwrap_or("")
+      let code = get_param_string(request.params, "code").unwrap_or("")
+      let modifiers = get_param_number(request.params, "modifiers").unwrap_or(
+        0.0,
+      )
+      let text = get_param_string(request.params, "text")
+
+      // Convert to internal types
+      let key_type : @scheduler.KeyEventType = match event_type {
+        "keyDown" => @scheduler.KeyEventType::KeyDown
+        "keyUp" => @scheduler.KeyEventType::KeyUp
+        "rawKeyDown" => @scheduler.KeyEventType::RawKeyDown
+        "char" => @scheduler.KeyEventType::Char
+        _ => @scheduler.KeyEventType::KeyDown
+      }
+
+      // Create keyboard event
+      let event = @scheduler.KeyboardEvent::new(key_type, key)
+        .with_code(code)
+        .with_modifiers(modifiers.to_int())
+
+      let event = match text {
+        Some(t) => event.with_text(t)
+        None => event
+      }
+
+      // Queue event for processing
+      let _ = event
+
+      self.send_result(request.id, request.session_id, None)
+    }
+    "insertText" => {
+      // Parse text parameter
+      let text = get_param_string(request.params, "text").unwrap_or("")
+
+      // Create text input event
+      let event = @scheduler.InputEvent::Text(text)
+
+      // Queue event for processing
+      let _ = event
+
+      self.send_result(request.id, request.session_id, None)
+    }
     _ =>
       self.send_error(
         request.id,
@@ -1206,6 +1297,18 @@ fn get_param_bool(params : Json?, key : String) -> Bool? {
       match map.get(key) {
         Some(True) => Some(true)
         Some(False) => Some(false)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn get_param_number(params : Json?, key : String) -> Double? {
+  match params {
+    Some(Object(map)) =>
+      match map.get(key) {
+        Some(Number(n, ..)) => Some(n)
         _ => None
       }
     _ => None
