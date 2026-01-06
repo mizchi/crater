@@ -25,3 +25,6 @@ real-world/
 
 # WASM component transpiled output (regenerate with npm run build:wasm-component && npx jco transpile)
 wasm/dist/
+
+# Browser npm build output
+browser/dist/

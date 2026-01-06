@@ -1,3 +1,37 @@
 {
-  "type": "commonjs"
+  "name": "crater-browser",
+  "version": "0.0.1",
+  "description": "Experimental TUI browser in MoonBit - renders web pages in the terminal",
+  "type": "commonjs",
+  "bin": {
+    "crater": "./dist/crater.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build:moon": "moon build --target js",
+    "build:minify": "esbuild target/js/release/build/src/main/main.js --bundle --platform=node --minify --outfile=dist/crater.js --banner:js='#!/usr/bin/env node'",
+    "build": "npm run build:moon && npm run build:minify",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "browser",
+    "tui",
+    "terminal",
+    "moonbit",
+    "sixel"
+  ],
+  "author": "mizchi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/crater"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
 }

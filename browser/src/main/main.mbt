@@ -102,12 +102,8 @@ async fn main {
   let options = match parse_args() {
     Some(opts) => opts
     None => {
-      println(
-        "Usage: moon run src/main --target js -- <URL> [--sixel|--text] [--debug]",
-      )
-      println(
-        "Example: moon run src/main --target js -- https://example.com --text",
-      )
+      println("Usage: crater <URL> [--sixel|--text] [--debug]")
+      println("Example: crater https://example.com --text")
       println("")
       println("Options:")
       println(

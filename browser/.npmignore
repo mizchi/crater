@@ -1,0 +1,15 @@
+# Source files (MoonBit)
+src/
+target/
+.mooncakes/
+
+# MoonBit config
+moon.mod.json
+
+# Development
+node_modules/
+*.log
+
+# Git
+.git/
+.gitignore
