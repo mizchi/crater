@@ -17,9 +17,10 @@ pub fn matches_simple(element : Element, selector : SimpleSelector) -> Bool {
     Attribute(attr_sel) => matches_attribute(element, attr_sel)
     PseudoClass(pc) => matches_pseudo_class(element, pc)
     PseudoElement(_) =>
-      // Pseudo-elements don't affect matching in the usual sense
-      // They're handled separately during rendering
-      true
+      // Pseudo-elements (::before, ::after) create virtual elements that don't exist in the DOM
+      // Selectors with pseudo-elements should NOT match the actual element
+      // because we don't support creating pseudo-element content
+      false
   }
 }
 

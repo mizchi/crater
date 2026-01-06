@@ -182,6 +182,20 @@ fn parse_color_value(v : String) -> CssColorValue {
   if v == "inherit" {
     return Inherit
   }
+  // Empty value (unresolved var())
+  if v == "" {
+    return Resolved(@types.Color::transparent())
+  }
+  // Unsupported CSS functions - return transparent
+  // (gradients, url(), etc. cannot be represented as solid colors)
+  if v.has_prefix("linear-gradient") ||
+    v.has_prefix("radial-gradient") ||
+    v.has_prefix("conic-gradient") ||
+    v.has_prefix("repeating-linear-gradient") ||
+    v.has_prefix("repeating-radial-gradient") ||
+    v.has_prefix("url(") {
+    return Resolved(@types.Color::transparent())
+  }
 
   // Hex color
   if v.has_prefix("#") {
@@ -205,8 +219,8 @@ fn parse_color_value(v : String) -> CssColorValue {
     None => ()
   }
 
-  // Default: black for color, transparent for background
-  Resolved(@types.Color::black())
+  // Default: transparent for unknown values (safer than black)
+  Resolved(@types.Color::transparent())
 }
 
 ///|

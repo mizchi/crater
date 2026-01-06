@@ -220,9 +220,15 @@ fn SelectorParser::parse_compound_selector(
           }
           // Single colon - pseudo-class (or legacy pseudo-element)
           _ =>
+            // First try to parse as pseudo-class
             match self.parse_pseudo_class() {
               Some(pc) => subclasses.push(PseudoClass(pc))
-              None => break
+              None =>
+                // Try legacy pseudo-element syntax (:before, :after)
+                match self.parse_pseudo_element() {
+                  Some(pe) => subclasses.push(PseudoElement(pe))
+                  None => break
+                }
             }
         }
       }
@@ -423,8 +429,8 @@ fn SelectorParser::parse_pseudo_element(
 fn SelectorParser::parse_pseudo_class(self : SelectorParser) -> PseudoClass? {
   match self.peek() {
     Ident(name) => {
-      let _ = self.advance()
-      match name.to_lower() {
+      // Check if it's a known pseudo-class BEFORE consuming the token
+      let result = match name.to_lower() {
         "first-child" => Some(FirstChild)
         "last-child" => Some(LastChild)
         "only-child" => Some(OnlyChild)
@@ -452,6 +458,14 @@ fn SelectorParser::parse_pseudo_class(self : SelectorParser) -> PseudoClass? {
         "read-only" => Some(ReadOnly)
         "read-write" => Some(ReadWrite)
         _ => None
+      }
+      // Only consume the token if it matched
+      match result {
+        Some(_) => {
+          let _ = self.advance()
+          result
+        }
+        None => None
       }
     }
     Function(name) => {
