@@ -253,7 +253,7 @@ test "font-size inheritance in full render" {
 
   // Text inside <a> is now collected to parent div (inline element text collection)
   let text = div1.children[0]
-  inspect(text.id, content="#text")
+  inspect(text.id, content="a")
   inspect(text.style.font_size, content="20")
 }
 
@@ -298,7 +298,7 @@ test "font-size with nested selectors like WPT" {
   // Text inside <a> is now collected to parent div (inline element text collection)
   // div1 should have a #text child with the text from <a>
   let text1 = div1.children[0]
-  inspect(text1.id, content="#text")
+  inspect(text1.id, content="a")
   inspect(text1.style.font_size, content="20")
   inspect(text1.style.line_height, content="20")
 }
@@ -492,7 +492,7 @@ test "debug_h2_with_anchor" {
   inspect(h2.children.length(), content="1")
   if h2.children.length() > 0 {
     let text = h2.children[0]
-    inspect(text.id, content="#text")
+    inspect(text.id, content="a")
   }
 }
 
@@ -607,5 +607,46 @@ test "img_alt_text_propagation" {
       inspect(img.height > 0.0, content="true")
     }
     None => fail("No img layout found!")
+  }
+}
+
+///|
+test "link default color is blue" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<a href="https://example.com">Link text</a>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  // Find the <a> element which should be preserved with blue color
+  fn find_link_node(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("a") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_link_node(child) {
+        Some(a) => return Some(a)
+        None => continue
+      }
+    }
+    None
+  }
+  match find_link_node(node) {
+    Some(link) => {
+      // <a> element should have blue color (#0000EE = rgb(0, 0, 238))
+      inspect(link.style.color.r, content="0")
+      inspect(link.style.color.g, content="0")
+      inspect(link.style.color.b, content="238")
+      // Text inside <a> should also have blue color (inherited)
+      if link.children.length() > 0 {
+        let text = link.children[0]
+        inspect(text.id, content="#text")
+        inspect(text.style.color.r, content="0")
+        inspect(text.style.color.g, content="0")
+        inspect(text.style.color.b, content="238")
+      }
+    }
+    None => fail("No link node found!")
   }
 }

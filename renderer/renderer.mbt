@@ -394,8 +394,11 @@ fn collect_inline_content(
           if contains_replaced_element(elem) {
             // Keep as separate node to preserve replaced element children
             remaining.push(child)
+          } else if tag_lower == "a" {
+            // Keep <a> elements as separate nodes to preserve link styling (blue color)
+            remaining.push(child)
           } else {
-            // Recursively collect text from inline elements (a, span, em, etc.)
+            // Recursively collect text from inline elements (span, em, etc.)
             // Only if CSS doesn't set display: inline-block or other non-inline value
             collect_text_from_inline(elem, text_builder, stylesheets, ctx)
             has_inline_content = true
@@ -1397,9 +1400,16 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Length(40.0),
         ),
       }
+    // Link element - blue color (standard browser UA style)
+    "a" =>
+      {
+        ..default_style,
+        display: @style.Inline,
+        // Standard link blue: #0000EE (rgb(0, 0, 238))
+        color: @types.Color::rgb(0, 0, 238),
+      }
     // Inline elements - HTML default display: inline
     "span"
-    | "a"
     | "em"
     | "strong"
     | "i"
@@ -1465,10 +1475,10 @@ fn compute_element_style(
     Some(media_env),
   )
 
-  // Start with user-agent default style based on tag
-  let mut style = get_ua_default_style(selector_elem.tag_name)
+  // Start with default style
+  let mut style = @style.Style::default()
 
-  // Inherit properties from parent
+  // Inherit properties from parent first
   // CSS inherited properties: color, font-size, line-height, visibility, etc.
   match parent_style {
     Some(ps) => {
@@ -1488,6 +1498,18 @@ fn compute_element_style(
     }
     None => ()
   }
+
+  // Apply user-agent default style (UA styles override inherited values)
+  let ua_style = get_ua_default_style(selector_elem.tag_name)
+  // Only apply UA color if it's explicitly set (not default black)
+  // This allows UA stylesheet to set link color to blue
+  if ua_style.color != @types.Color::black() {
+    style = { ..style, color: ua_style.color }
+  }
+  // Apply display from UA style
+  style = { ..style, display: ua_style.display }
+  // Apply margin/padding from UA style if set
+  style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
 
   // Apply cascaded values with correct viewport and CSS variables
   for prop in cascaded.properties() {
