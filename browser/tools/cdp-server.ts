@@ -232,8 +232,8 @@ wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
           console.log(`-> [event] ${frameNavigatedEvent.substring(0, 200)}...`);
           ws.send(frameNavigatedEvent);
 
-          // Send lifecycle events (including network idle for puppeteer)
-          const lifecycleEvents = ['commit', 'DOMContentLoaded', 'load', 'networkAlmostIdle', 'networkIdle'];
+          // Send lifecycle events (init is required to update frame._loaderId in puppeteer)
+          const lifecycleEvents = ['init', 'commit', 'DOMContentLoaded', 'load', 'networkAlmostIdle', 'networkIdle'];
           for (const name of lifecycleEvents) {
             const event = JSON.stringify({
               method: 'Page.lifecycleEvent',
