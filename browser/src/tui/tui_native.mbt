@@ -29,3 +29,12 @@ pub fn get_args() -> Array[String] {
   // TODO: implement native argument parsing
   []
 }
+
+///|
+/// Get terminal size in characters (columns, rows)
+/// Native implementation - returns default values for now
+/// TODO: Use ioctl TIOCGWINSZ or environment variables COLUMNS/LINES
+pub fn get_terminal_size() -> (Int, Int) {
+  // Default terminal size
+  (80, 24)
+}

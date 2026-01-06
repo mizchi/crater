@@ -2,11 +2,33 @@
 /// TUI Browser - Main entry point
 
 ///|
-/// Default viewport size
-let viewport_width : Int = 375
+/// Character size constants for TUI mode (monospace font)
+let char_width : Int = 8 // Width of one character in pixels
 
 ///|
-let viewport_height : Int = 450
+let char_height : Int = 16 // Height of one character in pixels
+
+///|
+/// Default viewport size (used when terminal size not available)
+let default_viewport_width : Int = 640 // 80 columns * 8px
+
+///|
+let default_viewport_height : Int = 384 // 24 rows * 16px
+
+///|
+/// Calculate viewport size from terminal dimensions
+fn calculate_viewport(text_mode : Bool) -> (Int, Int) {
+  if text_mode {
+    // TUI text mode: use terminal size
+    let (cols, rows) = @tui.get_terminal_size()
+    let width = cols * char_width
+    let height = rows * char_height
+    (width, height)
+  } else {
+    // Sixel/debug mode: use default size
+    (default_viewport_width, default_viewport_height)
+  }
+}
 
 ///|
 /// Command line options
@@ -96,6 +118,8 @@ async fn main {
       return
     }
   }
+  // Calculate viewport size based on mode (TUI uses terminal size)
+  let (viewport_width, viewport_height) = calculate_viewport(options.text)
   let browser = @browser.Browser::new(viewport_width, viewport_height)
   // Print welcome message
   if options.sixel || options.text {
@@ -103,6 +127,20 @@ async fn main {
     @tui.print_raw(@tui.hide_cursor())
   }
   println("TUI Browser MVP")
+  if options.text {
+    let (cols, rows) = @tui.get_terminal_size()
+    println(
+      "Terminal: " +
+      cols.to_string() +
+      "x" +
+      rows.to_string() +
+      " chars, viewport: " +
+      viewport_width.to_string() +
+      "x" +
+      viewport_height.to_string() +
+      "px",
+    )
+  }
   println("Loading " + options.url + "...")
   println("")
   // Navigate to initial URL

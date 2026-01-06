@@ -93,3 +93,26 @@ pub async fn read_line(prompt : String) -> String {
 pub fn print_raw(s : String) -> Unit {
   js_print(s)
 }
+
+///|
+/// Get terminal columns from process.stdout
+extern "js" fn js_get_terminal_columns() -> Int =
+  #| () => {
+  #|   if (typeof process === 'undefined') return 80;
+  #|   return process.stdout.columns || 80;
+  #| }
+
+///|
+/// Get terminal rows from process.stdout
+extern "js" fn js_get_terminal_rows() -> Int =
+  #| () => {
+  #|   if (typeof process === 'undefined') return 24;
+  #|   return process.stdout.rows || 24;
+  #| }
+
+///|
+/// Get terminal size in characters (columns, rows)
+/// Returns (80, 24) as default if size cannot be determined
+pub fn get_terminal_size() -> (Int, Int) {
+  (js_get_terminal_columns(), js_get_terminal_rows())
+}
