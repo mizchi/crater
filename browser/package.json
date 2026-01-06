@@ -14,10 +14,10 @@
     "build:minify": "rolldown target/js/release/build/src/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
     "build": "npm run build:moon && npm run build:minify",
     "prepublishOnly": "npm run build",
-    "test:webdriver": "tsx tools/webdriver-e2e-test.ts",
+    "test:webdriver": "tsx tests/webdriver-e2e-test.ts",
     "cdp:server": "tsx tools/cdp-server.ts",
-    "test:cdp": "tsx tools/cdp-e2e-test.ts",
-    "test:cdp:navigate": "tsx tools/cdp-e2e-test-navigate.ts",
+    "test:cdp": "tsx tests/cdp-e2e-test.ts",
+    "test:cdp:navigate": "tsx tests/cdp-e2e-test-navigate.ts",
     "test": "vitest run tests/cdp.test.ts"
   },
   "keywords": [
