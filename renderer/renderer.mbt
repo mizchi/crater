@@ -165,10 +165,15 @@ fn create_text_measure(
 ///|
 /// Check if an element is an inline-level element by tag name
 fn is_inline_element_by_tag(tag : String) -> Bool {
+  // HTML inline elements - includes HTML5 semantic inline elements
   let inline_tags = [
+    // Traditional inline elements
     "a", "abbr", "acronym", "b", "bdo", "big", "br", "cite", "code", "dfn", "em",
     "font", "i", "img", "input", "kbd", "label", "q", "s", "samp", "select", "small",
     "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
+    // HTML5 semantic inline elements
+     "time", "data", "mark", "bdi", "wbr", "ruby", "rb", "rt", "rtc", "rp", "meter",
+    "progress", "output", "ins", "del",
   ]
   inline_tags.contains(tag.to_lower())
 }
@@ -294,8 +299,10 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     let font_size = parent_style.font_size
     let text_line_height = parent_style.line_height
     // Create text style with inherited font properties and color for rendering
+    // Text nodes should be inline-level to flow with other inline content
     let text_style : @style.Style = {
       ..@style.Style::default(),
+      display: @style.Inline,
       font_size,
       line_height: text_line_height,
       color: parent_style.color,
