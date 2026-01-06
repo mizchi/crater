@@ -47,6 +47,6 @@ test "executor get log returns reference" {
 test "executor manager is accessible" {
   let executor = Executor::new()
   // Can access manager to verify it's properly initialized
-  let ctx = executor.manager.create_context()
-  assert_true(ctx.has_prefix("ctx-"))
+  let ctx = executor.manager.create_session()
+  assert_true(ctx.has_prefix("session-"))
 }

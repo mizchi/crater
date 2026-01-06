@@ -1,0 +1,161 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/src/cdp"
+
+import(
+  "mizchi/crater-browser/src/core"
+)
+
+// Values
+pub fn core_to_cdp_error(@core.CoreError) -> CdpError
+
+// Errors
+pub suberror CdpResult CdpError
+
+// Types and methods
+pub struct CdpBoxModel {
+  content : Array[Double]
+  padding : Array[Double]
+  border : Array[Double]
+  margin : Array[Double]
+  width : Int
+  height : Int
+}
+pub impl Show for CdpBoxModel
+
+pub struct CdpError {
+  code : Int
+  message : String
+}
+pub fn CdpError::from_code(CdpErrorCode, String) -> Self
+pub impl Show for CdpError
+
+pub enum CdpErrorCode {
+  InvalidParams
+  InternalError
+  NodeNotFound
+  NoSuchFrame
+  NoSuchElement
+}
+pub impl Show for CdpErrorCode
+
+pub struct CdpFrameInfo {
+  id : String
+  parent_id : String?
+  loader_id : String
+  name : String
+  url : String
+  security_origin : String
+  mime_type : String
+}
+pub impl Show for CdpFrameInfo
+
+pub struct CdpNavigateResult {
+  frame_id : String
+  loader_id : String
+  error_text : String?
+}
+pub impl Show for CdpNavigateResult
+
+pub struct CdpNavigationEntry {
+  id : Int
+  url : String
+  title : String
+  transition_type : String
+}
+pub impl Show for CdpNavigationEntry
+
+pub struct CdpNavigationHistory {
+  current_index : Int
+  entries : Array[CdpNavigationEntry]
+}
+pub impl Show for CdpNavigationHistory
+
+pub struct CdpNode {
+  node_id : Int
+  backend_node_id : Int
+  node_type : Int
+  node_name : String
+  local_name : String
+  node_value : String
+  child_node_count : Int?
+  children : Array[CdpNode]?
+  attributes : Array[String]?
+}
+pub impl Show for CdpNode
+
+pub struct CdpSession {
+  tree : @core.DomTree
+  dom : DomDomain
+  input : InputDomain
+  page : PageDomain
+  session_id : String
+  target_id : String
+}
+pub fn CdpSession::click_element(Self, Int) -> Result[Unit, CdpError]
+pub fn CdpSession::focus_element(Self, Int) -> Result[Unit, CdpError]
+pub fn CdpSession::get_dom(Self) -> DomDomain
+pub fn CdpSession::get_input(Self) -> InputDomain
+pub fn CdpSession::get_page(Self) -> PageDomain
+pub fn CdpSession::get_session_id(Self) -> String
+pub fn CdpSession::get_target_id(Self) -> String
+pub fn CdpSession::get_title(Self) -> String
+pub fn CdpSession::get_tree(Self) -> @core.DomTree
+pub fn CdpSession::get_url(Self) -> String
+pub fn CdpSession::navigate_to(Self, String) -> Result[CdpNavigateResult, CdpError]
+pub fn CdpSession::new(String) -> Self
+pub fn CdpSession::query_selector(Self, String) -> Result[Int?, CdpError]
+pub fn CdpSession::query_selector_all(Self, String) -> Result[Array[Int], CdpError]
+pub fn CdpSession::set_title(Self, String) -> Unit
+pub fn CdpSession::type_text(Self, String) -> Result[Unit, CdpError]
+
+pub struct DomDomain {
+  tree : @core.DomTree
+}
+pub fn DomDomain::get_attributes(Self, Int) -> Result[Array[String], CdpError]
+pub fn DomDomain::get_box_model(Self, Int) -> Result[CdpBoxModel, CdpError]
+pub fn DomDomain::get_document(Self, Int?) -> Result[CdpNode, CdpError]
+pub fn DomDomain::get_outer_html(Self, Int) -> Result[String, CdpError]
+pub fn DomDomain::new(@core.DomTree) -> Self
+pub fn DomDomain::query_selector(Self, Int, String) -> Result[Int?, CdpError]
+pub fn DomDomain::query_selector_all(Self, Int, String) -> Result[Array[Int], CdpError]
+pub fn DomDomain::remove_attribute(Self, Int, String) -> Result[Unit, CdpError]
+pub fn DomDomain::remove_node(Self, Int) -> Result[Unit, CdpError]
+pub fn DomDomain::request_child_nodes(Self, Int, Int?) -> Result[Array[CdpNode], CdpError]
+pub fn DomDomain::set_attribute_value(Self, Int, String, String) -> Result[Unit, CdpError]
+pub fn DomDomain::set_node_value(Self, Int, String) -> Result[Unit, CdpError]
+
+pub struct InputDomain {
+  tree : @core.DomTree
+  mut mouse_x : Double
+  mut mouse_y : Double
+  mut button_pressed : Bool
+}
+pub fn InputDomain::dispatch_key_event(Self, String, String, String, String?) -> Result[Unit, CdpError]
+pub fn InputDomain::dispatch_mouse_event(Self, String, Double, Double, String, Int) -> Result[Unit, CdpError]
+pub fn InputDomain::insert_text(Self, String) -> Result[Unit, CdpError]
+pub fn InputDomain::new(@core.DomTree) -> Self
+
+pub struct PageDomain {
+  tree : @core.DomTree
+  mut current_url : String
+  mut title : String
+  frame_id : String
+  mut loader_id : Int
+  history : Array[CdpNavigationEntry]
+  mut history_index : Int
+}
+pub fn PageDomain::get_frame_tree(Self) -> Result[CdpFrameInfo, CdpError]
+pub fn PageDomain::get_navigation_history(Self) -> Result[CdpNavigationHistory, CdpError]
+pub fn PageDomain::get_title(Self) -> String
+pub fn PageDomain::get_url(Self) -> String
+pub fn PageDomain::go_back(Self) -> Result[Bool, CdpError]
+pub fn PageDomain::go_forward(Self) -> Result[Bool, CdpError]
+pub fn PageDomain::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
+pub fn PageDomain::new(@core.DomTree) -> Self
+pub fn PageDomain::reload(Self) -> Result[Unit, CdpError]
+pub fn PageDomain::set_title(Self, String) -> Unit
+
+// Type aliases
+
+// Traits
+

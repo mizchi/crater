@@ -2,7 +2,7 @@
 package "mizchi/crater-browser/src/webdriver"
 
 import(
-  "mizchi/crater-browser/src/browser"
+  "mizchi/crater-browser/src/cdp"
 )
 
 // Values
@@ -10,7 +10,25 @@ pub fn api_error_to_rpc(RpcId, ApiError) -> RpcResponse
 
 pub fn error_response(ErrorCode, String) -> WebDriverResponse
 
-pub async fn handle_rpc(BrowserManager, RpcRequest) -> RpcResponse
+pub fn handle_element_click(@cdp.CdpSession, Int) -> Result[Unit, CdpHandlerError]
+
+pub fn handle_find_element(@cdp.CdpSession, String, String) -> Result[Int, CdpHandlerError]
+
+pub fn handle_find_elements(@cdp.CdpSession, String, String) -> Result[Array[Int], CdpHandlerError]
+
+pub fn handle_get_current_url(@cdp.CdpSession) -> String
+
+pub fn handle_get_element_attribute(@cdp.CdpSession, Int, String) -> Result[String?, CdpHandlerError]
+
+pub fn handle_get_element_tag_name(@cdp.CdpSession, Int) -> Result[String, CdpHandlerError]
+
+pub fn handle_get_element_text(@cdp.CdpSession, Int) -> Result[String, CdpHandlerError]
+
+pub fn handle_get_title(@cdp.CdpSession) -> String
+
+pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, CdpHandlerError]
+
+pub async fn handle_rpc(CdpSessionManager, RpcRequest) -> RpcResponse
 
 pub fn parse_json_object(String) -> Map[String, String]
 
@@ -117,19 +135,6 @@ pub(all) enum ApiResult[T] {
 }
 pub impl[T : Show] Show for ApiResult[T]
 
-pub struct BrowserManager {
-  browsers : Map[String, @browser.Browser]
-  mut next_id : Int
-  default_width : Int
-  default_height : Int
-}
-pub fn BrowserManager::close_context(Self, String) -> Bool
-pub fn BrowserManager::create_context(Self) -> String
-pub fn BrowserManager::get_browser(Self, String) -> @browser.Browser?
-pub fn BrowserManager::list_contexts(Self) -> Array[String]
-pub fn BrowserManager::new() -> Self
-pub fn BrowserManager::new_with_viewport(Int, Int) -> Self
-
 pub(all) struct Capabilities {
   browser_name : String
   browser_version : String
@@ -141,6 +146,27 @@ pub(all) struct Capabilities {
 }
 pub fn Capabilities::to_json(Self) -> String
 pub impl Show for Capabilities
+
+pub enum CdpHandlerError {
+  SessionNotFound(session_id~ : String)
+  NoSuchElement(selector~ : String)
+  ElementNotInteractable(element_id~ : Int)
+  InvalidSelector(selector~ : String)
+  NavigationFailed(url~ : String, reason~ : String)
+  InternalCdpError(message~ : String)
+}
+pub fn CdpHandlerError::to_w3c_error(Self) -> (String, String)
+pub impl Show for CdpHandlerError
+
+pub struct CdpSessionManager {
+  sessions : Map[String, @cdp.CdpSession]
+  mut next_id : Int
+}
+pub fn CdpSessionManager::close_session(Self, String) -> Bool
+pub fn CdpSessionManager::create_session(Self) -> String
+pub fn CdpSessionManager::get_session(Self, String) -> @cdp.CdpSession?
+pub fn CdpSessionManager::list_sessions(Self) -> Array[String]
+pub fn CdpSessionManager::new() -> Self
 
 pub(all) struct ContextId {
   id : String
@@ -197,7 +223,7 @@ pub impl Eq for ErrorCode
 pub impl Show for ErrorCode
 
 pub struct Executor {
-  manager : BrowserManager
+  manager : CdpSessionManager
   mut logging_enabled : Bool
   operation_log : Array[String]
 }

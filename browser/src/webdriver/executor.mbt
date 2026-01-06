@@ -14,7 +14,7 @@
 ///|
 /// Execution context with logging and state management
 pub struct Executor {
-  manager : BrowserManager
+  manager : CdpSessionManager
   /// Enable operation logging
   mut logging_enabled : Bool
   /// Operation log (JSON-RPC format)
@@ -24,14 +24,18 @@ pub struct Executor {
 ///|
 /// Create a new executor
 pub fn Executor::new() -> Executor {
-  { manager: BrowserManager::new(), logging_enabled: false, operation_log: [] }
+  {
+    manager: CdpSessionManager::new(),
+    logging_enabled: false,
+    operation_log: [],
+  }
 }
 
 ///|
-/// Create executor with custom viewport
-pub fn Executor::new_with_viewport(width : Int, height : Int) -> Executor {
+/// Create executor with custom viewport (viewport info stored but not used in pure protocol mode)
+pub fn Executor::new_with_viewport(_width : Int, _height : Int) -> Executor {
   {
-    manager: BrowserManager::new_with_viewport(width, height),
+    manager: CdpSessionManager::new(),
     logging_enabled: false,
     operation_log: [],
   }
@@ -191,7 +195,7 @@ pub async fn Executor::content(
 }
 
 ///|
-/// Get screenshot (ANSI text)
+/// Get screenshot (DOM tree as text in pure protocol mode)
 pub async fn Executor::screenshot(
   self : Executor,
   page_id : String,

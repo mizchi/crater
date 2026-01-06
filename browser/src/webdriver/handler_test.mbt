@@ -1,47 +1,38 @@
 ///|
 /// Tests for WebDriver Handler
-test "browser manager create context" {
-  let manager = BrowserManager::new()
-  let ctx1 = manager.create_context()
-  let ctx2 = manager.create_context()
-  inspect(ctx1, content="ctx-1")
-  inspect(ctx2, content="ctx-2")
+test "cdp session manager create session" {
+  let manager = CdpSessionManager::new()
+  let ctx1 = manager.create_session()
+  let ctx2 = manager.create_session()
+  inspect(ctx1, content="session-1")
+  inspect(ctx2, content="session-2")
 }
 
 ///|
-test "browser manager get browser" {
-  let manager = BrowserManager::new()
-  let ctx = manager.create_context()
-  let browser = manager.get_browser(ctx)
-  assert_true(browser is Some(_))
-  let none = manager.get_browser("invalid")
+test "cdp session manager get session" {
+  let manager = CdpSessionManager::new()
+  let ctx = manager.create_session()
+  let session = manager.get_session(ctx)
+  assert_true(session is Some(_))
+  let none = manager.get_session("invalid")
   assert_true(none is None)
 }
 
 ///|
-test "browser manager close context" {
-  let manager = BrowserManager::new()
-  let ctx = manager.create_context()
-  assert_true(manager.get_browser(ctx) is Some(_))
-  let result = manager.close_context(ctx)
+test "cdp session manager close session" {
+  let manager = CdpSessionManager::new()
+  let ctx = manager.create_session()
+  assert_true(manager.get_session(ctx) is Some(_))
+  let result = manager.close_session(ctx)
   assert_true(result)
-  assert_true(manager.get_browser(ctx) is None)
+  assert_true(manager.get_session(ctx) is None)
 }
 
 ///|
-test "browser manager list contexts" {
-  let manager = BrowserManager::new()
-  let _ = manager.create_context()
-  let _ = manager.create_context()
-  let contexts = manager.list_contexts()
-  inspect(contexts.length(), content="2")
-}
-
-///|
-test "browser manager custom viewport" {
-  let manager = BrowserManager::new_with_viewport(1024, 768)
-  let ctx = manager.create_context()
-  let browser = manager.get_browser(ctx).unwrap()
-  inspect(browser.viewport_width, content="1024")
-  inspect(browser.viewport_height, content="768")
+test "cdp session manager list sessions" {
+  let manager = CdpSessionManager::new()
+  let _ = manager.create_session()
+  let _ = manager.create_session()
+  let sessions = manager.list_sessions()
+  inspect(sessions.length(), content="2")
 }

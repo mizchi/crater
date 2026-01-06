@@ -4,6 +4,12 @@
  * Tests the Crater WebDriver server using the webdriver npm package.
  * This verifies W3C WebDriver protocol compatibility.
  *
+ * Tests:
+ * - Session management
+ * - Real URL navigation with HTTP fetching
+ * - Element finding (link text, CSS selector)
+ * - Element click (triggers navigation for links)
+ *
  * Usage:
  *   npx tsx tools/webdriver-e2e-test.ts
  */
@@ -12,7 +18,6 @@ import { spawn, ChildProcess } from 'child_process';
 import WebDriver from 'webdriver';
 
 const PORT = 4444;
-const SERVER_URL = `http://localhost:${PORT}`;
 
 // Start the WebDriver server
 async function startServer(): Promise<ChildProcess> {
@@ -81,8 +86,8 @@ async function runTest(): Promise<void> {
     });
     console.log('   ✓ Session created:', client.sessionId, '\n');
 
-    // Navigate to example.com
-    console.log('3. Navigating to https://example.com...');
+    // Navigate to example.com (real HTTP fetch)
+    console.log('3. Navigating to https://example.com (real fetch)...');
     await client.navigateTo('https://example.com');
     console.log('   ✓ Navigation complete\n');
 
@@ -93,29 +98,68 @@ async function runTest(): Promise<void> {
     if (url === 'https://example.com') {
       console.log('   ✓ URL matches\n');
     } else {
-      console.log('   ⚠ URL mismatch (expected: https://example.com)\n');
+      throw new Error(`URL mismatch: expected https://example.com, got ${url}`);
     }
 
-    // Get page title
+    // Get page title (from real HTML)
     console.log('5. Getting page title...');
     const title = await client.getTitle();
     console.log('   Title:', title);
     if (title === 'Example Domain') {
       console.log('   ✓ Title matches\n');
     } else {
-      console.log('   ⚠ Title mismatch (expected: Example Domain)\n');
+      throw new Error(`Title mismatch: expected "Example Domain", got "${title}"`);
     }
 
-    // Get window rect
-    console.log('6. Getting window rect...');
-    const rect = await client.getWindowRect();
-    console.log('   Rect:', JSON.stringify(rect));
-    console.log('   ✓ Window rect retrieved\n');
+    // Find element by link text
+    console.log('6. Finding "Learn more" link...');
+    const link = await client.findElement('link text', 'Learn more');
+    console.log('   Element ID:', link['element-6066-11e4-a52e-4f735466cecf']);
+    console.log('   ✓ Link found\n');
+
+    // Get element text
+    console.log('7. Getting element text...');
+    const elementId = link['element-6066-11e4-a52e-4f735466cecf'];
+    const text = await client.getElementText(elementId);
+    console.log('   Text:', text);
+    if (text === 'Learn more') {
+      console.log('   ✓ Text matches\n');
+    } else {
+      console.log('   ⚠ Text mismatch\n');
+    }
+
+    // Click the link (should navigate to IANA)
+    console.log('8. Clicking the link...');
+    await client.elementClick(elementId);
+    console.log('   ✓ Click complete\n');
+
+    // Verify navigation happened
+    console.log('9. Verifying navigation after click...');
+    const newUrl = await client.getUrl();
+    console.log('   New URL:', newUrl);
+    if (newUrl.includes('iana.org')) {
+      console.log('   ✓ Navigated to IANA\n');
+    } else {
+      console.log('   ⚠ Expected IANA URL, got:', newUrl, '\n');
+    }
+
+    // Get new page title
+    console.log('10. Getting new page title...');
+    const newTitle = await client.getTitle();
+    console.log('    Title:', newTitle);
+    console.log('    ✓ Title retrieved\n');
+
+    // Find all links on new page
+    console.log('11. Finding all links on page...');
+    const links = await client.findElements('css selector', 'a');
+    console.log('    Found', links.length, 'links');
+    console.log('    ✓ Elements found\n');
 
     // Delete session
-    console.log('7. Closing session...');
+    console.log('12. Closing session...');
     await client.deleteSession();
-    console.log('   ✓ Session closed\n');
+    client = null;
+    console.log('    ✓ Session closed\n');
 
     console.log('=== All tests passed! ===');
 
@@ -146,6 +190,10 @@ declare namespace WebdriverIO {
     getUrl(): Promise<string>;
     getTitle(): Promise<string>;
     getWindowRect(): Promise<{ x: number; y: number; width: number; height: number }>;
+    findElement(using: string, value: string): Promise<{ 'element-6066-11e4-a52e-4f735466cecf': string }>;
+    findElements(using: string, value: string): Promise<Array<{ 'element-6066-11e4-a52e-4f735466cecf': string }>>;
+    getElementText(elementId: string): Promise<string>;
+    elementClick(elementId: string): Promise<void>;
     deleteSession(): Promise<void>;
   }
 }
