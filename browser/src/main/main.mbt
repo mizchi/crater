@@ -132,22 +132,8 @@ async fn main {
   // Show loading message (will be cleared when page renders)
   println("Loading " + options.url + "...")
   // Navigate to initial URL
-  try {
-    let _ = browser.navigate(options.url)
-    render_page(browser, options)
-  } catch {
-    err => {
-      // Cleanup before exit on error
-      if options.sixel || options.text {
-        @tui.cleanup_stdin()
-        @tui.print_raw(@tui.disable_mouse())
-        @tui.print_raw(@tui.show_cursor())
-        @tui.print_raw(@tui.exit_alt_screen())
-      }
-      println("Error loading page: " + Show::to_string(err))
-      return
-    }
-  }
+  let _ = browser.navigate(options.url)
+  render_page(browser, options)
   // Only enter interactive mode for sixel or text mode
   if not(options.sixel) && not(options.text) {
     return
@@ -200,12 +186,8 @@ async fn main {
         match browser.get_focused_link_url() {
           Some(url) => {
             println("Navigating to: " + url)
-            try {
-              let _ = browser.navigate(url)
-              render_page(browser, options)
-            } catch {
-              err => println("Error: " + Show::to_string(err))
-            }
+            let _ = browser.navigate(url)
+            render_page(browser, options)
           }
           None => ()
         }
@@ -215,60 +197,38 @@ async fn main {
         @tui.print_raw(@tui.hide_cursor())
         if url.length() > 0 {
           println("Navigating to: " + url)
-          try {
-            let _ = browser.navigate(url)
-            render_page(browser, options)
-          } catch {
-            err => println("Error: " + Show::to_string(err))
-          }
+          let _ = browser.navigate(url)
+          render_page(browser, options)
         }
       }
       Some(@tui.Refresh) => {
         println("Refreshing...")
-        try {
-          let _ = browser.navigate(browser.current_url)
-          render_page(browser, options)
-        } catch {
-          err => println("Error: " + Show::to_string(err))
-        }
+        let _ = browser.navigate(browser.current_url)
+        render_page(browser, options)
       }
-      Some(@tui.Back) => {
-        try {
-          match browser.go_back() {
-            Some(url) => {
-              println("Going back to: " + url)
-              render_page(browser, options)
-            }
-            None => ()
+      Some(@tui.Back) =>
+        match browser.go_back() {
+          Some(url) => {
+            println("Going back to: " + url)
+            render_page(browser, options)
           }
-        } catch {
-          err => println("Error: " + Show::to_string(err))
+          None => ()
         }
-      }
-      Some(@tui.Forward) => {
-        try {
-          match browser.go_forward() {
-            Some(url) => {
-              println("Going forward to: " + url)
-              render_page(browser, options)
-            }
-            None => ()
+      Some(@tui.Forward) =>
+        match browser.go_forward() {
+          Some(url) => {
+            println("Going forward to: " + url)
+            render_page(browser, options)
           }
-        } catch {
-          err => println("Error: " + Show::to_string(err))
+          None => ()
         }
-      }
       Some(@tui.MouseClick(col, row)) =>
         // Handle mouse click - check for link at position
         match browser.get_link_at(col, row) {
           Some(url) => {
             println("Clicking link: " + url)
-            try {
-              let _ = browser.navigate(url)
-              render_page(browser, options)
-            } catch {
-              err => println("Error: " + Show::to_string(err))
-            }
+            let _ = browser.navigate(url)
+            render_page(browser, options)
           }
           None => ()
         }
@@ -284,12 +244,8 @@ async fn main {
         // Process hint character and navigate if matched
         match browser.process_hint_char(c) {
           Some(url) => {
-            try {
-              let _ = browser.navigate(url)
-              render_page(browser, options)
-            } catch {
-              err => println("Error: " + Show::to_string(err))
-            }
+            let _ = browser.navigate(url)
+            render_page(browser, options)
           }
           None =>
             // Re-render to show updated hint input
