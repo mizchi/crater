@@ -1,0 +1,18 @@
+{
+  "import": [
+    { "path": "mizchi/crater-browser/src/cdp", "alias": "cdp" }
+  ],
+  "link": {
+    "js": {
+      "exports": [
+        "processCdpMessage",
+        "getNextCdpMessage",
+        "hasPendingCdpMessages",
+        "resetCdpProtocol",
+        "loadHtmlContent",
+        "getCdpProtocolInfo"
+      ],
+      "format": "esm"
+    }
+  }
+}

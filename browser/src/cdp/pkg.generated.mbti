@@ -2,7 +2,7 @@
 package "mizchi/crater-browser/src/cdp"
 
 import(
-  "mizchi/crater-browser/src/dom"
+  "mizchi/crater/dom"
 )
 
 // Values
@@ -21,6 +21,29 @@ pub struct CdpBoxModel {
   height : Int
 }
 pub impl Show for CdpBoxModel
+
+pub struct CdpContext {
+  id : String
+  mut target_id : String?
+  mut session_id : String?
+  session : CdpSession
+  mut url : String
+  mut title : String
+}
+pub fn CdpContext::clear_target(Self) -> Unit
+pub fn CdpContext::detach(Self) -> Unit
+pub fn CdpContext::get_id(Self) -> String
+pub fn CdpContext::get_session(Self) -> CdpSession
+pub fn CdpContext::get_session_id(Self) -> String?
+pub fn CdpContext::get_target_id(Self) -> String?
+pub fn CdpContext::get_title(Self) -> String
+pub fn CdpContext::get_url(Self) -> String
+pub fn CdpContext::is_attached(Self) -> Bool
+pub fn CdpContext::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
+pub fn CdpContext::new(String) -> Self
+pub fn CdpContext::set_session_id(Self, String) -> Unit
+pub fn CdpContext::set_target_id(Self, String) -> Unit
+pub fn CdpContext::set_title(Self, String) -> Unit
 
 pub struct CdpError {
   code : Int
@@ -154,6 +177,52 @@ pub fn PageDomain::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
 pub fn PageDomain::new(@dom.DomTree) -> Self
 pub fn PageDomain::reload(Self) -> Result[Unit, CdpError]
 pub fn PageDomain::set_title(Self, String) -> Unit
+
+pub struct TargetDomain {
+  contexts : Map[String, CdpContext]
+  mut active_context_id : String?
+  mut next_context_id : Int
+  mut next_target_id : Int
+  mut next_session_id : Int
+  mut auto_attach : Bool
+  mut discover_targets : Bool
+}
+pub fn TargetDomain::attach_to_target(Self, String) -> Result[String, CdpError]
+pub fn TargetDomain::close_target(Self, String) -> Result[Unit, CdpError]
+pub fn TargetDomain::create_browser_context(Self) -> Result[String, CdpError]
+pub fn TargetDomain::create_target(Self, String, String?) -> Result[String, CdpError]
+pub fn TargetDomain::detach_from_target(Self, String?, String?) -> Result[Unit, CdpError]
+pub fn TargetDomain::dispose_browser_context(Self, String) -> Result[Unit, CdpError]
+pub fn TargetDomain::get_active_context(Self) -> CdpContext?
+pub fn TargetDomain::get_browser_contexts(Self) -> Array[String]
+pub fn TargetDomain::get_context(Self, String) -> CdpContext?
+pub fn TargetDomain::get_target_info(Self, String?) -> Result[TargetInfo, CdpError]
+pub fn TargetDomain::get_targets(Self) -> Array[TargetInfo]
+pub fn TargetDomain::is_auto_attach(Self) -> Bool
+pub fn TargetDomain::new() -> Self
+pub fn TargetDomain::set_auto_attach(Self, Bool, Bool) -> Unit
+pub fn TargetDomain::set_discover_targets(Self, Bool) -> Unit
+
+pub struct TargetInfo {
+  target_id : String
+  target_type : String
+  title : String
+  url : String
+  attached : Bool
+  browser_context_id : String?
+}
+pub impl Show for TargetInfo
+
+pub struct TestContext {
+  session : CdpSession
+}
+pub fn TestContext::doc_id(Self) -> Int
+pub fn TestContext::dom(Self) -> DomDomain
+pub fn TestContext::input(Self) -> InputDomain
+pub fn TestContext::new() -> Self
+pub fn TestContext::page(Self) -> PageDomain
+pub fn TestContext::tree(Self) -> @dom.DomTree
+pub fn TestContext::with_html(String) -> Self
 
 // Type aliases
 

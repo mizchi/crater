@@ -1,6 +1,6 @@
 {
   "import": [
     "mizchi/crater-browser/src/cdp",
-    "mizchi/crater-browser/src/dom"
+    "mizchi/crater/dom"
   ]
 }
