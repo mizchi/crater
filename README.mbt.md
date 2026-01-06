@@ -21,31 +21,31 @@ Layout algorithm tests ported from [Taffy](https://github.com/DioxusLabs/taffy):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| Flexbox | 547 | 607 | 90.1% |
-| Block | 204 | 224 | 91.1% |
-| Grid | 266 | 331 | 80.4% |
-| **Total** | **1017** | **1162** | **87.5%** |
+| Flexbox | 543 | 609 | 89.2% |
+| Block | 204 | 226 | 90.3% |
+| Grid | 268 | 331 | 81.0% |
+| **Total** | **1015** | **1166** | **87.0%** |
 
 ### Parser Tests
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| CSS Parser | 150 | 150 | 100% |
-| CSS Selector | 54 | 54 | 100% |
-| CSS Media Query | 38 | 38 | 100% |
-| HTML Parser | 106 | 111 | 95.5% |
+| CSS Parser | 332 | 332 | 100% |
+| CSS Selector | 62 | 62 | 100% |
+| CSS Media Query | 41 | 41 | 100% |
 
 ### Web Platform Tests (WPT)
 
-CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), compared against Chromium:
+CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
-| Module | Passed | Total | Rate |
-|--------|--------|-------|------|
-| css-flexbox | 148 | 234 | 63.2% |
-| css-grid | 17 | 30 | 56.7% |
-| css-sizing | 23 | 50 | 46.0% |
-| css-overflow | 8 | 20 | 40.0% |
-| css-position | 11 | 30 | 36.7% |
+| Module | Tests |
+|--------|-------|
+| css-flexbox | 234 |
+| css-grid | 30 |
+| css-sizing | 50 |
+| css-overflow | 20 |
+| css-position | 30 |
+| css-variables | 30 |
 
 ## Features
 
@@ -63,20 +63,21 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), 
 - `box-sizing: border-box`
 
 ### Positioning
-- `position: relative`, `absolute`, `fixed`
+- `position: static`, `relative`, `absolute`, `fixed`
 - `top`, `right`, `bottom`, `left` (inset properties)
 
 ### Other Properties
 - `gap` (row-gap, column-gap)
 - `aspect-ratio`
 - `overflow-x`, `overflow-y`
-- `contain` (size, layout, inline-size)
+- `visibility: hidden` (with child override)
+- CSS Variables (`--var`, `var()`)
 - `calc()` CSS function
 
 ### Accessibility
 - **Accessible Name Computation** - WAI-ARIA accname-1.2 algorithm
 - **ARIA Snapshot** - Playwright-compatible YAML/JSON format
-- **Accessibility Tree** - Full tree structure with roles and states
+- **Accessibility Tree** - Full tree structure with roles, states, and `aria-owns` support
 
 ## Performance
 

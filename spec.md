@@ -11,7 +11,15 @@ Pure MoonBit implementation of CSS layout calculation.
 
 ## Current Status
 
-**Taffy Tests: 1185/1436 tests passing (82.5%)**
+**Taffy Layout Tests: 1015/1166 passing (87.0%)**
+
+| Module | Passed | Total | Rate |
+|--------|--------|-------|------|
+| Flexbox | 543 | 609 | 89.2% |
+| Block | 204 | 226 | 90.3% |
+| Grid | 268 | 331 | 81.0% |
+
+### Implemented Features
 
 - [x] Basic geometry types (Size, Point, Rect, BoundingRect)
 - [x] Dimension (Length, Percent, Auto)
@@ -20,91 +28,34 @@ Pure MoonBit implementation of CSS layout calculation.
 - [x] min/max width/height
 - [x] Margin collapsing (adjacent siblings)
 - [x] Percentage margin/padding (relative to parent width per CSS spec)
-- [x] Flex layout
-  - [x] flex-direction (row, column, row-reverse, column-reverse)
-  - [x] justify-content (start, end, center, space-between, space-around, space-evenly)
-  - [x] align-items (start, end, center, stretch)
-  - [x] align-self
-  - [x] flex-grow / flex-shrink
-  - [x] flex-basis
-  - [x] flex-wrap (wrap, nowrap, wrap-reverse)
-  - [x] align-content (stretch, start, end, center, space-between, space-around)
-  - [x] gap (row-gap, column-gap)
-  - [x] margin: auto
-  - [x] aspect-ratio (basic)
-  - [ ] display: none (partial)
-  - [ ] Intrinsic sizing with measure functions
-- [x] Grid layout
-  - [x] grid-template-columns / grid-template-rows
-  - [x] Track sizing: Length, Percent, Fr, Auto, MinContent, MaxContent
-  - [x] minmax() function
-  - [x] repeat() function (Count, AutoFill, AutoFit)
-  - [x] grid-auto-rows / grid-auto-columns
-  - [x] grid-auto-flow (Row, Column, Dense)
-  - [x] gap (row-gap, column-gap)
-  - [x] justify-content / align-content
-  - [x] justify-items / align-items
-  - [x] align-self for grid items
-  - [x] Grid item placement (line-based)
-  - [x] grid-template-areas (named areas)
-  - [x] Implicit track creation
-  - [x] Negative line indices
-  - [x] aspect-ratio for grid items (basic)
-  - [x] Nested Grid/Flex containers
-  - [x] Extrinsic definite sizing for stretched items
-  - [ ] Baseline alignment (partial)
-  - [ ] Auto margins (partial)
-  - [ ] Span items intrinsic sizing
-  - [ ] Percent resolution in deeply nested grids
-  - [ ] fit-content with indefinite percentages
-
-## Test Status by Category
-
-### Block Layout
-- ~21 failing tests
-- Issues: baseline alignment, aspect-ratio with max constraints, margin collapsing edge cases
-
-### Flex Layout
-- ~79 failing tests
-- Issues: display:none, intrinsic sizing, absolute positioning, baseline multiline, percentage gaps
-
-### Grid Layout
-- ~50 failing tests
-- Issues: absolute positioning, baseline, span items, nested percent resolution, fit-content
-
-### Mixed Layouts
-- ~15 failing tests
-- Issues: block-in-flex, block-in-grid, grid-in-flex, leaf content sizing
+- [x] Flex layout (all major features)
+- [x] Grid layout (all major features)
+- [x] Position: static, relative, absolute, fixed
+- [x] Inline layout (inline, inline-block, IFC)
+- [x] CSS Variables (--var and var() support)
+- [x] visibility: hidden with child override
 
 ### Remaining Issues
 
-1. **display: none** (~7 tests)
-   - Hidden elements should not affect layout
-   - Size should be 0, position should not affect siblings
-
-2. **Baseline Alignment** (~10 tests)
+1. **Baseline Alignment** (~10 tests)
    - Baseline calculation with padding/margin
    - Multiline baseline handling in flex and grid
 
-3. **Absolute Positioning** (~10 tests)
-   - Inset resolution with percentages
-   - Interaction with border/padding
-
-4. **Intrinsic Sizing** (~20 tests)
+2. **Intrinsic Sizing** (~20 tests)
    - Min-content/max-content for nested containers
    - Measure functions for leaf nodes
 
-5. **Span Items** (~15 tests)
+3. **Span Items in Grid** (~15 tests)
    - Grid items spanning multiple tracks
    - Gap calculation for span items
 
-6. **Percent in Nested Layouts** (~15 tests)
+4. **Percent in Nested Layouts** (~15 tests)
    - Percent resolution in nested grids/flex with auto-sized parents
    - Cyclic percentage dependencies
 
-7. **Aspect Ratio** (~10 tests)
-   - Interaction with max-width/max-height constraints
-   - Fill mode with constraints
+5. **Margin Collapsing Edge Cases** (~10 tests)
+   - Negative margin collapsing
+   - Margin collapse blocked by flex/grid containers
 
 ## Implementation Roadmap
 
@@ -634,21 +585,20 @@ impl PaintQuery {
 
 Tests from [web-platform-tests](https://github.com/web-platform-tests/wpt), compared against Chromium:
 
-| Module | Passed | Total | Rate |
-|--------|--------|-------|------|
-| css-flexbox | 151 | 234 | 65% |
-| css-grid | 16 | 30 | 53% |
-| css-sizing | 18 | 50 | 36% |
-| css-overflow | 5 | 20 | 25% |
-| css-position | 4 | 30 | 13% |
+| Module | Total Tests |
+|--------|-------------|
+| css-flexbox | 234 |
+| css-grid | 30 |
+| css-sizing | 50 |
+| css-overflow | 20 |
+| css-position | 30 |
+| css-variables | 30 |
 
 ### WPT Failure Categories
 
 1. **Baseline alignment** - Not yet implemented
 2. **Writing modes** (vertical-lr, vertical-rl) - Not implemented
-3. **flex-wrap: wrap-reverse** - Alignment issues
-4. **position: relative** with negative offsets - Not handled
-5. **Table elements** (thead, tbody, caption) - Not implemented
+3. **Table elements** (thead, tbody, caption) - Not implemented
 
 ## Test Porting Plan
 
