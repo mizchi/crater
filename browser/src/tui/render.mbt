@@ -33,6 +33,16 @@ pub(all) struct LinkRegion {
 }
 
 ///|
+/// Hint data for hit-a-hint feature
+pub(all) struct HintData {
+  label : String      // The hint label (e.g., "a", "b", "aa")
+  href : String       // Link URL
+  text : String       // Link text
+  col : Int           // Screen column position
+  row : Int           // Screen row position
+}
+
+///|
 /// Check if a point is inside this link region
 pub fn LinkRegion::contains(self : LinkRegion, col : Int, row : Int) -> Bool {
   col >= self.col && col < self.col + self.width &&
@@ -315,4 +325,165 @@ pub fn render_to_ansi_with_status(
 /// Get total content height in character rows
 pub fn get_content_height_chars(layout : @node.Layout) -> Int {
   px_to_row(layout.height)
+}
+
+///|
+/// Calculate display width of a string (full-width chars count as 2)
+fn display_width(s : String) -> Int {
+  let mut width = 0
+  for c in s {
+    // Full-width characters (CJK, etc.) take 2 columns
+    // Basic check: characters above U+2E80 are typically full-width
+    let code = c.to_int()
+    if code >= 0x2E80 {
+      width = width + 2
+    } else {
+      width = width + 1
+    }
+  }
+  width
+}
+
+///|
+/// Draw hint overlays on the buffer
+/// Hints are displayed as bright yellow background with black text
+/// Labels are shown to the RIGHT of link text for better visibility
+fn draw_hints(
+  buf : CharBuffer,
+  hints : Array[HintData],
+  viewport_height : Int,
+) -> Unit {
+  let hint_style : TextStyle = {
+    fg: @types.Color::rgb(0, 0, 0),        // Black text
+    bg: @types.Color::rgb(255, 220, 0),    // Bright yellow background
+    bold: true,
+    underline: false,
+  }
+  for hint in hints {
+    // Skip if not visible (row = -1 means position unknown)
+    if hint.row < 0 || hint.row >= viewport_height {
+      continue
+    }
+    // Draw hint label to the RIGHT of link text
+    // Format: [label] e.g. [a], [ab]
+    let label_text = "[" + hint.label + "]"
+    // Use display_width to handle full-width characters (CJK)
+    let label_col = hint.col + display_width(hint.text)
+    let _ = buf.write_text(label_col, hint.row, label_text, hint_style, label_text.length())
+  }
+}
+
+///|
+/// Render with hints overlay (for hit-a-hint mode)
+pub fn render_to_ansi_with_hints(
+  node : @node.Node,
+  layout : @node.Layout,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+  hints : Array[HintData],
+  hint_input : String,
+) -> RenderResult {
+  // Reserve last row for status bar
+  let content_height = height - 1
+  // Create character buffer
+  let buf = CharBuffer::new(width, height)
+  // Clear with white background
+  let white_cell : CharCell = {
+    char: ' ',
+    fg: @types.Color::black(),
+    bg: @types.Color::white(),
+    bold: false,
+    underline: false,
+    reverse: false,
+  }
+  buf.fill_rect(0, 0, width, content_height, white_cell)
+  // Convert to PaintNode
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  // Sort by stacking order
+  let sorted = @paint.sort_tree_by_stacking_order(paint_node)
+  // Create context with link regions array
+  let link_regions : Array[LinkRegion] = []
+  let ctx : TuiContext = {
+    buffer: buf,
+    scroll_y,
+    viewport_height: content_height,
+    link_regions,
+  }
+  // Render content (start with inside_link=false)
+  render_paint_node(ctx, sorted, 0.0, 0.0, false)
+  // Draw hint overlays (hint positions are already screen coordinates)
+  draw_hints(buf, hints, content_height)
+  // Draw status bar with hint list
+  draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
+  // Return ANSI and link regions
+  { ansi: buffer_to_ansi(buf), link_regions }
+}
+
+///|
+/// Draw status bar for hint mode with hint list
+fn draw_hint_mode_status_bar(
+  buf : CharBuffer,
+  y : Int,
+  hint_input : String,
+  hints : Array[HintData],
+) -> Unit {
+  // Black on yellow background for hint mode
+  let style : TextStyle = {
+    fg: @types.Color::rgb(0, 0, 0),
+    bg: @types.Color::rgb(255, 220, 0),
+    bold: true,
+    underline: false,
+  }
+  // Fill the entire row first
+  for col = 0; col < buf.width; col = col + 1 {
+    let cell : CharCell = {
+      char: ' ',
+      fg: @types.Color::rgb(0, 0, 0),
+      bg: @types.Color::rgb(255, 220, 0),
+      bold: false,
+      underline: false,
+      reverse: false,
+    }
+    buf.set_cell(col, y, cell)
+  }
+  // Build hint list (show first few that match current input)
+  let sb = StringBuilder::new()
+  sb.write_string(" HINT [")
+  sb.write_string(hint_input)
+  sb.write_string("]: ")
+  let mut shown = 0
+  let max_show = 8
+  for hint in hints {
+    if hint_input.length() == 0 || hint.label.has_prefix(hint_input) {
+      if shown > 0 {
+        sb.write_string(" ")
+      }
+      sb.write_string(hint.label)
+      sb.write_string(":")
+      // Truncate text if too long
+      let text = hint.text
+      let max_len = 12
+      if text.to_array().length() > max_len {
+        let chars = text.to_array()
+        for i = 0; i < max_len - 2; i = i + 1 {
+          sb.write_char(chars[i])
+        }
+        sb.write_string("..")
+      } else {
+        sb.write_string(text)
+      }
+      shown = shown + 1
+      if shown >= max_show {
+        sb.write_string(" ...")
+        break
+      }
+    }
+  }
+  if shown == 0 {
+    sb.write_string("(no match)")
+  }
+  sb.write_string(" | ESC:cancel")
+  let status = sb.to_string()
+  let _ = buf.write_text(0, y, status, style, buf.width)
 }

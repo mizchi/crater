@@ -31,6 +31,14 @@ pub struct Browser {
   mut content_height : Int
   /// Link regions for click hit testing (updated on each render)
   mut link_regions : Array[@tui.LinkRegion]
+  /// Hit-a-hint mode state
+  mut hint_mode : Bool
+  /// Current hints (generated when entering hint mode)
+  mut hints : Array[@tui.HintData]
+  /// Hint input buffer (for multi-char hints)
+  mut hint_input : String
+  /// Navigation history (stack of URLs)
+  history : Array[String]
 }
 
 ///|
@@ -47,12 +55,24 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     scroll_y: 0,
     content_height: 0,
     link_regions: [],
+    hint_mode: false,
+    hints: [],
+    hint_input: "",
+    history: [],
   }
 }
 
 ///|
 /// Resolve relative URL to absolute
 fn resolve_url(base_url : String, href : String) -> String {
+  // Skip empty, fragment-only, or javascript URLs
+  if href.length() == 0 ||
+    href.has_prefix("#") ||
+    href.has_prefix("javascript:") ||
+    href.has_prefix("mailto:") ||
+    href.has_prefix("tel:") {
+    return ""
+  }
   // Already absolute
   if href.has_prefix("http://") || href.has_prefix("https://") {
     return href
@@ -260,8 +280,21 @@ fn analyze_css_support(css_list : Array[String]) -> Unit {
 }
 
 ///|
-/// Navigate to a URL and render
+/// Navigate to a URL and render (adds to history)
 pub async fn Browser::navigate(
+  self : Browser,
+  url : String,
+) -> String raise @http.HttpError {
+  // Save current URL to history before navigating (if not empty)
+  if self.current_url.length() > 0 {
+    self.history.push(self.current_url)
+  }
+  self.load_url(url)
+}
+
+///|
+/// Load a URL without adding to history (internal use)
+async fn Browser::load_url(
   self : Browser,
   url : String,
 ) -> String raise @http.HttpError {
@@ -286,6 +319,17 @@ pub async fn Browser::navigate(
   )
   // Render to Sixel
   self.render()
+}
+
+///|
+/// Go back to previous page in history and load it
+pub async fn Browser::go_back(self : Browser) -> String? raise @http.HttpError {
+  if self.history.length() == 0 {
+    return None
+  }
+  let url = self.history.pop().unwrap()
+  let _ = self.load_url(url)
+  Some(url)
 }
 
 ///|
@@ -328,16 +372,29 @@ pub fn Browser::render_text(self : Browser) -> String {
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
   let char_scroll_y = self.scroll_y / 16
-  let result = @tui.render_to_ansi_with_status(
-    node,
-    layout,
-    char_width,
-    char_height,
-    char_scroll_y,
-    self.current_url,
-    self.links.length(),
-    self.focused_link,
-  )
+  // Use hint mode rendering if in hint mode
+  let result = if self.hint_mode {
+    @tui.render_to_ansi_with_hints(
+      node,
+      layout,
+      char_width,
+      char_height,
+      char_scroll_y,
+      self.hints,
+      self.hint_input,
+    )
+  } else {
+    @tui.render_to_ansi_with_status(
+      node,
+      layout,
+      char_width,
+      char_height,
+      char_scroll_y,
+      self.current_url,
+      self.links.length(),
+      self.focused_link,
+    )
+  }
   // Store link regions for click hit testing
   self.link_regions = result.link_regions
   result.ansi
@@ -461,7 +518,7 @@ fn extract_links(html : String) -> Array[Link] {
             while k < len && chars[k] != quote {
               k = k + 1
             }
-            href = chars[j + 6:k].to_string()
+            href = chars_to_string(chars[j + 6:k])
           }
         }
         j = j + 1
@@ -478,7 +535,7 @@ fn extract_links(html : String) -> Array[Link] {
           }
           text_end = text_end + 1
         }
-        let text = chars[text_start:text_end].to_string().trim().to_string()
+        let text = chars_to_string(chars[text_start:text_end]).trim().to_string()
         if href.length() > 0 {
           links.push({ href, text })
         }
@@ -488,4 +545,99 @@ fn extract_links(html : String) -> Array[Link] {
     i = i + 1
   }
   links
+}
+
+///|
+/// Convert char array/slice to string
+fn chars_to_string(chars : ArrayView[Char]) -> String {
+  let sb = StringBuilder::new()
+  for c in chars {
+    sb.write_char(c)
+  }
+  sb.to_string()
+}
+
+///|
+/// Enter hint mode - generate hints for visible links only
+pub fn Browser::enter_hint_mode(self : Browser) -> Unit {
+  if self.link_regions.length() == 0 {
+    return // No visible links to hint
+  }
+  self.hint_mode = true
+  self.hint_input = ""
+  // Generate hints from visible link regions only
+  self.hints = []
+  let mut label_idx = 0
+  for region in self.link_regions {
+    // Find corresponding link href from extracted links
+    let mut href = ""
+    for link in self.links {
+      if region.text == link.text {
+        href = resolve_url(self.current_url, link.href)
+        break
+      }
+    }
+    // Skip if no href found or resolved URL is empty
+    if href.length() == 0 {
+      continue
+    }
+    self.hints.push({
+      label: generate_single_label(label_idx),
+      href,
+      text: region.text,
+      col: region.col,
+      row: region.row,
+    })
+    label_idx = label_idx + 1
+  }
+}
+
+///|
+/// Generate a single hint label for index
+fn generate_single_label(idx : Int) -> String {
+  if idx < 26 {
+    // a-z
+    (97 + idx).unsafe_to_char().to_string()
+  } else {
+    // aa, ab, ac, ...
+    let first = 97 + idx / 26
+    let second = 97 + idx % 26
+    first.unsafe_to_char().to_string() + second.unsafe_to_char().to_string()
+  }
+}
+
+///|
+/// Exit hint mode
+pub fn Browser::exit_hint_mode(self : Browser) -> Unit {
+  self.hint_mode = false
+  self.hints = []
+  self.hint_input = ""
+}
+
+///|
+/// Process hint character input
+/// Returns Some(url) if a hint is matched, None otherwise
+pub fn Browser::process_hint_char(self : Browser, char : String) -> String? {
+  self.hint_input = self.hint_input + char
+  // Check for exact match
+  for hint in self.hints {
+    if hint.label == self.hint_input {
+      let href = hint.href
+      self.exit_hint_mode()
+      return Some(href)
+    }
+  }
+  // Check if any hints start with current input
+  let mut has_prefix_match = false
+  for hint in self.hints {
+    if hint.label.has_prefix(self.hint_input) {
+      has_prefix_match = true
+      break
+    }
+  }
+  // If no prefix matches, exit hint mode
+  if not(has_prefix_match) {
+    self.exit_hint_mode()
+  }
+  None
 }

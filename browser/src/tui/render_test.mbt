@@ -73,12 +73,12 @@ test "img_placeholder_rendering" {
   // Render to buffer
   let width = 40  // characters
   let height = 20 // characters
-  let ansi = render_to_ansi(node, layout, width, height, 0)
+  let result = render_to_ansi(node, layout, width, height, 0)
   println("=== ANSI Output (first 500 chars) ===")
-  let preview = if ansi.length() > 500 {
-    ansi.substring(end=500)
+  let preview = if result.ansi.length() > 500 {
+    result.ansi.substring(end=500)
   } else {
-    ansi
+    result.ansi
   }
   println(preview)
 }

@@ -156,7 +156,13 @@ async fn main {
   let mut running = true
   while running {
     let key = @tui.read_key()
-    match @tui.key_to_action(key) {
+    // Use different key handling based on hint mode
+    let action = if browser.hint_mode {
+      @tui.key_to_hint_action(key)
+    } else {
+      @tui.key_to_action(key)
+    }
+    match action {
       Some(@tui.Quit) => {
         @tui.cleanup_stdin()
         @tui.print_raw(@tui.disable_mouse())
@@ -217,6 +223,19 @@ async fn main {
           err => println("Error: " + Show::to_string(err))
         }
       }
+      Some(@tui.Back) => {
+        try {
+          match browser.go_back() {
+            Some(url) => {
+              println("Going back to: " + url)
+              render_page(browser, options)
+            }
+            None => ()
+          }
+        } catch {
+          err => println("Error: " + Show::to_string(err))
+        }
+      }
       Some(@tui.MouseClick(col, row)) =>
         // Handle mouse click - check for link at position
         match browser.get_link_at(col, row) {
@@ -230,6 +249,29 @@ async fn main {
             }
           }
           None => ()
+        }
+      Some(@tui.EnterHintMode) => {
+        browser.enter_hint_mode()
+        render_page(browser, options)
+      }
+      Some(@tui.ExitHintMode) => {
+        browser.exit_hint_mode()
+        render_page(browser, options)
+      }
+      Some(@tui.HintChar(c)) =>
+        // Process hint character and navigate if matched
+        match browser.process_hint_char(c) {
+          Some(url) => {
+            try {
+              let _ = browser.navigate(url)
+              render_page(browser, options)
+            } catch {
+              err => println("Error: " + Show::to_string(err))
+            }
+          }
+          None =>
+            // Re-render to show updated hint input
+            render_page(browser, options)
         }
       None => ()
     }

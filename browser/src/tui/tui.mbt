@@ -12,11 +12,15 @@ pub enum BrowserAction {
   GoToUrl(String)
   Refresh
   Quit
+  Back                 // Go back to previous page
   MouseClick(Int, Int) // (col, row) coordinates
+  EnterHintMode        // Start hit-a-hint mode (triggered by 'f')
+  HintChar(String)     // Hint character input (a-z)
+  ExitHintMode         // Exit hint mode (Escape)
 }
 
 ///|
-/// Map key to browser action
+/// Map key to browser action (normal mode)
 pub fn key_to_action(key : String) -> BrowserAction? {
   match key {
     "j" | "ArrowDown" => Some(ScrollDown)
@@ -26,7 +30,10 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "Enter" => Some(ActivateLink)
     "g" => Some(GoToUrl(""))
     "r" => Some(Refresh)
-    "q" | "Escape" => Some(Quit)
+    "q" => Some(Quit)
+    "f" => Some(EnterHintMode)
+    "Escape" => Some(ExitHintMode)
+    "Backspace" | "Delete" => Some(Back)
     _ =>
       // Check for mouse click: "Mouse:col,row"
       if key.has_prefix("Mouse:") {
@@ -34,6 +41,27 @@ pub fn key_to_action(key : String) -> BrowserAction? {
       } else {
         None
       }
+  }
+}
+
+///|
+/// Map key to browser action in hint mode
+/// In hint mode, a-z are hint characters, Escape exits
+pub fn key_to_hint_action(key : String) -> BrowserAction? {
+  match key {
+    "Escape" => Some(ExitHintMode)
+    _ => {
+      // Check if it's a single lowercase letter
+      if key.length() == 1 {
+        let c = key[0]
+        // MoonBit doesn't have char range check easily, use code comparison
+        // a-z are 97-122
+        if c >= 'a' && c <= 'z' {
+          return Some(HintChar(key))
+        }
+      }
+      None
+    }
   }
 }
 

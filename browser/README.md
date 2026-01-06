@@ -48,9 +48,18 @@ moon run src/main --target js -- --debug https://example.com
 - `Tab`: Next link
 - `Shift+Tab`: Previous link
 - `Enter`: Activate link
+- `f`: Hit-a-hint mode (shows labels on links, type to navigate)
 - `g`: Go to URL
 - `r`: Reload
+- `Backspace` / `Delete`: Go back to previous page
 - `q`: Quit
+- `Escape`: Exit hint mode
+
+### Hit-a-Hint Mode
+
+Press `f` to enter hint mode. All visible links will be labeled with characters (a-z). Type the label to navigate to that link. Press `Escape` to cancel.
+
+For pages with more than 26 links, two-character labels (aa, ab, etc.) are used.
 
 ## Limitations
 
@@ -67,11 +76,5 @@ moon run src/main --target js -- --debug https://example.com
 - [ ] Fix j/k scroll layout
 - [ ] Access and scroll to content by AOM (Accessibility Object Model)
 - [ ] Text search (Ctrl+F)
-- [ ] hit a hint
-
-## WIP (Work in Progress)
-
-- [ ] Mouse click link navigation
-  - Infrastructure implemented: LinkRegion, MouseClick action, mouse tracking ANSI codes
-  - Issue: Hit testing not working correctly (coordinate mismatch?)
-  - TODO: Add href field to PaintNode for proper link resolution instead of text matching
+- [x] Hit-a-hint (implemented)
+- [ ] Mouse click link navigation (WIP - hit testing not working correctly)
