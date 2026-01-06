@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build:moon": "moon build --target js",
-    "build:minify": "esbuild target/js/release/build/src/main/main.js --bundle --platform=node --minify --outfile=dist/crater.js --banner:js='#!/usr/bin/env node'",
+    "build:minify": "rolldown target/js/release/build/src/main/main.js --platform=node --format=cjs --minify --file=dist/crater.js --banner='#!/usr/bin/env node'",
     "build": "npm run build:moon && npm run build:minify",
     "prepublishOnly": "npm run build"
   },
@@ -32,6 +32,6 @@
     "node": ">=18"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "rolldown": "^1.0.0-beta.58"
   }
 }
