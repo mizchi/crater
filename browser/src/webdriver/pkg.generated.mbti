@@ -1,10 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser/src/webdriver"
 
+import(
+  "mizchi/crater-browser/src/browser"
+)
+
 // Values
 pub fn api_error_to_rpc(RpcId, ApiError) -> RpcResponse
 
 pub fn error_response(ErrorCode, String) -> WebDriverResponse
+
+pub async fn handle_rpc(BrowserManager, RpcRequest) -> RpcResponse
 
 pub fn parse_json_object(String) -> Map[String, String]
 
@@ -110,6 +116,19 @@ pub(all) enum ApiResult[T] {
   Err(ApiError)
 }
 pub impl[T : Show] Show for ApiResult[T]
+
+pub struct BrowserManager {
+  browsers : Map[String, @browser.Browser]
+  mut next_id : Int
+  default_width : Int
+  default_height : Int
+}
+pub fn BrowserManager::close_context(Self, String) -> Bool
+pub fn BrowserManager::create_context(Self) -> String
+pub fn BrowserManager::get_browser(Self, String) -> @browser.Browser?
+pub fn BrowserManager::list_contexts(Self) -> Array[String]
+pub fn BrowserManager::new() -> Self
+pub fn BrowserManager::new_with_viewport(Int, Int) -> Self
 
 pub(all) struct Capabilities {
   browser_name : String
