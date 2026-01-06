@@ -126,6 +126,7 @@ async fn main {
     // Enter alternate screen buffer (like vim/less) for clean display
     @tui.print_raw(@tui.enter_alt_screen())
     @tui.print_raw(@tui.hide_cursor())
+    @tui.print_raw(@tui.enable_mouse()) // Enable mouse tracking
     @tui.print_raw(@tui.clear_screen())
   }
   // Show loading message (will be cleared when page renders)
@@ -139,6 +140,7 @@ async fn main {
       // Cleanup before exit on error
       if options.sixel || options.text {
         @tui.cleanup_stdin()
+        @tui.print_raw(@tui.disable_mouse())
         @tui.print_raw(@tui.show_cursor())
         @tui.print_raw(@tui.exit_alt_screen())
       }
@@ -157,6 +159,7 @@ async fn main {
     match @tui.key_to_action(key) {
       Some(@tui.Quit) => {
         @tui.cleanup_stdin()
+        @tui.print_raw(@tui.disable_mouse())
         @tui.print_raw(@tui.show_cursor())
         @tui.print_raw(@tui.exit_alt_screen())
         println("Goodbye!")
@@ -214,6 +217,20 @@ async fn main {
           err => println("Error: " + Show::to_string(err))
         }
       }
+      Some(@tui.MouseClick(col, row)) =>
+        // Handle mouse click - check for link at position
+        match browser.get_link_at(col, row) {
+          Some(url) => {
+            println("Clicking link: " + url)
+            try {
+              let _ = browser.navigate(url)
+              render_page(browser, options)
+            } catch {
+              err => println("Error: " + Show::to_string(err))
+            }
+          }
+          None => ()
+        }
       None => ()
     }
   }

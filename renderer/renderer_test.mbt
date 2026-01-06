@@ -536,7 +536,8 @@ test "debug_inline_text_with_block_sibling" {
 
 ///|
 test "img_alt_text_propagation" {
-  let html = #|<!DOCTYPE html>
+  let html =
+    #|<!DOCTYPE html>
     #|<html>
     #|<body>
     #|  <h1>Test</h1>
@@ -563,6 +564,7 @@ test "img_alt_text_propagation" {
       print_nodes(child, depth + 1)
     }
   }
+
   println("=== Node tree ===")
   print_nodes(node, 0)
   // Find img node
@@ -578,6 +580,7 @@ test "img_alt_text_propagation" {
     }
     None
   }
+
   fn find_img_layout(l : @node.Layout) -> @node.Layout? {
     if l.id.has_prefix("img") {
       return Some(l)
@@ -632,6 +635,7 @@ test "link default color is blue" {
     }
     None
   }
+
   match find_link_node(node) {
     Some(link) => {
       // <a> element should have blue color (#0000EE = rgb(0, 0, 238))

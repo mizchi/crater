@@ -91,14 +91,7 @@ pub fn Node::with_measure(
   measure : MeasureFunc,
   text? : String,
 ) -> Node {
-  {
-    id,
-    uid: next_uid(),
-    style,
-    children: [],
-    measure: Some(measure),
-    text,
-  }
+  { id, uid: next_uid(), style, children: [], measure: Some(measure), text }
 }
 
 ///|

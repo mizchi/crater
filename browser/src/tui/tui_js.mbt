@@ -3,6 +3,7 @@
 
 ///|
 /// Read a single key from stdin (keeps raw mode on for smooth rendering)
+/// Also handles mouse events when mouse tracking is enabled
 extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #| async () => {
   #|   if (typeof process === 'undefined') return 'q';
@@ -25,6 +26,21 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|       if (key === '\r' || key === '\n') { resolve('Enter'); return; }
   #|       if (key === '\t') { resolve('Tab'); return; }
   #|       if (key === '\u001b') { resolve('Escape'); return; }
+  #|       // Mouse click: SGR mode \e[<btn;col;row;M (press) or m (release)
+  #|       if (key.startsWith('\u001b[<')) {
+  #|         const match = key.match(/\u001b\[<(\d+);(\d+);(\d+)([Mm])/);
+  #|         if (match) {
+  #|           const btn = parseInt(match[1]);
+  #|           const col = parseInt(match[2]);
+  #|           const row = parseInt(match[3]);
+  #|           const pressed = match[4] === 'M';
+  #|           if (btn === 0 && pressed) {
+  #|             // Left click - return as Mouse:col,row
+  #|             resolve('Mouse:' + col + ',' + row);
+  #|             return;
+  #|           }
+  #|         }
+  #|       }
   #|       resolve(key);
   #|     };
   #|     process.stdin.on('data', onData);

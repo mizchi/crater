@@ -29,6 +29,8 @@ pub struct Browser {
   mut scroll_y : Int
   /// Content height (for scroll limit)
   mut content_height : Int
+  /// Link regions for click hit testing (updated on each render)
+  mut link_regions : Array[@tui.LinkRegion]
 }
 
 ///|
@@ -44,6 +46,7 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     focused_link: 0,
     scroll_y: 0,
     content_height: 0,
+    link_regions: [],
   }
 }
 
@@ -325,7 +328,7 @@ pub fn Browser::render_text(self : Browser) -> String {
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
   let char_scroll_y = self.scroll_y / 16
-  @tui.render_to_ansi_with_status(
+  let result = @tui.render_to_ansi_with_status(
     node,
     layout,
     char_width,
@@ -335,6 +338,9 @@ pub fn Browser::render_text(self : Browser) -> String {
     self.links.length(),
     self.focused_link,
   )
+  // Store link regions for click hit testing
+  self.link_regions = result.link_regions
+  result.ansi
 }
 
 ///|
@@ -379,6 +385,26 @@ pub fn Browser::get_focused_link_url(self : Browser) -> String? {
     Some(self.links[self.focused_link].href)
   } else {
     None
+  }
+}
+
+///|
+/// Find link URL at screen coordinates (for mouse click)
+/// Returns the resolved absolute URL if a link is found
+pub fn Browser::get_link_at(self : Browser, col : Int, row : Int) -> String? {
+  // Find link region at the click position
+  match @tui.find_link_at(self.link_regions, col, row) {
+    Some(link_text) => {
+      // Find matching link in our links array by text
+      for link in self.links {
+        if link.text == link_text {
+          return Some(link.href)
+        }
+      }
+      // No exact match found
+      None
+    }
+    None => None
   }
 }
 

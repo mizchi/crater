@@ -12,6 +12,7 @@ pub enum BrowserAction {
   GoToUrl(String)
   Refresh
   Quit
+  MouseClick(Int, Int) // (col, row) coordinates
 }
 
 ///|
@@ -26,7 +27,42 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "g" => Some(GoToUrl(""))
     "r" => Some(Refresh)
     "q" | "Escape" => Some(Quit)
-    _ => None
+    _ =>
+      // Check for mouse click: "Mouse:col,row"
+      if key.has_prefix("Mouse:") {
+        parse_mouse_click(key)
+      } else {
+        None
+      }
+  }
+}
+
+///|
+/// Parse mouse click event "Mouse:col,row" into MouseClick action
+fn parse_mouse_click(key : String) -> BrowserAction? {
+  // Format: "Mouse:col,row"
+  let parts = try {
+    key[6:].to_string()
+  } catch {
+    _ => return None
+  }
+  match parts.find(",") {
+    Some(comma_idx) => {
+      let col_str = try {
+        parts[:comma_idx].to_string()
+      } catch {
+        _ => return None
+      }
+      let row_str = try {
+        parts[comma_idx + 1:].to_string()
+      } catch {
+        _ => return None
+      }
+      let col = @strconv.parse_int(col_str) catch { _ => return None }
+      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      Some(MouseClick(col, row))
+    }
+    None => None
   }
 }
 

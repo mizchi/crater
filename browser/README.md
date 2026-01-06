@@ -67,3 +67,11 @@ moon run src/main --target js -- --debug https://example.com
 - [ ] Fix j/k scroll layout
 - [ ] Access and scroll to content by AOM (Accessibility Object Model)
 - [ ] Text search (Ctrl+F)
+- [ ] hit a hint
+
+## WIP (Work in Progress)
+
+- [ ] Mouse click link navigation
+  - Infrastructure implemented: LinkRegion, MouseClick action, mouse tracking ANSI codes
+  - Issue: Hit testing not working correctly (coordinate mismatch?)
+  - TODO: Add href field to PaintNode for proper link resolution instead of text matching

@@ -106,6 +106,8 @@ pub(all) struct PaintNode {
   text : String?
   // Children
   children : Array[PaintNode]
+  // TODO: Add href field for proper link hit testing
+  // Currently links are matched by text content via Browser.links array
 }
 
 ///|

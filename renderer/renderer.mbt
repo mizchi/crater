@@ -354,8 +354,14 @@ fn contains_replaced_element(elem : @html.Element) -> Bool {
 /// Replaced elements have intrinsic dimensions and don't contain text
 fn is_replaced_element(tag : String) -> Bool {
   match tag.to_lower() {
-    "img" | "input" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" =>
-      true
+    "img"
+    | "input"
+    | "video"
+    | "audio"
+    | "canvas"
+    | "iframe"
+    | "object"
+    | "embed" => true
     _ => false
   }
 }
@@ -1226,7 +1232,8 @@ fn element_to_node_with_styles_internal(
         },
       }
       return match alt_text {
-        Some(alt) => @node.Node::with_measure(node_id, img_style, measure, text=alt)
+        Some(alt) =>
+          @node.Node::with_measure(node_id, img_style, measure, text=alt)
         None => @node.Node::with_measure(node_id, img_style, measure)
       }
     }

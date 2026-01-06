@@ -12,14 +12,42 @@ let font_height : Double = 16.0
 
 ///|
 /// Convert pixel X to character column
-fn px_to_col(px : Double) -> Int {
+pub fn px_to_col(px : Double) -> Int {
   (px / font_width).to_int()
 }
 
 ///|
 /// Convert pixel Y to character row
-fn px_to_row(px : Double) -> Int {
+pub fn px_to_row(px : Double) -> Int {
   (px / font_height).to_int()
+}
+
+///|
+/// A clickable link region on screen
+pub(all) struct LinkRegion {
+  col : Int      // Start column
+  row : Int      // Start row
+  width : Int    // Width in characters
+  height : Int   // Height in characters
+  text : String  // Link text (used to match with Browser.links for href)
+}
+
+///|
+/// Check if a point is inside this link region
+pub fn LinkRegion::contains(self : LinkRegion, col : Int, row : Int) -> Bool {
+  col >= self.col && col < self.col + self.width &&
+  row >= self.row && row < self.row + self.height
+}
+
+///|
+/// Find link at given screen coordinates
+pub fn find_link_at(regions : Array[LinkRegion], col : Int, row : Int) -> String? {
+  for region in regions {
+    if region.contains(col, row) {
+      return Some(region.text)
+    }
+  }
+  None
 }
 
 ///|
@@ -28,6 +56,7 @@ pub struct TuiContext {
   buffer : CharBuffer
   scroll_y : Int // Scroll offset in character rows
   viewport_height : Int // Visible height in character rows
+  link_regions : Array[LinkRegion] // Collected link regions
 }
 
 ///|
@@ -173,6 +202,17 @@ fn render_paint_node(
             w,
             (row + h).min(ctx.viewport_height) - row,
           )
+          // Collect link region for hit testing
+          if is_link && w > 0 && h > 0 {
+            let text_len = text_content.to_array().length()
+            ctx.link_regions.push({
+              col,
+              row,
+              width: text_len.min(w),
+              height: 1,
+              text: text_content,
+            })
+          }
         }
       None => ()
     }
@@ -185,6 +225,13 @@ fn render_paint_node(
 }
 
 ///|
+/// Render result containing ANSI string and link regions
+pub(all) struct RenderResult {
+  ansi : String
+  link_regions : Array[LinkRegion]
+}
+
+///|
 /// Render a Node + Layout tree to ANSI string
 pub fn render_to_ansi(
   node : @node.Node,
@@ -192,7 +239,7 @@ pub fn render_to_ansi(
   width : Int,
   height : Int,
   scroll_y : Int,
-) -> String {
+) -> RenderResult {
   // Create character buffer
   let buf = CharBuffer::new(width, height)
   // Clear with white background
@@ -209,12 +256,13 @@ pub fn render_to_ansi(
   let paint_node = @paint.from_node_and_layout(node, layout)
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
-  // Create context
-  let ctx : TuiContext = { buffer: buf, scroll_y, viewport_height: height }
+  // Create context with link regions array
+  let link_regions : Array[LinkRegion] = []
+  let ctx : TuiContext = { buffer: buf, scroll_y, viewport_height: height, link_regions }
   // Render (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  // Convert to ANSI
-  buffer_to_ansi(buf)
+  // Return ANSI and link regions
+  { ansi: buffer_to_ansi(buf), link_regions }
 }
 
 ///|
@@ -228,7 +276,7 @@ pub fn render_to_ansi_with_status(
   url : String,
   link_count : Int,
   focused_link : Int,
-) -> String {
+) -> RenderResult {
   // Reserve last row for status bar
   let content_height = height - 1
   // Create character buffer
@@ -247,18 +295,20 @@ pub fn render_to_ansi_with_status(
   let paint_node = @paint.from_node_and_layout(node, layout)
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
-  // Create context
+  // Create context with link regions array
+  let link_regions : Array[LinkRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
     viewport_height: content_height,
+    link_regions,
   }
   // Render content (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
   // Draw status bar
   draw_status_bar(buf, content_height, url, link_count, focused_link)
-  // Convert to ANSI
-  buffer_to_ansi(buf)
+  // Return ANSI and link regions
+  { ansi: buffer_to_ansi(buf), link_regions }
 }
 
 ///|

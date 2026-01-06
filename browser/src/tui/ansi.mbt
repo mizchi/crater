@@ -228,3 +228,15 @@ pub fn buffer_diff_to_ansi(current : CharBuffer, prev : CharBuffer) -> String {
   sb.write_string(ansi_reset())
   sb.to_string()
 }
+
+///|
+/// Enable mouse tracking (SGR mode for better coordinates)
+pub fn enable_mouse() -> String {
+  "\u001b[?1000h\u001b[?1006h"
+}
+
+///|
+/// Disable mouse tracking
+pub fn disable_mouse() -> String {
+  "\u001b[?1006l\u001b[?1000l"
+}
