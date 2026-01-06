@@ -30,7 +30,6 @@ pub struct TuiContext {
   viewport_height : Int // Visible height in character rows
 }
 
-
 ///|
 /// Render a PaintNode to the CharBuffer
 fn render_paint_node(
@@ -77,7 +76,7 @@ fn render_paint_node(
   }
   // Draw text content
   match node.text {
-    Some(text_content) => {
+    Some(text_content) =>
       if row >= 0 && row < ctx.viewport_height {
         let style : TextStyle = {
           fg: node.paint.color,
@@ -86,12 +85,15 @@ fn render_paint_node(
           underline: false,
         }
         let _ = ctx.buffer.write_text_wrapped(
-          col, row, text_content, style, w, (row + h).min(ctx.viewport_height) -
+          col,
           row,
+          text_content,
+          style,
+          w,
+          (row + h).min(ctx.viewport_height) - row,
         )
 
       }
-    }
     None => ()
   }
   // Render children

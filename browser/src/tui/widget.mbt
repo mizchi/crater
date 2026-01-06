@@ -190,7 +190,12 @@ pub fn draw_heading(
     2 => @types.Color::rgb(200, 200, 200) // Light gray for h2
     _ => @types.Color::rgb(180, 180, 180) // Lighter gray for h3+
   }
-  let style : TextStyle = { fg, bg: @types.Color::transparent(), bold: true, underline: false }
+  let style : TextStyle = {
+    fg,
+    bg: @types.Color::transparent(),
+    bold: true,
+    underline: false,
+  }
   buf.write_text(x, y, text, style, max_width)
 }
 
@@ -212,39 +217,32 @@ pub fn draw_scrollbar(
   // Draw track
   let track_char = '│'
   for row = y; row < y + height; row = row + 1 {
-    buf.set_cell(
-      x,
-      row,
-      {
-        char: track_char,
-        fg,
-        bg: @types.Color::transparent(),
-        bold: false,
-        underline: false,
-        reverse: false,
-      },
-    )
+    buf.set_cell(x, row, {
+      char: track_char,
+      fg,
+      bg: @types.Color::transparent(),
+      bold: false,
+      underline: false,
+      reverse: false,
+    })
   }
   // Calculate thumb position and size
   let thumb_height = (visible_height * height / content_height).max(1)
-  let thumb_pos = scroll_pos * (height - thumb_height) /
+  let thumb_pos = scroll_pos *
+    (height - thumb_height) /
     (content_height - visible_height)
   // Draw thumb
   let thumb_char = '█'
   for row = y + thumb_pos; row < y + thumb_pos + thumb_height; row = row + 1 {
     if row < y + height {
-      buf.set_cell(
-        x,
-        row,
-        {
-          char: thumb_char,
-          fg: @types.Color::rgb(200, 200, 200),
-          bg: @types.Color::transparent(),
-          bold: false,
-          underline: false,
-          reverse: false,
-        },
-      )
+      buf.set_cell(x, row, {
+        char: thumb_char,
+        fg: @types.Color::rgb(200, 200, 200),
+        bg: @types.Color::transparent(),
+        bold: false,
+        underline: false,
+        reverse: false,
+      })
     }
   }
 }

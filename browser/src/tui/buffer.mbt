@@ -122,7 +122,7 @@ pub fn CharBuffer::fill_bg(
     for col = x; col < x + w; col = col + 1 {
       if col >= 0 && col < self.width && row >= 0 && row < self.height {
         let existing = self.get_cell(col, row)
-        self.set_cell(col, row, { ..existing, bg })
+        self.set_cell(col, row, { ..existing, bg, })
       }
     }
   }
@@ -151,7 +151,11 @@ fn is_wide_char(c : Char) -> Bool {
 ///|
 /// Get display width of a character (1 for narrow, 2 for wide)
 pub fn char_display_width(c : Char) -> Int {
-  if is_wide_char(c) { 2 } else { 1 }
+  if is_wide_char(c) {
+    2
+  } else {
+    1
+  }
 }
 
 ///|

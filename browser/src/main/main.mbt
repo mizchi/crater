@@ -63,9 +63,7 @@ fn render_page(browser : @browser.Browser, options : Options) -> Unit {
     // Debug mode: print layout tree
     browser.debug_layout()
   } else {
-    println(
-      "Page loaded. Use --sixel, --text, or --debug to render.",
-    )
+    println("Page loaded. Use --sixel, --text, or --debug to render.")
   }
 }
 
@@ -112,7 +110,9 @@ async fn main {
       )
       println("")
       println("Options:")
-      println("  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)")
+      println(
+        "  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)",
+      )
       println("  --text   Render page as ANSI text (works in any terminal)")
       println("  --debug  Print layout tree for debugging")
       return
@@ -121,34 +121,26 @@ async fn main {
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
   let browser = @browser.Browser::new(viewport_width, viewport_height)
-  // Print welcome message
+  // Enter TUI mode
   if options.sixel || options.text {
-    @tui.print_raw(@tui.clear_screen())
+    // Enter alternate screen buffer (like vim/less) for clean display
+    @tui.print_raw(@tui.enter_alt_screen())
     @tui.print_raw(@tui.hide_cursor())
+    @tui.print_raw(@tui.clear_screen())
   }
-  println("TUI Browser MVP")
-  if options.text {
-    let (cols, rows) = @tui.get_terminal_size()
-    println(
-      "Terminal: " +
-      cols.to_string() +
-      "x" +
-      rows.to_string() +
-      " chars, viewport: " +
-      viewport_width.to_string() +
-      "x" +
-      viewport_height.to_string() +
-      "px",
-    )
-  }
+  // Show loading message (will be cleared when page renders)
   println("Loading " + options.url + "...")
-  println("")
   // Navigate to initial URL
   try {
     let _ = browser.navigate(options.url)
     render_page(browser, options)
   } catch {
     err => {
+      // Cleanup before exit on error
+      if options.sixel || options.text {
+        @tui.print_raw(@tui.show_cursor())
+        @tui.print_raw(@tui.exit_alt_screen())
+      }
       println("Error loading page: " + Show::to_string(err))
       return
     }
@@ -164,6 +156,7 @@ async fn main {
     match @tui.key_to_action(key) {
       Some(@tui.Quit) => {
         @tui.print_raw(@tui.show_cursor())
+        @tui.print_raw(@tui.exit_alt_screen())
         println("Goodbye!")
         running = false
       }

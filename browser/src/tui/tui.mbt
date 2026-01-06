@@ -37,6 +37,18 @@ pub fn clear_screen() -> String {
 }
 
 ///|
+/// Enter alternate screen buffer (like vim/less)
+pub fn enter_alt_screen() -> String {
+  "\u001b[?1049h\u001b[H"
+}
+
+///|
+/// Exit alternate screen buffer (restore previous screen)
+pub fn exit_alt_screen() -> String {
+  "\u001b[?1049l"
+}
+
+///|
 /// Move cursor to position (ANSI escape)
 pub fn move_cursor(row : Int, col : Int) -> String {
   "\u001b[" + row.to_string() + ";" + col.to_string() + "H"

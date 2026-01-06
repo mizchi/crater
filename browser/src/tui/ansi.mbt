@@ -61,7 +61,7 @@ pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
       231 // Use white from color cube
     } else {
       // Map to 24 grayscale levels (232-255)
-      232 + ((r - 8) * 24 / 240)
+      232 + (r - 8) * 24 / 240
     }
   } else {
     // Map to 6x6x6 color cube (16-231)
@@ -185,7 +185,11 @@ pub fn buffer_diff_to_ansi(current : CharBuffer, prev : CharBuffer) -> String {
         sb.write_string(ansi_move_to(row + 1, col + 1))
       }
       // Apply styles and write character (same as buffer_to_ansi)
-      let fg_idx = if cell.fg.is_transparent() { 7 } else { color_to_256(cell.fg) }
+      let fg_idx = if cell.fg.is_transparent() {
+        7
+      } else {
+        color_to_256(cell.fg)
+      }
       let bg_idx = if cell.bg.is_transparent() {
         -1
       } else {

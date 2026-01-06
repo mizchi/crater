@@ -234,17 +234,91 @@ fn is_inline_element(elem : @html.Element) -> Bool {
 }
 
 ///|
+/// Check if an element will have non-inline display (inline-block, block, flex, etc.) based on CSS rules
+/// This is used to prevent text merging for elements that might be styled differently
+fn will_have_non_inline_display(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  // Check inline style first
+  match elem.style {
+    Some(style) => {
+      let style_lower = style.to_lower()
+      if style_lower.contains("display:") || style_lower.contains("display :") {
+        // Has display in inline style - check if it's non-inline
+        if style_lower.contains("inline-block") ||
+          style_lower.contains("block") ||
+          style_lower.contains("flex") ||
+          style_lower.contains("grid") {
+          return true
+        }
+      }
+    }
+    None => ()
+  }
+  // Check CSS stylesheets for matching rules
+  if stylesheets.length() > 0 {
+    // Create selector element for CSS matching
+    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    match elem.id {
+      Some(id) => selector_elem = selector_elem.set_id(id)
+      None => ()
+    }
+    for cls in elem.classes {
+      selector_elem = selector_elem.add_class(cls)
+    }
+    for attr in elem.attributes {
+      let (name, value) = attr
+      selector_elem = selector_elem.set_attribute(name, value)
+    }
+    let media_env = @media.MediaEnvironment::new(
+      ctx.viewport_width,
+      ctx.viewport_height,
+    )
+    let cascaded = @cascade.cascade_element_with_media(
+      selector_elem,
+      stylesheets,
+      [],
+      Some(media_env),
+    )
+    // Check if display property is set to non-inline value
+    match cascaded.get_value("display") {
+      Some(value) => {
+        let value_lower = value.to_lower()
+        // inline-block, block, flex, grid, etc. should not be merged
+        if value_lower.contains("inline-block") ||
+          (value_lower.contains("block") && not(value_lower.contains("inline"))) ||
+          value_lower.contains("flex") ||
+          value_lower.contains("grid") {
+          return true
+        }
+      }
+      None => ()
+    }
+  }
+  false
+}
+
+///|
 /// Recursively collect text from inline elements
-fn collect_text_from_inline(elem : @html.Element, buf : StringBuilder) -> Unit {
+fn collect_text_from_inline(
+  elem : @html.Element,
+  buf : StringBuilder,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Unit {
   for child in elem.children {
     match child {
       @html.Node::Text(text) => buf.write_string(text)
       @html.Node::Element(child_elem) =>
         if child_elem.tag.to_lower() == "br" {
           buf.write_string("\n")
-        } else if is_inline_element(child_elem) {
+        } else if is_inline_element(child_elem) &&
+          not(will_have_non_inline_display(child_elem, stylesheets, ctx)) {
           // Recursively collect text from nested inline elements
-          collect_text_from_inline(child_elem, buf)
+          // Only if CSS doesn't override to non-inline display
+          collect_text_from_inline(child_elem, buf, stylesheets, ctx)
         }
     }
   }
@@ -253,8 +327,11 @@ fn collect_text_from_inline(elem : @html.Element, buf : StringBuilder) -> Unit {
 ///|
 /// Collect inline content from HTML children, combining text and <br> elements
 /// Returns collected text (with \n for br) and remaining block-level children
+/// Respects CSS display values to avoid merging text from inline-block elements
 fn collect_inline_content(
   children : Array[@html.Node],
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
 ) -> (String, Array[@html.Node]) {
   let text_builder = StringBuilder::new()
   let remaining : Array[@html.Node] = []
@@ -270,12 +347,14 @@ fn collect_inline_content(
           // Insert newline for <br>
           text_builder.write_string("\n")
           has_inline_content = true
-        } else if is_inline_element(elem) {
+        } else if is_inline_element(elem) &&
+          not(will_have_non_inline_display(elem, stylesheets, ctx)) {
           // Recursively collect text from inline elements (a, span, em, etc.)
-          collect_text_from_inline(elem, text_builder)
+          // Only if CSS doesn't set display: inline-block or other non-inline value
+          collect_text_from_inline(elem, text_builder, stylesheets, ctx)
           has_inline_content = true
         } else {
-          // Block-level elements go to remaining
+          // Block-level elements (or elements with CSS non-inline display) go to remaining
           remaining.push(child)
         }
     }
@@ -884,8 +963,13 @@ fn element_to_node_with_styles(
   )
 
   // Convert children - first collect inline content (text + br)
+  // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []
-  let (inline_text, remaining_children) = collect_inline_content(elem.children)
+  let (inline_text, remaining_children) = collect_inline_content(
+    elem.children,
+    stylesheets,
+    ctx,
+  )
 
   // Add combined text node if there's inline content
   if not(inline_text.trim().is_empty()) {
@@ -955,8 +1039,13 @@ fn element_to_node_with_styles_internal(
   )
 
   // Convert children - first collect inline content (text + br)
+  // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []
-  let (inline_text, remaining_children) = collect_inline_content(elem.children)
+  let (inline_text, remaining_children) = collect_inline_content(
+    elem.children,
+    stylesheets,
+    ctx,
+  )
 
   // Add combined text node if there's inline content
   if not(inline_text.trim().is_empty()) {
