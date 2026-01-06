@@ -3,11 +3,13 @@
     "mizchi/crater/types",
     "mizchi/crater/node",
     "mizchi/crater/paint",
+    "mizchi/crater/renderer",
     { "path": "moonbitlang/async/js_async", "targets": ["js"] }
   ],
   "targets": {
     "tui_js.mbt": ["js"],
     "tui_native.mbt": ["native"],
-    "tui_wasm.mbt": ["wasm", "wasm-gc"]
+    "tui_wasm.mbt": ["wasm", "wasm-gc"],
+    "render_test.mbt": ["wasm-gc"]
   }
 }

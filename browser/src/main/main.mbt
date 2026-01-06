@@ -138,6 +138,7 @@ async fn main {
     err => {
       // Cleanup before exit on error
       if options.sixel || options.text {
+        @tui.cleanup_stdin()
         @tui.print_raw(@tui.show_cursor())
         @tui.print_raw(@tui.exit_alt_screen())
       }
@@ -155,6 +156,7 @@ async fn main {
     let key = @tui.read_key()
     match @tui.key_to_action(key) {
       Some(@tui.Quit) => {
+        @tui.cleanup_stdin()
         @tui.print_raw(@tui.show_cursor())
         @tui.print_raw(@tui.exit_alt_screen())
         println("Goodbye!")

@@ -24,3 +24,15 @@ pub fn print_raw(_s : String) -> Unit {
 pub fn get_args() -> Array[String] {
   []
 }
+
+///|
+/// Cleanup stdin state - not supported in WASM
+pub fn cleanup_stdin() -> Unit {
+  ()
+}
+
+///|
+/// Get terminal size - not supported in WASM
+pub fn get_terminal_size() -> (Int, Int) {
+  (80, 24)
+}

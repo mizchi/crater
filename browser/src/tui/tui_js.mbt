@@ -2,7 +2,7 @@
 /// TUI implementation for JavaScript/Node.js target
 
 ///|
-/// Read a single key from stdin (simplified for MVP)
+/// Read a single key from stdin (keeps raw mode on for smooth rendering)
 extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #| async () => {
   #|   if (typeof process === 'undefined') return 'q';
@@ -12,12 +12,12 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|     return '';
   #|   }
   #|   return new Promise((resolve) => {
+  #|     // Set raw mode and keep it on (don't turn off after key read)
   #|     process.stdin.setRawMode(true);
   #|     process.stdin.resume();
   #|     process.stdin.setEncoding('utf8');
   #|     const onData = (key) => {
-  #|       process.stdin.setRawMode(false);
-  #|       process.stdin.pause();
+  #|       // Don't turn off raw mode - keep it on for smooth rendering
   #|       process.stdin.removeListener('data', onData);
   #|       if (key === '\u0003') { resolve('q'); return; } // Ctrl+C
   #|       if (key === '\u001b[A') { resolve('ArrowUp'); return; }
@@ -58,6 +58,16 @@ extern "js" fn js_print(s : String) =
   #| (s) => process.stdout.write(s)
 
 ///|
+/// Cleanup stdin (turn off raw mode)
+extern "js" fn js_cleanup_stdin() =
+  #| () => {
+  #|   if (typeof process !== 'undefined' && process.stdin.isTTY) {
+  #|     process.stdin.setRawMode(false);
+  #|     process.stdin.pause();
+  #|   }
+  #| }
+
+///|
 /// Get command line arguments (after --)
 extern "js" fn js_get_args() -> Array[String] =
   #| () => {
@@ -92,6 +102,12 @@ pub async fn read_line(prompt : String) -> String {
 /// Print string to stdout (no newline)
 pub fn print_raw(s : String) -> Unit {
   js_print(s)
+}
+
+///|
+/// Cleanup stdin state (turn off raw mode, pause)
+pub fn cleanup_stdin() -> Unit {
+  js_cleanup_stdin()
 }
 
 ///|

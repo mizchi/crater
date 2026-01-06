@@ -24,6 +24,12 @@ pub fn print_raw(s : String) -> Unit {
 }
 
 ///|
+/// Cleanup stdin state (stub for native)
+pub fn cleanup_stdin() -> Unit {
+  // No-op for native
+}
+
+///|
 /// Get command line arguments (stub for native)
 pub fn get_args() -> Array[String] {
   // TODO: implement native argument parsing

@@ -58,3 +58,12 @@ moon run src/main --target js -- --debug https://example.com
 - Only a subset of CSS properties are supported
 - Images shown as placeholders (not actual image rendering in TUI mode)
 - Some CSS layout features (grid, advanced flexbox) are partial
+
+## TODO
+
+- [ ] Static asset cache
+- [ ] Show visited/unvisited link colors
+- [ ] Tab text focus and preview
+- [ ] Fix j/k scroll layout
+- [ ] Access and scroll to content by AOM (Accessibility Object Model)
+- [ ] Text search (Ctrl+F)
