@@ -196,6 +196,30 @@ pub fn ErrorCode::to_string(Self) -> String
 pub impl Eq for ErrorCode
 pub impl Show for ErrorCode
 
+pub struct Executor {
+  manager : BrowserManager
+  mut logging_enabled : Bool
+  operation_log : Array[String]
+}
+pub fn Executor::clear_log(Self) -> Unit
+pub async fn Executor::close_context(Self, String) -> ApiResult[String]
+pub async fn Executor::content(Self, String) -> ApiResult[String]
+pub fn Executor::disable_logging(Self) -> Unit
+pub fn Executor::enable_logging(Self) -> Unit
+pub async fn Executor::execute(Self, ApiMethod) -> ApiResult[String]
+pub async fn Executor::execute_json(Self, String) -> String
+pub fn Executor::get_log(Self) -> Array[String]
+pub async fn Executor::go_back(Self, String) -> ApiResult[String]
+pub async fn Executor::go_forward(Self, String) -> ApiResult[String]
+pub async fn Executor::goto(Self, String, String) -> ApiResult[String]
+pub fn Executor::new() -> Self
+pub async fn Executor::new_context(Self) -> ApiResult[String]
+pub fn Executor::new_with_viewport(Int, Int) -> Self
+pub async fn Executor::reload(Self, String) -> ApiResult[String]
+pub async fn Executor::screenshot(Self, String) -> ApiResult[String]
+pub async fn Executor::title(Self, String) -> ApiResult[String]
+pub async fn Executor::url(Self, String) -> ApiResult[String]
+
 pub(all) enum HttpMethod {
   Get
   Post
