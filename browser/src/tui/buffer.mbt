@@ -109,7 +109,7 @@ pub fn CharBuffer::fill_rect(
 }
 
 ///|
-/// Fill a rectangle with just a background color
+/// Fill a rectangle with just a background color (preserves char and fg)
 pub fn CharBuffer::fill_bg(
   self : CharBuffer,
   x : Int,
@@ -118,8 +118,14 @@ pub fn CharBuffer::fill_bg(
   h : Int,
   bg : @types.Color,
 ) -> Unit {
-  let cell = { ..CharCell::default(), bg }
-  self.fill_rect(x, y, w, h, cell)
+  for row = y; row < y + h; row = row + 1 {
+    for col = x; col < x + w; col = col + 1 {
+      if col >= 0 && col < self.width && row >= 0 && row < self.height {
+        let existing = self.get_cell(col, row)
+        self.set_cell(col, row, { ..existing, bg })
+      }
+    }
+  }
 }
 
 ///|
@@ -170,6 +176,7 @@ pub fn TextStyle::default() -> TextStyle {
 ///|
 /// Write text at position with style
 /// Returns the number of columns written
+/// Note: If style.bg is transparent, preserves existing cell background
 pub fn CharBuffer::write_text(
   self : CharBuffer,
   x : Int,
@@ -194,11 +201,17 @@ pub fn CharBuffer::write_text(
     if cur_x + width > end_x {
       break
     }
+    // Determine background: preserve existing if style.bg is transparent
+    let bg = if style.bg.is_transparent() {
+      self.get_cell(cur_x, y).bg
+    } else {
+      style.bg
+    }
     // Write the character
     let cell : CharCell = {
       char: c,
       fg: style.fg,
-      bg: style.bg,
+      bg,
       bold: style.bold,
       underline: style.underline,
       reverse: false,
@@ -206,11 +219,16 @@ pub fn CharBuffer::write_text(
     self.set_cell(cur_x, y, cell)
     // For wide characters, fill next cell with a placeholder
     if width == 2 && cur_x + 1 < end_x {
+      let next_bg = if style.bg.is_transparent() {
+        self.get_cell(cur_x + 1, y).bg
+      } else {
+        style.bg
+      }
       // Use a special marker for the second half of wide char
       let placeholder : CharCell = {
         char: '\u0000', // Null as placeholder for wide char continuation
         fg: style.fg,
-        bg: style.bg,
+        bg: next_bg,
         bold: style.bold,
         underline: style.underline,
         reverse: false,
@@ -225,6 +243,7 @@ pub fn CharBuffer::write_text(
 ///|
 /// Write text with wrapping
 /// Returns the number of lines used
+/// Note: If style.bg is transparent, preserves existing cell background
 pub fn CharBuffer::write_text_wrapped(
   self : CharBuffer,
   x : Int,
@@ -261,21 +280,32 @@ pub fn CharBuffer::write_text_wrapped(
         break
       }
     }
+    // Determine background: preserve existing if style.bg is transparent
+    let bg = if style.bg.is_transparent() {
+      self.get_cell(cur_x, cur_y).bg
+    } else {
+      style.bg
+    }
     // Write the character
     let cell : CharCell = {
       char: c,
       fg: style.fg,
-      bg: style.bg,
+      bg,
       bold: style.bold,
       underline: style.underline,
       reverse: false,
     }
     self.set_cell(cur_x, cur_y, cell)
     if width == 2 && cur_x + 1 < end_x {
+      let next_bg = if style.bg.is_transparent() {
+        self.get_cell(cur_x + 1, cur_y).bg
+      } else {
+        style.bg
+      }
       let placeholder : CharCell = {
         char: '\u0000',
         fg: style.fg,
-        bg: style.bg,
+        bg: next_bg,
         bold: style.bold,
         underline: style.underline,
         reverse: false,
