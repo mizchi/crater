@@ -43,15 +43,23 @@ moon run src/main --target js -- --debug https://example.com
 
 ## Key Bindings
 
+### Navigation
 - `j` / `Down`: Scroll down
 - `k` / `Up`: Scroll up
-- `Tab`: Next link
-- `Shift+Tab`: Previous link
-- `Enter`: Activate link
+- `Ctrl-D` / `PageDown`: Page down (scroll by one screen)
+- `PageUp`: Page up (scroll by one screen)
+- `H` / `Backspace` / `Delete`: Go back to previous page
+- `L`: Go forward to next page
+
+### Links
+- `Tab` / `n`: Next link
+- `Shift+Tab` / `N` / `p`: Previous link
+- `Enter`: Activate focused link
 - `f`: Hit-a-hint mode (shows labels on links, type to navigate)
-- `g`: Go to URL
-- `r`: Reload
-- `Backspace` / `Delete`: Go back to previous page
+
+### General
+- `g`: Go to URL (opens prompt)
+- `r`: Reload current page
 - `q`: Quit
 - `Escape`: Exit hint mode
 

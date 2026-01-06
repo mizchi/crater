@@ -6,6 +6,8 @@
 pub enum BrowserAction {
   ScrollUp
   ScrollDown
+  PageUp               // Scroll up by one page
+  PageDown             // Scroll down by one page
   NextLink
   PrevLink
   ActivateLink
@@ -13,6 +15,7 @@ pub enum BrowserAction {
   Refresh
   Quit
   Back                 // Go back to previous page
+  Forward              // Go forward to next page
   MouseClick(Int, Int) // (col, row) coordinates
   EnterHintMode        // Start hit-a-hint mode (triggered by 'f')
   HintChar(String)     // Hint character input (a-z)
@@ -25,6 +28,8 @@ pub fn key_to_action(key : String) -> BrowserAction? {
   match key {
     "j" | "ArrowDown" => Some(ScrollDown)
     "k" | "ArrowUp" => Some(ScrollUp)
+    "Ctrl-D" | "PageDown" => Some(PageDown)
+    "PageUp" => Some(PageUp)
     "Tab" | "n" => Some(NextLink)
     "N" | "p" => Some(PrevLink)
     "Enter" => Some(ActivateLink)
@@ -33,7 +38,8 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "q" => Some(Quit)
     "f" => Some(EnterHintMode)
     "Escape" => Some(ExitHintMode)
-    "Backspace" | "Delete" => Some(Back)
+    "H" | "Backspace" | "Delete" => Some(Back)
+    "L" => Some(Forward)
     _ =>
       // Check for mouse click: "Mouse:col,row"
       if key.has_prefix("Mouse:") {

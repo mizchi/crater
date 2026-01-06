@@ -37,8 +37,10 @@ pub struct Browser {
   mut hints : Array[@tui.HintData]
   /// Hint input buffer (for multi-char hints)
   mut hint_input : String
-  /// Navigation history (stack of URLs)
-  history : Array[String]
+  /// Back history (stack of URLs for going back)
+  back_history : Array[String]
+  /// Forward history (stack of URLs for going forward)
+  forward_history : Array[String]
 }
 
 ///|
@@ -58,7 +60,8 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     hint_mode: false,
     hints: [],
     hint_input: "",
-    history: [],
+    back_history: [],
+    forward_history: [],
   }
 }
 
@@ -280,15 +283,17 @@ fn analyze_css_support(css_list : Array[String]) -> Unit {
 }
 
 ///|
-/// Navigate to a URL and render (adds to history)
+/// Navigate to a URL and render (adds to back history, clears forward history)
 pub async fn Browser::navigate(
   self : Browser,
   url : String,
 ) -> String raise @http.HttpError {
-  // Save current URL to history before navigating (if not empty)
+  // Save current URL to back history before navigating (if not empty)
   if self.current_url.length() > 0 {
-    self.history.push(self.current_url)
+    self.back_history.push(self.current_url)
   }
+  // Clear forward history on new navigation
+  self.forward_history.clear()
   self.load_url(url)
 }
 
@@ -324,10 +329,29 @@ async fn Browser::load_url(
 ///|
 /// Go back to previous page in history and load it
 pub async fn Browser::go_back(self : Browser) -> String? raise @http.HttpError {
-  if self.history.length() == 0 {
+  if self.back_history.length() == 0 {
     return None
   }
-  let url = self.history.pop().unwrap()
+  // Save current URL to forward history
+  if self.current_url.length() > 0 {
+    self.forward_history.push(self.current_url)
+  }
+  let url = self.back_history.pop().unwrap()
+  let _ = self.load_url(url)
+  Some(url)
+}
+
+///|
+/// Go forward to next page in history and load it
+pub async fn Browser::go_forward(self : Browser) -> String? raise @http.HttpError {
+  if self.forward_history.length() == 0 {
+    return None
+  }
+  // Save current URL to back history
+  if self.current_url.length() > 0 {
+    self.back_history.push(self.current_url)
+  }
+  let url = self.forward_history.pop().unwrap()
   let _ = self.load_url(url)
   Some(url)
 }

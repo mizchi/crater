@@ -21,8 +21,13 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|       // Don't turn off raw mode - keep it on for smooth rendering
   #|       process.stdin.removeListener('data', onData);
   #|       if (key === '\u0003') { resolve('q'); return; } // Ctrl+C
+  #|       if (key === '\u0004') { resolve('Ctrl-D'); return; } // Ctrl+D
   #|       if (key === '\u001b[A') { resolve('ArrowUp'); return; }
   #|       if (key === '\u001b[B') { resolve('ArrowDown'); return; }
+  #|       if (key === '\u001b[5~') { resolve('PageUp'); return; }
+  #|       if (key === '\u001b[6~') { resolve('PageDown'); return; }
+  #|       if (key === '\u001b[3~') { resolve('Delete'); return; }
+  #|       if (key === '\u007f' || key === '\u0008') { resolve('Backspace'); return; }
   #|       if (key === '\r' || key === '\n') { resolve('Enter'); return; }
   #|       if (key === '\t') { resolve('Tab'); return; }
   #|       if (key === '\u001b') { resolve('Escape'); return; }

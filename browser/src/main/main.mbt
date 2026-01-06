@@ -179,6 +179,15 @@ async fn main {
         browser.scroll_up(50)
         render_page(browser, options)
       }
+      Some(@tui.PageDown) => {
+        // Scroll by viewport height (minus some overlap)
+        browser.scroll_down(browser.viewport_height - 50)
+        render_page(browser, options)
+      }
+      Some(@tui.PageUp) => {
+        browser.scroll_up(browser.viewport_height - 50)
+        render_page(browser, options)
+      }
       Some(@tui.NextLink) => {
         browser.next_link()
         render_page(browser, options)
@@ -228,6 +237,19 @@ async fn main {
           match browser.go_back() {
             Some(url) => {
               println("Going back to: " + url)
+              render_page(browser, options)
+            }
+            None => ()
+          }
+        } catch {
+          err => println("Error: " + Show::to_string(err))
+        }
+      }
+      Some(@tui.Forward) => {
+        try {
+          match browser.go_forward() {
+            Some(url) => {
+              println("Going forward to: " + url)
               render_page(browser, options)
             }
             None => ()
