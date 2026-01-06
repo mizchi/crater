@@ -74,27 +74,96 @@ fn render_paint_node(
       ctx.buffer.fill_bg(col, draw_row, w, draw_h, node.paint.background_color)
     }
   }
-  // Draw text content
-  match node.text {
-    Some(text_content) =>
-      if row >= 0 && row < ctx.viewport_height {
-        let style : TextStyle = {
-          fg: node.paint.color,
-          bg: node.paint.background_color,
-          bold: false,
-          underline: false,
-        }
-        let _ = ctx.buffer.write_text_wrapped(
-          col,
-          row,
-          text_content,
-          style,
-          w,
-          (row + h).min(ctx.viewport_height) - row,
-        )
-
+  // Handle image placeholder (check BEFORE text to ensure background is drawn)
+  if node.tag == "img" && w > 0 && h > 0 {
+    // Use a more visible background color for image placeholder
+    let img_bg = @types.Color::rgb(200, 200, 210)
+    let border_color = @types.Color::rgb(150, 150, 160)
+    let draw_row = row.max(0)
+    let draw_h = (row + h).min(ctx.viewport_height) - draw_row
+    if draw_h > 0 {
+      // Fill background
+      ctx.buffer.fill_bg(col, draw_row, w, draw_h, img_bg)
+      // Draw top and bottom borders with darker color
+      let border_style : TextStyle = {
+        fg: border_color,
+        bg: img_bg,
+        bold: false,
+        underline: false,
       }
-    None => ()
+      // Top border
+      if draw_row >= 0 && draw_row < ctx.viewport_height {
+        let border_line = String::make(w, '-')
+        let _ = ctx.buffer.write_text(col, draw_row, border_line, border_style, w)
+      }
+      // Bottom border
+      let bottom_row = draw_row + draw_h - 1
+      if bottom_row >= 0 && bottom_row < ctx.viewport_height && bottom_row > draw_row {
+        let border_line = String::make(w, '-')
+        let _ = ctx.buffer.write_text(col, bottom_row, border_line, border_style, w)
+      }
+    }
+    // Draw alt text (or "[IMG]" if no alt) centered in the image area
+    if draw_row >= 0 && draw_row < ctx.viewport_height && draw_h > 0 {
+      let label = match node.text {
+        Some(alt) => if alt.length() > 0 { alt } else { "[IMG]" }
+        None => "[IMG]"
+      }
+      let label_style : TextStyle = {
+        fg: @types.Color::rgb(60, 60, 70),
+        bg: img_bg,
+        bold: false,
+        underline: false,
+      }
+      // Center vertically (middle row of the image area)
+      let center_row = draw_row + draw_h / 2
+      if center_row >= 0 && center_row < ctx.viewport_height {
+        // Calculate visible label width (truncate if needed)
+        let max_label_width = w - 2 // Leave 1 char margin on each side
+        let visible_label = if label.to_array().length() > max_label_width && max_label_width > 3 {
+          // Truncate with "..."
+          let chars = label.to_array()
+          let truncated_chars = chars[:max_label_width - 3]
+          truncated_chars.to_string() + "..."
+        } else {
+          label
+        }
+        let label_len = visible_label.to_array().length()
+        // Center horizontally
+        let label_col = col + (w - label_len) / 2
+        if label_col >= 0 {
+          let _ = ctx.buffer.write_text(
+            label_col.max(col),
+            center_row,
+            visible_label,
+            label_style,
+            w,
+          )
+        }
+      }
+    }
+  } else {
+    // Draw text content for non-image elements
+    match node.text {
+      Some(text_content) =>
+        if row >= 0 && row < ctx.viewport_height {
+          let style : TextStyle = {
+            fg: node.paint.color,
+            bg: node.paint.background_color,
+            bold: false,
+            underline: false,
+          }
+          let _ = ctx.buffer.write_text_wrapped(
+            col,
+            row,
+            text_content,
+            style,
+            w,
+            (row + h).min(ctx.viewport_height) - row,
+          )
+        }
+      None => ()
+    }
   }
   // Render children
   for child in node.children {

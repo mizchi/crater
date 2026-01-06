@@ -301,6 +301,28 @@ pub fn flatten_for_rendering(node : PaintNode) -> Array[PaintNode] {
 // =============================================================================
 
 ///|
+/// Extract tag name from node ID
+/// Node IDs have format: "tag#id", "tag.class", or "tag"
+fn extract_tag_from_id(id : String) -> String {
+  // "#text" is a special case for text nodes
+  if id == "#text" {
+    return "#text"
+  }
+  // Find first '#' or '.' to determine where tag name ends
+  let mut end_pos : Int? = None
+  for i, c in id {
+    if c == '#' || c == '.' {
+      end_pos = Some(i)
+      break
+    }
+  }
+  match end_pos {
+    Some(pos) => try! id[:pos].to_string()
+    None => id
+  }
+}
+
+///|
 /// Convert a Node and its Layout to a PaintNode tree
 /// This combines style information from Node with position from Layout
 pub fn from_node_and_layout(
@@ -320,16 +342,8 @@ pub fn from_node_and_layout(
     children.push(from_node_and_layout(node.children[i], layout.children[i]))
   }
 
-  // Determine tag from node id (heuristic: use id or default to "div")
-  let tag = if node.id == "#text" {
-    "#text"
-  } else if node.id.has_prefix("body") {
-    "body"
-  } else if node.id.has_prefix("html") {
-    "html"
-  } else {
-    "div"
-  }
+  // Extract tag name from node ID
+  let tag = extract_tag_from_id(node.id)
   PaintNode::new(
     node.id,
     tag,
@@ -356,7 +370,7 @@ pub fn from_layout(layout : @node.Layout) -> PaintNode {
   for child in layout.children {
     children.push(from_layout(child))
   }
-  let tag = if layout.id == "#text" { "#text" } else { "div" }
+  let tag = extract_tag_from_id(layout.id)
   PaintNode::new(
     layout.id,
     tag,

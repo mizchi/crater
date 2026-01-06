@@ -533,3 +533,79 @@ test "debug_inline_text_with_block_sibling" {
     )
   }
 }
+
+///|
+test "img_alt_text_propagation" {
+  let html = #|<!DOCTYPE html>
+    #|<html>
+    #|<body>
+    #|  <h1>Test</h1>
+    #|  <img src="test.jpg" width="200" height="100" alt="Alt text here">
+    #|  <p>After</p>
+    #|</body>
+    #|</html>
+  let ctx : RenderContext = {
+    viewport_width: 640.0,
+    viewport_height: 400.0,
+    root_font_size: 16.0,
+  }
+  let node = render_to_node(html, ctx)
+  let layout = render(html, ctx)
+  // Debug: print all node IDs
+  fn print_nodes(n : @node.Node, depth : Int) -> Unit {
+    let indent = String::make(depth * 2, ' ')
+    let text_info = match n.text {
+      Some(t) => " text=\"" + t + "\""
+      None => ""
+    }
+    println(indent + "Node: " + n.id + text_info)
+    for child in n.children {
+      print_nodes(child, depth + 1)
+    }
+  }
+  println("=== Node tree ===")
+  print_nodes(node, 0)
+  // Find img node
+  fn find_img_node(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("img") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_img_node(child) {
+        Some(img) => return Some(img)
+        None => continue
+      }
+    }
+    None
+  }
+  fn find_img_layout(l : @node.Layout) -> @node.Layout? {
+    if l.id.has_prefix("img") {
+      return Some(l)
+    }
+    for child in l.children {
+      match find_img_layout(child) {
+        Some(img) => return Some(img)
+        None => continue
+      }
+    }
+    None
+  }
+  // Check node has alt text
+  match find_img_node(node) {
+    Some(img) => {
+      inspect(img.id, content="img")
+      inspect(img.text, content="Some(\"Alt text here\")")
+    }
+    None => fail("No img node found!")
+  }
+  // Check layout has text
+  match find_img_layout(layout) {
+    Some(img) => {
+      inspect(img.id, content="img")
+      inspect(img.text, content="Some(\"Alt text here\")")
+      inspect(img.width > 0.0, content="true")
+      inspect(img.height > 0.0, content="true")
+    }
+    None => fail("No img layout found!")
+  }
+}

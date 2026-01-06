@@ -8,19 +8,37 @@ An experimental TUI browser implemented in MoonBit. Renders web pages in the ter
 
 - HTML parsing and rendering
 - External CSS fetching and application
-- Sixel graphics output
+- Sixel graphics output (with `--sixel` flag)
+- TUI text mode rendering (with `--text` flag)
+  - Image placeholders with alt text display
+  - Gray background with borders for image areas
 - Basic keyboard navigation
+- Link navigation with Tab/Shift+Tab
 
 ## Usage
 
 ```bash
 cd browser
-moon run src/main --target js -- <URL>
+moon run src/main --target js -- [OPTIONS] <URL>
 ```
 
-Example:
+### Options
+
+- `--text`: TUI text mode (default terminal rendering)
+- `--sixel`: Sixel graphics mode (requires sixel-capable terminal)
+- `--debug`: Print layout tree for debugging
+
+### Examples
+
 ```bash
-moon run src/main --target js -- https://example.com
+# TUI text mode
+moon run src/main --target js -- --text https://example.com
+
+# Sixel graphics mode
+moon run src/main --target js -- --sixel https://example.com
+
+# Debug layout
+moon run src/main --target js -- --debug https://example.com
 ```
 
 ## Key Bindings
@@ -38,5 +56,5 @@ moon run src/main --target js -- https://example.com
 
 - JavaScript is not executed
 - Only a subset of CSS properties are supported
-- Images are not displayed
-- CJK characters are rendered as placeholders
+- Images shown as placeholders (not actual image rendering in TUI mode)
+- Some CSS layout features (grid, advanced flexbox) are partial

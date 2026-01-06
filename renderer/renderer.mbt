@@ -311,16 +311,52 @@ fn collect_text_from_inline(
   for child in elem.children {
     match child {
       @html.Node::Text(text) => buf.write_string(text)
-      @html.Node::Element(child_elem) =>
-        if child_elem.tag.to_lower() == "br" {
+      @html.Node::Element(child_elem) => {
+        let tag_lower = child_elem.tag.to_lower()
+        if tag_lower == "br" {
           buf.write_string("\n")
+        } else if is_replaced_element(tag_lower) {
+          // Skip replaced elements - they'll be handled separately
+          continue
         } else if is_inline_element(child_elem) &&
           not(will_have_non_inline_display(child_elem, stylesheets, ctx)) {
           // Recursively collect text from nested inline elements
           // Only if CSS doesn't override to non-inline display
           collect_text_from_inline(child_elem, buf, stylesheets, ctx)
         }
+      }
     }
+  }
+}
+
+///|
+/// Check if element contains any replaced elements (img, input, etc.)
+fn contains_replaced_element(elem : @html.Element) -> Bool {
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        if is_replaced_element(child_elem.tag.to_lower()) {
+          return true
+        }
+        // Recursively check children
+        if contains_replaced_element(child_elem) {
+          return true
+        }
+      }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+/// Check if element is a replaced element (img, input, video, etc.)
+/// Replaced elements have intrinsic dimensions and don't contain text
+fn is_replaced_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "img" | "input" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" =>
+      true
+    _ => false
   }
 }
 
@@ -342,21 +378,33 @@ fn collect_inline_content(
         text_builder.write_string(text)
         has_inline_content = true
       }
-      @html.Node::Element(elem) =>
-        if elem.tag.to_lower() == "br" {
+      @html.Node::Element(elem) => {
+        let tag_lower = elem.tag.to_lower()
+        if tag_lower == "br" {
           // Insert newline for <br>
           text_builder.write_string("\n")
           has_inline_content = true
+        } else if is_replaced_element(tag_lower) {
+          // Replaced elements (img, input, etc.) are kept as separate nodes
+          // They have intrinsic dimensions and shouldn't be merged into text
+          remaining.push(child)
         } else if is_inline_element(elem) &&
           not(will_have_non_inline_display(elem, stylesheets, ctx)) {
-          // Recursively collect text from inline elements (a, span, em, etc.)
-          // Only if CSS doesn't set display: inline-block or other non-inline value
-          collect_text_from_inline(elem, text_builder, stylesheets, ctx)
-          has_inline_content = true
+          // Check if this inline element contains replaced elements (like <a><img></a>)
+          if contains_replaced_element(elem) {
+            // Keep as separate node to preserve replaced element children
+            remaining.push(child)
+          } else {
+            // Recursively collect text from inline elements (a, span, em, etc.)
+            // Only if CSS doesn't set display: inline-block or other non-inline value
+            collect_text_from_inline(elem, text_builder, stylesheets, ctx)
+            has_inline_content = true
+          }
         } else {
           // Block-level elements (or elements with CSS non-inline display) go to remaining
           remaining.push(child)
         }
+      }
     }
   }
   if has_inline_content {
@@ -1028,7 +1076,7 @@ fn element_to_node_with_styles_internal(
   css_vars : Map[String, String],
 ) -> @node.Node {
   // Get style from stylesheet matching + inline style
-  let style = compute_element_style(
+  let computed_style = compute_element_style(
     selector_elem,
     elem.style,
     stylesheets,
@@ -1037,6 +1085,15 @@ fn element_to_node_with_styles_internal(
     parent_style,
     css_vars,
   )
+
+  // If this is an inline element containing replaced elements (like <a><img></a>),
+  // treat it as inline-block so it gets proper sizing from its content
+  let style = if computed_style.display == @style.Inline &&
+    contains_replaced_element(elem) {
+    { ..computed_style, display: @style.InlineBlock }
+  } else {
+    computed_style
+  }
 
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
@@ -1149,6 +1206,8 @@ fn element_to_node_with_styles_internal(
     // Setting explicit width/height in style prevents flex stretch from overriding
     if intrinsic_width > 0.0 || intrinsic_height > 0.0 {
       let measure = create_image_measure(intrinsic_width, intrinsic_height)
+      // Get alt text for accessibility/placeholder display
+      let alt_text = elem.attributes.get("alt")
       // Create a new style with explicit width/height to prevent flex stretch
       let img_style : @style.Style = {
         ..style,
@@ -1163,7 +1222,10 @@ fn element_to_node_with_styles_internal(
           style.height
         },
       }
-      return @node.Node::with_measure(node_id, img_style, measure)
+      return match alt_text {
+        Some(alt) => @node.Node::with_measure(node_id, img_style, measure, text=alt)
+        None => @node.Node::with_measure(node_id, img_style, measure)
+      }
     }
   }
   if children.is_empty() {

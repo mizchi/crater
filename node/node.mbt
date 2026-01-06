@@ -84,10 +84,12 @@ pub fn Node::leaf(id : String, style : @style.Style) -> Node {
 
 ///|
 /// Create a leaf node with a custom measure function
+/// Optional text parameter for alt text (images) or other content
 pub fn Node::with_measure(
   id : String,
   style : @style.Style,
   measure : MeasureFunc,
+  text? : String,
 ) -> Node {
   {
     id,
@@ -95,7 +97,7 @@ pub fn Node::with_measure(
     style,
     children: [],
     measure: Some(measure),
-    text: None,
+    text,
   }
 }
 
