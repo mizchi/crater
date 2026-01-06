@@ -93,6 +93,11 @@ pub(all) struct PaintNode {
   y : Double
   width : Double
   height : Double
+  // Overflow clipping
+  overflow_x : @style.Overflow
+  overflow_y : @style.Overflow
+  // Legacy clip property (for accessibility)
+  clip : @types.ClipRect
   // Paint properties
   paint : PaintProperties
   // Stacking order (computed from z-index)
@@ -114,6 +119,9 @@ pub fn PaintNode::new(
   paint : PaintProperties,
   children : Array[PaintNode],
   text? : String? = None,
+  overflow_x? : @style.Overflow = @style.Visible,
+  overflow_y? : @style.Overflow = @style.Visible,
+  clip? : @types.ClipRect = @types.ClipRect::Auto,
 ) -> PaintNode {
   {
     id,
@@ -122,6 +130,9 @@ pub fn PaintNode::new(
     y,
     width,
     height,
+    overflow_x,
+    overflow_y,
+    clip,
     paint,
     stacking_order: paint.z_index_value(),
     text,
@@ -150,6 +161,79 @@ pub impl Show for PaintNode with output(self, logger) {
   if self.paint.opacity < 1.0 {
     logger.write_string(" opacity:")
     self.paint.opacity.output(logger)
+  }
+  if self.clips_content() {
+    logger.write_string(" [clips]")
+  }
+}
+
+///|
+/// Check if this node clips its content (overflow: hidden/scroll/auto or legacy clip)
+pub fn PaintNode::clips_content(self : PaintNode) -> Bool {
+  // Check overflow
+  let overflow_clips = match (self.overflow_x, self.overflow_y) {
+    (@style.Visible, @style.Visible) => false
+    _ => true
+  }
+  // Check legacy clip property
+  let clip_clips = match self.clip {
+    @types.ClipRect::Auto => false
+    @types.ClipRect::Rect(_) => true
+  }
+  overflow_clips || clip_clips
+}
+
+///|
+/// Check if this node has a legacy clip property set
+pub fn PaintNode::has_legacy_clip(self : PaintNode) -> Bool {
+  match self.clip {
+    @types.ClipRect::Auto => false
+    @types.ClipRect::Rect(_) => true
+  }
+}
+
+///|
+/// Get legacy clip rect values (top, right, bottom, left offsets from element edges)
+/// Returns None if clip: auto
+pub fn PaintNode::get_legacy_clip(
+  self : PaintNode,
+) -> (Double, Double, Double, Double)? {
+  match self.clip {
+    @types.ClipRect::Auto => None
+    @types.ClipRect::Rect(top~, right~, bottom~, left~) =>
+      Some((top, right, bottom, left))
+  }
+}
+
+///|
+/// Get the effective clip rect for rendering
+/// For legacy clip: rect(top, right, bottom, left), computes absolute coordinates
+/// For overflow clipping, returns element bounds
+/// Returns (x, y, width, height)
+pub fn PaintNode::get_clip_rect(
+  self : PaintNode,
+) -> (Double, Double, Double, Double)? {
+  // Legacy clip takes precedence
+  match self.clip {
+    @types.ClipRect::Rect(top~, right~, bottom~, left~) => {
+      // clip: rect() uses offsets from top-left corner
+      // rect(top, right, bottom, left) means:
+      //   top edge at 'top' pixels from element top
+      //   right edge at 'right' pixels from element left
+      //   bottom edge at 'bottom' pixels from element top
+      //   left edge at 'left' pixels from element left
+      let clip_x = self.x + left
+      let clip_y = self.y + top
+      let clip_width = right - left
+      let clip_height = bottom - top
+      Some((clip_x, clip_y, clip_width, clip_height))
+    }
+    @types.ClipRect::Auto =>
+      // Fall back to overflow clipping
+      match (self.overflow_x, self.overflow_y) {
+        (@style.Visible, @style.Visible) => None
+        _ => Some((self.x, self.y, self.width, self.height))
+      }
   }
 }
 
@@ -256,6 +340,9 @@ pub fn from_node_and_layout(
     paint,
     children,
     text=layout.text,
+    overflow_x=layout.overflow_x,
+    overflow_y=layout.overflow_y,
+    clip=node.style.clip,
   )
 }
 
@@ -280,5 +367,7 @@ pub fn from_layout(layout : @node.Layout) -> PaintNode {
     paint,
     children,
     text=layout.text,
+    overflow_x=layout.overflow_x,
+    overflow_y=layout.overflow_y,
   )
 }

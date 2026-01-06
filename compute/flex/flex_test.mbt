@@ -1,4 +1,67 @@
 ///|
+// Test that flex item height is recalculated when width changes due to flex-shrink
+// This simulates the Wikipedia layout issue where flex items shrink but height wasn't updated
+test "flex_item_height_recalculated_on_shrink" {
+  let default_style = @style.Style::default()
+  // Create a text measure function that returns different heights at different widths
+  let text_measure : @node.MeasureFunc = {
+    func: fn(available_width, _available_height) -> @node.IntrinsicSize {
+      let max_width = 180.0 // Natural width
+      let actual_width = if available_width.is_inf() ||
+        available_width.is_nan() ||
+        available_width <= 0.0 {
+        max_width
+      } else {
+        available_width
+      }
+      if actual_width >= max_width {
+        { min_width: 50.0, max_width, min_height: 20.0, max_height: 20.0 }
+      } else {
+        // Wraps - needs more height
+        let lines = (max_width / actual_width).ceil()
+        {
+          min_width: 50.0,
+          max_width,
+          min_height: 20.0,
+          max_height: 20.0 * lines,
+        }
+      }
+    },
+  }
+  // Two flex items with flex-shrink: 1
+  let child_style = { ..default_style, flex_shrink: 1.0, flex_grow: 0.0 }
+  let child1 = @node.Node::with_measure("child1", child_style, text_measure)
+  let child2 = @node.Node::with_measure("child2", child_style, text_measure)
+  // Container is only 200px, with align-items: flex-start to disable stretch
+  let root_style = {
+    ..default_style,
+    display: @style.Flex,
+    flex_direction: @style.Row,
+    width: @types.Length(200.0),
+    align_items: @style.FlexStart,
+  }
+  let root = @node.Node::new("root", root_style, [child1, child2])
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(400.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 200.0,
+    viewport_height: 400.0,
+  }
+  let layout = compute(root, ctx)
+  // Inspect actual values for debugging
+  inspect(layout.width, content="200")
+  inspect(layout.children.length(), content="2")
+  // Child widths should be 100 each (200 / 2), not 180 (max_width)
+  inspect(layout.children[0].width, content="100")
+  inspect(layout.children[1].width, content="100")
+  // Child heights are recalculated based on final width (100px), not original content_width (200px)
+  // At 100px width, text needs ~2 lines, so height is ~36-40px (not 20px which it would be at 200px)
+  inspect(layout.children[0].height, content="36")
+  inspect(layout.children[1].height, content="36")
+}
+
+///|
 test "flex_row_basic" {
   let default_style = @style.Style::default()
   let child1 = @node.Node::leaf("child1", {
@@ -3131,4 +3194,77 @@ test "debug_intrinsic_cross_sizing" {
   inspect(layout.children[0].height, content="40")
   // child should be 40x40
   inspect(layout.children[0].children[0].height, content="40")
+}
+
+///|
+test "flex_text_wrapping_in_fixed_width_container" {
+  // Test that text in a flex container with fixed width wraps correctly
+  let default_style = @style.Style::default()
+
+  // Create a text node that simulates long text (max-content width 200px)
+  // When constrained to 100px, it should wrap to 2 lines
+  let text_measure : @node.MeasureFunc = {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
+      let max_width = 200.0 // Single line width
+      let line_height = 20.0
+      // Calculate wrapped height based on available_width
+      let lines = if available_width >= max_width {
+        1.0
+      } else if available_width > 0.0 {
+        (max_width / available_width).ceil()
+      } else {
+        1.0
+      }
+      {
+        min_width: 40.0, // Longest word
+        max_width,
+        min_height: line_height,
+        max_height: lines * line_height,
+      }
+    },
+  }
+
+  // Flex item with auto width (should shrink to container)
+  let text_node = @node.Node::with_measure("#text", default_style, text_measure)
+  let flex_item = @node.Node::new(
+    "item",
+    { ..default_style, flex_shrink: 1.0 },
+    [text_node],
+  )
+
+  // Flex container with fixed width of 100px
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Row,
+      width: @types.Length(100.0),
+    },
+    [flex_item],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 400.0,
+    available_height: None, // Auto height - let content determine height
+    sizing_mode: @node.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+  }
+  let layout = compute(root, ctx)
+
+  // Container should be 100px wide
+  inspect(layout.width, content="100")
+  // Flex item should be constrained to 100px (not 200px)
+  inspect(layout.children[0].width, content="100")
+  // Container should have auto height (based on content)
+  // With width=100 and text max_width=200, text wraps to 2 lines = 40px
+  inspect(layout.height, content="40")
+  inspect(layout.children[0].height, content="40")
+  // Text node inside should also be 40px high
+  if layout.children[0].children.length() > 0 {
+    inspect(layout.children[0].children[0].height, content="40")
+  }
 }

@@ -48,7 +48,7 @@ test "parse_display" {
 test "parse_position" {
   inspect(@computed.parse_position("relative"), content="Relative")
   inspect(@computed.parse_position("absolute"), content="Absolute")
-  inspect(@computed.parse_position("static"), content="Relative") // treated as relative
+  inspect(@computed.parse_position("static"), content="Static") // treated as relative
 }
 
 ///|
@@ -523,4 +523,42 @@ test "css variables - color values" {
     "background-color: var(--bg-color)", ctx,
   )
   inspect(style2.background_color.to_hex(), content="#0000ff")
+}
+
+///|
+test "parse_clip - auto" {
+  let clip = @computed.parse_clip("auto")
+  inspect(clip, content="auto")
+}
+
+///|
+test "parse_clip - rect with px values" {
+  let clip = @computed.parse_clip("rect(1px, 1px, 1px, 1px)")
+  inspect(clip, content="rect(1, 1, 1, 1)")
+}
+
+///|
+test "parse_clip - rect with comma separated values" {
+  let clip = @computed.parse_clip("rect(10px, 100px, 50px, 5px)")
+  inspect(clip, content="rect(10, 100, 50, 5)")
+}
+
+///|
+test "parse_clip - rect with space separated values" {
+  let clip = @computed.parse_clip("rect(10px 100px 50px 5px)")
+  inspect(clip, content="rect(10, 100, 50, 5)")
+}
+
+///|
+test "compute_inline clip property" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("clip: rect(1px, 1px, 1px, 1px)", ctx)
+  inspect(style.clip, content="rect(1, 1, 1, 1)")
+}
+
+///|
+test "compute_inline clip auto" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("clip: auto", ctx)
+  inspect(style.clip, content="auto")
 }

@@ -87,7 +87,7 @@ priv struct StyleBuilder {
   mut position : @style.Position
   mut float : @style.Float
   mut clear : @style.Clear
-  box_sizing : @style.BoxSizing
+  mut box_sizing : @style.BoxSizing
   mut overflow_x : @style.Overflow
   mut overflow_y : @style.Overflow
   mut width : @types.Dimension
@@ -138,6 +138,8 @@ priv struct StyleBuilder {
   mut line_height : Double
   // Vertical alignment for inline elements
   mut vertical_align : @style.VerticalAlign
+  // Clip (legacy)
+  mut clip : @types.ClipRect
   // Paint properties
   mut visibility : @style.Visibility
   mut z_index : @style.ZIndex
@@ -153,7 +155,7 @@ priv struct StyleBuilder {
 fn StyleBuilder::new() -> StyleBuilder {
   {
     display: @style.Display::Block,
-    position: @style.Position::Relative,
+    position: @style.Position::Static,
     float: @style.Float::None,
     clear: @style.Clear::None,
     box_sizing: @style.BoxSizing::ContentBox,
@@ -204,6 +206,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     font_size: 16.0,
     line_height: 16.0,
     vertical_align: @style.VerticalAlign::Baseline,
+    clip: @types.ClipRect::Auto,
     visibility: @style.Visibility::Visible,
     z_index: @style.ZIndex::Auto,
     opacity: 1.0,
@@ -280,6 +283,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     font_size: self.font_size,
     line_height: self.line_height,
     vertical_align: self.vertical_align,
+    clip: self.clip,
     visibility: self.visibility,
     z_index: self.z_index,
     opacity: self.opacity,
@@ -345,6 +349,7 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       }
     "position" =>
       match style.position {
+        @style.Position::Static => "static"
         @style.Position::Relative => "relative"
         @style.Position::Absolute => "absolute"
         @style.Position::Fixed => "fixed"
@@ -502,6 +507,12 @@ fn apply_property(
     "position" => builder.position = parse_position(value)
     "float" => builder.float = parse_float(value)
     "clear" => builder.clear = parse_clear(value)
+    "box-sizing" =>
+      builder.box_sizing = match value.trim().to_lower() {
+        "border-box" => @style.BoxSizing::BorderBox
+        "content-box" | "initial" | "inherit" => @style.BoxSizing::ContentBox
+        _ => @style.BoxSizing::ContentBox
+      }
     // Sizing
     "width" => builder.width = resolve_dimension(value, ctx)
     "height" => builder.height = resolve_dimension(value, ctx)
@@ -580,12 +591,43 @@ fn apply_property(
     "padding-bottom" => builder.padding_bottom = resolve_dimension(value, ctx)
     "padding-left" => builder.padding_left = resolve_dimension(value, ctx)
     "padding" => {
-      // Shorthand: parse multi-value padding
-      let dim = resolve_dimension(value, ctx)
-      builder.padding_top = dim
-      builder.padding_right = dim
-      builder.padding_bottom = dim
-      builder.padding_left = dim
+      // Shorthand: padding (1, 2, 3, or 4 values)
+      let parts = value.trim().to_string().split(" ")
+      let values : Array[@types.Dimension] = []
+      for part in parts {
+        let p = part.to_string().trim().to_string()
+        if not(p.is_empty()) {
+          values.push(resolve_dimension(p, ctx))
+        }
+      }
+      match values.length() {
+        1 => {
+          builder.padding_top = values[0]
+          builder.padding_right = values[0]
+          builder.padding_bottom = values[0]
+          builder.padding_left = values[0]
+        }
+        2 => {
+          builder.padding_top = values[0]
+          builder.padding_right = values[1]
+          builder.padding_bottom = values[0]
+          builder.padding_left = values[1]
+        }
+        3 => {
+          builder.padding_top = values[0]
+          builder.padding_right = values[1]
+          builder.padding_bottom = values[2]
+          builder.padding_left = values[1]
+        }
+        _ =>
+          // 4 or more values
+          if values.length() >= 4 {
+            builder.padding_top = values[0]
+            builder.padding_right = values[1]
+            builder.padding_bottom = values[2]
+            builder.padding_left = values[3]
+          }
+      }
     }
     // Logical padding properties (block/inline)
     "padding-block" => {
@@ -916,6 +958,8 @@ fn apply_property(
     }
     // CSS Containment
     "contain" => builder.contain = parse_contain(value)
+    // Clip (legacy, deprecated but widely used for a11y)
+    "clip" => builder.clip = parse_clip(value)
     // Paint properties (visual, not layout)
     "visibility" => builder.visibility = parse_visibility(value)
     "z-index" => builder.z_index = parse_z_index(value)
@@ -1671,8 +1715,10 @@ fn apply_inheritance(
 }
 
 ///|
-/// Compute style from inline style string
-pub fn compute_inline(
+/// Compute style from inline style string (raw, without box-sizing adjustment)
+/// Use this when merging individual properties into an existing style.
+/// The caller is responsible for calling adjust_for_box_sizing on the final result.
+pub fn compute_inline_raw(
   inline_css : String,
   ctx : ComputeContext,
 ) -> @style.Style {
@@ -1716,9 +1762,18 @@ pub fn compute_inline(
   // Cascade
   let cascaded = @cascade.cascade(decls)
 
-  // Compute
-  let style = compute(cascaded, ctx)
+  // Compute (without box-sizing adjustment)
+  compute(cascaded, ctx)
+}
 
+///|
+/// Compute style from inline style string
+/// This is the standard function that applies box-sizing adjustment.
+pub fn compute_inline(
+  inline_css : String,
+  ctx : ComputeContext,
+) -> @style.Style {
+  let style = compute_inline_raw(inline_css, ctx)
   // Convert content-box dimensions to border-box dimensions
   // The layout engine always works with outer (border-box) dimensions
   adjust_for_box_sizing(style)

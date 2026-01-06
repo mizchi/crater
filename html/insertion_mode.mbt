@@ -392,6 +392,9 @@ fn TreeBuilder::handle_in_body_end_tag(
   self : TreeBuilder,
   tag : String,
 ) -> Unit {
+  // Flush any pending text before processing end tag
+  // This ensures text content is added to the current element before it's popped
+  self.flush_pending_text()
   match tag {
     "body" => {
       if not(self.has_element_in_scope("body")) {

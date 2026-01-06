@@ -241,10 +241,11 @@ pub fn parse_display(value : String) -> @style.Display {
 /// Parse position value
 pub fn parse_position(value : String) -> @style.Position {
   match value.trim().to_lower() {
+    "static" => @style.Position::Static
     "absolute" => @style.Position::Absolute
     "fixed" => @style.Position::Fixed
-    "relative" | "static" | "sticky" => @style.Position::Relative
-    _ => @style.Position::Relative
+    "relative" | "sticky" => @style.Position::Relative
+    _ => @style.Position::Static // Default is static
   }
 }
 
@@ -533,4 +534,71 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
   // Try parsing as a single number
   let n = @strconv.parse_double(v.to_string()) catch { _ => return None }
   Some(n)
+}
+
+///|
+/// Parse CSS clip property value
+/// Supports: auto, rect(top, right, bottom, left)
+/// Note: This is a deprecated property but widely used for accessibility
+pub fn parse_clip(value : String) -> @types.ClipRect {
+  let v = value.trim().to_lower()
+  if v == "auto" || v == "initial" || v == "unset" {
+    return @types.ClipRect::Auto
+  }
+  // Parse rect(top, right, bottom, left)
+  if v.has_prefix("rect(") && v.has_suffix(")") {
+    // Extract the content inside rect()
+    let content = v[5:v.length() - 1].to_string().trim() catch {
+        _ => return @types.ClipRect::Auto
+      }
+    // Split by comma or space (both are valid in CSS)
+    let parts : Array[String] = []
+    let mut current = StringBuilder::new()
+    for c in content.iter() {
+      if c == ',' || c == ' ' {
+        let s = current.to_string().trim().to_string()
+        if not(s.is_empty()) {
+          parts.push(s)
+        }
+        current = StringBuilder::new()
+      } else {
+        current.write_char(c)
+      }
+    }
+    let last = current.to_string().trim().to_string()
+    if not(last.is_empty()) {
+      parts.push(last)
+    }
+    if parts.length() == 4 {
+      let top = parse_clip_value(parts[0])
+      let right = parse_clip_value(parts[1])
+      let bottom = parse_clip_value(parts[2])
+      let left = parse_clip_value(parts[3])
+      return @types.ClipRect::Rect(top~, right~, bottom~, left~)
+    }
+  }
+  @types.ClipRect::Auto
+}
+
+///|
+/// Parse a single clip rect value (auto or length)
+fn parse_clip_value(value : String) -> Double {
+  let v = value.trim().to_lower()
+  if v == "auto" {
+    // auto in clip rect context means 0 (no offset)
+    return 0.0
+  }
+  // Parse px value
+  match v.strip_suffix("px") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
+        _ => return 0.0
+      }
+      return n
+    }
+    None => ()
+  }
+  // Parse plain number
+  let n = @strconv.parse_double(v.to_string()) catch { _ => return 0.0 }
+  n
 }

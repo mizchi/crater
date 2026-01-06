@@ -1040,3 +1040,122 @@ test "inline_block_shrink_to_fit" {
   inspect(inline_block_layout.width, content="70")
   inspect(inline_block_layout.height, content="30") // 20 + 5 + 5
 }
+
+///|
+/// Test anonymous block box handling for mixed inline/block content
+/// When a block container has both inline and block children,
+/// contiguous inline children are grouped and laid out through IFC
+test "anonymous_block_basic" {
+  // Set up the layout dispatcher for proper IFC handling
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+  // Create inline element (text-like)
+  let inline_style = { ..default_style, display: @style.Inline }
+  let inline1_measure = @node.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 50.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let inline1 = @node.Node::with_measure(
+    "inline1", inline_style, inline1_measure,
+  )
+  // Create block element
+  let block_style = { ..default_style, height: @types.Length(20.0) }
+  let block1 = @node.Node::leaf("block1", block_style)
+  // Create another inline element
+  let inline2_measure = @node.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let inline2 = @node.Node::with_measure(
+    "inline2", inline_style, inline2_measure,
+  )
+  // Root container
+  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root = @node.Node::new("root", root_style, [inline1, block1, inline2])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(root, ctx)
+  // Check root dimensions
+  inspect(layout.width, content="200")
+  // Children should be stacked vertically:
+  // - inline1 at y=0 (anonymous block 1)
+  // - block1 at y=16 (after anonymous block 1)
+  // - inline2 at y=36 (anonymous block 2, after block1)
+  inspect(layout.children.length(), content="3")
+  // inline1 should be at y=0
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[0].height, content="16")
+  // block1 should be below inline1
+  inspect(layout.children[1].y, content="16")
+  inspect(layout.children[1].height, content="20")
+  // inline2 should be below block1
+  inspect(layout.children[2].y, content="36")
+  inspect(layout.children[2].height, content="16")
+  // Total height should be 16 + 20 + 16 = 52
+  inspect(layout.height, content="52")
+}
+
+///|
+/// Test multiple inline elements in one anonymous block group
+test "anonymous_block_multiple_inline_in_group" {
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+  let inline_style = { ..default_style, display: @style.Inline }
+  // Three inline elements followed by a block
+  let inline1_measure = @node.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let inline1 = @node.Node::with_measure(
+    "inline1", inline_style, inline1_measure,
+  )
+  let inline2_measure = @node.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let inline2 = @node.Node::with_measure(
+    "inline2", inline_style, inline2_measure,
+  )
+  let inline3_measure = @node.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 20.0, max_width: 20.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let inline3 = @node.Node::with_measure(
+    "inline3", inline_style, inline3_measure,
+  )
+  let block1 = @node.Node::leaf("block1", {
+    ..default_style,
+    height: @types.Length(30.0),
+  })
+  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root = @node.Node::new("root", root_style, [
+    inline1, inline2, inline3, block1,
+  ])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(root, ctx)
+  // All three inline elements should be on the same line (y=0)
+  // They fit within 200px: 30 + 40 + 20 = 90
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[1].y, content="0")
+  inspect(layout.children[2].y, content="0")
+  // Block should be below the inline line
+  inspect(layout.children[3].y, content="16")
+  // Total height: 16 (line) + 30 (block) = 46
+  inspect(layout.height, content="46")
+}

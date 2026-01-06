@@ -140,7 +140,12 @@ test "label[for] association" {
   // Find the input element in the tree
   let inputs = tree.find_by_role(Textbox)
   inspect(inputs.length(), content="1")
-  inspect(inputs[0].name, content="Some(\"Input label\")")
+  inspect(
+    inputs[0].name,
+    content=(
+      #|Some("Input label")
+    ),
+  )
 }
 
 ///|
@@ -153,7 +158,12 @@ test "label encapsulation - input wrapped in label" {
   let tree = build_accessibility_tree(doc)
   let inputs = tree.find_by_role(Textbox)
   inspect(inputs.length(), content="1")
-  inspect(inputs[0].name, content="Some(\"textfield label\")")
+  inspect(
+    inputs[0].name,
+    content=(
+      #|Some("textfield label")
+    ),
+  )
 }
 
 ///|
@@ -166,5 +176,10 @@ test "label encapsulation - checkbox wrapped in label" {
   let tree = build_accessibility_tree(doc)
   let checkboxes = tree.find_by_role(Checkbox)
   inspect(checkboxes.length(), content="1")
-  inspect(checkboxes[0].name, content="Some(\"checkbox label\")")
+  inspect(
+    checkboxes[0].name,
+    content=(
+      #|Some("checkbox label")
+    ),
+  )
 }

@@ -14,6 +14,7 @@ pub(all) enum Display {
 ///|
 /// CSS position property
 pub(all) enum Position {
+  Static // Default - no offset applied
   Relative
   Absolute
   Fixed
@@ -308,6 +309,8 @@ pub(all) struct Style {
   mut line_height : Double // Computed line height in pixels (default = font_size)
   // Vertical alignment for inline elements
   mut vertical_align : VerticalAlign
+  // Clip (legacy, deprecated but widely used for a11y)
+  mut clip : @types.ClipRect
   // Paint properties (visual, not layout)
   mut visibility : Visibility
   mut z_index : ZIndex
@@ -323,7 +326,7 @@ pub(all) struct Style {
 pub fn Style::default() -> Style {
   {
     display: Block,
-    position: Relative,
+    position: Static,
     float: None,
     clear: None,
     box_sizing: ContentBox,
@@ -386,6 +389,7 @@ pub fn Style::default() -> Style {
     font_size: 16.0,
     line_height: 16.0,
     vertical_align: Baseline,
+    clip: @types.ClipRect::Auto,
     visibility: Visible,
     z_index: Auto,
     opacity: 1.0,

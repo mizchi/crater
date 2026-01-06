@@ -290,6 +290,288 @@ fn compute_intrinsic_main_size(
 }
 
 ///|
+/// Compute the min-content size of a node on the main axis
+/// This is used for automatic minimum size calculation (min-width: auto / min-height: auto)
+/// Unlike compute_intrinsic_main_size which returns max-content (full unwrapped width),
+/// this returns min-content (longest unbreakable unit, e.g., longest word)
+fn compute_min_content_main_size(
+  node : @node.Node,
+  is_row : Bool,
+  available_cross : Double?,
+  cache : IntrinsicCache,
+) -> Double {
+  let style = node.style
+  let children = node.children
+
+  // CSS Containment: contain: size makes intrinsic size 0 in both axes
+  // contain: inline-size makes intrinsic size 0 only in inline (horizontal) axis
+  if style.contain.size || (style.contain.inline_size && is_row) {
+    let available_width = match available_cross {
+      Some(w) if not(is_row) => w
+      _ => 0.0
+    }
+    let padding = @types.resolve_rect(style.padding, available_width)
+    let border = @types.resolve_rect(style.border, available_width)
+    return if is_row {
+      padding.horizontal_sum() + border.horizontal_sum()
+    } else {
+      padding.vertical_sum() + border.vertical_sum()
+    }
+  }
+
+  // Leaf nodes: use MeasureFunc if available, otherwise 0
+  if children.length() == 0 {
+    match node.measure {
+      Some(mf) => {
+        // Call MeasureFunc to get intrinsic size
+        let intrinsic = (mf.func)(0.0, 0.0)
+        // For min-content, return min_width (longest unbreakable unit)
+        if is_row {
+          intrinsic.min_width
+        } else {
+          // For height, min-content is the height at min_width
+          let constrained = (mf.func)(intrinsic.min_width, 0.0)
+          constrained.max_height
+        }
+      }
+      None => 0.0
+    }
+  } else {
+    // For containers, recursively compute min-content
+    // Note: This is simplified - ideally we'd have separate min-content functions
+    // for each display type, but for now we reuse the max-content functions
+    // which gives us a conservative (larger) minimum
+    match style.display {
+      @style.Flex =>
+        compute_min_content_flex_main_size(node, is_row, available_cross, cache)
+      @style.Block =>
+        compute_min_content_block_main_size(
+          node, is_row, available_cross, cache,
+        )
+      _ =>
+        // Fall back to max-content for other display types
+        compute_intrinsic_main_size(node, is_row, available_cross, cache)
+    }
+  }
+}
+
+///|
+/// Compute min-content size for a flex container
+fn compute_min_content_flex_main_size(
+  node : @node.Node,
+  parent_is_row : Bool,
+  available_cross : Double?,
+  cache : IntrinsicCache,
+) -> Double {
+  let style = node.style
+  let children = node.children
+
+  // Check if this flex container is row or column
+  let child_is_row = match style.flex_direction {
+    @style.Row | @style.RowReverse => true
+    @style.Column | @style.ColumnReverse => false
+  }
+
+  // Determine if we're computing along this container's main axis or cross axis
+  let compute_main_axis = parent_is_row == child_is_row
+  let child_available_width = if parent_is_row {
+    match style.width {
+      @types.Length(w) => w
+      _ => 0.0
+    }
+  } else {
+    match available_cross {
+      Some(w) => w
+      None =>
+        match style.width {
+          @types.Length(w) => w
+          _ => 0.0
+        }
+    }
+  }
+  let padding = @types.resolve_rect(style.padding, child_available_width)
+  let border = @types.resolve_rect(style.border, child_available_width)
+  if compute_main_axis {
+    // For min-content on main axis: sum of min-content sizes (no wrapping)
+    let mut total_main = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @style.None {
+        continue
+      }
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
+        continue
+      }
+      let child_margin = @types.resolve_rect(
+        child_style.margin,
+        child_available_width,
+      )
+      let child_main = if child_is_row {
+        match child_style.width {
+          @types.Length(w) => w
+          _ => compute_min_content_main_size(child, true, None, cache)
+        }
+      } else {
+        match child_style.height {
+          @types.Length(h) => h
+          _ =>
+            compute_min_content_main_size(
+              child,
+              false,
+              Some(child_available_width),
+              cache,
+            )
+        }
+      }
+      let margin_main = if child_is_row {
+        child_margin.left + child_margin.right
+      } else {
+        child_margin.top + child_margin.bottom
+      }
+      total_main = total_main + child_main + margin_main
+    }
+    let padding_border = if child_is_row {
+      padding.horizontal_sum() + border.horizontal_sum()
+    } else {
+      padding.vertical_sum() + border.vertical_sum()
+    }
+    total_main + padding_border
+  } else {
+    // Cross axis: max of min-content sizes
+    let mut max_cross = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @style.None {
+        continue
+      }
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
+        continue
+      }
+      let child_margin = @types.resolve_rect(
+        child_style.margin,
+        child_available_width,
+      )
+      let child_cross = if child_is_row {
+        match child_style.height {
+          @types.Length(h) => h
+          _ =>
+            compute_min_content_main_size(
+              child,
+              false,
+              Some(child_available_width),
+              cache,
+            )
+        }
+      } else {
+        match child_style.width {
+          @types.Length(w) => w
+          _ => compute_min_content_main_size(child, true, None, cache)
+        }
+      }
+      let margin_cross = if child_is_row {
+        child_margin.top + child_margin.bottom
+      } else {
+        child_margin.left + child_margin.right
+      }
+      max_cross = max(max_cross, child_cross + margin_cross)
+    }
+    let padding_border_cross = if parent_is_row {
+      padding.horizontal_sum() + border.horizontal_sum()
+    } else {
+      padding.vertical_sum() + border.vertical_sum()
+    }
+    max_cross + padding_border_cross
+  }
+}
+
+///|
+/// Compute min-content size for a block container
+fn compute_min_content_block_main_size(
+  node : @node.Node,
+  parent_is_row : Bool,
+  available_cross : Double?,
+  cache : IntrinsicCache,
+) -> Double {
+  let style = node.style
+  let children = node.children
+  let available_width = match available_cross {
+    Some(w) if not(parent_is_row) => w
+    _ =>
+      match style.width {
+        @types.Length(w) => w
+        _ => 0.0
+      }
+  }
+  let padding = @types.resolve_rect(style.padding, available_width)
+  let border = @types.resolve_rect(style.border, available_width)
+  if parent_is_row {
+    // Compute min-content width: max of children's min-content widths
+    let mut max_width = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @style.None {
+        continue
+      }
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
+        continue
+      }
+      let child_margin = @types.resolve_rect(
+        child_style.margin,
+        available_width,
+      )
+      let child_width = match child_style.width {
+        @types.Length(w) => w + child_margin.left + child_margin.right
+        _ =>
+          compute_min_content_main_size(child, true, None, cache) +
+          child_margin.left +
+          child_margin.right
+      }
+      max_width = max(max_width, child_width)
+    }
+    max_width + padding.left + padding.right + border.left + border.right
+  } else {
+    // Compute min-content height: sum of children's heights
+    let mut total_height = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @style.None {
+        continue
+      }
+      if child_style.position == @style.Absolute ||
+        child_style.position == @style.Fixed {
+        continue
+      }
+      let child_margin = @types.resolve_rect(
+        child_style.margin,
+        available_width,
+      )
+      let child_height = match child_style.height {
+        @types.Length(h) => h
+        _ =>
+          compute_min_content_main_size(
+            child,
+            false,
+            Some(available_width),
+            cache,
+          )
+      }
+      total_height = total_height +
+        child_height +
+        child_margin.top +
+        child_margin.bottom
+    }
+    total_height + padding.top + padding.bottom + border.top + border.bottom
+  }
+}
+
+///|
 /// Compute intrinsic size for a flex container
 /// parent_is_row: true = compute width, false = compute height
 fn compute_intrinsic_flex_main_size(
@@ -1549,7 +1831,9 @@ fn compute_internal(
             None => false
           }
           if is_overflow_visible && (child.children.length() > 0 || has_measure) {
-            let content_min = compute_intrinsic_main_size(
+            // Use min-content size for automatic minimum (not max-content)
+            // This allows flex items to shrink below their max-content width
+            let content_min = compute_min_content_main_size(
               child, true, content_height, cache,
             )
             // Clamp by specified size (width) if set
@@ -1598,7 +1882,7 @@ fn compute_internal(
             None => padding_border_min
           }
         @types.Auto => {
-          // Auto min-height: use intrinsic content size for containers/MeasureFunc
+          // Auto min-height: use min-content size for containers/MeasureFunc
           // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
           // CSS spec: clamped from above by specified size (height) and max-height
           let has_measure = match child.measure {
@@ -1606,7 +1890,9 @@ fn compute_internal(
             None => false
           }
           if is_overflow_visible && (child.children.length() > 0 || has_measure) {
-            let content_min = compute_intrinsic_main_size(
+            // Use min-content size for automatic minimum (not max-content)
+            // This allows flex items to shrink below their max-content height
+            let content_min = compute_min_content_main_size(
               child,
               false,
               Some(content_width),
@@ -2007,16 +2293,39 @@ fn compute_internal(
       @style.Wrap | @style.WrapReverse => true
       @style.NoWrap => false
     }
+    // If final_main differs from content_width, we may need to recalculate cross size
+    // because base_cross was computed using content_width, not the actual item width
+    // This is especially important when text wrapping changes with different widths
+    let child = children[item.index]
+    // Compare final_main with content_width (the width used to compute base_cross)
+    let width_differs_from_base = (item.final_main - content_width).abs() > 0.01
+    let needs_cross_recalc = width_differs_from_base &&
+      is_row &&
+      item.cross_is_auto &&
+      (child.children.length() > 0 || child.measure is Some(_))
+    let recalc_cross = fn() -> Double {
+      compute_intrinsic_main_size(child, false, Some(item.final_main), cache)
+    }
     let final_cross = match effective_align {
       @style.Stretch =>
         if item.cross_is_auto {
           if is_wrap {
             // For wrap containers, defer stretch to Phase 5 (use line_cross_size, not container cross_size)
-            item.base_cross
+            // But if main size changed, recalculate based on final_main
+            if needs_cross_recalc {
+              recalc_cross()
+            } else {
+              item.base_cross
+            }
           } else {
             match cross_size {
               Some(cs) => cs - item.margin_cross
-              None => item.base_cross
+              None =>
+                if needs_cross_recalc {
+                  recalc_cross()
+                } else {
+                  item.base_cross
+                }
             }
           }
         } else {
@@ -2034,7 +2343,12 @@ fn compute_internal(
                 // width = height * ratio
                 item.final_main * ratio
               }
-            None => item.base_cross
+            None =>
+              if needs_cross_recalc {
+                recalc_cross()
+              } else {
+                item.base_cross
+              }
           }
         } else {
           item.base_cross

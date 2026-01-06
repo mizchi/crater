@@ -12,6 +12,8 @@ pub fn compute(@cascade.CascadedValues, ComputeContext) -> @style.Style
 
 pub fn compute_inline(String, ComputeContext) -> @style.Style
 
+pub fn compute_inline_raw(String, ComputeContext) -> @style.Style
+
 pub fn compute_with_vars(@cascade.CascadedValues, ComputeContext) -> (@style.Style, Map[String, String])
 
 pub fn default_background_color() -> @types.Color
@@ -31,6 +33,8 @@ pub fn parse_alignment(String) -> @style.Alignment
 pub fn parse_aspect_ratio(String) -> Double?
 
 pub fn parse_clear(String) -> @style.Clear
+
+pub fn parse_clip(String) -> @types.ClipRect
 
 pub fn parse_color(String) -> CssColorValue
 

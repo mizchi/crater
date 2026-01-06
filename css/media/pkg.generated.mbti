@@ -7,6 +7,13 @@ pub fn parse_media_query_list(String) -> MediaQueryList
 // Errors
 
 // Types and methods
+pub struct MediaEnvironment {
+  viewport_width : Double
+  viewport_height : Double
+  device_pixel_ratio : Double
+}
+pub fn MediaEnvironment::new(Double, Double) -> Self
+
 pub enum MediaFeature {
   Color
   ColorGamut
@@ -47,12 +54,14 @@ pub struct MediaQuery {
   conditions : Array[MediaFeature]
 }
 pub fn MediaQuery::default() -> Self
+pub fn MediaQuery::evaluate(Self, MediaEnvironment) -> Bool
 pub impl Eq for MediaQuery
 pub impl Show for MediaQuery
 
 pub struct MediaQueryList {
   queries : Array[MediaQuery]
 }
+pub fn MediaQueryList::evaluate(Self, MediaEnvironment) -> Bool
 pub fn MediaQueryList::is_empty(Self) -> Bool
 pub fn MediaQueryList::length(Self) -> Int
 pub fn MediaQueryList::new() -> Self

@@ -250,33 +250,61 @@ fn compute_inline_child(
   // Handle leaf nodes with MeasureFunc (e.g., text nodes)
   match node.measure {
     Some(mf) => {
-      let intrinsic = (mf.func)(
-        available_width,
+      // First, get unconstrained intrinsic sizes (for min-content, max-content)
+      let unconstrained = (mf.func)(
+        @double.infinity,
         available_height.unwrap_or(0.0),
       )
 
-      // Calculate width
-      let width = match style.width {
-        @types.Length(w) => w
-        @types.Percent(p) => available_width * p
-        @types.Auto =>
-          intrinsic.max_width +
-          padding.horizontal_sum() +
+      // Calculate content width based on sizing mode
+      let content_width = match style.width {
+        @types.Length(w) =>
+          w - padding.horizontal_sum() - border.horizontal_sum()
+        @types.Percent(p) =>
+          available_width * p -
+          padding.horizontal_sum() -
           border.horizontal_sum()
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-          intrinsic.max_width +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
+        @types.MinContent => unconstrained.min_width
+        @types.MaxContent => unconstrained.max_width
+        @types.FitContent(_) | @types.Auto => {
+          // Auto: constrain to available_width
+          let max_content = unconstrained.max_width
+          let content_available = available_width -
+            padding.horizontal_sum() -
+            border.horizontal_sum()
+          let clamped_available = if content_available > 0.0 {
+            content_available
+          } else {
+            0.0
+          }
+          if max_content < clamped_available {
+            max_content
+          } else {
+            clamped_available
+          }
+        }
       }
+
+      // Re-call MeasureFunc with constrained width to get correct height
+      let constrained = (mf.func)(
+        content_width,
+        available_height.unwrap_or(0.0),
+      )
+      let width = content_width +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
 
       // Calculate height
       let height = match style.height {
         @types.Length(h) => h
         @types.Percent(p) => available_height.unwrap_or(0.0) * p
-        @types.Auto =>
-          intrinsic.max_height + padding.vertical_sum() + border.vertical_sum()
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-          intrinsic.max_height + padding.vertical_sum() + border.vertical_sum()
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) =>
+          constrained.max_height +
+          padding.vertical_sum() +
+          border.vertical_sum()
       }
       return {
         id: node.id,

@@ -6,5 +6,8 @@
     "mizchi/crater/compute/absolute",
     "mizchi/crater/compute/float",
     "mizchi/crater/compute/inline"
+  ],
+  "test-import": [
+    "mizchi/crater/compute/dispatch"
   ]
 }

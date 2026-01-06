@@ -31,7 +31,12 @@ test "html-aam/names: address aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -54,7 +59,12 @@ test "html-aam/names: address aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -69,7 +79,12 @@ test "html-aam/names: address aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -84,7 +99,12 @@ test "html-aam/names: address aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -123,7 +143,12 @@ test "html-aam/names: aside aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Complementary)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -146,7 +171,12 @@ test "html-aam/names: aside aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Complementary)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -161,7 +191,12 @@ test "html-aam/names: aside aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Complementary)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -176,7 +211,12 @@ test "html-aam/names: aside aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Complementary)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -215,7 +255,12 @@ test "html-aam/names: blockquote aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Blockquote)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -238,7 +283,12 @@ test "html-aam/names: blockquote aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Blockquote)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -253,7 +303,12 @@ test "html-aam/names: blockquote aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Blockquote)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -268,7 +323,12 @@ test "html-aam/names: blockquote aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Blockquote)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -307,7 +367,12 @@ test "html-aam/names: details aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -330,7 +395,12 @@ test "html-aam/names: details aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -345,7 +415,12 @@ test "html-aam/names: details aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -360,7 +435,12 @@ test "html-aam/names: details aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -399,7 +479,12 @@ test "html-aam/names: figure aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Figure)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -422,7 +507,12 @@ test "html-aam/names: figure aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Figure)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -437,7 +527,12 @@ test "html-aam/names: figure aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Figure)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -452,7 +547,12 @@ test "html-aam/names: figure aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Figure)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -491,7 +591,12 @@ test "html-aam/names: footer aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(ContentInfo)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -514,7 +619,12 @@ test "html-aam/names: footer aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(ContentInfo)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -529,7 +639,12 @@ test "html-aam/names: footer aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(ContentInfo)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -544,7 +659,12 @@ test "html-aam/names: footer aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(ContentInfo)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -583,7 +703,12 @@ test "html-aam/names: form aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Form)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -606,7 +731,12 @@ test "html-aam/names: form aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Form)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -621,7 +751,12 @@ test "html-aam/names: form aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Form)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -636,7 +771,12 @@ test "html-aam/names: form aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Form)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -675,7 +815,12 @@ test "html-aam/names: hgroup aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -698,7 +843,12 @@ test "html-aam/names: hgroup aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -713,7 +863,12 @@ test "html-aam/names: hgroup aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -728,7 +883,12 @@ test "html-aam/names: hgroup aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -767,7 +927,12 @@ test "html-aam/names: hr aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Separator)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -790,7 +955,12 @@ test "html-aam/names: hr aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Separator)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -805,7 +975,12 @@ test "html-aam/names: hr aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Separator)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -820,7 +995,12 @@ test "html-aam/names: hr aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Separator)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -859,7 +1039,12 @@ test "html-aam/names: ol aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -882,7 +1067,12 @@ test "html-aam/names: ol aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -897,7 +1087,12 @@ test "html-aam/names: ol aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -912,7 +1107,12 @@ test "html-aam/names: ol aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -951,7 +1151,12 @@ test "html-aam/names: main aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Main)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -974,7 +1179,12 @@ test "html-aam/names: main aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Main)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -989,7 +1199,12 @@ test "html-aam/names: main aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Main)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1004,7 +1219,12 @@ test "html-aam/names: main aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Main)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1043,7 +1263,12 @@ test "html-aam/names: menu aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1066,7 +1291,12 @@ test "html-aam/names: menu aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1081,7 +1311,12 @@ test "html-aam/names: menu aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1096,7 +1331,12 @@ test "html-aam/names: menu aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1135,7 +1375,12 @@ test "html-aam/names: nav aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Navigation)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1158,7 +1403,12 @@ test "html-aam/names: nav aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Navigation)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1173,7 +1423,12 @@ test "html-aam/names: nav aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Navigation)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1188,7 +1443,12 @@ test "html-aam/names: nav aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Navigation)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1227,7 +1487,12 @@ test "html-aam/names: search aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Search)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1250,7 +1515,12 @@ test "html-aam/names: search aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Search)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1265,7 +1535,12 @@ test "html-aam/names: search aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Search)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1280,7 +1555,12 @@ test "html-aam/names: search aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Search)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1319,7 +1599,12 @@ test "html-aam/names: section aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(Region)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1342,7 +1627,12 @@ test "html-aam/names: section aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Region)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1357,7 +1647,12 @@ test "html-aam/names: section aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Region)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1372,7 +1667,12 @@ test "html-aam/names: section aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(Region)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1411,7 +1711,12 @@ test "html-aam/names: ul aria-labelledby" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1434,7 +1739,12 @@ test "html-aam/names: ul aria-labelledby vs aria-label vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1449,7 +1759,12 @@ test "html-aam/names: ul aria-labelledby vs aria-label" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|
@@ -1464,7 +1779,12 @@ test "html-aam/names: ul aria-labelledby vs title" {
   // Find the test element by role
   let nodes = tree.find_by_role(List)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"labelledby\")")
+  inspect(
+    name,
+    content=(
+      #|Some("labelledby")
+    ),
+  )
 }
 
 ///|

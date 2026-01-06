@@ -960,6 +960,56 @@ fn parse_overflow(tokens : ArrayView[@token.Token]) -> @style.Overflow? {
 }
 
 ///|
+/// Parse clip property (legacy, for accessibility patterns)
+fn parse_clip(tokens : ArrayView[@token.Token]) -> @types.ClipRect {
+  if tokens.length() == 0 {
+    return @types.ClipRect::Auto
+  }
+  match tokens[0] {
+    @token.Token::Ident(s) =>
+      if s == "auto" || s == "initial" || s == "unset" {
+        @types.ClipRect::Auto
+      } else {
+        @types.ClipRect::Auto
+      }
+    @token.Token::Function(name) =>
+      if name == "rect" {
+        // Parse rect(top, right, bottom, left)
+        // tokens[1:] contains the arguments
+        let args = tokens[1:]
+        let values : Array[Double] = []
+        for token in args {
+          match token {
+            @token.Token::Dimension(v, _) => values.push(v)
+            @token.Token::Number(v, _) => values.push(v)
+            @token.Token::Ident(s) =>
+              if s == "auto" {
+                values.push(0.0) // auto in rect is treated as 0
+              }
+            _ => ()
+          }
+          if values.length() >= 4 {
+            break
+          }
+        }
+        if values.length() >= 4 {
+          @types.ClipRect::Rect(
+            top=values[0],
+            right=values[1],
+            bottom=values[2],
+            left=values[3],
+          )
+        } else {
+          @types.ClipRect::Auto
+        }
+      } else {
+        @types.ClipRect::Auto
+      }
+    _ => @types.ClipRect::Auto
+  }
+}
+
+///|
 /// Parse box-sizing property
 fn parse_box_sizing(tokens : ArrayView[@token.Token]) -> @style.BoxSizing? {
   if tokens.length() == 0 {
@@ -1420,6 +1470,10 @@ fn apply_property(
       Some(v) => return { ..style, overflow_y: v }
       None => ()
     }
+  }
+  // clip (legacy, for accessibility)
+  if property == "clip" {
+    return { ..style, clip: parse_clip(value_tokens) }
   }
   // border (single value)
   if property == "border-width" {

@@ -160,6 +160,7 @@ pub impl Eq for Overflow
 pub impl Show for Overflow
 
 pub(all) enum Position {
+  Static
   Relative
   Absolute
   Fixed
@@ -234,6 +235,7 @@ pub(all) struct Style {
   mut font_size : Double
   mut line_height : Double
   mut vertical_align : VerticalAlign
+  mut clip : @types.ClipRect
   mut visibility : Visibility
   mut z_index : ZIndex
   mut opacity : Double

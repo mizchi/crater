@@ -9,6 +9,18 @@
 
 ## High Priority (WPT Test Failures)
 
+### Wikipedia layout issues
+- [x] `position: static` handling (fixed - added Static to Position enum)
+  - Note: Some Taffy tests fail because they expect `position: relative` as default
+  - Taffy fixtures with `inset` but no explicit `position` now behave differently
+- [x] **Flex container height with auto sizing** (fixed in compute/block/block.mbt)
+  - Block layout now passes `available_height: None` for auto-height Flex/Grid children
+  - This prevents flex containers from inheriting parent's available height
+  - Flex items stretched by their parent still receive correct `available_height`
+  - Reproduction: `test_utils/fixtures/flex-height.html`
+  - Verified: `.header-container` now correctly sizes to ~50px instead of 800px
+- [ ] Check flex container alignment defaults for complex nested layouts
+
 ### Baseline Alignment (~25 WPT tests)
 - [ ] Implement baseline calculation for flex items
 - [ ] Handle baseline with padding/margin
@@ -53,11 +65,18 @@
 
 - [ ] Table layout (thead, tbody, caption)
 - [ ] Overflow clipping during rendering
+  - [ ] Proper `clip: rect()` implementation in rendering pipeline
+  - [ ] Pass clip/overflow from Style → Layout → PaintNode correctly
+  - [ ] Current workarounds (renderer/renderer.mbt, renderer/sixel/sixel.mbt):
+    - Skip elements with a11y hiding classes (mw-jump-link, sr-only, visually-hidden, etc.)
+    - Skip 1x1 or smaller elements in Sixel rendering
+    - Skip text nodes with width <= 1 in Sixel rendering
+  - [ ] Proper fix: compute styles before inline content collection (architectural change)
 - [ ] z-index stacking context
 - [ ] Renderer improvements (Sixel, SVG)
 - [ ] CLS => Web Vitals metrics
 - [ ] ShadowRoot support
-- [ ] CSS Variables
+- [ ] CSS Variables (completed basic implementation, needs var() fallback)
 
 ## Documentation
 

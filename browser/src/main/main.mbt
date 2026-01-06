@@ -9,59 +9,105 @@ let viewport_width : Int = 375
 let viewport_height : Int = 450
 
 ///|
-/// Render and display the current page
-fn render_page(browser : @browser.Browser) -> Unit {
-  let sixel = browser.render()
-  @tui.print_raw(@tui.clear_screen())
-  @tui.print_raw(sixel)
-  println("")
-  println(
-    @tui.format_status_bar(
-      browser.current_url,
-      browser.links.length(),
-      browser.focused_link,
-    ),
-  )
+/// Command line options
+struct Options {
+  url : String
+  sixel : Bool
+  debug : Bool
 }
 
 ///|
-/// Get initial URL from args (required)
-fn get_initial_url() -> String? {
-  let args = @tui.get_args()
-  if args.length() > 0 {
-    Some(args[0])
+/// Render and display the current page
+fn render_page(browser : @browser.Browser, options : Options) -> Unit {
+  if options.sixel {
+    let sixel = browser.render()
+    @tui.print_raw(@tui.clear_screen())
+    @tui.print_raw(sixel)
+    println("")
+    println(
+      @tui.format_status_bar(
+        browser.current_url,
+        browser.links.length(),
+        browser.focused_link,
+      ),
+    )
+  } else if options.debug {
+    // Debug mode: print layout tree
+    browser.debug_layout()
   } else {
+    println(
+      "Page loaded. Use --sixel to render visually or --debug to print layout tree.",
+    )
+  }
+}
+
+///|
+/// Parse command line arguments
+fn parse_args() -> Options? {
+  let args = @tui.get_args()
+  if args.length() == 0 {
+    return None
+  }
+  let mut url = ""
+  let mut sixel = false
+  let mut debug = false
+  for arg in args {
+    if arg == "--sixel" {
+      sixel = true
+    } else if arg == "--debug" {
+      debug = true
+    } else if not(arg.has_prefix("--")) {
+      url = arg
+    }
+  }
+  if url.length() == 0 {
     None
+  } else {
+    Some({ url, sixel, debug })
   }
 }
 
 ///|
 /// Entry point - async main
 async fn main {
-  let initial_url = match get_initial_url() {
-    Some(url) => url
+  let options = match parse_args() {
+    Some(opts) => opts
     None => {
-      println("Usage: moon run src/main --target js -- <URL>")
-      println("Example: moon run src/main --target js -- https://example.com")
+      println(
+        "Usage: moon run src/main --target js -- <URL> [--sixel] [--debug]",
+      )
+      println(
+        "Example: moon run src/main --target js -- https://example.com --sixel",
+      )
+      println("")
+      println("Options:")
+      println("  --sixel  Render page as Sixel graphics")
+      println("  --debug  Print layout tree for debugging")
       return
     }
   }
   let browser = @browser.Browser::new(viewport_width, viewport_height)
   // Print welcome message
-  @tui.print_raw(@tui.clear_screen())
-  @tui.print_raw(@tui.hide_cursor())
+  if options.sixel {
+    @tui.print_raw(@tui.clear_screen())
+    @tui.print_raw(@tui.hide_cursor())
+  }
   println("TUI Browser MVP")
-  println("Loading " + initial_url + "...")
+  println("Loading " + options.url + "...")
   println("")
   // Navigate to initial URL
   try {
-    let _ = browser.navigate(initial_url)
-    render_page(browser)
+    let _ = browser.navigate(options.url)
+    render_page(browser, options)
   } catch {
     err => {
       println("Error loading page: " + Show::to_string(err))
       return
     }
+  }
+  // Only enter interactive mode for sixel
+  if not(options.sixel) {
+    return
   }
   // Main event loop
   let mut running = true
@@ -75,19 +121,19 @@ async fn main {
       }
       Some(@tui.ScrollDown) => {
         browser.scroll_down(50)
-        render_page(browser)
+        render_page(browser, options)
       }
       Some(@tui.ScrollUp) => {
         browser.scroll_up(50)
-        render_page(browser)
+        render_page(browser, options)
       }
       Some(@tui.NextLink) => {
         browser.next_link()
-        render_page(browser)
+        render_page(browser, options)
       }
       Some(@tui.PrevLink) => {
         browser.prev_link()
-        render_page(browser)
+        render_page(browser, options)
       }
       Some(@tui.ActivateLink) =>
         match browser.get_focused_link_url() {
@@ -95,7 +141,7 @@ async fn main {
             println("Navigating to: " + url)
             try {
               let _ = browser.navigate(url)
-              render_page(browser)
+              render_page(browser, options)
             } catch {
               err => println("Error: " + Show::to_string(err))
             }
@@ -110,7 +156,7 @@ async fn main {
           println("Navigating to: " + url)
           try {
             let _ = browser.navigate(url)
-            render_page(browser)
+            render_page(browser, options)
           } catch {
             err => println("Error: " + Show::to_string(err))
           }
@@ -120,7 +166,7 @@ async fn main {
         println("Refreshing...")
         try {
           let _ = browser.navigate(browser.current_url)
-          render_page(browser)
+          render_page(browser, options)
         } catch {
           err => println("Error: " + Show::to_string(err))
         }

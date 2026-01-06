@@ -813,6 +813,24 @@ fn render_paint_node(
     return
   }
 
+  // Skip "visually hidden" accessibility pattern:
+  // Elements with clip/overflow clipping and very small size (1px x 1px)
+  // This is commonly used to hide content visually while keeping it for screen readers
+  if node.clips_content() && w <= 1 && h <= 1 {
+    return
+  }
+
+  // WORKAROUND: Skip very small elements that are likely visually hidden
+  // TODO: Properly implement clip rect rendering and overflow clipping
+  // - 1x1 or smaller elements (common visually hidden pattern)
+  // - Text nodes with width <= 1 (text inside visually hidden containers)
+  if w <= 1 && h <= 1 {
+    return
+  }
+  if w <= 1 && node.tag == "#text" {
+    return
+  }
+
   // Draw background if not transparent
   if not(node.paint.background_color.is_transparent()) {
     let bg_idx = palette.get_or_add(
@@ -910,11 +928,14 @@ pub fn render_paint_node_to_sixel(
   // Fill with white background
   fb.fill_rect(0, 0, width, height, 0)
 
+  // Sort by stacking order (z-index) for correct rendering
+  let sorted_node = @paint.sort_tree_by_stacking_order(node)
+
   // Collect all colors first
-  collect_colors(palette, node)
+  collect_colors(palette, sorted_node)
 
   // Render the tree
-  render_paint_node(fb, palette, node, 0.0, 0.0)
+  render_paint_node(fb, palette, sorted_node, 0.0, 0.0)
 
   // Convert to Sixel
   to_sixel_dynamic(fb, palette)
@@ -944,10 +965,12 @@ pub fn render_paint_node_to_sixel_scrolled(
   let palette = DynamicPalette::new()
   // Fill with white background
   fb.fill_rect(0, 0, width, height, 0)
+  // Sort by stacking order (z-index) for correct rendering
+  let sorted_node = @paint.sort_tree_by_stacking_order(node)
   // Collect all colors first
-  collect_colors(palette, node)
+  collect_colors(palette, sorted_node)
   // Render the tree with scroll offset
-  render_paint_node(fb, palette, node, 0.0, -scroll_y.to_double())
+  render_paint_node(fb, palette, sorted_node, 0.0, -scroll_y.to_double())
   // Convert to Sixel
   to_sixel_dynamic(fb, palette)
 }

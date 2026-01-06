@@ -437,7 +437,12 @@ test "accname: aria-labelledby single reference" {
   let tree = build_accessibility_tree(doc)
   // Use find_by_role to search the entire tree, get first match
   let inputs = tree.find_by_role(Textbox)
-  inspect(inputs[0].name, content="Some(\"Username\")")
+  inspect(
+    inputs[0].name,
+    content=(
+      #|Some("Username")
+    ),
+  )
 }
 
 ///|
@@ -451,7 +456,12 @@ test "accname: aria-labelledby multiple references" {
   let doc = @html.parse_document(html)
   let tree = build_accessibility_tree(doc)
   let inputs = tree.find_by_role(Textbox)
-  inspect(inputs[0].name, content="Some(\"First Last\")")
+  inspect(
+    inputs[0].name,
+    content=(
+      #|Some("First Last")
+    ),
+  )
 }
 
 ///|
@@ -464,7 +474,12 @@ test "accname: aria-labelledby overrides aria-label" {
   let doc = @html.parse_document(html)
   let tree = build_accessibility_tree(doc)
   let buttons = tree.find_by_role(Button)
-  inspect(buttons[0].name, content="Some(\"Referenced Label\")")
+  inspect(
+    buttons[0].name,
+    content=(
+      #|Some("Referenced Label")
+    ),
+  )
 }
 
 ///|
@@ -478,7 +493,12 @@ test "accname: aria-labelledby references hidden element" {
   let tree = build_accessibility_tree(doc)
   let buttons = tree.find_by_role(Button)
   // aria-labelledby can reference aria-hidden elements
-  inspect(buttons[0].name, content="Some(\"Hidden Label\")")
+  inspect(
+    buttons[0].name,
+    content=(
+      #|Some("Hidden Label")
+    ),
+  )
 }
 
 ///|
@@ -501,5 +521,10 @@ test "accname: aria-labelledby with self-reference" {
   let tree = build_accessibility_tree(doc)
   let buttons = tree.find_by_role(Button)
   // Self-reference includes button's content, plus referenced element
-  inspect(buttons[0].name, content="Some(\"Self Extra\")")
+  inspect(
+    buttons[0].name,
+    content=(
+      #|Some("Self Extra")
+    ),
+  )
 }

@@ -56,7 +56,7 @@ test "register pending resource and resolve later" {
   let layout2 = tree.compute_incremental()
   let img_layout2 = layout2.children[0]
   // Now should use actual image size
-  inspect(img_layout2.width, content="1600")
+  inspect(img_layout2.width, content="800")
   inspect(img_layout2.height, content="300")
 }
 
@@ -319,7 +319,7 @@ test "resolve resource before first compute" {
   // First compute should use resolved size (Flex may affect height)
   let layout = tree.compute_incremental()
   let img_layout = layout.children[0]
-  inspect(img_layout.width, content="666.6666666666666")
+  inspect(img_layout.width, content="500")
   inspect(img_layout.height, content="300") // Flex stretch
 }
 

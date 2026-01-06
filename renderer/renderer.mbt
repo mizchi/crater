@@ -163,14 +163,69 @@ fn create_text_measure(
 }
 
 ///|
-/// Check if an element is an inline-level element
-fn is_inline_element(tag : String) -> Bool {
+/// Check if an element is an inline-level element by tag name
+fn is_inline_element_by_tag(tag : String) -> Bool {
   let inline_tags = [
     "a", "abbr", "acronym", "b", "bdo", "big", "br", "cite", "code", "dfn", "em",
     "font", "i", "img", "input", "kbd", "label", "q", "s", "samp", "select", "small",
     "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
   ]
   inline_tags.contains(tag.to_lower())
+}
+
+///|
+/// Check if an element has block display in its inline style
+fn has_block_display_in_style(elem : @html.Element) -> Bool {
+  match elem.style {
+    Some(style_str) => {
+      // Parse the inline style to check display property
+      let parsed = @parser.parse_inline_style(style_str)
+      match parsed.display {
+        @style.Block | @style.Flex | @style.Grid => true
+        _ => false
+      }
+    }
+    None => false
+  }
+}
+
+///|
+/// Check if element has a class that indicates it's visually hidden (accessibility pattern)
+fn is_visually_hidden_class(elem : @html.Element) -> Bool {
+  // Common accessibility hiding class names
+  let hidden_classes = [
+    "mw-jump-link", // MediaWiki/Wikipedia
+     "visually-hidden", // Bootstrap
+     "sr-only", // Screen reader only (Bootstrap)
+     "screen-reader-text", // WordPress
+     "skip-link", // Skip navigation links
+     "skip-to-content",
+  ]
+  for cls in elem.classes {
+    let cls_lower = cls.to_lower()
+    for hidden in hidden_classes {
+      if cls_lower.contains(hidden) {
+        return true
+      }
+    }
+  }
+  false
+}
+
+///|
+/// Check if an element should be treated as inline
+fn is_inline_element(elem : @html.Element) -> Bool {
+  // If element has block display in inline style, treat as block
+  if has_block_display_in_style(elem) {
+    return false
+  }
+  // WORKAROUND: Skip visually hidden accessibility elements
+  // These typically have display:block from external CSS but we detect them by class
+  if is_visually_hidden_class(elem) {
+    return false
+  }
+  // Otherwise, check tag name
+  is_inline_element_by_tag(elem.tag)
 }
 
 ///|
@@ -182,7 +237,7 @@ fn collect_text_from_inline(elem : @html.Element, buf : StringBuilder) -> Unit {
       @html.Node::Element(child_elem) =>
         if child_elem.tag.to_lower() == "br" {
           buf.write_string("\n")
-        } else if is_inline_element(child_elem.tag) {
+        } else if is_inline_element(child_elem) {
           // Recursively collect text from nested inline elements
           collect_text_from_inline(child_elem, buf)
         }
@@ -210,7 +265,7 @@ fn collect_inline_content(
           // Insert newline for <br>
           text_builder.write_string("\n")
           has_inline_content = true
-        } else if is_inline_element(elem.tag) {
+        } else if is_inline_element(elem) {
           // Recursively collect text from inline elements (a, span, em, etc.)
           collect_text_from_inline(elem, text_builder)
           has_inline_content = true
@@ -1173,8 +1228,18 @@ fn compute_element_style(
   ctx : RenderContext,
   parent_style : @style.Style?,
 ) -> @style.Style {
-  // Match stylesheets and get cascaded values
-  let cascaded = @cascade.cascade_element(selector_elem, stylesheets, [])
+  // Create media environment for media query evaluation
+  let media_env = @media.MediaEnvironment::new(
+    ctx.viewport_width,
+    ctx.viewport_height,
+  )
+  // Match stylesheets and get cascaded values with media query evaluation
+  let cascaded = @cascade.cascade_element_with_media(
+    selector_elem,
+    stylesheets,
+    [],
+    Some(media_env),
+  )
 
   // Start with user-agent default style based on tag
   let mut style = get_ua_default_style(selector_elem.tag_name)
@@ -1230,7 +1295,10 @@ fn compute_element_style(
     }
     // height: auto - let block layout calculate from content
   }
-  style
+
+  // Adjust dimensions for box-sizing: content-box
+  // This handles both stylesheet and inline styles
+  adjust_for_box_sizing(style)
 }
 
 ///|
@@ -1242,8 +1310,13 @@ fn apply_css_property(
   value : String,
 ) -> @style.Style {
   // Use the inline parser's logic to parse and apply the value
+  // Use compute_inline_raw to avoid premature box-sizing adjustment
+  // The caller (apply_inline_css) will handle box-sizing adjustment after all properties are applied
   let css = property + ": " + value
-  let parsed = @computed.compute_inline(css, @computed.ComputeContext::new())
+  let parsed = @computed.compute_inline_raw(
+    css,
+    @computed.ComputeContext::new(),
+  )
 
   // Merge the parsed property into the style
   merge_style_property(style, parsed, property)
@@ -1259,11 +1332,13 @@ fn apply_css_property_with_viewport(
   viewport_height : Double,
 ) -> @style.Style {
   // Use the inline parser's logic to parse and apply the value
+  // Use compute_inline_raw to avoid premature box-sizing adjustment
+  // The caller will handle box-sizing adjustment after all properties are applied
   let css = property + ": " + value
   let ctx = @computed.ComputeContext::with_viewport(
     viewport_width, viewport_height,
   )
-  let parsed = @computed.compute_inline(css, ctx)
+  let parsed = @computed.compute_inline_raw(css, ctx)
 
   // Merge the parsed property into the style
   merge_style_property(style, parsed, property)
@@ -1700,6 +1775,24 @@ fn merge_style_property(
   }
   if property == "color" {
     return { ..target, color: source.color }
+  }
+  // Overflow properties
+  if property == "overflow" {
+    return {
+      ..target,
+      overflow_x: source.overflow_x,
+      overflow_y: source.overflow_y,
+    }
+  }
+  if property == "overflow-x" {
+    return { ..target, overflow_x: source.overflow_x }
+  }
+  if property == "overflow-y" {
+    return { ..target, overflow_y: source.overflow_y }
+  }
+  // Clip property (legacy, for accessibility patterns)
+  if property == "clip" {
+    return { ..target, clip: source.clip }
   }
   target
 }

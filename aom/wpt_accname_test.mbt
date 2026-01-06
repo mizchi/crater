@@ -15,7 +15,12 @@ test "accname: A button using aria-owns to specify its label" {
   // Find the test element by role
   let nodes = tree.find_by_role(Button)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Play\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Play")
+    ),
+  )
 }
 
 ///|
@@ -32,7 +37,9 @@ test "accname: A link using aria-owns to concatenate extra text" {
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
   inspect(
     name,
-    content="Some(\"World Wide Web Consortium (opens in a new window)\")",
+    content=(
+      #|Some("World Wide Web Consortium (opens in a new window)")
+    ),
   )
 }
 
@@ -48,7 +55,12 @@ test "accname: Ignore aria-owns when on an element that is hidden from all users
   // Find the test element by role
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"treasure\")")
+  inspect(
+    name,
+    content=(
+      #|Some("treasure")
+    ),
+  )
 }
 
 ///|
@@ -84,7 +96,12 @@ test "accname: Ignore aria-owns when on an element with aria-hidden" {
   // Find the test element by role
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"reflection\")")
+  inspect(
+    name,
+    content=(
+      #|Some("reflection")
+    ),
+  )
 }
 
 ///|
@@ -144,7 +161,12 @@ test "accname: checkbox label with embedded textfield" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -162,7 +184,12 @@ test "accname: checkbox label with embedded select:not([size])" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -180,7 +207,12 @@ test "accname: checkbox label with embedded select[size]" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -198,7 +230,12 @@ test "accname: checkbox label with embedded combobox (input[type=text])" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -216,7 +253,12 @@ test "accname: checkbox label with embedded combobox (span)" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -234,7 +276,12 @@ test "accname: checkbox label with embedded combobox (div)" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -252,7 +299,12 @@ test "accname: checkbox label with embedded input[type=range]" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -270,7 +322,12 @@ test "accname: checkbox label with embedded input[type=number]" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -288,7 +345,12 @@ test "accname: checkbox label with embedded ARIA slider (aria-valuenow)" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -306,7 +368,12 @@ test "accname: checkbox label with embedded ARIA slider (aria-valuetext)" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -324,7 +391,12 @@ test "accname: checkbox label with embedded ARIA spinbutton (aria-valuenow)" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -342,7 +414,12 @@ test "accname: checkbox label with embedded ARIA spinbutton (aria-valuetext)" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"Flash the screen 3 times\")")
+  inspect(
+    name,
+    content=(
+      #|Some("Flash the screen 3 times")
+    ),
+  )
 }
 
 ///|
@@ -373,7 +450,12 @@ test "accname: button labelled by element that is aria-hidden=true" {
   // Find the test element by role
   let nodes = tree.find_by_role(Button)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"hidden but referenced,\")")
+  inspect(
+    name,
+    content=(
+      #|Some("hidden but referenced,")
+    ),
+  )
 }
 
 ///|
@@ -388,7 +470,12 @@ test "accname: button labelled by element with the hidden host language attribut
   // Find the test element by role
   let nodes = tree.find_by_role(Button)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"hidden from all users but referenced,\")")
+  inspect(
+    name,
+    content=(
+      #|Some("hidden from all users but referenced,")
+    ),
+  )
 }
 
 ///|
@@ -406,7 +493,9 @@ test "accname: link labelled by elements with assorted visibility and a11y tree 
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
   inspect(
     name,
-    content="Some(\"visible to all users, hidden but referenced, hidden from all users but referenced\")",
+    content=(
+      #|Some("visible to all users, hidden but referenced, hidden from all users but referenced")
+    ),
   )
 }
 
@@ -465,7 +554,12 @@ test "accname: html: label[for] input[type=checkbox]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"checkbox label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("checkbox label")
+    ),
+  )
 }
 
 ///|
@@ -480,7 +574,12 @@ test "accname: html: label[for] input[type=checkbox][checked]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"checkbox label checked\")")
+  inspect(
+    name,
+    content=(
+      #|Some("checkbox label checked")
+    ),
+  )
 }
 
 ///|
@@ -497,7 +596,12 @@ test "accname: html: label[for] input[type=color]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"color label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("color label")
+    ),
+  )
 }
 
 ///|
@@ -514,7 +618,12 @@ test "accname: html: label[for] input[type=date]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"date label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("date label")
+    ),
+  )
 }
 
 ///|
@@ -531,7 +640,12 @@ test "accname: html: label[for] input[type=datetime-local]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"datetime-local label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("datetime-local label")
+    ),
+  )
 }
 
 ///|
@@ -546,7 +660,12 @@ test "accname: html: label[for] input[type=email]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"email label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("email label")
+    ),
+  )
 }
 
 ///|
@@ -563,7 +682,12 @@ test "accname: html: label[for] input[type=file]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"file label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("file label")
+    ),
+  )
 }
 
 ///|
@@ -580,7 +704,12 @@ test "accname: html: label[for] input[type=month]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"month label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("month label")
+    ),
+  )
 }
 
 ///|
@@ -595,7 +724,12 @@ test "accname: html: label[for] input[type=number]" {
   // Find the test element by role
   let nodes = tree.find_by_role(SpinButton)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"number label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("number label")
+    ),
+  )
 }
 
 ///|
@@ -610,7 +744,12 @@ test "accname: html: label[for] input[type=number][value=2025]" {
   // Find the test element by role
   let nodes = tree.find_by_role(SpinButton)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"number label with non-empty value\")")
+  inspect(
+    name,
+    content=(
+      #|Some("number label with non-empty value")
+    ),
+  )
 }
 
 ///|
@@ -625,7 +764,12 @@ test "accname: html: label[for] input[type=password]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"password label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("password label")
+    ),
+  )
 }
 
 ///|
@@ -640,7 +784,12 @@ test "accname: html: label[for] input[type=radio]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Radio)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"radio label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("radio label")
+    ),
+  )
 }
 
 ///|
@@ -655,7 +804,12 @@ test "accname: html: label[for] input[type=range]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Slider)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"range label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("range label")
+    ),
+  )
 }
 
 ///|
@@ -670,7 +824,12 @@ test "accname: html: label[for] input[type=range][min=0][max=10][value=5]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Slider)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"range label with non-empty value\")")
+  inspect(
+    name,
+    content=(
+      #|Some("range label with non-empty value")
+    ),
+  )
 }
 
 ///|
@@ -685,7 +844,12 @@ test "accname: html: label[for] input[type=search]" {
   // Find the test element by role
   let nodes = tree.find_by_role(SearchBox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"search label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("search label")
+    ),
+  )
 }
 
 ///|
@@ -700,7 +864,12 @@ test "accname: html: label[for] input[type=tel]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"tel label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("tel label")
+    ),
+  )
 }
 
 ///|
@@ -715,7 +884,12 @@ test "accname: html: label[for] input[type=text]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"textfield label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("textfield label")
+    ),
+  )
 }
 
 ///|
@@ -732,7 +906,12 @@ test "accname: html: label[for] input[type=time]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"time label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("time label")
+    ),
+  )
 }
 
 ///|
@@ -747,7 +926,12 @@ test "accname: html: label[for] input[type=url]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"url label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("url label")
+    ),
+  )
 }
 
 ///|
@@ -764,7 +948,12 @@ test "accname: html: label[for] input[type=week]" {
     Some(node) => node.name
     Option::None => None
   }
-  inspect(name, content="Some(\"week label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("week label")
+    ),
+  )
 }
 
 ///|
@@ -774,7 +963,12 @@ test "accname: html: label input[type=checkbox] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"checkbox label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("checkbox label")
+    ),
+  )
 }
 
 ///|
@@ -784,7 +978,12 @@ test "accname: html: label input[type=checkbox][checked] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Checkbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"checkbox label checked\")")
+  inspect(
+    name,
+    content=(
+      #|Some("checkbox label checked")
+    ),
+  )
 }
 
 ///|
@@ -794,7 +993,12 @@ test "accname: html: label input[type=color] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"color label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("color label")
+    ),
+  )
 }
 
 ///|
@@ -804,7 +1008,12 @@ test "accname: html: label input[type=date] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"date label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("date label")
+    ),
+  )
 }
 
 ///|
@@ -814,7 +1023,12 @@ test "accname: html: label input[type=datetime-local] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"datetime-local label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("datetime-local label")
+    ),
+  )
 }
 
 ///|
@@ -824,7 +1038,12 @@ test "accname: html: label input[type=email] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"email label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("email label")
+    ),
+  )
 }
 
 ///|
@@ -834,7 +1053,12 @@ test "accname: html: label input[type=file] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"file label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("file label")
+    ),
+  )
 }
 
 ///|
@@ -844,7 +1068,12 @@ test "accname: html: label input[type=month] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"month label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("month label")
+    ),
+  )
 }
 
 ///|
@@ -854,7 +1083,12 @@ test "accname: html: label input[type=number] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(SpinButton)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"number label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("number label")
+    ),
+  )
 }
 
 ///|
@@ -864,7 +1098,12 @@ test "accname: html: label input[type=number][value=1] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(SpinButton)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"number label with non-empty value\")")
+  inspect(
+    name,
+    content=(
+      #|Some("number label with non-empty value")
+    ),
+  )
 }
 
 ///|
@@ -874,7 +1113,12 @@ test "accname: html: label input[type=password] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"password label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("password label")
+    ),
+  )
 }
 
 ///|
@@ -884,7 +1128,12 @@ test "accname: html: label input[type=radio] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Radio)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"radio label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("radio label")
+    ),
+  )
 }
 
 ///|
@@ -894,7 +1143,12 @@ test "accname: html: label input[type=range] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Slider)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"range label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("range label")
+    ),
+  )
 }
 
 ///|
@@ -904,7 +1158,12 @@ test "accname: html: label input[type=search] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(SearchBox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"search label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("search label")
+    ),
+  )
 }
 
 ///|
@@ -914,7 +1173,12 @@ test "accname: html: label input[type=tel] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"tel label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("tel label")
+    ),
+  )
 }
 
 ///|
@@ -924,7 +1188,12 @@ test "accname: html: label[for] input[type=text] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"textfield label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("textfield label")
+    ),
+  )
 }
 
 ///|
@@ -934,7 +1203,12 @@ test "accname: html: label input[type=time] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"time label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("time label")
+    ),
+  )
 }
 
 ///|
@@ -944,7 +1218,12 @@ test "accname: html: label input[type=url] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"url label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("url label")
+    ),
+  )
 }
 
 ///|
@@ -954,7 +1233,12 @@ test "accname: html: label input[type=week] encapsulation" {
   let tree = build_accessibility_tree(doc)
   let focusable = tree.find_focusable()
   let name = if focusable.length() > 0 { focusable[0].name } else { None }
-  inspect(name, content="Some(\"week label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("week label")
+    ),
+  )
 }
 
 ///|
@@ -987,7 +1271,12 @@ test "accname: html: select for/id" {
   // Find the test element by role
   let nodes = tree.find_by_role(Combobox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"select label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("select label")
+    ),
+  )
 }
 
 ///|
@@ -1102,7 +1391,12 @@ test "accname: html: multiple label elements[for]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Textbox)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"textfield label 1\")")
+  inspect(
+    name,
+    content=(
+      #|Some("textfield label 1")
+    ),
+  )
 }
 
 ///|
@@ -2045,7 +2339,12 @@ test "accname: nav with trailing nbsp char aria-label is valid (nbsp is preserve
   let html = "<nav aria-label=\"label&nbsp;\" >x</nav>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"label&nbsp;\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("label ")
+    ),
+  )
 }
 
 ///|
@@ -2053,7 +2352,12 @@ test "accname: button with leading nbsp char in aria-label is valid (and uses ar
   let html = "<button aria-label=\"&nbsp;label\" >my button</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some(" label")
+    ),
+  )
 }
 
 ///|
@@ -2131,7 +2435,12 @@ test "accname: div group explicitly labelledby heading" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"first heading\")")
+  inspect(
+    name,
+    content=(
+      #|Some("first heading")
+    ),
+  )
 }
 
 ///|
@@ -2146,7 +2455,12 @@ test "accname: div group explicitly labelledby self and heading" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"self label + first heading\")")
+  inspect(
+    name,
+    content=(
+      #|Some("self label + first heading")
+    ),
+  )
 }
 
 ///|
@@ -2164,7 +2478,12 @@ test "accname: nav with verified spaces appended between each of IDREFS" {
   // Find the test element by role
   let nodes = tree.find_by_role(Navigation)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"verify spaces between foreach\")")
+  inspect(
+    name,
+    content=(
+      #|Some("verify spaces between foreach")
+    ),
+  )
 }
 
 ///|
@@ -2179,7 +2498,12 @@ test "accname: link labelled by aria-labelledby supercedes aria-labeledby (non-s
   // Find the test element by role
   let nodes = tree.find_by_role(Link)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"first label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("first label")
+    ),
+  )
 }
 
 ///|
@@ -2194,7 +2518,12 @@ test "accname: button labelled by aria-labelledby supercedes aria-labeledby (non
   // Find the test element by role
   let nodes = tree.find_by_role(Button)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"first label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("first label")
+    ),
+  )
 }
 
 ///|
@@ -2209,7 +2538,12 @@ test "accname: div labelled by aria-labelledby supercedes aria-labeledby (non-st
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"first label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("first label")
+    ),
+  )
 }
 
 ///|
@@ -2224,7 +2558,12 @@ test "accname: link labelled by [aria-labeledby][aria-labelledby]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Link)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"second label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("second label")
+    ),
+  )
 }
 
 ///|
@@ -2239,7 +2578,12 @@ test "accname: button labelled by [aria-labeledby][aria-labelledby]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Button)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"second label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("second label")
+    ),
+  )
 }
 
 ///|
@@ -2254,7 +2598,12 @@ test "accname: div labelled by [aria-labeledby][aria-labelledby]" {
   // Find the test element by role
   let nodes = tree.find_by_role(Group)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"second label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("second label")
+    ),
+  )
 }
 
 ///|
@@ -2504,7 +2853,12 @@ test "accname: heading name from content with ::before" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"before label\")")
+  inspect(
+    name,
+    content=(
+      #|Some("before label")
+    ),
+  )
 }
 
 ///|
@@ -2552,7 +2906,12 @@ test "accname: heading name from content with ::after" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"label after\")")
+  inspect(
+    name,
+    content=(
+      #|Some("label after")
+    ),
+  )
 }
 
 ///|
@@ -2606,7 +2965,12 @@ test "accname: heading name from content with ::before and ::after" {
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"before label after\")")
+  inspect(
+    name,
+    content=(
+      #|Some("before label after")
+    ),
+  )
 }
 
 ///|
@@ -2653,7 +3017,12 @@ test "accname: heading name from content no space joiners ::before and ::after" 
   let tree = build_accessibility_tree(doc)
   let nodes = tree.find_by_role(Heading)
   let name = if nodes.length() > 0 { nodes[0].name } else { None }
-  inspect(name, content="Some(\"nospacelabelnospace\")")
+  inspect(
+    name,
+    content=(
+      #|Some("nospacelabelnospace")
+    ),
+  )
 }
 
 ///|
@@ -3585,7 +3954,12 @@ test "accname: span[role=button] with text node, with non-breaking space" {
   let html = "<span role=\"button\" tabindex=\"0\" >button&nbsp;label</span>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"button&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("button label")
+    ),
+  )
 }
 
 ///|
@@ -3593,7 +3967,12 @@ test "accname: div[role=heading] with text node, with non-breaking space" {
   let html = "<div role=\"heading\" >heading&nbsp;label</div>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("heading label")
+    ),
+  )
 }
 
 ///|
@@ -3601,7 +3980,12 @@ test "accname: button with text node, with non-breaking space" {
   let html = "<button >button&nbsp;label</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"button&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("button label")
+    ),
+  )
 }
 
 ///|
@@ -3609,7 +3993,12 @@ test "accname: heading with text node, with non-breaking space" {
   let html = "<h3 >heading&nbsp;label</h3>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("heading label")
+    ),
+  )
 }
 
 ///|
@@ -3617,7 +4006,12 @@ test "accname: link with text node, with non-breaking space" {
   let html = "<a href=\"#\" >link&nbsp;label</a>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"link&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("link label")
+    ),
+  )
 }
 
 ///|
@@ -3625,7 +4019,12 @@ test "accname: span[role=button] with text node, with extra non-breaking space" 
   let html = "<span role=\"button\" tabindex=\"0\" >button&nbsp;&nbsp;&nbsp;label</span>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"button&nbsp;&nbsp;&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("button   label")
+    ),
+  )
 }
 
 ///|
@@ -3633,7 +4032,12 @@ test "accname: div[role=heading] with text node, with extra non-breaking space" 
   let html = "<div role=\"heading\" >heading&nbsp;&nbsp;&nbsp;label</div>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading&nbsp;&nbsp;&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("heading   label")
+    ),
+  )
 }
 
 ///|
@@ -3641,7 +4045,12 @@ test "accname: button with text node, with extra non-breaking space" {
   let html = "<button >button&nbsp;&nbsp;&nbsp;label</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"button&nbsp;&nbsp;&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("button   label")
+    ),
+  )
 }
 
 ///|
@@ -3649,7 +4058,12 @@ test "accname: heading with text node, with extra non-breaking space" {
   let html = "<h3 >heading&nbsp;&nbsp;&nbsp;label</h3>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading&nbsp;&nbsp;&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("heading   label")
+    ),
+  )
 }
 
 ///|
@@ -3657,7 +4071,12 @@ test "accname: link with text node, with extra non-breaking space" {
   let html = "<a href=\"#\" >link&nbsp;&nbsp;&nbsp;label</a>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"link&nbsp;&nbsp;&nbsp;label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("link   label")
+    ),
+  )
 }
 
 ///|
@@ -3665,7 +4084,12 @@ test "accname: span[role=button] with text node, with leading/trailing non-break
   let html = "<span role=\"button\" tabindex=\"0\" >&nbsp;button&nbsp;label&nbsp;</span>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"&nbsp;button&nbsp;label&nbsp;\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some(" button label ")
+    ),
+  )
 }
 
 ///|
@@ -3673,7 +4097,12 @@ test "accname: div[role=heading] with text node, with leading/trailing non-break
   let html = "<div role=\"heading\" >&nbsp;heading&nbsp;label&nbsp;</div>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"&nbsp;heading&nbsp;label&nbsp;\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some(" heading label ")
+    ),
+  )
 }
 
 ///|
@@ -3681,7 +4110,12 @@ test "accname: button with text node, with leading/trailing non-breaking space" 
   let html = "<button >&nbsp;button&nbsp;label&nbsp;</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"&nbsp;button&nbsp;label&nbsp;\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some(" button label ")
+    ),
+  )
 }
 
 ///|
@@ -3689,7 +4123,12 @@ test "accname: heading with text node, with leading/trailing non-breaking space"
   let html = "<h3 >&nbsp;heading&nbsp;label&nbsp;</h3>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"&nbsp;heading&nbsp;label&nbsp;\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some(" heading label ")
+    ),
+  )
 }
 
 ///|
@@ -3697,7 +4136,12 @@ test "accname: link with text node, with leading/trailing non-breaking space" {
   let html = "<a href=\"#\" >&nbsp;link&nbsp;label&nbsp;</a>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"&nbsp;link&nbsp;label&nbsp;\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some(" link label ")
+    ),
+  )
 }
 
 ///|
@@ -3705,7 +4149,12 @@ test "accname: span[role=button] with text node, with mixed space and non-breaki
   let html = "<span role=\"button\" tabindex=\"0\" >button &nbsp; label</span>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"button &nbsp; label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("button   label")
+    ),
+  )
 }
 
 ///|
@@ -3713,7 +4162,12 @@ test "accname: div[role=heading] with text node, with mixed space and non-breaki
   let html = "<div role=\"heading\" >heading &nbsp; label</div>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading &nbsp; label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("heading   label")
+    ),
+  )
 }
 
 ///|
@@ -3721,7 +4175,12 @@ test "accname: button with text node, with mixed space and non-breaking space" {
   let html = "<button >button &nbsp; label</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"button &nbsp; label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("button   label")
+    ),
+  )
 }
 
 ///|
@@ -3729,7 +4188,12 @@ test "accname: heading with text node, with mixed space and non-breaking space" 
   let html = "<h3 >heading &nbsp; label</h3>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"heading &nbsp; label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("heading   label")
+    ),
+  )
 }
 
 ///|
@@ -3737,7 +4201,12 @@ test "accname: link with text node, with mixed space and non-breaking space" {
   let html = "<a href=\"#\" >link &nbsp; label</a>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"link &nbsp; label\")")
+  inspect(
+    tree.root.name,
+    content=(
+      #|Some("link   label")
+    ),
+  )
 }
 
 ///|

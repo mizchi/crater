@@ -225,8 +225,27 @@ pub fn Stylesheet::match_element(
   self : Stylesheet,
   element : @selector.Element,
 ) -> Array[RuleMatch] {
+  self.match_element_with_media(element, None)
+}
+
+///|
+/// Match all rules against an element with media query evaluation
+pub fn Stylesheet::match_element_with_media(
+  self : Stylesheet,
+  element : @selector.Element,
+  media_env : @media.MediaEnvironment?,
+) -> Array[RuleMatch] {
   let matches : Array[RuleMatch] = []
   for rule in self.rules {
+    // Check media query if present and environment provided
+    let media_matches = match (rule.media_query, media_env) {
+      (Some(mq), Some(env)) => mq.evaluate(env)
+      (Some(_), None) => true // No env = match all media queries
+      (None, _) => true // No media query = always matches
+    }
+    if not(media_matches) {
+      continue
+    }
     if @selector.matches_complex(element, rule.selector) {
       let specificity = @selector.complex_specificity(rule.selector)
       // Update declarations with stylesheet origin
@@ -261,11 +280,22 @@ pub fn cascade_element(
   stylesheets : Array[Stylesheet],
   inline_style : Array[Declaration],
 ) -> CascadedValues {
+  cascade_element_with_media(element, stylesheets, inline_style, None)
+}
+
+///|
+/// Cascade styles for an element with media query evaluation
+pub fn cascade_element_with_media(
+  element : @selector.Element,
+  stylesheets : Array[Stylesheet],
+  inline_style : Array[Declaration],
+  media_env : @media.MediaEnvironment?,
+) -> CascadedValues {
   let all_matches : Array[RuleMatch] = []
 
   // Collect matches from all stylesheets
   for stylesheet in stylesheets {
-    let matches = stylesheet.match_element(element)
+    let matches = stylesheet.match_element_with_media(element, media_env)
     for m in matches {
       all_matches.push(m)
     }

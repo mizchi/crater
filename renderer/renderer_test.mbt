@@ -339,3 +339,197 @@ test "logical properties inline-size and block-size" {
   inspect(test_div.width, content="200")
   inspect(test_div.height, content="100")
 }
+
+///|
+test "visually hidden element should be skipped" {
+  let html = "<div><a class=\"mw-jump-link\" style=\"display:block;position:absolute;clip:rect(1px,1px,1px,1px);width:1px;height:1px;overflow:hidden\">Jump to content</a><p>Visible content</p></div>"
+  let ctx : RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+  }
+  let node = render_to_node(html, ctx)
+
+  // Check the a element style (path: body -> div -> a)
+  let div_node = node.children[0]
+  let a_node = div_node.children[0]
+  inspect(a_node.id, content="a.mw-jump-link")
+  inspect(a_node.style.display, content="Block")
+  inspect(a_node.style.clip, content="rect(1, 1, 1, 1)")
+  inspect(a_node.style.overflow_x, content="Hidden")
+  inspect(a_node.style.width, content="Length(1)")
+  inspect(a_node.style.height, content="Length(1)")
+}
+
+///|
+test "debug_text_wrapping_in_narrow_container" {
+  // Simple test: long text in a narrow container should wrap and have correct height
+  let html =
+    #|<div style="width: 100px">
+    #|This is a long text that should wrap within the container width
+    #|</div>
+  let ctx : RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+  }
+  let layout = render(html, ctx)
+  let container = layout.children[0]
+  // Container width should be 100px
+  inspect(container.width, content="100")
+  // Check text child
+  inspect(container.children.length() > 0, content="true")
+  if container.children.length() > 0 {
+    let text_layout = container.children[0]
+    // Text width should be constrained to container width
+    inspect(text_layout.width, content="100")
+    // Text height should be multiple lines (text is about 60 chars, container is ~12 chars wide)
+    // Expecting at least 5 lines * ~19.2 line height = ~96 height
+    inspect(text_layout.height > 50.0, content="true")
+  }
+}
+
+///|
+test "debug_mixed_inline_block_content" {
+  // Wikipedia-like structure: text mixed with block elements
+  let html =
+    #|<div style="width: 300px">
+    #|<p>This is paragraph one with some long text content.</p>
+    #|<p>This is paragraph two with more long text content that needs to wrap.</p>
+    #|</div>
+  let ctx : RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+  }
+  let layout = render(html, ctx)
+  let container = layout.children[0]
+  inspect(container.width, content="300")
+  // Should have 2 children (p elements)
+  inspect(container.children.length(), content="2")
+  if container.children.length() >= 2 {
+    let p1 = container.children[0]
+    let p2 = container.children[1]
+    // p2 should be below p1 (y > 0)
+    inspect(p2.y > p1.y, content="true")
+    // CRITICAL: p2 should start after p1 ends (no overlap)
+    // p2.y should be >= p1.y + p1.height (accounting for margins)
+    let p1_bottom = p1.y + p1.height
+    let overlap = p1_bottom > p2.y
+    inspect(overlap, content="false")
+  }
+}
+
+///|
+test "debug_heading_text_rendering" {
+  let html = "<h1>Signal Boosting</h1>"
+
+  // First check HTML parser output
+  let doc = @html.parse_document(html)
+  fn find_h1(elem : @html.Element) -> @html.Element? {
+    if elem.tag == "h1" {
+      return Some(elem)
+    }
+    for child in elem.children {
+      match child {
+        @html.Node::Element(child_elem) =>
+          match find_h1(child_elem) {
+            Some(h1) => return Some(h1)
+            None => ()
+          }
+        @html.Node::Text(_) => ()
+      }
+    }
+    None
+  }
+
+  match find_h1(doc.root) {
+    Some(h1) => {
+      inspect(h1.tag, content="h1")
+      inspect(h1.children.length(), content="1")
+      if h1.children.length() > 0 {
+        match h1.children[0] {
+          @html.Node::Text(text) => inspect(text, content="Signal Boosting")
+          @html.Node::Element(e) => inspect(e.tag, content="")
+        }
+      }
+    }
+    None => inspect("h1 not found", content="")
+  }
+
+  // Now check render output
+  let ctx : RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+  }
+  let node = render_to_node(html, ctx)
+  // Find h1 in children
+  let mut h1_found = false
+  for child in node.children {
+    if child.id == "h1" {
+      h1_found = true
+      // Check h1 has children
+      inspect(child.children.length(), content="1")
+    }
+  }
+  inspect(h1_found, content="true")
+}
+
+///|
+test "debug_h2_with_anchor" {
+  let html = "<h2><a href=\"#\">Link Text in H2</a></h2>"
+  let ctx : RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+  }
+  let node = render_to_node(html, ctx)
+  // h2 should be the first child of body
+  let h2 = node.children[0]
+  inspect(h2.id, content="h2")
+  // h2 should have a #text child (anchor text is collected as inline)
+  inspect(h2.children.length(), content="1")
+  if h2.children.length() > 0 {
+    let text = h2.children[0]
+    inspect(text.id, content="#text")
+  }
+}
+
+///|
+test "debug_inline_text_with_block_sibling" {
+  // Test case: raw text followed by block element (Anonymous Block Boxes)
+  let html =
+    #|<div style="width: 200px">
+    #|Welcome to the site
+    #|<p style="margin: 0">This is a paragraph</p>
+    #|More text after the paragraph
+    #|</div>
+  let ctx : RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+  }
+  let layout = render(html, ctx)
+  let container = layout.children[0]
+  inspect(container.width, content="200")
+  // Check that children don't overlap
+  for i = 0; i < container.children.length() - 1; i = i + 1 {
+    let child = container.children[i]
+    let next = container.children[i + 1]
+    let child_bottom = child.y + child.height
+    let overlap = child_bottom > next.y
+    // Each pair should not overlap
+    assert_true(
+      not(overlap),
+      msg="Children " +
+        i.to_string() +
+        " and " +
+        (i + 1).to_string() +
+        " overlap: " +
+        child_bottom.to_string() +
+        " > " +
+        next.y.to_string(),
+    )
+  }
+}

@@ -58,6 +58,17 @@ priv struct LayoutWithCollapse {
 }
 
 ///|
+/// Flow child group for anonymous block box processing
+/// When a block container has mixed inline/block children,
+/// contiguous inline children are grouped together for IFC processing
+priv enum FlowChildGroup {
+  /// Contiguous inline elements (processed through IFC as anonymous block)
+  InlineGroup(nodes~ : Array[@node.Node], indices~ : Array[Int])
+  /// Single block-level element
+  BlockChild(node~ : @node.Node, index~ : Int)
+}
+
+///|
 /// Check if element can collapse through (zero height, no border/padding)
 fn can_collapse_through(
   height : Double,
@@ -69,6 +80,183 @@ fn can_collapse_through(
   border.bottom == 0.0 &&
   padding.top == 0.0 &&
   padding.bottom == 0.0
+}
+
+///|
+/// Check if flow_nodes contains both inline and block level elements
+/// This determines whether we need anonymous block box processing
+fn has_mixed_inline_block_content(flow_nodes : Array[@node.Node]) -> Bool {
+  let mut has_inline = false
+  let mut has_block = false
+  for node in flow_nodes {
+    if node.style.display == @style.None {
+      continue
+    }
+    if @inline.is_inline_level(node.style.display) {
+      has_inline = true
+    } else {
+      has_block = true
+    }
+    if has_inline && has_block {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Group contiguous inline elements together for anonymous block box processing
+/// Block elements become individual BlockChild entries
+/// Contiguous inline elements are grouped into InlineGroup entries
+fn group_flow_children_for_anonymous_blocks(
+  flow_nodes : Array[@node.Node],
+  flow_indices : Array[Int],
+) -> Array[FlowChildGroup] {
+  let groups : Array[FlowChildGroup] = []
+  let mut current_inline_nodes : Array[@node.Node] = []
+  let mut current_inline_indices : Array[Int] = []
+  for i = 0; i < flow_nodes.length(); i = i + 1 {
+    let node = flow_nodes[i]
+    let index = flow_indices[i]
+    if @inline.is_inline_level(node.style.display) {
+      // Add to current inline group
+      current_inline_nodes.push(node)
+      current_inline_indices.push(index)
+    } else {
+      // Block element: flush current inline group first
+      if current_inline_nodes.length() > 0 {
+        groups.push(
+          InlineGroup(
+            nodes=current_inline_nodes,
+            indices=current_inline_indices,
+          ),
+        )
+        current_inline_nodes = []
+        current_inline_indices = []
+      }
+      // Add block child
+      groups.push(BlockChild(node~, index~))
+    }
+  }
+  // Flush remaining inline group
+  if current_inline_nodes.length() > 0 {
+    groups.push(
+      InlineGroup(nodes=current_inline_nodes, indices=current_inline_indices),
+    )
+  }
+  groups
+}
+
+///|
+/// Result of mixed content layout processing
+priv struct MixedContentResult {
+  content_height : Double
+  escaped_top : Double?
+  escaped_bottom : Double?
+}
+
+///|
+/// Compute layout for mixed inline/block content using anonymous block boxes
+/// Each InlineGroup is processed through IFC, each BlockChild through block layout
+fn compute_mixed_content_layout(
+  groups : Array[FlowChildGroup],
+  available_width : Double,
+  available_height : Double?,
+  padding : @types.Rect[Double],
+  border : @types.Rect[Double],
+  ctx : @node.LayoutContext,
+  warnings : Array[@node.LayoutWarning],
+  layout_map : Map[Int, @node.Layout],
+) -> MixedContentResult {
+  let mut current_y = 0.0
+  let mut prev_margin_bottom = 0.0
+  let mut escaped_top : Double? = None
+  let mut escaped_bottom : Double? = None
+  let content_offset_x = padding.left + border.left
+  let content_offset_y = padding.top + border.top
+  for i = 0; i < groups.length(); i = i + 1 {
+    let group = groups[i]
+    let is_first = i == 0
+    let _is_last = i == groups.length() - 1
+    match group {
+      InlineGroup(nodes~, indices~) => {
+        // Collapse previous block's bottom margin with anonymous block (no margin)
+        // Anonymous blocks have no margin, so we just add current_y
+        current_y = current_y + prev_margin_bottom
+        prev_margin_bottom = 0.0
+        // Process inline group through IFC (anonymous block box)
+        let ifc_result = @inline.compute_ifc(
+          nodes,
+          available_width,
+          available_height,
+          content_offset_x,
+          content_offset_y + current_y,
+        )
+        // Store layouts with original indices
+        for j = 0; j < indices.length(); j = j + 1 {
+          if j < ifc_result.layouts.length() {
+            layout_map[indices[j]] = ifc_result.layouts[j]
+          }
+        }
+        // Anonymous blocks don't have margins, so no collapse
+        current_y = current_y + ifc_result.total_height
+      }
+      BlockChild(node~, index~) => {
+        // Process block child with margin collapsing
+        let child_ctx : @node.LayoutContext = {
+          available_width,
+          available_height,
+          sizing_mode: @node.Definite,
+          viewport_width: ctx.viewport_width,
+          viewport_height: ctx.viewport_height,
+        }
+        let child_result = compute_with_collapse(node, child_ctx, warnings)
+        let child_layout = child_result.layout
+        // Calculate margin values
+        let margin_top = child_layout.margin.top
+        let margin_bottom = child_layout.margin.bottom
+        // Collapse margins
+        let collapsed = collapse_margins(prev_margin_bottom, margin_top)
+        // Handle first child - check if margin escapes
+        if is_first && escaped_top is None {
+          // Check if we can collapse through (parent has no padding/border top)
+          if padding.top == 0.0 && border.top == 0.0 {
+            escaped_top = Some(margin_top)
+          } else {
+            current_y = current_y + margin_top
+          }
+        } else {
+          current_y = current_y + collapsed
+        }
+        // Position and store layout
+        let positioned_layout : @node.Layout = {
+          id: child_layout.id,
+          x: content_offset_x + child_layout.margin.left,
+          y: content_offset_y + current_y,
+          width: child_layout.width,
+          height: child_layout.height,
+          margin: child_layout.margin,
+          padding: child_layout.padding,
+          border: child_layout.border,
+          overflow_x: child_layout.overflow_x,
+          overflow_y: child_layout.overflow_y,
+          children: child_layout.children,
+          text: child_layout.text,
+        }
+        layout_map[index] = positioned_layout
+        // Update state
+        current_y = current_y + child_layout.height
+        prev_margin_bottom = margin_bottom
+        escaped_bottom = Some(margin_bottom)
+      }
+    }
+  }
+  // Add final margin if not escaping
+  if padding.bottom > 0.0 || border.bottom > 0.0 {
+    current_y = current_y + prev_margin_bottom
+    escaped_bottom = None
+  }
+  { content_height: current_y, escaped_top, escaped_bottom }
 }
 
 ///|
@@ -584,6 +772,8 @@ fn compute_with_collapse(
   // Only use IFC when the layout dispatcher is set (needed for proper InlineBlock layout)
   let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
     @node.get_layout_dispatcher() is Some(_)
+  // Check for mixed inline/block content (needs anonymous block boxes)
+  let has_mixed = has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
     // Use IFC for inline layout
     let ifc_result = @inline.compute_ifc(
@@ -670,19 +860,93 @@ fn compute_with_collapse(
       text: node.text,
     }
     return { layout, collapsed: { top: None, bottom: None } }
+  } else if has_mixed && @node.get_layout_dispatcher() is Some(_) {
+    // Mixed inline/block content - use anonymous block boxes
+    let groups = group_flow_children_for_anonymous_blocks(
+      flow_nodes, flow_indices,
+    )
+    let mixed_result = compute_mixed_content_layout(
+      groups, actual_child_available_width, child_available_height, padding, border,
+      ctx, warnings, layout_map,
+    )
+    // Calculate box height from mixed content
+    let content_height = mixed_result.content_height
+    let mut box_height = match style.height {
+      @types.Length(h) => h
+      @types.Percent(p) => parent_height * p
+      @types.Auto =>
+        content_height + padding.vertical_sum() + border.vertical_sum()
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        content_height + padding.vertical_sum() + border.vertical_sum()
+    }
+    // Apply min/max height constraints
+    match style.min_height {
+      @types.Length(min_h) => if box_height < min_h { box_height = min_h }
+      _ => ()
+    }
+    match style.max_height {
+      @types.Length(max_h) => if box_height > max_h { box_height = max_h }
+      _ => ()
+    }
+    // Handle absolute children
+    for i = 0; i < node.children.length(); i = i + 1 {
+      let child = node.children[i]
+      if child.style.position == @style.Absolute {
+        let abs_layout = layout_absolute_child(
+          child, box_width, box_height, border, content_height, warnings,
+        )
+        layout_map[i] = abs_layout
+      }
+    }
+    // Handle fixed children (positioned relative to viewport)
+    for i = 0; i < node.children.length(); i = i + 1 {
+      let child = node.children[i]
+      if child.style.position == @style.Fixed {
+        let fixed_layout = layout_fixed_child(
+          child,
+          ctx.viewport_width,
+          ctx.viewport_height,
+          warnings,
+        )
+        layout_map[i] = fixed_layout
+      }
+    }
+    // Assemble child_layouts in original order
+    let child_layouts : Array[@node.Layout] = []
+    for i = 0; i < node.children.length(); i = i + 1 {
+      match layout_map.get(i) {
+        Some(layout) => child_layouts.push(layout)
+        None => ()
+      }
+    }
+    let layout : @node.Layout = {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width: box_width,
+      height: box_height,
+      margin,
+      padding,
+      border,
+      overflow_x: style.overflow_x,
+      overflow_y: style.overflow_y,
+      children: child_layouts,
+      text: node.text,
+    }
+    // Return with escaped margins from mixed content
+    return {
+      layout,
+      collapsed: {
+        top: mixed_result.escaped_top,
+        bottom: mixed_result.escaped_bottom,
+      },
+    }
   }
 
   // Now compute children's actual layout with the resolved width (BFC path)
   let flow_children : Array[LayoutWithCollapse] = []
   for i = 0; i < flow_nodes.length(); i = i + 1 {
     let child = flow_nodes[i]
-    let child_ctx : @node.LayoutContext = {
-      available_width: actual_child_available_width,
-      available_height: child_available_height,
-      sizing_mode: @node.Definite,
-      viewport_width: ctx.viewport_width,
-      viewport_height: ctx.viewport_height,
-    }
     // Flex, Grid, and InlineBlock containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
     let child_result = match child.style.display {
@@ -691,6 +955,21 @@ fn compute_with_collapse(
       | @style.Grid
       | @style.InlineGrid
       | @style.InlineBlock => {
+        // For BFC-establishing children with auto height, don't pass available_height
+        // This allows them to size to their content rather than stretching to fill
+        // the available space. Flex items are different - they get their final height
+        // from their flex parent, which passes it as available_height.
+        let child_height_for_ctx : Double? = match child.style.height {
+          @types.Auto => None
+          _ => child_available_height
+        }
+        let child_ctx : @node.LayoutContext = {
+          available_width: actual_child_available_width,
+          available_height: child_height_for_ctx,
+          sizing_mode: @node.Definite,
+          viewport_width: ctx.viewport_width,
+          viewport_height: ctx.viewport_height,
+        }
         // Use global dispatcher if available, otherwise use block layout
         // (tests without dispatcher setup will use block layout as fallback)
         let layout = match @node.get_layout_dispatcher() {
@@ -699,7 +978,16 @@ fn compute_with_collapse(
         }
         { layout, collapsed: { top: None, bottom: None } }
       }
-      _ => compute_with_collapse(child, child_ctx, warnings)
+      _ => {
+        let child_ctx : @node.LayoutContext = {
+          available_width: actual_child_available_width,
+          available_height: child_available_height,
+          sizing_mode: @node.Definite,
+          viewport_width: ctx.viewport_width,
+          viewport_height: ctx.viewport_height,
+        }
+        compute_with_collapse(child, child_ctx, warnings)
+      }
     }
     flow_children.push(child_result)
   }

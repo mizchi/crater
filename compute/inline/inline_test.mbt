@@ -177,3 +177,107 @@ test "should_establish_ifc_empty" {
   let children : Array[@node.Node] = []
   inspect(should_establish_ifc(children), content="false")
 }
+
+///|
+test "text_width_constrained_by_available_width" {
+  // Text node with MeasureFunc should be constrained by available_width
+  let default_style = @style.Style::default()
+  let inline_style = { ..default_style, display: @style.Inline }
+
+  // MeasureFunc that returns wide text (max_width=200) that wraps to 4 lines at width=50
+  let measure : @node.MeasureFunc = {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
+      let max_width = 200.0 // Single line width
+      let line_height = 16.0
+      // Calculate wrapped height based on available_width
+      let lines = if available_width >= max_width {
+        1.0
+      } else if available_width > 0.0 {
+        (max_width / available_width).ceil()
+      } else {
+        1.0
+      }
+      {
+        min_width: 40.0, // Longest word
+        max_width,
+        min_height: line_height,
+        max_height: lines * line_height,
+      }
+    },
+  }
+  let text_node = @node.Node::with_measure("text", inline_style, measure)
+  let result = compute_ifc([text_node], 100.0, Some(600.0), 0.0, 0.0)
+
+  // Width should be constrained to available_width (100), not max_width (200)
+  inspect(result.layouts[0].width, content="100")
+  // Height should be for 2 wrapped lines (200/100 = 2 lines * 16 = 32)
+  inspect(result.layouts[0].height, content="32")
+}
+
+///|
+test "text_width_unconstrained_when_smaller" {
+  // Text node narrower than available_width should use its max_width
+  let default_style = @style.Style::default()
+  let inline_style = { ..default_style, display: @style.Inline }
+
+  // MeasureFunc for short text (max_width=50)
+  let measure : @node.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
+      { min_width: 20.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
+    }, // Single line
+  }
+  let text_node = @node.Node::with_measure("text", inline_style, measure)
+  let result = compute_ifc([text_node], 400.0, Some(600.0), 0.0, 0.0)
+
+  // Width should be text's natural width (50), not available_width (400)
+  inspect(result.layouts[0].width, content="50")
+  // Height should be single line (16)
+  inspect(result.layouts[0].height, content="16")
+}
+
+///|
+test "text_min_content_width" {
+  // Text node with width: min-content should use min_width
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @style.Inline,
+    width: @types.MinContent,
+  }
+  let measure : @node.MeasureFunc = {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @node.IntrinsicSize {
+      let max_width = 200.0
+      let min_width = 40.0 // Longest word
+      let line_height = 16.0
+      let lines = if available_width >= max_width {
+        1.0
+      } else if available_width > 0.0 {
+        (max_width / available_width).ceil()
+      } else {
+        1.0
+      }
+      {
+        min_width,
+        max_width,
+        min_height: line_height,
+        max_height: lines * line_height,
+      }
+    },
+  }
+  let text_node = @node.Node::with_measure("text", inline_style, measure)
+  let result = compute_ifc([text_node], 400.0, Some(600.0), 0.0, 0.0)
+
+  // Width should be min_width (40)
+  inspect(result.layouts[0].width, content="40")
+  // Height should be for 5 wrapped lines (200/40 = 5 lines * 16 = 80)
+  inspect(result.layouts[0].height, content="80")
+}

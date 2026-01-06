@@ -68,17 +68,13 @@ fn resolve_url(base_url : String, href : String) -> String {
     Some(i) => i
     None => return href
   }
-  let after_protocol = try {
-    base_url[protocol_end + 3:].to_string()
-  } catch {
+  let after_protocol = base_url[protocol_end + 3:].to_string() catch {
     _ => return href
   }
   let path_start = after_protocol.find("/")
   let origin = match path_start {
     Some(i) =>
-      try {
-        base_url[:protocol_end + 3 + i].to_string()
-      } catch {
+      base_url[:protocol_end + 3 + i].to_string() catch {
         _ => base_url
       }
     None => base_url
@@ -91,9 +87,7 @@ fn resolve_url(base_url : String, href : String) -> String {
   let last_slash = base_url.rev_find("/")
   match last_slash {
     Some(i) if i > protocol_end + 2 =>
-      try {
-        base_url[:i + 1].to_string() + href
-      } catch {
+      try base_url[:i + 1].to_string() + href catch {
         _ => origin + "/" + href
       }
     _ => origin + "/" + href
@@ -123,9 +117,7 @@ async fn fetch_external_css(html : String, base_url : String) -> Array[String] {
       err => println("  -> Error: " + err.to_string())
     }
   }
-  println(
-    "Loaded " + css_contents.length().to_string() + " stylesheets",
-  )
+  println("Loaded " + css_contents.length().to_string() + " stylesheets")
   // Analyze CSS support
   analyze_css_support(css_contents)
   css_contents
@@ -203,7 +195,11 @@ fn analyze_css_support(css_list : Array[String]) -> Unit {
       println("  Unsupported (visual): " + unsupported_visual.to_string())
     }
     if unsupported_layout > 0 {
-      println("  Unsupported (layout): " + unsupported_layout.to_string() + " [WARNING]")
+      println(
+        "  Unsupported (layout): " +
+        unsupported_layout.to_string() +
+        " [WARNING]",
+      )
     }
     if unknown > 0 {
       println("  Unknown: " + unknown.to_string() + " [ERROR]")
@@ -217,13 +213,19 @@ fn analyze_css_support(css_list : Array[String]) -> Unit {
     }
     if layout_issues.length() > 0 {
       println("\n--- Layout-affecting issues ---")
-      let count = if layout_issues.length() > 10 { 10 } else { layout_issues.length() }
+      let count = if layout_issues.length() > 10 {
+        10
+      } else {
+        layout_issues.length()
+      }
       for i = 0; i < count; i = i + 1 {
         let diag = layout_issues[i]
         println("  " + diag.property + ": " + diag.value)
       }
       if layout_issues.length() > 10 {
-        println("  ... and " + (layout_issues.length() - 10).to_string() + " more")
+        println(
+          "  ... and " + (layout_issues.length() - 10).to_string() + " more",
+        )
       }
     }
     // Print first few unknown properties
@@ -236,13 +238,19 @@ fn analyze_css_support(css_list : Array[String]) -> Unit {
     }
     if unknown_props.length() > 0 {
       println("\n--- Unknown properties ---")
-      let count = if unknown_props.length() > 10 { 10 } else { unknown_props.length() }
+      let count = if unknown_props.length() > 10 {
+        10
+      } else {
+        unknown_props.length()
+      }
       for i = 0; i < count; i = i + 1 {
         let diag = unknown_props[i]
         println("  " + diag.property + ": " + diag.value)
       }
       if unknown_props.length() > 10 {
-        println("  ... and " + (unknown_props.length() - 10).to_string() + " more")
+        println(
+          "  ... and " + (unknown_props.length() - 10).to_string() + " more",
+        )
       }
     }
   }
@@ -259,9 +267,7 @@ pub async fn Browser::navigate(
   let response = @http.fetch(url)
   self.html_content = response.body
   // Fetch external CSS
-  self.external_css = try {
-    fetch_external_css(self.html_content, url)
-  } catch {
+  self.external_css = fetch_external_css(self.html_content, url) catch {
     _ => [] // Fallback to no external CSS on error
   }
   // Extract links from HTML
@@ -337,6 +343,29 @@ pub fn Browser::get_focused_link_url(self : Browser) -> String? {
   } else {
     None
   }
+}
+
+///|
+/// Debug: print layout tree
+pub fn Browser::debug_layout(self : Browser) -> Unit {
+  if self.html_content.length() == 0 {
+    println("No content loaded")
+    return
+  }
+  let ctx : @renderer.RenderContext = {
+    viewport_width: self.viewport_width.to_double(),
+    viewport_height: self.viewport_height.to_double(),
+    root_font_size: 16.0,
+  }
+  let layout = @renderer.render_with_external_css(
+    self.html_content,
+    ctx,
+    self.external_css,
+  )
+  println("=== Layout Tree ===")
+  @renderer.print_layout_tree_with_options(layout, 0, true)
+  println("===================")
+  println("Total content height: " + layout.height.to_string())
 }
 
 ///|

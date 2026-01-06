@@ -11,6 +11,8 @@ pub fn cascade(Array[Declaration]) -> CascadedValues
 
 pub fn cascade_element(@selector.Element, Array[Stylesheet], Array[Declaration]) -> CascadedValues
 
+pub fn cascade_element_with_media(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
+
 pub fn cascade_precedence(Origin, Importance) -> Int
 
 pub fn collect_declarations(Array[RuleMatch], Array[Declaration]) -> Array[Declaration]
@@ -86,6 +88,7 @@ pub struct Stylesheet {
 pub fn Stylesheet::add_rule(Self, String, @selector.ComplexSelector, Array[Declaration]) -> Unit
 pub fn Stylesheet::add_rule_with_media(Self, String, @selector.ComplexSelector, Array[Declaration], @media.MediaQueryList) -> Unit
 pub fn Stylesheet::match_element(Self, @selector.Element) -> Array[RuleMatch]
+pub fn Stylesheet::match_element_with_media(Self, @selector.Element, @media.MediaEnvironment?) -> Array[RuleMatch]
 pub fn Stylesheet::new(Origin) -> Self
 
 // Type aliases

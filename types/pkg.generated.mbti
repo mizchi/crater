@@ -35,6 +35,14 @@ pub fn BoundingRect::union(Self, Self) -> Self
 pub fn BoundingRect::zero() -> Self
 pub impl Show for BoundingRect
 
+pub(all) enum ClipRect {
+  Auto
+  Rect(top~ : Double, right~ : Double, bottom~ : Double, left~ : Double)
+}
+pub fn ClipRect::default() -> Self
+pub impl Eq for ClipRect
+pub impl Show for ClipRect
+
 pub(all) struct Color {
   r : Int
   g : Int
