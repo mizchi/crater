@@ -16,7 +16,9 @@
     "prepublishOnly": "npm run build",
     "test:webdriver": "tsx tools/webdriver-e2e-test.ts",
     "cdp:server": "tsx tools/cdp-server.ts",
-    "test:cdp": "tsx tools/cdp-e2e-test.ts"
+    "test:cdp": "tsx tools/cdp-e2e-test.ts",
+    "test:cdp:navigate": "tsx tools/cdp-e2e-test-navigate.ts",
+    "test": "vitest run tests/cdp.test.ts"
   },
   "keywords": [
     "browser",
@@ -39,6 +41,7 @@
     "puppeteer-core": "^24.8.0",
     "rolldown": "^1.0.0-beta.58",
     "tsx": "^4.19.0",
+    "vitest": "^4.0.16",
     "webdriver": "^9.23.0",
     "ws": "^8.18.0"
   }

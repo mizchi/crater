@@ -822,7 +822,189 @@ fn CdpProtocol::dispatch_runtime(
       let func_decl = get_param_string(request.params, "functionDeclaration").unwrap_or(
         "",
       )
-      let result = if func_decl.contains("document.title") &&
+      let result = if func_decl.contains("cssQuerySelector") &&
+        not(func_decl.contains("cssQuerySelectorAll")) {
+        // Handle puppeteer's querySelector: cssQuerySelector(element, selector)
+        // Extract selector from arguments
+        let selector = match request.params {
+          Some(Object(map)) =>
+            match map.get("arguments") {
+              Some(Array(args)) if args.length() >= 2 =>
+                // Second argument is the selector (first is the element)
+                match args[1] {
+                  Object(arg_map) =>
+                    match arg_map.get("value") {
+                      Some(String(s)) => s
+                      _ => ""
+                    }
+                  _ => ""
+                }
+              _ => ""
+            }
+          _ => ""
+        }
+        if selector.length() > 0 {
+          match self.target.get_active_context() {
+            Some(ctx) => {
+              let session = ctx.get_session()
+              match session.query_selector(selector) {
+                Ok(Some(node_id)) =>
+                  // Return node reference
+                  make_object({
+                    "result": make_object({
+                      "type": Json::string("object"),
+                      "subtype": Json::string("node"),
+                      "className": Json::string("HTMLElement"),
+                      "description": Json::string(selector),
+                      "objectId": Json::string(
+                        "{\"injectedScriptId\":1,\"id\":" +
+                        node_id.to_string() +
+                        "}",
+                      ),
+                    }),
+                  })
+                Ok(None) | Err(_) =>
+                  // Element not found - return null
+                  make_object({
+                    "result": make_object({
+                      "type": Json::string("object"),
+                      "subtype": Json::string("null"),
+                      "value": Json::null(),
+                    }),
+                  })
+              }
+            }
+            None =>
+              make_object({
+                "result": make_object({
+                  "type": Json::string("object"),
+                  "subtype": Json::string("null"),
+                  "value": Json::null(),
+                }),
+              })
+          }
+        } else {
+          make_object({
+            "result": make_object({
+              "type": Json::string("object"),
+              "subtype": Json::string("null"),
+              "value": Json::null(),
+            }),
+          })
+        }
+      } else if func_decl.contains("textContent") ||
+        func_decl.contains("innerText") {
+        // Handle getting element text content
+        // Check for document.querySelector pattern: document.querySelector('h1')?.textContent
+        let selector_from_func = extract_selector_from_function(func_decl)
+        if selector_from_func.length() > 0 {
+          // Direct querySelector in function - use extracted selector
+          match self.target.get_active_context() {
+            Some(ctx) => {
+              let session = ctx.get_session()
+              match session.query_selector(selector_from_func) {
+                Ok(Some(node_id)) =>
+                  match session.get_dom().get_outer_html(node_id) {
+                    Ok(html) => {
+                      let text = extract_text_from_html(html)
+                      make_object({
+                        "result": make_object({
+                          "type": Json::string("string"),
+                          "value": Json::string(text),
+                        }),
+                      })
+                    }
+                    Err(_) =>
+                      make_object({
+                        "result": make_object({
+                          "type": Json::string("string"),
+                          "value": Json::string(""),
+                        }),
+                      })
+                  }
+                Ok(None) | Err(_) =>
+                  make_object({
+                    "result": make_object({
+                      "type": Json::string("object"),
+                      "subtype": Json::string("null"),
+                      "value": Json::null(),
+                    }),
+                  })
+              }
+            }
+            None =>
+              make_object({
+                "result": make_object({
+                  "type": Json::string("string"),
+                  "value": Json::string(""),
+                }),
+              })
+          }
+        } else {
+          // Element passed as argument - extract objectId
+          let object_id = match request.params {
+            Some(Object(map)) =>
+              match map.get("arguments") {
+                Some(Array(args)) if args.length() > 0 =>
+                  match args[0] {
+                    Object(arg_map) =>
+                      match arg_map.get("objectId") {
+                        Some(String(s)) => s
+                        _ => ""
+                      }
+                    _ => ""
+                  }
+                _ => ""
+              }
+            _ => ""
+          }
+          let object_id = if object_id.length() > 0 {
+            object_id
+          } else {
+            get_param_string(request.params, "objectId").unwrap_or("")
+          }
+          let node_id = parse_node_id_from_object_id(object_id)
+          if node_id > 0 {
+            match self.target.get_active_context() {
+              Some(ctx) => {
+                let session = ctx.get_session()
+                match session.get_dom().get_outer_html(node_id) {
+                  Ok(html) => {
+                    let text = extract_text_from_html(html)
+                    make_object({
+                      "result": make_object({
+                        "type": Json::string("string"),
+                        "value": Json::string(text),
+                      }),
+                    })
+                  }
+                  Err(_) =>
+                    make_object({
+                      "result": make_object({
+                        "type": Json::string("string"),
+                        "value": Json::string(""),
+                      }),
+                    })
+                }
+              }
+              None =>
+                make_object({
+                  "result": make_object({
+                    "type": Json::string("string"),
+                    "value": Json::string(""),
+                  }),
+                })
+            }
+          } else {
+            make_object({
+              "result": make_object({
+                "type": Json::string("string"),
+                "value": Json::string(""),
+              }),
+            })
+          }
+        }
+      } else if func_decl.contains("document.title") &&
         not(func_decl.contains("document.write")) {
         // Return page title for title queries
         let title = match self.target.get_active_context() {
@@ -1327,4 +1509,98 @@ fn cdp_node_to_json(node : CdpNode) -> Json {
     None => ()
   }
   make_object(obj)
+}
+
+///|
+/// Parse node ID from objectId string (format: {"injectedScriptId":1,"id":NODE_ID})
+fn parse_node_id_from_object_id(object_id : String) -> Int {
+  match object_id.find("\"id\":") {
+    Some(idx) => {
+      let after_id = object_id[idx + 5:].to_string() catch { _ => return 0 }
+      // Find the end of the number
+      let chars = after_id.to_array()
+      let buf = StringBuilder::new()
+      for i = 0; i < chars.length(); i = i + 1 {
+        let c = chars[i]
+        if c >= '0' && c <= '9' {
+          buf.write_char(c)
+        } else {
+          break
+        }
+      }
+      let num_str = buf.to_string()
+      if num_str.length() > 0 {
+        parse_int_simple(num_str)
+      } else {
+        0
+      }
+    }
+    None => 0
+  }
+}
+
+///|
+/// Simple integer parsing
+fn parse_int_simple(s : String) -> Int {
+  let chars = s.to_array()
+  let result = { val: 0 }
+  for i = 0; i < chars.length(); i = i + 1 {
+    let c = chars[i]
+    if c >= '0' && c <= '9' {
+      result.val = result.val * 10 + (c.to_int() - '0'.to_int())
+    }
+  }
+  result.val
+}
+
+///|
+/// Extract text content from HTML (strips tags)
+fn extract_text_from_html(html : String) -> String {
+  let buf = StringBuilder::new()
+  let chars = html.to_array()
+  let in_tag = { val: false }
+  for i = 0; i < chars.length(); i = i + 1 {
+    let c = chars[i]
+    if c == '<' {
+      in_tag.val = true
+    } else if c == '>' {
+      in_tag.val = false
+    } else if not(in_tag.val) {
+      buf.write_char(c)
+    }
+  }
+  buf.to_string().trim().to_string()
+}
+
+///|
+/// Extract CSS selector from document.querySelector patterns in function code
+/// e.g., document.querySelector('h1')?.textContent -> "h1"
+/// e.g., document.querySelector("div.class") -> "div.class"
+fn extract_selector_from_function(func_decl : String) -> String {
+  // Look for document.querySelector(' or document.querySelector("
+  let single_quote_pattern = "document.querySelector('"
+  let double_quote_pattern = "document.querySelector(\""
+  match func_decl.find(single_quote_pattern) {
+    Some(idx) => {
+      let start = idx + single_quote_pattern.length()
+      let rest = func_decl[start:].to_string() catch { _ => return "" }
+      // Find closing quote
+      match rest.find("'") {
+        Some(end) => rest[:end].to_string() catch { _ => "" }
+        None => ""
+      }
+    }
+    None =>
+      match func_decl.find(double_quote_pattern) {
+        Some(idx) => {
+          let start = idx + double_quote_pattern.length()
+          let rest = func_decl[start:].to_string() catch { _ => return "" }
+          match rest.find("\"") {
+            Some(end) => rest[:end].to_string() catch { _ => "" }
+            None => ""
+          }
+        }
+        None => ""
+      }
+  }
 }

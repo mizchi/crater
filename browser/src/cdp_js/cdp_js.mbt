@@ -65,6 +65,15 @@ pub fn loadHtmlContent(html : String) -> String {
     Some(ctx) => {
       let session = ctx.get_session()
       session.load_html(html)
+      // Extract and set title from HTML
+      match (html.find("<title>"), html.find("</title>")) {
+        (Some(start), Some(end_)) if end_ > start => {
+          let title = html[start + 7:end_].to_string() catch { _ => "" }
+          ctx.set_title(title)
+          session.set_title(title)
+        }
+        _ => ()
+      }
       "{\"result\":{}}"
     }
     None => "{\"error\":{\"code\":-32000,\"message\":\"No active context\"}}"
