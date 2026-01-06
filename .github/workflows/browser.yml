@@ -1,0 +1,62 @@
+name: Browser
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'browser/**'
+      - '.github/workflows/browser.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'browser/**'
+      - '.github/workflows/browser.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Show MoonBit version
+        run: moon version --all
+
+      - name: Update dependencies (root)
+        run: moon update
+
+      - name: Update dependencies (browser)
+        working-directory: browser
+        run: moon update
+
+      - name: Check code
+        working-directory: browser
+        run: moon check --target js
+
+      - name: Run tests
+        working-directory: browser
+        run: moon test --target js
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install npm dependencies
+        working-directory: browser
+        run: npm install
+
+      - name: Build JS bundle
+        working-directory: browser
+        run: npm run build
