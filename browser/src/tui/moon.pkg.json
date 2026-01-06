@@ -1,5 +1,8 @@
 {
   "import": [
+    "mizchi/crater/types",
+    "mizchi/crater/node",
+    "mizchi/crater/paint",
     { "path": "moonbitlang/async/js_async", "targets": ["js"] }
   ],
   "targets": {

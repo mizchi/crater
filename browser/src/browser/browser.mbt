@@ -301,6 +301,43 @@ pub fn Browser::render(self : Browser) -> String {
 }
 
 ///|
+/// Render current content to ANSI text (TUI mode)
+pub fn Browser::render_text(self : Browser) -> String {
+  if self.html_content.length() == 0 {
+    return ""
+  }
+  let ctx : @renderer.RenderContext = {
+    viewport_width: self.viewport_width.to_double(),
+    viewport_height: self.viewport_height.to_double(),
+    root_font_size: 16.0,
+  }
+  let node = @renderer.render_to_node_with_external_css(
+    self.html_content,
+    ctx,
+    self.external_css,
+  )
+  let layout = @renderer.render_with_external_css(
+    self.html_content,
+    ctx,
+    self.external_css,
+  )
+  // Convert pixel dimensions to character dimensions
+  let char_width = self.viewport_width / 8
+  let char_height = self.viewport_height / 16
+  let char_scroll_y = self.scroll_y / 16
+  @tui.render_to_ansi_with_status(
+    node,
+    layout,
+    char_width,
+    char_height,
+    char_scroll_y,
+    self.current_url,
+    self.links.length(),
+    self.focused_link,
+  )
+}
+
+///|
 /// Get maximum scroll position
 fn Browser::max_scroll(self : Browser) -> Int {
   (self.content_height - self.viewport_height).max(0)

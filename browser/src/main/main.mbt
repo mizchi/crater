@@ -13,6 +13,7 @@ let viewport_height : Int = 450
 struct Options {
   url : String
   sixel : Bool
+  text : Bool // New: TUI text mode
   debug : Bool
 }
 
@@ -31,12 +32,17 @@ fn render_page(browser : @browser.Browser, options : Options) -> Unit {
         browser.focused_link,
       ),
     )
+  } else if options.text {
+    // TUI text mode: character-based rendering
+    let text_output = browser.render_text()
+    @tui.print_raw(@tui.clear_screen())
+    @tui.print_raw(text_output)
   } else if options.debug {
     // Debug mode: print layout tree
     browser.debug_layout()
   } else {
     println(
-      "Page loaded. Use --sixel to render visually or --debug to print layout tree.",
+      "Page loaded. Use --sixel, --text, or --debug to render.",
     )
   }
 }
@@ -50,10 +56,13 @@ fn parse_args() -> Options? {
   }
   let mut url = ""
   let mut sixel = false
+  let mut text = false
   let mut debug = false
   for arg in args {
     if arg == "--sixel" {
       sixel = true
+    } else if arg == "--text" {
+      text = true
     } else if arg == "--debug" {
       debug = true
     } else if not(arg.has_prefix("--")) {
@@ -63,7 +72,7 @@ fn parse_args() -> Options? {
   if url.length() == 0 {
     None
   } else {
-    Some({ url, sixel, debug })
+    Some({ url, sixel, text, debug })
   }
 }
 
@@ -74,21 +83,22 @@ async fn main {
     Some(opts) => opts
     None => {
       println(
-        "Usage: moon run src/main --target js -- <URL> [--sixel] [--debug]",
+        "Usage: moon run src/main --target js -- <URL> [--sixel|--text] [--debug]",
       )
       println(
-        "Example: moon run src/main --target js -- https://example.com --sixel",
+        "Example: moon run src/main --target js -- https://example.com --text",
       )
       println("")
       println("Options:")
-      println("  --sixel  Render page as Sixel graphics")
+      println("  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)")
+      println("  --text   Render page as ANSI text (works in any terminal)")
       println("  --debug  Print layout tree for debugging")
       return
     }
   }
   let browser = @browser.Browser::new(viewport_width, viewport_height)
   // Print welcome message
-  if options.sixel {
+  if options.sixel || options.text {
     @tui.print_raw(@tui.clear_screen())
     @tui.print_raw(@tui.hide_cursor())
   }
@@ -105,8 +115,8 @@ async fn main {
       return
     }
   }
-  // Only enter interactive mode for sixel
-  if not(options.sixel) {
+  // Only enter interactive mode for sixel or text mode
+  if not(options.sixel) && not(options.text) {
     return
   }
   // Main event loop
