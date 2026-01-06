@@ -662,6 +662,9 @@ pub fn render_with_external_css(
     stylesheets.push(stylesheet)
   }
 
+  // Collect CSS custom properties from :root rules
+  let css_vars = collect_root_css_variables(stylesheets)
+
   // Find body element, or use root if not found
   let render_root = match find_body(doc.root) {
     Some(body) => body
@@ -669,7 +672,13 @@ pub fn render_with_external_css(
   }
 
   // Convert to node tree with stylesheet styles applied
-  let root = element_to_node_with_styles(render_root, None, ctx, stylesheets)
+  let root = element_to_node_with_styles(
+    render_root,
+    None,
+    ctx,
+    stylesheets,
+    css_vars,
+  )
 
   // Create layout context - subtract root margin from available space
   let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
@@ -730,6 +739,54 @@ pub fn render_with_external_css(
 }
 
 ///|
+/// Check if a compound selector is the :root pseudo-class
+fn is_root_selector(selector : @selector.CompoundSelector) -> Bool {
+  for sub in selector.subclasses {
+    match sub {
+      @selector.SimpleSelector::PseudoClass(@selector.PseudoClass::Root) =>
+        return true
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+/// Check if a complex selector matches :root (simple :root without combinators)
+fn is_root_only_selector(selector : @selector.ComplexSelector) -> Bool {
+  // :root should be a simple selector without combinators
+  if selector.tail.length() > 0 {
+    return false
+  }
+  is_root_selector(selector.head)
+}
+
+///|
+/// Collect CSS custom properties from :root rules in stylesheets
+fn collect_root_css_variables(
+  stylesheets : Array[@cascade.Stylesheet],
+) -> Map[String, String] {
+  let vars : Map[String, String] = {}
+  for stylesheet in stylesheets {
+    for rule in stylesheet.rules {
+      // Check if this rule targets :root
+      if is_root_only_selector(rule.selector) {
+        // Collect custom properties (--*) from declarations
+        for decl in rule.declarations {
+          if decl.property.has_prefix("--") {
+            match decl.value {
+              @cascade.PropertyValue::Value(v) => vars[decl.property] = v
+              _ => ()
+            }
+          }
+        }
+      }
+    }
+  }
+  vars
+}
+
+///|
 /// Render HTML to Node tree (for testing/debugging)
 pub fn render_to_node(html : String, ctx : RenderContext) -> @node.Node {
   render_to_node_with_external_css(html, ctx, [])
@@ -754,11 +811,13 @@ pub fn render_to_node_with_external_css(
     let stylesheet = @parser.parse_stylesheet(css)
     stylesheets.push(stylesheet)
   }
+  // Collect CSS custom properties from :root rules
+  let css_vars = collect_root_css_variables(stylesheets)
   let render_root = match find_body(doc.root) {
     Some(body) => body
     None => doc.root
   }
-  element_to_node_with_styles(render_root, None, ctx, stylesheets)
+  element_to_node_with_styles(render_root, None, ctx, stylesheets, css_vars)
 }
 
 ///|
@@ -801,6 +860,7 @@ fn element_to_node_with_styles(
   parent : @selector.Element?,
   ctx : RenderContext,
   stylesheets : Array[@cascade.Stylesheet],
+  css_vars : Map[String, String],
 ) -> @node.Node {
   // Convert HTML element to selector element for matching
   let selector_elem = html_to_selector_element(elem, parent)
@@ -813,6 +873,7 @@ fn element_to_node_with_styles(
     parent is None,
     ctx,
     None, // Root element has no parent style
+    css_vars,
   )
 
   // Convert children - first collect inline content (text + br)
@@ -846,6 +907,7 @@ fn element_to_node_with_styles(
           ctx,
           stylesheets,
           Some(style),
+          css_vars,
         )
         children.push(child_node)
       }
@@ -872,6 +934,7 @@ fn element_to_node_with_styles_internal(
   ctx : RenderContext,
   stylesheets : Array[@cascade.Stylesheet],
   parent_style : @style.Style?,
+  css_vars : Map[String, String],
 ) -> @node.Node {
   // Get style from stylesheet matching + inline style
   let style = compute_element_style(
@@ -881,6 +944,7 @@ fn element_to_node_with_styles_internal(
     false,
     ctx,
     parent_style,
+    css_vars,
   )
 
   // Convert children - first collect inline content (text + br)
@@ -913,6 +977,7 @@ fn element_to_node_with_styles_internal(
           ctx,
           stylesheets,
           Some(style),
+          css_vars,
         )
         children.push(child_node)
       }
@@ -1227,6 +1292,7 @@ fn compute_element_style(
   is_root : Bool,
   ctx : RenderContext,
   parent_style : @style.Style?,
+  css_vars : Map[String, String],
 ) -> @style.Style {
   // Create media environment for media query evaluation
   let media_env = @media.MediaEnvironment::new(
@@ -1244,8 +1310,8 @@ fn compute_element_style(
   // Start with user-agent default style based on tag
   let mut style = get_ua_default_style(selector_elem.tag_name)
 
-  // Inherit font properties from parent
-  // CSS line-height inheritance: inherit the ratio, not the absolute value
+  // Inherit properties from parent
+  // CSS inherited properties: color, font-size, line-height, visibility, etc.
   match parent_style {
     Some(ps) => {
       // Calculate line-height ratio from parent
@@ -1254,9 +1320,10 @@ fn compute_element_style(
       } else {
         1.2 // Default ratio
       }
-      // Apply inherited font-size and computed line-height
+      // Apply inherited properties (color and font properties)
       style = {
         ..style,
+        color: ps.color, // CSS color is inherited
         font_size: ps.font_size,
         line_height: ps.font_size * lh_ratio,
       }
@@ -1264,7 +1331,7 @@ fn compute_element_style(
     None => ()
   }
 
-  // Apply cascaded values with correct viewport
+  // Apply cascaded values with correct viewport and CSS variables
   for prop in cascaded.properties() {
     match cascaded.get_value(prop) {
       Some(value) =>
@@ -1274,6 +1341,7 @@ fn compute_element_style(
           value,
           ctx.viewport_width,
           ctx.viewport_height,
+          css_vars,
         )
       None => ()
     }
@@ -1282,7 +1350,7 @@ fn compute_element_style(
   // Apply inline styles (override stylesheet styles)
   // Parse inline CSS properties and apply them one by one
   match inline_css {
-    Some(css) => style = apply_inline_css(style, css)
+    Some(css) => style = apply_inline_css_with_vars(style, css, css_vars)
     None => ()
   }
 
@@ -1323,21 +1391,28 @@ fn apply_css_property(
 }
 
 ///|
-/// Apply a CSS property value to a style with custom viewport
+/// Apply a CSS property value to a style with custom viewport and CSS variables
 fn apply_css_property_with_viewport(
   style : @style.Style,
   property : String,
   value : String,
   viewport_width : Double,
   viewport_height : Double,
+  css_vars : Map[String, String],
 ) -> @style.Style {
   // Use the inline parser's logic to parse and apply the value
   // Use compute_inline_raw to avoid premature box-sizing adjustment
   // The caller will handle box-sizing adjustment after all properties are applied
   let css = property + ": " + value
-  let ctx = @computed.ComputeContext::with_viewport(
-    viewport_width, viewport_height,
-  )
+  // Create context with CSS custom properties for var() resolution
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width,
+    viewport_height,
+    custom_properties: css_vars,
+  }
   let parsed = @computed.compute_inline_raw(css, ctx)
 
   // Merge the parsed property into the style
@@ -1355,8 +1430,12 @@ pub fn apply_css_property_debug(
 }
 
 ///|
-/// Parse inline CSS and apply properties to style
-fn apply_inline_css(target : @style.Style, inline_css : String) -> @style.Style {
+/// Parse inline CSS and apply properties to style with CSS variables
+fn apply_inline_css_with_vars(
+  target : @style.Style,
+  inline_css : String,
+  css_vars : Map[String, String],
+) -> @style.Style {
   // Parse the inline CSS to get property/value pairs
   // Format: "property1: value1; property2: value2"
   let mut result = target
@@ -1379,7 +1458,10 @@ fn apply_inline_css(target : @style.Style, inline_css : String) -> @style.Style 
         let prop = decl_str[0:colon_idx].trim().to_string()
         let value = decl_str[colon_idx + 1:].trim().to_string()
         if prop.length() > 0 && value.length() > 0 {
-          result = apply_css_property(result, prop, value)
+          // Use viewport-aware property application with CSS variables
+          result = apply_css_property_with_viewport(
+            result, prop, value, 1920.0, 1080.0, css_vars,
+          )
         }
       } catch {
         _ => ()
