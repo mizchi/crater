@@ -34,8 +34,27 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install wasm-tools
+        run: |
+          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.219.1/wasm-tools-1.219.1-x86_64-linux.tar.gz
+          tar xzf wasm-tools-1.219.1-x86_64-linux.tar.gz
+          sudo mv wasm-tools-1.219.1-x86_64-linux/wasm-tools /usr/local/bin/
+
       - name: Update MoonBit dependencies
         run: |
-            moon version --all
-            moon update
-            
+          moon version --all
+          moon update
+          moon update --directory browser
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build WASM component
+        run: |
+          npm run build:wasm-component
+          npm run jco:transpile
