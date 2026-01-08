@@ -356,6 +356,7 @@ fn build_node(
       bounds: Option::None,
       children,
       focusable: false,
+      tabindex: Option::None,
       source_id: element.id,
     }
   }
@@ -403,8 +404,9 @@ fn build_node(
   // Compute states
   let states = compute_states(element)
 
-  // Check if focusable
+  // Check if focusable and get tabindex
   let focusable = is_focusable(element, role)
+  let tabindex = get_tabindex(element)
 
   // Build children (update sectioning context if needed)
   let new_ctx = if is_sectioning_content(element.tag) {
@@ -424,6 +426,7 @@ fn build_node(
     bounds: Option::None,
     children,
     focusable,
+    tabindex,
     source_id: element.id,
   }
 }
@@ -476,6 +479,7 @@ fn build_children(
             bounds: Option::None,
             children: [],
             focusable: false,
+            tabindex: Option::None,
             source_id: Option::None,
           }
           children.push(text_node)
@@ -623,6 +627,15 @@ fn compute_states(element : @html.Element) -> Array[State] {
 ///|
 /// Check if element is focusable
 fn is_focusable(element : @html.Element, role : Role) -> Bool {
+  let tag = element.tag.to_lower()
+
+  // Elements that are never directly tab-focusable
+  // (they may be focusable within their parent context, but not via Tab)
+  match tag {
+    "option" | "optgroup" => return false
+    _ => ()
+  }
+
   // Check tabindex
   match element.attributes.get("tabindex") {
     Some(tabindex) => {
@@ -637,7 +650,6 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
   }
 
   // Inherently focusable elements
-  let tag = element.tag.to_lower()
   match tag {
     "a" => if element.attributes.contains("href") { return true }
     "button" => return not(element.attributes.contains("disabled"))
@@ -653,6 +665,19 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
   // Check if role is inherently focusable
   role_is_inherently_focusable(role) &&
   not(element.attributes.contains("disabled"))
+}
+
+///|
+/// Get tabindex value from element
+/// Returns None if no tabindex attribute, Some(n) otherwise
+fn get_tabindex(element : @html.Element) -> Int? {
+  match element.attributes.get("tabindex") {
+    Some(tabindex_str) => {
+      let idx = @strconv.parse_int(tabindex_str) catch { _ => return None }
+      Some(idx)
+    }
+    Option::None => None
+  }
 }
 
 // =============================================================================

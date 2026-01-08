@@ -27,6 +27,8 @@ pub fn compute_accessible_name_with_label(@html.Element, (String) -> @html.Eleme
 
 pub fn compute_role(@html.Element, RoleMappingContext) -> Role
 
+pub fn compute_tab_order(AccessibilityTree) -> Array[FocusableItem]
+
 pub fn extract_bounds_from_layout(@tree.LayoutTree) -> Map[String, Bounds]
 
 pub fn find_headings(AccessibilityTree) -> Array[AccessibilityNode]
@@ -36,6 +38,10 @@ pub fn find_interactive(AccessibilityTree) -> Array[AccessibilityNode]
 pub fn find_landmarks(AccessibilityTree) -> Array[AccessibilityNode]
 
 pub fn get_heading_level(@html.Element) -> Int?
+
+pub fn get_tab_order_ids(AccessibilityTree) -> Array[String]
+
+pub fn get_tab_order_info(AccessibilityTree) -> Array[(String, String?, Role)]
 
 pub fn is_sectioning_content(String) -> Bool
 
@@ -59,6 +65,7 @@ pub(all) struct AccessibilityNode {
   bounds : Bounds?
   children : Array[AccessibilityNode]
   focusable : Bool
+  tabindex : Int?
   source_id : String?
 }
 pub fn AccessibilityNode::add_child(Self, Self) -> Self
@@ -70,6 +77,7 @@ pub fn AccessibilityNode::to_aria_snapshot(Self) -> String
 pub fn AccessibilityNode::with_bounds(Self, Bounds) -> Self
 pub fn AccessibilityNode::with_level(Self, Int) -> Self
 pub fn AccessibilityNode::with_name(Self, String) -> Self
+pub fn AccessibilityNode::with_tabindex(Self, Int) -> Self
 
 pub(all) struct AccessibilityTree {
   root : AccessibilityNode
@@ -91,6 +99,31 @@ pub(all) struct Bounds {
 }
 pub fn Bounds::default() -> Self
 pub fn Bounds::new(Double, Double, Double, Double) -> Self
+
+pub(all) struct FocusManager {
+  tree : AccessibilityTree
+  tab_order : Array[FocusableItem]
+  mut current_index : Int
+}
+pub fn FocusManager::blur(Self) -> Unit
+pub fn FocusManager::current(Self) -> AccessibilityNode?
+pub fn FocusManager::current_id(Self) -> String?
+pub fn FocusManager::focus_by_id(Self, String) -> Bool
+pub fn FocusManager::focus_by_source_id(Self, String) -> Bool
+pub fn FocusManager::focus_first(Self) -> AccessibilityNode?
+pub fn FocusManager::focus_last(Self) -> AccessibilityNode?
+pub fn FocusManager::focus_next(Self) -> AccessibilityNode?
+pub fn FocusManager::focus_prev(Self) -> AccessibilityNode?
+pub fn FocusManager::focusable_count(Self) -> Int
+pub fn FocusManager::get_tab_order(Self) -> Array[FocusableItem]
+pub fn FocusManager::has_focus(Self) -> Bool
+pub fn FocusManager::new(AccessibilityTree) -> Self
+
+pub(all) struct FocusableItem {
+  node : AccessibilityNode
+  document_order : Int
+  effective_tabindex : Int
+}
 
 pub(all) enum Role {
   Article

@@ -395,6 +395,13 @@ pub(all) struct AccessibilityNode {
   // Focusable / interactive
   focusable : Bool
 
+  // Tabindex value for tab navigation order
+  // None = no explicit tabindex (inherent focusability only)
+  // Some(-1) = programmatically focusable but not via Tab
+  // Some(0) = focusable in document order
+  // Some(n) where n > 0 = focusable in priority order
+  tabindex : Int?
+
   // Reference to source element id (for debugging/tooling)
   source_id : String?
 }
@@ -412,6 +419,7 @@ pub fn AccessibilityNode::new(id : String, role : Role) -> AccessibilityNode {
     bounds: Option::None,
     children: [],
     focusable: false,
+    tabindex: Option::None,
     source_id: Option::None,
   }
 }
@@ -466,6 +474,14 @@ pub fn AccessibilityNode::set_focusable(
   focusable : Bool,
 ) -> AccessibilityNode {
   { ..self, focusable, }
+}
+
+///|
+pub fn AccessibilityNode::with_tabindex(
+  self : AccessibilityNode,
+  tabindex : Int,
+) -> AccessibilityNode {
+  { ..self, tabindex: Some(tabindex) }
 }
 
 // =============================================================================
