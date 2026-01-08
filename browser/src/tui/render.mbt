@@ -73,6 +73,7 @@ pub struct TuiContext {
   scroll_y : Int // Scroll offset in character rows
   viewport_height : Int // Visible height in character rows
   link_regions : Array[LinkRegion] // Collected link regions
+  focused_element_name : String? // Name of currently focused element (for :focus styling)
 }
 
 ///|
@@ -207,17 +208,35 @@ fn render_paint_node(
         if row >= 0 && row < ctx.viewport_height {
           // Check if this is a link or inside a link - force underline and blue color
           let is_link = node.tag == "a" || inside_link
-          let (fg_color, use_underline) = if is_link {
+          // Check if this element is currently focused
+          let is_focused = match ctx.focused_element_name {
+            Some(focused_name) => is_link && text_content == focused_name
+            None => false
+          }
+          let (fg_color, bg_color, use_underline, use_bold) = if is_focused {
+            // Focus styling: reverse video effect (white text on blue background)
+            (
+              @types.Color::rgb(255, 255, 255),
+              @types.Color::rgb(0, 100, 200),
+              false,
+              true,
+            )
+          } else if is_link {
             // Force blue color and underline for links in TUI mode
             // This overrides site CSS to ensure links are always visible
-            (@types.Color::rgb(0, 0, 238), true)
+            (
+              @types.Color::rgb(0, 0, 238),
+              node.paint.background_color,
+              true,
+              false,
+            )
           } else {
-            (node.paint.color, false)
+            (node.paint.color, node.paint.background_color, false, false)
           }
           let style : TextStyle = {
             fg: fg_color,
-            bg: node.paint.background_color,
-            bold: false,
+            bg: bg_color,
+            bold: use_bold,
             underline: use_underline,
           }
           let _ = ctx.buffer.write_text_wrapped(
@@ -265,6 +284,7 @@ pub fn render_to_ansi(
   width : Int,
   height : Int,
   scroll_y : Int,
+  focused_element_name? : String? = None,
 ) -> RenderResult {
   // Create character buffer
   let buf = CharBuffer::new(width, height)
@@ -289,6 +309,7 @@ pub fn render_to_ansi(
     scroll_y,
     viewport_height: height,
     link_regions,
+    focused_element_name,
   }
   // Render (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
@@ -307,6 +328,8 @@ pub fn render_to_ansi_with_status(
   url : String,
   link_count : Int,
   focused_link : Int,
+  focused_element_name? : String? = None,
+  focused_link_url? : String? = None,
 ) -> RenderResult {
   // Reserve last row for status bar
   let content_height = height - 1
@@ -333,11 +356,19 @@ pub fn render_to_ansi_with_status(
     scroll_y,
     viewport_height: content_height,
     link_regions,
+    focused_element_name,
   }
   // Render content (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  // Draw status bar
-  draw_status_bar(buf, content_height, url, link_count, focused_link)
+  // Draw status bar (show focused link URL if available)
+  draw_status_bar(
+    buf,
+    content_height,
+    url,
+    link_count,
+    focused_link,
+    focused_link_url~,
+  )
   // Return ANSI and link regions
   { ansi: buffer_to_ansi(buf), link_regions }
 }
@@ -411,6 +442,7 @@ pub fn render_to_ansi_with_hints(
   scroll_y : Int,
   hints : Array[HintData],
   hint_input : String,
+  focused_element_name? : String? = None,
 ) -> RenderResult {
   // Reserve last row for status bar
   let content_height = height - 1
@@ -437,6 +469,7 @@ pub fn render_to_ansi_with_hints(
     scroll_y,
     viewport_height: content_height,
     link_regions,
+    focused_element_name,
   }
   // Render content (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)

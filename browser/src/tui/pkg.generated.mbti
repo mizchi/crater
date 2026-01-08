@@ -51,7 +51,7 @@ pub fn draw_link(CharBuffer, Int, Int, String, Int, Bool) -> Int
 
 pub fn draw_scrollbar(CharBuffer, Int, Int, Int, Int, Int, Int) -> Unit
 
-pub fn draw_status_bar(CharBuffer, Int, String, Int, Int) -> Unit
+pub fn draw_status_bar(CharBuffer, Int, String, Int, Int, focused_link_url? : String?) -> Unit
 
 pub fn draw_vline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
 
@@ -89,11 +89,11 @@ pub fn read_key() -> String
 
 pub fn read_line(String) -> String
 
-pub fn render_to_ansi(@node.Node, @node.Layout, Int, Int, Int) -> RenderResult
+pub fn render_to_ansi(@node.Node, @node.Layout, Int, Int, Int, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_hints(@node.Node, @node.Layout, Int, Int, Int, Array[HintData], String) -> RenderResult
+pub fn render_to_ansi_with_hints(@node.Node, @node.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_status(@node.Node, @node.Layout, Int, Int, Int, String, Int, Int) -> RenderResult
+pub fn render_to_ansi_with_status(@node.Node, @node.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?) -> RenderResult
 
 pub fn rgb_to_256(Int, Int, Int) -> Int
 
@@ -190,6 +190,7 @@ pub struct TuiContext {
   scroll_y : Int
   viewport_height : Int
   link_regions : Array[LinkRegion]
+  focused_element_name : String?
 }
 
 // Type aliases

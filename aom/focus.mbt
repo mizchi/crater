@@ -33,23 +33,42 @@ pub(all) struct FocusManager {
 // =============================================================================
 
 ///|
+/// Minimum size in pixels for an element to be considered tabbable
+/// Elements smaller than this are likely invisible or too small to interact with
+let min_focusable_size : Double = 1.0
+
+///|
+/// Check if bounds are valid for focus (not zero-sized or too small)
+fn is_valid_bounds_for_focus(bounds : Bounds?) -> Bool {
+  match bounds {
+    Some(b) => b.width >= min_focusable_size && b.height >= min_focusable_size
+    // If no bounds info, allow focus (conservative approach)
+    None => true
+  }
+}
+
+///|
 /// Compute the tab order for an accessibility tree
 /// Returns focusable items sorted by tab order:
 /// 1. Elements with tabindex > 0, sorted by tabindex value (ascending)
 /// 2. Elements with tabindex = 0 or implicit focusable, in document order
 /// 3. Elements with tabindex < 0 are excluded (not tabbable)
+/// 4. Elements with zero-size or missing bounds are excluded
 pub fn compute_tab_order(tree : AccessibilityTree) -> Array[FocusableItem] {
   let items : Array[FocusableItem] = []
 
   // Collect all focusable items in document order
   let _ = collect_focusable_items(tree.root, items, 0)
 
-  // Filter out items with tabindex < 0 (not tabbable)
+  // Filter out items with tabindex < 0 (not tabbable) or invalid bounds
   let tabbable : Array[FocusableItem] = []
   for item in items {
     // tabindex < 0 means not tabbable (programmatic focus only)
     if item.effective_tabindex >= 0 {
-      tabbable.push(item)
+      // Also check if element has valid bounds (not zero-sized)
+      if is_valid_bounds_for_focus(item.node.bounds) {
+        tabbable.push(item)
+      }
     }
   }
 

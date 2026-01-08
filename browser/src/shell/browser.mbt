@@ -406,9 +406,10 @@ pub fn Browser::render_text(self : Browser) -> String {
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
   let char_scroll_y = self.scroll_y / 16
-  // Get focus info for status bar
-  let focus_count = self.focusable_count()
-  let focus_index = self.get_focus_index()
+  // Get focused element name for :focus styling
+  let focused_element_name = self.get_focused_element_name()
+  // Get focused link URL for status bar
+  let focused_link_url = self.get_focused_link_url()
   // Use hint mode rendering if in hint mode
   let result = if self.hint_mode {
     @tui.render_to_ansi_with_hints(
@@ -419,6 +420,7 @@ pub fn Browser::render_text(self : Browser) -> String {
       char_scroll_y,
       self.hints,
       self.hint_input,
+      focused_element_name~,
     )
   } else {
     @tui.render_to_ansi_with_status(
@@ -428,8 +430,10 @@ pub fn Browser::render_text(self : Browser) -> String {
       char_height,
       char_scroll_y,
       self.current_url,
-      focus_count,
-      focus_index,
+      self.get_visible_focusable_count(),
+      self.get_visible_focus_index(),
+      focused_element_name~,
+      focused_link_url~,
     )
   }
   // Store link regions for click hit testing
@@ -456,12 +460,40 @@ pub fn Browser::scroll_up(self : Browser, amount : Int) -> Unit {
 }
 
 ///|
-/// Focus next focusable element (Tab)
+/// Check if a link is currently visible on screen
+/// A link is visible if its text appears in the link_regions array
+fn Browser::is_link_visible(self : Browser, link_name : String) -> Bool {
+  for region in self.link_regions {
+    if region.text == link_name {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Focus next visible focusable element (Tab)
+/// Skips elements that are not currently visible on screen
 pub fn Browser::next_link(self : Browser) -> Unit {
   match self.focus_manager {
     Some(fm) => {
-      let _ = fm.focus_next()
-
+      // Try to find next visible focusable element
+      let count = fm.focusable_count()
+      if count == 0 {
+        return
+      }
+      // Try up to count times to find a visible element
+      for attempt = 0; attempt < count; attempt = attempt + 1 {
+        let _ = fm.focus_next()
+        match fm.current() {
+          Some(node) =>
+            match node.name {
+              Some(name) => if self.is_link_visible(name) { return }
+              None => ()
+            }
+          None => return
+        }
+      }
     }
     None =>
       // Fallback to legacy link navigation
@@ -472,12 +504,28 @@ pub fn Browser::next_link(self : Browser) -> Unit {
 }
 
 ///|
-/// Focus previous focusable element (Shift+Tab)
+/// Focus previous visible focusable element (Shift+Tab)
+/// Skips elements that are not currently visible on screen
 pub fn Browser::prev_link(self : Browser) -> Unit {
   match self.focus_manager {
     Some(fm) => {
-      let _ = fm.focus_prev()
-
+      // Try to find previous visible focusable element
+      let count = fm.focusable_count()
+      if count == 0 {
+        return
+      }
+      // Try up to count times to find a visible element
+      for attempt = 0; attempt < count; attempt = attempt + 1 {
+        let _ = fm.focus_prev()
+        match fm.current() {
+          Some(node) =>
+            match node.name {
+              Some(name) => if self.is_link_visible(name) { return }
+              None => ()
+            }
+          None => return
+        }
+      }
     }
     None =>
       // Fallback to legacy link navigation
@@ -524,6 +572,20 @@ pub fn Browser::get_focus_info(self : Browser) -> (String?, @aom.Role?) {
         None => (None, None)
       }
     None => (None, None)
+  }
+}
+
+///|
+/// Get the accessible name of the currently focused element
+/// Used for :focus styling in TUI rendering
+pub fn Browser::get_focused_element_name(self : Browser) -> String? {
+  match self.focus_manager {
+    Some(fm) =>
+      match fm.current() {
+        Some(node) => node.name
+        None => None
+      }
+    None => None
   }
 }
 
@@ -593,6 +655,29 @@ pub fn Browser::get_focus_index(self : Browser) -> Int {
         -1
       }
     None => self.focused_link
+  }
+}
+
+///|
+/// Get number of visible focusable elements (links visible on screen)
+pub fn Browser::get_visible_focusable_count(self : Browser) -> Int {
+  self.link_regions.length()
+}
+
+///|
+/// Get current focus index among visible elements (-1 if no focus or not visible)
+pub fn Browser::get_visible_focus_index(self : Browser) -> Int {
+  let focused_name = self.get_focused_element_name()
+  match focused_name {
+    Some(name) => {
+      for i, region in self.link_regions {
+        if region.text == name {
+          return i
+        }
+      }
+      -1
+    }
+    None => -1
   }
 }
 
