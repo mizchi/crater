@@ -4,6 +4,7 @@ package "mizchi/crater-browser/src/shell"
 import(
   "mizchi/crater-browser/src/http"
   "mizchi/crater-browser/src/tui"
+  "mizchi/crater/aom"
 )
 
 // Values
@@ -27,10 +28,16 @@ pub struct Browser {
   mut hint_input : String
   back_history : Array[String]
   forward_history : Array[String]
+  mut focus_manager : @aom.FocusManager?
+  mut a11y_tree : @aom.AccessibilityTree?
 }
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
 pub fn Browser::exit_hint_mode(Self) -> Unit
+pub fn Browser::focusable_count(Self) -> Int
+pub fn Browser::get_focus_index(Self) -> Int
+pub fn Browser::get_focus_info(Self) -> (String?, @aom.Role?)
+pub fn Browser::get_focused_element_id(Self) -> String?
 pub fn Browser::get_focused_link_url(Self) -> String?
 pub fn Browser::get_link_at(Self, Int, Int) -> String?
 pub async fn Browser::go_back(Self) -> String? raise @http.HttpError

@@ -30,6 +30,7 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|       if (key === '\u007f' || key === '\u0008') { resolve('Backspace'); return; }
   #|       if (key === '\r' || key === '\n') { resolve('Enter'); return; }
   #|       if (key === '\t') { resolve('Tab'); return; }
+  #|       if (key === '\u001b[Z') { resolve('Shift-Tab'); return; }
   #|       if (key === '\u001b') { resolve('Escape'); return; }
   #|       // Mouse click: SGR mode \e[<btn;col;row;M (press) or m (release)
   #|       if (key.startsWith('\u001b[<')) {

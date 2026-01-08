@@ -23,7 +23,7 @@ pub struct Browser {
   mut external_css : Array[String]
   /// Links found in current page
   mut links : Array[Link]
-  /// Currently focused link index
+  /// Currently focused link index (legacy, kept for compatibility)
   mut focused_link : Int
   /// Scroll position (Y offset)
   mut scroll_y : Int
@@ -41,6 +41,10 @@ pub struct Browser {
   back_history : Array[String]
   /// Forward history (stack of URLs for going forward)
   forward_history : Array[String]
+  /// Focus manager for Tab/Shift+Tab navigation
+  mut focus_manager : @aom.FocusManager?
+  /// Current accessibility tree
+  mut a11y_tree : @aom.AccessibilityTree?
 }
 
 ///|
@@ -62,6 +66,8 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     hint_input: "",
     back_history: [],
     forward_history: [],
+    focus_manager: None,
+    a11y_tree: None,
   }
 }
 
@@ -322,6 +328,8 @@ async fn Browser::load_url(
     self.viewport_height,
     self.external_css,
   )
+  // Build accessibility tree for focus navigation
+  self.build_accessibility_tree()
   // Render to Sixel
   self.render()
 }
@@ -398,6 +406,9 @@ pub fn Browser::render_text(self : Browser) -> String {
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
   let char_scroll_y = self.scroll_y / 16
+  // Get focus info for status bar
+  let focus_count = self.focusable_count()
+  let focus_index = self.get_focus_index()
   // Use hint mode rendering if in hint mode
   let result = if self.hint_mode {
     @tui.render_to_ansi_with_hints(
@@ -417,8 +428,8 @@ pub fn Browser::render_text(self : Browser) -> String {
       char_height,
       char_scroll_y,
       self.current_url,
-      self.links.length(),
-      self.focused_link,
+      focus_count,
+      focus_index,
     )
   }
   // Store link regions for click hit testing
@@ -445,29 +456,143 @@ pub fn Browser::scroll_up(self : Browser, amount : Int) -> Unit {
 }
 
 ///|
-/// Focus next link
+/// Focus next focusable element (Tab)
 pub fn Browser::next_link(self : Browser) -> Unit {
-  if self.links.length() > 0 {
-    self.focused_link = (self.focused_link + 1) % self.links.length()
+  match self.focus_manager {
+    Some(fm) => {
+      let _ = fm.focus_next()
+
+    }
+    None =>
+      // Fallback to legacy link navigation
+      if self.links.length() > 0 {
+        self.focused_link = (self.focused_link + 1) % self.links.length()
+      }
   }
 }
 
 ///|
-/// Focus previous link
+/// Focus previous focusable element (Shift+Tab)
 pub fn Browser::prev_link(self : Browser) -> Unit {
-  if self.links.length() > 0 {
-    self.focused_link = (self.focused_link - 1 + self.links.length()) %
-      self.links.length()
+  match self.focus_manager {
+    Some(fm) => {
+      let _ = fm.focus_prev()
+
+    }
+    None =>
+      // Fallback to legacy link navigation
+      if self.links.length() > 0 {
+        self.focused_link = (self.focused_link - 1 + self.links.length()) %
+          self.links.length()
+      }
+  }
+}
+
+///|
+/// Build accessibility tree from current HTML content
+fn Browser::build_accessibility_tree(self : Browser) -> Unit {
+  if self.html_content.length() == 0 {
+    self.a11y_tree = None
+    self.focus_manager = None
+    return
+  }
+  // Parse HTML document
+  let doc = @html.parse_document(self.html_content)
+  // Build accessibility tree
+  let tree = @aom.build_accessibility_tree(doc)
+  self.a11y_tree = Some(tree)
+  // Create focus manager
+  self.focus_manager = Some(@aom.FocusManager::new(tree))
+}
+
+///|
+/// Get currently focused element ID from FocusManager
+pub fn Browser::get_focused_element_id(self : Browser) -> String? {
+  match self.focus_manager {
+    Some(fm) => fm.current_id()
+    None => None
+  }
+}
+
+///|
+/// Get focus info for rendering (element id and role)
+pub fn Browser::get_focus_info(self : Browser) -> (String?, @aom.Role?) {
+  match self.focus_manager {
+    Some(fm) =>
+      match fm.current() {
+        Some(node) => (Some(node.id), Some(node.role))
+        None => (None, None)
+      }
+    None => (None, None)
   }
 }
 
 ///|
 /// Get currently focused link URL
 pub fn Browser::get_focused_link_url(self : Browser) -> String? {
-  if self.links.length() > 0 && self.focused_link < self.links.length() {
-    Some(self.links[self.focused_link].href)
-  } else {
-    None
+  // Try to get URL from FocusManager first
+  match self.focus_manager {
+    Some(fm) =>
+      match fm.current() {
+        Some(node) =>
+          // Check if it's a link and has a name (which may contain href info)
+          // For now, we need to look up the link by matching text
+          match node.role {
+            @aom.Link =>
+              // Find matching link by accessible name
+              match node.name {
+                Some(name) => {
+                  for link in self.links {
+                    if link.text == name {
+                      return Some(resolve_url(self.current_url, link.href))
+                    }
+                  }
+                  None
+                }
+                None => None
+              }
+            _ => None
+          }
+        None => None
+      }
+    None =>
+      // Fallback to legacy
+      if self.links.length() > 0 && self.focused_link < self.links.length() {
+        Some(self.links[self.focused_link].href)
+      } else {
+        None
+      }
+  }
+}
+
+///|
+/// Get number of focusable elements
+pub fn Browser::focusable_count(self : Browser) -> Int {
+  match self.focus_manager {
+    Some(fm) => fm.focusable_count()
+    None => self.links.length()
+  }
+}
+
+///|
+/// Get current focus index (0-based, -1 if no focus)
+pub fn Browser::get_focus_index(self : Browser) -> Int {
+  match self.focus_manager {
+    Some(fm) =>
+      if fm.has_focus() {
+        // Find current index by matching current id in tab order
+        let current_id = fm.current_id()
+        let tab_order = fm.get_tab_order()
+        for i, item in tab_order {
+          if Some(item.node.id) == current_id {
+            return i
+          }
+        }
+        -1
+      } else {
+        -1
+      }
+    None => self.focused_link
   }
 }
 

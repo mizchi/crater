@@ -31,7 +31,7 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "Ctrl-D" | "PageDown" => Some(PageDown)
     "PageUp" => Some(PageUp)
     "Tab" | "n" => Some(NextLink)
-    "N" | "p" => Some(PrevLink)
+    "Shift-Tab" | "N" | "p" => Some(PrevLink)
     "Enter" => Some(ActivateLink)
     "g" => Some(GoToUrl(""))
     "r" => Some(Refresh)
@@ -135,11 +135,11 @@ pub fn format_status_bar(
   buf.write_string("\u001b[7m") // Reverse video
   buf.write_string(" URL: ")
   buf.write_string(url)
-  buf.write_string(" | Links: ")
+  buf.write_string(" | Focus: ")
   buf.write_string((focused + 1).to_string())
   buf.write_string("/")
   buf.write_string(link_count.to_string())
-  buf.write_string(" | q:quit j/k:scroll Tab:next link Enter:go ")
+  buf.write_string(" | q:quit j/k:scroll Tab/S-Tab:focus Enter:go ")
   buf.write_string("\u001b[0m") // Reset
   buf.to_string()
 }
