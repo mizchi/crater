@@ -93,15 +93,6 @@ pub fn core_to_cdp_error(err : @dom.CoreError) -> CdpError {
         NodeNotFound,
         "Node not found: " + node_id.to_string(),
       )
-    @dom.InvalidSelector(selector~) =>
-      CdpError::from_code(InvalidParams, "Invalid selector: " + selector)
-    @dom.NavigationFailed(url~, reason~) =>
-      CdpError::from_code(
-        InternalError,
-        "Navigation to " + url + " failed: " + reason,
-      )
-    @dom.Timeout(operation~) =>
-      CdpError::from_code(InternalError, "Timeout: " + operation)
     @dom.InvalidOperation(message~) =>
       CdpError::from_code(InvalidParams, message)
   }

@@ -15,6 +15,14 @@ pub fn compute_element_style(StyleManager, @html.Element) -> @cascade.CascadedVa
 
 pub fn discover_resources(@html.Element) -> ResourceDiscoveryResult
 
+pub fn has_alt(Int) -> Bool
+
+pub fn has_ctrl(Int) -> Bool
+
+pub fn has_meta(Int) -> Bool
+
+pub fn has_shift(Int) -> Bool
+
 pub fn html_element_to_selector(@html.Element) -> @selector.Element
 
 pub fn parse_and_schedule(Scheduler, String, base_url? : String) -> ParseCompleteResult
@@ -113,6 +121,46 @@ pub(all) struct InlineScript {
   blocking : Bool
 }
 
+pub(all) enum InputEvent {
+  Mouse(MouseEvent)
+  Keyboard(KeyboardEvent)
+  Text(String)
+}
+pub impl Show for InputEvent
+
+pub struct InputManager {
+  pending_events : Array[InputEvent]
+  mut enabled : Bool
+}
+pub fn InputManager::disable(Self) -> Unit
+pub fn InputManager::enable(Self) -> Unit
+pub fn InputManager::new() -> Self
+pub fn InputManager::queue_event(Self, InputEvent) -> Unit
+pub fn InputManager::take_events(Self) -> Array[InputEvent]
+
+pub(all) enum KeyEventType {
+  KeyDown
+  KeyUp
+  RawKeyDown
+  Char
+}
+pub impl Eq for KeyEventType
+pub impl Show for KeyEventType
+
+pub(all) struct KeyboardEvent {
+  event_type : KeyEventType
+  key : String
+  code : String
+  modifiers : Int
+  text : String?
+  timestamp : Double
+}
+pub fn KeyboardEvent::new(KeyEventType, String) -> Self
+pub fn KeyboardEvent::with_code(Self, String) -> Self
+pub fn KeyboardEvent::with_modifiers(Self, Int) -> Self
+pub fn KeyboardEvent::with_text(Self, String) -> Self
+pub impl Show for KeyboardEvent
+
 pub(all) struct LayoutComputeResult {
   layout : @node.Layout
   was_incremental : Bool
@@ -153,6 +201,41 @@ pub(all) struct LayoutStats {
   pending_images : Int
 }
 
+pub(all) enum MouseButton {
+  None
+  Left
+  Middle
+  Right
+  Back
+  Forward
+}
+pub impl Eq for MouseButton
+pub impl Show for MouseButton
+
+pub(all) struct MouseEvent {
+  event_type : MouseEventType
+  x : Double
+  y : Double
+  button : MouseButton
+  buttons : Int
+  click_count : Int
+  modifiers : Int
+  timestamp : Double
+}
+pub fn MouseEvent::new(MouseEventType, Double, Double) -> Self
+pub fn MouseEvent::with_button(Self, MouseButton) -> Self
+pub fn MouseEvent::with_modifiers(Self, Int) -> Self
+pub impl Show for MouseEvent
+
+pub(all) enum MouseEventType {
+  MousePressed
+  MouseReleased
+  MouseMoved
+  MouseWheel
+}
+pub impl Eq for MouseEventType
+pub impl Show for MouseEventType
+
 pub(all) enum NetworkEvent {
   RequestWillBeSent(NetworkRequest)
   ResponseReceived(NetworkResponse)
@@ -191,6 +274,7 @@ pub(all) struct NetworkRequest {
 }
 pub fn NetworkRequest::new(String, ResourceType, document_url? : String, frame_id? : String, http_method? : HttpMethod) -> Self
 pub fn NetworkRequest::with_headers(Self, Map[String, String]) -> Self
+pub fn NetworkRequest::with_loader_id(Self, String) -> Self
 pub fn NetworkRequest::with_timestamp(Self, Double) -> Self
 pub impl Show for NetworkRequest
 
@@ -204,10 +288,12 @@ pub(all) struct NetworkResponse {
   body : String?
   content_length : Int
   timestamp : Double
+  loader_id : String
 }
 pub fn NetworkResponse::new(RequestId, String, Int) -> Self
 pub fn NetworkResponse::with_body(Self, String) -> Self
 pub fn NetworkResponse::with_headers(Self, Map[String, String]) -> Self
+pub fn NetworkResponse::with_loader_id(Self, String) -> Self
 pub fn NetworkResponse::with_mime_type(Self, String) -> Self
 pub fn NetworkResponse::with_timestamp(Self, Double) -> Self
 pub impl Show for NetworkResponse

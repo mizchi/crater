@@ -31,6 +31,7 @@ pub struct Point {
 /// Node type enumeration
 pub enum NodeType {
   Document
+  DocumentType
   Element
   Text
   Comment
@@ -50,9 +51,6 @@ pub struct NodeInfo {
 /// Core error types
 pub enum CoreError {
   NodeNotFound(node_id~ : NodeId)
-  InvalidSelector(selector~ : String)
-  NavigationFailed(url~ : String, reason~ : String)
-  Timeout(operation~ : String)
   InvalidOperation(message~ : String)
 } derive(Show)
 

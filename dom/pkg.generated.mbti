@@ -4,34 +4,13 @@ package "mizchi/crater/dom"
 // Values
 
 // Errors
-pub suberror CoreResult CoreError
 
 // Types and methods
-pub struct BoxModel {
-  content : Quad
-  padding : Quad
-  border : Quad
-  margin : Quad
-  width : Int
-  height : Int
-}
-pub impl Show for BoxModel
-
 pub enum CoreError {
   NodeNotFound(node_id~ : NodeId)
-  InvalidSelector(selector~ : String)
-  NavigationFailed(url~ : String, reason~ : String)
-  Timeout(operation~ : String)
   InvalidOperation(message~ : String)
 }
 pub impl Show for CoreError
-
-pub struct DocumentId(Int)
-#deprecated
-pub fn DocumentId::inner(Self) -> Int
-pub impl Eq for DocumentId
-pub impl Hash for DocumentId
-pub impl Show for DocumentId
 
 type DomNode
 
@@ -68,50 +47,6 @@ pub fn DomTree::set_cached_rect(Self, NodeId, Rect) -> Unit
 pub fn DomTree::set_focus(Self, NodeId?) -> Unit
 pub fn DomTree::set_text_content(Self, NodeId, String) -> Result[Unit, CoreError]
 
-pub struct ElementAttributes {
-  attributes : Array[(String, String)]
-}
-pub impl Show for ElementAttributes
-
-pub struct FrameId(String)
-#deprecated
-pub fn FrameId::inner(Self) -> String
-pub impl Eq for FrameId
-pub impl Hash for FrameId
-pub impl Show for FrameId
-
-pub enum KeyEventType {
-  KeyDown
-  KeyUp
-  Char
-}
-pub impl Eq for KeyEventType
-pub impl Show for KeyEventType
-
-pub enum MouseButton {
-  Left
-  Middle
-  Right
-  Back
-  Forward
-}
-pub impl Eq for MouseButton
-pub impl Show for MouseButton
-
-pub enum MouseEventType {
-  MousePressed
-  MouseReleased
-  MouseMoved
-}
-pub impl Eq for MouseEventType
-pub impl Show for MouseEventType
-
-pub enum NavigationResult {
-  Success(frame_id~ : FrameId, loader_id~ : String)
-  Error(message~ : String)
-}
-pub impl Show for NavigationResult
-
 pub struct NodeId(Int)
 pub fn NodeId::from_int(Int) -> Self
 #deprecated
@@ -132,10 +67,10 @@ pub impl Show for NodeInfo
 
 pub enum NodeType {
   Document
+  DocumentType
   Element
   Text
   Comment
-  DocumentType
 }
 pub impl Eq for NodeType
 pub impl Show for NodeType
@@ -146,15 +81,6 @@ pub struct Point {
 }
 pub impl Eq for Point
 pub impl Show for Point
-
-pub struct Quad {
-  p1 : Point
-  p2 : Point
-  p3 : Point
-  p4 : Point
-}
-pub impl Eq for Quad
-pub impl Show for Quad
 
 pub struct Rect {
   x : Double

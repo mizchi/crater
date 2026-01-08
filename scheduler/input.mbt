@@ -48,7 +48,7 @@ pub(all) struct MouseEvent {
 pub fn MouseEvent::new(
   event_type : MouseEventType,
   x : Double,
-  y : Double
+  y : Double,
 ) -> MouseEvent {
   {
     event_type,
@@ -63,13 +63,19 @@ pub fn MouseEvent::new(
 }
 
 ///|
-pub fn MouseEvent::with_button(self : MouseEvent, button : MouseButton) -> MouseEvent {
-  { ..self, button }
+pub fn MouseEvent::with_button(
+  self : MouseEvent,
+  button : MouseButton,
+) -> MouseEvent {
+  { ..self, button, }
 }
 
 ///|
-pub fn MouseEvent::with_modifiers(self : MouseEvent, modifiers : Int) -> MouseEvent {
-  { ..self, modifiers }
+pub fn MouseEvent::with_modifiers(
+  self : MouseEvent,
+  modifiers : Int,
+) -> MouseEvent {
+  { ..self, modifiers, }
 }
 
 ///|
@@ -84,54 +90,59 @@ pub(all) struct KeyboardEvent {
 } derive(Show)
 
 ///|
-pub fn KeyboardEvent::new(event_type : KeyEventType, key : String) -> KeyboardEvent {
-  {
-    event_type,
-    key,
-    code: "",
-    modifiers: 0,
-    text: None,
-    timestamp: 0.0,
-  }
+pub fn KeyboardEvent::new(
+  event_type : KeyEventType,
+  key : String,
+) -> KeyboardEvent {
+  { event_type, key, code: "", modifiers: 0, text: None, timestamp: 0.0 }
 }
 
 ///|
-pub fn KeyboardEvent::with_code(self : KeyboardEvent, code : String) -> KeyboardEvent {
-  { ..self, code }
+pub fn KeyboardEvent::with_code(
+  self : KeyboardEvent,
+  code : String,
+) -> KeyboardEvent {
+  { ..self, code, }
 }
 
 ///|
-pub fn KeyboardEvent::with_modifiers(self : KeyboardEvent, modifiers : Int) -> KeyboardEvent {
-  { ..self, modifiers }
+pub fn KeyboardEvent::with_modifiers(
+  self : KeyboardEvent,
+  modifiers : Int,
+) -> KeyboardEvent {
+  { ..self, modifiers, }
 }
 
 ///|
-pub fn KeyboardEvent::with_text(self : KeyboardEvent, text : String) -> KeyboardEvent {
+pub fn KeyboardEvent::with_text(
+  self : KeyboardEvent,
+  text : String,
+) -> KeyboardEvent {
   { ..self, text: Some(text) }
 }
 
 ///|
 /// Check if Alt modifier is set
 pub fn has_alt(modifiers : Int) -> Bool {
-  modifiers.land(1) != 0
+  (modifiers & 1) != 0
 }
 
 ///|
 /// Check if Ctrl modifier is set
 pub fn has_ctrl(modifiers : Int) -> Bool {
-  modifiers.land(2) != 0
+  (modifiers & 2) != 0
 }
 
 ///|
 /// Check if Meta modifier is set
 pub fn has_meta(modifiers : Int) -> Bool {
-  modifiers.land(4) != 0
+  (modifiers & 4) != 0
 }
 
 ///|
 /// Check if Shift modifier is set
 pub fn has_shift(modifiers : Int) -> Bool {
-  modifiers.land(8) != 0
+  (modifiers & 8) != 0
 }
 
 ///|
@@ -165,7 +176,10 @@ pub fn InputManager::disable(self : InputManager) -> Unit {
 }
 
 ///|
-pub fn InputManager::queue_event(self : InputManager, event : InputEvent) -> Unit {
+pub fn InputManager::queue_event(
+  self : InputManager,
+  event : InputEvent,
+) -> Unit {
   if self.enabled {
     self.pending_events.push(event)
   }

@@ -9,10 +9,9 @@
  */
 
 import puppeteer from 'puppeteer';
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
+import { renderer } from '../wasm/dist/crater.js';
 
 // Types
 interface Rect {
@@ -255,49 +254,38 @@ function getCraterLayout(htmlPath: string): LayoutNode {
     // Prepare HTML with inlined CSS
     const htmlContent = prepareHtmlContent(htmlPath);
 
-    // Write to temp file
-    const tempPath = path.join(os.tmpdir(), `crater-test-${Date.now()}.html`);
-    fs.writeFileSync(tempPath, htmlContent);
+    // Use Crater WASM module directly
+    const result = renderer.renderHtmlToJson(htmlContent, 800, 600);
+    let layout = JSON.parse(result) as LayoutNode;
 
-    try {
-      const result = execSync(
-        `moon run cmd/main -- --json "${tempPath}" 2>/dev/null`,
-        { encoding: 'utf-8', cwd: process.cwd() }
-      );
-      let layout = JSON.parse(result.trim()) as LayoutNode;
-
-      // Handle nested body structure from Crater
-      if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
-        layout = layout.children[0];
-      }
-
-      // Find #test or #container element if it exists (WPT tests)
-      const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
-                          findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
-      if (testElement) {
-        return normalizeRoot(testElement);
-      }
-
-      // If root (body) has a single meaningful child, use that child
-      // to match browser behavior
-      const meaningfulChildren = layout.children.filter(
-        c => !c.id.startsWith('#text') && c.id !== 'p' && c.id !== 'div#log'
-      );
-      if (meaningfulChildren.length === 1) {
-        return normalizeRoot(meaningfulChildren[0]);
-      }
-
-      // Try to find a container div (first one, excluding #log)
-      const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div') && c.id !== 'div#log');
-      if (divChildren.length >= 1) {
-        return normalizeRoot(divChildren[0]);
-      }
-
-      return normalizeRoot(layout);
-    } finally {
-      // Clean up temp file
-      fs.unlinkSync(tempPath);
+    // Handle nested body structure from Crater
+    if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
+      layout = layout.children[0];
     }
+
+    // Find #test or #container element if it exists (WPT tests)
+    const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
+                        findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
+    if (testElement) {
+      return normalizeRoot(testElement);
+    }
+
+    // If root (body) has a single meaningful child, use that child
+    // to match browser behavior
+    const meaningfulChildren = layout.children.filter(
+      c => !c.id.startsWith('#text') && c.id !== 'p' && c.id !== 'div#log'
+    );
+    if (meaningfulChildren.length === 1) {
+      return normalizeRoot(meaningfulChildren[0]);
+    }
+
+    // Try to find a container div (first one, excluding #log)
+    const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div') && c.id !== 'div#log');
+    if (divChildren.length >= 1) {
+      return normalizeRoot(divChildren[0]);
+    }
+
+    return normalizeRoot(layout);
   } catch (error) {
     throw new Error(`Crater failed to render: ${error}`);
   }
