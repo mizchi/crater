@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/src/cdp_js"
+
+// Values
+pub fn createNetworkRequest(String, String, String, String) -> Int
+
+pub fn createNetworkRequestWithLoader(String, String, String, String, String) -> Int
+
+pub fn flushNetworkEvents(String) -> Unit
+
+pub fn getCdpProtocolInfo() -> String
+
+pub fn getNextCdpMessage() -> String
+
+pub fn hasPendingCdpMessages() -> Int
+
+pub fn isNetworkEnabled() -> Bool
+
+pub fn loadHtmlContent(String) -> String
+
+pub fn notifyLoadingFailed(Int, String) -> Unit
+
+pub fn notifyLoadingFinished(Int, Int) -> Unit
+
+pub fn notifyResponseReceived(Int, String, Int, String, String) -> Unit
+
+pub fn notifyResponseReceivedWithLoader(Int, String, Int, String, String, String) -> Unit
+
+pub fn processCdpMessage(String) -> String
+
+pub fn resetCdpProtocol() -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
