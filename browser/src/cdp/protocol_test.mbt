@@ -193,8 +193,8 @@ test "CdpProtocol processes enable/disable methods" {
   let _ = protocol.take_messages()
   // Test various enable methods
   let methods_list = [
-    "DOM.enable", "Page.enable", "Network.enable", "Security.enable",
-    "Performance.enable", "Log.enable",
+    "DOM.enable", "Page.enable", "Network.enable", "Security.enable", "Performance.enable",
+    "Log.enable",
   ]
   for m in methods_list {
     let json = "{\"id\":1,\"method\":\"" + m + "\"}"

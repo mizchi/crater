@@ -45,7 +45,7 @@ test "img_placeholder_rendering" {
       "x" +
       p.height.to_string() +
       " text=" +
-      p.text.or_else(fn() { "None" }).to_string(),
+      p.text.unwrap_or_else(fn() { "None" }).to_string(),
     )
     for child in p.children {
       print_paint_tree(child, depth + 1)
@@ -75,7 +75,7 @@ test "img_placeholder_rendering" {
       println("tag: " + img.tag)
       println("width: " + img.width.to_string())
       println("height: " + img.height.to_string())
-      println("text: " + img.text.or_else(fn() { "None" }).to_string())
+      println("text: " + img.text.unwrap_or_else(fn() { "None" }).to_string())
       // Verify img has correct properties
       inspect(img.tag, content="img")
       inspect(img.width > 0.0, content="true")
@@ -93,7 +93,7 @@ test "img_placeholder_rendering" {
   let result = render_to_ansi(node, layout, width, height, 0)
   println("=== ANSI Output (first 500 chars) ===")
   let preview = if result.ansi.length() > 500 {
-    result.ansi.substring(end=500)
+    result.ansi[:500].to_string()
   } else {
     result.ansi
   }

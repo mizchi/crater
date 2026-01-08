@@ -1,15 +1,15 @@
 ///|
 /// CDP DOM Domain Tests
 ///
-/// Tests for DOM domain operations.
-/// Pattern inspired by lightpanda-browser dom.zig tests.
+///Tests for DOM domain operations.
+///Pattern inspired by lightpanda-browser dom.zig tests.
 
 ///|
 test "DOM.getDocument returns root node" {
   let ctx = TestContext::new()
   let dom = ctx.dom()
   let result = dom.get_document(Some(1))
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   let doc = result.unwrap()
   inspect(doc.node_type, content="9") // Document type
   inspect(doc.node_name, content="#DOCUMENT")
@@ -21,12 +21,12 @@ test "DOM.getDocument with depth" {
   let dom = ctx.dom()
   // Depth 0 - just root
   let result0 = dom.get_document(Some(0))
-  inspect(result0.is_ok(), content="true")
+  inspect(result0 is Ok(_), content="true")
   // Depth 3 - includes children
   let result3 = dom.get_document(Some(3))
-  inspect(result3.is_ok(), content="true")
+  inspect(result3 is Ok(_), content="true")
   let doc = result3.unwrap()
-  inspect(doc.children.is_empty(), content="false")
+  inspect(not(doc.children is None), content="true")
 }
 
 ///|
@@ -35,8 +35,8 @@ test "DOM.querySelector finds element by tag" {
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, "p")
-  inspect(result.is_ok(), content="true")
-  inspect(result.unwrap().is_empty(), content="false")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap() is Some(_), content="true")
 }
 
 ///|
@@ -45,8 +45,8 @@ test "DOM.querySelector finds element by id" {
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, "#foo")
-  inspect(result.is_ok(), content="true")
-  inspect(result.unwrap().is_empty(), content="false")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap() is Some(_), content="true")
 }
 
 ///|
@@ -55,8 +55,8 @@ test "DOM.querySelector finds element by class" {
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, ".bar")
-  inspect(result.is_ok(), content="true")
-  inspect(result.unwrap().is_empty(), content="false")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap() is Some(_), content="true")
 }
 
 ///|
@@ -65,8 +65,8 @@ test "DOM.querySelector returns None for no match" {
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, "#nonexistent")
-  inspect(result.is_ok(), content="true")
-  inspect(result.unwrap().is_empty(), content="true")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap() is None, content="true")
 }
 
 ///|
@@ -75,7 +75,7 @@ test "DOM.querySelectorAll finds all elements" {
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector_all(doc_id, "p")
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   inspect(result.unwrap().length(), content="3")
 }
 
@@ -85,7 +85,7 @@ test "DOM.querySelectorAll returns empty for no match" {
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector_all(doc_id, "div")
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   inspect(result.unwrap().length(), content="0")
 }
 
@@ -101,7 +101,7 @@ test "DOM.getAttributes returns element attributes" {
   let div_id = div_result.unwrap().unwrap()
   // Get attributes
   let attrs = dom.get_attributes(div_id)
-  inspect(attrs.is_ok(), content="true")
+  inspect(attrs is Ok(_), content="true")
   let attr_list = attrs.unwrap()
   // CDP returns [name, value, name, value, ...]
   inspect(attr_list.length() >= 4, content="true") // at least id and class
@@ -116,7 +116,7 @@ test "DOM.setAttributeValue sets attribute" {
   let div_id = div_result.unwrap().unwrap()
   // Set new attribute
   let result = dom.set_attribute_value(div_id, "data-value", "123")
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   // Verify attribute was set
   let tree = ctx.tree()
   let attr = tree.get_attribute(@dom.NodeId::from_int(div_id), "data-value")
@@ -134,7 +134,7 @@ test "DOM.removeAttribute removes attribute" {
   let div_id = div_result.unwrap().unwrap()
   // Remove attribute
   let result = dom.remove_attribute(div_id, "data-remove")
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   // Verify attribute was removed
   let tree = ctx.tree()
   let attr = tree.get_attribute(@dom.NodeId::from_int(div_id), "data-remove")
@@ -150,7 +150,7 @@ test "DOM.getBoxModel returns box model" {
   let div_id = div_result.unwrap().unwrap()
   // Get box model (no layout computed, returns zeros)
   let result = dom.get_box_model(div_id)
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   let box = result.unwrap()
   inspect(box.width, content="0")
   inspect(box.height, content="0")
@@ -171,7 +171,7 @@ test "DOM.getBoxModel with cached rect" {
   )
   // Get box model
   let result = dom.get_box_model(div_id)
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   let box = result.unwrap()
   inspect(box.width, content="100")
   inspect(box.height, content="50")
@@ -185,7 +185,7 @@ test "DOM.getOuterHTML returns HTML string" {
   let div_result = dom.query_selector(doc_id, "#test")
   let div_id = div_result.unwrap().unwrap()
   let result = dom.get_outer_html(div_id)
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   let html = result.unwrap()
   inspect(html.contains("div"), content="true")
   inspect(html.contains("hello"), content="true")
@@ -200,7 +200,7 @@ test "DOM.setNodeValue sets text content" {
   let p_id = p_result.unwrap().unwrap()
   // Set new content
   let result = dom.set_node_value(p_id, "new content")
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   // Verify content changed
   let tree = ctx.tree()
   let text = tree.get_text_content(@dom.NodeId::from_int(p_id))
@@ -216,10 +216,10 @@ test "DOM.removeNode removes element from tree" {
   let p_id = p_result.unwrap().unwrap()
   // Remove node
   let result = dom.remove_node(p_id)
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   // Verify node is no longer findable
   let check = dom.query_selector(doc_id, "#remove")
-  inspect(check.unwrap().is_empty(), content="true")
+  inspect(check.unwrap() is None, content="true")
 }
 
 ///|
@@ -231,7 +231,7 @@ test "DOM.requestChildNodes returns children" {
   let div_id = div_result.unwrap().unwrap()
   // Request children
   let result = dom.request_child_nodes(div_id, Some(1))
-  inspect(result.is_ok(), content="true")
+  inspect(result is Ok(_), content="true")
   let children = result.unwrap()
   inspect(children.length(), content="2")
 }
@@ -242,5 +242,5 @@ test "DOM operations on invalid node return error" {
   let dom = ctx.dom()
   // Try to get attributes of non-existent node
   let result = dom.get_attributes(99999)
-  inspect(result.is_err(), content="true")
+  inspect(result is Err(_), content="true")
 }

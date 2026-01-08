@@ -736,7 +736,6 @@ fn CdpProtocol::dispatch_input(
         "mouseWheel" => @scheduler.MouseEventType::MouseWheel
         _ => @scheduler.MouseEventType::MousePressed
       }
-
       let mouse_button : @scheduler.MouseButton = match button {
         "left" => @scheduler.MouseButton::Left
         "middle" => @scheduler.MouseButton::Middle
@@ -755,7 +754,6 @@ fn CdpProtocol::dispatch_input(
       // For now, just acknowledge the event
       let _ = event
       let _ = click_count
-
       self.send_result(request.id, request.session_id, None)
     }
     "dispatchKeyEvent" => {
@@ -783,7 +781,6 @@ fn CdpProtocol::dispatch_input(
       let event = @scheduler.KeyboardEvent::new(key_type, key)
         .with_code(code)
         .with_modifiers(modifiers.to_int())
-
       let event = match text {
         Some(t) => event.with_text(t)
         None => event
@@ -791,7 +788,6 @@ fn CdpProtocol::dispatch_input(
 
       // Queue event for processing
       let _ = event
-
       self.send_result(request.id, request.session_id, None)
     }
     "insertText" => {
@@ -803,7 +799,6 @@ fn CdpProtocol::dispatch_input(
 
       // Queue event for processing
       let _ = event
-
       self.send_result(request.id, request.session_id, None)
     }
     _ =>
@@ -1544,22 +1539,17 @@ pub fn CdpProtocol::get_network_manager(
 ///|
 fn network_event_to_cdp(event : @scheduler.NetworkEvent) -> (String, Json) {
   match event {
-    @scheduler.RequestWillBeSent(req) => (
-      "Network.requestWillBeSent",
-      request_will_be_sent_to_json(req),
-    )
-    @scheduler.ResponseReceived(res) => (
-      "Network.responseReceived",
-      response_received_to_json(res),
-    )
-    @scheduler.LoadingFinished(request_id~, encoded_data_length~) => (
-      "Network.loadingFinished",
-      loading_finished_to_json(request_id, encoded_data_length),
-    )
-    @scheduler.LoadingFailed(request_id~, error~) => (
-      "Network.loadingFailed",
-      loading_failed_to_json(request_id, error),
-    )
+    @scheduler.RequestWillBeSent(req) =>
+      ("Network.requestWillBeSent", request_will_be_sent_to_json(req))
+    @scheduler.ResponseReceived(res) =>
+      ("Network.responseReceived", response_received_to_json(res))
+    @scheduler.LoadingFinished(request_id~, encoded_data_length~) =>
+      (
+        "Network.loadingFinished",
+        loading_finished_to_json(request_id, encoded_data_length),
+      )
+    @scheduler.LoadingFailed(request_id~, error~) =>
+      ("Network.loadingFailed", loading_failed_to_json(request_id, error))
   }
 }
 

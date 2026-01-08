@@ -85,9 +85,9 @@ pub fn px_to_col(Double) -> Int
 
 pub fn px_to_row(Double) -> Int
 
-pub async fn read_key() -> String
+pub fn read_key() -> String
 
-pub async fn read_line(String) -> String
+pub fn read_line(String) -> String
 
 pub fn render_to_ansi(@node.Node, @node.Layout, Int, Int, Int) -> RenderResult
 

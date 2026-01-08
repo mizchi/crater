@@ -150,11 +150,7 @@ pub fn createNetworkRequestWithLoader(
     _ => @scheduler.Other
   }
   let req_id = protocol.create_network_request_with_loader(
-    url,
-    rt,
-    document_url,
-    frame_id,
-    loader_id,
+    url, rt, document_url, frame_id, loader_id,
   )
   let @scheduler.RequestId(id) = req_id
   id
@@ -187,18 +183,16 @@ pub fn notifyResponseReceivedWithLoader(
   let req_id = @scheduler.RequestId(request_id)
   let headers : Map[String, String] = parse_headers_json(headers_json)
   protocol.notify_response_received_with_loader(
-    req_id,
-    url,
-    status,
-    mime_type,
-    headers,
-    loader_id,
+    req_id, url, status, mime_type, headers, loader_id,
   )
 }
 
 ///|
 /// Notify that loading finished
-pub fn notifyLoadingFinished(request_id : Int, encoded_data_length : Int) -> Unit {
+pub fn notifyLoadingFinished(
+  request_id : Int,
+  encoded_data_length : Int,
+) -> Unit {
   let req_id = @scheduler.RequestId(request_id)
   protocol.notify_loading_finished(req_id, encoded_data_length)
 }

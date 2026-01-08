@@ -3,6 +3,7 @@ package "mizchi/crater-browser/src/cdp"
 
 import(
   "mizchi/crater/dom"
+  "mizchi/crater/scheduler"
 )
 
 // Values
@@ -61,6 +62,13 @@ pub enum CdpErrorCode {
 }
 pub impl Show for CdpErrorCode
 
+pub struct CdpEvent {
+  event_method : String
+  params : Json?
+  session_id : String?
+}
+pub fn CdpEvent::new(String, Json?, String?) -> Self
+
 pub struct CdpFrameInfo {
   id : String
   parent_id : String?
@@ -106,6 +114,53 @@ pub struct CdpNode {
 }
 pub impl Show for CdpNode
 
+pub enum CdpOutMessage {
+  Response(CdpResponse)
+  Event(CdpEvent)
+}
+pub fn CdpOutMessage::event(CdpEvent) -> Self
+pub fn CdpOutMessage::response(CdpResponse) -> Self
+pub fn CdpOutMessage::to_json(Self) -> String
+
+pub struct CdpProtocol {
+  target : TargetDomain
+  network : @scheduler.NetworkManager
+  outbox : Array[CdpOutMessage]
+  mut lifecycle_events : Bool
+}
+pub fn CdpProtocol::create_network_request(Self, String, @scheduler.ResourceType, String, String) -> @scheduler.RequestId
+pub fn CdpProtocol::create_network_request_with_loader(Self, String, @scheduler.ResourceType, String, String, String) -> @scheduler.RequestId
+pub fn CdpProtocol::flush_network_events(Self, String?) -> Unit
+pub fn CdpProtocol::get_network_manager(Self) -> @scheduler.NetworkManager
+pub fn CdpProtocol::has_pending_network_events(Self) -> Bool
+pub fn CdpProtocol::new() -> Self
+pub fn CdpProtocol::notify_loading_failed(Self, @scheduler.RequestId, String) -> Unit
+pub fn CdpProtocol::notify_loading_finished(Self, @scheduler.RequestId, Int) -> Unit
+pub fn CdpProtocol::notify_response_received(Self, @scheduler.RequestId, String, Int, String, Map[String, String]) -> Unit
+pub fn CdpProtocol::notify_response_received_with_loader(Self, @scheduler.RequestId, String, Int, String, Map[String, String], String) -> Unit
+pub fn CdpProtocol::process_message(Self, String) -> Result[Unit, String]
+pub fn CdpProtocol::take_messages(Self) -> Array[CdpOutMessage]
+
+pub struct CdpRequest {
+  id : Int?
+  request_method : String
+  params : Json?
+  session_id : String?
+}
+
+pub struct CdpResponse {
+  id : Int?
+  result : Json?
+  error : CdpResponseError?
+  session_id : String?
+}
+pub fn CdpResponse::new(Int?, Json?, CdpResponseError?, String?) -> Self
+
+pub struct CdpResponseError {
+  code : Int
+  message : String
+}
+
 pub struct CdpSession {
   tree : @dom.DomTree
   dom : DomDomain
@@ -124,6 +179,7 @@ pub fn CdpSession::get_target_id(Self) -> String
 pub fn CdpSession::get_title(Self) -> String
 pub fn CdpSession::get_tree(Self) -> @dom.DomTree
 pub fn CdpSession::get_url(Self) -> String
+pub fn CdpSession::load_html(Self, String) -> Unit
 pub fn CdpSession::navigate_to(Self, String) -> Result[CdpNavigateResult, CdpError]
 pub fn CdpSession::new(String) -> Self
 pub fn CdpSession::query_selector(Self, String) -> Result[Int?, CdpError]
