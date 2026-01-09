@@ -341,6 +341,8 @@ fn compute_inline_child(
   // For plain inline elements (no MeasureFunc), calculate size based on children
   // and handle absolute positioned children
   let children : Array[@node.Layout] = []
+  let mut content_width = 0.0
+  let mut content_height = 0.0
 
   // Process children - handle absolute positioned elements
   for child in node.children {
@@ -359,21 +361,38 @@ fn compute_inline_child(
       }
       let child_layout = @node.dispatch_layout(child, child_ctx)
       children.push(child_layout)
+      // Absolute children don't contribute to inline element's size
     } else if is_inline_level(child.style.display) {
       // Recursively process inline children
       let child_layout = compute_inline_child(
         child, available_width, available_height,
       )
       children.push(child_layout)
+      // Accumulate content size from flow children
+      // For inline elements, children are laid out horizontally
+      content_width = content_width + child_layout.width
+      if child_layout.height > content_height {
+        content_height = child_layout.height
+      }
     }
     // Block-level children in inline context are not supported (would need anonymous blocks)
   }
+
+  // Calculate final width and height
+  // For inline elements, content width is the sum of children widths
+  // Content height is the maximum child height
+  let final_width = content_width +
+    padding.horizontal_sum() +
+    border.horizontal_sum()
+  let final_height = content_height +
+    padding.vertical_sum() +
+    border.vertical_sum()
   {
     id: node.id,
     x: 0.0,
     y: 0.0,
-    width: padding.horizontal_sum() + border.horizontal_sum(),
-    height: padding.vertical_sum() + border.vertical_sum(),
+    width: final_width,
+    height: final_height,
     margin: @types.Rect::zero(),
     padding,
     border,

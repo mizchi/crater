@@ -281,3 +281,60 @@ test "text_min_content_width" {
   // Height should be for 5 wrapped lines (200/40 = 5 lines * 16 = 80)
   inspect(result.layouts[0].height, content="80")
 }
+
+///|
+test "inline_element_with_child_has_size" {
+  // An inline element (like <a>) containing a child should have proper size
+  // This tests the fix for 0x0 link size issue
+  let default_style = @style.Style::default()
+  let inline_style = { ..default_style, display: @style.Inline }
+
+  // Create a text child with MeasureFunc (simulating text content)
+  let child_measure : @node.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 80.0, max_width: 80.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let text_child = @node.Node::with_measure("text", inline_style, child_measure)
+
+  // Create inline parent (like <a>) containing the text
+  let link = @node.Node::new("a", inline_style, [text_child])
+  let result = compute_ifc([link], 400.0, Some(600.0), 0.0, 0.0)
+
+  // Link should have width and height from its child, NOT 0x0
+  inspect(result.layouts[0].width, content="80")
+  inspect(result.layouts[0].height, content="16")
+}
+
+///|
+test "inline_element_with_padding_and_child" {
+  // An inline element with padding containing a child
+  let default_style = @style.Style::default()
+  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_with_padding = {
+    ..inline_style,
+    padding: {
+      left: @types.Length(5.0),
+      right: @types.Length(5.0),
+      top: @types.Length(2.0),
+      bottom: @types.Length(2.0),
+    },
+  }
+
+  // Create a text child with MeasureFunc
+  let child_measure : @node.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      { min_width: 100.0, max_width: 100.0, min_height: 20.0, max_height: 20.0 }
+    },
+  }
+  let text_child = @node.Node::with_measure("text", inline_style, child_measure)
+
+  // Create inline parent with padding
+  let link = @node.Node::new("a", inline_with_padding, [text_child])
+  let result = compute_ifc([link], 400.0, Some(600.0), 0.0, 0.0)
+
+  // Link width = child width (100) + padding left (5) + padding right (5) = 110
+  inspect(result.layouts[0].width, content="110")
+  // Link height = child height (20) + padding top (2) + padding bottom (2) = 24
+  inspect(result.layouts[0].height, content="24")
+}
