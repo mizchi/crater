@@ -3,6 +3,7 @@ package "mizchi/crater/tree"
 
 import(
   "mizchi/crater/css/cascade"
+  "mizchi/crater/dom"
   "mizchi/crater/html"
   "mizchi/crater/node"
   "mizchi/crater/style"
@@ -84,6 +85,30 @@ pub(all) enum DependencyKind {
 pub fn DependencyKind::merge(Self, Self) -> Self
 pub impl Eq for DependencyKind
 pub impl Show for DependencyKind
+
+pub struct Document {
+  dom : @dom.DomTree
+  layout : LayoutTree
+  dom_to_layout : Map[Int, Int]
+  layout_to_dom : Map[Int, Int]
+  mut needs_layout : Bool
+}
+pub fn Document::append_child(Self, @dom.NodeId, @dom.NodeId) -> Result[Unit, @dom.CoreError]
+pub fn Document::compute_layout(Self) -> @node.Layout
+pub fn Document::compute_layout_full(Self) -> @node.Layout
+pub fn Document::create_element(Self, String) -> @dom.NodeId
+pub fn Document::create_text(Self, String) -> @dom.NodeId
+pub fn Document::get_document_root(Self) -> @dom.NodeId
+pub fn Document::get_dom(Self) -> @dom.DomTree
+pub fn Document::get_layout(Self) -> LayoutTree
+pub fn Document::needs_layout(Self) -> Bool
+pub fn Document::new(Double, Double) -> Self
+pub fn Document::process_mutations(Self) -> Int
+pub fn Document::query_selector(Self, String) -> Result[@dom.NodeId?, @dom.CoreError]
+pub fn Document::resize_viewport(Self, Double, Double) -> Unit
+pub fn Document::set_attribute(Self, @dom.NodeId, String, String) -> Result[Unit, @dom.CoreError]
+pub fn Document::set_text_content(Self, @dom.NodeId, String) -> Result[Unit, @dom.CoreError]
+pub fn Document::update(Self) -> @node.Layout
 
 pub(all) enum IntrinsicState {
   Resolved(width~ : Double, height~ : Double)

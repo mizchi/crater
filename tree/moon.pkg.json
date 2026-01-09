@@ -5,6 +5,7 @@
     "mizchi/crater/node",
     "mizchi/crater/compute/dispatch",
     "mizchi/crater/html",
-    "mizchi/crater/css/cascade"
+    "mizchi/crater/css/cascade",
+    "mizchi/crater/dom"
   ]
 }
