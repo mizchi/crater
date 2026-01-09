@@ -1078,6 +1078,198 @@ fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
 }
 
 ///|
+/// Parse CSS transform property
+/// Supports: translate(x, y), translateX(x), translateY(y), translate3d(x, y, z), none
+fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
+  let remaining = skip_whitespace(tokens)
+  if remaining.length() == 0 {
+    return @style.Transform::none()
+  }
+  // Check for "none"
+  match remaining[0] {
+    @token.Token::Ident(s) => if s == "none" { return @style.Transform::none() }
+    _ => ()
+  }
+  // Reconstruct the value as string for parsing with the full transform parser
+  // Since transform values like "translate(10px, 20px)" are complex,
+  // we build the string and reuse the computed transform parser
+  let sb = StringBuilder::new()
+  for i = 0; i < remaining.length(); i = i + 1 {
+    match remaining[i] {
+      @token.Token::Ident(s) => sb.write_string(s)
+      @token.Token::Function(name) => {
+        sb.write_string(name)
+        sb.write_char('(')
+      }
+      @token.Token::Dimension(value, unit) => {
+        sb.write_string(value.to_string())
+        sb.write_string(unit)
+      }
+      @token.Token::Percentage(value) => {
+        sb.write_string(value.to_string())
+        sb.write_char('%')
+      }
+      @token.Token::Number(value, _) => sb.write_string(value.to_string())
+      @token.Token::Comma => sb.write_char(',')
+      @token.Token::RightParen => sb.write_char(')')
+      @token.Token::LeftParen => sb.write_char('(')
+      @token.Token::Whitespace => sb.write_char(' ')
+      _ => ()
+    }
+  }
+  let value_str = sb.to_string()
+  // Parse the reconstructed string
+  parse_transform_string(value_str)
+}
+
+///|
+/// Parse CSS transform from a string value
+fn parse_transform_string(value : String) -> @style.Transform {
+  let v = value.trim().to_lower()
+  // Handle none
+  if v == "none" || v.is_empty() {
+    return @style.Transform::none()
+  }
+  let mut translate_x = @style.TranslateValue::Length(0.0)
+  let mut translate_y = @style.TranslateValue::Length(0.0)
+  // Parse transform functions
+  let chars = v.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    // Skip whitespace
+    while i < len && (chars[i] == ' ' || chars[i] == '\t') {
+      i = i + 1
+    }
+    if i >= len {
+      break
+    }
+    // Find function name
+    let func_start = i
+    while i < len && chars[i] != '(' {
+      i = i + 1
+    }
+    if i >= len {
+      break
+    }
+    let func_name = transform_chars_to_string(chars[func_start:i])
+    i = i + 1 // Skip '('
+    // Find function arguments (handle nested parens)
+    let args_start = i
+    let mut paren_depth = 1
+    while i < len && paren_depth > 0 {
+      if chars[i] == '(' {
+        paren_depth = paren_depth + 1
+      } else if chars[i] == ')' {
+        paren_depth = paren_depth - 1
+      }
+      i = i + 1
+    }
+    let args_str = transform_chars_to_string(chars[args_start:i - 1])
+    // Parse transform function
+    match func_name.trim() {
+      "translate" => {
+        // translate(x) or translate(x, y)
+        let args = split_transform_args(args_str)
+        if args.length() >= 1 {
+          translate_x = parse_translate_value(args[0])
+        }
+        if args.length() >= 2 {
+          translate_y = parse_translate_value(args[1])
+        }
+      }
+      "translatex" => translate_x = parse_translate_value(args_str)
+      "translatey" => translate_y = parse_translate_value(args_str)
+      "translate3d" => {
+        // translate3d(x, y, z) - we only use x and y
+        let args = split_transform_args(args_str)
+        if args.length() >= 1 {
+          translate_x = parse_translate_value(args[0])
+        }
+        if args.length() >= 2 {
+          translate_y = parse_translate_value(args[1])
+        }
+      }
+      _ => () // Ignore unsupported functions like rotate, scale, etc.
+    }
+  }
+  { translate_x, translate_y }
+}
+
+///|
+/// Parse a single translate value (can be length or percentage)
+fn parse_translate_value(value : String) -> @style.TranslateValue {
+  let v = value.trim()
+  if v.is_empty() {
+    return @style.TranslateValue::Length(0.0)
+  }
+  // Check for percentage
+  if v.has_suffix("%") {
+    let num_str = v[:v.length() - 1].to_string() catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    let n = @strconv.parse_double(num_str.trim()) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Percent(n / 100.0)
+  } else if v.has_suffix("px") {
+    let num_str = v[:v.length() - 2].to_string() catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    let n = @strconv.parse_double(num_str.trim()) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Length(n)
+  } else if v.has_suffix("em") || v.has_suffix("rem") {
+    // em/rem - convert to pixels assuming 16px base
+    let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
+    let num_str = v[:v.length() - suffix_len].to_string() catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    let n = @strconv.parse_double(num_str.trim()) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Length(n * 16.0)
+  } else {
+    // Try parsing as plain number (assumed px)
+    let n = @strconv.parse_double(v) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Length(n)
+  }
+}
+
+///|
+/// Split string by comma (for transform arguments) - local version
+fn split_transform_args(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let current = StringBuilder::new()
+  for c in s {
+    if c == ',' {
+      result.push(current.to_string())
+      current.reset()
+    } else {
+      current.write_char(c)
+    }
+  }
+  let last = current.to_string()
+  if not(last.is_empty()) {
+    result.push(last)
+  }
+  result
+}
+
+///|
+/// Convert char array slice to string
+fn transform_chars_to_string(chars : ArrayView[Char]) -> String {
+  let sb = StringBuilder::new()
+  for c in chars {
+    sb.write_char(c)
+  }
+  sb.to_string()
+}
+
+///|
 /// Extract property name and value tokens from a declaration
 fn parse_declaration(
   tokens : ArrayView[@token.Token],
@@ -1609,6 +1801,11 @@ fn apply_property(
   if property == "contain" {
     let contain = parse_contain(value_tokens)
     return { ..style, contain, }
+  }
+  // transform
+  if property == "transform" {
+    let transform = parse_transform(value_tokens)
+    return { ..style, transform, }
   }
   // Unknown property - ignore
   style

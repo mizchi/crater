@@ -242,6 +242,7 @@ pub(all) struct Style {
   mut color : @types.Color
   mut background_color : @types.Color
   mut contain : Contain
+  mut transform : Transform
 }
 pub fn Style::default() -> Self
 
@@ -259,6 +260,24 @@ pub(all) enum TrackSizingFunction {
 }
 pub impl Eq for TrackSizingFunction
 pub impl Show for TrackSizingFunction
+
+pub(all) struct Transform {
+  translate_x : TranslateValue
+  translate_y : TranslateValue
+}
+pub fn Transform::compute_translate_x(Self, Double) -> Double
+pub fn Transform::compute_translate_y(Self, Double) -> Double
+pub fn Transform::is_none(Self) -> Bool
+pub fn Transform::none() -> Self
+pub impl Eq for Transform
+pub impl Show for Transform
+
+pub(all) enum TranslateValue {
+  Length(Double)
+  Percent(Double)
+}
+pub impl Eq for TranslateValue
+pub impl Show for TranslateValue
 
 pub(all) enum VerticalAlign {
   Baseline

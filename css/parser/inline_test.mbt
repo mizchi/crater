@@ -700,3 +700,31 @@ test "parse alignment flex-start and flex-end" {
   inspect(style.justify_content, content="FlexStart")
   inspect(style.align_items, content="FlexEnd")
 }
+
+///|
+test "parse transform translate" {
+  let style = parse_inline_style("transform: translate(10px, 20px)")
+  inspect(style.transform.translate_x, content="Length(10)")
+  inspect(style.transform.translate_y, content="Length(20)")
+}
+
+///|
+test "parse transform translateX" {
+  let style = parse_inline_style("transform: translateX(50%)")
+  inspect(style.transform.translate_x, content="Percent(0.5)")
+  inspect(style.transform.translate_y, content="Length(0)")
+}
+
+///|
+test "parse transform translateY" {
+  let style = parse_inline_style("transform: translateY(-100px)")
+  inspect(style.transform.translate_x, content="Length(0)")
+  inspect(style.transform.translate_y, content="Length(-100)")
+}
+
+///|
+test "parse transform translate with percentage" {
+  let style = parse_inline_style("transform: translate(-50%, -50%)")
+  inspect(style.transform.translate_x, content="Percent(-0.5)")
+  inspect(style.transform.translate_y, content="Percent(-0.5)")
+}

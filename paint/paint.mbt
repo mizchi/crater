@@ -344,13 +344,18 @@ pub fn from_node_and_layout(
     children.push(from_node_and_layout(node.children[i], layout.children[i]))
   }
 
+  // Apply CSS transform (translate) to visual position
+  let transform = node.style.transform
+  let translate_x = transform.compute_translate_x(layout.width)
+  let translate_y = transform.compute_translate_y(layout.height)
+
   // Extract tag name from node ID
   let tag = extract_tag_from_id(node.id)
   PaintNode::new(
     node.id,
     tag,
-    layout.x,
-    layout.y,
+    layout.x + translate_x,
+    layout.y + translate_y,
     layout.width,
     layout.height,
     paint,

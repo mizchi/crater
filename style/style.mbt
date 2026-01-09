@@ -114,6 +114,64 @@ pub(all) enum ZIndex {
 } derive(Show, Eq)
 
 ///|
+/// CSS transform translate value (can be length or percent)
+pub(all) enum TranslateValue {
+  Length(Double) // Fixed length in pixels
+  Percent(Double) // Percentage of element's own dimension (0.0 - 1.0)
+} derive(Show, Eq)
+
+///|
+/// CSS transform property - list of transform functions
+/// Currently supports translate only for layout purposes
+pub(all) struct Transform {
+  translate_x : TranslateValue // translateX or first arg of translate()
+  translate_y : TranslateValue // translateY or second arg of translate()
+} derive(Show, Eq)
+
+///|
+/// Create a none/identity transform
+pub fn Transform::none() -> Transform {
+  {
+    translate_x: TranslateValue::Length(0.0),
+    translate_y: TranslateValue::Length(0.0),
+  }
+}
+
+///|
+/// Check if transform is identity (no visual change)
+pub fn Transform::is_none(self : Transform) -> Bool {
+  match (self.translate_x, self.translate_y) {
+    (TranslateValue::Length(0.0), TranslateValue::Length(0.0)) => true
+    (TranslateValue::Percent(0.0), TranslateValue::Percent(0.0)) => true
+    _ => false
+  }
+}
+
+///|
+/// Compute translate X offset given element width
+pub fn Transform::compute_translate_x(
+  self : Transform,
+  element_width : Double,
+) -> Double {
+  match self.translate_x {
+    TranslateValue::Length(v) => v
+    TranslateValue::Percent(p) => element_width * p
+  }
+}
+
+///|
+/// Compute translate Y offset given element height
+pub fn Transform::compute_translate_y(
+  self : Transform,
+  element_height : Double,
+) -> Double {
+  match self.translate_y {
+    TranslateValue::Length(v) => v
+    TranslateValue::Percent(p) => element_height * p
+  }
+}
+
+///|
 /// CSS contain property - uses flags since multiple values can be combined
 /// e.g., "contain: layout paint" or "contain: strict"
 pub(all) struct Contain {
@@ -320,6 +378,8 @@ pub(all) struct Style {
   mut background_color : @types.Color // Background color (not inherited)
   // Containment (for layout optimization)
   mut contain : Contain
+  // CSS transform (visual offset, applied in paint phase)
+  mut transform : Transform
 }
 
 ///|
@@ -396,5 +456,6 @@ pub fn Style::default() -> Style {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
+    transform: Transform::none(),
   }
 }
