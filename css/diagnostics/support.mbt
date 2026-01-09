@@ -106,8 +106,13 @@ pub fn get_support_level(property : String) -> SupportLevel {
     | "grid-column-start"
     | "grid-column-end" => Supported
     "grid-row" | "grid-column" | "grid-area" => Supported
-    // Gap
-    "gap" | "row-gap" | "column-gap" => Supported
+    // Gap (grid-gap is legacy alias)
+    "gap"
+    | "row-gap"
+    | "column-gap"
+    | "grid-gap"
+    | "grid-row-gap"
+    | "grid-column-gap" => Supported
     // Place properties (shorthand)
     "place-content" | "place-items" | "place-self" =>
       Partial("shorthand for align/justify")
@@ -243,8 +248,8 @@ pub fn get_support_level(property : String) -> SupportLevel {
     // Text Shadow
     "text-shadow" => UnsupportedVisual
     // Transforms
-    "transform"
-    | "transform-origin"
+    "transform" => Partial("translate only, no rotate/scale/skew")
+    "transform-origin"
     | "transform-style"
     | "perspective"
     | "perspective-origin" => UnsupportedVisual

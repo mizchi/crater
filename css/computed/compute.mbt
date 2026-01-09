@@ -149,6 +149,8 @@ priv struct StyleBuilder {
   mut background_color : @types.Color
   // Containment
   mut contain : @style.Contain
+  // Transform
+  mut transform : @style.Transform
 }
 
 ///|
@@ -213,6 +215,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
+    transform: @style.Transform::none(),
   }
 }
 
@@ -290,6 +293,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     color: self.color,
     background_color: self.background_color,
     contain: self.contain,
+    transform: self.transform,
   }
 }
 
@@ -878,14 +882,16 @@ fn apply_property(
         }
       }
     }
-    // Gap
-    "gap" => {
+    // Gap (grid-gap is legacy alias)
+    "gap" | "grid-gap" => {
       let dim = resolve_dimension(value, ctx)
       builder.row_gap = dim
       builder.column_gap = dim
     }
-    "row-gap" => builder.row_gap = resolve_dimension(value, ctx)
-    "column-gap" => builder.column_gap = resolve_dimension(value, ctx)
+    "row-gap" | "grid-row-gap" =>
+      builder.row_gap = resolve_dimension(value, ctx)
+    "column-gap" | "grid-column-gap" =>
+      builder.column_gap = resolve_dimension(value, ctx)
     // Inset
     "top" => builder.inset_top = resolve_dimension(value, ctx)
     "right" => builder.inset_right = resolve_dimension(value, ctx)
@@ -997,6 +1003,8 @@ fn apply_property(
           }
       }
     }
+    // Transform (visual position offset)
+    "transform" => builder.transform = parse_transform(value)
     _ => ()
   }
 }
@@ -1670,6 +1678,155 @@ fn is_pure_number(s : String) -> Bool {
     }
   }
   true
+}
+
+///|
+/// Parse CSS transform property
+/// Supports translate(x, y), translateX(x), translateY(y)
+fn parse_transform(value : String) -> @style.Transform {
+  let v = value.trim().to_lower()
+  // Handle none
+  if v == "none" || v.is_empty() {
+    return @style.Transform::none()
+  }
+  let mut translate_x = @style.TranslateValue::Length(0.0)
+  let mut translate_y = @style.TranslateValue::Length(0.0)
+  // Parse transform functions
+  // We handle each function in sequence
+  let chars = v.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    // Skip whitespace
+    while i < len && (chars[i] == ' ' || chars[i] == '\t') {
+      i = i + 1
+    }
+    if i >= len {
+      break
+    }
+    // Find function name
+    let func_start = i
+    while i < len && chars[i] != '(' {
+      i = i + 1
+    }
+    if i >= len {
+      break
+    }
+    let func_name = chars_to_string(chars[func_start:i])
+    i = i + 1 // Skip '('
+    // Find function arguments (handle nested parens)
+    let args_start = i
+    let mut paren_depth = 1
+    while i < len && paren_depth > 0 {
+      if chars[i] == '(' {
+        paren_depth = paren_depth + 1
+      } else if chars[i] == ')' {
+        paren_depth = paren_depth - 1
+      }
+      i = i + 1
+    }
+    let args_str = chars_to_string(chars[args_start:i - 1])
+    // Parse transform function
+    match func_name.trim() {
+      "translate" => {
+        // translate(x) or translate(x, y)
+        let args = split_by_comma(args_str)
+        if args.length() >= 1 {
+          translate_x = parse_translate_value(args[0])
+        }
+        if args.length() >= 2 {
+          translate_y = parse_translate_value(args[1])
+        }
+      }
+      "translatex" => translate_x = parse_translate_value(args_str)
+      "translatey" => translate_y = parse_translate_value(args_str)
+      "translate3d" => {
+        // translate3d(x, y, z) - we only use x and y
+        let args = split_by_comma(args_str)
+        if args.length() >= 1 {
+          translate_x = parse_translate_value(args[0])
+        }
+        if args.length() >= 2 {
+          translate_y = parse_translate_value(args[1])
+        }
+      }
+      _ => () // Ignore unsupported functions like rotate, scale, etc.
+    }
+  }
+  { translate_x, translate_y }
+}
+
+///|
+/// Parse a single translate value (can be length or percentage)
+fn parse_translate_value(value : String) -> @style.TranslateValue {
+  let v = value.trim()
+  if v.is_empty() {
+    return @style.TranslateValue::Length(0.0)
+  }
+  // Check for percentage
+  if v.has_suffix("%") {
+    let num_str = v[:v.length() - 1].to_string() catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    let n = @strconv.parse_double(num_str.trim()) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Percent(n / 100.0)
+  } else if v.has_suffix("px") {
+    let num_str = v[:v.length() - 2].to_string() catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    let n = @strconv.parse_double(num_str.trim()) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Length(n)
+  } else if v.has_suffix("em") || v.has_suffix("rem") {
+    // em/rem - convert to pixels assuming 16px base
+    let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
+    let num_str = v[:v.length() - suffix_len].to_string() catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    let n = @strconv.parse_double(num_str.trim()) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Length(n * 16.0)
+  } else {
+    // Try parsing as plain number (assumed px)
+    let n = @strconv.parse_double(v) catch {
+      _ => return @style.TranslateValue::Length(0.0)
+    }
+    @style.TranslateValue::Length(n)
+  }
+}
+
+///|
+/// Split string by comma (for transform arguments)
+fn split_by_comma(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let current = StringBuilder::new()
+  for c in s {
+    if c == ',' {
+      result.push(current.to_string())
+      current.reset()
+    } else {
+      current.write_char(c)
+    }
+  }
+  let last = current.to_string()
+  if not(last.is_empty()) {
+    result.push(last)
+  }
+  result
+}
+
+///|
+/// Convert char array slice to string
+fn chars_to_string(chars : ArrayView[Char]) -> String {
+  let sb = StringBuilder::new()
+  for c in chars {
+    sb.write_char(c)
+  }
+  sb.to_string()
 }
 
 ///|

@@ -65,8 +65,13 @@ pub fn initial_value(property : String) -> String {
     "flex-grow" => "0"
     "flex-shrink" => "1"
     "flex-basis" => "auto"
-    // Gap
-    "gap" | "row-gap" | "column-gap" => "0"
+    // Gap (grid-gap is legacy alias)
+    "gap"
+    | "row-gap"
+    | "column-gap"
+    | "grid-gap"
+    | "grid-row-gap"
+    | "grid-column-gap" => "0"
     // Aspect ratio
     "aspect-ratio" => "auto"
     // Inset
