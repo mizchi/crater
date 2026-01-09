@@ -19,11 +19,15 @@ pub struct DomTree {
   nodes : Map[Int, DomNode]
   mut root_id : Int
   mut focused_node : Int?
+  mutations : MutationQueue
 }
 pub fn DomTree::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
+pub fn DomTree::clear_mutations(Self) -> Unit
 pub fn DomTree::create_comment(Self, String) -> NodeId
 pub fn DomTree::create_element(Self, String) -> NodeId
 pub fn DomTree::create_text(Self, String) -> NodeId
+pub fn DomTree::flush_mutations(Self) -> (Array[MutationRecord], FlushResult)
+pub fn[T] DomTree::flush_mutations_with(Self, (MutationRecord) -> T) -> (Array[T], FlushResult)
 pub fn DomTree::get_attribute(Self, NodeId, String) -> Result[String?, CoreError]
 pub fn DomTree::get_attributes(Self, NodeId) -> Result[Array[(String, String)], CoreError]
 pub fn DomTree::get_cached_rect(Self, NodeId) -> Rect?
@@ -31,13 +35,16 @@ pub fn DomTree::get_children(Self, NodeId) -> Result[Array[NodeId], CoreError]
 pub fn DomTree::get_document(Self) -> NodeId
 pub fn DomTree::get_first_child(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_focus(Self) -> NodeId?
+pub fn DomTree::get_mutation_queue(Self) -> MutationQueue
 pub fn DomTree::get_next_sibling(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_node_info(Self, NodeId) -> Result[NodeInfo, CoreError]
 pub fn DomTree::get_parent(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_tag_name(Self, NodeId) -> Result[String, CoreError]
 pub fn DomTree::get_text_content(Self, NodeId) -> Result[String, CoreError]
+pub fn DomTree::has_pending_mutations(Self) -> Bool
 pub fn DomTree::insert_before(Self, NodeId, NodeId, NodeId?) -> Result[Unit, CoreError]
 pub fn DomTree::new() -> Self
+pub fn DomTree::pending_mutation_count(Self) -> Int
 pub fn DomTree::query_selector(Self, NodeId, String) -> Result[NodeId?, CoreError]
 pub fn DomTree::query_selector_all(Self, NodeId, String) -> Result[Array[NodeId], CoreError]
 pub fn DomTree::remove_attribute(Self, NodeId, String) -> Result[Unit, CoreError]
@@ -46,6 +53,55 @@ pub fn DomTree::set_attribute(Self, NodeId, String, String) -> Result[Unit, Core
 pub fn DomTree::set_cached_rect(Self, NodeId, Rect) -> Unit
 pub fn DomTree::set_focus(Self, NodeId?) -> Unit
 pub fn DomTree::set_text_content(Self, NodeId, String) -> Result[Unit, CoreError]
+
+pub struct FlushResult {
+  processed : Int
+  nodes_affected : Int
+  needs_layout : Bool
+}
+pub impl Show for FlushResult
+
+pub struct MutationQueue {
+  mut records : Array[MutationRecord]
+  dirty_nodes : Map[Int, Bool]
+  mut is_flushing : Bool
+  mut deferred : Array[MutationRecord]
+}
+pub fn MutationQueue::clear(Self) -> Unit
+pub fn MutationQueue::flush(Self) -> (Array[MutationRecord], FlushResult)
+pub fn[T] MutationQueue::flush_with(Self, (MutationRecord) -> T) -> (Array[T], FlushResult)
+pub fn MutationQueue::has_pending(Self, NodeId) -> Bool
+pub fn MutationQueue::is_empty(Self) -> Bool
+pub fn MutationQueue::length(Self) -> Int
+pub fn MutationQueue::new() -> Self
+pub fn MutationQueue::optimize(Self) -> Array[MutationRecord]
+pub fn MutationQueue::push(Self, MutationRecord) -> Unit
+
+pub struct MutationRecord {
+  type_ : MutationType
+  target : NodeId
+  added_nodes : Array[NodeId]
+  removed_nodes : Array[NodeId]
+  attribute_name : String?
+  old_value : String?
+  new_value : String?
+  changed_properties : Array[String]
+}
+pub fn MutationRecord::affects_layout(Self) -> Bool
+pub fn MutationRecord::attribute(NodeId, String, old_value? : String?, new_value? : String?) -> Self
+pub fn MutationRecord::character_data(NodeId, old_value? : String?, new_value? : String?) -> Self
+pub fn MutationRecord::child_list(NodeId, added? : Array[NodeId], removed? : Array[NodeId]) -> Self
+pub fn MutationRecord::style_change(NodeId, Array[String]) -> Self
+pub impl Show for MutationRecord
+
+pub enum MutationType {
+  ChildList
+  Attributes
+  CharacterData
+  StyleChange
+}
+pub impl Eq for MutationType
+pub impl Show for MutationType
 
 pub struct NodeId(Int)
 pub fn NodeId::from_int(Int) -> Self

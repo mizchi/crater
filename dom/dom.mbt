@@ -22,6 +22,8 @@ pub struct DomTree {
   mut root_id : Int
   /// Currently focused node (for input)
   mut focused_node : Int?
+  /// Mutation queue for batching changes
+  mutations : MutationQueue
 }
 
 ///|
@@ -40,7 +42,13 @@ struct DomNode {
 ///|
 /// Create a new empty DOM tree
 pub fn DomTree::new() -> DomTree {
-  let tree : DomTree = { next_id: 1, nodes: {}, root_id: 0, focused_node: None }
+  let tree : DomTree = {
+    next_id: 1,
+    nodes: {},
+    root_id: 0,
+    focused_node: None,
+    mutations: MutationQueue::new(),
+  }
   // Create root document node
   let doc_node : DomNode = {
     node_type: Document,
@@ -138,7 +146,12 @@ pub fn DomTree::append_child(
               match idx {
                 Some(i) => {
                   let _ = old_parent.children.remove(i)
-
+                  // Record removal from old parent
+                  self.mutations.push(
+                    MutationRecord::child_list(NodeId(old_parent_id), removed=[
+                      child,
+                    ]),
+                  )
                 }
                 None => ()
               }
@@ -151,6 +164,8 @@ pub fn DomTree::append_child(
       c.parent_id = Some(parent_id)
       // Add to new parent's children
       p.children.push(child_id)
+      // Record mutation
+      self.mutations.push(MutationRecord::child_list(parent, added=[child]))
       // Invalidate layout cache
       self.invalidate_layout(parent_id)
       Ok(())
@@ -185,7 +200,12 @@ pub fn DomTree::insert_before(
                   match idx {
                     Some(i) => {
                       let _ = old_parent.children.remove(i)
-
+                      // Record removal from old parent
+                      self.mutations.push(
+                        MutationRecord::child_list(NodeId(old_parent_id), removed=[
+                          child,
+                        ]),
+                      )
                     }
                     None => ()
                   }
@@ -208,6 +228,8 @@ pub fn DomTree::insert_before(
             }
             None => p.children.push(child_id) // No reference, append
           }
+          // Record mutation
+          self.mutations.push(MutationRecord::child_list(parent, added=[child]))
           self.invalidate_layout(parent_id)
           Ok(())
         }
@@ -231,6 +253,10 @@ pub fn DomTree::remove_child(
         Some(i) => {
           let _ = p.children.remove(i)
           c.parent_id = None
+          // Record mutation
+          self.mutations.push(
+            MutationRecord::child_list(parent, removed=[child]),
+          )
           self.invalidate_layout(parent_id)
           Ok(())
         }
@@ -257,7 +283,12 @@ pub fn DomTree::set_attribute(
   let id = node.to_int()
   match self.nodes.get(id) {
     Some(n) => {
+      let old_value = n.attributes.get(name)
       n.attributes[name] = value
+      // Record mutation
+      self.mutations.push(
+        MutationRecord::attribute(node, name, old_value~, new_value=Some(value)),
+      )
       self.invalidate_layout(id)
       Ok(())
     }
@@ -289,7 +320,12 @@ pub fn DomTree::remove_attribute(
   let id = node.to_int()
   match self.nodes.get(id) {
     Some(n) => {
+      let old_value = n.attributes.get(name)
       n.attributes.remove(name)
+      // Record mutation
+      self.mutations.push(
+        MutationRecord::attribute(node, name, old_value~, new_value=None),
+      )
       self.invalidate_layout(id)
       Ok(())
     }
@@ -386,9 +422,26 @@ pub fn DomTree::set_text_content(
   match self.nodes.get(id) {
     Some(n) => {
       match n.node_type {
-        Text | Comment => n.text_content = content
+        Text | Comment => {
+          let old_value = n.text_content
+          n.text_content = content
+          // Record mutation
+          self.mutations.push(
+            MutationRecord::character_data(
+              node,
+              old_value=Some(old_value),
+              new_value=Some(content),
+            ),
+          )
+        }
         _ => {
           // For elements, remove all children and add text node
+          // Record removal of existing children
+          for child_id in n.children {
+            self.mutations.push(
+              MutationRecord::child_list(node, removed=[NodeId(child_id)]),
+            )
+          }
           n.children.clear()
           let text_node = self.create_text(content)
           let _ = self.append_child(node, text_node)
@@ -700,4 +753,52 @@ pub fn DomTree::set_focus(self : DomTree, node : NodeId?) -> Unit {
 /// Get focused element
 pub fn DomTree::get_focus(self : DomTree) -> NodeId? {
   self.focused_node.map(fn(x) { NodeId(x) })
+}
+
+// =============================================================================
+// Mutation Queue API
+// =============================================================================
+
+///|
+/// Check if there are pending mutations
+pub fn DomTree::has_pending_mutations(self : DomTree) -> Bool {
+  not(self.mutations.is_empty())
+}
+
+///|
+/// Get number of pending mutations
+pub fn DomTree::pending_mutation_count(self : DomTree) -> Int {
+  self.mutations.length()
+}
+
+///|
+/// Flush pending mutations and return optimized records
+/// Returns (records, result) where records is the optimized mutation list
+/// and result contains statistics about the flush operation
+pub fn DomTree::flush_mutations(
+  self : DomTree,
+) -> (Array[MutationRecord], FlushResult) {
+  self.mutations.flush()
+}
+
+///|
+/// Flush mutations with a custom handler for each record
+/// Useful for applying mutations to other systems (e.g., LayoutTree)
+pub fn[T] DomTree::flush_mutations_with(
+  self : DomTree,
+  handler : (MutationRecord) -> T,
+) -> (Array[T], FlushResult) {
+  self.mutations.flush_with(handler)
+}
+
+///|
+/// Clear all pending mutations without processing
+pub fn DomTree::clear_mutations(self : DomTree) -> Unit {
+  self.mutations.clear()
+}
+
+///|
+/// Get direct access to the mutation queue (for advanced use cases)
+pub fn DomTree::get_mutation_queue(self : DomTree) -> MutationQueue {
+  self.mutations
 }
