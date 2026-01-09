@@ -382,31 +382,62 @@ fn compute_with_collapse(
         let available_h = ctx.available_height.unwrap_or(0.0)
         let intrinsic = (mf.func)(parent_width, available_h)
 
-        // Calculate width - constrained by parent width
-        let box_width = match style.width {
-          @types.Length(w) => w
-          @types.Percent(p) => parent_width * p
+        // Resolve min/max constraints
+        let min_width = style.min_width.resolve_or(parent_width, 0.0)
+        let max_width = style.max_width.resolve_or(
+          parent_width, @double.infinity,
+        )
+        let min_height = style.min_height.resolve_or(parent_height, 0.0)
+        let max_height = style.max_height.resolve_or(
+          parent_height, @double.infinity,
+        )
+
+        // Calculate initial width
+        let initial_width : Double? = match style.width {
+          @types.Length(w) => Some(w)
+          @types.Percent(p) => Some(parent_width * p)
           @types.Auto => {
             let content_width = intrinsic.max_width +
               padding.horizontal_sum() +
               border.horizontal_sum()
             // Text should not exceed parent width
-            @types.min(content_width, parent_width)
+            Some(@types.min(content_width, parent_width))
           }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-            parent_width
+            Some(parent_width)
         }
 
-        // Calculate height
-        let box_height = match style.height {
-          @types.Length(h) => h
-          @types.Percent(p) => parent_height * p
+        // Calculate initial height
+        let initial_height : Double? = match style.height {
+          @types.Length(h) => Some(h)
+          @types.Percent(p) => Some(parent_height * p)
           @types.Auto =>
-            intrinsic.max_height +
-            padding.vertical_sum() +
-            border.vertical_sum()
-          @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+            Some(
+              intrinsic.max_height +
+              padding.vertical_sum() +
+              border.vertical_sum(),
+            )
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            Some(0.0)
         }
+
+        // Apply aspect_ratio and constraints
+        let (final_width, final_height) = @types.resolve_dimensions_with_aspect_ratio(
+          initial_width,
+          initial_height,
+          style.aspect_ratio,
+          min_width,
+          max_width,
+          min_height,
+          max_height,
+        )
+        let box_width = final_width.unwrap_or(0.0)
+        let box_height = final_height.unwrap_or(0.0)
+
+        // Re-apply aspect_ratio after min/max constraints if needed
+        let (box_width, box_height) = @absolute.apply_constraints_with_aspect_ratio(
+          box_width, box_height, style, min_width, max_width, min_height, max_height,
+        )
         return {
           layout: {
             id: node.id,
@@ -1215,8 +1246,10 @@ fn compute_with_collapse(
       }
     }
 
-    // Apply inset offset for relative positioned children
-    let (final_x, final_y) = if child_style.position == @style.Relative {
+    // Apply inset offset for non-absolute positioned children
+    // (Static and Relative both apply inset as offset from flow position)
+    let (final_x, final_y) = if child_style.position != @style.Absolute &&
+      child_style.position != @style.Fixed {
       let inset = child_style.inset
       // X offset: left takes precedence over right
       // Percentages resolve against containing block width

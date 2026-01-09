@@ -1195,7 +1195,24 @@ fn compute_internal(
             // Root-level flex should use content-based sizing (taffy behavior)
             @node.Definite =>
               if is_block_level && not(is_root) {
-                parent_width - margin.horizontal_sum()
+                let fill_width = parent_width - margin.horizontal_sum()
+                let min_width = padding.horizontal_sum() +
+                  border.horizontal_sum()
+                if fill_width >= min_width {
+                  fill_width
+                } else if node.children.length() > 0 {
+                  // When fill calculation would result in width < min,
+                  // parent_width is likely the final content size (not available space).
+                  // Use intrinsic sizing instead.
+                  compute_intrinsic_main_size(
+                    node,
+                    true,
+                    ctx.available_height,
+                    cache,
+                  )
+                } else {
+                  min_width
+                }
                 // InlineFlex or root Flex: use content-based sizing
               } else if node.children.length() > 0 {
                 compute_intrinsic_main_size(
@@ -1469,52 +1486,76 @@ fn compute_internal(
                 Some(ch) => Some(ch * p)
                 None => None
               }
-            @types.Auto =>
-              // Check if min-height is set - use it for aspect-ratio calculation
-              match child_style.min_height {
-                @types.Length(min_h) if min_h > 0.0 => {
-                  // Get intrinsic height from MeasureFunc if available
-                  let intrinsic_h = match child.measure {
-                    Some(mf) => {
-                      let intrinsic = (mf.func)(content_width, 0.0)
-                      intrinsic.max_height
-                    }
+            @types.Auto => {
+              // Get intrinsic height from MeasureFunc if available
+              let intrinsic_h = match child.measure {
+                Some(mf) => {
+                  let intrinsic = (mf.func)(content_width, 0.0)
+                  intrinsic.max_height
+                }
+                None => 0.0
+              }
+              // Apply min/max constraints for aspect-ratio calculation
+              let min_h = match child_style.min_height {
+                @types.Length(h) => h
+                @types.Percent(p) =>
+                  match content_height {
+                    Some(ch) => ch * p
                     None => 0.0
                   }
-                  // Use max of intrinsic and min constraint
-                  Some(@types.max(intrinsic_h, min_h))
-                }
-                @types.Percent(p) if p > 0.0 =>
-                  match content_height {
-                    Some(ch) => Some(ch * p)
-                    None => None
-                  }
-                _ => None
+                _ => 0.0
               }
+              let max_h = match child_style.max_height {
+                @types.Length(h) => h
+                @types.Percent(p) =>
+                  match content_height {
+                    Some(ch) => ch * p
+                    None => @double.infinity
+                  }
+                _ => @double.infinity
+              }
+              // If max_height is set and less than intrinsic, use constrained value
+              if max_h < @double.infinity || min_h > 0.0 {
+                let constrained = @types.clamp(intrinsic_h, min_h, max_h)
+                Some(constrained)
+              } else {
+                None
+              }
+            }
             @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
         } else {
           match child_style.width {
             @types.Length(w) => Some(w)
             @types.Percent(p) => Some(content_width * p)
-            @types.Auto =>
-              // Check if min-width is set - use it for aspect-ratio calculation
-              match child_style.min_width {
-                @types.Length(min_w) if min_w > 0.0 => {
-                  // Get intrinsic width from MeasureFunc if available
-                  let intrinsic_w = match child.measure {
-                    Some(mf) => {
-                      let intrinsic = (mf.func)(0.0, 0.0)
-                      intrinsic.max_width
-                    }
-                    None => 0.0
-                  }
-                  // Use max of intrinsic and min constraint
-                  Some(@types.max(intrinsic_w, min_w))
+            @types.Auto => {
+              // Get intrinsic width from MeasureFunc if available
+              let intrinsic_w = match child.measure {
+                Some(mf) => {
+                  let intrinsic = (mf.func)(0.0, 0.0)
+                  intrinsic.max_width
                 }
-                @types.Percent(p) if p > 0.0 => Some(content_width * p)
-                _ => None
+                None => 0.0
               }
+              // Apply min/max constraints for aspect-ratio calculation
+              let min_w = match child_style.min_width {
+                @types.Length(w) => w
+                @types.Percent(p) => content_width * p
+                _ => 0.0
+              }
+              let max_w = match child_style.max_width {
+                @types.Length(w) => w
+                @types.Percent(p) => content_width * p
+                _ => @double.infinity
+              }
+              // If max_width is set and less than intrinsic, use constrained value
+              if max_w < @double.infinity || min_w > 0.0 {
+                let constrained = @types.clamp(intrinsic_w, min_w, max_w)
+                Some(constrained)
+              } else {
+                None
+              }
+            }
             @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
         }
@@ -2980,9 +3021,11 @@ fn compute_internal(
         (x, y)
       }
 
-      // Apply position: relative inset offsets
+      // Apply inset offsets for non-absolute positioned children
+      // (Static and Relative both apply inset as offset from flow position)
       let child_style = child.style
-      let (child_x, child_y) = if child_style.position == @style.Relative {
+      let (child_x, child_y) = if child_style.position != @style.Absolute &&
+        child_style.position != @style.Fixed {
         // X offset: left takes precedence, otherwise use negative right
         let x_offset = match child_style.inset.left {
           @types.Length(v) => v
