@@ -725,6 +725,24 @@ pub fn Browser::debug_layout(self : Browser) -> Unit {
 }
 
 ///|
+/// Render accessibility tree as JSON (for AI scraping)
+pub fn Browser::render_json(self : Browser) -> String {
+  match self.a11y_tree {
+    Some(tree) => tree.to_aria_json()
+    None => "{}"
+  }
+}
+
+///|
+/// Render accessibility tree as YAML (Playwright-compatible)
+pub fn Browser::render_aom(self : Browser) -> String {
+  match self.a11y_tree {
+    Some(tree) => tree.to_aria_snapshot()
+    None => ""
+  }
+}
+
+///|
 /// Extract links from HTML content
 fn extract_links(html : String) -> Array[Link] {
   let links : Array[Link] = []

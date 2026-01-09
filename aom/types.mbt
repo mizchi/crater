@@ -404,6 +404,24 @@ pub(all) struct AccessibilityNode {
 
   // Reference to source element id (for debugging/tooling)
   source_id : String?
+
+  // === AI scraping enhancements ===
+
+  // URL for links (href attribute)
+  href : String?
+
+  // Original HTML tag name (for disambiguation when role is generic)
+  tag_name : String?
+
+  // CSS selector for element targeting (for AI interaction)
+  selector : String?
+
+  // Whether this is visible content (false for style, script, head content)
+  visible : Bool
+
+  // Sequential reference ID for AI interaction (e.g., "ref_1", "ref_2")
+  // Simple, unique identifier for element targeting
+  ref_id : String?
 }
 
 ///|
@@ -421,6 +439,11 @@ pub fn AccessibilityNode::new(id : String, role : Role) -> AccessibilityNode {
     focusable: false,
     tabindex: Option::None,
     source_id: Option::None,
+    href: Option::None,
+    tag_name: Option::None,
+    selector: Option::None,
+    visible: true,
+    ref_id: Option::None,
   }
 }
 

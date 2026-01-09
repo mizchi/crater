@@ -52,6 +52,18 @@ fn render_node_json(
   buf.write_string(role_to_snapshot_string(node.role))
   buf.write_string("\"")
 
+  // Ref ID (for AI - simple sequential identifier for element targeting)
+  match node.ref_id {
+    Some(ref_id) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"ref\": \"")
+      buf.write_string(escape_string(ref_id))
+      buf.write_string("\"")
+    }
+    None => ()
+  }
+
   // Name
   match node.name {
     Some(name) if not(name.is_empty()) => {
@@ -71,6 +83,97 @@ fn render_node_json(
       write_indent(buf, indent + 1)
       buf.write_string("\"level\": ")
       buf.write_string(level.to_string())
+    }
+    None => ()
+  }
+
+  // Focusable (for AI - helps identify interactive elements)
+  if node.focusable {
+    buf.write_string(",\n")
+    write_indent(buf, indent + 1)
+    buf.write_string("\"focusable\": true")
+  }
+
+  // Tabindex (for AI - helps understand navigation order)
+  match node.tabindex {
+    Some(tabindex) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"tabindex\": ")
+      buf.write_string(tabindex.to_string())
+    }
+    None => ()
+  }
+
+  // Source ID (for AI - reference to original HTML element)
+  match node.source_id {
+    Some(source_id) if not(source_id.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"sourceId\": \"")
+      buf.write_string(escape_string(source_id))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+
+  // href (for AI - link URL)
+  match node.href {
+    Some(href) if not(href.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"href\": \"")
+      buf.write_string(escape_string(href))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+
+  // Tag name (for AI - original HTML tag)
+  match node.tag_name {
+    Some(tag) if not(tag.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"tag\": \"")
+      buf.write_string(escape_string(tag))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+
+  // Selector (for AI - CSS selector for element targeting)
+  match node.selector {
+    Some(sel) if not(sel.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"selector\": \"")
+      buf.write_string(escape_string(sel))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+
+  // Visible flag (for AI - false for style/script/meta content)
+  if not(node.visible) {
+    buf.write_string(",\n")
+    write_indent(buf, indent + 1)
+    buf.write_string("\"visible\": false")
+  }
+
+  // Bounds (for AI - spatial information)
+  match node.bounds {
+    Some(bounds) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"bounds\": { \"x\": ")
+      buf.write_string(bounds.x.to_string())
+      buf.write_string(", \"y\": ")
+      buf.write_string(bounds.y.to_string())
+      buf.write_string(", \"width\": ")
+      buf.write_string(bounds.width.to_string())
+      buf.write_string(", \"height\": ")
+      buf.write_string(bounds.height.to_string())
+      buf.write_string(" }")
     }
     None => ()
   }

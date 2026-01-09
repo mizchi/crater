@@ -67,6 +67,11 @@ pub(all) struct AccessibilityNode {
   focusable : Bool
   tabindex : Int?
   source_id : String?
+  href : String?
+  tag_name : String?
+  selector : String?
+  visible : Bool
+  ref_id : String?
 }
 pub fn AccessibilityNode::add_child(Self, Self) -> Self
 pub fn AccessibilityNode::add_state(Self, State) -> Self

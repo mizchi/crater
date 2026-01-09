@@ -21,6 +21,8 @@ priv struct TreeBuilderContext {
   mut uid_counter : Int
   // Parsed stylesheets for pseudo-element content
   stylesheets : Array[@cascade.Stylesheet]
+  // Ref counter for sequential element refs (ref_1, ref_2, ...)
+  mut ref_counter : Int
 }
 
 ///|
@@ -32,6 +34,7 @@ fn TreeBuilderContext::new() -> TreeBuilderContext {
     encapsulating_label: None,
     uid_counter: 0,
     stylesheets: [],
+    ref_counter: 1,
   }
 }
 
@@ -48,6 +51,14 @@ fn TreeBuilderContext::next_uid(self : TreeBuilderContext) -> String {
   let uid = self.uid_counter
   self.uid_counter += 1
   "aom-\{uid}"
+}
+
+///|
+/// Generate next ref id (ref_1, ref_2, ...)
+fn TreeBuilderContext::next_ref(self : TreeBuilderContext) -> String {
+  let ref_num = self.ref_counter
+  self.ref_counter += 1
+  "ref_\{ref_num}"
 }
 
 ///|
@@ -358,6 +369,11 @@ fn build_node(
       focusable: false,
       tabindex: Option::None,
       source_id: element.id,
+      href: Option::None,
+      tag_name: Some(element.tag.to_lower()),
+      selector: build_selector(element),
+      visible: is_visible_element(element.tag),
+      ref_id: Some(ctx.next_ref()),
     }
   }
 
@@ -415,6 +431,9 @@ fn build_node(
     ctx
   }
   let children = build_children(element, new_ctx)
+
+  // Extract href for links
+  let href = extract_href(element)
   {
     id: node_id,
     role,
@@ -428,6 +447,11 @@ fn build_node(
     focusable,
     tabindex,
     source_id: element.id,
+    href,
+    tag_name: Some(element.tag.to_lower()),
+    selector: build_selector(element),
+    visible: is_visible_element(element.tag),
+    ref_id: Some(ctx.next_ref()),
   }
 }
 
@@ -481,6 +505,11 @@ fn build_children(
             focusable: false,
             tabindex: Option::None,
             source_id: Option::None,
+            href: Option::None,
+            tag_name: Option::None,
+            selector: Option::None,
+            visible: true,
+            ref_id: Some(ctx.next_ref()),
           }
           children.push(text_node)
         }
@@ -555,6 +584,67 @@ fn is_empty_generic(node : AccessibilityNode) -> Bool {
     Generic =>
       node.name is None && node.children.is_empty() && not(node.focusable)
     _ => false
+  }
+}
+
+// =============================================================================
+// AI Scraping Helpers
+// =============================================================================
+
+///|
+/// Extract href attribute from link elements
+fn extract_href(element : @html.Element) -> String? {
+  let tag = element.tag.to_lower()
+  match tag {
+    "a" => element.attributes.get("href")
+    "area" => element.attributes.get("href")
+    "link" => element.attributes.get("href")
+    _ => Option::None
+  }
+}
+
+///|
+/// Build a CSS selector for an element
+fn build_selector(element : @html.Element) -> String? {
+  let tag = element.tag.to_lower()
+  let buf = StringBuilder::new()
+  buf.write_string(tag)
+
+  // Add id if present (most specific)
+  match element.id {
+    Some(id) if not(id.is_empty()) => {
+      buf.write_string("#")
+      buf.write_string(id)
+      return Some(buf.to_string())
+    }
+    _ => ()
+  }
+
+  // Add classes if present
+  if not(element.classes.is_empty()) {
+    for cls in element.classes {
+      buf.write_string(".")
+      buf.write_string(cls)
+    }
+  }
+  Some(buf.to_string())
+}
+
+///|
+/// Check if element tag represents visible content
+/// Returns false for style, script, meta, and head content
+fn is_visible_element(tag : String) -> Bool {
+  let lower = tag.to_lower()
+  match lower {
+    "script"
+    | "style"
+    | "meta"
+    | "link"
+    | "head"
+    | "title"
+    | "noscript"
+    | "template" => false
+    _ => true
   }
 }
 

@@ -37,12 +37,22 @@ struct Options {
   sixel : Bool
   text : Bool // New: TUI text mode
   debug : Bool
+  json : Bool // AOM JSON output for AI scraping
+  aom : Bool // AOM YAML snapshot output
 }
 
 ///|
 /// Render and display the current page
 fn render_page(browser : @shell.Browser, options : Options) -> Unit {
-  if options.sixel {
+  if options.json {
+    // AOM JSON output for AI scraping
+    let json_output = browser.render_json()
+    println(json_output)
+  } else if options.aom {
+    // AOM YAML snapshot output (Playwright-compatible)
+    let aom_output = browser.render_aom()
+    println(aom_output)
+  } else if options.sixel {
     let sixel = browser.render()
     @tui.print_raw(@tui.clear_screen())
     @tui.print_raw(sixel)
@@ -63,7 +73,7 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     // Debug mode: print layout tree
     browser.debug_layout()
   } else {
-    println("Page loaded. Use --sixel, --text, or --debug to render.")
+    println("Page loaded. Use --sixel, --text, --json, --aom, or --debug to render.")
   }
 }
 
@@ -78,6 +88,8 @@ fn parse_args() -> Options? {
   let mut sixel = false
   let mut text = false
   let mut debug = false
+  let mut json = false
+  let mut aom = false
   for arg in args {
     if arg == "--sixel" {
       sixel = true
@@ -85,6 +97,10 @@ fn parse_args() -> Options? {
       text = true
     } else if arg == "--debug" {
       debug = true
+    } else if arg == "--json" {
+      json = true
+    } else if arg == "--aom" {
+      aom = true
     } else if not(arg.has_prefix("--")) {
       url = arg
     }
@@ -92,9 +108,13 @@ fn parse_args() -> Options? {
   if url.length() == 0 {
     None
   } else {
-    // Default to text mode if neither sixel nor text is specified
-    let text = if not(sixel) && not(text) && not(debug) { true } else { text }
-    Some({ url, sixel, text, debug })
+    // Default to text mode if no output mode is specified
+    let text = if not(sixel) && not(text) && not(debug) && not(json) && not(aom) {
+      true
+    } else {
+      text
+    }
+    Some({ url, sixel, text, debug, json, aom })
   }
 }
 
@@ -104,16 +124,18 @@ async fn main {
   let options = match parse_args() {
     Some(opts) => opts
     None => {
-      println("Usage: npx @mizchi/crater-browser <URL> [--sixel] [--debug]")
+      println("Usage: npx @mizchi/crater-browser <URL> [options]")
       println(
         "Example: npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html",
       )
       println("")
       println("Options:")
+      println("  --text   Render page as ANSI text (default)")
       println(
         "  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)",
       )
-      println("  --text   Render page as ANSI text (default)")
+      println("  --json   Output accessibility tree as JSON (for AI scraping)")
+      println("  --aom    Output accessibility tree as YAML (Playwright format)")
       println("  --debug  Print layout tree for debugging")
       return
     }
@@ -121,6 +143,12 @@ async fn main {
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
   let browser = @shell.Browser::new(viewport_width, viewport_height)
+  // For JSON/AOM modes, just fetch and output without TUI
+  if options.json || options.aom {
+    let _ = browser.navigate(options.url)
+    render_page(browser, options)
+    return
+  }
   // Enter TUI mode
   if options.sixel || options.text {
     // Enter alternate screen buffer (like vim/less) for clean display
