@@ -72,6 +72,10 @@ pub(all) struct AccessibilityNode {
   selector : String?
   visible : Bool
   ref_id : String?
+  input_type : String?
+  placeholder : String?
+  input_value : String?
+  required : Bool
 }
 pub fn AccessibilityNode::add_child(Self, Self) -> Self
 pub fn AccessibilityNode::add_state(Self, State) -> Self

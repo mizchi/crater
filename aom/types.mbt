@@ -422,6 +422,20 @@ pub(all) struct AccessibilityNode {
   // Sequential reference ID for AI interaction (e.g., "ref_1", "ref_2")
   // Simple, unique identifier for element targeting
   ref_id : String?
+
+  // === Form input enhancements ===
+
+  // Input type for form elements (text, email, password, checkbox, radio, etc.)
+  input_type : String?
+
+  // Placeholder text for form inputs
+  placeholder : String?
+
+  // Current value of form inputs
+  input_value : String?
+
+  // Whether the form field is required
+  required : Bool
 }
 
 ///|
@@ -444,6 +458,10 @@ pub fn AccessibilityNode::new(id : String, role : Role) -> AccessibilityNode {
     selector: Option::None,
     visible: true,
     ref_id: Option::None,
+    input_type: Option::None,
+    placeholder: Option::None,
+    input_value: Option::None,
+    required: false,
   }
 }
 

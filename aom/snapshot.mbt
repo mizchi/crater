@@ -178,6 +178,43 @@ fn render_node_json(
     None => ()
   }
 
+  // Form input fields (for AI - form interaction)
+  match node.input_type {
+    Some(input_type) if not(input_type.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"inputType\": \"")
+      buf.write_string(escape_string(input_type))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+  match node.placeholder {
+    Some(placeholder) if not(placeholder.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"placeholder\": \"")
+      buf.write_string(escape_string(placeholder))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+  match node.input_value {
+    Some(value) if not(value.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"value\": \"")
+      buf.write_string(escape_string(value))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+  if node.required {
+    buf.write_string(",\n")
+    write_indent(buf, indent + 1)
+    buf.write_string("\"required\": true")
+  }
+
   // States
   if not(node.states.is_empty()) {
     buf.write_string(",\n")

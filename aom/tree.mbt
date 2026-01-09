@@ -374,6 +374,10 @@ fn build_node(
       selector: build_selector(element),
       visible: is_visible_element(element.tag),
       ref_id: Some(ctx.next_ref()),
+      input_type: Option::None,
+      placeholder: Option::None,
+      input_value: Option::None,
+      required: false,
     }
   }
 
@@ -434,6 +438,12 @@ fn build_node(
 
   // Extract href for links
   let href = extract_href(element)
+
+  // Extract form input information
+  let input_type = extract_input_type(element)
+  let placeholder = extract_placeholder(element)
+  let input_value = extract_input_value(element)
+  let required = is_required(element)
   {
     id: node_id,
     role,
@@ -452,6 +462,10 @@ fn build_node(
     selector: build_selector(element),
     visible: is_visible_element(element.tag),
     ref_id: Some(ctx.next_ref()),
+    input_type,
+    placeholder,
+    input_value,
+    required,
   }
 }
 
@@ -510,6 +524,10 @@ fn build_children(
             selector: Option::None,
             visible: true,
             ref_id: Some(ctx.next_ref()),
+            input_type: Option::None,
+            placeholder: Option::None,
+            input_value: Option::None,
+            required: false,
           }
           children.push(text_node)
         }
@@ -646,6 +664,52 @@ fn is_visible_element(tag : String) -> Bool {
     | "template" => false
     _ => true
   }
+}
+
+///|
+/// Extract input type from form elements
+fn extract_input_type(element : @html.Element) -> String? {
+  let tag = element.tag.to_lower()
+  match tag {
+    "input" =>
+      match element.attributes.get("type") {
+        Some(t) => Some(t)
+        None => Some("text") // default input type
+      }
+    "textarea" => Some("textarea")
+    "select" => Some("select")
+    "button" =>
+      match element.attributes.get("type") {
+        Some(t) => Some(t)
+        None => Some("submit") // default button type
+      }
+    _ => Option::None
+  }
+}
+
+///|
+/// Extract placeholder text from form inputs
+fn extract_placeholder(element : @html.Element) -> String? {
+  element.attributes.get("placeholder")
+}
+
+///|
+/// Extract current value from form inputs
+fn extract_input_value(element : @html.Element) -> String? {
+  let tag = element.tag.to_lower()
+  match tag {
+    "input" => element.attributes.get("value")
+    "textarea" => element.attributes.get("value")
+    "select" => element.attributes.get("value")
+    _ => Option::None
+  }
+}
+
+///|
+/// Check if form field is required
+fn is_required(element : @html.Element) -> Bool {
+  element.attributes.contains("required") ||
+  element.attributes.get("aria-required") == Some("true")
 }
 
 ///|
