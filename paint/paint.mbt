@@ -368,6 +368,97 @@ pub fn from_node_and_layout(
 }
 
 ///|
+/// Convert a Node and its Layout to a PaintNode tree with viewport culling.
+/// Nodes completely outside the viewport are skipped to reduce memory and improve rendering performance.
+/// Parameters:
+///   - node: The Node tree with style information
+///   - layout: The Layout tree with position information
+///   - viewport_top: Top Y coordinate of visible viewport (after scroll)
+///   - viewport_bottom: Bottom Y coordinate of visible viewport
+///   - parent_y: Absolute Y position of parent (for computing absolute positions)
+pub fn from_node_and_layout_with_viewport(
+  node : @node.Node,
+  layout : @node.Layout,
+  viewport_top : Double,
+  viewport_bottom : Double,
+  parent_y : Double,
+) -> PaintNode? {
+  // Compute absolute Y position
+  let abs_y = parent_y + layout.y
+  let abs_bottom = abs_y + layout.height
+
+  // Calculate effective bottom including children (for elements with height: 0)
+  // This handles cases where parent has height: 100% (resolves to 0) but children extend beyond
+  let effective_bottom = if layout.children.length() > 0 && layout.height <= 0.0 {
+    // For zero-height containers, find max child extent
+    let mut max_child_extent = abs_bottom
+    for child in layout.children {
+      let child_bottom = abs_y + child.y + child.height
+      if child_bottom > max_child_extent {
+        max_child_extent = child_bottom
+      }
+    }
+    max_child_extent
+  } else {
+    abs_bottom
+  }
+
+  // Skip nodes that are completely outside the viewport
+  // A node is outside if its effective bottom edge is above viewport top
+  // or its top edge is below viewport bottom
+  if effective_bottom < viewport_top || abs_y > viewport_bottom {
+    return None
+  }
+  let paint = PaintProperties::from_style(node.style)
+  let children : Array[PaintNode] = []
+
+  // Match children by index (assumes same order)
+  let child_count = if node.children.length() < layout.children.length() {
+    node.children.length()
+  } else {
+    layout.children.length()
+  }
+  for i = 0; i < child_count; i = i + 1 {
+    // Recursively process children with viewport culling
+    match
+      from_node_and_layout_with_viewport(
+        node.children[i],
+        layout.children[i],
+        viewport_top,
+        viewport_bottom,
+        abs_y,
+      ) {
+      Some(child) => children.push(child)
+      None => () // Child is outside viewport, skip it
+    }
+  }
+
+  // Apply CSS transform (translate) to visual position
+  let transform = node.style.transform
+  let translate_x = transform.compute_translate_x(layout.width)
+  let translate_y = transform.compute_translate_y(layout.height)
+
+  // Extract tag name from node ID
+  let tag = extract_tag_from_id(node.id)
+  Some(
+    PaintNode::new(
+      node.id,
+      tag,
+      layout.x + translate_x,
+      layout.y + translate_y,
+      layout.width,
+      layout.height,
+      paint,
+      children,
+      text=layout.text,
+      overflow_x=layout.overflow_x,
+      overflow_y=layout.overflow_y,
+      clip=node.style.clip,
+    ),
+  )
+}
+
+///|
 /// Convert a Layout tree to PaintNode tree using default styles
 /// Use this when Node tree is not available
 pub fn from_layout(layout : @node.Layout) -> PaintNode {

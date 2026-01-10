@@ -14,6 +14,8 @@ pub fn from_layout(@node.Layout) -> PaintNode
 
 pub fn from_node_and_layout(@node.Node, @node.Layout) -> PaintNode
 
+pub fn from_node_and_layout_with_viewport(@node.Node, @node.Layout, Double, Double, Double) -> PaintNode?
+
 pub fn sort_by_stacking_order(Array[PaintNode]) -> Array[PaintNode]
 
 pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
