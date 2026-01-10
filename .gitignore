@@ -4,6 +4,7 @@ target/
 .moonagent/
 taffy
 blitz
+target
 
 # Dependencies
 node_modules/
@@ -28,3 +29,6 @@ wasm/dist/
 
 # Browser npm build output
 browser/dist/
+
+# MoonBit build output
+_build/
