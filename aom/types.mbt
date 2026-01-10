@@ -436,6 +436,29 @@ pub(all) struct AccessibilityNode {
 
   // Whether the form field is required
   required : Bool
+
+  // === AI text aggregation ===
+
+  // Aggregated text content from all children (for paragraphs, etc.)
+  text : String?
+
+  // === Select element options ===
+
+  // Options for select/listbox elements
+  options : Array[SelectOption]
+
+  // === Label associations ===
+
+  // Ref ID of the element that labels this element
+  labelled_by : String?
+}
+
+///|
+/// Option for select elements
+pub(all) struct SelectOption {
+  value : String
+  label : String
+  selected : Bool
 }
 
 ///|
@@ -462,6 +485,9 @@ pub fn AccessibilityNode::new(id : String, role : Role) -> AccessibilityNode {
     placeholder: Option::None,
     input_value: Option::None,
     required: false,
+    text: Option::None,
+    options: [],
+    labelled_by: Option::None,
   }
 }
 

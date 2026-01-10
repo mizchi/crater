@@ -215,6 +215,55 @@ fn render_node_json(
     buf.write_string("\"required\": true")
   }
 
+  // Aggregated text content (for paragraphs, headings, etc.)
+  match node.text {
+    Some(text) if not(text.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"text\": \"")
+      buf.write_string(escape_string(text))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+
+  // Select options
+  if not(node.options.is_empty()) {
+    buf.write_string(",\n")
+    write_indent(buf, indent + 1)
+    buf.write_string("\"options\": [\n")
+    for i, option in node.options {
+      if i > 0 {
+        buf.write_string(",\n")
+      }
+      write_indent(buf, indent + 2)
+      buf.write_string("{ \"value\": \"")
+      buf.write_string(escape_string(option.value))
+      buf.write_string("\", \"label\": \"")
+      buf.write_string(escape_string(option.label))
+      buf.write_string("\"")
+      if option.selected {
+        buf.write_string(", \"selected\": true")
+      }
+      buf.write_string(" }")
+    }
+    buf.write_string("\n")
+    write_indent(buf, indent + 1)
+    buf.write_string("]")
+  }
+
+  // Labelled by reference
+  match node.labelled_by {
+    Some(labelled_by) if not(labelled_by.is_empty()) => {
+      buf.write_string(",\n")
+      write_indent(buf, indent + 1)
+      buf.write_string("\"labelledBy\": \"")
+      buf.write_string(escape_string(labelled_by))
+      buf.write_string("\"")
+    }
+    _ => ()
+  }
+
   // States
   if not(node.states.is_empty()) {
     buf.write_string(",\n")

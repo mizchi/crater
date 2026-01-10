@@ -378,6 +378,9 @@ fn build_node(
       placeholder: Option::None,
       input_value: Option::None,
       required: false,
+      text: Option::None,
+      options: [],
+      labelled_by: Option::None,
     }
   }
 
@@ -444,6 +447,24 @@ fn build_node(
   let placeholder = extract_placeholder(element)
   let input_value = extract_input_value(element)
   let required = is_required(element)
+
+  // Extract select options
+  let options = extract_select_options(element)
+
+  // Find labelling element
+  let labelled_by = find_labelling_ref(element, ctx)
+
+  // Aggregate text content for non-interactive elements
+  let text = if role == Paragraph ||
+    role == Heading ||
+    role == ListItem ||
+    role == Cell ||
+    role == Caption {
+    let content = get_element_text_content(element)
+    if content.is_empty() { Option::None } else { Some(content) }
+  } else {
+    Option::None
+  }
   {
     id: node_id,
     role,
@@ -466,6 +487,9 @@ fn build_node(
     placeholder,
     input_value,
     required,
+    text,
+    options,
+    labelled_by,
   }
 }
 
@@ -528,6 +552,9 @@ fn build_children(
             placeholder: Option::None,
             input_value: Option::None,
             required: false,
+            text: Option::None,
+            options: [],
+            labelled_by: Option::None,
           }
           children.push(text_node)
         }
@@ -710,6 +737,109 @@ fn extract_input_value(element : @html.Element) -> String? {
 fn is_required(element : @html.Element) -> Bool {
   element.attributes.contains("required") ||
   element.attributes.get("aria-required") == Some("true")
+}
+
+///|
+/// Extract options from select element
+fn extract_select_options(element : @html.Element) -> Array[SelectOption] {
+  let options : Array[SelectOption] = []
+  let tag = element.tag.to_lower()
+  if tag != "select" {
+    return options
+  }
+  for child in element.children {
+    match child {
+      @html.Element(option_elem) => {
+        let option_tag = option_elem.tag.to_lower()
+        if option_tag == "option" {
+          let value = option_elem.attributes.get("value").unwrap_or("")
+          let label = get_element_text_content(option_elem)
+          let selected = option_elem.attributes.contains("selected")
+          options.push({ value, label, selected })
+        } else if option_tag == "optgroup" {
+          // Handle optgroup by extracting its options
+          for optgroup_child in option_elem.children {
+            match optgroup_child {
+              @html.Element(opt) =>
+                if opt.tag.to_lower() == "option" {
+                  let value = opt.attributes.get("value").unwrap_or("")
+                  let label = get_element_text_content(opt)
+                  let selected = opt.attributes.contains("selected")
+                  options.push({ value, label, selected })
+                }
+              _ => ()
+            }
+          }
+        }
+      }
+      _ => ()
+    }
+  }
+  options
+}
+
+///|
+/// Get text content from an element (recursively)
+fn get_element_text_content(element : @html.Element) -> String {
+  let buf = StringBuilder::new()
+  collect_text_content(element, buf)
+  buf.to_string().trim().to_string()
+}
+
+///|
+/// Recursively collect text content from element
+fn collect_text_content(element : @html.Element, buf : StringBuilder) -> Unit {
+  for child in element.children {
+    match child {
+      @html.Text(text) => {
+        let trimmed = text.trim().to_string()
+        if not(trimmed.is_empty()) {
+          if buf.to_string().length() > 0 {
+            buf.write_string(" ")
+          }
+          buf.write_string(trimmed)
+        }
+      }
+      @html.Element(child_elem) => {
+        // Skip non-visible elements
+        if is_visible_element(child_elem.tag) {
+          collect_text_content(child_elem, buf)
+        }
+      }
+    }
+  }
+}
+
+///|
+/// Find the ref of the labelling element for a form input
+fn find_labelling_ref(
+  element : @html.Element,
+  ctx : TreeBuilderContext,
+) -> String? {
+  // Check aria-labelledby first
+  match element.attributes.get("aria-labelledby") {
+    Some(label_id) if not(label_id.is_empty()) => {
+      // The value might be a space-separated list of IDs, take the first
+      let parts : Array[String] = label_id.split(" ").map(fn(s) { s.to_string() }).collect()
+      if parts.length() > 0 {
+        return Some(parts[0])
+      }
+    }
+    _ => ()
+  }
+  // Check if there's a label with 'for' attribute matching this element's id
+  match element.id {
+    Some(elem_id) =>
+      match ctx.label_map.get(elem_id) {
+        Some(_) => {
+          // Return the element id as a hint (the ref will be computed later)
+          return Some("label-for-" + elem_id)
+        }
+        _ => ()
+      }
+    _ => ()
+  }
+  Option::None
 }
 
 ///|

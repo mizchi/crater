@@ -76,6 +76,9 @@ pub(all) struct AccessibilityNode {
   placeholder : String?
   input_value : String?
   required : Bool
+  text : String?
+  options : Array[SelectOption]
+  labelled_by : String?
 }
 pub fn AccessibilityNode::add_child(Self, Self) -> Self
 pub fn AccessibilityNode::add_state(Self, State) -> Self
@@ -235,6 +238,12 @@ pub(all) struct RoleMappingContext {
   in_sectioning_content : Bool
 }
 pub fn RoleMappingContext::default() -> Self
+
+pub(all) struct SelectOption {
+  value : String
+  label : String
+  selected : Bool
+}
 
 pub(all) enum State {
   Busy
