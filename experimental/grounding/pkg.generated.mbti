@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/experimental/grounding"
+
+import(
+  "mizchi/crater/aom"
+)
+
+// Values
+pub fn find_best(@aom.AccessibilityTree, SpatialQuery, Viewport) -> GroundingResult?
+
+pub fn find_by_spatial(@aom.AccessibilityTree, SpatialQuery, Viewport) -> Array[GroundingResult]
+
+pub fn get_click_coords(@aom.AccessibilityTree, String) -> (Double, Double)?
+
+// Errors
+
+// Types and methods
+pub(all) struct GroundingResult {
+  node : @aom.AccessibilityNode
+  distance : Double
+  click_x : Double
+  click_y : Double
+}
+pub fn GroundingResult::to_string(Self) -> String
+
+pub(all) enum SpatialQuery {
+  InRegion(SpatialRegion)
+  RelativeTo(SpatialRelation, String)
+  NearestTo(Double, Double)
+  RoleInRegion(@aom.Role, SpatialRegion)
+}
+
+pub(all) enum SpatialRegion {
+  TopLeft
+  TopCenter
+  TopRight
+  MiddleLeft
+  Center
+  MiddleRight
+  BottomLeft
+  BottomCenter
+  BottomRight
+}
+pub fn SpatialRegion::to_string(Self) -> String
+
+pub(all) enum SpatialRelation {
+  Above
+  Below
+  LeftOf
+  RightOf
+  Inside
+  Near
+}
+
+pub(all) struct Viewport {
+  width : Double
+  height : Double
+}
+pub fn Viewport::default() -> Self
+
+// Type aliases
+
+// Traits
+

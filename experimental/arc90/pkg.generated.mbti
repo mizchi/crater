@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/experimental/arc90"
+
+import(
+  "mizchi/crater/aom"
+)
+
+// Values
+pub fn extract_content(@aom.AccessibilityTree, ExtractConfig) -> ExtractionResult
+
+pub fn extract_main_content(@aom.AccessibilityTree) -> @aom.AccessibilityNode?
+
+// Errors
+
+// Types and methods
+pub(all) struct ContentBlock {
+  node : @aom.AccessibilityNode
+  score : Double
+  text_density : Double
+  visual_score : Double
+  position_penalty : Double
+}
+pub fn ContentBlock::to_string(Self) -> String
+
+pub(all) struct ExtractConfig {
+  min_text_length : Int
+  viewport_width : Double
+  viewport_height : Double
+  ad_sizes : Array[(Double, Double)]
+}
+pub fn ExtractConfig::default() -> Self
+
+pub(all) struct ExtractionResult {
+  main_content : @aom.AccessibilityNode?
+  content_blocks : Array[ContentBlock]
+  detected_ads : Array[@aom.AccessibilityNode]
+  detected_navigation : Array[@aom.AccessibilityNode]
+}
+pub fn ExtractionResult::to_summary(Self) -> String
+
+// Type aliases
+
+// Traits
+

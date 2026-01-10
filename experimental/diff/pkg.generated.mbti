@@ -1,0 +1,59 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/experimental/diff"
+
+import(
+  "mizchi/crater/aom"
+)
+
+// Values
+pub fn diff_summary(@aom.AccessibilityTree, @aom.AccessibilityTree) -> String
+
+pub fn diff_trees(@aom.AccessibilityTree, @aom.AccessibilityTree, DiffConfig) -> DiffResult
+
+pub fn trees_equal(@aom.AccessibilityTree, @aom.AccessibilityTree) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) enum ChangeType {
+  Added
+  Removed
+  Moved
+  Resized
+  RoleChanged
+  NameChanged
+  StateChanged
+}
+
+pub(all) struct DiffConfig {
+  position_threshold : Double
+  size_threshold : Double
+  ignore_invisible : Bool
+  ignore_anonymous_generic : Bool
+}
+pub fn DiffConfig::default() -> Self
+pub fn DiffConfig::strict() -> Self
+
+pub(all) struct DiffResult {
+  differences : Array[Difference]
+  added_count : Int
+  removed_count : Int
+  changed_count : Int
+  similarity : Double
+}
+pub fn DiffResult::to_json(Self) -> String
+pub fn DiffResult::to_summary(Self) -> String
+
+pub(all) struct Difference {
+  change_type : ChangeType
+  path : String
+  element_id : String
+  description : String
+  severity : Int
+}
+pub fn Difference::to_string(Self) -> String
+
+// Type aliases
+
+// Traits
+
