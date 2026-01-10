@@ -133,6 +133,47 @@ pub fn cleanup_stdin() -> Unit {
 }
 
 ///|
+/// Enable raw mode (for resuming after text selection)
+extern "js" fn js_enable_raw_mode() =
+  #| () => {
+  #|   if (typeof process !== 'undefined' && process.stdin.isTTY) {
+  #|     process.stdin.setRawMode(true);
+  #|     process.stdin.resume();
+  #|   }
+  #| }
+
+///|
+/// Enable raw mode
+pub fn enable_raw_mode() -> Unit {
+  js_enable_raw_mode()
+}
+
+///|
+/// Wait for Enter key without enabling raw mode (for selection mode)
+extern "js" fn js_wait_for_enter() -> @js_async.Promise[Unit] =
+  #| async () => {
+  #|   if (typeof process === 'undefined') return;
+  #|   if (!process.stdin.isTTY) return;
+  #|   const readline = require('readline');
+  #|   const rl = readline.createInterface({
+  #|     input: process.stdin,
+  #|     output: process.stdout
+  #|   });
+  #|   return new Promise((resolve) => {
+  #|     rl.question('', () => {
+  #|       rl.close();
+  #|       resolve();
+  #|     });
+  #|   });
+  #| }
+
+///|
+/// Wait for Enter key without raw mode
+pub async fn wait_for_enter() -> Unit {
+  @js_async.Promise::wait(js_wait_for_enter())
+}
+
+///|
 /// Get terminal columns from process.stdout
 extern "js" fn js_get_terminal_columns() -> Int =
   #| () => {

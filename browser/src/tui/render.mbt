@@ -84,6 +84,7 @@ fn render_paint_node(
   parent_x : Double,
   parent_y : Double,
   inside_link : Bool,
+  inside_pre? : Bool = false,
 ) -> Unit {
   // Skip invisible nodes
   if not(node.paint.should_render()) {
@@ -97,12 +98,24 @@ fn render_paint_node(
   let row = px_to_row(abs_y) - ctx.scroll_y
   let w = px_to_col(node.width)
   let h = px_to_row(node.height)
+  // Check if we're inside a pre/code element (no text wrapping)
+  // Also disable wrapping inside table cells (th/td) - cells should clip, not wrap
+  let is_pre = node.tag == "pre" || node.tag == "code"
+  let is_table_cell = node.tag == "th" || node.tag == "td"
+  let child_inside_pre = inside_pre || is_pre || is_table_cell
   // Skip if completely outside viewport
   if row + h < 0 || row >= ctx.viewport_height {
     // Still need to render children that might be visible
     let child_inside_link = inside_link || node.tag == "a"
     for child in node.children {
-      render_paint_node(ctx, child, abs_x, abs_y, child_inside_link)
+      render_paint_node(
+        ctx,
+        child,
+        abs_x,
+        abs_y,
+        child_inside_link,
+        inside_pre=child_inside_pre,
+      )
     }
     return
   }
@@ -110,7 +123,14 @@ fn render_paint_node(
   if w <= 0 || h <= 0 {
     let child_inside_link = inside_link || node.tag == "a"
     for child in node.children {
-      render_paint_node(ctx, child, abs_x, abs_y, child_inside_link)
+      render_paint_node(
+        ctx,
+        child,
+        abs_x,
+        abs_y,
+        child_inside_link,
+        inside_pre=child_inside_pre,
+      )
     }
     return
   }
@@ -239,14 +259,21 @@ fn render_paint_node(
             bold: use_bold,
             underline: use_underline,
           }
-          let _ = ctx.buffer.write_text_wrapped(
-            col,
-            row,
-            text_content,
-            style,
-            w,
-            (row + h).min(ctx.viewport_height) - row,
-          )
+          // Use non-wrapping text for pre/code elements to preserve formatting
+          if child_inside_pre {
+            let _ = ctx.buffer.write_text(col, row, text_content, style, w)
+
+          } else {
+            let _ = ctx.buffer.write_text_wrapped(
+              col,
+              row,
+              text_content,
+              style,
+              w,
+              (row + h).min(ctx.viewport_height) - row,
+            )
+
+          }
           // Collect link region for hit testing
           if is_link && w > 0 && h > 0 {
             let text_len = text_content.to_array().length()
@@ -262,10 +289,17 @@ fn render_paint_node(
       None => ()
     }
   }
-  // Render children - pass inside_link flag
+  // Render children - pass inside_link and inside_pre flags
   let child_inside_link = inside_link || node.tag == "a"
   for child in node.children {
-    render_paint_node(ctx, child, abs_x, abs_y, child_inside_link)
+    render_paint_node(
+      ctx,
+      child,
+      abs_x,
+      abs_y,
+      child_inside_link,
+      inside_pre=child_inside_pre,
+    )
   }
 }
 
@@ -298,8 +332,17 @@ pub fn render_to_ansi(
     reverse: false,
   }
   buf.fill_rect(0, 0, width, height, white_cell)
-  // Convert to PaintNode
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  // Convert to PaintNode with viewport culling
+  // Calculate viewport bounds in pixels (font_height = 16.0)
+  let viewport_top = scroll_y.to_double() * font_height
+  let viewport_bottom = (scroll_y + height).to_double() * font_height
+  let paint_node = match
+    @paint.from_node_and_layout_with_viewport(
+      node, layout, viewport_top, viewport_bottom, 0.0,
+    ) {
+    Some(n) => n
+    None => return { ansi: buffer_to_ansi(buf), link_regions: [] }
+  }
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   // Create context with link regions array
@@ -318,7 +361,7 @@ pub fn render_to_ansi(
 }
 
 ///|
-/// Render a Node + Layout tree with status bar
+/// Render a Node + Layout tree with status bar at top
 pub fn render_to_ansi_with_status(
   node : @node.Node,
   layout : @node.Layout,
@@ -330,12 +373,14 @@ pub fn render_to_ansi_with_status(
   focused_link : Int,
   focused_element_name? : String? = None,
   focused_link_url? : String? = None,
+  selection_mode? : Bool = false,
 ) -> RenderResult {
-  // Reserve last row for status bar
+  // Reserve first row for status bar at top
   let content_height = height - 1
+  let content_start_row = 1 // Content starts at row 1 (after status bar)
   // Create character buffer
   let buf = CharBuffer::new(width, height)
-  // Clear with white background
+  // Clear with white background (for content area, starting at row 1)
   let white_cell : CharCell = {
     char: ' ',
     fg: @types.Color::black(),
@@ -344,30 +389,59 @@ pub fn render_to_ansi_with_status(
     underline: false,
     reverse: false,
   }
-  buf.fill_rect(0, 0, width, content_height, white_cell)
-  // Convert to PaintNode
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  buf.fill_rect(0, content_start_row, width, content_height, white_cell)
+  // Convert to PaintNode with viewport culling
+  // Calculate viewport bounds in pixels (font_height = 16.0)
+  let viewport_top = scroll_y.to_double() * font_height
+  let viewport_bottom = (scroll_y + content_height).to_double() * font_height
+  let paint_node = match
+    @paint.from_node_and_layout_with_viewport(
+      node, layout, viewport_top, viewport_bottom, 0.0,
+    ) {
+    Some(n) => n
+    None => {
+      // Content is outside viewport, draw status bar and return
+      draw_status_bar(
+        buf,
+        0,
+        url,
+        link_count,
+        focused_link,
+        focused_link_url~,
+        selection_mode~,
+      )
+      return { ansi: buffer_to_ansi(buf), link_regions: [] }
+    }
+  }
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   // Create context with link regions array
+  // Note: scroll_y is adjusted for content area (row 1+), link regions need row offset
   let link_regions : Array[LinkRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
-    scroll_y,
+    scroll_y: scroll_y - content_start_row, // Adjust scroll for content offset
     viewport_height: content_height,
     link_regions,
     focused_element_name,
   }
-  // Render content (start with inside_link=false)
-  render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  // Draw status bar (show focused link URL if available)
+  // Render content with offset (start with inside_link=false)
+  render_paint_node(
+    ctx,
+    sorted,
+    0.0,
+    content_start_row.to_double() * font_height,
+    false,
+  )
+  // Draw status bar at top (row 0) - drawn after content to ensure it's not overwritten
   draw_status_bar(
     buf,
-    content_height,
+    0,
     url,
     link_count,
     focused_link,
     focused_link_url~,
+    selection_mode~,
   )
   // Return ANSI and link regions
   { ansi: buffer_to_ansi(buf), link_regions }
@@ -458,8 +532,22 @@ pub fn render_to_ansi_with_hints(
     reverse: false,
   }
   buf.fill_rect(0, 0, width, content_height, white_cell)
-  // Convert to PaintNode
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  // Convert to PaintNode with viewport culling
+  // Calculate viewport bounds in pixels (font_height = 16.0)
+  let viewport_top = scroll_y.to_double() * font_height
+  let viewport_bottom = (scroll_y + content_height).to_double() * font_height
+  let paint_node = match
+    @paint.from_node_and_layout_with_viewport(
+      node, layout, viewport_top, viewport_bottom, 0.0,
+    ) {
+    Some(n) => n
+    None => {
+      // Content is outside viewport, just draw hints and status bar
+      draw_hints(buf, hints, content_height)
+      draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
+      return { ansi: buffer_to_ansi(buf), link_regions: [] }
+    }
+  }
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   // Create context with link regions array

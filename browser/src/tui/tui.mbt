@@ -20,6 +20,7 @@ pub enum BrowserAction {
   EnterHintMode // Start hit-a-hint mode (triggered by 'f')
   HintChar(String) // Hint character input (a-z)
   ExitHintMode // Exit hint mode (Escape)
+  ToggleRawMode // Toggle raw mode for text selection (triggered by 'v')
 }
 
 ///|
@@ -38,6 +39,7 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "q" => Some(Quit)
     "f" => Some(EnterHintMode)
     "Escape" => Some(ExitHintMode)
+    "v" => Some(ToggleRawMode)
     "H" | "Backspace" | "Delete" => Some(Back)
     "L" => Some(Forward)
     _ =>
@@ -139,7 +141,7 @@ pub fn format_status_bar(
   buf.write_string((focused + 1).to_string())
   buf.write_string("/")
   buf.write_string(link_count.to_string())
-  buf.write_string(" | q:quit j/k:scroll Tab/S-Tab:focus Enter:go ")
+  buf.write_string(" | q:quit j/k:scroll Tab:focus Enter:go v:select ")
   buf.write_string("\u001b[0m") // Reset
   buf.to_string()
 }

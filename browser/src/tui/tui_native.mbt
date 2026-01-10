@@ -30,10 +30,15 @@ pub fn cleanup_stdin() -> Unit {
 }
 
 ///|
-/// Get command line arguments (stub for native)
+/// Get command line arguments (native implementation)
 pub fn get_args() -> Array[String] {
-  // TODO: implement native argument parsing
-  []
+  // Get command line args using sys module (skips first element which is program name)
+  let all_args = @sys.get_cli_args()
+  let result : Array[String] = []
+  for i = 1; i < all_args.length(); i = i + 1 {
+    result.push(all_args[i])
+  }
+  result
 }
 
 ///|
@@ -43,4 +48,16 @@ pub fn get_args() -> Array[String] {
 pub fn get_terminal_size() -> (Int, Int) {
   // Default terminal size
   (80, 24)
+}
+
+///|
+/// Enable raw mode (stub for native)
+pub fn enable_raw_mode() -> Unit {
+  // No-op for native
+}
+
+///|
+/// Wait for Enter key (stub for native)
+pub fn wait_for_enter() -> Unit {
+  // No-op for native
 }

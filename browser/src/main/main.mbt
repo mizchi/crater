@@ -40,6 +40,7 @@ struct Options {
   json : Bool // AOM JSON output for AI scraping
   aom : Bool // AOM YAML snapshot output
   arc90 : Bool // Arc90 content extraction
+  grounding : Bool // Visual grounding demo
 }
 
 ///|
@@ -57,6 +58,10 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     // Arc90 content extraction
     let arc90_output = browser.render_arc90()
     println(arc90_output)
+  } else if options.grounding {
+    // Visual grounding demo
+    let grounding_output = browser.render_grounding()
+    println(grounding_output)
   } else if options.sixel {
     let sixel = browser.render()
     @tui.print_raw(@tui.clear_screen())
@@ -78,7 +83,9 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     // Debug mode: print layout tree
     browser.debug_layout()
   } else {
-    println("Page loaded. Use --sixel, --text, --json, --aom, or --debug to render.")
+    println(
+      "Page loaded. Use --sixel, --text, --json, --aom, or --debug to render.",
+    )
   }
 }
 
@@ -96,6 +103,7 @@ fn parse_args() -> Options? {
   let mut json = false
   let mut aom = false
   let mut arc90 = false
+  let mut grounding = false
   for arg in args {
     if arg == "--sixel" {
       sixel = true
@@ -105,6 +113,8 @@ fn parse_args() -> Options? {
       debug = true
     } else if arg == "--arc90" {
       arc90 = true
+    } else if arg == "--grounding" {
+      grounding = true
     } else if arg == "--json" {
       json = true
     } else if arg == "--aom" {
@@ -117,12 +127,18 @@ fn parse_args() -> Options? {
     None
   } else {
     // Default to text mode if no output mode is specified
-    let text = if not(sixel) && not(text) && not(debug) && not(json) && not(aom) && not(arc90) {
+    let text = if not(sixel) &&
+      not(text) &&
+      not(debug) &&
+      not(json) &&
+      not(aom) &&
+      not(arc90) &&
+      not(grounding) {
       true
     } else {
       text
     }
-    Some({ url, sixel, text, debug, json, aom, arc90 })
+    Some({ url, sixel, text, debug, json, aom, arc90, grounding })
   }
 }
 
@@ -142,18 +158,33 @@ async fn main {
       println(
         "  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)",
       )
-      println("  --json   Output accessibility tree as JSON (for AI scraping)")
-      println("  --aom    Output accessibility tree as YAML (Playwright format)")
-      println("  --arc90  Run Arc90 content extraction (detect main content)")
-      println("  --debug  Print layout tree for debugging")
+      println(
+        "  --json      Output accessibility tree as JSON (for AI scraping)",
+      )
+      println(
+        "  --aom       Output accessibility tree as YAML (Playwright format)",
+      )
+      println(
+        "  --arc90     Run Arc90 content extraction (detect main content)",
+      )
+      println(
+        "  --grounding Run visual grounding demo (spatial element queries)",
+      )
+      println("  --debug     Print layout tree for debugging")
       return
     }
   }
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
   let browser = @shell.Browser::new(viewport_width, viewport_height)
-  // For JSON/AOM/Arc90 modes, just fetch and output without TUI
-  if options.json || options.aom || options.arc90 {
+  // For JSON/AOM modes, use lightweight navigation (skip CSS cascade and layout)
+  if options.json || options.aom {
+    let _ = browser.navigate_lightweight(options.url)
+    render_page(browser, options)
+    return
+  }
+  // For Arc90/Grounding modes, still need full rendering for bounds info
+  if options.arc90 || options.grounding {
     let _ = browser.navigate(options.url)
     render_page(browser, options)
     return
@@ -288,6 +319,20 @@ async fn main {
             // Re-render to show updated hint input
             render_page(browser, options)
         }
+      Some(@tui.ToggleRawMode) => {
+        let entering = browser.toggle_selection_mode()
+        if entering {
+          // Entering selection mode - disable raw mode for text selection
+          @tui.cleanup_stdin()
+          @tui.print_raw(@tui.disable_mouse())
+          @tui.print_raw(@tui.show_cursor())
+        } else {
+          // Exiting selection mode - re-enable raw mode
+          @tui.print_raw(@tui.hide_cursor())
+          @tui.print_raw(@tui.enable_mouse())
+        }
+        render_page(browser, options)
+      }
       None => ()
     }
   }

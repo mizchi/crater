@@ -5,6 +5,7 @@ import(
   "mizchi/crater-browser/src/http"
   "mizchi/crater-browser/src/tui"
   "mizchi/crater/aom"
+  "mizchi/crater/html"
 )
 
 // Values
@@ -17,6 +18,7 @@ pub struct Browser {
   viewport_width : Int
   viewport_height : Int
   mut html_content : String
+  mut parsed_doc : @html.Document?
   mut external_css : Array[String]
   mut links : Array[Link]
   mut focused_link : Int
@@ -30,6 +32,7 @@ pub struct Browser {
   forward_history : Array[String]
   mut focus_manager : @aom.FocusManager?
   mut a11y_tree : @aom.AccessibilityTree?
+  mut selection_mode : Bool
 }
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
@@ -45,15 +48,22 @@ pub fn Browser::get_visible_focus_index(Self) -> Int
 pub fn Browser::get_visible_focusable_count(Self) -> Int
 pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
 pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
+pub async fn Browser::load_url_lightweight(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
+pub async fn Browser::navigate_lightweight(Self, String) -> String raise @http.HttpError
 pub fn Browser::new(Int, Int) -> Self
 pub fn Browser::next_link(Self) -> Unit
 pub fn Browser::prev_link(Self) -> Unit
 pub fn Browser::process_hint_char(Self, String) -> String?
 pub fn Browser::render(Self) -> String
+pub fn Browser::render_aom(Self) -> String
+pub fn Browser::render_arc90(Self) -> String
+pub fn Browser::render_grounding(Self) -> String
+pub fn Browser::render_json(Self) -> String
 pub fn Browser::render_text(Self) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
+pub fn Browser::toggle_selection_mode(Self) -> Bool
 
 pub(all) struct Link {
   href : String

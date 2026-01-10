@@ -51,11 +51,13 @@ pub fn draw_link(CharBuffer, Int, Int, String, Int, Bool) -> Int
 
 pub fn draw_scrollbar(CharBuffer, Int, Int, Int, Int, Int, Int) -> Unit
 
-pub fn draw_status_bar(CharBuffer, Int, String, Int, Int, focused_link_url? : String?) -> Unit
+pub fn draw_status_bar(CharBuffer, Int, String, Int, Int, focused_link_url? : String?, selection_mode? : Bool) -> Unit
 
 pub fn draw_vline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
 
 pub fn enable_mouse() -> String
+
+pub fn enable_raw_mode() -> Unit
 
 pub fn enter_alt_screen() -> String
 
@@ -93,11 +95,13 @@ pub fn render_to_ansi(@node.Node, @node.Layout, Int, Int, Int, focused_element_n
 
 pub fn render_to_ansi_with_hints(@node.Node, @node.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_status(@node.Node, @node.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?) -> RenderResult
+pub fn render_to_ansi_with_status(@node.Node, @node.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool) -> RenderResult
 
 pub fn rgb_to_256(Int, Int, Int) -> Int
 
 pub fn show_cursor() -> String
+
+pub fn wait_for_enter() -> Unit
 
 // Errors
 
@@ -126,6 +130,7 @@ pub enum BrowserAction {
   EnterHintMode
   HintChar(String)
   ExitHintMode
+  ToggleRawMode
 }
 
 pub struct CharBuffer {

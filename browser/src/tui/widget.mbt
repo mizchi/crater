@@ -257,10 +257,12 @@ pub fn draw_status_bar(
   link_count : Int,
   focused_link : Int,
   focused_link_url? : String? = None,
+  selection_mode? : Bool = false,
 ) -> Unit {
   let bg = @types.Color::rgb(50, 50, 50)
   let fg = @types.Color::rgb(200, 200, 200)
   let highlight_fg = @types.Color::rgb(100, 200, 255) // Cyan for link URL
+  let selection_fg = @types.Color::rgb(255, 200, 100) // Orange for selection mode
   // Fill the entire row with background
   let fill : CharCell = {
     char: ' ',
@@ -271,13 +273,25 @@ pub fn draw_status_bar(
     reverse: false,
   }
   buf.fill_rect(0, y, buf.width, 1, fill)
+  // Build status text
+  let style : TextStyle = { fg, bg, bold: false, underline: false }
+  let selection_style : TextStyle = {
+    fg: selection_fg,
+    bg,
+    bold: true,
+    underline: false,
+  }
+  let mut col = 0
+  // Show selection mode indicator if active
+  if selection_mode {
+    let mode_text = " [SELECTION MODE - Press Enter to resume] "
+    col = buf.write_text(col, y, mode_text, selection_style, buf.width)
+  }
   // Determine display URL: show focused link URL if available
   let (display_url, is_link_url) = match focused_link_url {
     Some(link_url) => (link_url, true)
     None => (url, false)
   }
-  // Build status text
-  let style : TextStyle = { fg, bg, bold: false, underline: false }
   let link_url_style : TextStyle = {
     fg: highlight_fg,
     bg,
@@ -287,13 +301,15 @@ pub fn draw_status_bar(
   // Write URL part (possibly highlighted if it's a link URL)
   let url_style = if is_link_url { link_url_style } else { style }
   let url_text = " " + display_url
-  let url_len = buf.write_text(0, y, url_text, url_style, buf.width)
-  // Write the rest of the status
-  let rest = " | Links: " +
-    (focused_link + 1).to_string() +
-    "/" +
-    link_count.to_string() +
-    " | q:quit j/k:scroll Tab:link "
-  let _ = buf.write_text(url_len, y, rest, style, buf.width - url_len)
+  col = buf.write_text(col, y, url_text, url_style, buf.width - col)
+  // Write the rest of the status (skip if selection mode to save space)
+  if not(selection_mode) {
+    let rest = " | Links: " +
+      (focused_link + 1).to_string() +
+      "/" +
+      link_count.to_string() +
+      " | q:quit j/k:scroll Tab:link "
+    let _ = buf.write_text(col, y, rest, style, buf.width - col)
 
+  }
 }

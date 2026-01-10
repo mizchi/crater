@@ -36,3 +36,15 @@ pub fn cleanup_stdin() -> Unit {
 pub fn get_terminal_size() -> (Int, Int) {
   (80, 24)
 }
+
+///|
+/// Enable raw mode - not supported in WASM
+pub fn enable_raw_mode() -> Unit {
+  ()
+}
+
+///|
+/// Wait for Enter key - not supported in WASM
+pub fn wait_for_enter() -> Unit {
+  ()
+}

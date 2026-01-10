@@ -19,6 +19,8 @@ pub struct Browser {
   viewport_height : Int
   /// Current HTML content
   mut html_content : String
+  /// Parsed document (cached to avoid re-parsing)
+  mut parsed_doc : @html.Document?
   /// External CSS content
   mut external_css : Array[String]
   /// Links found in current page
@@ -45,6 +47,8 @@ pub struct Browser {
   mut focus_manager : @aom.FocusManager?
   /// Current accessibility tree
   mut a11y_tree : @aom.AccessibilityTree?
+  /// Selection mode (raw mode disabled for text copy)
+  mut selection_mode : Bool
 }
 
 ///|
@@ -55,6 +59,7 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     viewport_width: width,
     viewport_height: height,
     html_content: "",
+    parsed_doc: None,
     external_css: [],
     links: [],
     focused_link: 0,
@@ -68,6 +73,7 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     forward_history: [],
     focus_manager: None,
     a11y_tree: None,
+    selection_mode: false,
   }
 }
 
@@ -129,15 +135,16 @@ fn resolve_url(base_url : String, href : String) -> String {
 ///|
 /// Fetch external stylesheets and return CSS array
 async fn fetch_external_css(html : String, base_url : String) -> Array[String] {
-  let doc = @html.parse_document(html)
-  let link_count = doc.stylesheet_links.length()
+  // Use lightweight extraction instead of full DOM parsing
+  let stylesheet_links = @html.extract_stylesheet_links(html)
+  let link_count = stylesheet_links.length()
   if link_count == 0 {
     return []
   }
   println("Found " + link_count.to_string() + " external stylesheets")
   // Fetch all external CSS
   let css_contents : Array[String] = []
-  for link in doc.stylesheet_links {
+  for link in stylesheet_links {
     let css_url = resolve_url(base_url, link)
     println("Fetching CSS: " + css_url)
     // Try to fetch CSS, ignore errors
@@ -304,6 +311,16 @@ pub async fn Browser::navigate(
 }
 
 ///|
+/// Navigate to URL in lightweight mode (for --json, --aom modes)
+/// Skips CSS cascade and layout calculation to reduce memory usage
+pub async fn Browser::navigate_lightweight(
+  self : Browser,
+  url : String,
+) -> String raise @http.HttpError {
+  self.load_url_lightweight(url)
+}
+
+///|
 /// Load a URL without adding to history (internal use)
 async fn Browser::load_url(
   self : Browser,
@@ -313,25 +330,56 @@ async fn Browser::load_url(
   // Fetch the page
   let response = @http.fetch(url)
   self.html_content = response.body
-  // Fetch external CSS
+  // Fetch external CSS using lightweight extraction (no full parsing)
   self.external_css = fetch_external_css(self.html_content, url) catch {
     _ => [] // Fallback to no external CSS on error
   }
-  // Extract links from HTML
+  // Extract links from HTML (lightweight, no full parsing)
   self.links = extract_links(self.html_content)
   self.focused_link = 0
   self.scroll_y = 0
-  // Calculate content height
-  self.content_height = @renderer.get_content_height_with_css(
-    self.html_content,
+  // Parse HTML using regular parser (streaming parser under investigation)
+  let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
+  self.parsed_doc = Some(doc)
+  // Calculate content height using the pre-parsed document
+  self.content_height = @renderer.get_content_height_with_document(
+    doc,
     self.viewport_width,
     self.viewport_height,
     self.external_css,
   )
-  // Build accessibility tree for focus navigation
+  // Build accessibility tree for focus navigation (uses cached doc)
   self.build_accessibility_tree()
   // Render to Sixel
   self.render()
+}
+
+///|
+/// Load a URL in lightweight mode (for --json, --aom modes)
+/// Skips CSS cascade and layout calculation to reduce memory usage
+pub async fn Browser::load_url_lightweight(
+  self : Browser,
+  url : String,
+) -> String raise @http.HttpError {
+  self.current_url = url
+  // Fetch the page
+  let response = @http.fetch(url)
+  self.html_content = response.body
+  // Skip external CSS fetching in lightweight mode
+  self.external_css = []
+  // Skip link extraction (not needed for JSON/AOM output)
+  self.links = []
+  self.focused_link = 0
+  self.scroll_y = 0
+  // Parse HTML using regular parser (streaming parser under investigation)
+  let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
+  self.parsed_doc = Some(doc)
+  // Skip content height calculation in lightweight mode
+  self.content_height = 0
+  // Build lightweight accessibility tree (no CSS cascade, no layout)
+  self.build_accessibility_tree_lightweight()
+  // Return empty string (no rendering in lightweight mode)
+  ""
 }
 
 ///|
@@ -392,16 +440,38 @@ pub fn Browser::render_text(self : Browser) -> String {
     viewport_height: self.viewport_height.to_double(),
     root_font_size: 16.0,
   }
-  let node = @renderer.render_to_node_with_external_css(
-    self.html_content,
-    ctx,
-    self.external_css,
-  )
-  let layout = @renderer.render_with_external_css(
-    self.html_content,
-    ctx,
-    self.external_css,
-  )
+  // Use cached parsed document if available to ensure consistent layout
+  // This is critical for scrolling - the same DOM must be used for content_height
+  // calculation (in load_url) and rendering (here)
+  let (node, layout) = match self.parsed_doc {
+    Some(doc) => {
+      let n = @renderer.render_to_node_with_document(
+        doc,
+        ctx,
+        self.external_css,
+      )
+      let l = @renderer.render_document_with_external_css(
+        doc,
+        ctx,
+        self.external_css,
+      )
+      (n, l)
+    }
+    None => {
+      // Fallback to parsing HTML (shouldn't happen in normal flow)
+      let n = @renderer.render_to_node_with_external_css(
+        self.html_content,
+        ctx,
+        self.external_css,
+      )
+      let l = @renderer.render_with_external_css(
+        self.html_content,
+        ctx,
+        self.external_css,
+      )
+      (n, l)
+    }
+  }
   // Convert pixel dimensions to character dimensions
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
@@ -434,6 +504,7 @@ pub fn Browser::render_text(self : Browser) -> String {
       self.get_visible_focus_index(),
       focused_element_name~,
       focused_link_url~,
+      selection_mode=self.selection_mode,
     )
   }
   // Store link regions for click hit testing
@@ -539,28 +610,69 @@ pub fn Browser::prev_link(self : Browser) -> Unit {
 ///|
 /// Build accessibility tree from current HTML content
 fn Browser::build_accessibility_tree(self : Browser) -> Unit {
-  if self.html_content.length() == 0 {
-    self.a11y_tree = None
-    self.focus_manager = None
-    return
+  // Use cached parsed document if available
+  let doc = match self.parsed_doc {
+    Some(d) => d
+    None => {
+      if self.html_content.length() == 0 {
+        self.a11y_tree = None
+        self.focus_manager = None
+        return
+      }
+      // Fallback: parse if not cached (shouldn't happen in normal flow)
+      let d = @html.assign_synthetic_ids(
+        @html.parse_document(self.html_content),
+      )
+      self.parsed_doc = Some(d)
+      d
+    }
   }
-  // Parse HTML document
-  let doc = @html.parse_document(self.html_content)
-  // Build layout tree and calculate layout to get bounds
-  let layout_tree = @tree.LayoutTree::from_html_document(
+  // Use the renderer's layout which applies CSS properly
+  let ctx : @renderer.RenderContext = {
+    viewport_width: self.viewport_width.to_double(),
+    viewport_height: self.viewport_height.to_double(),
+    root_font_size: 16.0,
+  }
+  // Render with CSS to get proper layout bounds
+  // Use the document with synthetic IDs for consistent ID matching
+  let layout = @renderer.render_document_with_external_css(
     doc,
-    self.viewport_width.to_double(),
-    self.viewport_height.to_double(),
+    ctx,
+    self.external_css,
   )
-  let _ = layout_tree.calculate_layout(
-    self.viewport_width.to_double(),
-    self.viewport_height.to_double(),
-  )
-  // Build accessibility tree with layout bounds
-  let tree = @aom.build_accessibility_tree_with_layout(doc, layout_tree)
+  // Build accessibility tree with renderer's layout bounds
+  let tree = @aom.build_accessibility_tree_with_node_layout(doc, layout)
   self.a11y_tree = Some(tree)
   // Create focus manager
   self.focus_manager = Some(@aom.FocusManager::new(tree))
+}
+
+///|
+/// Build lightweight accessibility tree (no CSS cascade, no layout)
+/// Used for --json and --aom modes to reduce memory usage
+fn Browser::build_accessibility_tree_lightweight(self : Browser) -> Unit {
+  // Use cached parsed document if available
+  let doc = match self.parsed_doc {
+    Some(d) => d
+    None => {
+      if self.html_content.length() == 0 {
+        self.a11y_tree = None
+        self.focus_manager = None
+        return
+      }
+      // Parse with regular parser
+      let d = @html.assign_synthetic_ids(
+        @html.parse_document(self.html_content),
+      )
+      self.parsed_doc = Some(d)
+      d
+    }
+  }
+  // Build lightweight accessibility tree (skips CSS cascade and layout)
+  let tree = @aom.build_accessibility_tree_lightweight(doc)
+  self.a11y_tree = Some(tree)
+  // No focus manager needed for JSON/AOM output
+  self.focus_manager = None
 }
 
 ///|
@@ -778,53 +890,142 @@ pub fn Browser::render_arc90(self : Browser) -> String {
 }
 
 ///|
-/// Extract links from HTML content
+/// Run visual grounding demo and return results
+pub fn Browser::render_grounding(self : Browser) -> String {
+  match self.a11y_tree {
+    Some(tree) => {
+      let viewport : @grounding.Viewport = {
+        width: self.viewport_width.to_double(),
+        height: self.viewport_height.to_double(),
+      }
+      let buf = StringBuilder::new()
+      buf.write_string("=== Visual Grounding Demo ===\n")
+      buf.write_string("Viewport: ")
+      buf.write_string(self.viewport_width.to_string())
+      buf.write_string("x")
+      buf.write_string(self.viewport_height.to_string())
+      buf.write_string("\n\n")
+
+      // Test different spatial queries
+      let regions : Array[(@grounding.SpatialRegion, String)] = [
+        (@grounding.TopLeft, "Top Left"),
+        (@grounding.TopRight, "Top Right"),
+        (@grounding.Center, "Center"),
+        (@grounding.BottomLeft, "Bottom Left"),
+        (@grounding.BottomRight, "Bottom Right"),
+      ]
+      for region_info in regions {
+        let (region, name) = region_info
+        buf.write_string("--- ")
+        buf.write_string(name)
+        buf.write_string(" ---\n")
+        let results = @grounding.find_by_spatial(
+          tree,
+          @grounding.InRegion(region),
+          viewport,
+        )
+        if results.length() == 0 {
+          buf.write_string("  (no interactive elements)\n")
+        } else {
+          let limit = if results.length() < 3 { results.length() } else { 3 }
+          for i in 0..<limit {
+            let r = results[i]
+            buf.write_string("  ")
+            buf.write_string(r.to_string())
+            buf.write_string("\n")
+          }
+        }
+        buf.write_string("\n")
+      }
+
+      // Test role-based search
+      buf.write_string("--- Links in Top Right ---\n")
+      let top_right_links = @grounding.find_by_spatial(
+        tree,
+        @grounding.RoleInRegion(@aom.Link, @grounding.TopRight),
+        viewport,
+      )
+      if top_right_links.length() == 0 {
+        buf.write_string("  (no links)\n")
+      } else {
+        let limit = if top_right_links.length() < 5 {
+          top_right_links.length()
+        } else {
+          5
+        }
+        for i in 0..<limit {
+          let r = top_right_links[i]
+          buf.write_string("  ")
+          buf.write_string(r.to_string())
+          buf.write_string("\n")
+        }
+      }
+      buf.to_string()
+    }
+    None => "No accessibility tree available."
+  }
+}
+
+///|
+/// Get character at index from string (returns '\0' if out of bounds)
+fn char_at(s : String, i : Int) -> Char {
+  if i < 0 || i >= s.length() {
+    '\u0000'
+  } else {
+    s[i].to_int().unsafe_to_char()
+  }
+}
+
+///|
+/// Extract links from HTML content (memory-efficient version)
 fn extract_links(html : String) -> Array[Link] {
   let links : Array[Link] = []
-  // Simple regex-like extraction for <a href="...">...</a>
+  let len = html.length()
   let mut i = 0
-  let chars = html.to_array()
-  let len = chars.length()
   while i < len {
     // Look for <a
     if i + 2 < len &&
-      chars[i] == '<' &&
-      (chars[i + 1] == 'a' || chars[i + 1] == 'A') &&
-      (chars[i + 2] == ' ' || chars[i + 2] == '\t') {
+      char_at(html, i) == '<' &&
+      (char_at(html, i + 1) == 'a' || char_at(html, i + 1) == 'A') &&
+      (char_at(html, i + 2) == ' ' || char_at(html, i + 2) == '\t') {
       // Find href="
       let mut j = i + 2
       let mut href = ""
-      while j < len && chars[j] != '>' {
+      while j < len && char_at(html, j) != '>' {
         if j + 6 < len &&
-          (chars[j] == 'h' || chars[j] == 'H') &&
-          (chars[j + 1] == 'r' || chars[j + 1] == 'R') &&
-          (chars[j + 2] == 'e' || chars[j + 2] == 'E') &&
-          (chars[j + 3] == 'f' || chars[j + 3] == 'F') &&
-          chars[j + 4] == '=' {
-          let quote = chars[j + 5]
+          (char_at(html, j) == 'h' || char_at(html, j) == 'H') &&
+          (char_at(html, j + 1) == 'r' || char_at(html, j + 1) == 'R') &&
+          (char_at(html, j + 2) == 'e' || char_at(html, j + 2) == 'E') &&
+          (char_at(html, j + 3) == 'f' || char_at(html, j + 3) == 'F') &&
+          char_at(html, j + 4) == '=' {
+          let quote = char_at(html, j + 5)
           if quote == '"' || quote == '\'' {
             let mut k = j + 6
-            while k < len && chars[k] != quote {
+            while k < len && char_at(html, k) != quote {
               k = k + 1
             }
-            href = chars_to_string(chars[j + 6:k])
+            href = html.unsafe_substring(start=j + 6, end=k)
           }
         }
         j = j + 1
       }
       // Find link text (between > and </a>)
-      if j < len && chars[j] == '>' {
+      if j < len && char_at(html, j) == '>' {
         let text_start = j + 1
         let mut text_end = text_start
         while text_end + 3 < len {
-          if chars[text_end] == '<' &&
-            chars[text_end + 1] == '/' &&
-            (chars[text_end + 2] == 'a' || chars[text_end + 2] == 'A') {
+          if char_at(html, text_end) == '<' &&
+            char_at(html, text_end + 1) == '/' &&
+            (
+              char_at(html, text_end + 2) == 'a' ||
+              char_at(html, text_end + 2) == 'A'
+            ) {
             break
           }
           text_end = text_end + 1
         }
-        let text = chars_to_string(chars[text_start:text_end])
+        let text = html
+          .unsafe_substring(start=text_start, end=text_end)
           .trim()
           .to_string()
         if href.length() > 0 {
@@ -836,16 +1037,6 @@ fn extract_links(html : String) -> Array[Link] {
     i = i + 1
   }
   links
-}
-
-///|
-/// Convert char array/slice to string
-fn chars_to_string(chars : ArrayView[Char]) -> String {
-  let sb = StringBuilder::new()
-  for c in chars {
-    sb.write_char(c)
-  }
-  sb.to_string()
 }
 
 ///|
@@ -903,6 +1094,14 @@ pub fn Browser::exit_hint_mode(self : Browser) -> Unit {
   self.hint_mode = false
   self.hints = []
   self.hint_input = ""
+}
+
+///|
+/// Toggle selection mode (for text copy with mouse)
+/// Returns true if selection mode is now enabled, false if disabled
+pub fn Browser::toggle_selection_mode(self : Browser) -> Bool {
+  self.selection_mode = not(self.selection_mode)
+  self.selection_mode
 }
 
 ///|
