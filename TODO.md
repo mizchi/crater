@@ -1,5 +1,27 @@
 # TODO
 
+## Bugs
+
+### TUI テーブルレンダリングで文字が1文字切れる
+
+**症状**
+- テーブルセル内のテキストが常に最後の1文字切れて表示される
+- ASCII文字・CJK文字両方で発生
+- 例: "コードブロック" → "コードブロッ", "mbt check" → "mbt chec"
+
+**調査結果**
+- ストリーミングパーサー・通常パーサー両方で発生 → パーサーの問題ではない
+- `write_text` のループ終了条件は正しそう
+- `px_to_col` の四捨五入変更では解決せず
+
+**調査が必要な箇所**
+1. レイアウトエンジン (`renderer/renderer.mbt`): テキスト幅計算 `create_text_measure`
+2. TUI バッファ (`browser/src/tui/buffer.mbt`): `write_text` の文字列イテレーション
+3. ピクセル→カラム変換: `node.width` の値が正しいか確認
+
+**再現方法**
+テーブルを含むHTMLをTUIモードでレンダリング
+
 ## Completed ✅
 
 - [x] `position: static/relative/absolute/fixed`
