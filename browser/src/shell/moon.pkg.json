@@ -6,6 +6,8 @@
     "mizchi/crater/html",
     "mizchi/crater/css/parser",
     "mizchi/crater/css/diagnostics",
-    "mizchi/crater/aom"
+    "mizchi/crater/aom",
+    "mizchi/crater/tree",
+    "mizchi/crater/experimental/arc90"
   ]
 }

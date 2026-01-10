@@ -39,6 +39,7 @@ struct Options {
   debug : Bool
   json : Bool // AOM JSON output for AI scraping
   aom : Bool // AOM YAML snapshot output
+  arc90 : Bool // Arc90 content extraction
 }
 
 ///|
@@ -52,6 +53,10 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     // AOM YAML snapshot output (Playwright-compatible)
     let aom_output = browser.render_aom()
     println(aom_output)
+  } else if options.arc90 {
+    // Arc90 content extraction
+    let arc90_output = browser.render_arc90()
+    println(arc90_output)
   } else if options.sixel {
     let sixel = browser.render()
     @tui.print_raw(@tui.clear_screen())
@@ -90,6 +95,7 @@ fn parse_args() -> Options? {
   let mut debug = false
   let mut json = false
   let mut aom = false
+  let mut arc90 = false
   for arg in args {
     if arg == "--sixel" {
       sixel = true
@@ -97,6 +103,8 @@ fn parse_args() -> Options? {
       text = true
     } else if arg == "--debug" {
       debug = true
+    } else if arg == "--arc90" {
+      arc90 = true
     } else if arg == "--json" {
       json = true
     } else if arg == "--aom" {
@@ -109,12 +117,12 @@ fn parse_args() -> Options? {
     None
   } else {
     // Default to text mode if no output mode is specified
-    let text = if not(sixel) && not(text) && not(debug) && not(json) && not(aom) {
+    let text = if not(sixel) && not(text) && not(debug) && not(json) && not(aom) && not(arc90) {
       true
     } else {
       text
     }
-    Some({ url, sixel, text, debug, json, aom })
+    Some({ url, sixel, text, debug, json, aom, arc90 })
   }
 }
 
@@ -136,6 +144,7 @@ async fn main {
       )
       println("  --json   Output accessibility tree as JSON (for AI scraping)")
       println("  --aom    Output accessibility tree as YAML (Playwright format)")
+      println("  --arc90  Run Arc90 content extraction (detect main content)")
       println("  --debug  Print layout tree for debugging")
       return
     }
@@ -143,8 +152,8 @@ async fn main {
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
   let browser = @shell.Browser::new(viewport_width, viewport_height)
-  // For JSON/AOM modes, just fetch and output without TUI
-  if options.json || options.aom {
+  // For JSON/AOM/Arc90 modes, just fetch and output without TUI
+  if options.json || options.aom || options.arc90 {
     let _ = browser.navigate(options.url)
     render_page(browser, options)
     return

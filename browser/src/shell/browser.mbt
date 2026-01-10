@@ -546,8 +546,18 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
   }
   // Parse HTML document
   let doc = @html.parse_document(self.html_content)
-  // Build accessibility tree
-  let tree = @aom.build_accessibility_tree(doc)
+  // Build layout tree and calculate layout to get bounds
+  let layout_tree = @tree.LayoutTree::from_html_document(
+    doc,
+    self.viewport_width.to_double(),
+    self.viewport_height.to_double(),
+  )
+  let _ = layout_tree.calculate_layout(
+    self.viewport_width.to_double(),
+    self.viewport_height.to_double(),
+  )
+  // Build accessibility tree with layout bounds
+  let tree = @aom.build_accessibility_tree_with_layout(doc, layout_tree)
   self.a11y_tree = Some(tree)
   // Create focus manager
   self.focus_manager = Some(@aom.FocusManager::new(tree))
@@ -739,6 +749,31 @@ pub fn Browser::render_aom(self : Browser) -> String {
   match self.a11y_tree {
     Some(tree) => tree.to_aria_snapshot()
     None => ""
+  }
+}
+
+///|
+/// Run Arc90 content extraction and return result
+pub fn Browser::render_arc90(self : Browser) -> String {
+  match self.a11y_tree {
+    Some(tree) => {
+      let config : @arc90.ExtractConfig = {
+        min_text_length: 50,
+        viewport_width: self.viewport_width.to_double(),
+        viewport_height: self.viewport_height.to_double(),
+        ad_sizes: [
+          (300.0, 250.0),
+          (728.0, 90.0),
+          (160.0, 600.0),
+          (300.0, 600.0),
+          (320.0, 50.0),
+          (320.0, 100.0),
+        ],
+      }
+      let result = @arc90.extract_content(tree, config)
+      result.to_summary()
+    }
+    None => "No accessibility tree available."
   }
 }
 

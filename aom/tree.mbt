@@ -461,7 +461,11 @@ fn build_node(
     role == Cell ||
     role == Caption {
     let content = get_element_text_content(element)
-    if content.is_empty() { Option::None } else { Some(content) }
+    if content.is_empty() {
+      Option::None
+    } else {
+      Some(content)
+    }
   } else {
     Option::None
   }
@@ -800,12 +804,11 @@ fn collect_text_content(element : @html.Element, buf : StringBuilder) -> Unit {
           buf.write_string(trimmed)
         }
       }
-      @html.Element(child_elem) => {
+      @html.Element(child_elem) =>
         // Skip non-visible elements
         if is_visible_element(child_elem.tag) {
           collect_text_content(child_elem, buf)
         }
-      }
     }
   }
 }
@@ -820,7 +823,10 @@ fn find_labelling_ref(
   match element.attributes.get("aria-labelledby") {
     Some(label_id) if not(label_id.is_empty()) => {
       // The value might be a space-separated list of IDs, take the first
-      let parts : Array[String] = label_id.split(" ").map(fn(s) { s.to_string() }).collect()
+      let parts : Array[String] = label_id
+        .split(" ")
+        .map(fn(s) { s.to_string() })
+        .collect()
       if parts.length() > 0 {
         return Some(parts[0])
       }
@@ -831,10 +837,9 @@ fn find_labelling_ref(
   match element.id {
     Some(elem_id) =>
       match ctx.label_map.get(elem_id) {
-        Some(_) => {
+        Some(_) =>
           // Return the element id as a hint (the ref will be computed later)
           return Some("label-for-" + elem_id)
-        }
         _ => ()
       }
     _ => ()
