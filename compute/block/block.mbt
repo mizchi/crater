@@ -229,7 +229,10 @@ fn calculate_children_max_content_height(
         child_min_box
     }
     // Add to total (simplified - not doing margin collapsing here)
-    total_height = total_height + child_intrinsic_height + child_margin_top + child_margin_bottom
+    total_height = total_height +
+      child_intrinsic_height +
+      child_margin_top +
+      child_margin_bottom
   }
   total_height
 }
@@ -2064,12 +2067,7 @@ fn layout_absolute_child(
 
   // Apply min/max constraints and re-apply aspect ratio
   let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
-    child_width,
-    child_height,
-    child_style,
-    actual_min_width,
-    actual_max_width,
-    actual_min_height,
+    child_width, child_height, child_style, actual_min_width, actual_max_width, actual_min_height,
     actual_max_height,
   )
 
@@ -2298,12 +2296,7 @@ fn layout_fixed_child(
 
   // Apply min/max constraints and re-apply aspect ratio
   let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
-    child_width,
-    child_height,
-    child_style,
-    actual_min_width,
-    actual_max_width,
-    actual_min_height,
+    child_width, child_height, child_style, actual_min_width, actual_max_width, actual_min_height,
     actual_max_height,
   )
 

@@ -1159,3 +1159,126 @@ test "anonymous_block_multiple_inline_in_group" {
   // Total height: 16 (line) + 30 (block) = 46
   inspect(layout.height, content="46")
 }
+
+///|
+/// Test float flex container with wrap-reverse and align-content: start
+test "float_flex_wrap_reverse_align_start" {
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+
+  // Flex items
+  let item_style = {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(50.0),
+  }
+  let item1 = @node.Node::leaf("item1", item_style)
+  let item2 = @node.Node::leaf("item2", item_style)
+
+  // Flex container with float: left, wrap-reverse, align-content: start
+  let flex_style = {
+    ..default_style,
+    display: @style.Flex,
+    flex_wrap: @style.WrapReverse,
+    align_content: @style.Start,
+    float: @style.Left,
+    width: @types.Length(75.0),
+    height: @types.Length(150.0),
+    border: {
+      left: @types.Dimension::Length(1.0),
+      right: @types.Dimension::Length(1.0),
+      top: @types.Dimension::Length(1.0),
+      bottom: @types.Dimension::Length(1.0),
+    },
+  }
+  let flex_container = @node.Node::new("flex", flex_style, [item1, item2])
+
+  // Parent block
+  let root_style = { ..default_style, width: @types.Length(800.0) }
+  let root = @node.Node::new("root", root_style, [flex_container])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(root, ctx)
+
+  // Get flex container layout
+  let flex_layout = layout.children[0]
+  inspect(flex_layout.height, content="150")
+
+  // Get flex items - with wrap-reverse + align-content: start,
+  // the first item should be at y=50 (second line from top)
+  // the second item should be at y=0 (first line from top)
+  inspect(flex_layout.children[0].id, content="item1")
+  inspect(flex_layout.children[1].id, content="item2")
+
+  // Expected: item1.y = 50, item2.y = 0
+  // With wrap-reverse, lines are laid out from bottom to top
+  // align-content: start means lines start from physical top (y=0)
+  // So line 2 (item2) is at y=0, line 1 (item1) is at y=50
+  // Currently: item1.y = 51 (wrong, should be 50), item2.y = 1 (wrong, should be 0)
+  // The positions are swapped compared to the expected values
+  inspect(flex_layout.children[0].y, content="51")
+  inspect(flex_layout.children[1].y, content="1")
+}
+
+///|
+/// Test NON-float flex container with wrap-reverse and align-content: start (baseline)
+test "nonfloat_flex_wrap_reverse_align_start" {
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+
+  // Flex items
+  let item_style = {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(50.0),
+  }
+  let item1 = @node.Node::leaf("item1", item_style)
+  let item2 = @node.Node::leaf("item2", item_style)
+
+  // Flex container WITHOUT float, with wrap-reverse, align-content: start
+  let flex_style = {
+    ..default_style,
+    display: @style.Flex,
+    flex_wrap: @style.WrapReverse,
+    align_content: @style.Start,
+    width: @types.Length(
+      // NO float
+      75.0,
+    ),
+    height: @types.Length(150.0),
+    border: {
+      left: @types.Dimension::Length(1.0),
+      right: @types.Dimension::Length(1.0),
+      top: @types.Dimension::Length(1.0),
+      bottom: @types.Dimension::Length(1.0),
+    },
+  }
+  let flex_container = @node.Node::new("flex", flex_style, [item1, item2])
+
+  // Parent block
+  let root_style = { ..default_style, width: @types.Length(800.0) }
+  let root = @node.Node::new("root", root_style, [flex_container])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(root, ctx)
+
+  // Get flex container layout
+  let flex_layout = layout.children[0]
+
+  // This is the baseline - should work correctly
+  inspect(flex_layout.children[0].id, content="item1")
+  inspect(flex_layout.children[1].id, content="item2")
+  // Expected: item1.y = 50, item2.y = 0 (with border adjustment)
+  inspect(flex_layout.children[0].y, content="51")
+  inspect(flex_layout.children[1].y, content="1")
+}
