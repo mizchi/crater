@@ -40,12 +40,19 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| css-flexbox | 20 | 20 | 100% |
-| css-sizing | 25 | 30 | 83.3% |
-| css-position | 13 | 30 | 43.3% |
-| css-tables | 6 | 20 | 30.0% |
-| css-display | 2 | 30 | 6.7% |
-| **Total** | **66** | **130** | **50.8%** |
+| css-flexbox | 162 | 253 | 64.0% |
+| css-grid | 21 | 39 | 53.8% |
+| css-sizing | 37 | 103 | 35.9% |
+| css-position | 42 | 117 | 35.9% |
+| css-tables | 11 | 74 | 14.9% |
+| css-display | 12 | 93 | 12.9% |
+| **Total** | **285** | **679** | **42.0%** |
+
+Run WPT tests:
+```bash
+npm run wpt:fetch-all  # Fetch all WPT tests
+npm run wpt:run-all    # Run all WPT tests
+```
 
 ## Features
 
