@@ -38,14 +38,14 @@ Layout algorithm tests ported from [Taffy](https://github.com/DioxusLabs/taffy):
 
 CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
-| Module | Tests |
-|--------|-------|
-| css-flexbox | 234 |
-| css-grid | 30 |
-| css-sizing | 50 |
-| css-overflow | 20 |
-| css-position | 30 |
-| css-variables | 30 |
+| Module | Passed | Total | Rate |
+|--------|--------|-------|------|
+| css-flexbox | 20 | 20 | 100% |
+| css-sizing | 22 | 30 | 73.3% |
+| css-position | 11 | 30 | 36.7% |
+| css-tables | 6 | 20 | 30.0% |
+| css-display | 2 | 30 | 6.7% |
+| **Total** | **61** | **130** | **46.9%** |
 
 ## Features
 
