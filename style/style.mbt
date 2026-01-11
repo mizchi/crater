@@ -8,6 +8,17 @@ pub(all) enum Display {
   InlineFlex
   Grid
   InlineGrid
+  // Table display types
+  Table
+  InlineTable
+  TableRow
+  TableCell
+  TableCaption
+  TableRowGroup // tbody
+  TableHeaderGroup // thead
+  TableFooterGroup // tfoot
+  TableColumn // col (not rendered)
+  TableColumnGroup // colgroup (not rendered)
   None
 } derive(Show, Eq)
 
@@ -80,6 +91,13 @@ pub(all) enum Clear {
   Left
   Right
   Both
+} derive(Show, Eq)
+
+///|
+/// CSS border-collapse property (for tables)
+pub(all) enum BorderCollapse {
+  Separate // Default - borders have spacing
+  Collapse // Adjacent borders merge
 } derive(Show, Eq)
 
 ///|
@@ -380,6 +398,9 @@ pub(all) struct Style {
   mut contain : Contain
   // CSS transform (visual offset, applied in paint phase)
   mut transform : Transform
+  // Table properties
+  mut border_spacing : Double // border-spacing in pixels (horizontal and vertical, simplified)
+  mut border_collapse : BorderCollapse // border-collapse: separate | collapse
 }
 
 ///|
@@ -457,5 +478,7 @@ pub fn Style::default() -> Style {
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
     transform: Transform::none(),
+    border_spacing: 0.0,
+    border_collapse: Separate,
   }
 }

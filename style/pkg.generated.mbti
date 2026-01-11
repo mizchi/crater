@@ -36,6 +36,13 @@ pub(all) enum Alignment {
 pub impl Eq for Alignment
 pub impl Show for Alignment
 
+pub(all) enum BorderCollapse {
+  Separate
+  Collapse
+}
+pub impl Eq for BorderCollapse
+pub impl Show for BorderCollapse
+
 pub(all) enum BoxSizing {
   ContentBox
   BorderBox
@@ -74,6 +81,16 @@ pub(all) enum Display {
   InlineFlex
   Grid
   InlineGrid
+  Table
+  InlineTable
+  TableRow
+  TableCell
+  TableCaption
+  TableRowGroup
+  TableHeaderGroup
+  TableFooterGroup
+  TableColumn
+  TableColumnGroup
   None
 }
 pub impl Eq for Display
@@ -243,6 +260,8 @@ pub(all) struct Style {
   mut background_color : @types.Color
   mut contain : Contain
   mut transform : Transform
+  mut border_spacing : Double
+  mut border_collapse : BorderCollapse
 }
 pub fn Style::default() -> Self
 

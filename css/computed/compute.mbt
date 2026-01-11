@@ -151,6 +151,9 @@ priv struct StyleBuilder {
   mut contain : @style.Contain
   // Transform
   mut transform : @style.Transform
+  // Table properties
+  mut border_spacing : Double
+  mut border_collapse : @style.BorderCollapse
 }
 
 ///|
@@ -216,6 +219,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
     transform: @style.Transform::none(),
+    border_spacing: 0.0,
+    border_collapse: @style.BorderCollapse::Separate,
   }
 }
 
@@ -294,6 +299,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     background_color: self.background_color,
     contain: self.contain,
     transform: self.transform,
+    border_spacing: self.border_spacing,
+    border_collapse: self.border_collapse,
   }
 }
 
@@ -349,6 +356,16 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.Display::InlineFlex => "inline-flex"
         @style.Display::Grid => "grid"
         @style.Display::InlineGrid => "inline-grid"
+        @style.Display::Table => "table"
+        @style.Display::InlineTable => "inline-table"
+        @style.Display::TableRow => "table-row"
+        @style.Display::TableCell => "table-cell"
+        @style.Display::TableCaption => "table-caption"
+        @style.Display::TableRowGroup => "table-row-group"
+        @style.Display::TableHeaderGroup => "table-header-group"
+        @style.Display::TableFooterGroup => "table-footer-group"
+        @style.Display::TableColumn => "table-column"
+        @style.Display::TableColumnGroup => "table-column-group"
         @style.Display::None => "none"
       }
     "position" =>
@@ -1005,8 +1022,42 @@ fn apply_property(
     }
     // Transform (visual position offset)
     "transform" => builder.transform = parse_transform(value)
+    // Table properties
+    "border-spacing" =>
+      builder.border_spacing = parse_border_spacing(value, ctx)
+    "border-collapse" => builder.border_collapse = parse_border_collapse(value)
     _ => ()
   }
+}
+
+///|
+/// Parse border-collapse value
+fn parse_border_collapse(value : String) -> @style.BorderCollapse {
+  match value.trim() {
+    "collapse" => @style.Collapse
+    "separate" => @style.Separate
+    _ => @style.Separate
+  }
+}
+
+///|
+/// Parse border-spacing value (single value or two values)
+fn parse_border_spacing(value : String, ctx : ComputeContext) -> Double {
+  let v = value.trim()
+  // Split by whitespace
+  let parts : Array[StringView] = v
+    .split(" ")
+    .filter(fn(s) { not(s.is_empty()) })
+    .collect()
+  // Use first value (or the only value)
+  if parts.length() >= 1 {
+    let dim = resolve_dimension(parts[0].to_string(), ctx)
+    match dim {
+      @types.Length(px) => return px
+      _ => return 0.0
+    }
+  }
+  0.0
 }
 
 ///|

@@ -280,6 +280,8 @@ fn compute_intrinsic_main_size(
         compute_intrinsic_block_main_size(node, is_row, available_cross, cache)
       @style.Grid | @style.InlineGrid =>
         compute_intrinsic_grid_main_size(node, is_row, available_cross)
+      @style.Table | @style.InlineTable =>
+        @table.compute_intrinsic_size(node, is_row)
       _ => 0.0
     }
   }

@@ -286,6 +286,17 @@ pub fn compute_layout(
         ctx.viewport_height,
       )
     @style.None => @absolute.create_zero_layout(node.id)
+    // Table display types - fall through to block for now (handled by dispatch)
+    @style.Table
+    | @style.InlineTable
+    | @style.TableRow
+    | @style.TableCell
+    | @style.TableCaption
+    | @style.TableRowGroup
+    | @style.TableHeaderGroup
+    | @style.TableFooterGroup
+    | @style.TableColumn
+    | @style.TableColumnGroup => @block.compute(node, ctx)
   }
 }
 
@@ -1742,6 +1753,11 @@ fn calculate_item_intrinsic_sizes(
               let max_layout = @block.compute(child, max_ctx)
               (min_layout.width, max_layout.width)
             }
+            @style.Table | @style.InlineTable => {
+              // Table layout for intrinsic width
+              let width = @table.compute_intrinsic_size(child, true)
+              (width, width)
+            }
             _ => {
               // For other display types, use measure or defaults
               let intrinsic = get_intrinsic_from_measure(
@@ -1907,6 +1923,11 @@ fn calculate_item_intrinsic_sizes(
               }
               let max_layout = @block.compute(child, max_ctx)
               (min_layout.height, max_layout.height)
+            }
+            @style.Table | @style.InlineTable => {
+              // Table layout for intrinsic height
+              let height = @table.compute_intrinsic_size(child, false)
+              (height, height)
             }
             _ => {
               let intrinsic = get_intrinsic_from_measure(
@@ -3316,6 +3337,35 @@ fn compute_child_layout(
       width = nested_layout.width
     }
     if height_is_auto && is_intrinsic_height {
+      height = nested_layout.height
+    }
+  } else if child.style.display == @style.Table ||
+    child.style.display == @style.InlineTable {
+    // Recursively compute table layout for nested tables
+    let ctx : @node.LayoutContext = {
+      available_width: width,
+      available_height: Some(height),
+      sizing_mode: @node.Definite,
+      viewport_width: available_width,
+      viewport_height: available_height,
+    }
+    let nested_layout = @table.compute(child, ctx)
+    for i = 0; i < nested_layout.children.length(); i = i + 1 {
+      child_layouts.push(nested_layout.children[i])
+    }
+    // Update dimensions based on table layout
+    let width_is_auto = match child.style.width {
+      @types.Auto => true
+      _ => false
+    }
+    let height_is_auto = match child.style.height {
+      @types.Auto => true
+      _ => false
+    }
+    if width_is_auto {
+      width = nested_layout.width
+    }
+    if height_is_auto {
       height = nested_layout.height
     }
   } else {

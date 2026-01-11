@@ -6,6 +6,7 @@
     "mizchi/crater/compute/absolute",
     "mizchi/crater/compute/alignment",
     "mizchi/crater/compute/baseline",
-    "mizchi/crater/compute/trace"
+    "mizchi/crater/compute/trace",
+    "mizchi/crater/compute/table"
   ]
 }

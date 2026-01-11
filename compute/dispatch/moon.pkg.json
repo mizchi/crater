@@ -4,7 +4,8 @@
     "mizchi/crater/node",
     "mizchi/crater/compute/block",
     "mizchi/crater/compute/flex",
-    "mizchi/crater/compute/grid"
+    "mizchi/crater/compute/grid",
+    "mizchi/crater/compute/table"
   ],
   "test-import": [
     "mizchi/crater/types"
