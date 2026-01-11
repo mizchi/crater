@@ -1830,7 +1830,11 @@ fn compute_element_style(
   match inline_css {
     Some(css) =>
       style = apply_inline_css_with_vars(
-        style, css, css_vars, ctx.viewport_width, ctx.viewport_height,
+        style,
+        css,
+        css_vars,
+        ctx.viewport_width,
+        ctx.viewport_height,
       )
     None => ()
   }

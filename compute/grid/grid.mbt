@@ -3928,12 +3928,7 @@ fn layout_absolute_child(
 
   // Apply min/max constraints and re-apply aspect ratio
   let (final_width, final_height) = @absolute.apply_constraints_with_aspect_ratio(
-    child_width,
-    child_height,
-    style,
-    actual_min_width,
-    actual_max_width,
-    actual_min_height,
+    child_width, child_height, style, actual_min_width, actual_max_width, actual_min_height,
     actual_max_height,
   )
 
@@ -4094,12 +4089,7 @@ fn layout_fixed_child(
 
   // Apply min/max constraints and re-apply aspect ratio
   let (final_width, final_height) = @absolute.apply_constraints_with_aspect_ratio(
-    child_width,
-    child_height,
-    style,
-    actual_min_width,
-    actual_max_width,
-    actual_min_height,
+    child_width, child_height, style, actual_min_width, actual_max_width, actual_min_height,
     actual_max_height,
   )
 

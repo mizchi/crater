@@ -1291,7 +1291,6 @@ test "max-width max-content with explicit width" {
     height: @types.Length(100.0),
   }
   let child = @node.Node::new("child", child_style, [])
-
   let parent_style = {
     ..@style.Style::default(),
     position: @style.Absolute,
@@ -1301,7 +1300,6 @@ test "max-width max-content with explicit width" {
     max_height: @types.MaxContent,
   }
   let parent = @node.Node::new("parent", parent_style, [child])
-
   let ctx : @node.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
@@ -1309,7 +1307,6 @@ test "max-width max-content with explicit width" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-
   @dispatch.setup()
   let layout = @dispatch.compute(parent, ctx)
 
