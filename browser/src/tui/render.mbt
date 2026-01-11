@@ -11,9 +11,22 @@ let font_width : Double = 8.0
 let font_height : Double = 16.0
 
 ///|
-/// Convert pixel X to character column
+/// Convert pixel X to character column (truncates for position)
 pub fn px_to_col(px : Double) -> Int {
   (px / font_width).to_int()
+}
+
+///|
+/// Convert pixel width to character width (rounds up to ensure content fits)
+fn px_to_col_width(px : Double) -> Int {
+  let result = px / font_width
+  let int_part = result.to_int()
+  // Ceiling: if there's any fractional part, add 1
+  if result > int_part.to_double() {
+    int_part + 1
+  } else {
+    int_part
+  }
 }
 
 ///|
@@ -74,7 +87,9 @@ pub struct TuiContext {
   viewport_height : Int // Visible height in character rows
   link_regions : Array[LinkRegion] // Collected link regions
   focused_element_name : String? // Name of currently focused element (for :focus styling)
+  dark_mode : Bool // Dark mode enabled
 }
+
 
 ///|
 /// Render a PaintNode to the CharBuffer
@@ -96,7 +111,8 @@ fn render_paint_node(
   // Convert to character coordinates
   let col = px_to_col(abs_x)
   let row = px_to_row(abs_y) - ctx.scroll_y
-  let w = px_to_col(node.width)
+  // Use ceiling for width to ensure text content fits
+  let w = px_to_col_width(node.width)
   let h = px_to_row(node.height)
   // Check if we're inside a pre/code element (no text wrapping)
   // Also disable wrapping inside table cells (th/td) - cells should clip, not wrap
@@ -140,6 +156,7 @@ fn render_paint_node(
     let draw_row = row.max(0)
     let draw_h = (row + h).min(ctx.viewport_height) - draw_row
     if draw_h > 0 {
+      // Use CSS-computed color directly (dark mode is handled by CSS cascade)
       ctx.buffer.fill_bg(col, draw_row, w, draw_h, node.paint.background_color)
     }
   }
@@ -251,6 +268,7 @@ fn render_paint_node(
               false,
             )
           } else {
+            // Use CSS-computed colors directly (dark mode is handled by CSS cascade)
             (node.paint.color, node.paint.background_color, false, false)
           }
           let style : TextStyle = {
@@ -259,11 +277,19 @@ fn render_paint_node(
             bold: use_bold,
             underline: use_underline,
           }
+          // Calculate text display width (accounts for wide characters like CJK)
+          let text_display_width = calculate_text_display_width(text_content)
+          // Effective width ensures text is not clipped due to font-size differences
+          let effective_width = w.max(text_display_width)
+          // Check if text needs wrapping: contains spaces/newlines and exceeds container width
+          let needs_wrapping = text_display_width > w &&
+            (text_content.contains(" ") || text_content.contains("\n"))
           // Use non-wrapping text for pre/code elements to preserve formatting
           if child_inside_pre {
-            let _ = ctx.buffer.write_text(col, row, text_content, style, w)
+            let _ = ctx.buffer.write_text(col, row, text_content, style, effective_width)
 
-          } else {
+          } else if needs_wrapping {
+            // Text with spaces that exceeds width - use w for proper line wrapping
             let _ = ctx.buffer.write_text_wrapped(
               col,
               row,
@@ -272,6 +298,10 @@ fn render_paint_node(
               w,
               (row + h).min(ctx.viewport_height) - row,
             )
+
+          } else {
+            // Single word or short text - use effective_width to prevent clipping
+            let _ = ctx.buffer.write_text(col, row, text_content, style, effective_width)
 
           }
           // Collect link region for hit testing
@@ -353,6 +383,7 @@ pub fn render_to_ansi(
     viewport_height: height,
     link_regions,
     focused_element_name,
+    dark_mode: false,
   }
   // Render (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
@@ -374,22 +405,28 @@ pub fn render_to_ansi_with_status(
   focused_element_name? : String? = None,
   focused_link_url? : String? = None,
   selection_mode? : Bool = false,
+  dark_mode? : Bool = false,
 ) -> RenderResult {
   // Reserve first row for status bar at top
   let content_height = height - 1
   let content_start_row = 1 // Content starts at row 1 (after status bar)
   // Create character buffer
   let buf = CharBuffer::new(width, height)
-  // Clear with white background (for content area, starting at row 1)
-  let white_cell : CharCell = {
+  // Clear with background color based on theme
+  let (content_fg, content_bg) = if dark_mode {
+    (@types.Color::rgb(220, 220, 220), @types.Color::rgb(30, 30, 30))
+  } else {
+    (@types.Color::black(), @types.Color::white())
+  }
+  let bg_cell : CharCell = {
     char: ' ',
-    fg: @types.Color::black(),
-    bg: @types.Color::white(),
+    fg: content_fg,
+    bg: content_bg,
     bold: false,
     underline: false,
     reverse: false,
   }
-  buf.fill_rect(0, content_start_row, width, content_height, white_cell)
+  buf.fill_rect(0, content_start_row, width, content_height, bg_cell)
   // Convert to PaintNode with viewport culling
   // Calculate viewport bounds in pixels (font_height = 16.0)
   let viewport_top = scroll_y.to_double() * font_height
@@ -409,6 +446,7 @@ pub fn render_to_ansi_with_status(
         focused_link,
         focused_link_url~,
         selection_mode~,
+        dark_mode~,
       )
       return { ansi: buffer_to_ansi(buf), link_regions: [] }
     }
@@ -424,6 +462,7 @@ pub fn render_to_ansi_with_status(
     viewport_height: content_height,
     link_regions,
     focused_element_name,
+    dark_mode,
   }
   // Render content with offset (start with inside_link=false)
   render_paint_node(
@@ -442,6 +481,7 @@ pub fn render_to_ansi_with_status(
     focused_link,
     focused_link_url~,
     selection_mode~,
+    dark_mode~,
   )
   // Return ANSI and link regions
   { ansi: buffer_to_ansi(buf), link_regions }
@@ -466,6 +506,22 @@ fn display_width(s : String) -> Int {
     } else {
       width = width + 1
     }
+  }
+  width
+}
+
+///|
+/// Calculate text display width for TUI rendering
+/// Uses character-based width (not pixel-based) to ensure text is not clipped
+/// due to font-size differences between layout and TUI
+fn calculate_text_display_width(text : String) -> Int {
+  let mut width = 0
+  for c in text {
+    if c == '\n' {
+      // Stop at newline for single-line width
+      break
+    }
+    width = width + char_display_width(c)
   }
   width
 }
@@ -558,6 +614,7 @@ pub fn render_to_ansi_with_hints(
     viewport_height: content_height,
     link_regions,
     focused_element_name,
+    dark_mode: false, // TODO: Add dark_mode support for hints
   }
   // Render content (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
