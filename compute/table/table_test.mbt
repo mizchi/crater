@@ -376,3 +376,142 @@ test "table-layout fixed with explicit width" {
   inspect(row_layout.children[0].width, content="150")
   inspect(row_layout.children[1].width, content="50")
 }
+
+///|
+/// Test rowspan - cell spanning multiple rows
+test "table rowspan" {
+  // Row 0: Cell A (rowspan=2, 100px wide), Cell B (100px wide)
+  // Row 1: Cell C (should be at column 1, 100px wide)
+  let cell_a_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+    rowspan: 2,
+  }
+  let cell_b_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  }
+  let cell_c_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Table,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell_a = @node.Node::new("cell_a", cell_a_style, [])
+  let cell_b = @node.Node::new("cell_b", cell_b_style, [])
+  let row0 = @node.Node::new("row0", row_style, [cell_a, cell_b])
+  let cell_c = @node.Node::new("cell_c", cell_c_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell_c])
+  let table = @node.Node::new("table", table_style, [row0, row1])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute(table, ctx)
+
+  // Row 0 should have 2 cells
+  let row0_layout = layout.children[0]
+  assert_eq!(row0_layout.children.length(), 2)
+
+  // Row 1 should have 1 cell
+  let row1_layout = layout.children[1]
+  assert_eq!(row1_layout.children.length(), 1)
+
+  // Cell C in row 1 should be at x = 100 (after the rowspan cell A)
+  // because column 0 is occupied by cell A's rowspan
+  let cell_c_layout = row1_layout.children[0]
+  inspect!(cell_c_layout.x, content="100")
+}
+
+///|
+/// Test rowspan with tbody - cell spanning multiple rows inside tbody
+test "table rowspan with tbody" {
+  // Row 0: Cell A (rowspan=2), Cell B
+  // Row 1: Cell C (should be at column 1)
+  let cell_a_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+    rowspan: 2,
+  }
+  let cell_b_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  }
+  let cell_c_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRow,
+  }
+  let tbody_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRowGroup,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Table,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell_a = @node.Node::new("cell_a", cell_a_style, [])
+  let cell_b = @node.Node::new("cell_b", cell_b_style, [])
+  let row0 = @node.Node::new("row0", row_style, [cell_a, cell_b])
+  let cell_c = @node.Node::new("cell_c", cell_c_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell_c])
+  let tbody = @node.Node::new("tbody", tbody_style, [row0, row1])
+  let table = @node.Node::new("table", table_style, [tbody])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute(table, ctx)
+
+  // Table should have 1 child (tbody)
+  assert_eq!(layout.children.length(), 1)
+
+  // tbody should have 2 rows
+  let tbody_layout = layout.children[0]
+  assert_eq!(tbody_layout.children.length(), 2)
+
+  // Row 0 should have 2 cells
+  let row0_layout = tbody_layout.children[0]
+  assert_eq!(row0_layout.children.length(), 2)
+
+  // Row 1 should have 1 cell
+  let row1_layout = tbody_layout.children[1]
+  assert_eq!(row1_layout.children.length(), 1)
+
+  // Cell C in row 1 should be at x = 100 (after the rowspan cell A)
+  let cell_c_layout = row1_layout.children[0]
+  inspect!(cell_c_layout.x, content="100")
+}

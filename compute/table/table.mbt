@@ -1,11 +1,13 @@
 // =============================================================================
-// CSS Table Layout Implementation (Phase 1 - Simplified)
+// CSS Table Layout Implementation
 // =============================================================================
-// This is a simplified implementation that:
-// - Distributes column widths equally (or based on content)
-// - Does not support rowspan/colspan
-// - Does not support border-collapse
-// - Does not support caption-side
+// This implementation supports:
+// - Content-based column width distribution
+// - Fixed table layout (table-layout: fixed)
+// - colspan (cells spanning multiple columns)
+// - rowspan (cells spanning multiple rows)
+// - border-collapse and border-spacing
+// - caption-side (top/bottom)
 
 ///|
 /// Helper function for max
@@ -66,6 +68,74 @@ fn is_table_row(display : @style.Display) -> Bool {
 /// Check if a display type is a table cell
 fn is_table_cell(display : @style.Display) -> Bool {
   display == @style.TableCell
+}
+
+///|
+/// Cell occupancy info - tracks which cell occupies a grid position
+priv struct CellOccupancy {
+  row_index : Int // Starting row of the cell
+  cell_index : Int // Index of cell within the row's children
+}
+
+///|
+/// Build an occupancy grid for the table
+/// Returns: (grid, num_columns) where grid maps (row, col) -> CellOccupancy
+fn build_occupancy_grid(rows : Array[@node.Node]) -> (Map[String, CellOccupancy], Int) {
+  let grid : Map[String, CellOccupancy] = {}
+  let mut num_columns = 0
+
+  for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
+    let row = rows[row_idx]
+    let mut col_idx = 0
+    let mut cell_idx = 0
+
+    for child in row.children {
+      if child.style.display == @style.None {
+        cell_idx = cell_idx + 1
+        continue
+      }
+      if not(is_table_cell(child.style.display)) {
+        cell_idx = cell_idx + 1
+        continue
+      }
+
+      // Skip columns that are already occupied by rowspan from previous rows
+      while grid.contains(key_for_pos(row_idx, col_idx)) {
+        col_idx = col_idx + 1
+      }
+
+      let colspan = if child.style.colspan > 0 { child.style.colspan } else { 1 }
+      let rowspan = if child.style.rowspan > 0 { child.style.rowspan } else { 1 }
+
+      // Mark all positions occupied by this cell
+      for ri = 0; ri < rowspan; ri = ri + 1 {
+        for ci = 0; ci < colspan; ci = ci + 1 {
+          let target_row = row_idx + ri
+          let target_col = col_idx + ci
+          grid[key_for_pos(target_row, target_col)] = {
+            row_index: row_idx,
+            cell_index: cell_idx,
+          }
+        }
+      }
+
+      // Track max column count
+      if col_idx + colspan > num_columns {
+        num_columns = col_idx + colspan
+      }
+
+      col_idx = col_idx + colspan
+      cell_idx = cell_idx + 1
+    }
+  }
+
+  (grid, num_columns)
+}
+
+///|
+/// Create a key string for grid position
+fn key_for_pos(row : Int, col : Int) -> String {
+  row.to_string() + "," + col.to_string()
 }
 
 ///|
@@ -197,30 +267,6 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
   rows
 }
 
-///|
-/// Count cells in a row
-fn count_cells(row : @node.Node) -> Int {
-  let mut count = 0
-  for child in row.children {
-    if child.style.display != @style.None && is_table_cell(child.style.display) {
-      count += 1
-    }
-  }
-  count
-}
-
-///|
-/// Get max column count from all rows
-fn get_column_count(rows : Array[@node.Node]) -> Int {
-  let mut max_cols = 0
-  for row in rows {
-    let cols = count_cells(row)
-    if cols > max_cols {
-      max_cols = cols
-    }
-  }
-  max_cols
-}
 
 ///|
 /// Measure intrinsic width of a cell's content
@@ -648,12 +694,16 @@ fn layout_cell(
 ///|
 /// Layout a single table row
 /// border_collapse: whether border-collapse is enabled
+/// row_index: index of this row for occupancy grid lookup
+/// grid: occupancy grid for rowspan tracking
 fn layout_row(
   row : @node.Node,
+  row_index : Int,
   column_widths : Array[Double],
   border_spacing : Double,
   ctx : @node.LayoutContext,
   border_collapse : Bool,
+  grid : Map[String, CellOccupancy],
 ) -> @node.Layout {
   let style = row.style
   let parent_width = ctx.available_width
@@ -688,15 +738,36 @@ fn layout_row(
   let mut collapsed_border_width = 0.0
   let mut first_cell_left_border = 0.0
   let mut last_cell_right_border = 0.0
+  let mut cell_idx = 0
   for child in row.children {
     if child.style.display == @style.None {
       cell_layouts.push(create_zero_layout(child))
+      cell_idx = cell_idx + 1
       continue
     }
     if not(is_table_cell(child.style.display)) {
       // Skip non-cell children
       cell_layouts.push(create_zero_layout(child))
+      cell_idx = cell_idx + 1
       continue
+    }
+
+    // Skip columns occupied by rowspan cells from previous rows
+    while true {
+      match grid.get(key_for_pos(row_index, col_index)) {
+        Some(occ) =>
+          // If this position's origin is not this cell, skip it
+          if occ.row_index != row_index || occ.cell_index != cell_idx {
+            // Add spacing for skipped column
+            if col_index < column_widths.length() {
+              x_offset = x_offset + column_widths[col_index] + border_spacing
+            }
+            col_index = col_index + 1
+          } else {
+            break
+          }
+        None => break
+      }
     }
 
     // Get colspan from style (default 1)
@@ -741,6 +812,7 @@ fn layout_row(
     x_offset = x_offset + cell_width + border_spacing
     // Advance by colspan columns
     col_index = col_index + colspan
+    cell_idx = cell_idx + 1
     cell_layouts.push(positioned_cell)
   }
 
@@ -834,9 +906,10 @@ pub fn compute_intrinsic_size(
   let border = @types.resolve_rect_intrinsic(style.border)
   let border_spacing = style.border_spacing
 
-  // Collect all rows
+  // Collect all rows and build occupancy grid
   let rows = collect_table_rows(node)
-  let num_columns = get_column_count(rows)
+  let (grid, num_columns) = build_occupancy_grid(rows)
+  let _ = grid // Grid not needed for intrinsic size calculation
   if parent_is_row {
     // Compute intrinsic width
     let intrinsic_col_widths = calculate_intrinsic_column_widths(
@@ -1001,11 +1074,11 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     style.border_spacing
   }
 
-  // Collect all rows
+  // Collect all rows and build occupancy grid
   let rows = collect_table_rows(node)
 
-  // Get column count
-  let num_columns = get_column_count(rows)
+  // Build occupancy grid to track rowspan/colspan
+  let (grid, num_columns) = build_occupancy_grid(rows)
 
   // Collect column width specifications from col/colgroup elements
   let col_widths = collect_column_widths(node, ctx.available_width)
@@ -1162,6 +1235,9 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   // x position for rows includes left edge spacing
   let row_x_offset = padding.left + border.left + border_spacing
 
+  // Track global row index (matching order in collect_table_rows)
+  let mut global_row_idx = 0
+
   // Second: layout rows and row groups
   for entry in row_children {
     let (child, idx) = entry
@@ -1172,11 +1248,18 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     if is_table_row(child.style.display) {
       // Direct row
       let row_layout = layout_row(
-        child, column_widths, border_spacing, child_ctx, is_border_collapse,
+        child,
+        global_row_idx,
+        column_widths,
+        border_spacing,
+        child_ctx,
+        is_border_collapse,
+        grid,
       )
       let positioned_row = { ..row_layout, x: row_x_offset, y: y_offset }
       y_offset = y_offset + row_layout.height + border_spacing
       layout_map[idx] = positioned_row
+      global_row_idx = global_row_idx + 1
     } else if is_table_row_group(child.style.display) {
       // Row group (thead, tbody, tfoot)
       let group_layouts : Array[@node.Layout] = []
@@ -1193,7 +1276,13 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         }
         if is_table_row(row.style.display) {
           let row_layout = layout_row(
-            row, column_widths, border_spacing, child_ctx, is_border_collapse,
+            row,
+            global_row_idx,
+            column_widths,
+            border_spacing,
+            child_ctx,
+            is_border_collapse,
+            grid,
           )
           let positioned_row = {
             ..row_layout,
@@ -1204,6 +1293,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
           // Track max row width for consistent group width
           max_row_width = max(max_row_width, row_layout.width)
           group_layouts.push(positioned_row)
+          global_row_idx = global_row_idx + 1
         } else {
           group_layouts.push(create_zero_layout(row))
         }
