@@ -1,5 +1,9 @@
 package mizchi:crater@0.1.0;
 
+// =============================================================================
+// Shared Types
+// =============================================================================
+
 /// Core layout types
 interface types {
     /// Cache statistics
@@ -53,6 +57,21 @@ interface types {
     }
 }
 
+// =============================================================================
+// Core Interface - Stateless, pure layout computation
+// =============================================================================
+
+/// Core layout computation - stateless, pure functions
+interface core {
+    /// Compute layout from HTML (returns JSON string)
+    /// JSON format: { "nodes": [...], "rootId": "..." }
+    compute-layout: func(html: string, width: u32, height: u32) -> string;
+}
+
+// =============================================================================
+// Renderer Interface - Legacy HTML rendering functions
+// =============================================================================
+
 /// HTML rendering functions
 interface renderer {
     /// Render HTML to text layout tree representation
@@ -64,6 +83,10 @@ interface renderer {
     /// Render HTML to paint tree JSON with visual properties
     render-html-to-paint-tree: func(html: string, width: u32, height: u32) -> string;
 }
+
+// =============================================================================
+// Incremental Interface - Stateful layout with diff updates
+// =============================================================================
 
 /// Incremental layout API
 interface incremental {
@@ -97,6 +120,10 @@ interface incremental {
     /// Destroy the current tree
     destroy-tree: func();
 }
+
+// =============================================================================
+// Yoga Interface - Yoga-compatible node-based API
+// =============================================================================
 
 /// Yoga-compatible style API
 interface yoga {
@@ -190,9 +217,36 @@ interface yoga {
     calculate-layout: func(width: f64, height: f64) -> string;
 }
 
+// =============================================================================
+// Accessibility Interface - ARIA and accessibility tree
+// =============================================================================
+
+/// Accessibility API
+interface accessibility {
+    /// Get ARIA snapshot in YAML format (Playwright-compatible)
+    get-aria-snapshot: func(html: string) -> string;
+
+    /// Get ARIA snapshot in JSON format
+    get-aria-snapshot-json: func(html: string) -> string;
+
+    /// Get full accessibility tree as JSON
+    get-accessibility-tree: func(html: string) -> string;
+}
+
+// =============================================================================
+// Worlds
+// =============================================================================
+
 /// Main world exporting all interfaces
 world crater {
+    export core;
     export renderer;
     export incremental;
     export yoga;
+    export accessibility;
+}
+
+/// Core-only world - minimal, just layout computation
+world crater-core {
+    export core;
 }

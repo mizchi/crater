@@ -1,20 +1,36 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/js"
 
+import(
+  "mizchi/crater/node"
+)
+
 // Values
 pub fn addChild(String, String) -> Bool
 
 pub fn calculateLayout(Double, Double) -> String
 
+pub fn calculateLayoutStructured(Double, Double) -> FlatLayoutResult
+
 pub fn computeFull() -> String
 
+pub fn computeFullStructured() -> FlatLayoutResult
+
 pub fn computeIncremental() -> String
+
+pub fn computeLayout(String, Int, Int) -> FlatLayoutResult
+
+pub fn computeLayoutJson(String, Int, Int) -> String
+
+pub fn computeStructured() -> FlatLayoutResult
 
 pub fn createNode(String) -> Int
 
 pub fn createTree(String, Int, Int) -> Int
 
 pub fn destroyTree() -> Unit
+
+pub fn flatten_layout(@node.Layout) -> FlatLayoutResult
 
 pub fn getAccessibilityTree(String) -> String
 
@@ -99,6 +115,25 @@ pub fn updateStyle(String, String) -> Bool
 // Errors
 
 // Types and methods
+pub(all) struct FlatLayoutNode {
+  id : String
+  parent_id : String
+  index : Int
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  content_x : Double
+  content_y : Double
+  content_width : Double
+  content_height : Double
+  text : String
+}
+
+pub(all) struct FlatLayoutResult {
+  nodes : Array[FlatLayoutNode]
+  root_id : String
+}
 
 // Type aliases
 

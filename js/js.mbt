@@ -979,3 +979,173 @@ fn write_json_indent(buf : StringBuilder, level : Int) -> Unit {
     buf.write_string("  ")
   }
 }
+
+// =============================================================================
+// Flat Layout Types and Functions (for WIT layout-result)
+// =============================================================================
+
+///|
+/// Flat layout node (children referenced by parent-id)
+pub(all) struct FlatLayoutNode {
+  id : String
+  parent_id : String // empty for root
+  index : Int // child index in parent
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  content_x : Double
+  content_y : Double
+  content_width : Double
+  content_height : Double
+  text : String // empty if not a text node
+}
+
+///|
+/// Layout result with all nodes flattened (depth-first order)
+pub(all) struct FlatLayoutResult {
+  nodes : Array[FlatLayoutNode]
+  root_id : String
+}
+
+///|
+/// Flatten a hierarchical Layout tree to FlatLayoutResult
+pub fn flatten_layout(layout : @node.Layout) -> FlatLayoutResult {
+  let nodes : Array[FlatLayoutNode] = []
+  flatten_layout_rec(layout, "", 0, nodes)
+  { nodes, root_id: layout.id }
+}
+
+///|
+fn flatten_layout_rec(
+  layout : @node.Layout,
+  parent_id : String,
+  index : Int,
+  nodes : Array[FlatLayoutNode],
+) -> Unit {
+  // Calculate content box (after padding and border)
+  let content_x = layout.x + layout.padding.left + layout.border.left
+  let content_y = layout.y + layout.padding.top + layout.border.top
+  let content_width = layout.width -
+    layout.padding.left -
+    layout.padding.right -
+    layout.border.left -
+    layout.border.right
+  let content_height = layout.height -
+    layout.padding.top -
+    layout.padding.bottom -
+    layout.border.top -
+    layout.border.bottom
+  let node : FlatLayoutNode = {
+    id: layout.id,
+    parent_id,
+    index,
+    x: layout.x,
+    y: layout.y,
+    width: layout.width,
+    height: layout.height,
+    content_x,
+    content_y,
+    content_width: if content_width > 0.0 {
+      content_width
+    } else {
+      0.0
+    },
+    content_height: if content_height > 0.0 {
+      content_height
+    } else {
+      0.0
+    },
+    text: match layout.text {
+      Some(t) => t
+      None => ""
+    },
+  }
+  nodes.push(node)
+  // Recursively process children
+  for i, child in layout.children {
+    flatten_layout_rec(child, layout.id, i, nodes)
+  }
+}
+
+// =============================================================================
+// Core API Functions
+// =============================================================================
+
+///|
+/// Compute layout from HTML (returns structured FlatLayoutResult)
+pub fn computeLayout(
+  html : String,
+  width : Int,
+  height : Int,
+) -> FlatLayoutResult {
+  let ctx : @renderer.RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  flatten_layout(layout)
+}
+
+///|
+/// Compute layout from HTML (returns JSON string)
+pub fn computeLayoutJson(html : String, width : Int, height : Int) -> String {
+  renderHtmlToJson(html, width, height)
+}
+
+// =============================================================================
+// Incremental API - Structured return versions
+// =============================================================================
+
+///|
+/// Compute layout incrementally (returns structured FlatLayoutResult)
+pub fn computeStructured() -> FlatLayoutResult {
+  match global_tree.val {
+    Some(tree) => {
+      let stats = match global_stats.val {
+        Some(s) => s
+        None => {
+          let s = @tree.CacheStats::new()
+          global_stats.val = Some(s)
+          s
+        }
+      }
+      let layout = tree.compute_with_stats(stats)
+      flatten_layout(layout)
+    }
+    None => { nodes: [], root_id: "" }
+  }
+}
+
+///|
+/// Compute full layout (returns structured FlatLayoutResult)
+pub fn computeFullStructured() -> FlatLayoutResult {
+  match global_tree.val {
+    Some(tree) => {
+      let layout = tree.compute_full()
+      flatten_layout(layout)
+    }
+    None => { nodes: [], root_id: "" }
+  }
+}
+
+// =============================================================================
+// Yoga API - Structured return version
+// =============================================================================
+
+///|
+/// Calculate layout (returns structured FlatLayoutResult)
+pub fn calculateLayoutStructured(
+  width : Double,
+  height : Double,
+) -> FlatLayoutResult {
+  match global_tree.val {
+    Some(tree) => {
+      let layout = tree.calculate_layout(width, height)
+      flatten_layout(layout)
+    }
+    None => { nodes: [], root_id: "" }
+  }
+}

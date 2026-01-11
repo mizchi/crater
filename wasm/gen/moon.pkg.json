@@ -1,11 +1,77 @@
-
 {
-      "link": {
-            "wasm": {
-                  "exports": ["cabi_realloc:cabi_realloc", "wasmExportAddChild:mizchi:crater/yoga@0.1.0#add-child", "wasmExportCalculateLayout:mizchi:crater/yoga@0.1.0#calculate-layout", "wasmExportCalculateLayoutPostReturn:cabi_post_mizchi:crater/yoga@0.1.0#calculate-layout", "wasmExportComputeFull:mizchi:crater/incremental@0.1.0#compute-full", "wasmExportComputeFullPostReturn:cabi_post_mizchi:crater/incremental@0.1.0#compute-full", "wasmExportComputeIncremental:mizchi:crater/incremental@0.1.0#compute-incremental", "wasmExportComputeIncrementalPostReturn:cabi_post_mizchi:crater/incremental@0.1.0#compute-incremental", "wasmExportCreateNode:mizchi:crater/yoga@0.1.0#create-node", "wasmExportCreateTree:mizchi:crater/incremental@0.1.0#create-tree", "wasmExportDestroyTree:mizchi:crater/incremental@0.1.0#destroy-tree", "wasmExportGetCacheStats:mizchi:crater/incremental@0.1.0#get-cache-stats", "wasmExportGetCacheStatsPostReturn:cabi_post_mizchi:crater/incremental@0.1.0#get-cache-stats", "wasmExportGetChildCount:mizchi:crater/yoga@0.1.0#get-child-count", "wasmExportGetComputedHeight:mizchi:crater/yoga@0.1.0#get-computed-height", "wasmExportGetComputedLeft:mizchi:crater/yoga@0.1.0#get-computed-left", "wasmExportGetComputedTop:mizchi:crater/yoga@0.1.0#get-computed-top", "wasmExportGetComputedWidth:mizchi:crater/yoga@0.1.0#get-computed-width", "wasmExportHasNewLayout:mizchi:crater/yoga@0.1.0#has-new-layout", "wasmExportInsertChild:mizchi:crater/yoga@0.1.0#insert-child", "wasmExportMarkDirty:mizchi:crater/incremental@0.1.0#mark-dirty", "wasmExportMarkLayoutSeen:mizchi:crater/yoga@0.1.0#mark-layout-seen", "wasmExportNeedsLayout:mizchi:crater/incremental@0.1.0#needs-layout", "wasmExportRemoveChild:mizchi:crater/yoga@0.1.0#remove-child", "wasmExportRenderHtml:mizchi:crater/renderer@0.1.0#render-html", "wasmExportRenderHtmlPostReturn:cabi_post_mizchi:crater/renderer@0.1.0#render-html", "wasmExportRenderHtmlToJson:mizchi:crater/renderer@0.1.0#render-html-to-json", "wasmExportRenderHtmlToJsonPostReturn:cabi_post_mizchi:crater/renderer@0.1.0#render-html-to-json", "wasmExportRenderHtmlToPaintTree:mizchi:crater/renderer@0.1.0#render-html-to-paint-tree", "wasmExportRenderHtmlToPaintTreePostReturn:cabi_post_mizchi:crater/renderer@0.1.0#render-html-to-paint-tree", "wasmExportResetCacheStats:mizchi:crater/incremental@0.1.0#reset-cache-stats", "wasmExportResizeViewport:mizchi:crater/incremental@0.1.0#resize-viewport", "wasmExportSetAlignItems:mizchi:crater/yoga@0.1.0#set-align-items", "wasmExportSetDisplay:mizchi:crater/yoga@0.1.0#set-display", "wasmExportSetFlexBasis:mizchi:crater/yoga@0.1.0#set-flex-basis", "wasmExportSetFlexDirection:mizchi:crater/yoga@0.1.0#set-flex-direction", "wasmExportSetFlexGrow:mizchi:crater/yoga@0.1.0#set-flex-grow", "wasmExportSetFlexShrink:mizchi:crater/yoga@0.1.0#set-flex-shrink", "wasmExportSetFlexWrap:mizchi:crater/yoga@0.1.0#set-flex-wrap", "wasmExportSetGap:mizchi:crater/yoga@0.1.0#set-gap", "wasmExportSetHeight:mizchi:crater/yoga@0.1.0#set-height", "wasmExportSetHeightAuto:mizchi:crater/yoga@0.1.0#set-height-auto", "wasmExportSetHeightPercent:mizchi:crater/yoga@0.1.0#set-height-percent", "wasmExportSetJustifyContent:mizchi:crater/yoga@0.1.0#set-justify-content", "wasmExportSetMargin:mizchi:crater/yoga@0.1.0#set-margin", "wasmExportSetPadding:mizchi:crater/yoga@0.1.0#set-padding", "wasmExportSetWidth:mizchi:crater/yoga@0.1.0#set-width", "wasmExportSetWidthAuto:mizchi:crater/yoga@0.1.0#set-width-auto", "wasmExportSetWidthPercent:mizchi:crater/yoga@0.1.0#set-width-percent", "wasmExportUpdateStyle:mizchi:crater/incremental@0.1.0#update-style"],
-                  "export-memory-name": "memory",
-                  "heap-start-address": 16
-            }
-      }
-      ,"import": [{ "path" : "mizchi/crater-component/ffi", "alias" : "ffi" }, { "path" : "mizchi/crater-component/gen/interface/mizchi/crater/incremental", "alias" : "incremental" }, { "path" : "mizchi/crater-component/gen/interface/mizchi/crater/renderer", "alias" : "renderer" }, { "path" : "mizchi/crater-component/gen/interface/mizchi/crater/yoga", "alias" : "yoga" }, { "path" : "mizchi/crater-component/interface/mizchi/crater/types", "alias" : "types" }]
+  "link": {
+    "wasm": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportComputeLayout:mizchi:crater/core@0.1.0#compute-layout",
+        "wasmExportComputeLayoutPostReturn:cabi_post_mizchi:crater/core@0.1.0#compute-layout",
+        "wasmExportAddChild:mizchi:crater/yoga@0.1.0#add-child",
+        "wasmExportCalculateLayout:mizchi:crater/yoga@0.1.0#calculate-layout",
+        "wasmExportCalculateLayoutPostReturn:cabi_post_mizchi:crater/yoga@0.1.0#calculate-layout",
+        "wasmExportComputeFull:mizchi:crater/incremental@0.1.0#compute-full",
+        "wasmExportComputeFullPostReturn:cabi_post_mizchi:crater/incremental@0.1.0#compute-full",
+        "wasmExportComputeIncremental:mizchi:crater/incremental@0.1.0#compute-incremental",
+        "wasmExportComputeIncrementalPostReturn:cabi_post_mizchi:crater/incremental@0.1.0#compute-incremental",
+        "wasmExportCreateNode:mizchi:crater/yoga@0.1.0#create-node",
+        "wasmExportCreateTree:mizchi:crater/incremental@0.1.0#create-tree",
+        "wasmExportDestroyTree:mizchi:crater/incremental@0.1.0#destroy-tree",
+        "wasmExportGetCacheStats:mizchi:crater/incremental@0.1.0#get-cache-stats",
+        "wasmExportGetCacheStatsPostReturn:cabi_post_mizchi:crater/incremental@0.1.0#get-cache-stats",
+        "wasmExportGetChildCount:mizchi:crater/yoga@0.1.0#get-child-count",
+        "wasmExportGetComputedHeight:mizchi:crater/yoga@0.1.0#get-computed-height",
+        "wasmExportGetComputedLeft:mizchi:crater/yoga@0.1.0#get-computed-left",
+        "wasmExportGetComputedTop:mizchi:crater/yoga@0.1.0#get-computed-top",
+        "wasmExportGetComputedWidth:mizchi:crater/yoga@0.1.0#get-computed-width",
+        "wasmExportHasNewLayout:mizchi:crater/yoga@0.1.0#has-new-layout",
+        "wasmExportInsertChild:mizchi:crater/yoga@0.1.0#insert-child",
+        "wasmExportMarkDirty:mizchi:crater/incremental@0.1.0#mark-dirty",
+        "wasmExportMarkLayoutSeen:mizchi:crater/yoga@0.1.0#mark-layout-seen",
+        "wasmExportNeedsLayout:mizchi:crater/incremental@0.1.0#needs-layout",
+        "wasmExportRemoveChild:mizchi:crater/yoga@0.1.0#remove-child",
+        "wasmExportRenderHtml:mizchi:crater/renderer@0.1.0#render-html",
+        "wasmExportRenderHtmlPostReturn:cabi_post_mizchi:crater/renderer@0.1.0#render-html",
+        "wasmExportRenderHtmlToJson:mizchi:crater/renderer@0.1.0#render-html-to-json",
+        "wasmExportRenderHtmlToJsonPostReturn:cabi_post_mizchi:crater/renderer@0.1.0#render-html-to-json",
+        "wasmExportRenderHtmlToPaintTree:mizchi:crater/renderer@0.1.0#render-html-to-paint-tree",
+        "wasmExportRenderHtmlToPaintTreePostReturn:cabi_post_mizchi:crater/renderer@0.1.0#render-html-to-paint-tree",
+        "wasmExportResetCacheStats:mizchi:crater/incremental@0.1.0#reset-cache-stats",
+        "wasmExportResizeViewport:mizchi:crater/incremental@0.1.0#resize-viewport",
+        "wasmExportSetAlignItems:mizchi:crater/yoga@0.1.0#set-align-items",
+        "wasmExportSetDisplay:mizchi:crater/yoga@0.1.0#set-display",
+        "wasmExportSetFlexBasis:mizchi:crater/yoga@0.1.0#set-flex-basis",
+        "wasmExportSetFlexDirection:mizchi:crater/yoga@0.1.0#set-flex-direction",
+        "wasmExportSetFlexGrow:mizchi:crater/yoga@0.1.0#set-flex-grow",
+        "wasmExportSetFlexShrink:mizchi:crater/yoga@0.1.0#set-flex-shrink",
+        "wasmExportSetFlexWrap:mizchi:crater/yoga@0.1.0#set-flex-wrap",
+        "wasmExportSetGap:mizchi:crater/yoga@0.1.0#set-gap",
+        "wasmExportSetHeight:mizchi:crater/yoga@0.1.0#set-height",
+        "wasmExportSetHeightAuto:mizchi:crater/yoga@0.1.0#set-height-auto",
+        "wasmExportSetHeightPercent:mizchi:crater/yoga@0.1.0#set-height-percent",
+        "wasmExportSetJustifyContent:mizchi:crater/yoga@0.1.0#set-justify-content",
+        "wasmExportSetMargin:mizchi:crater/yoga@0.1.0#set-margin",
+        "wasmExportSetPadding:mizchi:crater/yoga@0.1.0#set-padding",
+        "wasmExportSetWidth:mizchi:crater/yoga@0.1.0#set-width",
+        "wasmExportSetWidthAuto:mizchi:crater/yoga@0.1.0#set-width-auto",
+        "wasmExportSetWidthPercent:mizchi:crater/yoga@0.1.0#set-width-percent",
+        "wasmExportUpdateStyle:mizchi:crater/incremental@0.1.0#update-style",
+        "wasmExportGetAriaSnapshot:mizchi:crater/accessibility@0.1.0#get-aria-snapshot",
+        "wasmExportGetAriaSnapshotPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#get-aria-snapshot",
+        "wasmExportGetAriaSnapshotJson:mizchi:crater/accessibility@0.1.0#get-aria-snapshot-json",
+        "wasmExportGetAriaSnapshotJsonPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#get-aria-snapshot-json",
+        "wasmExportGetAccessibilityTree:mizchi:crater/accessibility@0.1.0#get-accessibility-tree",
+        "wasmExportGetAccessibilityTreePostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#get-accessibility-tree"
+      ],
+      "export-memory-name": "memory",
+      "heap-start-address": 16
+    }
+  },
+  "import": [
+    { "path": "mizchi/crater-component/ffi", "alias": "ffi" },
+    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/core", "alias": "core" },
+    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/incremental", "alias": "incremental" },
+    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/renderer", "alias": "renderer" },
+    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/yoga", "alias": "yoga" },
+    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/accessibility", "alias": "accessibility" },
+    { "path": "mizchi/crater-component/interface/mizchi/crater/types", "alias": "types" }
+  ]
 }

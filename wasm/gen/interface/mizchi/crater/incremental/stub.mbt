@@ -7,9 +7,21 @@ pub fn create_tree(html : String, width : UInt, height : UInt) -> UInt {
 }
 
 ///|
-/// Compute layout incrementally (uses cache)
+/// Compute layout incrementally (uses cache, returns structured data)
+pub fn compute() -> @crater.FlatLayoutResult {
+  @crater.computeStructured()
+}
+
+///|
+/// Compute layout incrementally (uses cache) - legacy JSON version
 pub fn compute_incremental() -> String {
   @crater.computeIncremental()
+}
+
+///|
+/// Compute full layout (ignores cache, returns structured data)
+pub fn compute_full_structured() -> @crater.FlatLayoutResult {
+  @crater.computeFullStructured()
 }
 
 ///|

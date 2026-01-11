@@ -169,7 +169,16 @@ pub fn mark_layout_seen(node_id : String) -> Bool {
 }
 
 ///|
-/// Calculate layout
+/// Calculate layout (returns structured data)
+pub fn calculate_layout_structured(
+  width : Double,
+  height : Double,
+) -> @crater.FlatLayoutResult {
+  @crater.calculateLayoutStructured(width, height)
+}
+
+///|
+/// Calculate layout (returns JSON)
 pub fn calculate_layout(width : Double, height : Double) -> String {
   @crater.calculateLayout(width, height)
 }
