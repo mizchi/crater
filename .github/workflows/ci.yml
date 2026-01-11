@@ -83,3 +83,52 @@ jobs:
 
       - name: Test WASM component
         run: npm run test:wasm-component
+
+  wpt-tests:
+    runs-on: ubuntu-latest
+    needs: wasm-component
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install wasm-tools
+        run: |
+          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.219.1/wasm-tools-1.219.1-x86_64-linux.tar.gz
+          tar xzf wasm-tools-1.219.1-x86_64-linux.tar.gz
+          sudo mv wasm-tools-1.219.1-x86_64-linux/wasm-tools /usr/local/bin/
+          wasm-tools --version
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
+      - name: Build WASM component
+        run: npm run build:wasm-component
+
+      - name: Transpile with jco
+        run: npm run jco:transpile
+
+      - name: Fetch WPT tests
+        run: npm run wpt:fetch-all
+
+      - name: Run WPT tests
+        run: npm run wpt:run-all
+        continue-on-error: true
