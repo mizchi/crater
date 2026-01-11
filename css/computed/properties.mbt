@@ -238,6 +238,7 @@ pub fn parse_display(value : String) -> @style.Display {
     "grid" => @style.Display::Grid
     "inline-grid" => @style.Display::InlineGrid
     "none" => @style.Display::None
+    "contents" => @style.Display::Contents
     _ => @style.Display::Block
   }
 }

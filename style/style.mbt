@@ -20,6 +20,9 @@ pub(all) enum Display {
   TableColumn // col (not rendered)
   TableColumnGroup // colgroup (not rendered)
   None
+  // Special display type - element doesn't generate a box
+  // but its children are treated as if they were children of the parent
+  Contents
 } derive(Show, Eq)
 
 ///|

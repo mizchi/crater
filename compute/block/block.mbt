@@ -44,6 +44,18 @@ fn collapse_margins(m1 : Double, m2 : Double) -> Double {
 }
 
 ///|
+/// Resolve a dimension to pixels for intrinsic sizing
+/// Percentages resolve to 0 in intrinsic sizing mode
+fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(_) => 0.0 // Percentages resolve to 0 in intrinsic sizing
+    @types.Auto => 0.0
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+  }
+}
+
+///|
 /// Collapsed margins that escape from a child element
 priv struct CollapsedMargins {
   top : Double? // Margin that escapes upward
@@ -80,6 +92,20 @@ fn can_collapse_through(
   border.bottom == 0.0 &&
   padding.top == 0.0 &&
   padding.bottom == 0.0
+}
+
+///|
+/// Calculate total height contribution from children layouts
+/// Used for display: contents elements where the parent needs children's height
+/// Note: margins are handled through margin collapsing, not added to height
+fn get_children_total_height(children : Array[@node.Layout]) -> Double {
+  let mut total_height = 0.0
+  for child in children {
+    // Only count the child's box height, not margins
+    // Margins are handled through margin collapsing in the parent
+    total_height = total_height + child.height
+  }
+  total_height
 }
 
 ///|
@@ -367,6 +393,74 @@ fn compute_with_collapse(
 ) -> LayoutWithCollapse {
   let style = node.style
 
+  // Handle display: contents - element doesn't generate a box but children do
+  if style.display == @style.Contents {
+    // Compute children layouts using parent context
+    // Position children as if they were direct children of the parent
+    let children_layouts : Array[@node.Layout] = []
+    let mut current_y = 0.0
+    let mut prev_margin_bottom = 0.0
+    let mut first_child_margin_top : Double? = None
+    for i = 0; i < node.children.length(); i = i + 1 {
+      let child = node.children[i]
+      let child_result = compute_with_collapse(child, ctx, warnings)
+      let child_layout = child_result.layout
+      // Get child's margins
+      let child_margin_top = child_layout.margin.top
+      let child_margin_bottom = child_layout.margin.bottom
+      // Track first child's margin for escape
+      if i == 0 {
+        first_child_margin_top = Some(child_margin_top)
+      }
+      // Collapse margins between siblings
+      let collapsed = if i == 0 {
+        0.0
+      } else {
+        collapse_margins(prev_margin_bottom, child_margin_top)
+      }
+      current_y = current_y + collapsed
+      // Position child
+      let positioned_child : @node.Layout = {
+        id: child_layout.id,
+        x: child_layout.x,
+        y: current_y,
+        width: child_layout.width,
+        height: child_layout.height,
+        margin: child_layout.margin,
+        padding: child_layout.padding,
+        border: child_layout.border,
+        overflow_x: child_layout.overflow_x,
+        overflow_y: child_layout.overflow_y,
+        children: child_layout.children,
+        text: child_layout.text,
+      }
+      children_layouts.push(positioned_child)
+      current_y = current_y + child_layout.height
+      prev_margin_bottom = child_margin_bottom
+    }
+    return {
+      layout: {
+        id: node.id,
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+        height: 0.0,
+        margin: @types.Rect::zero(),
+        padding: @types.Rect::zero(),
+        border: @types.Rect::zero(),
+        overflow_x: @style.Visible,
+        overflow_y: @style.Visible,
+        children: children_layouts,
+        text: node.text,
+      },
+      // Pass through the first child's margin for collapse with siblings
+      collapsed: {
+        top: first_child_margin_top,
+        bottom: Some(prev_margin_bottom),
+      },
+    }
+  }
+
   // Note: Float is now supported - no warning needed
 
   // Handle leaf nodes with MeasureFunc (e.g., text nodes)
@@ -508,23 +602,34 @@ fn compute_with_collapse(
   // Check if we can calculate width from height + aspect_ratio
   let width_from_aspect_ratio : Double? = match
     (style.width, style.height, style.aspect_ratio) {
-    (@types.Auto, @types.Length(h), Some(ratio)) => {
-      // Width = (height - padding - border) * ratio + padding + border
-      let content_height = h - padding.vertical_sum() - border.vertical_sum()
-      Some(
-        content_height * ratio +
-        padding.horizontal_sum() +
-        border.horizontal_sum(),
-      )
-    }
+    (@types.Auto, @types.Length(h), Some(ratio)) =>
+      // With box-sizing: border-box, aspect-ratio applies to border-box dimensions
+      // With content-box (default), it applies to content dimensions
+      if style.box_sizing == @style.BorderBox {
+        // aspect-ratio applies to border-box: width = height * ratio
+        Some(h * ratio)
+      } else {
+        // aspect-ratio applies to content-box:
+        // Width = (height - padding - border) * ratio + padding + border
+        let content_height = h - padding.vertical_sum() - border.vertical_sum()
+        Some(
+          content_height * ratio +
+          padding.horizontal_sum() +
+          border.horizontal_sum(),
+        )
+      }
     (@types.Auto, @types.Percent(p), Some(ratio)) => {
       let h = parent_height * p
-      let content_height = h - padding.vertical_sum() - border.vertical_sum()
-      Some(
-        content_height * ratio +
-        padding.horizontal_sum() +
-        border.horizontal_sum(),
-      )
+      if style.box_sizing == @style.BorderBox {
+        Some(h * ratio)
+      } else {
+        let content_height = h - padding.vertical_sum() - border.vertical_sum()
+        Some(
+          content_height * ratio +
+          padding.horizontal_sum() +
+          border.horizontal_sum(),
+        )
+      }
     }
     _ => None
   }
@@ -654,7 +759,8 @@ fn compute_with_collapse(
   )
 
   // For MaxContent mode, first determine max-content width from children's contributions
-  if use_max_content {
+  // But if aspect-ratio calculated width is available, prefer that
+  if use_max_content && width_from_aspect_ratio is None {
     let mut max_content_width = 0.0
     // CSS Containment: contain: inline-size means intrinsic width is 0 (no content contribution)
     let skip_content_contribution = style.contain.inline_size ||
@@ -730,21 +836,50 @@ fn compute_with_collapse(
                 @types.max(intrinsic.max_width + child_min_box, child_min_box)
               }
               None =>
-                if child.children.length() == 0 {
-                  child_min_box // Leaf nodes with no content have padding+border as minimum
-                } else {
-                  // Recursively compute child's max-content width
-                  let intrinsic_ctx : @node.LayoutContext = {
-                    available_width: parent_width, // Use parent_width as reference for percentages
-                    available_height: child_available_height,
-                    sizing_mode: @node.MaxContent,
-                    viewport_width: ctx.viewport_width,
-                    viewport_height: ctx.viewport_height,
+                // Check if child has aspect-ratio with definite height
+                match (child_style.aspect_ratio, child_style.height) {
+                  (Some(ratio), @types.Length(h)) if ratio > 0.0 => {
+                    // Width from aspect-ratio
+                    // CSS spec: aspect-ratio applies to the box indicated by box-sizing
+                    let child_padding_v = resolve_dimension_intrinsic(
+                        child_style.padding.top,
+                      ) +
+                      resolve_dimension_intrinsic(child_style.padding.bottom)
+                    if child_style.box_sizing == @style.BorderBox {
+                      // Border-box: aspect-ratio applies directly to border-box
+                      h * ratio
+                    } else {
+                      // Content-box: height is adjusted to border-box, extract content height
+                      let content_height = h -
+                        child_padding_v -
+                        child_border.vertical_sum()
+                      if content_height > 0.0 {
+                        content_height * ratio +
+                        child_padding_left +
+                        child_padding_right +
+                        child_border.horizontal_sum()
+                      } else {
+                        child_min_box
+                      }
+                    }
                   }
-                  let child_result = compute_with_collapse(
-                    child, intrinsic_ctx, warnings,
-                  )
-                  child_result.layout.width
+                  _ =>
+                    if child.children.length() == 0 {
+                      child_min_box // Leaf nodes with no content have padding+border as minimum
+                    } else {
+                      // Recursively compute child's max-content width
+                      let intrinsic_ctx : @node.LayoutContext = {
+                        available_width: parent_width, // Use parent_width as reference for percentages
+                        available_height: child_available_height,
+                        sizing_mode: @node.MaxContent,
+                        viewport_width: ctx.viewport_width,
+                        viewport_height: ctx.viewport_height,
+                      }
+                      let child_result = compute_with_collapse(
+                        child, intrinsic_ctx, warnings,
+                      )
+                      child_result.layout.width
+                    }
                 }
             }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -978,14 +1113,16 @@ fn compute_with_collapse(
   let flow_children : Array[LayoutWithCollapse] = []
   for i = 0; i < flow_nodes.length(); i = i + 1 {
     let child = flow_nodes[i]
-    // Flex, Grid, and InlineBlock containers establish a new BFC, so use dispatch for them
+    // Flex, Grid, Table, and InlineBlock containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
     let child_result = match child.style.display {
       @style.Flex
       | @style.InlineFlex
       | @style.Grid
       | @style.InlineGrid
-      | @style.InlineBlock => {
+      | @style.InlineBlock
+      | @style.Table
+      | @style.InlineTable => {
         // For BFC-establishing children with auto height, don't pass available_height
         // This allows them to size to their content rather than stretching to fill
         // the available space. Flex items are different - they get their final height
@@ -1057,9 +1194,16 @@ fn compute_with_collapse(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        let intrinsic_layout = compute_with_collapse(
-            child, intrinsic_ctx, warnings,
-          ).layout
+        // Use dispatch_layout for flex/grid elements, block layout for others
+        let intrinsic_layout = match child_style.display {
+          @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
+            match @node.get_layout_dispatcher() {
+              Some(_) => @node.dispatch_layout(child, intrinsic_ctx)
+              None =>
+                compute_with_collapse(child, intrinsic_ctx, warnings).layout
+            }
+          _ => compute_with_collapse(child, intrinsic_ctx, warnings).layout
+        }
         @types.min(intrinsic_layout.width, actual_child_available_width)
       }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -1070,18 +1214,36 @@ fn compute_with_collapse(
     let child_content_width = child_width -
       child_padding.horizontal_sum() -
       child_border.horizontal_sum()
+    // For BFC-establishing children (flex/grid) with auto height, don't pass available_height
+    // This allows them to size to their content rather than stretching
+    let child_height_for_ctx : Double? = match child_style.display {
+      @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
+        match child_style.height {
+          @types.Auto => None
+          _ => child_available_height
+        }
+      _ => child_available_height
+    }
     let child_ctx : @node.LayoutContext = {
       available_width: if child_content_width > 0.0 {
         child_content_width
       } else {
         0.0
       },
-      available_height: child_available_height,
+      available_height: child_height_for_ctx,
       sizing_mode: @node.Definite,
       viewport_width: ctx.viewport_width,
       viewport_height: ctx.viewport_height,
     }
-    let child_inner = compute_with_collapse(child, child_ctx, warnings).layout
+    // Use dispatch_layout for flex/grid elements, block layout for others
+    let child_inner = match child_style.display {
+      @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
+        match @node.get_layout_dispatcher() {
+          Some(_) => @node.dispatch_layout(child, child_ctx)
+          None => compute_with_collapse(child, child_ctx, warnings).layout
+        }
+      _ => compute_with_collapse(child, child_ctx, warnings).layout
+    }
 
     // Get child dimensions
     let final_width = child_inner.width
@@ -1166,8 +1328,15 @@ fn compute_with_collapse(
       Some(_) => true
       None => false
     }
+    // For display: contents, use children's height for collapse check
+    let effective_height_for_collapse = if child_style.display ==
+      @style.Contents {
+      get_children_total_height(child_layout.children)
+    } else {
+      child_layout.height
+    }
     let collapses_through = can_collapse_through(
-        child_layout.height,
+        effective_height_for_collapse,
         child_layout.border,
         child_layout.padding,
       ) &&
@@ -1317,12 +1486,18 @@ fn compute_with_collapse(
 
     // Update current_y (only if not collapsing through)
     if not(collapses_through) {
-      if is_first && can_collapse_top {
-        current_y = child_layout.height
-      } else if is_first {
-        current_y = effective_margin_top + child_layout.height
+      // For display: contents, use children's total height instead of element's height (which is 0)
+      let effective_height = if child_style.display == @style.Contents {
+        get_children_total_height(child_layout.children)
       } else {
-        current_y = current_y + child_layout.height
+        child_layout.height
+      }
+      if is_first && can_collapse_top {
+        current_y = effective_height
+      } else if is_first {
+        current_y = effective_margin_top + effective_height
+      } else {
+        current_y = current_y + effective_height
       }
     }
 
@@ -1358,13 +1533,20 @@ fn compute_with_collapse(
     @types.Percent(p) => parent_height * p
     @types.Auto =>
       match style.aspect_ratio {
-        Some(ratio) => {
-          // Height from aspect ratio: height = width / ratio
-          let content_width = box_width -
-            padding.horizontal_sum() -
-            border.horizontal_sum()
-          content_width / ratio + padding.vertical_sum() + border.vertical_sum()
-        }
+        Some(ratio) =>
+          // With box-sizing: border-box, aspect-ratio applies to border-box dimensions
+          if style.box_sizing == @style.BorderBox {
+            // Height from aspect ratio on border-box: height = width / ratio
+            box_width / ratio
+          } else {
+            // Height from aspect ratio on content-box: height = content_width / ratio
+            let content_width = box_width -
+              padding.horizontal_sum() -
+              border.horizontal_sum()
+            content_width / ratio +
+            padding.vertical_sum() +
+            border.vertical_sum()
+          }
         None => content_height + padding.vertical_sum() + border.vertical_sum()
       }
     @types.MinContent | @types.MaxContent | @types.FitContent(_) =>

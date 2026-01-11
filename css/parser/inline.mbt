@@ -191,6 +191,10 @@ fn parse_display(tokens : ArrayView[@token.Token]) -> @style.Display? {
     @token.Token::Ident(s) =>
       if s == "block" {
         Some(@style.Block)
+      } else if s == "inline" {
+        Some(@style.Inline)
+      } else if s == "inline-block" {
+        Some(@style.InlineBlock)
       } else if s == "flex" {
         Some(@style.Flex)
       } else if s == "inline-flex" {
@@ -199,8 +203,30 @@ fn parse_display(tokens : ArrayView[@token.Token]) -> @style.Display? {
         Some(@style.Grid)
       } else if s == "inline-grid" {
         Some(@style.InlineGrid)
+      } else if s == "table" {
+        Some(@style.Table)
+      } else if s == "inline-table" {
+        Some(@style.InlineTable)
+      } else if s == "table-row" {
+        Some(@style.TableRow)
+      } else if s == "table-cell" {
+        Some(@style.TableCell)
+      } else if s == "table-caption" {
+        Some(@style.TableCaption)
+      } else if s == "table-row-group" {
+        Some(@style.TableRowGroup)
+      } else if s == "table-header-group" {
+        Some(@style.TableHeaderGroup)
+      } else if s == "table-footer-group" {
+        Some(@style.TableFooterGroup)
+      } else if s == "table-column" {
+        Some(@style.TableColumn)
+      } else if s == "table-column-group" {
+        Some(@style.TableColumnGroup)
       } else if s == "none" {
         Some(@style.Display::None)
+      } else if s == "contents" {
+        Some(@style.Contents)
       } else {
         None
       }

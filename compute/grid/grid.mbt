@@ -285,7 +285,7 @@ pub fn compute_layout(
         ctx.viewport_width,
         ctx.viewport_height,
       )
-    @style.None => @absolute.create_zero_layout(node.id)
+    @style.None | @style.Contents => @absolute.create_zero_layout(node.id)
     // Table display types - fall through to block for now (handled by dispatch)
     @style.Table
     | @style.InlineTable

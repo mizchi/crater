@@ -51,9 +51,10 @@ fn dispatch_compute(
         ctx.available_width,
         ctx.available_height.unwrap_or(0.0),
       )
-    @style.None =>
+    @style.Table | @style.InlineTable => @table.compute(node, ctx)
+    @style.None | @style.Contents =>
       {
-        // display: none - return zero-sized layout
+        // display: none/contents - return zero-sized layout
         id: node.id,
         x: 0.0,
         y: 0.0,
@@ -67,6 +68,15 @@ fn dispatch_compute(
         children: [],
         text: node.text,
       }
+    // Table sub-elements - handled as blocks when encountered outside table context
+    @style.TableRow
+    | @style.TableCell
+    | @style.TableCaption
+    | @style.TableRowGroup
+    | @style.TableHeaderGroup
+    | @style.TableFooterGroup
+    | @style.TableColumn
+    | @style.TableColumnGroup => @block.compute(node, ctx)
   }
 }
 
@@ -88,7 +98,11 @@ fn dispatch_compute_with_warnings(
       )
       { layout, warnings: [] }
     }
-    @style.None =>
+    @style.Table | @style.InlineTable => {
+      let layout = @table.compute(node, ctx)
+      { layout, warnings: [] }
+    }
+    @style.None | @style.Contents =>
       {
         layout: {
           id: node.id,
@@ -106,6 +120,15 @@ fn dispatch_compute_with_warnings(
         },
         warnings: [],
       }
+    // Table sub-elements - handled as blocks when encountered outside table context
+    @style.TableRow
+    | @style.TableCell
+    | @style.TableCaption
+    | @style.TableRowGroup
+    | @style.TableHeaderGroup
+    | @style.TableFooterGroup
+    | @style.TableColumn
+    | @style.TableColumnGroup => @block.compute_with_warnings(node, ctx)
   }
 }
 

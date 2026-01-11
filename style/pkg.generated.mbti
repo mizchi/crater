@@ -92,6 +92,7 @@ pub(all) enum Display {
   TableColumn
   TableColumnGroup
   None
+  Contents
 }
 pub impl Eq for Display
 pub impl Show for Display
