@@ -2,6 +2,7 @@
 package "mizchi/crater/renderer"
 
 import(
+  "mizchi/crater/css/media"
   "mizchi/crater/html"
   "mizchi/crater/node"
   "mizchi/crater/style"
@@ -16,6 +17,8 @@ pub fn get_content_height(String, Int, Int) -> Int
 
 pub fn get_content_height_with_css(String, Int, Int, Array[String]) -> Int
 
+pub fn get_content_height_with_document(@html.Document, Int, Int, Array[String]) -> Int
+
 pub fn layout_to_json(@node.Layout) -> String
 
 pub fn print_layout_tree(@node.Layout, Int) -> Unit
@@ -24,7 +27,11 @@ pub fn print_layout_tree_with_options(@node.Layout, Int, Bool) -> Unit
 
 pub fn render(String, RenderContext) -> @node.Layout
 
+pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @node.Layout
+
 pub fn render_to_node(String, RenderContext) -> @node.Node
+
+pub fn render_to_node_with_document(@html.Document, RenderContext, Array[String]) -> @node.Node
 
 pub fn render_to_node_with_external_css(String, RenderContext, Array[String]) -> @node.Node
 
@@ -45,6 +52,7 @@ pub(all) struct RenderContext {
   viewport_width : Double
   viewport_height : Double
   root_font_size : Double
+  color_scheme : @media.ColorScheme
 }
 pub fn RenderContext::default() -> Self
 

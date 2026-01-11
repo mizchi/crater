@@ -262,8 +262,16 @@ pub(all) struct Style {
   mut transform : Transform
   mut border_spacing : Double
   mut border_collapse : BorderCollapse
+  mut table_layout : TableLayout
 }
 pub fn Style::default() -> Self
+
+pub(all) enum TableLayout {
+  Auto
+  Fixed
+}
+pub impl Eq for TableLayout
+pub impl Show for TableLayout
 
 pub(all) enum TrackSizingFunction {
   Length(Double)

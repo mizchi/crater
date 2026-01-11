@@ -233,3 +233,146 @@ test "table shrink-to-fit width" {
   inspect(row_layout.children[0].x, content="0")
   inspect(row_layout.children[1].x, content="110")
 }
+
+///|
+/// Test border-collapse layout
+test "table border-collapse" {
+  // Cell with explicit width and border
+  // In real CSS, adjust_for_box_sizing converts content-box dimensions to include border
+  // So width=50 with border=10 becomes width=70 (50 + 10 + 10)
+  // Here we simulate that by setting width/height to 70 (50 content + 20 border)
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(70.0), // 50 content + 10 + 10 border (simulating adjust_for_box_sizing)
+    height: @types.Length(70.0), // 50 content + 10 + 10 border
+    border: {
+      left: @types.Length(10.0),
+      right: @types.Length(10.0),
+      top: @types.Length(10.0),
+      bottom: @types.Length(10.0),
+    },
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRow,
+  }
+  // Table with border-collapse: collapse
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Table,
+    border_collapse: @style.Collapse,
+  }
+  let cell1 = @node.Node::new("cell1", cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell1])
+  let table = @node.Node::new("table", table_style, [row1])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute(table, ctx)
+
+  // With border-collapse, cell dimensions should be 50x50 (border included)
+  let row_layout = layout.children[0]
+  let cell_layout = row_layout.children[0]
+
+  // Cell height should be 50 (not 70 = 50 + 10 + 10)
+  inspect(cell_layout.height, content="50")
+
+  // Cell border in layout should be 0 (collapsed borders don't add to dimensions)
+  inspect(cell_layout.border.top, content="0")
+}
+
+///|
+/// Test table-layout: fixed
+test "table-layout fixed" {
+  // Two cells with auto width
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    height: @types.Length(100.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRow,
+  }
+  // Table with table-layout: fixed and explicit width
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Table,
+    table_layout: @style.Fixed,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell1 = @node.Node::new("cell1", cell_style, [])
+  let cell2 = @node.Node::new("cell2", cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
+  let table = @node.Node::new("table", table_style, [row1])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute(table, ctx)
+
+  // Table should be 200px wide
+  inspect(layout.width, content="200")
+
+  // Each cell should be 100px wide (200 / 2 columns)
+  let row_layout = layout.children[0]
+  inspect(row_layout.children[0].width, content="100")
+  inspect(row_layout.children[1].width, content="100")
+}
+
+///|
+/// Test table-layout: fixed with explicit cell width in first row
+test "table-layout fixed with explicit width" {
+  // First row has cell with 150px width
+  let cell_w150_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(150.0),
+    height: @types.Length(50.0),
+  }
+  let cell_auto_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    height: @types.Length(50.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Table,
+    table_layout: @style.Fixed,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell1 = @node.Node::new("cell1", cell_w150_style, [])
+  let cell2 = @node.Node::new("cell2", cell_auto_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
+  let table = @node.Node::new("table", table_style, [row1])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute(table, ctx)
+
+  // First cell should be 150px, second gets remaining 50px
+  let row_layout = layout.children[0]
+  inspect(row_layout.children[0].width, content="150")
+  inspect(row_layout.children[1].width, content="50")
+}

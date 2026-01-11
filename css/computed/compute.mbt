@@ -154,6 +154,7 @@ priv struct StyleBuilder {
   // Table properties
   mut border_spacing : Double
   mut border_collapse : @style.BorderCollapse
+  mut table_layout : @style.TableLayout
 }
 
 ///|
@@ -221,6 +222,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     transform: @style.Transform::none(),
     border_spacing: 0.0,
     border_collapse: @style.BorderCollapse::Separate,
+    table_layout: @style.TableLayout::Auto,
   }
 }
 
@@ -301,6 +303,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     transform: self.transform,
     border_spacing: self.border_spacing,
     border_collapse: self.border_collapse,
+    table_layout: self.table_layout,
   }
 }
 
@@ -1026,6 +1029,7 @@ fn apply_property(
     "border-spacing" =>
       builder.border_spacing = parse_border_spacing(value, ctx)
     "border-collapse" => builder.border_collapse = parse_border_collapse(value)
+    "table-layout" => builder.table_layout = parse_table_layout(value)
     _ => ()
   }
 }
@@ -1037,6 +1041,16 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
     "collapse" => @style.Collapse
     "separate" => @style.Separate
     _ => @style.Separate
+  }
+}
+
+///|
+/// Parse table-layout value
+fn parse_table_layout(value : String) -> @style.TableLayout {
+  match value.trim() {
+    "fixed" => @style.Fixed
+    "auto" => @style.Auto
+    _ => @style.Auto
   }
 }
 

@@ -123,6 +123,57 @@ fn resolve_col_width(col : @node.Node, parent_width : Double) -> Double? {
 }
 
 ///|
+/// Get the first row in visual order (thead > tbody > tfoot > direct rows)
+/// This is used for table-layout: fixed
+fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
+  // Priority: thead > direct rows > tbody > tfoot
+  // First check for thead
+  for child in table_node.children {
+    if child.style.display == @style.None {
+      continue
+    }
+    if child.style.display == @style.TableHeaderGroup {
+      // Found thead, return first row
+      for row in child.children {
+        if row.style.display != @style.None && is_table_row(row.style.display) {
+          return Some(row)
+        }
+      }
+    }
+  }
+  // Check for direct rows or tbody
+  for child in table_node.children {
+    if child.style.display == @style.None {
+      continue
+    }
+    if is_table_row(child.style.display) {
+      return Some(child)
+    }
+    if child.style.display == @style.TableRowGroup {
+      for row in child.children {
+        if row.style.display != @style.None && is_table_row(row.style.display) {
+          return Some(row)
+        }
+      }
+    }
+  }
+  // Check for tfoot
+  for child in table_node.children {
+    if child.style.display == @style.None {
+      continue
+    }
+    if child.style.display == @style.TableFooterGroup {
+      for row in child.children {
+        if row.style.display != @style.None && is_table_row(row.style.display) {
+          return Some(row)
+        }
+      }
+    }
+  }
+  None
+}
+
+///|
 /// Collect all table rows from table children
 /// Handles both direct rows and rows inside row groups (thead, tbody, tfoot)
 fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
@@ -287,6 +338,94 @@ fn calculate_intrinsic_column_widths(
 }
 
 ///|
+/// Calculate column widths for table-layout: fixed
+/// In fixed mode:
+/// - Column widths are determined by the first row's cells or <col> elements
+/// - Cell content in subsequent rows is ignored
+/// - Auto-width columns share remaining space equally
+fn calculate_fixed_column_widths(
+  first_row : @node.Node?,
+  num_columns : Int,
+  available_width : Double,
+  border_spacing : Double,
+  col_widths : Array[Double?],
+) -> Array[Double] {
+  let widths : Array[Double] = []
+  if num_columns == 0 {
+    return widths
+  }
+
+  // Calculate total spacing
+  let total_spacing = border_spacing * (num_columns - 1).to_double()
+  let content_available = max(0.0, available_width - total_spacing)
+
+  // Collect explicit widths from first row cells and col elements
+  // Priority: col element width > first row cell width > auto
+  let explicit_widths : Array[Double?] = []
+  for i = 0; i < num_columns; i = i + 1 {
+    // First check col element width
+    if i < col_widths.length() {
+      match col_widths[i] {
+        Some(w) => {
+          explicit_widths.push(Some(w))
+          continue
+        }
+        None => ()
+      }
+    }
+    // Then check first row cell width
+    match first_row {
+      Some(row) => {
+        let cells = get_row_cells(row)
+        if i < cells.length() {
+          let cell_style = cells[i].style
+          match cell_style.width {
+            @types.Length(w) => {
+              explicit_widths.push(Some(w))
+              continue
+            }
+            @types.Percent(p) => {
+              explicit_widths.push(Some(available_width * p))
+              continue
+            }
+            _ => ()
+          }
+        }
+      }
+      None => ()
+    }
+    explicit_widths.push(None)
+  }
+
+  // Calculate fixed width total and count auto columns
+  let mut fixed_width_total = 0.0
+  let mut auto_col_count = 0
+  for i = 0; i < num_columns; i = i + 1 {
+    match explicit_widths[i] {
+      Some(w) => fixed_width_total = fixed_width_total + w
+      None => auto_col_count = auto_col_count + 1
+    }
+  }
+
+  // Distribute remaining width equally among auto columns
+  let auto_available = max(0.0, content_available - fixed_width_total)
+  let auto_col_width = if auto_col_count > 0 {
+    auto_available / auto_col_count.to_double()
+  } else {
+    0.0
+  }
+
+  // Build final widths array
+  for i = 0; i < num_columns; i = i + 1 {
+    match explicit_widths[i] {
+      Some(w) => widths.push(w)
+      None => widths.push(auto_col_width)
+    }
+  }
+  widths
+}
+
+///|
 /// Calculate column widths based on content and col element specifications
 /// Phase 2: Content-based width calculation with col support
 fn calculate_column_widths(
@@ -409,16 +548,24 @@ fn calculate_column_widths(
 
 ///|
 /// Layout a single table cell
+/// border_collapse: whether border-collapse is enabled (borders included in cell dimensions)
 fn layout_cell(
   cell : @node.Node,
   cell_width : Double,
   ctx : @node.LayoutContext,
+  border_collapse : Bool,
 ) -> @node.Layout {
   let style = cell.style
   let parent_width = ctx.available_width
   let margin = @types.resolve_rect(style.margin, parent_width)
   let padding = @types.resolve_rect(style.padding, parent_width)
-  let border = @types.resolve_rect(style.border, parent_width)
+  // In border-collapse mode, borders are included in cell dimensions (like border-box)
+  // So we use zero border for layout calculations
+  let border : @types.Rect[Double] = if border_collapse {
+    @types.Rect::{ left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+  } else {
+    @types.resolve_rect(style.border, parent_width)
+  }
 
   // Content width = cell width - padding - border
   let content_width = max(
@@ -438,6 +585,7 @@ fn layout_cell(
   // Layout children and calculate content height
   let child_layouts : Array[@node.Layout] = []
   let mut content_height = 0.0
+  // Note: In border-collapse mode, border is already 0
   let mut y_offset = padding.top + border.top
   for child in cell.children {
     if child.style.display == @style.None {
@@ -459,11 +607,22 @@ fn layout_cell(
   }
 
   // Add padding/border to height
+  // Note: In border-collapse mode, border is already 0
   let total_height = content_height + padding.bottom + border.bottom
 
   // Resolve explicit height if set
+  // In border-collapse mode, the style.height was adjusted by adjust_for_box_sizing
+  // (border added). We need to subtract the border back.
+  let style_border = @types.resolve_rect(style.border, parent_width)
   let final_height = match style.height {
-    @types.Length(h) => max(h, total_height)
+    @types.Length(h) => {
+      let adjusted_h = if border_collapse {
+        h - style_border.vertical_sum()
+      } else {
+        h
+      }
+      max(adjusted_h, total_height)
+    }
     @types.Percent(p) => {
       let parent_h = ctx.available_height.unwrap_or(0.0)
       max(parent_h * p, total_height)
@@ -488,11 +647,13 @@ fn layout_cell(
 
 ///|
 /// Layout a single table row
+/// border_collapse: whether border-collapse is enabled
 fn layout_row(
   row : @node.Node,
   column_widths : Array[Double],
   border_spacing : Double,
   ctx : @node.LayoutContext,
+  border_collapse : Bool,
 ) -> @node.Layout {
   let style = row.style
   let parent_width = ctx.available_width
@@ -523,6 +684,10 @@ fn layout_row(
   let mut x_offset = padding.left + border.left
   let mut max_height = 0.0
   let mut col_index = 0
+  // Track collapsed border width for border-collapse mode
+  let mut collapsed_border_width = 0.0
+  let mut first_cell_left_border = 0.0
+  let mut last_cell_right_border = 0.0
   for child in row.children {
     if child.style.display == @style.None {
       cell_layouts.push(create_zero_layout(child))
@@ -535,12 +700,33 @@ fn layout_row(
     }
 
     // Get column width (or use remaining width if out of bounds)
-    let cell_width = if col_index < column_widths.length() {
+    let mut cell_width = if col_index < column_widths.length() {
       column_widths[col_index]
     } else {
       100.0 // Fallback width
     }
-    let cell_layout = layout_cell(child, cell_width, cell_ctx)
+    // In border-collapse mode, the cell's width from the stylesheet was
+    // adjusted by adjust_for_box_sizing (border added). We need to subtract
+    // the border back since border-collapse cells include border in their dimensions.
+    let cell_border = @types.resolve_rect(
+      child.style.border,
+      ctx.available_width,
+    )
+    if border_collapse {
+      cell_width = cell_width - cell_border.horizontal_sum()
+      // Track first cell's left border
+      if col_index == 0 {
+        first_cell_left_border = cell_border.left
+      }
+      // Track this cell's right border (will be updated for last cell)
+      last_cell_right_border = cell_border.right
+      // Add shared border between cells (one per pair)
+      if col_index > 0 {
+        // Middle border is shared - use max of adjacent borders
+        collapsed_border_width = collapsed_border_width + cell_border.left
+      }
+    }
+    let cell_layout = layout_cell(child, cell_width, cell_ctx, border_collapse)
     let positioned_cell = { ..cell_layout, x: x_offset, y: 0.0 }
     max_height = max(max_height, cell_layout.height)
     x_offset = x_offset + cell_width + border_spacing
@@ -549,13 +735,45 @@ fn layout_row(
   }
 
   // Calculate row width
-  // If no cells were placed, row width should use content_width from context
+  // Row width should span all columns, even if this row has fewer cells
+  // Calculate full row width from all column widths
+  let mut full_content_width = 0.0
+  for i = 0; i < column_widths.length(); i = i + 1 {
+    full_content_width = full_content_width + column_widths[i]
+    if i < column_widths.length() - 1 {
+      full_content_width = full_content_width + border_spacing
+    }
+  }
   let row_width = if col_index == 0 {
     // Empty row - use available width from context
     ctx.available_width
+  } else if border_collapse {
+    // In border-collapse mode:
+    // - x_offset tracks actual placed cells with their correct widths
+    // - For rows with all cells, use x_offset-based calculation
+    // - Add collapsed borders
+    let total_border = first_cell_left_border +
+      collapsed_border_width +
+      last_cell_right_border
+    // If row has all columns, use x_offset; otherwise extend to full width
+    if col_index >= column_widths.length() {
+      x_offset - border_spacing + padding.right + border.right + total_border
+    } else {
+      // Row has fewer cells - add remaining column widths
+      let mut remaining_width = 0.0
+      for i = col_index; i < column_widths.length(); i = i + 1 {
+        remaining_width = remaining_width + column_widths[i] + border_spacing
+      }
+      x_offset +
+      remaining_width -
+      border_spacing +
+      padding.right +
+      border.right +
+      total_border
+    }
   } else {
-    // Row with cells - use calculated width
-    x_offset - border_spacing + padding.right + border.right
+    // Row with cells - use full content width (all columns)
+    full_content_width + padding.horizontal_sum() + border.horizontal_sum()
   }
 
   // Row height is the maximum of:
@@ -762,9 +980,12 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let padding = @types.resolve_rect(style.padding, parent_width)
   let border = @types.resolve_rect(style.border, parent_width)
 
+  // Check if border-collapse is enabled
+  let is_border_collapse = style.border_collapse == @style.Collapse
+
   // Border spacing from style (inherited from table element)
   // If border-collapse is collapse, border-spacing is effectively 0
-  let border_spacing = if style.border_collapse == @style.Collapse {
+  let border_spacing = if is_border_collapse {
     0.0
   } else {
     style.border_spacing
@@ -828,10 +1049,23 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let edge_spacing = border_spacing * 2.0
   let row_content_width = max(0.0, content_width - edge_spacing)
 
-  // Calculate column widths with proper distribution (using row_content_width without edge spacing)
-  let column_widths = calculate_column_widths(
-    rows, num_columns, row_content_width, border_spacing, col_widths,
-  )
+  // Check if using fixed layout
+  let is_fixed_layout = style.table_layout == @style.Fixed
+
+  // Calculate column widths with proper distribution
+  let column_widths = if is_fixed_layout {
+    // Fixed layout: use first row for column widths
+    // In visual order, thead comes before tbody
+    let first_row = get_first_visual_row(node)
+    calculate_fixed_column_widths(
+      first_row, num_columns, row_content_width, border_spacing, col_widths,
+    )
+  } else {
+    // Auto layout: use content-based distribution
+    calculate_column_widths(
+      rows, num_columns, row_content_width, border_spacing, col_widths,
+    )
+  }
 
   // Resolve explicit table height from style
   let explicit_table_height : Double? = match style.height {
@@ -879,7 +1113,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     if is_table_row(child.style.display) {
       // Direct row
       let row_layout = layout_row(
-        child, column_widths, border_spacing, child_ctx,
+        child, column_widths, border_spacing, child_ctx, is_border_collapse,
       )
       let positioned_row = { ..row_layout, x: row_x_offset, y: y_offset }
       y_offset = y_offset + row_layout.height + border_spacing
@@ -888,6 +1122,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       // Row group (thead, tbody, tfoot)
       let group_layouts : Array[@node.Layout] = []
       let mut group_y = 0.0
+      let mut max_row_width = 0.0
       let group_style = child.style
       let group_margin = @types.resolve_rect(group_style.margin, parent_width)
       let group_padding = @types.resolve_rect(group_style.padding, parent_width)
@@ -899,7 +1134,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         }
         if is_table_row(row.style.display) {
           let row_layout = layout_row(
-            row, column_widths, border_spacing, child_ctx,
+            row, column_widths, border_spacing, child_ctx, is_border_collapse,
           )
           let positioned_row = {
             ..row_layout,
@@ -907,6 +1142,8 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
             y: group_y + group_padding.top + group_border.top,
           }
           group_y = group_y + row_layout.height + border_spacing
+          // Track max row width for consistent group width
+          max_row_width = max(max_row_width, row_layout.width)
           group_layouts.push(positioned_row)
         } else {
           group_layouts.push(create_zero_layout(row))
@@ -921,11 +1158,19 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       } else {
         group_padding.vertical_sum() + group_border.vertical_sum()
       }
+      // In border-collapse mode, use actual row width; otherwise use row_content_width
+      let group_width = if is_border_collapse && max_row_width > 0.0 {
+        max_row_width +
+        group_padding.horizontal_sum() +
+        group_border.horizontal_sum()
+      } else {
+        row_content_width
+      }
       let group_layout : @node.Layout = {
         id: child.id,
         x: row_x_offset,
         y: y_offset,
-        width: row_content_width,
+        width: group_width,
         height: group_height,
         margin: group_margin,
         padding: group_padding,

@@ -101,6 +101,13 @@ pub(all) enum BorderCollapse {
 } derive(Show, Eq)
 
 ///|
+/// Table layout algorithm
+pub(all) enum TableLayout {
+  Auto // Default - column widths based on content
+  Fixed // Column widths based on first row only
+} derive(Show, Eq)
+
+///|
 /// CSS overflow property
 pub(all) enum Overflow {
   Visible // Content is not clipped (default)
@@ -401,6 +408,7 @@ pub(all) struct Style {
   // Table properties
   mut border_spacing : Double // border-spacing in pixels (horizontal and vertical, simplified)
   mut border_collapse : BorderCollapse // border-collapse: separate | collapse
+  mut table_layout : TableLayout // table-layout: auto | fixed
 }
 
 ///|
@@ -480,5 +488,6 @@ pub fn Style::default() -> Style {
     transform: Transform::none(),
     border_spacing: 0.0,
     border_collapse: Separate,
+    table_layout: Auto,
   }
 }

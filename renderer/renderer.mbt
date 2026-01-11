@@ -47,11 +47,17 @@ pub(all) struct RenderContext {
   viewport_width : Double
   viewport_height : Double
   root_font_size : Double
+  color_scheme : @media.ColorScheme
 }
 
 ///|
 pub fn RenderContext::default() -> RenderContext {
-  { viewport_width: 800.0, viewport_height: 600.0, root_font_size: 16.0 }
+  {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
 }
 
 ///|
@@ -272,9 +278,10 @@ fn will_have_non_inline_display(
       let (name, value) = attr
       selector_elem = selector_elem.set_attribute(name, value)
     }
-    let media_env = @media.MediaEnvironment::new(
+    let media_env = @media.MediaEnvironment::with_color_scheme(
       ctx.viewport_width,
       ctx.viewport_height,
+      ctx.color_scheme,
     )
     let cascaded = @cascade.cascade_element_with_media(
       selector_elem,
@@ -758,11 +765,23 @@ pub fn element_to_node(
 }
 
 ///|
-/// Find body element in HTML tree
+/// Find the deepest body element in HTML tree
+/// If there are nested body elements (invalid HTML), find the innermost one
 fn find_body(elem : @html.Element) -> @html.Element? {
   if elem.tag == "body" {
-    return Some(elem)
+    // Check if there's a nested body inside this one
+    match find_body_in_children(elem) {
+      Some(inner_body) => Some(inner_body)
+      None => Some(elem)
+    }
+  } else {
+    find_body_in_children(elem)
   }
+}
+
+///|
+/// Helper to find body in children
+fn find_body_in_children(elem : @html.Element) -> @html.Element? {
   for child in elem.children {
     match child {
       @html.Node::Element(child_elem) =>
@@ -806,7 +825,7 @@ pub fn render_with_external_css(
   }
 
   // Collect CSS custom properties from :root rules
-  let css_vars = collect_root_css_variables(stylesheets)
+  let css_vars = collect_root_css_variables(stylesheets, ctx)
 
   // Find body element, or use root if not found
   let render_root = match find_body(doc.root) {
@@ -828,12 +847,11 @@ pub fn render_with_external_css(
   let available_width = ctx.viewport_width -
     root_margin.left -
     root_margin.right
-  let available_height = ctx.viewport_height -
-    root_margin.top -
-    root_margin.bottom
+  // Use None for available_height to allow content to grow naturally (scrollable)
+  // If we pass Some(viewport_height), the layout might constrain to viewport
   let layout_ctx : @node.LayoutContext = {
     available_width,
-    available_height: Some(available_height),
+    available_height: None,
     sizing_mode: @node.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
@@ -847,6 +865,101 @@ pub fn render_with_external_css(
 
   // Apply root margin as position offset
   // For margin:auto, center horizontally
+  let margin_left_is_auto = match root.style.margin.left {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let margin_right_is_auto = match root.style.margin.right {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let x_offset = if margin_left_is_auto && margin_right_is_auto {
+    // Center horizontally
+    (ctx.viewport_width - layout.width) / 2.0
+  } else if margin_left_is_auto {
+    // Push to right
+    ctx.viewport_width - layout.width - root_margin.right
+  } else {
+    // Use left margin
+    root_margin.left
+  }
+  {
+    id: layout.id,
+    x: x_offset,
+    y: root_margin.top,
+    width: layout.width,
+    height: layout.height,
+    margin: layout.margin,
+    padding: layout.padding,
+    border: layout.border,
+    overflow_x: layout.overflow_x,
+    overflow_y: layout.overflow_y,
+    children: layout.children,
+    text: layout.text,
+  }
+}
+
+///|
+/// Render a parsed HTML Document to Layout with external CSS
+/// This is useful when you need to pre-process the document (e.g., add synthetic IDs)
+pub fn render_document_with_external_css(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> @node.Layout {
+  // Parse stylesheets from <style> tags and external CSS
+  let stylesheets : Array[@cascade.Stylesheet] = []
+  // First add external CSS (lower priority)
+  for css in external_css {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  // Then add inline styles (higher priority)
+  for css in doc.stylesheets {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+
+  // Collect CSS custom properties from :root rules
+  let css_vars = collect_root_css_variables(stylesheets, ctx)
+
+  // Find body element, or use root if not found
+  let render_root = match find_body(doc.root) {
+    Some(body) => body
+    None => doc.root
+  }
+
+  // Convert to node tree with stylesheet styles applied
+  let root = element_to_node_with_styles(
+    render_root,
+    None,
+    ctx,
+    stylesheets,
+    css_vars,
+  )
+
+  // Create layout context - subtract root margin from available space
+  let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
+  let available_width = ctx.viewport_width -
+    root_margin.left -
+    root_margin.right
+  // Use None for available_height to allow content to grow naturally (scrollable)
+  // If we pass Some(viewport_height), the layout might constrain to viewport
+  let layout_ctx : @node.LayoutContext = {
+    available_width,
+    available_height: None,
+    sizing_mode: @node.SizingMode::Definite,
+    viewport_width: ctx.viewport_width,
+    viewport_height: ctx.viewport_height,
+  }
+
+  // Initialize the layout dispatcher for cross-layout-type support
+  @dispatch.setup()
+
+  // Compute layout
+  let layout = @dispatch.compute(root, layout_ctx)
+
+  // Apply root margin offset to final layout
   let margin_left_is_auto = match root.style.margin.left {
     @types.Dimension::Auto => true
     _ => false
@@ -906,12 +1019,28 @@ fn is_root_only_selector(selector : @selector.ComplexSelector) -> Bool {
 
 ///|
 /// Collect CSS custom properties from :root rules in stylesheets
+/// Evaluates media queries to correctly apply dark mode variables
 fn collect_root_css_variables(
   stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
 ) -> Map[String, String] {
   let vars : Map[String, String] = {}
+  // Create media environment for evaluating @media queries
+  let media_env = @media.MediaEnvironment::with_color_scheme(
+    ctx.viewport_width,
+    ctx.viewport_height,
+    ctx.color_scheme,
+  )
   for stylesheet in stylesheets {
     for rule in stylesheet.rules {
+      // Check media query if present
+      let media_matches = match rule.media_query {
+        Some(mq) => mq.evaluate(media_env)
+        None => true
+      }
+      if not(media_matches) {
+        continue
+      }
       // Check if this rule targets :root
       if is_root_only_selector(rule.selector) {
         // Collect custom properties (--*) from declarations
@@ -955,7 +1084,35 @@ pub fn render_to_node_with_external_css(
     stylesheets.push(stylesheet)
   }
   // Collect CSS custom properties from :root rules
-  let css_vars = collect_root_css_variables(stylesheets)
+  let css_vars = collect_root_css_variables(stylesheets, ctx)
+  let render_root = match find_body(doc.root) {
+    Some(body) => body
+    None => doc.root
+  }
+  element_to_node_with_styles(render_root, None, ctx, stylesheets, css_vars)
+}
+
+///|
+/// Render a parsed HTML Document to Node tree with external CSS
+/// This is useful when you need to use a pre-parsed document (e.g., from streaming parser)
+pub fn render_to_node_with_document(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> @node.Node {
+  let stylesheets : Array[@cascade.Stylesheet] = []
+  // First add external CSS (lower priority)
+  for css in external_css {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  // Then add inline styles (higher priority)
+  for css in doc.stylesheets {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  // Collect CSS custom properties from :root rules
+  let css_vars = collect_root_css_variables(stylesheets, ctx)
   let render_root = match find_body(doc.root) {
     Some(body) => body
     None => doc.root
@@ -1310,6 +1467,40 @@ fn html_to_selector_element_with_parent(
 }
 
 ///|
+/// Check if a tag name is a table-related element
+fn is_table_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "table"
+    | "tr"
+    | "td"
+    | "th"
+    | "thead"
+    | "tbody"
+    | "tfoot"
+    | "caption"
+    | "colgroup"
+    | "col" => true
+    _ => false
+  }
+}
+
+///|
+/// Check if a display value is table-related
+fn is_table_display(display : @style.Display) -> Bool {
+  match display {
+    @style.Table
+    | @style.InlineTable
+    | @style.TableRow
+    | @style.TableCell
+    | @style.TableCaption
+    | @style.TableRowGroup
+    | @style.TableHeaderGroup
+    | @style.TableFooterGroup
+    | @style.TableColumn
+    | @style.TableColumnGroup => true
+    _ => false
+  }
+}
 
 ///|
 /// Get user-agent default style for an element tag
@@ -1407,6 +1598,20 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Length(40.0),
         ),
       }
+    // Pre element - preserve formatting, prevent wrapping
+    "pre" =>
+      {
+        // pre has margin like p, and overflow hidden to prevent wrap issues
+        ..default_style,
+        display: @style.Block,
+        overflow_x: @style.Hidden,
+        margin: @types.Rect::new(
+          @types.Length(16.0),
+          @types.Auto,
+          @types.Length(16.0),
+          @types.Auto,
+        ),
+      }
     // Link element - blue color (standard browser UA style)
     "a" =>
       {
@@ -1454,6 +1659,19 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     "label" => { ..default_style, display: @style.Inline }
     // br is inline with no width
     "br" => { ..default_style, display: @style.Inline }
+    // Table elements
+    "table" => { ..default_style, display: @style.Table }
+    "tr" => { ..default_style, display: @style.TableRow }
+    "td" | "th" => { ..default_style, display: @style.TableCell }
+    "thead" => { ..default_style, display: @style.TableHeaderGroup }
+    "tbody" => { ..default_style, display: @style.TableRowGroup }
+    "tfoot" => { ..default_style, display: @style.TableFooterGroup }
+    "caption" => { ..default_style, display: @style.TableCaption }
+    "col" => { ..default_style, display: @style.TableColumn }
+    "colgroup" => { ..default_style, display: @style.TableColumnGroup }
+    // Hidden elements - display: none by default
+    "template" | "script" | "style" | "head" | "meta" | "link" | "title" =>
+      { ..default_style, display: @style.None }
     _ => default_style
   }
 }
@@ -1470,9 +1688,10 @@ fn compute_element_style(
   css_vars : Map[String, String],
 ) -> @style.Style {
   // Create media environment for media query evaluation
-  let media_env = @media.MediaEnvironment::new(
+  let media_env = @media.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
     ctx.viewport_height,
+    ctx.color_scheme,
   )
   // Match stylesheets and get cascaded values with media query evaluation
   let cascaded = @cascade.cascade_element_with_media(
@@ -1531,6 +1750,18 @@ fn compute_element_style(
           css_vars,
         )
       None => ()
+    }
+  }
+
+  // Preserve table layout for table elements even if CSS overrides display
+  // This handles cases where generic classes (like .code-line) set display: block
+  // on table elements, breaking table layout. We preserve the UA default display
+  // for table-related HTML elements to ensure proper table rendering.
+  let tag = selector_elem.tag_name
+  if is_table_element(tag) {
+    // If CSS changed display to a non-table value, restore the UA default
+    if not(is_table_display(style.display)) {
+      style = { ..style, display: ua_style.display }
     }
   }
 
@@ -1883,6 +2114,16 @@ fn merge_style_property(
   if property == "border-right" || property == "border-right-width" {
     return { ..target, border: { ..target.border, right: source.border.right } }
   }
+  // Table properties
+  if property == "border-spacing" {
+    return { ..target, border_spacing: source.border_spacing }
+  }
+  if property == "border-collapse" {
+    return { ..target, border_collapse: source.border_collapse }
+  }
+  if property == "table-layout" {
+    return { ..target, table_layout: source.table_layout }
+  }
   // Flexbox alignment properties
   if property == "justify-content" {
     return { ..target, justify_content: source.justify_content }
@@ -2087,6 +2328,7 @@ pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   @sixel.render_layout(layout, width, height)
@@ -2126,6 +2368,7 @@ pub fn render_to_sixel_with_css(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   // Get both Node tree (for styles) and Layout (for positions)
   let node = render_to_node_with_external_css(html, ctx, external_css)
@@ -2145,6 +2388,7 @@ pub fn get_content_height_with_css(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, external_css)
   layout.height.to_int()
@@ -2157,9 +2401,47 @@ pub fn get_content_height(html : String, width : Int, height : Int) -> Int {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   layout.height.to_int()
+}
+
+///|
+/// Calculate the actual content extent (maximum y + height of all elements)
+/// This handles cases where parent has height: 100% but children extend beyond
+fn calculate_content_extent(layout : @node.Layout) -> Double {
+  // Start with this element's bottom edge
+  let mut max_extent = layout.y + layout.height
+  // Check all children recursively
+  for child in layout.children {
+    let child_extent = calculate_content_extent(child)
+    if child_extent > max_extent {
+      max_extent = child_extent
+    }
+  }
+  max_extent
+}
+
+///|
+/// Get content height from a parsed Document with external CSS
+pub fn get_content_height_with_document(
+  doc : @html.Document,
+  width : Int,
+  height : Int,
+  external_css : Array[String],
+) -> Int {
+  let ctx : RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = render_document_with_external_css(doc, ctx, external_css)
+  // Use actual content extent instead of just layout.height
+  // This handles height: 100% on body where children extend beyond
+  let content_extent = calculate_content_extent(layout)
+  content_extent.to_int().max(layout.height.to_int())
 }
 
 ///|
