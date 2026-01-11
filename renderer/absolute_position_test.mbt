@@ -9,6 +9,7 @@ test "absolute_position_in_relative_parent" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let relative_parent = layout.children[0]
@@ -38,6 +39,7 @@ test "edit_this_page_style" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let wrapper = layout.children[0]
@@ -70,6 +72,7 @@ test "wrapper_with_only_absolute_child_should_have_zero_height" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let wrapper = layout.children[0]

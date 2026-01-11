@@ -573,6 +573,41 @@ test "parse @media rule with prefers-color-scheme" {
 }
 
 ///|
+test "parse @media prefers-color-scheme and verify media query" {
+  let css =
+    #|@media (prefers-color-scheme: dark) {
+    #|  body { background: #1a1a1a; color: #eee; }
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  let rule = stylesheet.rules[0]
+  match rule.media_query {
+    Some(mq) => {
+      inspect(mq.queries.length(), content="1")
+      inspect(
+        mq.queries[0].conditions[0],
+        content="PrefersColorScheme(\"dark\")",
+      )
+      // Evaluate against light mode - should NOT match
+      let light_env = @media.MediaEnvironment::with_color_scheme(
+        375.0,
+        600.0,
+        @media.ColorScheme::Light,
+      )
+      inspect(mq.evaluate(light_env), content="false")
+      // Evaluate against dark mode - should match
+      let dark_env = @media.MediaEnvironment::with_color_scheme(
+        375.0,
+        600.0,
+        @media.ColorScheme::Dark,
+      )
+      inspect(mq.evaluate(dark_env), content="true")
+    }
+    None => fail("Expected media query")
+  }
+}
+
+///|
 test "parse multiple @media rules" {
   let css =
     #|@media screen {
@@ -682,4 +717,28 @@ test "parse @media with range syntax" {
     }
     None => inspect("should have media query", content="has media query")
   }
+}
+
+///|
+test "parse border-collapse property" {
+  let css = "table { border-collapse: collapse; border-spacing: 0; }"
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  let rule = stylesheet.rules[0]
+  inspect(rule.declarations.length(), content="2")
+
+  // Check declarations
+  let decl_strs : Array[String] = []
+  for decl in rule.declarations {
+    match decl.value {
+      @cascade.Value(v) => decl_strs.push(decl.property + ": " + v)
+      _ => ()
+    }
+  }
+  inspect(
+    decl_strs,
+    content=(
+      #|["border-collapse: collapse", "border-spacing: 0"]
+    ),
+  )
 }

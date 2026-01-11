@@ -40,6 +40,59 @@ test "media_query_min_width_evaluation" {
 }
 
 ///|
+test "media_query_prefers_color_scheme_light" {
+  // Test prefers-color-scheme: light
+  let env_light = MediaEnvironment::with_color_scheme(375.0, 600.0, Light)
+  let env_dark = MediaEnvironment::with_color_scheme(375.0, 600.0, Dark)
+  let mq : MediaQuery = {
+    negated: false,
+    only: false,
+    media_type: None,
+    conditions: [MediaFeature::PrefersColorScheme("light")],
+  }
+
+  // Light mode should match prefers-color-scheme: light
+  inspect(mq.evaluate(env_light), content="true")
+  // Dark mode should NOT match prefers-color-scheme: light
+  inspect(mq.evaluate(env_dark), content="false")
+}
+
+///|
+test "media_query_prefers_color_scheme_dark" {
+  // Test prefers-color-scheme: dark
+  let env_light = MediaEnvironment::with_color_scheme(375.0, 600.0, Light)
+  let env_dark = MediaEnvironment::with_color_scheme(375.0, 600.0, Dark)
+  let mq : MediaQuery = {
+    negated: false,
+    only: false,
+    media_type: None,
+    conditions: [MediaFeature::PrefersColorScheme("dark")],
+  }
+
+  // Light mode should NOT match prefers-color-scheme: dark
+  inspect(mq.evaluate(env_light), content="false")
+  // Dark mode should match prefers-color-scheme: dark
+  inspect(mq.evaluate(env_dark), content="true")
+}
+
+///|
+test "media_query_parse_and_evaluate_prefers_color_scheme" {
+  // End-to-end test: parse media query string and evaluate
+  let env_light = MediaEnvironment::with_color_scheme(375.0, 600.0, Light)
+  let env_dark = MediaEnvironment::with_color_scheme(375.0, 600.0, Dark)
+  let mq_dark = parse_media_query_list("(prefers-color-scheme: dark)")
+  let mq_light = parse_media_query_list("(prefers-color-scheme: light)")
+
+  // Dark mode query
+  inspect(mq_dark.evaluate(env_light), content="false")
+  inspect(mq_dark.evaluate(env_dark), content="true")
+
+  // Light mode query
+  inspect(mq_light.evaluate(env_light), content="true")
+  inspect(mq_light.evaluate(env_dark), content="false")
+}
+
+///|
 test "media_query_list_or_semantics" {
   let env = MediaEnvironment::new(375.0, 600.0)
 

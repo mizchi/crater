@@ -7,12 +7,21 @@ pub fn parse_media_query_list(String) -> MediaQueryList
 // Errors
 
 // Types and methods
-pub struct MediaEnvironment {
+pub(all) enum ColorScheme {
+  Light
+  Dark
+}
+pub impl Eq for ColorScheme
+pub impl Show for ColorScheme
+
+pub(all) struct MediaEnvironment {
   viewport_width : Double
   viewport_height : Double
   device_pixel_ratio : Double
+  color_scheme : ColorScheme
 }
 pub fn MediaEnvironment::new(Double, Double) -> Self
+pub fn MediaEnvironment::with_color_scheme(Double, Double, ColorScheme) -> Self
 
 pub enum MediaFeature {
   Color

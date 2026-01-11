@@ -50,6 +50,13 @@ pub(all) enum BoxSizing {
 pub impl Eq for BoxSizing
 pub impl Show for BoxSizing
 
+pub(all) enum CaptionSide {
+  Top
+  Bottom
+}
+pub impl Eq for CaptionSide
+pub impl Show for CaptionSide
+
 pub(all) enum Clear {
   None
   Left
@@ -264,6 +271,9 @@ pub(all) struct Style {
   mut border_spacing : Double
   mut border_collapse : BorderCollapse
   mut table_layout : TableLayout
+  mut caption_side : CaptionSide
+  mut rowspan : Int
+  mut colspan : Int
 }
 pub fn Style::default() -> Self
 

@@ -168,6 +168,18 @@ pub(all) struct Cleanup {
 }
 
 ///|
+/// Convert UTF-16 bytes from component model to MoonBit String
+/// ptr points to UTF-16 code units, len is number of code units
+pub fn utf16_ptr2str(ptr : Int, len : Int) -> String {
+  let buf = StringBuilder::new()
+  for i = 0; i < len; i = i + 1 {
+    let ch = load16_u(ptr + i * 2)
+    buf.write_char(Char::from_int(ch))
+  }
+  buf.to_string()
+}
+
+///|
 /// Convert UTF-8 bytes from component model to MoonBit String (UTF-16)
 pub fn utf8_ptr2str(ptr : Int, len : Int) -> String {
   // Build string from UTF-8 bytes
@@ -203,6 +215,22 @@ pub fn utf8_ptr2str(ptr : Int, len : Int) -> String {
     }
   }
   buf.to_string()
+}
+
+///|
+/// Convert MoonBit String (UTF-16) to UTF-16 bytes for component model
+/// Returns (ptr, len) where ptr points to UTF-16 code units and len is number of code units
+pub fn str2utf16(s : String) -> (Int, Int) {
+  // MoonBit String is already UTF-16 internally
+  let len = s.length()
+  // Allocate memory for UTF-16 code units (2 bytes each)
+  let ptr = malloc(len * 2)
+  // Write UTF-16 code units
+  for i = 0; i < len; i = i + 1 {
+    let ch = s[i].to_int()
+    store16(ptr + i * 2, ch)
+  }
+  (ptr, len)
 }
 
 ///|

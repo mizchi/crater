@@ -13,6 +13,7 @@ test "preact_page_structure" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let flex_container = layout.children[0]

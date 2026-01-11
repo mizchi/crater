@@ -7,6 +7,7 @@ test "debug_box_sizing_adjustment" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
 
   // Test inline style parsing directly
@@ -45,6 +46,7 @@ test "debug_border_box_no_adjustment" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let div = layout.children[0]

@@ -3,11 +3,19 @@
 /// Evaluates media queries against viewport dimensions
 
 ///|
+/// Color scheme preference
+pub(all) enum ColorScheme {
+  Light
+  Dark
+} derive(Eq, Show)
+
+///|
 /// Environment for evaluating media queries
-pub struct MediaEnvironment {
+pub(all) struct MediaEnvironment {
   viewport_width : Double
   viewport_height : Double
   device_pixel_ratio : Double
+  color_scheme : ColorScheme
 }
 
 ///|
@@ -16,7 +24,22 @@ pub fn MediaEnvironment::new(
   viewport_width : Double,
   viewport_height : Double,
 ) -> MediaEnvironment {
-  { viewport_width, viewport_height, device_pixel_ratio: 1.0 }
+  {
+    viewport_width,
+    viewport_height,
+    device_pixel_ratio: 1.0,
+    color_scheme: Light,
+  }
+}
+
+///|
+/// Create a media environment with color scheme
+pub fn MediaEnvironment::with_color_scheme(
+  viewport_width : Double,
+  viewport_height : Double,
+  color_scheme : ColorScheme,
+) -> MediaEnvironment {
+  { viewport_width, viewport_height, device_pixel_ratio: 1.0, color_scheme }
 }
 
 ///|
@@ -154,7 +177,12 @@ fn evaluate_feature(feature : MediaFeature, env : MediaEnvironment) -> Bool {
     MediaFeature::Update => true
     // Discrete features
     MediaFeature::DisplayMode(_) => true // Assume browser mode
-    MediaFeature::PrefersColorScheme(_) => true // Accept any color scheme
+    MediaFeature::PrefersColorScheme(scheme) =>
+      match scheme.to_lower() {
+        "dark" => env.color_scheme == Dark
+        "light" => env.color_scheme == Light
+        _ => true // Unknown scheme matches any
+      }
     MediaFeature::PrefersReducedMotion(_) => true // Accept any motion preference
     // Unknown features default to true
     MediaFeature::Custom(_, _) => true

@@ -14,6 +14,7 @@ test "inline_block_wide_viewport_layout" {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, [css])
   let container = layout.children[0]
@@ -51,6 +52,7 @@ test "inline_block_narrow_viewport_wraps" {
     viewport_width: 200.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, [css])
   let container = layout.children[0]
@@ -82,6 +84,7 @@ test "inline_block_very_narrow_text_wraps" {
     viewport_width: 120.0, // 15 columns
     viewport_height: 400.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, [css])
   let container = layout.children[0]
@@ -113,6 +116,7 @@ test "preactjs_actual_css_both_inline_block" {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   let layout = render_with_external_css(html, ctx, [css])

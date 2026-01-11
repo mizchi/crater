@@ -1182,14 +1182,22 @@ fn element_to_node_with_styles(
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
         let n = @strconv.parse_int(val) catch { _ => 1 }
-        if n > 0 { n } else { 1 }
+        if n > 0 {
+          n
+        } else {
+          1
+        }
       }
       None => 1
     }
     let colspan = match elem.attributes.get("colspan") {
       Some(val) => {
         let n = @strconv.parse_int(val) catch { _ => 1 }
-        if n > 0 { n } else { 1 }
+        if n > 0 {
+          n
+        } else {
+          1
+        }
       }
       None => 1
     }
@@ -1289,14 +1297,22 @@ fn element_to_node_with_styles_internal(
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
         let n = @strconv.parse_int(val) catch { _ => 1 }
-        if n > 0 { n } else { 1 }
+        if n > 0 {
+          n
+        } else {
+          1
+        }
       }
       None => 1
     }
     let colspan = match elem.attributes.get("colspan") {
       Some(val) => {
         let n = @strconv.parse_int(val) catch { _ => 1 }
-        if n > 0 { n } else { 1 }
+        if n > 0 {
+          n
+        } else {
+          1
+        }
       }
       None => 1
     }

@@ -1,4 +1,66 @@
 ///|
+test "trace_dark_mode_css_variables" {
+  // Test that CSS variables correctly update based on color scheme
+  let html =
+    #|<html><body>
+    #|  <h1>Title</h1>
+    #|  <p>Content text here</p>
+    #|</body></html>
+  let css =
+    #|:root {
+    #|  --text-color: #333333;
+    #|  --bg-color: #ffffff;
+    #|}
+    #|@media (prefers-color-scheme: dark) {
+    #|  :root {
+    #|    --text-color: #eeeeee;
+    #|    --bg-color: #1a1a1a;
+    #|  }
+    #|}
+    #|body { color: var(--text-color); background: var(--bg-color); }
+    #|h1 { color: var(--text-color); }
+    #|p { color: var(--text-color); }
+
+  // Light mode
+  let light_ctx : RenderContext = {
+    viewport_width: 375.0,
+    viewport_height: 450.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let light_node = render_to_node_with_external_css(html, light_ctx, [css])
+  println("=== Light mode ===")
+  println(
+    "body bg=" +
+    light_node.style.background_color.to_hex() +
+    " color=" +
+    light_node.style.color.to_hex(),
+  )
+  // Light mode: text should be dark (#333333), background should be white (#ffffff)
+  assert_eq(light_node.style.color.to_hex(), "#333333")
+  assert_eq(light_node.style.background_color.to_hex(), "#ffffff")
+
+  // Dark mode
+  let dark_ctx : RenderContext = {
+    viewport_width: 375.0,
+    viewport_height: 450.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Dark,
+  }
+  let dark_node = render_to_node_with_external_css(html, dark_ctx, [css])
+  println("=== Dark mode ===")
+  println(
+    "body bg=" +
+    dark_node.style.background_color.to_hex() +
+    " color=" +
+    dark_node.style.color.to_hex(),
+  )
+  // Dark mode: text should be light (#eeeeee), background should be dark (#1a1a1a)
+  assert_eq(dark_node.style.color.to_hex(), "#eeeeee")
+  assert_eq(dark_node.style.background_color.to_hex(), "#1a1a1a")
+}
+
+///|
 test "trace_preact_css" {
   // Simplified HTML that mimics preactjs.com structure
   let html =
@@ -32,6 +94,7 @@ test "trace_preact_css" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -78,6 +141,7 @@ test "trace_error_color_check" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -128,6 +192,7 @@ test "trace_loading_bar_pseudo_element" {
     viewport_width: 640.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -189,6 +254,7 @@ test "trace_gradient_fallback" {
     viewport_width: 640.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {

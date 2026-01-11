@@ -347,6 +347,7 @@ test "visually hidden element should be skipped" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
 
@@ -372,6 +373,7 @@ test "debug_text_wrapping_in_narrow_container" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   let container = layout.children[0]
@@ -401,6 +403,7 @@ test "debug_mixed_inline_block_content" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   let container = layout.children[0]
@@ -462,6 +465,7 @@ test "debug_heading_text_rendering" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
   // Find h1 in children
@@ -483,6 +487,7 @@ test "debug_h2_with_anchor" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
   // h2 should be the first child of body
@@ -509,6 +514,7 @@ test "debug_inline_text_with_block_sibling" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   let container = layout.children[0]
@@ -549,6 +555,7 @@ test "img_alt_text_propagation" {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
   let layout = render(html, ctx)
@@ -611,6 +618,109 @@ test "img_alt_text_propagation" {
     }
     None => fail("No img layout found!")
   }
+}
+
+///|
+/// Test tall content for scrollability (simulates Zenn article structure)
+test "tall_content_scrollability" {
+  // Simulate Zenn article structure with multiple sections
+  let html =
+    #|<!DOCTYPE html>
+    #|<html>
+    #|<head>
+    #|<style>
+    #|body { margin: 0; padding: 16px; }
+    #|h1 { font-size: 32px; margin: 16px 0; }
+    #|h2 { font-size: 24px; margin: 12px 0; }
+    #|p { font-size: 16px; line-height: 1.6; margin: 12px 0; }
+    #|pre { background: #f5f5f5; padding: 16px; margin: 16px 0; }
+    #|code { font-size: 14px; }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|<article>
+    #|  <h1>MoonBit Useful Tips</h1>
+    #|  <p>This is the introduction paragraph with some content about MoonBit programming language and its features.</p>
+    #|
+    #|  <h2>Section 1: Getting Started</h2>
+    #|  <p>First paragraph of section one with detailed explanation of the topic. This text should be long enough to wrap multiple lines in a narrow viewport.</p>
+    #|  <pre><code>fn main() {
+    #|  println("Hello, MoonBit!")
+    #|}</code></pre>
+    #|  <p>Additional explanation after the code block explaining what the code does and how it works in practice.</p>
+    #|
+    #|  <h2>Section 2: Advanced Features</h2>
+    #|  <p>Second section with more advanced content. This paragraph contains detailed technical information.</p>
+    #|  <pre><code>struct Point {
+    #|  x: Int
+    #|  y: Int
+    #|}
+    #|
+    #|fn Point::new(x: Int, y: Int) -> Point {
+    #|  { x, y }
+    #|}</code></pre>
+    #|  <p>Explanation of structs and methods in MoonBit with examples and best practices.</p>
+    #|
+    #|  <h2>Section 3: Pattern Matching</h2>
+    #|  <p>Pattern matching is a powerful feature in MoonBit that allows you to match values against patterns.</p>
+    #|  <pre><code>fn describe(opt: Int?) -> String {
+    #|  match opt {
+    #|    Some(n) => "Has value: " + n.to_string()
+    #|    None => "No value"
+    #|  }
+    #|}</code></pre>
+    #|  <p>More details about pattern matching and its various use cases in real applications.</p>
+    #|
+    #|  <h2>Section 4: Error Handling</h2>
+    #|  <p>Error handling in MoonBit uses Result types for explicit error management.</p>
+    #|  <p>This approach ensures that errors are handled at compile time rather than runtime.</p>
+    #|
+    #|  <h2>Conclusion</h2>
+    #|  <p>MoonBit provides a modern approach to systems programming with safety and performance.</p>
+    #|  <p>Thank you for reading this article. Feel free to explore more resources.</p>
+    #|</article>
+    #|</body>
+    #|</html>
+
+  // Small viewport to simulate scrollable content
+  let viewport_width = 320.0
+  let viewport_height = 200.0 // Only shows part of the content
+  let ctx : RenderContext = {
+    viewport_width,
+    viewport_height,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = render(html, ctx)
+
+  // Debug output
+  println("=== Tall Content Scrollability Test ===")
+  println(
+    "Viewport: " +
+    viewport_width.to_string() +
+    "x" +
+    viewport_height.to_string(),
+  )
+  println("Layout height: " + layout.height.to_string())
+
+  // CRITICAL: Content height must be greater than viewport height for scrolling
+  inspect(layout.height > viewport_height, content="true")
+
+  // Content should be significantly taller (at least 3x viewport height for this article)
+  let min_expected_height = viewport_height * 2.0
+  println("Min expected height: " + min_expected_height.to_string())
+  inspect(layout.height > min_expected_height, content="true")
+
+  // Verify scrollable area calculation
+  let scrollable_height = layout.height - viewport_height
+  println("Scrollable height: " + scrollable_height.to_string())
+  inspect(scrollable_height > 0.0, content="true")
+
+  // Test max scroll in character units (16px per char)
+  let font_height = 16.0
+  let max_scroll_chars = ((layout.height - viewport_height) / font_height).to_int()
+  println("Max scroll (chars): " + max_scroll_chars.to_string())
+  inspect(max_scroll_chars > 0, content="true")
 }
 
 ///|

@@ -12,6 +12,7 @@ test "banner_color_computation" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   // Print computed styles for debugging
@@ -51,6 +52,7 @@ test "code_token_color" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   // Print all nodes with their styles
@@ -89,6 +91,7 @@ test "css_variable_in_background" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -128,6 +131,7 @@ test "nested_background_inheritance" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
