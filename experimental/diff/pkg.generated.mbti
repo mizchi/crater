@@ -23,6 +23,7 @@ pub(all) enum ChangeType {
   RoleChanged
   NameChanged
   StateChanged
+  VisibilityChanged
 }
 
 pub(all) struct DiffConfig {

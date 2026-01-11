@@ -38,6 +38,20 @@ pub enum NodeType {
 } derive(Eq, Show)
 
 ///|
+/// Convert DOM node type constant to NodeType
+/// See: https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType
+pub fn NodeType::from_dom_constant(value : Int) -> NodeType? {
+  match value {
+    1 => Some(Element)
+    3 => Some(Text)
+    8 => Some(Comment)
+    9 => Some(Document)
+    10 => Some(DocumentType)
+    _ => None
+  }
+}
+
+///|
 /// Basic node information
 pub struct NodeInfo {
   node_id : NodeId

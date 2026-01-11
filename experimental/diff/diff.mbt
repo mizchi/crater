@@ -16,6 +16,7 @@ pub(all) enum ChangeType {
   RoleChanged
   NameChanged
   StateChanged
+  VisibilityChanged
 }
 
 ///|
@@ -327,6 +328,18 @@ fn compare_elements(
       severity: 1,
     })
   }
+
+  // Visibility changed
+  if before.visible != after.visible {
+    let visibility = if after.visible { "visible" } else { "hidden" }
+    diffs.push({
+      change_type: VisibilityChanged,
+      path: after.path,
+      element_id: after.id,
+      description: "Visibility changed to \{visibility}",
+      severity: 1,
+    })
+  }
 }
 
 ///|
@@ -420,6 +433,7 @@ pub fn Difference::to_string(self : Difference) -> String {
     RoleChanged => "ROLE_CHANGED"
     NameChanged => "NAME_CHANGED"
     StateChanged => "STATE_CHANGED"
+    VisibilityChanged => "VISIBILITY_CHANGED"
   }
   "[\{severity_str}] \{change_str}: \{self.description} (at \{self.path})"
 }
@@ -497,6 +511,7 @@ fn change_type_string(ct : ChangeType) -> String {
     RoleChanged => "role_changed"
     NameChanged => "name_changed"
     StateChanged => "state_changed"
+    VisibilityChanged => "visibility_changed"
   }
 }
 

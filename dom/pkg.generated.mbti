@@ -128,6 +128,7 @@ pub enum NodeType {
   Text
   Comment
 }
+pub fn NodeType::from_dom_constant(Int) -> Self?
 pub impl Eq for NodeType
 pub impl Show for NodeType
 
