@@ -1828,7 +1828,10 @@ fn compute_element_style(
   // Apply inline styles (override stylesheet styles)
   // Parse inline CSS properties and apply them one by one
   match inline_css {
-    Some(css) => style = apply_inline_css_with_vars(style, css, css_vars)
+    Some(css) =>
+      style = apply_inline_css_with_vars(
+        style, css, css_vars, ctx.viewport_width, ctx.viewport_height,
+      )
     None => ()
   }
 
@@ -1913,6 +1916,8 @@ fn apply_inline_css_with_vars(
   target : @style.Style,
   inline_css : String,
   css_vars : Map[String, String],
+  viewport_width : Double,
+  viewport_height : Double,
 ) -> @style.Style {
   // Parse the inline CSS to get property/value pairs
   // Format: "property1: value1; property2: value2"
@@ -1938,7 +1943,7 @@ fn apply_inline_css_with_vars(
         if prop.length() > 0 && value.length() > 0 {
           // Use viewport-aware property application with CSS variables
           result = apply_css_property_with_viewport(
-            result, prop, value, 1920.0, 1080.0, css_vars,
+            result, prop, value, viewport_width, viewport_height, css_vars,
           )
         }
       } catch {

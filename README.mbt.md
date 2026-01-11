@@ -41,11 +41,11 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
 | css-flexbox | 20 | 20 | 100% |
-| css-sizing | 23 | 30 | 76.7% |
+| css-sizing | 25 | 30 | 83.3% |
 | css-position | 11 | 30 | 36.7% |
 | css-tables | 6 | 20 | 30.0% |
 | css-display | 2 | 30 | 6.7% |
-| **Total** | **62** | **130** | **47.7%** |
+| **Total** | **64** | **130** | **49.2%** |
 
 ## Features
 
