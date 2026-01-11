@@ -23,7 +23,6 @@ pub fn get_extraction_stats(result : ExtractionResult) -> String {
   buf.write_string("Detected ads: ")
   buf.write_string(result.detected_ads.length().to_string())
   buf.write_string("\n\n")
-
   match result.main_content {
     Some(node) => {
       buf.write_string("Main Content Detected:\n")
@@ -59,7 +58,6 @@ pub fn get_extraction_stats(result : ExtractionResult) -> String {
     }
     None => buf.write_string("No main content detected.\n")
   }
-
   buf.write_string("\nTop 3 Content Blocks by Score:\n")
   let len = result.content_blocks.length()
   let limit = if len < 3 { len } else { 3 }
@@ -81,6 +79,5 @@ pub fn get_extraction_stats(result : ExtractionResult) -> String {
     buf.write_string(decimal.to_string())
     buf.write_string("\n")
   }
-
   buf.to_string()
 }

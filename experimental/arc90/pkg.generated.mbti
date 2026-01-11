@@ -10,6 +10,10 @@ pub fn extract_content(@aom.AccessibilityTree, ExtractConfig) -> ExtractionResul
 
 pub fn extract_main_content(@aom.AccessibilityTree) -> @aom.AccessibilityNode?
 
+pub fn get_extraction_stats(ExtractionResult) -> String
+
+pub fn print_extraction_result(ExtractionResult) -> String
+
 // Errors
 
 // Types and methods

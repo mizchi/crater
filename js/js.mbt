@@ -9,6 +9,7 @@ pub fn renderHtml(html : String, width : Int, height : Int) -> String {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let buf = StringBuilder::new()
@@ -49,6 +50,7 @@ pub fn renderHtmlToJson(html : String, width : Int, height : Int) -> String {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   @renderer.layout_to_json(layout)
@@ -65,6 +67,7 @@ pub fn renderHtmlToPaintTree(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -159,6 +162,7 @@ pub fn renderHtmlToSixel(html : String, width : Int, height : Int) -> String {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   @sixel.render_layout_with_options(layout, width, height, false)
@@ -175,6 +179,7 @@ pub fn renderHtmlToSixelWithStyles(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -201,6 +206,7 @@ pub fn createTree(html : String, width : Int, height : Int) -> Int {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let tree = @tree.LayoutTree::from_node(
