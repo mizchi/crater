@@ -429,16 +429,84 @@ test "table rowspan" {
 
   // Row 0 should have 2 cells
   let row0_layout = layout.children[0]
-  assert_eq!(row0_layout.children.length(), 2)
+  assert_eq(row0_layout.children.length(), 2)
 
   // Row 1 should have 1 cell
   let row1_layout = layout.children[1]
-  assert_eq!(row1_layout.children.length(), 1)
+  assert_eq(row1_layout.children.length(), 1)
 
   // Cell C in row 1 should be at x = 100 (after the rowspan cell A)
   // because column 0 is occupied by cell A's rowspan
   let cell_c_layout = row1_layout.children[0]
-  inspect!(cell_c_layout.x, content="100")
+  inspect(cell_c_layout.x, content="100")
+}
+
+///|
+/// Test rowspan height distribution - tall rowspan cell expands rows
+test "table rowspan height distribution" {
+  // Row 0: Cell A (rowspan=2, tall content), Cell B (short)
+  // Row 1: Cell C (short)
+  // The rowspan cell's height should be distributed across both rows
+  let cell_a_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0), // Tall cell
+    rowspan: 2,
+  }
+  let cell_b_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(20.0), // Short cell
+  }
+  let cell_c_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(20.0), // Short cell
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Table,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell_a = @node.Node::new("cell_a", cell_a_style, [])
+  let cell_b = @node.Node::new("cell_b", cell_b_style, [])
+  let row0 = @node.Node::new("row0", row_style, [cell_a, cell_b])
+  let cell_c = @node.Node::new("cell_c", cell_c_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell_c])
+  let table = @node.Node::new("table", table_style, [row0, row1])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute(table, ctx)
+
+  // Row 0 and Row 1 should have equal heights (100 / 2 = 50 each)
+  // because the rowspan cell (100px) needs to fit across both rows
+  let row0_layout = layout.children[0]
+  let row1_layout = layout.children[1]
+
+  // Each row should be 50px (100px rowspan cell / 2 rows)
+  // Note: base height for row 0 is 20 (from cell B), row 1 is 20 (from cell C)
+  // Extra needed = 100 - 40 = 60, distributed evenly = 30 each
+  // So row 0 = 20 + 30 = 50, row 1 = 20 + 30 = 50
+  inspect(row0_layout.height, content="50")
+  inspect(row1_layout.height, content="50")
+
+  // Cell C should be at correct x position (skipping rowspan cell's column)
+  let cell_c_layout = row1_layout.children[0]
+  inspect(cell_c_layout.x, content="100")
 }
 
 ///|
@@ -497,21 +565,21 @@ test "table rowspan with tbody" {
   let layout = @dispatch.compute(table, ctx)
 
   // Table should have 1 child (tbody)
-  assert_eq!(layout.children.length(), 1)
+  assert_eq(layout.children.length(), 1)
 
   // tbody should have 2 rows
   let tbody_layout = layout.children[0]
-  assert_eq!(tbody_layout.children.length(), 2)
+  assert_eq(tbody_layout.children.length(), 2)
 
   // Row 0 should have 2 cells
   let row0_layout = tbody_layout.children[0]
-  assert_eq!(row0_layout.children.length(), 2)
+  assert_eq(row0_layout.children.length(), 2)
 
   // Row 1 should have 1 cell
   let row1_layout = tbody_layout.children[1]
-  assert_eq!(row1_layout.children.length(), 1)
+  assert_eq(row1_layout.children.length(), 1)
 
   // Cell C in row 1 should be at x = 100 (after the rowspan cell A)
   let cell_c_layout = row1_layout.children[0]
-  inspect!(cell_c_layout.x, content="100")
+  inspect(cell_c_layout.x, content="100")
 }

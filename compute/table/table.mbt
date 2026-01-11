@@ -78,17 +78,25 @@ priv struct CellOccupancy {
 }
 
 ///|
+/// Rowspan cell info - tracks cells that span multiple rows for height distribution
+priv struct RowspanCellInfo {
+  start_row : Int // Starting row index
+  rowspan : Int // Number of rows spanned
+  cell_height : Double // Content height of the cell
+}
+
+///|
 /// Build an occupancy grid for the table
 /// Returns: (grid, num_columns) where grid maps (row, col) -> CellOccupancy
-fn build_occupancy_grid(rows : Array[@node.Node]) -> (Map[String, CellOccupancy], Int) {
+fn build_occupancy_grid(
+  rows : Array[@node.Node],
+) -> (Map[String, CellOccupancy], Int) {
   let grid : Map[String, CellOccupancy] = {}
   let mut num_columns = 0
-
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
     let mut col_idx = 0
     let mut cell_idx = 0
-
     for child in row.children {
       if child.style.display == @style.None {
         cell_idx = cell_idx + 1
@@ -103,9 +111,16 @@ fn build_occupancy_grid(rows : Array[@node.Node]) -> (Map[String, CellOccupancy]
       while grid.contains(key_for_pos(row_idx, col_idx)) {
         col_idx = col_idx + 1
       }
-
-      let colspan = if child.style.colspan > 0 { child.style.colspan } else { 1 }
-      let rowspan = if child.style.rowspan > 0 { child.style.rowspan } else { 1 }
+      let colspan = if child.style.colspan > 0 {
+        child.style.colspan
+      } else {
+        1
+      }
+      let rowspan = if child.style.rowspan > 0 {
+        child.style.rowspan
+      } else {
+        1
+      }
 
       // Mark all positions occupied by this cell
       for ri = 0; ri < rowspan; ri = ri + 1 {
@@ -123,12 +138,10 @@ fn build_occupancy_grid(rows : Array[@node.Node]) -> (Map[String, CellOccupancy]
       if col_idx + colspan > num_columns {
         num_columns = col_idx + colspan
       }
-
       col_idx = col_idx + colspan
       cell_idx = cell_idx + 1
     }
   }
-
   (grid, num_columns)
 }
 
@@ -266,7 +279,6 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
   }
   rows
 }
-
 
 ///|
 /// Measure intrinsic width of a cell's content
@@ -808,7 +820,12 @@ fn layout_row(
     }
     let cell_layout = layout_cell(child, cell_width, cell_ctx, border_collapse)
     let positioned_cell = { ..cell_layout, x: x_offset, y: 0.0 }
-    max_height = max(max_height, cell_layout.height)
+    // Only count rowspan=1 cells towards max_height
+    // Rowspan cells have their height distributed separately
+    let rowspan = if child.style.rowspan > 0 { child.style.rowspan } else { 1 }
+    if rowspan == 1 {
+      max_height = max(max_height, cell_layout.height)
+    }
     x_offset = x_offset + cell_width + border_spacing
     // Advance by colspan columns
     col_index = col_index + colspan
@@ -980,16 +997,176 @@ fn compute_row_intrinsic_height(row : @node.Node) -> Double {
 }
 
 ///|
+/// Compute base row heights (excluding cells with rowspan > 1)
+/// Returns: Array of base heights for each row
+fn compute_base_row_heights(
+  rows : Array[@node.Node],
+  grid : Map[String, CellOccupancy],
+  border_collapse : Bool,
+) -> Array[Double] {
+  let heights : Array[Double] = []
+  for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
+    let row = rows[row_idx]
+    let row_style = row.style
+
+    // Check for explicit row height
+    let mut max_height = match row_style.height {
+      @types.Length(h) => h
+      _ => 0.0
+    }
+
+    // Find max cell height among cells that DON'T have rowspan > 1
+    let mut cell_idx = 0
+    for child in row.children {
+      if child.style.display == @style.None ||
+        not(is_table_cell(child.style.display)) {
+        cell_idx = cell_idx + 1
+        continue
+      }
+      let rowspan = if child.style.rowspan > 0 {
+        child.style.rowspan
+      } else {
+        1
+      }
+
+      // Only consider cells that don't span multiple rows
+      if rowspan == 1 {
+        let cell_height = compute_cell_height_for_row(child, border_collapse)
+        if cell_height > max_height {
+          max_height = cell_height
+        }
+      }
+      cell_idx = cell_idx + 1
+    }
+    heights.push(max_height)
+  }
+  let _ = grid // Grid not needed for base calculation but kept for consistency
+  heights
+}
+
+///|
+/// Compute cell height for row height calculation
+/// In border-collapse mode, subtracts border from explicit heights
+fn compute_cell_height_for_row(
+  cell : @node.Node,
+  border_collapse : Bool,
+) -> Double {
+  let style = cell.style
+  let padding = @types.resolve_rect_intrinsic(style.padding)
+  let border = @types.resolve_rect_intrinsic(style.border)
+  let box_extra = padding.vertical_sum() + border.vertical_sum()
+
+  // If cell has explicit height
+  match style.height {
+    @types.Length(h) =>
+      // In border-collapse mode, explicit height includes border, so subtract it
+      if border_collapse {
+        h - border.vertical_sum()
+      } else {
+        h
+      }
+    _ => {
+      // Measure children's intrinsic height
+      let mut total_height = 0.0
+      for child in cell.children {
+        if child.style.display == @style.None {
+          continue
+        }
+        match child.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(10000.0, 10000.0)
+            total_height = total_height + intrinsic.max_height
+          }
+          None => {
+            let child_height = measure_node_intrinsic_height(child)
+            total_height = total_height + child_height
+          }
+        }
+      }
+      total_height + box_extra
+    }
+  }
+}
+
+///|
+/// Collect all rowspan cells with their info
+/// Returns: Array of RowspanCellInfo
+fn collect_rowspan_cells(rows : Array[@node.Node]) -> Array[RowspanCellInfo] {
+  let cells : Array[RowspanCellInfo] = []
+  for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
+    let row = rows[row_idx]
+    for child in row.children {
+      if child.style.display == @style.None ||
+        not(is_table_cell(child.style.display)) {
+        continue
+      }
+      let rowspan = if child.style.rowspan > 0 {
+        child.style.rowspan
+      } else {
+        1
+      }
+      if rowspan > 1 {
+        let cell_height = compute_cell_intrinsic_height(child)
+        cells.push({ start_row: row_idx, rowspan, cell_height })
+      }
+    }
+  }
+  cells
+}
+
+///|
+/// Distribute rowspan cell heights across spanned rows
+/// Modifies heights array in place
+fn distribute_rowspan_heights(
+  heights : Array[Double],
+  rowspan_cells : Array[RowspanCellInfo],
+  border_spacing : Double,
+) -> Unit {
+  for cell_info in rowspan_cells {
+    let start = cell_info.start_row
+    let span = cell_info.rowspan
+    let end = start + span
+
+    // Clamp end to array bounds
+    let actual_end = if end > heights.length() { heights.length() } else { end }
+    let actual_span = actual_end - start
+    if actual_span <= 0 {
+      continue
+    }
+
+    // Calculate current total height of spanned rows (including border-spacing between)
+    let mut current_total = 0.0
+    for i = start; i < actual_end; i = i + 1 {
+      current_total = current_total + heights[i]
+      if i < actual_end - 1 {
+        current_total = current_total + border_spacing
+      }
+    }
+
+    // If cell needs more height, distribute extra evenly
+    if cell_info.cell_height > current_total {
+      let extra = cell_info.cell_height - current_total
+      let extra_per_row = extra / actual_span.to_double()
+      for i = start; i < actual_end; i = i + 1 {
+        heights[i] = heights[i] + extra_per_row
+      }
+    }
+  }
+}
+
+///|
 /// Compute intrinsic height of a table cell
+/// Note: For explicit heights, we return just h because adjust_for_box_sizing
+/// has already converted content-box dimensions to include border.
 fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   let style = cell.style
   let padding = @types.resolve_rect_intrinsic(style.padding)
   let border = @types.resolve_rect_intrinsic(style.border)
   let box_extra = padding.vertical_sum() + border.vertical_sum()
 
-  // If cell has explicit height, use it
+  // If cell has explicit height, use it directly (already adjusted)
   match style.height {
-    @types.Length(h) => return h + box_extra
+    @types.Length(h) => return h
     _ => ()
   }
 
@@ -1157,26 +1334,51 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     _ => None
   }
 
-  // Calculate min row height if table has explicit height
-  // Distribute table height evenly among rows
+  // Calculate row heights with rowspan distribution
   let row_count = rows.length()
-  let min_row_height : Double? = match explicit_table_height {
-    Some(h) if row_count > 0 => {
-      // Available content height = table height - padding - border - all border-spacing
-      let available_content_height = h -
-        padding.vertical_sum() -
-        border.vertical_sum() -
-        border_spacing * (row_count + 1).to_double()
-      Some(available_content_height / row_count.to_double())
+  let row_heights : Array[Double] = if row_count > 0 {
+    // Step 1: Calculate base row heights (excluding rowspan cells)
+    let base_heights = compute_base_row_heights(rows, grid, is_border_collapse)
+
+    // Step 2: Collect all rowspan cells
+    let rowspan_cells = collect_rowspan_cells(rows)
+
+    // Step 3: Distribute rowspan cell heights across spanned rows
+    distribute_rowspan_heights(base_heights, rowspan_cells, border_spacing)
+
+    // Step 4: If table has explicit height, ensure rows fill it
+    match explicit_table_height {
+      Some(h) => {
+        // Calculate current total row height
+        let mut current_total = border_spacing // top edge
+        for i = 0; i < base_heights.length(); i = i + 1 {
+          current_total = current_total + base_heights[i]
+          current_total = current_total + border_spacing
+        }
+        let available_content_height = h -
+          padding.vertical_sum() -
+          border.vertical_sum()
+
+        // If explicit height is larger, distribute extra evenly
+        if available_content_height > current_total && row_count > 0 {
+          let extra = available_content_height - current_total
+          let extra_per_row = extra / row_count.to_double()
+          for i = 0; i < base_heights.length(); i = i + 1 {
+            base_heights[i] = base_heights[i] + extra_per_row
+          }
+        }
+      }
+      None => ()
     }
-    _ => None
+    base_heights
+  } else {
+    []
   }
 
-  // Create child context (use row_content_width for row layout)
-  // Pass min_row_height so rows can use it as minimum height
-  let child_ctx : @node.LayoutContext = {
+  // Create base child context (use row_content_width for row layout)
+  let base_child_ctx : @node.LayoutContext = {
     available_width: row_content_width,
-    available_height: min_row_height,
+    available_height: None,
     sizing_mode: ctx.sizing_mode,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
@@ -1219,7 +1421,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       layout_map[idx] = create_zero_layout(child)
       continue
     }
-    let caption_layout = @node.dispatch_layout(child, child_ctx)
+    let caption_layout = @node.dispatch_layout(child, base_child_ctx)
     let positioned_caption = {
       ..caption_layout,
       x: padding.left + border.left,
@@ -1246,14 +1448,18 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       continue
     }
     if is_table_row(child.style.display) {
-      // Direct row
+      // Direct row - use pre-calculated row height
+      let row_height = if global_row_idx < row_heights.length() {
+        Some(row_heights[global_row_idx])
+      } else {
+        None
+      }
+      let row_ctx : @node.LayoutContext = {
+        ..base_child_ctx,
+        available_height: row_height,
+      }
       let row_layout = layout_row(
-        child,
-        global_row_idx,
-        column_widths,
-        border_spacing,
-        child_ctx,
-        is_border_collapse,
+        child, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
         grid,
       )
       let positioned_row = { ..row_layout, x: row_x_offset, y: y_offset }
@@ -1275,13 +1481,18 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
           continue
         }
         if is_table_row(row.style.display) {
+          // Use pre-calculated row height for rows in row groups
+          let row_height = if global_row_idx < row_heights.length() {
+            Some(row_heights[global_row_idx])
+          } else {
+            None
+          }
+          let row_ctx : @node.LayoutContext = {
+            ..base_child_ctx,
+            available_height: row_height,
+          }
           let row_layout = layout_row(
-            row,
-            global_row_idx,
-            column_widths,
-            border_spacing,
-            child_ctx,
-            is_border_collapse,
+            row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
             grid,
           )
           let positioned_row = {
@@ -1418,7 +1629,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       layout_map[idx] = create_zero_layout(child)
       continue
     }
-    let caption_layout = @node.dispatch_layout(child, child_ctx)
+    let caption_layout = @node.dispatch_layout(child, base_child_ctx)
     let positioned_caption = {
       ..caption_layout,
       x: padding.left + border.left,
@@ -1452,7 +1663,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let final_child_layouts : Array[@node.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     match layout_map.get(i) {
-      Some(layout) => {
+      Some(layout) =>
         // Check if this is a colgroup by looking at its children which might be cols
         // Colgroups/cols have height=0.0 as placeholder
         if layout.height == 0.0 && layout.children.length() > 0 {
@@ -1461,7 +1672,10 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
           for col_layout in layout.children {
             if col_layout.height == 0.0 && col_layout.width > 0.0 {
               // This is a col element
-              updated_col_children.push({ ..col_layout, height: row_content_height })
+              updated_col_children.push({
+                ..col_layout,
+                height: row_content_height,
+              })
             } else {
               updated_col_children.push(col_layout)
             }
@@ -1477,7 +1691,6 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         } else {
           final_child_layouts.push(layout)
         }
-      }
       None => () // Should not happen
     }
   }
