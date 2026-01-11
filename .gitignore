@@ -18,8 +18,8 @@ render-results/
 # Generated test fixtures (regenerate with npm run gentest)
 fixtures/
 
-# WPT tests (regenerate with npm run fetch-wpt)
-wpt-tests/
+# WPT support files (CSS/fonts, regenerated during fetch)
+wpt-tests/**/support/
 
 # Real-world site downloads (regenerate with npm run download)
 real-world/

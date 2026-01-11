@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<title>CSS Flexbox: images' aspect ratio in flex box with flex-direction: column for min-size: auto</title>
+<link rel="help" href="https://drafts.csswg.org/css-flexbox/#flex-containers">
+<link rel="help" href="https://drafts.csswg.org/css-flexbox/#flex-direction-property">
+<link rel="help" href="https://drafts.csswg.org/css-flexbox/#min-size-auto">
+<link rel="help" href="https://drafts.csswg.org/css-sizing-3/#replaced-intrinsic">
+<link rel="help" href="https://crbug.com/581535">
+<link rel="help" href="https://crbug.com/581361">
+<style>/* Inlined from support/flexbox.css */
+.flexbox {
+    display: -webkit-flex;
+    display: flex;
+}
+.inline-flexbox {
+    display: -webkit-inline-flex;
+    display: inline-flex;
+}
+
+.flex-none {
+    -webkit-flex: none;
+    flex: none;
+}
+.flex-auto {
+    -webkit-flex: auto;
+    flex: auto;
+}
+.flex-one {
+    -webkit-flex: 1;
+    flex: 1;
+}
+.flex-one-one-auto {
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+}
+
+.row {
+    -webkit-flex-direction: row;
+    flex-direction: row;
+}
+.row-reverse {
+    -webkit-flex-direction: row-reverse;
+    flex-direction: row-reverse;
+}
+.column {
+    -webkit-flex-direction: column;
+    flex-direction: column;
+}
+.column-reverse {
+    -webkit-flex-direction: column-reverse;
+    flex-direction: column-reverse;
+}
+
+.wrap {
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+.wrap-reverse {
+    -webkit-flex-wrap: wrap-reverse;
+    flex-wrap: wrap-reverse;
+}
+
+.align-content-flex-start {
+    -webkit-align-content: flex-start;
+    align-content: flex-start;
+}
+.align-content-flex-end {
+    -webkit-align-content: flex-end;
+    align-content: flex-end;
+}
+.align-content-center {
+    -webkit-align-content: center;
+    align-content: center;
+}
+.align-content-space-between {
+    -webkit-align-content: space-between;
+    align-content: space-between;
+}
+.align-content-space-around {
+    -webkit-align-content: space-around;
+    align-content: space-around;
+}
+.align-content-stretch {
+    -webkit-align-content: stretch;
+    align-content: stretch;
+}
+
+.align-items-flex-start {
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+}
+.align-items-flex-end {
+    -webkit-align-items: flex-end;
+    align-items: flex-end;
+}
+.align-items-center {
+    -webkit-align-items: center;
+    align-items: center;
+}
+.align-items-baseline {
+    -webkit-align-items: baseline;
+    align-items: baseline;
+}
+.align-items-stretch {
+    -webkit-align-items: stretch;
+    align-items: stretch;
+}
+
+.align-self-auto {
+    -webkit-align-self: auto;
+    align-self: auto;
+}
+.align-self-flex-start {
+    -webkit-align-self: flex-start;
+    align-self: flex-start;
+}
+.align-self-flex-end {
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+}
+.align-self-center {
+    -webkit-align-self: center;
+    align-self: center;
+}
+.align-self-baseline {
+    -webkit-align-self: baseline;
+    align-self: baseline;
+}
+.align-self-stretch {
+    -webkit-align-self: stretch;
+    align-self: stretch;
+}
+
+.justify-content-flex-start {
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+}
+.justify-content-flex-end {
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+}
+.justify-content-center {
+    -webkit-justify-content: center;
+    justify-content: center;
+}
+.justify-content-space-between {
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+}
+.justify-content-space-around {
+    -webkit-justify-content: space-around;
+    justify-content: space-around;
+}
+</style>
+<meta name="assert" content="Images maintain aspect ratio in flex box with column direction with min-size: auto.">
+
+
+
+
+
+<body>
+<div id=log></div>
+
+<div class="flexbox" style="width: 10px;" data-expected-width="10">
+    <!-- should use content width, clamped by converted max-height, as minimum width. -->
+    <img src="support/100x100-green.png" style="max-height: 5px;"
+         data-expected-width="5" data-expected-height="5">
+</div>
+
+<div class="flexbox" style="width: 10px;" data-expected-width="10">
+    <!-- should use min(specified, content width) = 10px as minimum width,
+         which the image will shrink to due to default flex-shrink. -->
+    <img src="support/10x10-green.png" style="width: 100px;" data-expected-width="10">
+</div>
+
+<div class="flexbox" style="width: 10px;" data-expected-width="10">
+    <!-- should use content width, clamped by converted min-height, as minimum width. -->
+    <img src="support/100x100-green.png" style="max-height: 5px;"
+         data-expected-width="5" data-expected-height="5">
+</div>
+
+<div class="flexbox" style="width: 10px;" data-expected-width="10">
+    <!-- should use content width, clamped by converted min-height, as minimum width. -->
+    <img src="support/100x100-green.png" style="max-height: 5px; min-height: 10px;"
+         data-expected-width="10" data-expected-height="10">
+</div>
+
+<div class="flexbox" style="width: 10px;" data-expected-width="10">
+    <!-- transferred and content suggestions are both 100px here, so minimum
+      width is min(transferred, content width) = 100px. -->
+    <img src="support/10x10-green.png" style="height: 100px;" data-expected-width="100">
+</div>
+
+<div class="flexbox column" style="height: 10px;" data-expected-height="10">
+    <!-- should use content height, clamped by converted max-width, as minimum height. -->
+    <img src="support/100x100-green.png" style="max-width: 5px;"
+         data-expected-width="5" data-expected-height="5">
+</div>
+
+<div class="flexbox column" style="height: 10px; width: 50px;" data-expected-height="10">
+    <!-- should use min(specified=100, content height=50) = 50px as minimum height,
+         which the image will shrink to due to default flex-shrink. -->
+    <img src="support/10x10-green.png" style="height: 100px;" data-expected-height="50">
+</div>
+
+<div class="flexbox" style="height: 10px;" data-expected-height="10">
+    <!-- should use content height, clamped by converted min-height, as minimum height. -->
+    <img src="support/100x100-green.png" style="max-height: 5px;"
+         data-expected-height="5" data-expected-height="5">
+</div>
+
+<div class="flexbox" style="height: 10px;" data-expected-height="10">
+    <!-- should use content height, clamped by converted min-width, as minimum height. -->
+    <img src="support/100x100-green.png" style="max-width: 5px; min-width: 10px;"
+         data-expected-height="10" data-expected-width="10">
+</div>
+
+<div class="flexbox column" style="height: 10px;" data-expected-height="10">
+    <!-- should use min(transferred (100), content height (100)) = 100px as
+         minimum height, which will be final height of the image -->
+    <img src="support/10x10-green.png" style="width: 100px;" data-expected-height="100">
+</div>

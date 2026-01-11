@@ -126,9 +126,6 @@ jobs:
       - name: Transpile with jco
         run: npm run jco:transpile
 
-      - name: Fetch WPT tests
-        run: npm run wpt:fetch-all
-
       - name: Run WPT tests
         run: npm run wpt:run-all
         continue-on-error: true
