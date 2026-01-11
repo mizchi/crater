@@ -4,7 +4,7 @@
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
   "deps": {},
   "readme": "README.mbt.md",
-  "repository": "",
+  "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
   "keywords": [
     "css",
