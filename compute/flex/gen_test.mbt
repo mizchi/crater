@@ -11,7 +11,7 @@ fn assert_approx(actual : Double, expected : Double) -> Unit raise {
     expected - actual
   }
   if diff > tolerance {
-    raise Failure(
+    raise Failure::Failure(
       "assert_approx failed: actual=\{actual}, expected=\{expected}, diff=\{diff}",
     )
   }

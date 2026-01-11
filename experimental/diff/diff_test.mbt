@@ -86,7 +86,7 @@ test "element_moved" {
         _ => false
       }
     })
-  assert_true(moved_diff.is_some())
+  assert_true(moved_diff is Some(_))
 }
 
 ///|
@@ -126,7 +126,7 @@ test "element_resized" {
         _ => false
       }
     })
-  assert_true(resized_diff.is_some())
+  assert_true(resized_diff is Some(_))
 }
 
 ///|

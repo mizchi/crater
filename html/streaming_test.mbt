@@ -207,7 +207,6 @@ fn stb_collect_text(elem : @html.Element) -> String {
           buf.write_string(t)
           buf.write_string("|")
         }
-        _ => ()
       }
     }
   }

@@ -32,7 +32,7 @@ pub fn get_extraction_stats(result : ExtractionResult) -> String {
       match node.name {
         Some(name) => {
           let display_name = if name.length() > 100 {
-            name.substring(start=0, end=100) + "..."
+            name.unsafe_substring(start=0, end=100) + "..."
           } else {
             name
           }
@@ -45,7 +45,7 @@ pub fn get_extraction_stats(result : ExtractionResult) -> String {
       match node.text {
         Some(text) => {
           let display_text = if text.length() > 200 {
-            text.substring(start=0, end=200) + "..."
+            text.unsafe_substring(start=0, end=200) + "..."
           } else {
             text
           }

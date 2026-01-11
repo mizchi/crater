@@ -52,55 +52,6 @@ pub fn StreamingTokenizer::finish(self : StreamingTokenizer) -> Unit {
 }
 
 ///|
-/// Peek at character at current position
-fn StreamingTokenizer::peek(self : StreamingTokenizer) -> Char? {
-  let s = self.get_string()
-  if self.pos >= s.length() {
-    None
-  } else {
-    Some(s[self.pos].to_int().unsafe_to_char())
-  }
-}
-
-///|
-/// Fast peek - returns '\x00' for EOF/need more data
-fn StreamingTokenizer::peek_fast(self : StreamingTokenizer) -> Char {
-  let s = self.get_string()
-  if self.pos >= s.length() {
-    '\u0000'
-  } else {
-    s[self.pos].to_int().unsafe_to_char()
-  }
-}
-
-///|
-/// Peek at offset from current position
-fn StreamingTokenizer::peek_at(
-  self : StreamingTokenizer,
-  offset : Int,
-) -> Char? {
-  let s = self.get_string()
-  let idx = self.pos + offset
-  if idx >= s.length() || idx < 0 {
-    None
-  } else {
-    Some(s[idx].to_int().unsafe_to_char())
-  }
-}
-
-///|
-/// Advance position by 1
-fn StreamingTokenizer::advance(self : StreamingTokenizer) -> Unit {
-  self.pos += 1
-}
-
-///|
-/// Check if at end of available data
-fn StreamingTokenizer::is_at_end(self : StreamingTokenizer) -> Bool {
-  self.pos >= self.get_string().length()
-}
-
-///|
 fn stok_is_whitespace(c : Char) -> Bool {
   c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
 }
