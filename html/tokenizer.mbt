@@ -10,6 +10,7 @@ pub(all) enum Token {
   StartTag(String, Map[String, String], Bool) // tag, attrs, self_closing
   EndTag(String)
   Character(Char)
+  Characters(String) // Batch of consecutive text characters (optimization)
   Comment(String)
   EOF
 }
@@ -381,9 +382,23 @@ pub fn Tokenizer::next_token(self : Tokenizer) -> Token {
             }
         }
       }
-    Some(c) => {
-      let _ = self.consume()
-      Token::Character(c)
+    Some(_) => {
+      // Collect consecutive text characters as a single token
+      let start = self.pos
+      while self.pos < self.len {
+        let c = self.peek_fast()
+        if c == '<' {
+          break
+        }
+        self.advance()
+      }
+      let text = self.input.unsafe_substring(start~, end=self.pos)
+      if text.length() == 1 {
+        // Single character - use Character token for compatibility
+        Token::Character(text[0].to_int().unsafe_to_char())
+      } else {
+        Token::Characters(text)
+      }
     }
     None => Token::EOF
   }

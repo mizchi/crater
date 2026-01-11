@@ -8,9 +8,10 @@ fn TreeBuilder::handle_initial(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Doctype(_) => self.insertion_mode = InsertionMode::BeforeHtml
     Token::Character(c) if tok_is_whitespace(c) => () // Ignore whitespace
+    Token::Characters(s) if is_whitespace_only(s) => () // Ignore whitespace
     _ => {
       self.insertion_mode = InsertionMode::BeforeHtml
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -21,6 +22,7 @@ fn TreeBuilder::handle_before_html(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Doctype(_) => () // Ignore
     Token::Character(c) if tok_is_whitespace(c) => () // Ignore whitespace
+    Token::Characters(s) if is_whitespace_only(s) => () // Ignore whitespace
     Token::StartTag(tag, attrs, _) if tag == "html" => {
       let elem = create_element(tag, attrs)
       self.open_elements.push(elem)
@@ -30,7 +32,7 @@ fn TreeBuilder::handle_before_html(self : TreeBuilder, token : Token) -> Unit {
       let elem = create_element("html", {})
       self.open_elements.push(elem)
       self.insertion_mode = InsertionMode::BeforeHead
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -40,6 +42,7 @@ fn TreeBuilder::handle_before_html(self : TreeBuilder, token : Token) -> Unit {
 fn TreeBuilder::handle_before_head(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) if tok_is_whitespace(c) => () // Ignore whitespace
+    Token::Characters(s) if is_whitespace_only(s) => () // Ignore whitespace
     Token::StartTag(tag, attrs, _) if tag == "head" => {
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
@@ -54,7 +57,7 @@ fn TreeBuilder::handle_before_head(self : TreeBuilder, token : Token) -> Unit {
       self.insert_element(elem)
       self.head_element = Some(elem)
       self.insertion_mode = InsertionMode::InHead
-      self.process_token(token)
+      self.reprocess_token(token)
     }
     Token::EndTag(_) => () // Parse error, ignore
     _ => {
@@ -62,7 +65,7 @@ fn TreeBuilder::handle_before_head(self : TreeBuilder, token : Token) -> Unit {
       self.insert_element(elem)
       self.head_element = Some(elem)
       self.insertion_mode = InsertionMode::InHead
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -72,6 +75,7 @@ fn TreeBuilder::handle_before_head(self : TreeBuilder, token : Token) -> Unit {
 fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) if tok_is_whitespace(c) => self.insert_character(c)
+    Token::Characters(s) if is_whitespace_only(s) => self.insert_characters(s)
     Token::StartTag(tag, attrs, self_closing) =>
       match tag {
         "html" => self.handle_in_body(Token::StartTag(tag, attrs, self_closing))
@@ -93,12 +97,20 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
           self.original_insertion_mode = Some(self.insertion_mode)
           self.insertion_mode = InsertionMode::Text
         }
+        "template" => {
+          // Template requires special handling - for now, create element and skip its content
+          let elem = create_element(tag, attrs)
+          self.insert_element(elem)
+          // Switch to RCDATA-like mode to skip content until </template>
+          self.original_insertion_mode = Some(self.insertion_mode)
+          self.insertion_mode = InsertionMode::Text
+        }
         "head" => () // Parse error, ignore
         _ => {
           // Pop head and switch to after head
           let _ = self.open_elements.pop()
           self.insertion_mode = InsertionMode::AfterHead
-          self.process_token(Token::StartTag(tag, attrs, self_closing))
+          self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
       }
     Token::EndTag(tag) =>
@@ -110,14 +122,14 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
         "body" | "html" | "br" => {
           let _ = self.open_elements.pop()
           self.insertion_mode = InsertionMode::AfterHead
-          self.process_token(Token::EndTag(tag))
+          self.reprocess_token(Token::EndTag(tag))
         }
         _ => () // Parse error, ignore
       }
     _ => {
       let _ = self.open_elements.pop()
       self.insertion_mode = InsertionMode::AfterHead
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -127,6 +139,7 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
 fn TreeBuilder::handle_after_head(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) if tok_is_whitespace(c) => self.insert_character(c)
+    Token::Characters(s) if is_whitespace_only(s) => self.insert_characters(s)
     Token::StartTag(tag, attrs, _) if tag == "body" => {
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
@@ -138,7 +151,7 @@ fn TreeBuilder::handle_after_head(self : TreeBuilder, token : Token) -> Unit {
       let elem = create_element("body", {})
       self.insert_element(elem)
       self.insertion_mode = InsertionMode::InBody
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -148,6 +161,7 @@ fn TreeBuilder::handle_after_head(self : TreeBuilder, token : Token) -> Unit {
 fn TreeBuilder::handle_in_body(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) => self.insert_character(c)
+    Token::Characters(s) => self.insert_characters(s)
     Token::Comment(_) => () // Ignore comments for now
     Token::Doctype(_) => () // Parse error, ignore
     Token::StartTag(tag, attrs, self_closing) =>
@@ -407,7 +421,7 @@ fn TreeBuilder::handle_in_body_end_tag(
         return // Parse error, ignore
       }
       self.insertion_mode = InsertionMode::AfterBody
-      self.process_token(Token::EndTag("html"))
+      self.reprocess_token(Token::EndTag("html"))
     }
     "address"
     | "article"
@@ -549,12 +563,12 @@ fn TreeBuilder::any_other_end_tag(self : TreeBuilder, tag : String) -> Unit {
 /// Handle in table insertion mode
 fn TreeBuilder::handle_in_table(self : TreeBuilder, token : Token) -> Unit {
   match token {
-    Token::Character(_) => {
+    Token::Character(_) | Token::Characters(_) => {
       // Enable foster parenting for text in table
       self.pending_table_chars = []
       self.original_insertion_mode = Some(self.insertion_mode)
       self.insertion_mode = InsertionMode::InTableText
-      self.process_token(token)
+      self.reprocess_token(token)
     }
     Token::Comment(_) => () // Ignore for now
     Token::Doctype(_) => () // Parse error, ignore
@@ -578,7 +592,7 @@ fn TreeBuilder::handle_in_table(self : TreeBuilder, token : Token) -> Unit {
           let elem = create_element("colgroup", {})
           self.insert_element(elem)
           self.insertion_mode = InsertionMode::InColumnGroup
-          self.process_token(Token::StartTag(tag, attrs, self_closing))
+          self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
         "tbody" | "tfoot" | "thead" => {
           self.clear_stack_to_table_context()
@@ -591,14 +605,14 @@ fn TreeBuilder::handle_in_table(self : TreeBuilder, token : Token) -> Unit {
           let elem = create_element("tbody", {})
           self.insert_element(elem)
           self.insertion_mode = InsertionMode::InTableBody
-          self.process_token(Token::StartTag(tag, attrs, self_closing))
+          self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
         "table" =>
           // Close current table and reprocess
           if self.has_element_in_table_scope("table") {
             self.pop_until("table")
             self.reset_insertion_mode()
-            self.process_token(Token::StartTag(tag, attrs, self_closing))
+            self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
           }
         "style" | "script" | "template" =>
           self.handle_in_head(Token::StartTag(tag, attrs, self_closing))
@@ -663,6 +677,10 @@ fn TreeBuilder::handle_in_table(self : TreeBuilder, token : Token) -> Unit {
 fn TreeBuilder::handle_in_table_text(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) => self.pending_table_chars.push(c)
+    Token::Characters(s) =>
+      for c in s {
+        self.pending_table_chars.push(c)
+      }
     _ => {
       // Flush pending table characters
       let mut has_non_space = false
@@ -690,7 +708,7 @@ fn TreeBuilder::handle_in_table_text(self : TreeBuilder, token : Token) -> Unit 
         Some(mode) => self.insertion_mode = mode
         None => self.insertion_mode = InsertionMode::InTable
       }
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -712,7 +730,7 @@ fn TreeBuilder::handle_in_table_body(self : TreeBuilder, token : Token) -> Unit 
           let elem = create_element("tr", {})
           self.insert_element(elem)
           self.insertion_mode = InsertionMode::InRow
-          self.process_token(Token::StartTag(tag, attrs, self_closing))
+          self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
         "caption" | "col" | "colgroup" | "tbody" | "tfoot" | "thead" => {
           if not(self.has_element_in_table_scope("tbody")) &&
@@ -723,7 +741,7 @@ fn TreeBuilder::handle_in_table_body(self : TreeBuilder, token : Token) -> Unit 
           self.clear_stack_to_table_body_context()
           let _ = self.open_elements.pop() // Pop tbody/thead/tfoot
           self.insertion_mode = InsertionMode::InTable
-          self.process_token(Token::StartTag(tag, attrs, self_closing))
+          self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
         _ => self.handle_in_table(Token::StartTag(tag, attrs, self_closing))
       }
@@ -746,7 +764,7 @@ fn TreeBuilder::handle_in_table_body(self : TreeBuilder, token : Token) -> Unit 
           self.clear_stack_to_table_body_context()
           let _ = self.open_elements.pop()
           self.insertion_mode = InsertionMode::InTable
-          self.process_token(Token::EndTag(tag))
+          self.reprocess_token(Token::EndTag(tag))
         }
         "body" | "caption" | "col" | "colgroup" | "html" | "td" | "th" | "tr" =>
           () // Parse error, ignore
@@ -776,7 +794,7 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
           self.clear_stack_to_table_row_context()
           let _ = self.open_elements.pop() // Pop tr
           self.insertion_mode = InsertionMode::InTableBody
-          self.process_token(Token::StartTag(tag, attrs, self_closing))
+          self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
         _ => self.handle_in_table(Token::StartTag(tag, attrs, self_closing))
       }
@@ -797,7 +815,7 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
           self.clear_stack_to_table_row_context()
           let _ = self.open_elements.pop()
           self.insertion_mode = InsertionMode::InTableBody
-          self.process_token(Token::EndTag(tag))
+          self.reprocess_token(Token::EndTag(tag))
         }
         "tbody" | "tfoot" | "thead" => {
           if not(self.has_element_in_table_scope(tag)) {
@@ -809,7 +827,7 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
           self.clear_stack_to_table_row_context()
           let _ = self.open_elements.pop()
           self.insertion_mode = InsertionMode::InTableBody
-          self.process_token(Token::EndTag(tag))
+          self.reprocess_token(Token::EndTag(tag))
         }
         "body" | "caption" | "col" | "colgroup" | "html" | "td" | "th" => () // Parse error, ignore
         _ => self.handle_in_table(Token::EndTag(tag))
@@ -869,7 +887,7 @@ fn TreeBuilder::handle_in_cell(self : TreeBuilder, token : Token) -> Unit {
         return // Parse error, ignore
       }
       self.close_cell()
-      self.process_token(Token::StartTag(tag, attrs, self_closing))
+      self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
     }
     Token::EndTag(tag) if is_cell_ignored_end_tag(tag) => () // Parse error, ignore
     Token::EndTag(tag) if is_cell_scope_end_tag(tag) => {
@@ -877,7 +895,7 @@ fn TreeBuilder::handle_in_cell(self : TreeBuilder, token : Token) -> Unit {
         return // Parse error, ignore
       }
       self.close_cell()
-      self.process_token(Token::EndTag(tag))
+      self.reprocess_token(Token::EndTag(tag))
     }
     _ => self.handle_in_body(token)
   }
@@ -939,7 +957,7 @@ fn TreeBuilder::handle_in_caption(self : TreeBuilder, token : Token) -> Unit {
       self.pop_until("caption")
       self.clear_active_formatting_to_marker()
       self.insertion_mode = InsertionMode::InTable
-      self.process_token(Token::StartTag(tag, attrs, self_closing))
+      self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
     }
     Token::EndTag(tag) if tag == "table" => {
       if not(self.has_element_in_table_scope("caption")) {
@@ -949,7 +967,7 @@ fn TreeBuilder::handle_in_caption(self : TreeBuilder, token : Token) -> Unit {
       self.pop_until("caption")
       self.clear_active_formatting_to_marker()
       self.insertion_mode = InsertionMode::InTable
-      self.process_token(Token::EndTag(tag))
+      self.reprocess_token(Token::EndTag(tag))
     }
     Token::EndTag(tag) if is_caption_ignored_end_tag(tag) => () // Parse error, ignore
     _ => self.handle_in_body(token)
@@ -964,6 +982,7 @@ fn TreeBuilder::handle_in_column_group(
 ) -> Unit {
   match token {
     Token::Character(c) if tok_is_whitespace(c) => self.insert_character(c)
+    Token::Characters(s) if is_whitespace_only(s) => self.insert_characters(s)
     Token::Comment(_) => () // Ignore
     Token::Doctype(_) => () // Parse error, ignore
     Token::StartTag(tag, attrs, _) if tag == "html" =>
@@ -995,7 +1014,7 @@ fn TreeBuilder::handle_in_column_group(
       }
       let _ = self.open_elements.pop()
       self.insertion_mode = InsertionMode::InTable
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }
@@ -1006,6 +1025,8 @@ fn TreeBuilder::handle_after_body(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) if tok_is_whitespace(c) =>
       self.handle_in_body(Token::Character(c))
+    Token::Characters(s) if is_whitespace_only(s) =>
+      self.handle_in_body(Token::Characters(s))
     Token::Comment(_) => () // Ignore
     Token::Doctype(_) => () // Parse error, ignore
     Token::StartTag(tag, _, _) if tag == "html" => self.handle_in_body(token)
@@ -1014,7 +1035,7 @@ fn TreeBuilder::handle_after_body(self : TreeBuilder, token : Token) -> Unit {
     Token::EOF => () // Stop
     _ => {
       self.insertion_mode = InsertionMode::InBody
-      self.process_token(token)
+      self.reprocess_token(token)
     }
   }
 }

@@ -211,6 +211,7 @@ fn stb_collect_text(elem : @html.Element) -> String {
       }
     }
   }
+
   walk(elem)
   buf.to_string()
 }

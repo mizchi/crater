@@ -50,6 +50,8 @@ pub(all) struct TreeBuilder {
   mut pending_table_chars : Array[Char]
   // Text accumulation buffer for efficient character insertion
   pending_text : StringBuilder
+  // Queue of tokens to reprocess (avoids stack overflow from recursive process_token calls)
+  pending_tokens : Array[Token]
 }
 
 ///|
@@ -65,7 +67,14 @@ pub fn TreeBuilder::new(tokenizer : Tokenizer) -> TreeBuilder {
     head_element: None,
     pending_table_chars: [],
     pending_text: StringBuilder::new(),
+    pending_tokens: [],
   }
+}
+
+///|
+/// Queue a token for reprocessing (instead of recursive process_token call)
+fn TreeBuilder::reprocess_token(self : TreeBuilder, token : Token) -> Unit {
+  self.pending_tokens.push(token)
 }
 
 ///|
@@ -177,6 +186,22 @@ fn TreeBuilder::insert_character(self : TreeBuilder, c : Char) -> Unit {
   } else {
     // Accumulate character in buffer
     self.pending_text.write_char(c)
+  }
+}
+
+///|
+/// Insert multiple characters at once - optimized batch insertion
+fn TreeBuilder::insert_characters(self : TreeBuilder, s : String) -> Unit {
+  if self.foster_parenting && is_table_context(self.current_node()) {
+    // Flush any pending text before foster parenting
+    self.flush_pending_text()
+    // Foster parent each character
+    for c in s {
+      self.foster_parent_character(c)
+    }
+  } else {
+    // Accumulate all characters in buffer
+    self.pending_text.write_string(s)
   }
 }
 
@@ -509,12 +534,19 @@ pub fn TreeBuilder::build(self : TreeBuilder) -> Element {
   self.head_element = Some(head_elem)
   self.insertion_mode = InsertionMode::InBody
 
-  // Process tokens
+  // Process tokens using queue to avoid stack overflow
   while true {
     let token = self.tokenizer.next_token()
     match token {
       Token::EOF => break
-      _ => self.process_token(token)
+      _ => {
+        self.process_token_single(token)
+        // Process any requeued tokens iteratively
+        while not(self.pending_tokens.is_empty()) {
+          let next = self.pending_tokens.remove(0)
+          self.process_token_single(next)
+        }
+      }
     }
   }
   // Flush any remaining pending text
@@ -528,12 +560,19 @@ pub fn TreeBuilder::build(self : TreeBuilder) -> Element {
 pub fn TreeBuilder::build_document(self : TreeBuilder) -> Element {
   self.insertion_mode = InsertionMode::Initial
 
-  // Process tokens
+  // Process tokens using queue to avoid stack overflow
   while true {
     let token = self.tokenizer.next_token()
     match token {
       Token::EOF => break
-      _ => self.process_token(token)
+      _ => {
+        self.process_token_single(token)
+        // Process any requeued tokens iteratively
+        while not(self.pending_tokens.is_empty()) {
+          let next = self.pending_tokens.remove(0)
+          self.process_token_single(next)
+        }
+      }
     }
   }
   // Flush any remaining pending text
@@ -553,8 +592,8 @@ pub fn TreeBuilder::build_document(self : TreeBuilder) -> Element {
 }
 
 ///|
-/// Process a single token
-fn TreeBuilder::process_token(self : TreeBuilder, token : Token) -> Unit {
+/// Process a single token (internal - handlers may requeue tokens)
+fn TreeBuilder::process_token_single(self : TreeBuilder, token : Token) -> Unit {
   match self.insertion_mode {
     InsertionMode::Initial => self.handle_initial(token)
     InsertionMode::BeforeHtml => self.handle_before_html(token)
@@ -580,6 +619,7 @@ fn TreeBuilder::process_token(self : TreeBuilder, token : Token) -> Unit {
 fn TreeBuilder::handle_text(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::Character(c) => self.insert_character(c)
+    Token::Characters(s) => self.insert_characters(s)
     Token::EOF => {
       // Parse error - flush text and pop
       self.flush_pending_text()

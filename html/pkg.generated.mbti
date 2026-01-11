@@ -2,9 +2,15 @@
 package "mizchi/crater/html"
 
 // Values
+pub fn assign_synthetic_ids(Document) -> Document
+
+pub fn extract_stylesheet_links(String) -> Array[String]
+
 pub fn parse(String) -> Element?
 
 pub fn parse_document(String) -> Document
+
+pub fn parse_document_streaming(String, Int) -> Document
 
 pub fn parse_document_v2(String) -> Element
 
@@ -65,11 +71,43 @@ pub(all) enum Node {
   Text(String)
 }
 
+pub(all) struct StreamingTokenizer {
+  buffer : StringBuilder
+  mut cached_str : String
+  mut cache_valid : Bool
+  mut pos : Int
+  mut finished : Bool
+}
+pub fn StreamingTokenizer::compact(Self) -> Unit
+pub fn StreamingTokenizer::feed(Self, String) -> Unit
+pub fn StreamingTokenizer::finish(Self) -> Unit
+pub fn StreamingTokenizer::new() -> Self
+pub fn StreamingTokenizer::next_token(Self) -> Token?
+
+pub(all) struct StreamingTreeBuilder {
+  tokenizer : StreamingTokenizer
+  mut insertion_mode : InsertionMode
+  mut original_insertion_mode : InsertionMode?
+  open_elements : Array[Element]
+  active_formatting : Array[FormattingElement]
+  mut foster_parenting : Bool
+  mut frameset_ok : Bool
+  mut head_element : Element?
+  mut pending_table_chars : Array[Char]
+  pending_text : StringBuilder
+  pending_tokens : Array[Token]
+  mut root : Element?
+}
+pub fn StreamingTreeBuilder::feed(Self, String) -> Unit
+pub fn StreamingTreeBuilder::finish(Self) -> Element
+pub fn StreamingTreeBuilder::new() -> Self
+
 pub(all) enum Token {
   Doctype(String)
   StartTag(String, Map[String, String], Bool)
   EndTag(String)
   Character(Char)
+  Characters(String)
   Comment(String)
   EOF
 }
@@ -94,6 +132,7 @@ pub(all) struct TreeBuilder {
   mut head_element : Element?
   mut pending_table_chars : Array[Char]
   pending_text : StringBuilder
+  pending_tokens : Array[Token]
 }
 pub fn TreeBuilder::build(Self) -> Element
 pub fn TreeBuilder::build_document(Self) -> Element

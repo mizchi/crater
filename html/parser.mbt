@@ -862,6 +862,123 @@ fn extract_text_content(elem : Element) -> String {
 }
 
 ///|
+/// Find substring position in string, starting from a given offset
+/// Returns -1 if not found
+fn find_substring(s : String, needle : String, from : Int) -> Int {
+  let slen = s.length()
+  let nlen = needle.length()
+  if nlen == 0 || from + nlen > slen {
+    return -1
+  }
+  for i = from; i <= slen - nlen; i = i + 1 {
+    let mut matched = true
+    for j = 0; j < nlen; j = j + 1 {
+      if s[i + j].to_int() != needle[j].to_int() {
+        matched = false
+        break
+      }
+    }
+    if matched {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+/// Find single character position in string
+fn find_char(s : String, c : Char, from : Int) -> Int {
+  let slen = s.length()
+  for i = from; i < slen; i = i + 1 {
+    if s[i].to_int().unsafe_to_char() == c {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+/// Extract stylesheet links from HTML without full DOM parsing
+/// This is a lightweight alternative to parse_document for just getting CSS links
+pub fn extract_stylesheet_links(html : String) -> Array[String] {
+  let links : Array[String] = []
+  let len = html.length()
+  let mut pos = 0
+  while pos < len {
+    // Find <link (case insensitive - check both)
+    let link_pos_lower = find_substring(html, "<link", pos)
+    let link_pos_upper = find_substring(html, "<LINK", pos)
+    let link_pos = if link_pos_lower < 0 {
+      link_pos_upper
+    } else if link_pos_upper < 0 {
+      link_pos_lower
+    } else if link_pos_lower < link_pos_upper {
+      link_pos_lower
+    } else {
+      link_pos_upper
+    }
+    if link_pos < 0 {
+      break
+    }
+    // Find the closing >
+    let tag_end = find_char(html, '>', link_pos)
+    if tag_end < 0 {
+      break
+    }
+    // Extract the tag content
+    let tag_content = html.unsafe_substring(start=link_pos, end=tag_end + 1)
+    // Check if it has rel="stylesheet"
+    if tag_content.contains("stylesheet") {
+      // Extract href value
+      match extract_href_from_tag(tag_content) {
+        Some(href) => links.push(href)
+        None => ()
+      }
+    }
+    pos = tag_end + 1
+  }
+  links
+}
+
+///|
+/// Extract href value from a tag string
+fn extract_href_from_tag(tag : String) -> String? {
+  // Look for href="..." or href='...'
+  let href_pos = find_substring(tag, "href=", 0)
+  if href_pos < 0 {
+    return None
+  }
+  let after_href = href_pos + 5
+  if after_href >= tag.length() {
+    return None
+  }
+  let quote_char = tag[after_href].to_int().unsafe_to_char()
+  if quote_char != '"' && quote_char != '\'' {
+    // Unquoted href - find next whitespace or >
+    let start = after_href
+    let mut end = start
+    while end < tag.length() {
+      let c = tag[end].to_int().unsafe_to_char()
+      if c == ' ' || c == '\t' || c == '>' || c == '/' {
+        break
+      }
+      end += 1
+    }
+    if end > start {
+      return Some(tag.unsafe_substring(start~, end~))
+    }
+    return None
+  }
+  // Quoted href
+  let start = after_href + 1
+  let end_quote = find_char(tag, quote_char, start)
+  if end_quote < 0 {
+    return None
+  }
+  Some(tag.unsafe_substring(start~, end=end_quote))
+}
+
+///|
 /// Parse HTML fragment using TreeBuilder (HTML5 compliant)
 pub fn parse_fragment_v2(html : String) -> Element {
   let tokenizer = Tokenizer::new(html)
@@ -873,4 +990,54 @@ pub fn parse_fragment_v2(html : String) -> Element {
 /// Parse HTML with a wrapper div if needed
 pub fn parse_fragment(html : String) -> Element {
   parse_fragment_v2(html)
+}
+
+///|
+/// Context for assigning synthetic IDs
+priv struct IdAssigner {
+  mut counter : Int
+}
+
+///|
+fn IdAssigner::new() -> IdAssigner {
+  { counter: 0 }
+}
+
+///|
+fn IdAssigner::next_id(self : IdAssigner) -> String {
+  let id = "crater-e\{self.counter}"
+  self.counter += 1
+  id
+}
+
+///|
+/// Assign synthetic IDs to elements without explicit IDs
+/// Returns a new element tree with IDs assigned
+fn assign_ids_element(elem : Element, assigner : IdAssigner) -> Element {
+  // Assign ID if not present
+  let new_id : String? = match elem.id {
+    Some(id) => Some(id)
+    None => Some(assigner.next_id())
+  }
+  // Process children recursively
+  let new_children : Array[Node] = []
+  for child in elem.children {
+    match child {
+      Node::Element(child_elem) => {
+        let new_child = assign_ids_element(child_elem, assigner)
+        new_children.push(Node::Element(new_child))
+      }
+      Node::Text(text) => new_children.push(Node::Text(text))
+    }
+  }
+  { ..elem, id: new_id, children: new_children }
+}
+
+///|
+/// Assign synthetic IDs to all elements in a document
+/// This ensures every element has a unique ID for layout/AOM integration
+pub fn assign_synthetic_ids(doc : Document) -> Document {
+  let assigner = IdAssigner::new()
+  let new_root = assign_ids_element(doc.root, assigner)
+  { ..doc, root: new_root }
 }
