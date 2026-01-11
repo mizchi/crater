@@ -95,6 +95,146 @@ fn can_collapse_through(
 }
 
 ///|
+/// Calculate max-content width of children for intrinsic sizing
+/// This is used when min-width or max-width is max-content/min-content
+fn calculate_children_max_content_width(
+  node : @node.Node,
+  parent_width : Double,
+) -> Double {
+  let mut max_content_width = 0.0
+  // Check if node itself has MeasureFunc (leaf node with intrinsic size)
+  match node.measure {
+    Some(mf) => {
+      let intrinsic = (mf.func)(0.0, 0.0)
+      max_content_width = intrinsic.max_width
+    }
+    None => ()
+  }
+  // Calculate max-content width from children
+  for child in node.children {
+    // Skip display:none, absolute, fixed, and float elements
+    if child.style.display == @style.None ||
+      child.style.position == @style.Absolute ||
+      child.style.position == @style.Fixed {
+      continue
+    }
+    match child.style.float {
+      @style.Float::Left | @style.Float::Right => continue
+      @style.Float::None => ()
+    }
+    let child_style = child.style
+    // Calculate child's margin contribution (percentages resolve to 0)
+    let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
+    let child_margin_right = resolve_dimension_intrinsic(
+      child_style.margin.right,
+    )
+    let child_margin_sum = child_margin_left + child_margin_right
+    // Calculate child's padding (percentages resolve to 0)
+    let child_padding_left = resolve_dimension_intrinsic(
+      child_style.padding.left,
+    )
+    let child_padding_right = resolve_dimension_intrinsic(
+      child_style.padding.right,
+    )
+    let child_border = @types.resolve_rect(child_style.border, parent_width)
+    let child_min_box = child_padding_left +
+      child_padding_right +
+      child_border.horizontal_sum()
+    // Calculate child's intrinsic width
+    let child_intrinsic_width : Double = match child_style.width {
+      @types.Length(w) => @types.max(w, child_min_box)
+      @types.Percent(_) => child_min_box
+      @types.Auto =>
+        match child.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(0.0, 0.0)
+            @types.max(intrinsic.max_width + child_min_box, child_min_box)
+          }
+          None =>
+            // Recursively calculate for nested elements
+            calculate_children_max_content_width(child, parent_width) +
+            child_min_box
+        }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        child_min_box
+    }
+    let child_contribution = child_intrinsic_width + child_margin_sum
+    if child_contribution > max_content_width {
+      max_content_width = child_contribution
+    }
+  }
+  max_content_width
+}
+
+///|
+/// Calculate max-content height of children for intrinsic sizing
+/// This is used when min-height or max-height is max-content/min-content
+fn calculate_children_max_content_height(
+  node : @node.Node,
+  parent_width : Double,
+) -> Double {
+  let mut total_height = 0.0
+  // Check if node itself has MeasureFunc (leaf node with intrinsic size)
+  match node.measure {
+    Some(mf) => {
+      let intrinsic = (mf.func)(0.0, 0.0)
+      total_height = intrinsic.min_height
+    }
+    None => ()
+  }
+  // Calculate height from children (simplified - sum of heights)
+  for child in node.children {
+    // Skip display:none, absolute, fixed elements
+    if child.style.display == @style.None ||
+      child.style.position == @style.Absolute ||
+      child.style.position == @style.Fixed {
+      continue
+    }
+    // Skip floats for height calculation in normal flow
+    match child.style.float {
+      @style.Float::Left | @style.Float::Right => continue
+      @style.Float::None => ()
+    }
+    let child_style = child.style
+    // Calculate child's vertical margins (percentages resolve to parent WIDTH, not height)
+    let child_margin_top = resolve_dimension_intrinsic(child_style.margin.top)
+    let child_margin_bottom = resolve_dimension_intrinsic(
+      child_style.margin.bottom,
+    )
+    // Calculate child's padding and border
+    let child_padding_top = resolve_dimension_intrinsic(child_style.padding.top)
+    let child_padding_bottom = resolve_dimension_intrinsic(
+      child_style.padding.bottom,
+    )
+    let child_border = @types.resolve_rect(child_style.border, parent_width)
+    let child_min_box = child_padding_top +
+      child_padding_bottom +
+      child_border.vertical_sum()
+    // Calculate child's intrinsic height
+    let child_intrinsic_height : Double = match child_style.height {
+      @types.Length(h) => @types.max(h, child_min_box)
+      @types.Percent(_) => child_min_box
+      @types.Auto =>
+        match child.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(0.0, 0.0)
+            @types.max(intrinsic.min_height + child_min_box, child_min_box)
+          }
+          None =>
+            // Recursively calculate for nested elements
+            calculate_children_max_content_height(child, parent_width) +
+            child_min_box
+        }
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        child_min_box
+    }
+    // Add to total (simplified - not doing margin collapsing here)
+    total_height = total_height + child_intrinsic_height + child_margin_top + child_margin_bottom
+  }
+  total_height
+}
+
+///|
 /// Calculate total height contribution from children layouts
 /// Used for display: contents elements where the parent needs children's height
 /// Note: margins are handled through margin collapsing, not added to height
@@ -679,10 +819,18 @@ fn compute_with_collapse(
         box_width = min_w
       }
     }
-    @types.Auto
-    | @types.MinContent
-    | @types.MaxContent
-    | @types.FitContent(_) => ()
+    @types.MaxContent | @types.MinContent => {
+      // Calculate intrinsic width of children
+      let intrinsic_width = calculate_children_max_content_width(
+          node, parent_width,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      if box_width < intrinsic_width {
+        box_width = intrinsic_width
+      }
+    }
+    @types.Auto | @types.FitContent(_) => ()
   }
 
   // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
@@ -904,10 +1052,18 @@ fn compute_with_collapse(
           box_width = max_w
         }
       }
-      @types.Auto
-      | @types.MinContent
-      | @types.MaxContent
-      | @types.FitContent(_) => ()
+      @types.MaxContent | @types.MinContent => {
+        // Calculate intrinsic width of children
+        let intrinsic_width = calculate_children_max_content_width(
+            node, parent_width,
+          ) +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        if box_width > intrinsic_width {
+          box_width = intrinsic_width
+        }
+      }
+      @types.Auto | @types.FitContent(_) => ()
     }
     match style.min_width {
       @types.Length(min_w) => if box_width < min_w { box_width = min_w }
@@ -917,10 +1073,18 @@ fn compute_with_collapse(
           box_width = min_w
         }
       }
-      @types.Auto
-      | @types.MinContent
-      | @types.MaxContent
-      | @types.FitContent(_) => ()
+      @types.MaxContent | @types.MinContent => {
+        // Calculate intrinsic width of children
+        let intrinsic_width = calculate_children_max_content_width(
+            node, parent_width,
+          ) +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        if box_width < intrinsic_width {
+          box_width = intrinsic_width
+        }
+      }
+      @types.Auto | @types.FitContent(_) => ()
     }
     // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
     if box_width < min_box_width {
@@ -971,10 +1135,30 @@ fn compute_with_collapse(
     // Apply min/max height constraints
     match style.min_height {
       @types.Length(min_h) => if box_height < min_h { box_height = min_h }
+      @types.MaxContent | @types.MinContent => {
+        let intrinsic_height = calculate_children_max_content_height(
+            node, parent_width,
+          ) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        if box_height < intrinsic_height {
+          box_height = intrinsic_height
+        }
+      }
       _ => ()
     }
     match style.max_height {
       @types.Length(max_h) => if box_height > max_h { box_height = max_h }
+      @types.MaxContent | @types.MinContent => {
+        let intrinsic_height = calculate_children_max_content_height(
+            node, parent_width,
+          ) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        if box_height > intrinsic_height {
+          box_height = intrinsic_height
+        }
+      }
       _ => ()
     }
 
@@ -1048,10 +1232,30 @@ fn compute_with_collapse(
     // Apply min/max height constraints
     match style.min_height {
       @types.Length(min_h) => if box_height < min_h { box_height = min_h }
+      @types.MaxContent | @types.MinContent => {
+        let intrinsic_height = calculate_children_max_content_height(
+            node, parent_width,
+          ) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        if box_height < intrinsic_height {
+          box_height = intrinsic_height
+        }
+      }
       _ => ()
     }
     match style.max_height {
       @types.Length(max_h) => if box_height > max_h { box_height = max_h }
+      @types.MaxContent | @types.MinContent => {
+        let intrinsic_height = calculate_children_max_content_height(
+            node, parent_width,
+          ) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        if box_height > intrinsic_height {
+          box_height = intrinsic_height
+        }
+      }
       _ => ()
     }
     // Handle absolute children
@@ -1839,15 +2043,34 @@ fn layout_absolute_child(
     }
   }
 
+  // Calculate actual min/max constraints, handling max-content/min-content
+  // For intrinsic sizing, we use the computed child_inner dimensions
+  let actual_min_width = match child_style.min_width {
+    @types.MaxContent | @types.MinContent => child_inner.width
+    _ => params.min_width
+  }
+  let actual_max_width = match child_style.max_width {
+    @types.MaxContent | @types.MinContent => child_inner.width
+    _ => params.max_width
+  }
+  let actual_min_height = match child_style.min_height {
+    @types.MaxContent | @types.MinContent => child_inner.height
+    _ => params.min_height
+  }
+  let actual_max_height = match child_style.max_height {
+    @types.MaxContent | @types.MinContent => child_inner.height
+    _ => params.max_height
+  }
+
   // Apply min/max constraints and re-apply aspect ratio
   let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
     child_width,
     child_height,
     child_style,
-    params.min_width,
-    params.max_width,
-    params.min_height,
-    params.max_height,
+    actual_min_width,
+    actual_max_width,
+    actual_min_height,
+    actual_max_height,
   )
 
   // CSS rule: padding+border override explicit size constraints
@@ -2055,15 +2278,33 @@ fn layout_fixed_child(
     }
   }
 
+  // Calculate actual min/max constraints, handling max-content/min-content
+  let actual_min_width = match child_style.min_width {
+    @types.MaxContent | @types.MinContent => child_inner.width
+    _ => params.min_width
+  }
+  let actual_max_width = match child_style.max_width {
+    @types.MaxContent | @types.MinContent => child_inner.width
+    _ => params.max_width
+  }
+  let actual_min_height = match child_style.min_height {
+    @types.MaxContent | @types.MinContent => child_inner.height
+    _ => params.min_height
+  }
+  let actual_max_height = match child_style.max_height {
+    @types.MaxContent | @types.MinContent => child_inner.height
+    _ => params.max_height
+  }
+
   // Apply min/max constraints and re-apply aspect ratio
   let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
     child_width,
     child_height,
     child_style,
-    params.min_width,
-    params.max_width,
-    params.min_height,
-    params.max_height,
+    actual_min_width,
+    actual_max_width,
+    actual_min_height,
+    actual_max_height,
   )
 
   // CSS rule: padding+border override explicit size constraints
