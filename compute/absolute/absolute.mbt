@@ -93,16 +93,27 @@ pub fn compute_size_params(
   let inset_top = resolve_inset(style.inset.top, area_height)
   let inset_bottom = resolve_inset(style.inset.bottom, area_height)
 
+  // Check if margins are auto (for centering behavior)
+  let margin_left_is_auto = is_margin_auto(style.margin.left)
+  let margin_right_is_auto = is_margin_auto(style.margin.right)
+
   // Calculate initial width
+  // When both insets are specified and both margins are auto,
+  // use shrink-to-fit width (intrinsic) so auto margins can center the element
   let initial_width : Double? = match style.width {
     @types.Length(w) => Some(w)
     @types.Percent(p) => Some(area_width * p)
     @types.Auto =>
       match (inset_left, inset_right) {
-        (Some(l), Some(r)) => {
-          let w = area_width - l - r - margin_left - margin_right
-          Some(if w > 0.0 { w } else { 0.0 })
-        }
+        (Some(l), Some(r)) =>
+          // If both margins are auto, use shrink-to-fit (intrinsic) sizing
+          // so the element can be centered
+          if margin_left_is_auto && margin_right_is_auto {
+            None
+          } else {
+            let w = area_width - l - r - margin_left - margin_right
+            Some(if w > 0.0 { w } else { 0.0 })
+          }
         _ => None
       }
     @types.MinContent => None // Requires intrinsic sizing
@@ -110,16 +121,27 @@ pub fn compute_size_params(
     @types.FitContent(_) => None
   }
 
+  // Check if vertical margins are auto (for vertical centering)
+  let margin_top_is_auto = is_margin_auto(style.margin.top)
+  let margin_bottom_is_auto = is_margin_auto(style.margin.bottom)
+
   // Calculate initial height
+  // When both insets are specified and both margins are auto,
+  // use shrink-to-fit height (intrinsic) so auto margins can center the element
   let initial_height : Double? = match style.height {
     @types.Length(h) => Some(h)
     @types.Percent(p) => Some(area_height * p)
     @types.Auto =>
       match (inset_top, inset_bottom) {
-        (Some(t), Some(b)) => {
-          let h = area_height - t - b - margin_top - margin_bottom
-          Some(if h > 0.0 { h } else { 0.0 })
-        }
+        (Some(t), Some(b)) =>
+          // If both margins are auto, use shrink-to-fit (intrinsic) sizing
+          // so the element can be centered
+          if margin_top_is_auto && margin_bottom_is_auto {
+            None
+          } else {
+            let h = area_height - t - b - margin_top - margin_bottom
+            Some(if h > 0.0 { h } else { 0.0 })
+          }
         _ => None
       }
     @types.MinContent => None
