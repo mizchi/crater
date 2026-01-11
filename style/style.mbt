@@ -111,6 +111,13 @@ pub(all) enum TableLayout {
 } derive(Show, Eq)
 
 ///|
+/// CSS caption-side property (for table captions)
+pub(all) enum CaptionSide {
+  Top // Caption above the table (default)
+  Bottom // Caption below the table
+} derive(Show, Eq)
+
+///|
 /// CSS overflow property
 pub(all) enum Overflow {
   Visible // Content is not clipped (default)
@@ -412,6 +419,7 @@ pub(all) struct Style {
   mut border_spacing : Double // border-spacing in pixels (horizontal and vertical, simplified)
   mut border_collapse : BorderCollapse // border-collapse: separate | collapse
   mut table_layout : TableLayout // table-layout: auto | fixed
+  mut caption_side : CaptionSide // caption-side: top | bottom
 }
 
 ///|
@@ -492,5 +500,6 @@ pub fn Style::default() -> Style {
     border_spacing: 0.0,
     border_collapse: Separate,
     table_layout: Auto,
+    caption_side: Top,
   }
 }

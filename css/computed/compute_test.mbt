@@ -562,3 +562,31 @@ test "compute_inline clip auto" {
   let style = @computed.compute_inline("clip: auto", ctx)
   inspect(style.clip, content="auto")
 }
+
+///|
+test "compute_inline border-collapse" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("border-collapse: collapse", ctx)
+  inspect(style.border_collapse, content="Collapse")
+}
+
+///|
+test "compute_inline border-collapse separate" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("border-collapse: separate", ctx)
+  inspect(style.border_collapse, content="Separate")
+}
+
+///|
+test "compute_inline caption-side top" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("caption-side: top", ctx)
+  inspect(style.caption_side, content="Top")
+}
+
+///|
+test "compute_inline caption-side bottom" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("caption-side: bottom", ctx)
+  inspect(style.caption_side, content="Bottom")
+}

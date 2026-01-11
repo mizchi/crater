@@ -1099,15 +1099,64 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     viewport_height: ctx.viewport_height,
   }
 
+  // Collect captions and other children separately for caption-side ordering
+  // caption-side: top captions go before rows, bottom captions go after
+  // Table's caption-side is inherited by captions
+  let top_captions : Array[(@node.Node, Int)] = [] // (node, original_index)
+  let bottom_captions : Array[(@node.Node, Int)] = []
+  let row_children : Array[(@node.Node, Int)] = [] // rows, row groups, cols
+  for i = 0; i < node.children.length(); i = i + 1 {
+    let child = node.children[i]
+    if child.style.display == @style.TableCaption {
+      // Use caption's own caption-side, or inherit from table
+      let caption_side = child.style.caption_side
+      // Note: CSS cascade handles inheritance, so if caption has its own value, use it
+      // Otherwise it inherits from table (which is already computed)
+      if caption_side == @style.CaptionSide::Bottom {
+        bottom_captions.push((child, i))
+      } else {
+        top_captions.push((child, i))
+      }
+    } else {
+      row_children.push((child, i))
+    }
+  }
+
+  // Create a map to store layouts by original index
+  let layout_map : Map[Int, @node.Layout] = {}
+
   // Layout all children (including row groups)
-  let child_layouts : Array[@node.Layout] = []
   // y_offset includes top edge spacing
-  let mut y_offset = padding.top + border.top + border_spacing
+  let mut y_offset = padding.top + border.top
+
+  // First: layout top captions
+  for entry in top_captions {
+    let (child, idx) = entry
+    if child.style.display == @style.None {
+      layout_map[idx] = create_zero_layout(child)
+      continue
+    }
+    let caption_layout = @node.dispatch_layout(child, child_ctx)
+    let positioned_caption = {
+      ..caption_layout,
+      x: padding.left + border.left,
+      y: y_offset,
+    }
+    y_offset = y_offset + caption_layout.height
+    layout_map[idx] = positioned_caption
+  }
+
+  // Add border-spacing before rows
+  y_offset = y_offset + border_spacing
+
   // x position for rows includes left edge spacing
   let row_x_offset = padding.left + border.left + border_spacing
-  for child in node.children {
+
+  // Second: layout rows and row groups
+  for entry in row_children {
+    let (child, idx) = entry
     if child.style.display == @style.None {
-      child_layouts.push(create_zero_layout(child))
+      layout_map[idx] = create_zero_layout(child)
       continue
     }
     if is_table_row(child.style.display) {
@@ -1117,7 +1166,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       )
       let positioned_row = { ..row_layout, x: row_x_offset, y: y_offset }
       y_offset = y_offset + row_layout.height + border_spacing
-      child_layouts.push(positioned_row)
+      layout_map[idx] = positioned_row
     } else if is_table_row_group(child.style.display) {
       // Row group (thead, tbody, tfoot)
       let group_layouts : Array[@node.Layout] = []
@@ -1181,17 +1230,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         text: child.text,
       }
       y_offset = y_offset + group_height + border_spacing
-      child_layouts.push(group_layout)
-    } else if child.style.display == @style.TableCaption {
-      // Caption: treat as block for now (at top)
-      let caption_layout = @node.dispatch_layout(child, child_ctx)
-      let positioned_caption = {
-        ..caption_layout,
-        x: padding.left + border.left,
-        y: y_offset,
-      }
-      y_offset = y_offset + caption_layout.height
-      child_layouts.push(positioned_caption)
+      layout_map[idx] = group_layout
     } else if is_table_column_group(child.style.display) {
       // Colgroup: layout with column widths, positioned later
       // These are placeholder layouts that will be updated after we know table height
@@ -1262,14 +1301,31 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         children: col_layouts,
         text: child.text,
       }
-      child_layouts.push(colgroup_layout)
+      layout_map[idx] = colgroup_layout
     } else if is_table_column(child.style.display) {
       // Standalone col element (outside colgroup)
-      child_layouts.push(create_zero_layout(child))
+      layout_map[idx] = create_zero_layout(child)
     } else {
       // Other children: create zero layout
-      child_layouts.push(create_zero_layout(child))
+      layout_map[idx] = create_zero_layout(child)
     }
+  }
+
+  // Third: layout bottom captions
+  for entry in bottom_captions {
+    let (child, idx) = entry
+    if child.style.display == @style.None {
+      layout_map[idx] = create_zero_layout(child)
+      continue
+    }
+    let caption_layout = @node.dispatch_layout(child, child_ctx)
+    let positioned_caption = {
+      ..caption_layout,
+      x: padding.left + border.left,
+      y: y_offset,
+    }
+    y_offset = y_offset + caption_layout.height
+    layout_map[idx] = positioned_caption
   }
 
   // Calculate table height
@@ -1291,32 +1347,38 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   // This is the height of all rows (excluding padding/border)
   let row_content_height = content_height - border_spacing
 
-  // Update colgroup/col heights now that we know the table content height
+  // Assemble child_layouts in original order from layout_map
+  // Also update colgroup/col heights now that we know the table content height
   let final_child_layouts : Array[@node.Layout] = []
-  for layout in child_layouts {
-    // Check if this is a colgroup by looking at its children which might be cols
-    // Colgroups/cols have height=0.0 as placeholder
-    if layout.height == 0.0 && layout.children.length() > 0 {
-      // This might be a colgroup - update its height and children's heights
-      let updated_col_children : Array[@node.Layout] = []
-      for col_layout in layout.children {
-        if col_layout.height == 0.0 && col_layout.width > 0.0 {
-          // This is a col element
-          updated_col_children.push({ ..col_layout, height: row_content_height })
+  for i = 0; i < node.children.length(); i = i + 1 {
+    match layout_map.get(i) {
+      Some(layout) => {
+        // Check if this is a colgroup by looking at its children which might be cols
+        // Colgroups/cols have height=0.0 as placeholder
+        if layout.height == 0.0 && layout.children.length() > 0 {
+          // This might be a colgroup - update its height and children's heights
+          let updated_col_children : Array[@node.Layout] = []
+          for col_layout in layout.children {
+            if col_layout.height == 0.0 && col_layout.width > 0.0 {
+              // This is a col element
+              updated_col_children.push({ ..col_layout, height: row_content_height })
+            } else {
+              updated_col_children.push(col_layout)
+            }
+          }
+          final_child_layouts.push({
+            ..layout,
+            height: row_content_height,
+            children: updated_col_children,
+          })
+        } else if layout.height == 0.0 && layout.width > 0.0 {
+          // Standalone col element
+          final_child_layouts.push({ ..layout, height: row_content_height })
         } else {
-          updated_col_children.push(col_layout)
+          final_child_layouts.push(layout)
         }
       }
-      final_child_layouts.push({
-        ..layout,
-        height: row_content_height,
-        children: updated_col_children,
-      })
-    } else if layout.height == 0.0 && layout.width > 0.0 {
-      // Standalone col element
-      final_child_layouts.push({ ..layout, height: row_content_height })
-    } else {
-      final_child_layouts.push(layout)
+      None => () // Should not happen
     }
   }
   {

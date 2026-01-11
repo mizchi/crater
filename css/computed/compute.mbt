@@ -155,6 +155,7 @@ priv struct StyleBuilder {
   mut border_spacing : Double
   mut border_collapse : @style.BorderCollapse
   mut table_layout : @style.TableLayout
+  mut caption_side : @style.CaptionSide
 }
 
 ///|
@@ -223,6 +224,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_spacing: 0.0,
     border_collapse: @style.BorderCollapse::Separate,
     table_layout: @style.TableLayout::Auto,
+    caption_side: @style.CaptionSide::Top,
   }
 }
 
@@ -304,6 +306,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     border_spacing: self.border_spacing,
     border_collapse: self.border_collapse,
     table_layout: self.table_layout,
+    caption_side: self.caption_side,
   }
 }
 
@@ -411,6 +414,17 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "flex-basis" => dimension_to_string(style.flex_basis)
     "color" => style.color.to_hex()
     "background-color" => style.background_color.to_hex()
+    "caption-side" =>
+      match style.caption_side {
+        @style.CaptionSide::Top => "top"
+        @style.CaptionSide::Bottom => "bottom"
+      }
+    "border-collapse" =>
+      match style.border_collapse {
+        @style.BorderCollapse::Separate => "separate"
+        @style.BorderCollapse::Collapse => "collapse"
+      }
+    "border-spacing" => style.border_spacing.to_string() + "px"
     _ => initial_value(property)
   }
 }
@@ -1031,6 +1045,7 @@ fn apply_property(
       builder.border_spacing = parse_border_spacing(value, ctx)
     "border-collapse" => builder.border_collapse = parse_border_collapse(value)
     "table-layout" => builder.table_layout = parse_table_layout(value)
+    "caption-side" => builder.caption_side = parse_caption_side(value)
     _ => ()
   }
 }
@@ -1052,6 +1067,16 @@ fn parse_table_layout(value : String) -> @style.TableLayout {
     "fixed" => @style.Fixed
     "auto" => @style.Auto
     _ => @style.Auto
+  }
+}
+
+///|
+/// Parse caption-side value
+fn parse_caption_side(value : String) -> @style.CaptionSide {
+  match value.trim() {
+    "top" => @style.CaptionSide::Top
+    "bottom" => @style.CaptionSide::Bottom
+    _ => @style.CaptionSide::Top
   }
 }
 

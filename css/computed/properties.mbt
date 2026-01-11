@@ -17,6 +17,8 @@ pub fn is_inherited(property : String) -> Bool {
     | "font-style"
     | "color"
     | "visibility" => true
+    // Table properties that are inherited
+    "caption-side" | "border-collapse" | "border-spacing" => true
     // Containment is not inherited
     "contain" => false
     // All layout properties are not inherited
@@ -90,6 +92,11 @@ pub fn initial_value(property : String) -> String {
     "writing-mode" => "horizontal-tb"
     // Containment
     "contain" => "none"
+    // Table properties
+    "caption-side" => "top"
+    "border-collapse" => "separate"
+    "border-spacing" => "0"
+    "table-layout" => "auto"
     // Default
     _ => "auto"
   }
