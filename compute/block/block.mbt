@@ -809,10 +809,43 @@ fn compute_with_collapse(
         box_width = max_w
       }
     }
-    @types.Auto
-    | @types.MinContent
-    | @types.MaxContent
-    | @types.FitContent(_) => ()
+    @types.MaxContent | @types.MinContent => {
+      // Calculate intrinsic width for max-width constraint
+      // For elements with aspect-ratio, use the larger of:
+      // 1. Children's max-content width
+      // 2. Width from aspect-ratio (if height is specified)
+      let children_width = calculate_children_max_content_width(
+          node, parent_width,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      let aspect_width = match (style.aspect_ratio, style.height) {
+        (Some(ar), @types.Length(h)) if ar > 0.0 =>
+          if style.box_sizing == @style.BorderBox {
+            h * ar
+          } else {
+            (h - padding.vertical_sum() - border.vertical_sum()) * ar +
+            padding.horizontal_sum() +
+            border.horizontal_sum()
+          }
+        (Some(ar), @types.Percent(p)) if ar > 0.0 => {
+          let h = parent_height * p
+          if style.box_sizing == @style.BorderBox {
+            h * ar
+          } else {
+            (h - padding.vertical_sum() - border.vertical_sum()) * ar +
+            padding.horizontal_sum() +
+            border.horizontal_sum()
+          }
+        }
+        _ => 0.0
+      }
+      let intrinsic_width = @types.max(children_width, aspect_width)
+      if box_width > intrinsic_width {
+        box_width = intrinsic_width
+      }
+    }
+    @types.Auto | @types.FitContent(_) => ()
   }
   match style.min_width {
     @types.Length(min_w) => if box_width < min_w { box_width = min_w }
@@ -2047,21 +2080,42 @@ fn layout_absolute_child(
   }
 
   // Calculate actual min/max constraints, handling max-content/min-content
-  // For intrinsic sizing, we use the computed child_inner dimensions
+  // For intrinsic sizing, we need to compute the child's intrinsic size first
+  let needs_intrinsic = match child_style.max_width {
+    @types.MaxContent | @types.MinContent => true
+    _ =>
+      match child_style.max_height {
+        @types.MaxContent | @types.MinContent => true
+        _ =>
+          match child_style.min_width {
+            @types.MaxContent | @types.MinContent => true
+            _ =>
+              match child_style.min_height {
+                @types.MaxContent | @types.MinContent => true
+                _ => false
+              }
+          }
+      }
+  }
+  let intrinsic_size = if needs_intrinsic {
+    compute_nested_intrinsic(child, None, warnings)
+  } else {
+    child_inner
+  }
   let actual_min_width = match child_style.min_width {
-    @types.MaxContent | @types.MinContent => child_inner.width
+    @types.MaxContent | @types.MinContent => intrinsic_size.width
     _ => params.min_width
   }
   let actual_max_width = match child_style.max_width {
-    @types.MaxContent | @types.MinContent => child_inner.width
+    @types.MaxContent | @types.MinContent => intrinsic_size.width
     _ => params.max_width
   }
   let actual_min_height = match child_style.min_height {
-    @types.MaxContent | @types.MinContent => child_inner.height
+    @types.MaxContent | @types.MinContent => intrinsic_size.height
     _ => params.min_height
   }
   let actual_max_height = match child_style.max_height {
-    @types.MaxContent | @types.MinContent => child_inner.height
+    @types.MaxContent | @types.MinContent => intrinsic_size.height
     _ => params.max_height
   }
 

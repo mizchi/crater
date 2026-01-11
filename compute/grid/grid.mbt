@@ -3887,15 +3887,54 @@ fn layout_absolute_child(
     }
   }
 
+  // Calculate actual min/max constraints, handling max-content/min-content
+  let needs_intrinsic = match style.max_width {
+    @types.MaxContent | @types.MinContent => true
+    _ =>
+      match style.max_height {
+        @types.MaxContent | @types.MinContent => true
+        _ =>
+          match style.min_width {
+            @types.MaxContent | @types.MinContent => true
+            _ =>
+              match style.min_height {
+                @types.MaxContent | @types.MinContent => true
+                _ => false
+              }
+          }
+      }
+  }
+  let intrinsic_size = if needs_intrinsic {
+    compute_child_layout(child, 1.0e10, 1.0e10)
+  } else {
+    child_inner
+  }
+  let actual_min_width = match style.min_width {
+    @types.MaxContent | @types.MinContent => intrinsic_size.width
+    _ => params.min_width
+  }
+  let actual_max_width = match style.max_width {
+    @types.MaxContent | @types.MinContent => intrinsic_size.width
+    _ => params.max_width
+  }
+  let actual_min_height = match style.min_height {
+    @types.MaxContent | @types.MinContent => intrinsic_size.height
+    _ => params.min_height
+  }
+  let actual_max_height = match style.max_height {
+    @types.MaxContent | @types.MinContent => intrinsic_size.height
+    _ => params.max_height
+  }
+
   // Apply min/max constraints and re-apply aspect ratio
   let (final_width, final_height) = @absolute.apply_constraints_with_aspect_ratio(
     child_width,
     child_height,
     style,
-    params.min_width,
-    params.max_width,
-    params.min_height,
-    params.max_height,
+    actual_min_width,
+    actual_max_width,
+    actual_min_height,
+    actual_max_height,
   )
 
   // Compute position using shared module
@@ -4014,15 +4053,54 @@ fn layout_fixed_child(
     }
   }
 
+  // Calculate actual min/max constraints, handling max-content/min-content
+  let needs_intrinsic = match style.max_width {
+    @types.MaxContent | @types.MinContent => true
+    _ =>
+      match style.max_height {
+        @types.MaxContent | @types.MinContent => true
+        _ =>
+          match style.min_width {
+            @types.MaxContent | @types.MinContent => true
+            _ =>
+              match style.min_height {
+                @types.MaxContent | @types.MinContent => true
+                _ => false
+              }
+          }
+      }
+  }
+  let intrinsic_size = if needs_intrinsic {
+    compute_child_layout(child, 1.0e10, 1.0e10)
+  } else {
+    child_inner
+  }
+  let actual_min_width = match style.min_width {
+    @types.MaxContent | @types.MinContent => intrinsic_size.width
+    _ => params.min_width
+  }
+  let actual_max_width = match style.max_width {
+    @types.MaxContent | @types.MinContent => intrinsic_size.width
+    _ => params.max_width
+  }
+  let actual_min_height = match style.min_height {
+    @types.MaxContent | @types.MinContent => intrinsic_size.height
+    _ => params.min_height
+  }
+  let actual_max_height = match style.max_height {
+    @types.MaxContent | @types.MinContent => intrinsic_size.height
+    _ => params.max_height
+  }
+
   // Apply min/max constraints and re-apply aspect ratio
   let (final_width, final_height) = @absolute.apply_constraints_with_aspect_ratio(
     child_width,
     child_height,
     style,
-    params.min_width,
-    params.max_width,
-    params.min_height,
-    params.max_height,
+    actual_min_width,
+    actual_max_width,
+    actual_min_height,
+    actual_max_height,
   )
 
   // Compute position relative to viewport (0, 0)

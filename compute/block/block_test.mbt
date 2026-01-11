@@ -1282,3 +1282,38 @@ test "nonfloat_flex_wrap_reverse_align_start" {
   inspect(flex_layout.children[0].y, content="51")
   inspect(flex_layout.children[1].y, content="1")
 }
+
+///|
+test "max-width max-content with explicit width" {
+  let child_style = {
+    ..@style.Style::default(),
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  }
+  let child = @node.Node::new("child", child_style, [])
+
+  let parent_style = {
+    ..@style.Style::default(),
+    position: @style.Absolute,
+    width: @types.Length(200.0),
+    height: @types.Length(200.0),
+    max_width: @types.MaxContent,
+    max_height: @types.MaxContent,
+  }
+  let parent = @node.Node::new("parent", parent_style, [child])
+
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+
+  @dispatch.setup()
+  let layout = @dispatch.compute(parent, ctx)
+
+  // Should be clamped to child's max-content width (100px)
+  inspect(layout.width, content="100")
+  inspect(layout.height, content="100")
+}
