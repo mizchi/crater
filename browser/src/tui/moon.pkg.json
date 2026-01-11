@@ -4,12 +4,15 @@
     "mizchi/crater/node",
     "mizchi/crater/paint",
     "mizchi/crater/renderer",
-    { "path": "moonbitlang/async/js_async", "targets": ["js"] }
+    "mizchi/crater/css/media",
+    { "path": "moonbitlang/async/js_async", "targets": ["js"] },
+    { "path": "moonbitlang/x/sys", "targets": ["native"] }
   ],
   "targets": {
     "tui_js.mbt": ["js"],
     "tui_native.mbt": ["native"],
     "tui_wasm.mbt": ["wasm", "wasm-gc"],
-    "render_test.mbt": ["wasm-gc"]
+    "render_test.mbt": ["wasm-gc"],
+    "codeblock_test.mbt": ["wasm-gc", "native"]
   }
 }

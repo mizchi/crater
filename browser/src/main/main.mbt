@@ -41,6 +41,7 @@ struct Options {
   aom : Bool // AOM YAML snapshot output
   arc90 : Bool // Arc90 content extraction
   grounding : Bool // Visual grounding demo
+  dark : Bool // Start in dark mode
 }
 
 ///|
@@ -104,6 +105,7 @@ fn parse_args() -> Options? {
   let mut aom = false
   let mut arc90 = false
   let mut grounding = false
+  let mut dark = false
   for arg in args {
     if arg == "--sixel" {
       sixel = true
@@ -119,6 +121,8 @@ fn parse_args() -> Options? {
       json = true
     } else if arg == "--aom" {
       aom = true
+    } else if arg == "--dark" {
+      dark = true
     } else if not(arg.has_prefix("--")) {
       url = arg
     }
@@ -138,7 +142,7 @@ fn parse_args() -> Options? {
     } else {
       text
     }
-    Some({ url, sixel, text, debug, json, aom, arc90, grounding })
+    Some({ url, sixel, text, debug, json, aom, arc90, grounding, dark })
   }
 }
 
@@ -171,12 +175,17 @@ async fn main {
         "  --grounding Run visual grounding demo (spatial element queries)",
       )
       println("  --debug     Print layout tree for debugging")
+      println("  --dark      Start in dark mode (use prefers-color-scheme: dark)")
       return
     }
   }
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
   let browser = @shell.Browser::new(viewport_width, viewport_height)
+  // Set dark mode if requested
+  if options.dark {
+    browser.set_dark_mode(true)
+  }
   // For JSON/AOM modes, use lightweight navigation (skip CSS cascade and layout)
   if options.json || options.aom {
     let _ = browser.navigate_lightweight(options.url)
@@ -331,6 +340,10 @@ async fn main {
           @tui.print_raw(@tui.hide_cursor())
           @tui.print_raw(@tui.enable_mouse())
         }
+        render_page(browser, options)
+      }
+      Some(@tui.ToggleDarkMode) => {
+        browser.toggle_dark_mode()
         render_page(browser, options)
       }
       None => ()

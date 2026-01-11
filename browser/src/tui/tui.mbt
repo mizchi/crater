@@ -21,6 +21,7 @@ pub enum BrowserAction {
   HintChar(String) // Hint character input (a-z)
   ExitHintMode // Exit hint mode (Escape)
   ToggleRawMode // Toggle raw mode for text selection (triggered by 'v')
+  ToggleDarkMode // Toggle dark mode (triggered by 'd')
 }
 
 ///|
@@ -40,6 +41,7 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "f" => Some(EnterHintMode)
     "Escape" => Some(ExitHintMode)
     "v" => Some(ToggleRawMode)
+    "d" => Some(ToggleDarkMode)
     "H" | "Backspace" | "Delete" => Some(Back)
     "L" => Some(Forward)
     _ =>

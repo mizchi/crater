@@ -10,7 +10,9 @@ import(
 pub fn core_to_cdp_error(@dom.CoreError) -> CdpError
 
 // Errors
-pub suberror CdpResult CdpError
+pub suberror CdpResult {
+  CdpResult(CdpError)
+}
 
 // Types and methods
 pub struct CdpBoxModel {

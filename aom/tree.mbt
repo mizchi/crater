@@ -1155,3 +1155,417 @@ pub fn build_accessibility_tree_with_layout(
   // Attach bounds to accessibility nodes
   attach_bounds(a11y_tree, bounds_map)
 }
+
+///|
+/// Extract bounds from @node.Layout (renderer's layout result)
+/// This extracts proper bounds after CSS has been applied
+pub fn extract_bounds_from_node_layout(
+  layout : @node.Layout,
+) -> Map[String, Bounds] {
+  let bounds_map : Map[String, Bounds] = {}
+  extract_node_layout_bounds_recursive(layout, bounds_map)
+  bounds_map
+}
+
+///|
+fn extract_node_layout_bounds_recursive(
+  layout : @node.Layout,
+  bounds_map : Map[String, Bounds],
+) -> Unit {
+  // Add bounds for this node if it has a non-empty id
+  // The renderer uses format "tag#id" or "tag.class" or "tag"
+  // We need to extract just the id part for matching with AOM source_id
+  if not(layout.id.is_empty()) {
+    let id = extract_element_id(layout.id)
+    if not(id.is_empty()) {
+      bounds_map[id] = Bounds::new(
+        layout.x,
+        layout.y,
+        layout.width,
+        layout.height,
+      )
+    }
+  }
+  // Recurse into children
+  for child in layout.children {
+    extract_node_layout_bounds_recursive(child, bounds_map)
+  }
+}
+
+///|
+/// Extract element ID from renderer's node ID format
+/// Renderer uses: "tag#id", "tag.class", or "tag"
+/// Returns: just the id part, or empty string if no ID
+fn extract_element_id(node_id : String) -> String {
+  // Look for # which indicates an ID
+  match node_id.find("#") {
+    Some(idx) => {
+      // Return everything after the #
+      let id = node_id[idx + 1:].to_string() catch { _ => "" }
+      id
+    }
+    None => ""
+  }
+}
+
+///|
+/// Build AccessibilityTree from HTML and attach layout bounds from @node.Layout
+/// This is the integration function for combining a11y with renderer's layout
+pub fn build_accessibility_tree_with_node_layout(
+  doc : @html.Document,
+  layout : @node.Layout,
+) -> AccessibilityTree {
+  // Build accessibility tree
+  let a11y_tree = build_accessibility_tree(doc)
+  // Extract bounds from node layout
+  let bounds_map = extract_bounds_from_node_layout(layout)
+  // Attach bounds to accessibility nodes
+  attach_bounds(a11y_tree, bounds_map)
+}
+
+// =============================================================================
+// Lightweight Accessibility Tree Builder
+// =============================================================================
+// For large HTML files, we skip CSS parsing and layout to save memory.
+// This produces an AOM tree without bounds, suitable for --json/--aom modes.
+
+///|
+/// Lightweight context without stylesheets
+priv struct LightweightContext {
+  element_map : Map[String, @html.Element]
+  label_map : Map[String, @html.Element]
+  encapsulating_label : @html.Element?
+  mut ref_counter : Int
+}
+
+///|
+fn LightweightContext::new() -> LightweightContext {
+  { element_map: {}, label_map: {}, encapsulating_label: None, ref_counter: 1 }
+}
+
+///|
+fn LightweightContext::next_ref(self : LightweightContext) -> String {
+  let ref_num = self.ref_counter
+  self.ref_counter += 1
+  "ref_\{ref_num}"
+}
+
+///|
+fn LightweightContext::with_encapsulating_label(
+  self : LightweightContext,
+  label : @html.Element?,
+) -> LightweightContext {
+  { ..self, encapsulating_label: label }
+}
+
+///|
+/// Index elements for lightweight build
+fn lightweight_index_elements(
+  element : @html.Element,
+  ctx : LightweightContext,
+) -> Unit {
+  match element.id {
+    Some(id) => ctx.element_map[id] = element
+    None => ()
+  }
+  if element.tag.to_lower() == "label" {
+    match element.attributes.get("for") {
+      Some(for_id) => ctx.label_map[for_id] = element
+      None => ()
+    }
+  }
+  for child in element.children {
+    match child {
+      @html.Node::Element(child_elem) =>
+        lightweight_index_elements(child_elem, ctx)
+      @html.Node::Text(_) => ()
+    }
+  }
+}
+
+///|
+/// Build a lightweight accessibility node (no pseudo-elements, no bounds)
+fn lightweight_build_node(
+  element : @html.Element,
+  ctx : LightweightContext,
+) -> AccessibilityNode {
+  let tag = element.tag.to_lower()
+  let role_ctx = RoleMappingContext::default()
+  let role = compute_role(element, role_ctx)
+  let ref_id = ctx.next_ref()
+
+  // Get accessible name (simplified - no pseudo-element content)
+  let name = lightweight_get_name(element, ctx)
+
+  // Get source element id
+  let source_id = element.id
+
+  // Build CSS selector for this element
+  let selector = build_selector(element)
+
+  // Determine if element should be visible
+  let is_hidden = element.attributes.get("hidden") is Some(_) ||
+    element.attributes.get("aria-hidden") == Some("true")
+  let visible = not(is_hidden)
+
+  // Handle labels for form inputs
+  let ctx = if tag == "label" {
+    ctx.with_encapsulating_label(Some(element))
+  } else {
+    ctx
+  }
+
+  // Build children
+  let children : Array[AccessibilityNode] = []
+  for child in element.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        let child_node = lightweight_build_node(child_elem, ctx)
+        children.push(child_node)
+      }
+      @html.Node::Text(text) => {
+        let trimmed = text.trim().to_string()
+        if not(trimmed.is_empty()) {
+          let text_node = AccessibilityNode::new(ctx.next_ref(), Role::Generic)
+          let text_node = { ..text_node, name: Some(trimmed) }
+          children.push(text_node)
+        }
+      }
+    }
+  }
+
+  // Get form data
+  let (input_value, options) = lightweight_get_form_data(element)
+
+  // Create base node
+  let node = AccessibilityNode::new(ref_id, role)
+  {
+    ..node,
+    name,
+    source_id,
+    tag_name: Some(tag),
+    selector,
+    visible,
+    ref_id: Some(ref_id),
+    children,
+    input_value,
+    options: options.unwrap_or([]),
+    href: element.attributes.get("href"),
+  }
+}
+
+///|
+/// Get accessible name without pseudo-element content
+fn lightweight_get_name(
+  element : @html.Element,
+  ctx : LightweightContext,
+) -> String? {
+  let tag = element.tag.to_lower()
+
+  // Check aria-label first
+  match element.attributes.get("aria-label") {
+    Some(label) if not(label.is_empty()) => return Some(label)
+    _ => ()
+  }
+
+  // Check aria-labelledby
+  match element.attributes.get("aria-labelledby") {
+    Some(ids) => {
+      let names : Array[String] = []
+      for id in ids.split(" ") {
+        let id_str = id.to_string().trim().to_string()
+        match ctx.element_map.get(id_str) {
+          Some(elem) => {
+            let text = lightweight_extract_text(elem)
+            if not(text.is_empty()) {
+              names.push(text)
+            }
+          }
+          None => ()
+        }
+      }
+      if names.length() > 0 {
+        return Some(
+          names
+          .iter()
+          .fold(init="", fn(acc, s) {
+            if acc.is_empty() {
+              s
+            } else {
+              acc + " " + s
+            }
+          }),
+        )
+      }
+    }
+    None => ()
+  }
+
+  // Check for associated label
+  match element.id {
+    Some(id) =>
+      match ctx.label_map.get(id) {
+        Some(label_elem) => {
+          let text = lightweight_extract_text(label_elem)
+          if not(text.is_empty()) {
+            return Some(text)
+          }
+        }
+        None => ()
+      }
+    None => ()
+  }
+
+  // Check encapsulating label
+  match ctx.encapsulating_label {
+    Some(label_elem) => {
+      let text = lightweight_extract_text(label_elem)
+      if not(text.is_empty()) {
+        return Some(text)
+      }
+    }
+    None => ()
+  }
+
+  // Tag-specific names
+  match tag {
+    "img" | "area" =>
+      match element.attributes.get("alt") {
+        Some(alt) if not(alt.is_empty()) => return Some(alt)
+        _ => ()
+      }
+    "input" =>
+      match element.attributes.get("type") {
+        Some("submit") =>
+          return Some(element.attributes.get("value").unwrap_or("Submit"))
+        Some("reset") =>
+          return Some(element.attributes.get("value").unwrap_or("Reset"))
+        Some("button") => return element.attributes.get("value")
+        _ => ()
+      }
+    "a"
+    | "button"
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "h5"
+    | "h6"
+    | "label"
+    | "legend"
+    | "caption"
+    | "figcaption"
+    | "option"
+    | "th"
+    | "td"
+    | "li" => {
+      let text = lightweight_extract_text(element)
+      if not(text.is_empty()) {
+        return Some(text)
+      }
+    }
+    _ => ()
+  }
+
+  // Check title attribute as fallback
+  match element.attributes.get("title") {
+    Some(title) if not(title.is_empty()) => Some(title)
+    _ => None
+  }
+}
+
+///|
+/// Extract text content without pseudo-elements
+fn lightweight_extract_text(element : @html.Element) -> String {
+  let buf = StringBuilder::new()
+  for child in element.children {
+    match child {
+      @html.Node::Text(text) => {
+        if buf.to_string().length() > 0 {
+          buf.write_char(' ')
+        }
+        buf.write_string(text.trim().to_string())
+      }
+      @html.Node::Element(child_elem) => {
+        let child_text = lightweight_extract_text(child_elem)
+        if not(child_text.is_empty()) {
+          if buf.to_string().length() > 0 {
+            buf.write_char(' ')
+          }
+          buf.write_string(child_text)
+        }
+      }
+    }
+  }
+  buf.to_string().trim().to_string()
+}
+
+///|
+/// Get form data for lightweight build
+fn lightweight_get_form_data(
+  element : @html.Element,
+) -> (String?, Array[SelectOption]?) {
+  let tag = element.tag.to_lower()
+  match tag {
+    "input" => {
+      let input_type = element.attributes.get("type").unwrap_or("text")
+      match input_type {
+        "text" | "email" | "tel" | "url" | "search" | "password" | "number" =>
+          (element.attributes.get("value"), None)
+        "checkbox" | "radio" => {
+          let checked = element.attributes.get("checked") is Some(_)
+          (Some(if checked { "true" } else { "false" }), None)
+        }
+        _ => (None, None)
+      }
+    }
+    "textarea" => (Some(lightweight_extract_text(element)), None)
+    "select" => {
+      let options : Array[SelectOption] = []
+      lightweight_collect_options(element, options)
+      let selected = options.iter().find_first(fn(o) { o.selected })
+      let value = match selected {
+        Some(opt) => Some(opt.label)
+        None => if options.length() > 0 { Some(options[0].label) } else { None }
+      }
+      (value, Some(options))
+    }
+    _ => (None, None)
+  }
+}
+
+///|
+/// Collect options from select element
+fn lightweight_collect_options(
+  element : @html.Element,
+  options : Array[SelectOption],
+) -> Unit {
+  for child in element.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        let child_tag = child_elem.tag.to_lower()
+        if child_tag == "option" {
+          let label = lightweight_extract_text(child_elem)
+          let value = child_elem.attributes.get("value").unwrap_or(label)
+          let selected = child_elem.attributes.get("selected") is Some(_)
+          options.push({ value, label, selected })
+        } else if child_tag == "optgroup" {
+          lightweight_collect_options(child_elem, options)
+        }
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
+/// Build lightweight accessibility tree (no CSS, no layout, no bounds)
+/// This is much faster and uses less memory for large HTML files.
+pub fn build_accessibility_tree_lightweight(
+  doc : @html.Document,
+) -> AccessibilityTree {
+  let ctx = LightweightContext::new()
+  lightweight_index_elements(doc.root, ctx)
+  let root_node = lightweight_build_node(doc.root, ctx)
+  AccessibilityTree::new(root_node)
+}

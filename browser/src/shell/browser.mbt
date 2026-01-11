@@ -49,6 +49,8 @@ pub struct Browser {
   mut a11y_tree : @aom.AccessibilityTree?
   /// Selection mode (raw mode disabled for text copy)
   mut selection_mode : Bool
+  /// Dark mode for display
+  mut dark_mode : Bool
 }
 
 ///|
@@ -74,6 +76,7 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     focus_manager: None,
     a11y_tree: None,
     selection_mode: false,
+    dark_mode: false,
   }
 }
 
@@ -348,6 +351,14 @@ async fn Browser::load_url(
     self.viewport_height,
     self.external_css,
   )
+  println(
+    "DEBUG: content_height=" +
+    self.content_height.to_string() +
+    " viewport_height=" +
+    self.viewport_height.to_string() +
+    " max_scroll=" +
+    (self.content_height - self.viewport_height).max(0).to_string(),
+  )
   // Build accessibility tree for focus navigation (uses cached doc)
   self.build_accessibility_tree()
   // Render to Sixel
@@ -435,10 +446,16 @@ pub fn Browser::render_text(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
+  let color_scheme : @media.ColorScheme = if self.dark_mode {
+    @media.ColorScheme::Dark
+  } else {
+    @media.ColorScheme::Light
+  }
   let ctx : @renderer.RenderContext = {
     viewport_width: self.viewport_width.to_double(),
     viewport_height: self.viewport_height.to_double(),
     root_font_size: 16.0,
+    color_scheme,
   }
   // Use cached parsed document if available to ensure consistent layout
   // This is critical for scrolling - the same DOM must be used for content_height
@@ -505,6 +522,7 @@ pub fn Browser::render_text(self : Browser) -> String {
       focused_element_name~,
       focused_link_url~,
       selection_mode=self.selection_mode,
+      dark_mode=self.dark_mode,
     )
   }
   // Store link regions for click hit testing
@@ -632,6 +650,7 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
     viewport_width: self.viewport_width.to_double(),
     viewport_height: self.viewport_height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   // Render with CSS to get proper layout bounds
   // Use the document with synthetic IDs for consistent ID matching
@@ -834,6 +853,7 @@ pub fn Browser::debug_layout(self : Browser) -> Unit {
     viewport_width: self.viewport_width.to_double(),
     viewport_height: self.viewport_height.to_double(),
     root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render_with_external_css(
     self.html_content,
@@ -1102,6 +1122,18 @@ pub fn Browser::exit_hint_mode(self : Browser) -> Unit {
 pub fn Browser::toggle_selection_mode(self : Browser) -> Bool {
   self.selection_mode = not(self.selection_mode)
   self.selection_mode
+}
+
+///|
+/// Toggle dark mode
+pub fn Browser::toggle_dark_mode(self : Browser) -> Unit {
+  self.dark_mode = not(self.dark_mode)
+}
+
+///|
+/// Set dark mode explicitly
+pub fn Browser::set_dark_mode(self : Browser, enabled : Bool) -> Unit {
+  self.dark_mode = enabled
 }
 
 ///|

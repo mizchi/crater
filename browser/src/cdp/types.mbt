@@ -69,7 +69,9 @@ pub struct CdpError {
 
 ///|
 /// CDP Result type
-pub suberror CdpResult CdpError
+pub suberror CdpResult {
+  CdpResult(CdpError)
+}
 
 ///|
 /// Create CDP error from code

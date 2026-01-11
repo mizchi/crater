@@ -1,6 +1,6 @@
 {
   "name": "@mizchi/crater-browser",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Experimental TUI browser in MoonBit - renders web pages in the terminal",
   "type": "commonjs",
   "bin": {
@@ -21,7 +21,7 @@
     "test": "vitest run tests/cdp.test.ts"
   },
   "keywords": [
-    "browser",
+    "b4rowser",
     "tui",
     "terminal",
     "moonbit",

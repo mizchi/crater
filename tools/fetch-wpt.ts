@@ -23,6 +23,7 @@ const OUTPUT_DIR = "wpt-tests";
 const CSS_MODULES = [
   "css-flexbox",
   "css-grid",
+  "css-tables",
   "css-display",
   "css-box",
   "css-sizing",
@@ -43,6 +44,13 @@ const INCLUDE_PREFIXES = [
   "justify-",
   "order-",
   "gap-",
+  // Tables
+  "table-",
+  "border-collapse",
+  "border-spacing",
+  "caption-side",
+  "empty-cells",
+  "visibility-collapse",
   // Grid
   "grid-",
   "subgrid-",

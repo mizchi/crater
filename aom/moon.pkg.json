@@ -3,7 +3,8 @@
     "mizchi/crater/html",
     "mizchi/crater/css/parser",
     "mizchi/crater/css/cascade",
-    "mizchi/crater/tree"
+    "mizchi/crater/tree",
+    "mizchi/crater/node"
   ],
   "test-import": [
     "mizchi/crater/style",

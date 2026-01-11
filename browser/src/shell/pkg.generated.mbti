@@ -33,6 +33,7 @@ pub struct Browser {
   mut focus_manager : @aom.FocusManager?
   mut a11y_tree : @aom.AccessibilityTree?
   mut selection_mode : Bool
+  mut dark_mode : Bool
 }
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
@@ -63,6 +64,8 @@ pub fn Browser::render_json(Self) -> String
 pub fn Browser::render_text(Self) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
+pub fn Browser::set_dark_mode(Self, Bool) -> Unit
+pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool
 
 pub(all) struct Link {
