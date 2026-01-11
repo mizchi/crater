@@ -156,6 +156,9 @@ priv struct StyleBuilder {
   mut border_collapse : @style.BorderCollapse
   mut table_layout : @style.TableLayout
   mut caption_side : @style.CaptionSide
+  // Table cell properties (not mutable via CSS, set from HTML attributes)
+  rowspan : Int
+  colspan : Int
 }
 
 ///|
@@ -225,6 +228,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_collapse: @style.BorderCollapse::Separate,
     table_layout: @style.TableLayout::Auto,
     caption_side: @style.CaptionSide::Top,
+    rowspan: 1,
+    colspan: 1,
   }
 }
 
@@ -307,6 +312,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     border_collapse: self.border_collapse,
     table_layout: self.table_layout,
     caption_side: self.caption_side,
+    rowspan: self.rowspan,
+    colspan: self.colspan,
   }
 }
 

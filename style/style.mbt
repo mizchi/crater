@@ -420,6 +420,9 @@ pub(all) struct Style {
   mut border_collapse : BorderCollapse // border-collapse: separate | collapse
   mut table_layout : TableLayout // table-layout: auto | fixed
   mut caption_side : CaptionSide // caption-side: top | bottom
+  // Table cell properties (from HTML attributes)
+  mut rowspan : Int // rowspan attribute (default 1)
+  mut colspan : Int // colspan attribute (default 1)
 }
 
 ///|
@@ -501,5 +504,7 @@ pub fn Style::default() -> Style {
     border_collapse: Separate,
     table_layout: Auto,
     caption_side: Top,
+    rowspan: 1,
+    colspan: 1,
   }
 }

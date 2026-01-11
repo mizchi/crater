@@ -1166,7 +1166,7 @@ fn element_to_node_with_styles(
   let selector_elem = html_to_selector_element(elem, parent)
 
   // Get style from stylesheet matching + inline style
-  let style = compute_element_style(
+  let computed_style = compute_element_style(
     selector_elem,
     elem.style,
     stylesheets,
@@ -1175,6 +1175,28 @@ fn element_to_node_with_styles(
     None, // Root element has no parent style
     css_vars,
   )
+
+  // Handle table cell rowspan/colspan attributes
+  let cell_tag = elem.tag.to_lower()
+  let style = if cell_tag == "td" || cell_tag == "th" {
+    let rowspan = match elem.attributes.get("rowspan") {
+      Some(val) => {
+        let n = @strconv.parse_int(val) catch { _ => 1 }
+        if n > 0 { n } else { 1 }
+      }
+      None => 1
+    }
+    let colspan = match elem.attributes.get("colspan") {
+      Some(val) => {
+        let n = @strconv.parse_int(val) catch { _ => 1 }
+        if n > 0 { n } else { 1 }
+      }
+      None => 1
+    }
+    { ..computed_style, rowspan, colspan }
+  } else {
+    computed_style
+  }
 
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
@@ -1259,6 +1281,28 @@ fn element_to_node_with_styles_internal(
     { ..computed_style, display: @style.InlineBlock }
   } else {
     computed_style
+  }
+
+  // Handle table cell rowspan/colspan attributes
+  let cell_tag = elem.tag.to_lower()
+  let style = if cell_tag == "td" || cell_tag == "th" {
+    let rowspan = match elem.attributes.get("rowspan") {
+      Some(val) => {
+        let n = @strconv.parse_int(val) catch { _ => 1 }
+        if n > 0 { n } else { 1 }
+      }
+      None => 1
+    }
+    let colspan = match elem.attributes.get("colspan") {
+      Some(val) => {
+        let n = @strconv.parse_int(val) catch { _ => 1 }
+        if n > 0 { n } else { 1 }
+      }
+      None => 1
+    }
+    { ..style, rowspan, colspan }
+  } else {
+    style
   }
 
   // Convert children - first collect inline content (text + br)

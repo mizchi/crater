@@ -699,11 +699,20 @@ fn layout_row(
       continue
     }
 
-    // Get column width (or use remaining width if out of bounds)
-    let mut cell_width = if col_index < column_widths.length() {
-      column_widths[col_index]
-    } else {
-      100.0 // Fallback width
+    // Get colspan from style (default 1)
+    let colspan = if child.style.colspan > 0 { child.style.colspan } else { 1 }
+
+    // Calculate combined width for all spanned columns
+    let mut cell_width = 0.0
+    for i = 0; i < colspan; i = i + 1 {
+      let idx = col_index + i
+      if idx < column_widths.length() {
+        cell_width = cell_width + column_widths[idx]
+        // Add border_spacing between spanned columns (not after last)
+        if i < colspan - 1 {
+          cell_width = cell_width + border_spacing
+        }
+      }
     }
     // In border-collapse mode, the cell's width from the stylesheet was
     // adjusted by adjust_for_box_sizing (border added). We need to subtract
@@ -730,7 +739,8 @@ fn layout_row(
     let positioned_cell = { ..cell_layout, x: x_offset, y: 0.0 }
     max_height = max(max_height, cell_layout.height)
     x_offset = x_offset + cell_width + border_spacing
-    col_index += 1
+    // Advance by colspan columns
+    col_index = col_index + colspan
     cell_layouts.push(positioned_cell)
   }
 
