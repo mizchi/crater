@@ -292,14 +292,12 @@ test "text_render_uses_display_width" {
     #|<a href="/github">GitHub</a>
     #|</body>
     #|</html>
-
   let ctx : @renderer.RenderContext = {
     viewport_width: 320.0,
     viewport_height: 100.0,
     root_font_size: 16.0,
     color_scheme: @media.ColorScheme::Light,
   }
-
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
 

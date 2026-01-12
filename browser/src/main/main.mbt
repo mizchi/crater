@@ -175,7 +175,9 @@ async fn main {
         "  --grounding Run visual grounding demo (spatial element queries)",
       )
       println("  --debug     Print layout tree for debugging")
-      println("  --dark      Start in dark mode (use prefers-color-scheme: dark)")
+      println(
+        "  --dark      Start in dark mode (use prefers-color-scheme: dark)",
+      )
       return
     }
   }

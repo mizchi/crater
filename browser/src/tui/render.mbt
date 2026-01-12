@@ -90,7 +90,6 @@ pub struct TuiContext {
   dark_mode : Bool // Dark mode enabled
 }
 
-
 ///|
 /// Render a PaintNode to the CharBuffer
 fn render_paint_node(
@@ -286,7 +285,9 @@ fn render_paint_node(
             (text_content.contains(" ") || text_content.contains("\n"))
           // Use non-wrapping text for pre/code elements to preserve formatting
           if child_inside_pre {
-            let _ = ctx.buffer.write_text(col, row, text_content, style, effective_width)
+            let _ = ctx.buffer.write_text(
+              col, row, text_content, style, effective_width,
+            )
 
           } else if needs_wrapping {
             // Text with spaces that exceeds width - use w for proper line wrapping
@@ -301,7 +302,9 @@ fn render_paint_node(
 
           } else {
             // Single word or short text - use effective_width to prevent clipping
-            let _ = ctx.buffer.write_text(col, row, text_content, style, effective_width)
+            let _ = ctx.buffer.write_text(
+              col, row, text_content, style, effective_width,
+            )
 
           }
           // Collect link region for hit testing

@@ -28,7 +28,7 @@ pub fn handle_get_title(@cdp.CdpSession) -> String
 
 pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, CdpHandlerError]
 
-pub async fn handle_rpc(CdpSessionManager, RpcRequest) -> RpcResponse
+pub fn handle_rpc(CdpSessionManager, RpcRequest) -> RpcResponse
 
 pub fn parse_json_object(String) -> Map[String, String]
 
@@ -135,6 +135,54 @@ pub(all) enum ApiResult[T] {
 }
 pub impl[T : Show] Show for ApiResult[T]
 
+pub struct BidiError {
+  error : String
+  message : String
+  stacktrace : String
+}
+pub impl Show for BidiError
+
+pub struct BidiEvent {
+  event_method : String
+  params : Json
+}
+pub impl Show for BidiEvent
+
+pub enum BidiOutMessage {
+  Response(BidiResponse)
+  Event(BidiEvent)
+}
+pub fn BidiOutMessage::to_json(Self) -> String
+pub impl Show for BidiOutMessage
+
+pub struct BidiProtocol {
+  manager : CdpSessionManager
+  mut outbox : Array[BidiOutMessage]
+  mut session_id : String?
+  mut default_context_id : String?
+  mut next_navigation_id : Int
+  subscriptions : Map[String, Bool]
+  user_contexts : Map[String, Bool]
+  context_user_context : Map[String, String]
+}
+pub fn BidiProtocol::new() -> Self
+pub fn BidiProtocol::process_message(Self, String) -> Result[Unit, String]
+pub fn BidiProtocol::take_messages(Self) -> Array[BidiOutMessage]
+
+pub struct BidiRequest {
+  id : Int
+  method_name : String
+  params : Json?
+}
+pub impl Show for BidiRequest
+
+pub struct BidiResponse {
+  id : Int
+  result : Json?
+  error : BidiError?
+}
+pub impl Show for BidiResponse
+
 pub(all) struct Capabilities {
   browser_name : String
   browser_version : String
@@ -228,23 +276,23 @@ pub struct Executor {
   operation_log : Array[String]
 }
 pub fn Executor::clear_log(Self) -> Unit
-pub async fn Executor::close_context(Self, String) -> ApiResult[String]
-pub async fn Executor::content(Self, String) -> ApiResult[String]
+pub fn Executor::close_context(Self, String) -> ApiResult[String]
+pub fn Executor::content(Self, String) -> ApiResult[String]
 pub fn Executor::disable_logging(Self) -> Unit
 pub fn Executor::enable_logging(Self) -> Unit
-pub async fn Executor::execute(Self, ApiMethod) -> ApiResult[String]
-pub async fn Executor::execute_json(Self, String) -> String
+pub fn Executor::execute(Self, ApiMethod) -> ApiResult[String]
+pub fn Executor::execute_json(Self, String) -> String
 pub fn Executor::get_log(Self) -> Array[String]
-pub async fn Executor::go_back(Self, String) -> ApiResult[String]
-pub async fn Executor::go_forward(Self, String) -> ApiResult[String]
-pub async fn Executor::goto(Self, String, String) -> ApiResult[String]
+pub fn Executor::go_back(Self, String) -> ApiResult[String]
+pub fn Executor::go_forward(Self, String) -> ApiResult[String]
+pub fn Executor::goto(Self, String, String) -> ApiResult[String]
 pub fn Executor::new() -> Self
-pub async fn Executor::new_context(Self) -> ApiResult[String]
+pub fn Executor::new_context(Self) -> ApiResult[String]
 pub fn Executor::new_with_viewport(Int, Int) -> Self
-pub async fn Executor::reload(Self, String) -> ApiResult[String]
-pub async fn Executor::screenshot(Self, String) -> ApiResult[String]
-pub async fn Executor::title(Self, String) -> ApiResult[String]
-pub async fn Executor::url(Self, String) -> ApiResult[String]
+pub fn Executor::reload(Self, String) -> ApiResult[String]
+pub fn Executor::screenshot(Self, String) -> ApiResult[String]
+pub fn Executor::title(Self, String) -> ApiResult[String]
+pub fn Executor::url(Self, String) -> ApiResult[String]
 
 pub(all) enum HttpMethod {
   Get

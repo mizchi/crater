@@ -160,28 +160,19 @@ pub fn Executor::go_forward(
 
 ///|
 /// Reload page
-pub fn Executor::reload(
-  self : Executor,
-  page_id : String,
-) -> ApiResult[String] {
+pub fn Executor::reload(self : Executor, page_id : String) -> ApiResult[String] {
   self.execute(Reload(page_id~))
 }
 
 ///|
 /// Get current URL
-pub fn Executor::url(
-  self : Executor,
-  page_id : String,
-) -> ApiResult[String] {
+pub fn Executor::url(self : Executor, page_id : String) -> ApiResult[String] {
   self.execute(Url(page_id~))
 }
 
 ///|
 /// Get page title
-pub fn Executor::title(
-  self : Executor,
-  page_id : String,
-) -> ApiResult[String] {
+pub fn Executor::title(self : Executor, page_id : String) -> ApiResult[String] {
   self.execute(Title(page_id~))
 }
 
