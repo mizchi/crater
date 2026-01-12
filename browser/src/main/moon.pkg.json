@@ -1,8 +1,0 @@
-{
-  "is-main": true,
-  "import": [
-    "mizchi/crater-browser/src/shell",
-    "mizchi/crater-browser/src/tui",
-    "moonbitlang/async"
-  ]
-}

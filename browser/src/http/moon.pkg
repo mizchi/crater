@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/async/http" as @async_http,
+  "moonbitlang/async/io" as @async_io,
+}
+
+options(
+  targets: {
+    "http_js.mbt": [ "js" ],
+    "http_native.mbt": [ "native" ],
+    "http_wasm.mbt": [ "wasm", "wasm-gc" ],
+  },
+)

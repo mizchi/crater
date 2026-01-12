@@ -1,9 +1,10 @@
-{
-  "import": [
-    { "path": "mizchi/crater-browser/src/cdp", "alias": "cdp" },
-    { "path": "mizchi/crater/scheduler", "alias": "scheduler" }
-  ],
-  "link": {
+import {
+  "mizchi/crater-browser/src/cdp" as @cdp,
+  "mizchi/crater/scheduler" as @scheduler,
+}
+
+options(
+  link: {
     "js": {
       "exports": [
         "processCdpMessage",
@@ -18,9 +19,9 @@
         "notifyResponseReceivedWithLoader",
         "notifyLoadingFinished",
         "notifyLoadingFailed",
-        "flushNetworkEvents"
+        "flushNetworkEvents",
       ],
-      "format": "esm"
-    }
-  }
-}
+      "format": "esm",
+    },
+  },
+)

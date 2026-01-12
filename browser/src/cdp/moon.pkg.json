@@ -1,6 +1,0 @@
-{
-  "import": [
-    "mizchi/crater/dom",
-    "mizchi/crater/scheduler"
-  ]
-}
