@@ -233,6 +233,9 @@ fn analyze_css_support(css_list : Array[String]) -> Unit {
     if partial > 0 {
       println("  Partial: " + partial.to_string())
     }
+    if deprecated > 0 {
+      println("  Deprecated: " + deprecated.to_string())
+    }
     if unsupported_visual > 0 {
       println("  Unsupported (visual): " + unsupported_visual.to_string())
     }

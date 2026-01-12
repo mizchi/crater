@@ -49,7 +49,7 @@ fn parse_html_content(
 ) -> Unit {
   let chars = html.to_array()
   let len = chars.length()
-  let i = { val: 0 }
+  let i = Ref::new(0)
   while i.val < len {
     if chars[i.val] == '<' {
       // Check for closing tag
@@ -110,7 +110,7 @@ fn parse_html_content(
       }
       // Parse children (recursively find content until closing tag)
       let content_start = i.val
-      let depth = { val: 1 }
+      let depth = Ref::new(1)
       while i.val < len && depth.val > 0 {
         if chars[i.val] == '<' {
           if i.val + 1 < len && chars[i.val + 1] == '/' {

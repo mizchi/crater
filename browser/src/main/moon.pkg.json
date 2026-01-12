@@ -3,7 +3,6 @@
   "import": [
     "mizchi/crater-browser/src/shell",
     "mizchi/crater-browser/src/tui",
-    "mizchi/crater-browser/src/http",
     "moonbitlang/async"
   ]
 }

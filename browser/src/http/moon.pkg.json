@@ -1,6 +1,5 @@
 {
   "import": [
-    { "path": "moonbitlang/async/js_async", "targets": ["js"] },
     { "path": "moonbitlang/async/http", "alias": "async_http", "targets": ["native"] },
     { "path": "moonbitlang/async/io", "alias": "async_io", "targets": ["native"] }
   ],

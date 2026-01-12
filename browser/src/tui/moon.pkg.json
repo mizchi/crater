@@ -5,7 +5,6 @@
     "mizchi/crater/paint",
     "mizchi/crater/renderer",
     "mizchi/crater/css/media",
-    { "path": "moonbitlang/async/js_async", "targets": ["js"] },
     { "path": "moonbitlang/x/sys", "targets": ["native"] }
   ],
   "targets": {

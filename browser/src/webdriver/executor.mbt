@@ -72,7 +72,7 @@ pub fn Executor::clear_log(self : Executor) -> Unit {
 ///|
 /// Execute an API method and return result
 /// This is THE central entry point for all browser operations.
-pub async fn Executor::execute(
+pub fn Executor::execute(
   self : Executor,
   api_method : ApiMethod,
 ) -> ApiResult[String] {
@@ -94,7 +94,7 @@ pub async fn Executor::execute(
 
 ///|
 /// Execute from JSON-RPC request string
-pub async fn Executor::execute_json(self : Executor, json : String) -> String {
+pub fn Executor::execute_json(self : Executor, json : String) -> String {
   // Parse JSON to RpcRequest
   let request = parse_rpc_request(json)
   // Log raw request if enabled
@@ -117,13 +117,13 @@ pub async fn Executor::execute_json(self : Executor, json : String) -> String {
 
 ///|
 /// Create a new browser context
-pub async fn Executor::new_context(self : Executor) -> ApiResult[String] {
+pub fn Executor::new_context(self : Executor) -> ApiResult[String] {
   self.execute(NewContext)
 }
 
 ///|
 /// Close a browser context
-pub async fn Executor::close_context(
+pub fn Executor::close_context(
   self : Executor,
   context_id : String,
 ) -> ApiResult[String] {
@@ -132,7 +132,7 @@ pub async fn Executor::close_context(
 
 ///|
 /// Navigate to URL
-pub async fn Executor::goto(
+pub fn Executor::goto(
   self : Executor,
   page_id : String,
   url : String,
@@ -142,7 +142,7 @@ pub async fn Executor::goto(
 
 ///|
 /// Go back in history
-pub async fn Executor::go_back(
+pub fn Executor::go_back(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {
@@ -151,7 +151,7 @@ pub async fn Executor::go_back(
 
 ///|
 /// Go forward in history
-pub async fn Executor::go_forward(
+pub fn Executor::go_forward(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {
@@ -160,7 +160,7 @@ pub async fn Executor::go_forward(
 
 ///|
 /// Reload page
-pub async fn Executor::reload(
+pub fn Executor::reload(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {
@@ -169,7 +169,7 @@ pub async fn Executor::reload(
 
 ///|
 /// Get current URL
-pub async fn Executor::url(
+pub fn Executor::url(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {
@@ -178,7 +178,7 @@ pub async fn Executor::url(
 
 ///|
 /// Get page title
-pub async fn Executor::title(
+pub fn Executor::title(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {
@@ -187,7 +187,7 @@ pub async fn Executor::title(
 
 ///|
 /// Get page content
-pub async fn Executor::content(
+pub fn Executor::content(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {
@@ -196,7 +196,7 @@ pub async fn Executor::content(
 
 ///|
 /// Get screenshot (DOM tree as text in pure protocol mode)
-pub async fn Executor::screenshot(
+pub fn Executor::screenshot(
   self : Executor,
   page_id : String,
 ) -> ApiResult[String] {

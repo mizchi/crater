@@ -34,9 +34,10 @@ test-update:
 
 # === Code Quality ===
 
-# Check compilation
+# Check compilation (main + browser)
 check:
     moon check
+    moon check --directory browser
 
 # Format code
 fmt:

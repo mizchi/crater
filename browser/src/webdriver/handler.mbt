@@ -11,7 +11,7 @@
 ///|
 /// Handle an RPC request and return a response
 /// This is the main entry point for processing JSON-RPC requests
-pub async fn handle_rpc(
+pub fn handle_rpc(
   manager : CdpSessionManager,
   request : RpcRequest,
 ) -> RpcResponse {
@@ -26,7 +26,7 @@ pub async fn handle_rpc(
 
 ///|
 /// Dispatch an API method to the appropriate handler
-async fn dispatch_method(
+fn dispatch_method(
   manager : CdpSessionManager,
   id : RpcId,
   api_method : ApiMethod,
