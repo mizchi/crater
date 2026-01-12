@@ -4,9 +4,10 @@
 /// This module provides a typed API for browser automation.
 /// It can be used:
 /// 1. Directly from MoonBit code
-/// 2. Via JSON-RPC over WebSocket/stdio
-/// 3. Via WebDriver protocol (HTTP)
-/// 4. Via CDP-like protocol for Playwright compatibility
+/// 2. Via WebDriver BiDi (WebSocket, primary)
+/// 3. Via JSON-RPC over WebSocket/stdio
+/// 4. Via WebDriver protocol (HTTP, legacy)
+/// 5. Via CDP-like protocol for Playwright compatibility
 
 // =============================================================================
 // Core Types

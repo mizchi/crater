@@ -22,7 +22,7 @@ browser/          Browser module (crater-browser)
     │   ├── page.mbt    PageDomain
     │   └── input.mbt   InputDomain
     │
-    └── webdriver/  WebDriver protocol (uses CDP internally)
+    └── webdriver/  WebDriver BiDi (primary) + legacy WebDriver HTTP (uses CDP internally)
 ```
 
 **Note**: `dom/` is at crater root (not browser/src/dom) because:
