@@ -8,6 +8,8 @@ import(
 )
 
 // Values
+pub fn apply_property_direct(@style.Style, String, String, ComputeContext) -> @style.Style
+
 pub fn compute(@cascade.CascadedValues, ComputeContext) -> @style.Style
 
 pub fn compute_inline(String, ComputeContext) -> @style.Style

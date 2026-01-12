@@ -11,6 +11,8 @@ pub fn cascade(Array[Declaration]) -> CascadedValues
 
 pub fn cascade_element(@selector.Element, Array[Stylesheet], Array[Declaration]) -> CascadedValues
 
+pub fn cascade_element_indexed(@selector.Element, Array[IndexedStylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
+
 pub fn cascade_element_with_media(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
 
 pub fn cascade_precedence(Origin, Importance) -> Int
@@ -58,6 +60,14 @@ pub(all) enum Importance {
 }
 pub impl Show for Importance
 
+pub struct IndexedStylesheet {
+  stylesheet : Stylesheet
+  index : SelectorIndex
+}
+pub fn IndexedStylesheet::match_element(Self, @selector.Element) -> Array[RuleMatch]
+pub fn IndexedStylesheet::match_element_with_media(Self, @selector.Element, @media.MediaEnvironment?) -> Array[RuleMatch]
+pub fn IndexedStylesheet::new(Stylesheet) -> Self
+
 pub(all) enum Origin {
   UserAgent
   User
@@ -80,6 +90,16 @@ pub(all) struct RuleMatch {
   declarations : Array[Declaration]
   source_order : Int
 }
+
+pub(all) struct SelectorIndex {
+  by_id : Map[String, Array[Int]]
+  by_class : Map[String, Array[Int]]
+  by_tag : Map[String, Array[Int]]
+  universal : Array[Int]
+}
+pub fn SelectorIndex::from_stylesheet(Stylesheet) -> Self
+pub fn SelectorIndex::get_candidates(Self, @selector.Element) -> Array[Int]
+pub fn SelectorIndex::new() -> Self
 
 pub struct Stylesheet {
   rules : Array[CSSRule]

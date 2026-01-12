@@ -234,6 +234,79 @@ fn StyleBuilder::new() -> StyleBuilder {
 }
 
 ///|
+/// Create a StyleBuilder from an existing Style
+fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
+  {
+    display: style.display,
+    position: style.position,
+    float: style.float,
+    clear: style.clear,
+    box_sizing: style.box_sizing,
+    overflow_x: style.overflow_x,
+    overflow_y: style.overflow_y,
+    width: style.width,
+    height: style.height,
+    min_width: style.min_width,
+    min_height: style.min_height,
+    max_width: style.max_width,
+    max_height: style.max_height,
+    margin_top: style.margin.top,
+    margin_right: style.margin.right,
+    margin_bottom: style.margin.bottom,
+    margin_left: style.margin.left,
+    padding_top: style.padding.top,
+    padding_right: style.padding.right,
+    padding_bottom: style.padding.bottom,
+    padding_left: style.padding.left,
+    border_top: style.border.top,
+    border_right: style.border.right,
+    border_bottom: style.border.bottom,
+    border_left: style.border.left,
+    flex_direction: style.flex_direction,
+    flex_wrap: style.flex_wrap,
+    justify_content: style.justify_content,
+    align_items: style.align_items,
+    align_content: style.align_content,
+    align_self: style.align_self,
+    flex_grow: style.flex_grow,
+    flex_shrink: style.flex_shrink,
+    flex_basis: style.flex_basis,
+    order: style.order,
+    row_gap: style.row_gap,
+    column_gap: style.column_gap,
+    aspect_ratio: style.aspect_ratio,
+    inset_top: style.inset.top,
+    inset_right: style.inset.right,
+    inset_bottom: style.inset.bottom,
+    inset_left: style.inset.left,
+    grid_auto_flow: style.grid_auto_flow,
+    grid_template_columns: style.grid_template_columns,
+    grid_template_rows: style.grid_template_rows,
+    grid_column_start: style.grid_column.start,
+    grid_column_end: style.grid_column.end,
+    grid_row_start: style.grid_row.start,
+    grid_row_end: style.grid_row.end,
+    font_size: style.font_size,
+    line_height: style.line_height,
+    vertical_align: style.vertical_align,
+    clip: style.clip,
+    visibility: style.visibility,
+    z_index: style.z_index,
+    opacity: style.opacity,
+    color: style.color,
+    background_color: style.background_color,
+    contain: style.contain,
+    transform: style.transform,
+    border_spacing: style.border_spacing,
+    border_collapse: style.border_collapse,
+    table_layout: style.table_layout,
+    caption_side: style.caption_side,
+    rowspan: style.rowspan,
+    colspan: style.colspan,
+  }
+}
+
+///|
 fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
   {
     display: self.display,
@@ -2033,6 +2106,32 @@ pub fn compute_inline(
   // Convert content-box dimensions to border-box dimensions
   // The layout engine always works with outer (border-box) dimensions
   adjust_for_box_sizing(style)
+}
+
+///|
+/// Apply a single CSS property to an existing style directly
+/// This skips the CSS string parsing step for better performance
+pub fn apply_property_direct(
+  style : @style.Style,
+  property : String,
+  value : String,
+  ctx : ComputeContext,
+) -> @style.Style {
+  // Special handling for font-size: when font-size changes,
+  // update line-height proportionally to maintain the ratio
+  if property == "font-size" {
+    let builder = StyleBuilder::from_style(style)
+    let old_fs = style.font_size
+    apply_property(builder, property, value, ctx)
+    let new_fs = builder.font_size
+    // Maintain line-height / font-size ratio
+    let lh_ratio = if old_fs > 0.0 { style.line_height / old_fs } else { 1.0 }
+    builder.line_height = new_fs * lh_ratio
+    return builder.build()
+  }
+  let builder = StyleBuilder::from_style(style)
+  apply_property(builder, property, value, ctx)
+  builder.build()
 }
 
 ///|
