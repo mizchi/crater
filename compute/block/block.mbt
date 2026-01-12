@@ -379,8 +379,15 @@ fn compute_mixed_content_layout(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        let child_result = compute_with_collapse(node, child_ctx, warnings)
-        let child_layout = child_result.layout
+        // Use dispatch_layout for flex/grid containers, block layout for others
+        let child_layout = match node.style.display {
+          @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
+            match @node.get_layout_dispatcher() {
+              Some(_) => @node.dispatch_layout(node, child_ctx)
+              None => compute_with_collapse(node, child_ctx, warnings).layout
+            }
+          _ => compute_with_collapse(node, child_ctx, warnings).layout
+        }
         // Calculate margin values
         let margin_top = child_layout.margin.top
         let margin_bottom = child_layout.margin.bottom

@@ -47,6 +47,94 @@ fn GridIntrinsicCache::set(
   self.data.set(key, value)
 }
 
+// =============================================================================
+// Display: Contents Support for Grid
+// =============================================================================
+
+///|
+/// A grid item with tracking information for display: contents reconstruction
+priv struct FlattenedGridChild {
+  node : @node.Node
+  /// Index of the immediate child of grid container (for DOM ordering)
+  original_child_index : Int
+  /// Parent nodes with display: contents (for tree reconstruction)
+  contents_ancestors : Array[@node.Node]
+}
+
+///|
+/// Flatten children for grid layout, unwrapping display: contents nodes.
+fn flatten_children_for_grid(node : @node.Node) -> Array[FlattenedGridChild] {
+  let result : Array[FlattenedGridChild] = []
+  let children = node.children
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @style.Contents {
+      // This is a contents element - flatten its children
+      flatten_grid_children_recursive(child.children, i, [child], result)
+    } else {
+      // Regular child - add it directly
+      result.push({
+        node: child,
+        original_child_index: i,
+        contents_ancestors: [],
+      })
+    }
+  }
+  result
+}
+
+///|
+/// Recursively flatten grid children, tracking contents ancestors
+fn flatten_grid_children_recursive(
+  children : Array[@node.Node],
+  original_index : Int,
+  ancestors : Array[@node.Node],
+  result : Array[FlattenedGridChild],
+) -> Unit {
+  for child in children {
+    if child.style.display == @style.Contents {
+      // Nested contents - continue flattening
+      let new_ancestors = ancestors.copy()
+      new_ancestors.push(child)
+      flatten_grid_children_recursive(
+        child.children,
+        original_index,
+        new_ancestors,
+        result,
+      )
+    } else {
+      // Regular child - add as grid item
+      result.push({
+        node: child,
+        original_child_index: original_index,
+        contents_ancestors: ancestors.copy(),
+      })
+    }
+  }
+}
+
+///|
+/// Create a zero-size layout for a display: contents element in grid
+fn create_grid_contents_layout(
+  node : @node.Node,
+  children_layouts : Array[@node.Layout],
+) -> @node.Layout {
+  {
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width: 0.0,
+    height: 0.0,
+    margin: @types.Rect::zero(),
+    padding: @types.Rect::zero(),
+    border: @types.Rect::zero(),
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
+    children: children_layouts,
+    text: node.text,
+  }
+}
+
 ///|
 fn max(a : Double, b : Double) -> Double {
   if a > b {
@@ -337,7 +425,18 @@ fn compute_grid_layout_internal(
   viewport_height : Double,
 ) -> @node.Layout {
   let style = node.style
-  let children = node.children
+  let original_children = node.children
+
+  // Flatten children for display: contents support
+  let flattened = flatten_children_for_grid(node)
+  // Extract just the nodes for grid item processing
+  let children : Array[@node.Node] = []
+  for flat in flattened {
+    children.push(flat.node)
+  }
+
+  // Map to collect layouts for display: contents children reconstruction
+  let contents_layouts : Map[Int, Array[@node.Layout]] = {}
 
   // Create cache for intrinsic size calculations
   let intrinsic_cache = GridIntrinsicCache::new()
@@ -1114,6 +1213,41 @@ fn compute_grid_layout_internal(
       child_layouts.push(preliminary_layouts[i])
     }
   }
+
+  // Reconstruct tree with display: contents elements
+  // Group layouts by original_child_index
+  for i = 0; i < flattened.length(); i = i + 1 {
+    let flat = flattened[i]
+    if flat.contents_ancestors.length() > 0 {
+      // This is a child of a contents element
+      let key = flat.original_child_index
+      match contents_layouts.get(key) {
+        Some(arr) => arr.push(child_layouts[i])
+        None => contents_layouts.set(key, [child_layouts[i]])
+      }
+    }
+  }
+
+  // Build final children array with contents wrappers
+  let final_children : Array[@node.Layout] = []
+  let mut flattened_idx = 0
+  for i = 0; i < original_children.length(); i = i + 1 {
+    let orig_child = original_children[i]
+    if orig_child.style.display == @style.Contents {
+      // Create contents wrapper with its children's layouts
+      match contents_layouts.get(i) {
+        Some(layouts) =>
+          final_children.push(create_grid_contents_layout(orig_child, layouts))
+        None =>
+          // Contents element with no children
+          final_children.push(create_grid_contents_layout(orig_child, []))
+      }
+      // Regular child - use its layout from child_layouts
+    } else if flattened_idx < child_layouts.length() {
+      final_children.push(child_layouts[flattened_idx])
+      flattened_idx = flattened_idx + 1
+    }
+  }
   {
     id: node.id,
     x: 0.0,
@@ -1135,7 +1269,7 @@ fn compute_grid_layout_internal(
     },
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
-    children: child_layouts,
+    children: final_children,
     text: node.text,
   }
 }

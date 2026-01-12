@@ -1143,7 +1143,8 @@ fn should_skip_element(tag : String) -> Bool {
     // Media elements (not yet supported)
     | "video"
     | "audio"
-    | "canvas"
+    // Canvas is a replaced element with intrinsic size (300x150 by default)
+    // It should NOT be skipped
     | "svg"
     | "math"
     // Other non-visual elements
@@ -1454,6 +1455,44 @@ fn element_to_node_with_styles_internal(
         None => @node.Node::with_measure(node_id, img_style, measure)
       }
     }
+  }
+  // Handle canvas element with intrinsic sizing
+  if tag_lower == "canvas" && children.is_empty() {
+    // Canvas has default intrinsic size of 300x150 (HTML spec)
+    let default_width = 300.0
+    let default_height = 150.0
+
+    // Get dimensions from HTML attributes (override defaults)
+    let intrinsic_width = match elem.attributes.get("width") {
+      Some(w) => parse_html_dimension(w).unwrap_or(default_width)
+      None => default_width
+    }
+    let intrinsic_height = match elem.attributes.get("height") {
+      Some(h) => parse_html_dimension(h).unwrap_or(default_height)
+      None => default_height
+    }
+
+    // Build canvas style:
+    // - Use HTML attribute dimension as default when CSS is Auto
+    // - CSS dimensions (%, px, etc.) override HTML attributes
+    let canvas_style : @style.Style = {
+      ..style,
+      width: if style.width == @types.Auto {
+        @types.Length(intrinsic_width)
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        @types.Length(intrinsic_height)
+      } else {
+        style.height
+      },
+    }
+
+    // Always use MeasureFunc to provide intrinsic size
+    // The layout algorithm will use CSS dimensions if specified
+    let measure = create_image_measure(intrinsic_width, intrinsic_height)
+    return @node.Node::with_measure(node_id, canvas_style, measure)
   }
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
@@ -2601,8 +2640,8 @@ pub fn print_layout_tree_with_options(
 ///|
 /// Sanitize a number for JSON output (handle Infinity and NaN)
 fn safe_number(n : Double) -> Double {
-  // Check for Infinity or very large numbers (> 1e10 is likely a placeholder infinity)
-  if n > 1.0e10 || n < -1.0e10 {
+  // Check for Infinity or very large numbers (>= 1e10 is likely a placeholder infinity)
+  if n >= 1.0e10 || n <= -1.0e10 {
     return 0.0
   }
   // Check for NaN (NaN != NaN)

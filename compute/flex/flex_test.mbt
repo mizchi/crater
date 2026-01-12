@@ -3268,3 +3268,121 @@ test "flex_text_wrapping_in_fixed_width_container" {
     inspect(layout.children[0].children[0].height, content="40")
   }
 }
+
+///|
+// Test Row > Column > Div - with cache reset
+test "row_column_div_with_cache_reset" {
+  reset_intrinsic_cache() // Clear any stale cache
+  let default_style = @style.Style::default()
+  let text_measure : @node.MeasureFunc = {
+    func: fn(_available_width, _available_height) -> @node.IntrinsicSize {
+      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let text_node = @node.Node::with_measure("text", default_style, text_measure)
+  let inner_div = @node.Node::new(
+    "div",
+    { ..default_style, display: @style.Block },
+    [text_node],
+  )
+  let column = @node.Node::new(
+    "column",
+    { ..default_style, display: @style.Flex, flex_direction: @style.Column },
+    [inner_div],
+  )
+  let row = @node.Node::new(
+    "row",
+    { ..default_style, display: @style.Flex, flex_direction: @style.Row },
+    [column],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(row, ctx)
+  inspect(layout.height, content="16")
+}
+
+///|
+// Test Column > Div without Row
+test "column_div_nested" {
+  let default_style = @style.Style::default()
+  let text_measure : @node.MeasureFunc = {
+    func: fn(_available_width, _available_height) -> @node.IntrinsicSize {
+      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let text_node = @node.Node::with_measure("text", default_style, text_measure)
+  let inner_div = @node.Node::new(
+    "div",
+    { ..default_style, display: @style.Block },
+    [text_node],
+  )
+  let column = @node.Node::new(
+    "column",
+    { ..default_style, display: @style.Flex, flex_direction: @style.Column },
+    [inner_div],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(column, ctx)
+  inspect(layout.height, content="16")
+  inspect(layout.children[0].height, content="16")
+}
+
+///|
+// Test for Row > Column > div with text bug
+// This tests the scenario where nested flex containers cause height to become 1e10
+test "row_column_nested_flex_with_text" {
+  let default_style = @style.Style::default()
+  // Text measure function
+  let text_measure : @node.MeasureFunc = {
+    func: fn(_available_width, _available_height) -> @node.IntrinsicSize {
+      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  // Inner text node
+  let text_node = @node.Node::with_measure("text", default_style, text_measure)
+  // Inner div containing text (display: block by default)
+  let inner_div = @node.Node::new(
+    "div",
+    { ..default_style, display: @style.Block },
+    [text_node],
+  )
+  // Column flex container
+  let column = @node.Node::new(
+    "column",
+    { ..default_style, display: @style.Flex, flex_direction: @style.Column },
+    [inner_div],
+  )
+  // Row flex container
+  let row = @node.Node::new(
+    "row",
+    { ..default_style, display: @style.Flex, flex_direction: @style.Row },
+    [column],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: None, // Auto height
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(row, ctx)
+  // Row should have auto height based on content
+  inspect(layout.height, content="16")
+  // Column should have same height as content
+  inspect(layout.children[0].height, content="16")
+  // Inner div should have height of text
+  inspect(layout.children[0].children[0].height, content="16")
+  // Text should have its natural height
+  inspect(layout.children[0].children[0].children[0].height, content="16")
+}

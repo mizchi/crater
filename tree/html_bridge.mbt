@@ -484,9 +484,12 @@ pub fn LayoutNode::from_html_element(
   // Apply computed styles
   let _ = node.apply_css_values(computed_styles)
 
-  // Handle img elements with intrinsic sizing
-  if element.tag.to_lower() == "img" {
+  // Handle replaced elements with intrinsic sizing
+  let tag_lower = element.tag.to_lower()
+  if tag_lower == "img" {
     setup_image_node(node, element)
+  } else if tag_lower == "canvas" {
+    setup_canvas_node(node, element)
   }
 
   // Recursively convert children
@@ -569,6 +572,48 @@ fn setup_image_node(node : LayoutNode, element : @html.Element) -> Unit {
         ),
       )
     }
+  }
+}
+
+///|
+/// Setup a canvas node with intrinsic sizing
+/// Canvas defaults to 300x150 (HTML spec), but can be overridden by width/height attributes
+fn setup_canvas_node(node : LayoutNode, element : @html.Element) -> Unit {
+  // Canvas default intrinsic size (HTML spec)
+  let default_width = 300.0
+  let default_height = 150.0
+
+  // Try to get dimensions from HTML attributes
+  let width : Double = match element.attributes.get("width") {
+    Some(v) =>
+      match parse_html_dimension(v) {
+        Some(w) => w
+        None => default_width
+      }
+    None => default_width
+  }
+  let height : Double = match element.attributes.get("height") {
+    Some(v) =>
+      match parse_html_dimension(v) {
+        Some(h) => h
+        None => default_height
+      }
+    None => default_height
+  }
+
+  // Canvas always has resolved intrinsic size (doesn't need to load like images)
+  node.intrinsic_state = Some(Resolved(width~, height~))
+  node.measure = Some(create_fixed_measure(width, height))
+
+  // Set style dimensions if not already set (canvas dimensions are used as default)
+  // Only set if the style doesn't already have explicit dimensions
+  match node.style.width {
+    @types.Auto => node.style.width = @types.Length(width)
+    _ => ()
+  }
+  match node.style.height {
+    @types.Auto => node.style.height = @types.Length(height)
+    _ => ()
   }
 }
 

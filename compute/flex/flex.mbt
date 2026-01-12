@@ -147,6 +147,98 @@ fn IntrinsicCache::set(
   global_intrinsic_cache.val.set(key, value)
 }
 
+// =============================================================================
+// Display: Contents Support
+// =============================================================================
+
+///|
+/// A flex item with tracking information for display: contents reconstruction
+priv struct FlattenedChild {
+  node : @node.Node
+  /// Index of the immediate child of flex container (for DOM ordering)
+  original_child_index : Int
+  /// Path from the original child to this node (for display: contents)
+  /// Empty for direct children, contains parent nodes for nested contents
+  contents_ancestors : Array[@node.Node]
+}
+
+///|
+/// Flatten children for flex layout, unwrapping display: contents nodes.
+/// Returns an array of nodes that should be treated as flex items.
+/// For display: contents elements, their children become flex items instead.
+fn flatten_children_for_flex(node : @node.Node) -> Array[FlattenedChild] {
+  let result : Array[FlattenedChild] = []
+  let children = node.children
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @style.Contents {
+      // This is a contents element - flatten its children
+      flatten_children_recursive(child.children, i, [child], result)
+    } else {
+      // Regular child - add it directly
+      result.push({
+        node: child,
+        original_child_index: i,
+        contents_ancestors: [],
+      })
+    }
+  }
+  result
+}
+
+///|
+/// Recursively flatten children, tracking contents ancestors for layout reconstruction
+fn flatten_children_recursive(
+  children : Array[@node.Node],
+  original_index : Int,
+  ancestors : Array[@node.Node],
+  result : Array[FlattenedChild],
+) -> Unit {
+  for child in children {
+    if child.style.display == @style.Contents {
+      // This is a contents element - flatten its children instead
+      // Add this node to the ancestors path
+      let new_ancestors = ancestors.copy()
+      new_ancestors.push(child)
+      flatten_children_recursive(
+        child.children,
+        original_index,
+        new_ancestors,
+        result,
+      )
+    } else {
+      // Regular child - add it as a flex item
+      result.push({
+        node: child,
+        original_child_index: original_index,
+        contents_ancestors: ancestors.copy(),
+      })
+    }
+  }
+}
+
+///|
+/// Create a zero-size layout for a display: contents element
+fn create_contents_layout(
+  node : @node.Node,
+  children_layouts : Array[@node.Layout],
+) -> @node.Layout {
+  {
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width: 0.0,
+    height: 0.0,
+    margin: @types.Rect::zero(),
+    padding: @types.Rect::zero(),
+    border: @types.Rect::zero(),
+    overflow_x: @style.Visible,
+    overflow_y: @style.Visible,
+    children: children_layouts,
+    text: node.text,
+  }
+}
+
 ///|
 fn max(a : Double, b : Double) -> Double {
   if a > b {
@@ -182,7 +274,10 @@ fn compute_measured_cross_size(
     // Computing height based on constrained width
     let max_width = intrinsic.max_width
     let max_height = intrinsic.max_height
-    if constrained_main >= max_width || max_width <= 0.0 {
+    // Handle edge cases: unconstrained, no content, or zero/negative constraint
+    if constrained_main >= max_width ||
+      max_width <= 0.0 ||
+      constrained_main <= 0.0 {
       max_height
     } else {
       // Proportional scaling: content area = max_width * max_height
@@ -196,7 +291,10 @@ fn compute_measured_cross_size(
     // Computing width based on constrained height
     let max_width = intrinsic.max_width
     let max_height = intrinsic.max_height
-    if constrained_main >= max_height || max_height <= 0.0 {
+    // Handle edge cases: unconstrained, no content, or zero/negative constraint
+    if constrained_main >= max_height ||
+      max_height <= 0.0 ||
+      constrained_main <= 0.0 {
       max_width
     } else {
       // Proportional scaling
@@ -1415,9 +1513,11 @@ fn compute_internal(
   // cross_gap will be used for wrap scenarios
 
   // Phase 1: Calculate base sizes for each child
+  // Flatten children for display: contents support
+  let flattened = flatten_children_for_flex(node)
   let children = node.children
   let child_count = children.length()
-  if child_count == 0 {
+  if flattened.length() == 0 && child_count == 0 {
     // No children - just return container with intrinsic size if available
     let container_height = match intrinsic_from_measure {
       Some((_, h)) => h
@@ -1447,12 +1547,14 @@ fn compute_internal(
   }
 
   // Collect flex items info (skip display:none children)
-  let flex_items : Array[FlexItem] = Array::new(capacity=child_count)
+  // Use flattened children which expands display:contents elements
+  let flex_items : Array[FlexItem] = Array::new(capacity=flattened.length())
   let mut total_flex_grow = 0.0
   let mut total_flex_shrink = 0.0
   let mut total_base_main = 0.0
-  for i = 0; i < child_count; i = i + 1 {
-    let child = children[i]
+  for i = 0; i < flattened.length(); i = i + 1 {
+    let flat_child = flattened[i]
+    let child = flat_child.node
     let child_style = child.style
 
     // Skip display:none children
@@ -2022,6 +2124,8 @@ fn compute_internal(
     )
     let item : FlexItem = {
       index: i,
+      original_child_index: flat_child.original_child_index,
+      node: child,
       order: child_style.order,
       base_main,
       base_cross,
@@ -2042,6 +2146,7 @@ fn compute_internal(
       margin_cross_end_auto,
       baseline,
       align_self: child_style.align_self,
+      contents_ancestors: flat_child.contents_ancestors,
     }
     flex_items.push(item)
     total_base_main = total_base_main + base_main + margin_main
@@ -2266,7 +2371,7 @@ fn compute_internal(
   // For min-width/min-height: auto, use the automatic minimum size (item.min_main)
   for i = 0; i < flex_items.length(); i = i + 1 {
     let item = flex_items[i]
-    let child_style = children[item.index].style
+    let child_style = item.node.style
     let original_main = item.final_main
     let mut final_main = original_main
     if is_row {
@@ -2319,7 +2424,7 @@ fn compute_internal(
   let mut max_cross : Double = 0.0
   for i = 0; i < flex_items.length(); i = i + 1 {
     let item = flex_items[i]
-    let child_style = children[item.index].style
+    let child_style = item.node.style
 
     // Determine effective alignment (align-self overrides align-items)
     let effective_align = match child_style.align_self {
@@ -2339,7 +2444,7 @@ fn compute_internal(
     // If final_main differs from content_width, we may need to recalculate cross size
     // because base_cross was computed using content_width, not the actual item width
     // This is especially important when text wrapping changes with different widths
-    let child = children[item.index]
+    let child = item.node
     // Compare final_main with content_width (the width used to compute base_cross)
     let width_differs_from_base = (item.final_main - content_width).abs() > 0.01
     let needs_cross_recalc = width_differs_from_base &&
@@ -2556,6 +2661,10 @@ fn compute_internal(
   // For multi-line (wrap), we need to process each line separately
   // Use IndexedLayout to preserve DOM order when mixing flex and absolute children
   let indexed_layouts : Array[IndexedLayout] = Array::new(capacity=child_count)
+
+  // Map to collect layouts for display: contents children
+  // Key: original_child_index, Value: array of (layout, contents_ancestors)
+  let contents_layouts : Map[Int, Array[(@node.Layout, Array[@node.Node])]] = {}
 
   // Calculate total cross size for all lines (for auto height)
   let mut total_lines_cross = 0.0
@@ -2808,7 +2917,7 @@ fn compute_internal(
     for j = 0; j < line_item_count; j = j + 1 {
       // Always access items in DOM order so child_layouts stays in DOM order
       let item = line_items[j]
-      let child = children[item.index]
+      let child = item.node
 
       // Calculate auto margin adjustments for main axis
       let main_start_auto_margin = if item.margin_main_start_auto {
@@ -2853,7 +2962,7 @@ fn compute_internal(
             let stretched = line_cross_size - item.margin_cross
             // item.final_cross already has constraints, use min of stretched and final_cross
             // to handle max constraints, and max with final_cross to handle min constraints
-            let child = children[item.index]
+            let child = item.node
             let child_style = child.style
             let mut constrained = stretched
             // CSS spec: min takes precedence over max, so apply max first, then min
@@ -3114,7 +3223,22 @@ fn compute_internal(
           text: child.text,
         }
       }
-      indexed_layouts.push({ dom_index: item.index, layout: child_layout })
+      // Handle display: contents - collect layouts for later tree reconstruction
+      if item.contents_ancestors.length() > 0 {
+        // This item is inside a display: contents element
+        let key = item.original_child_index
+        match contents_layouts.get(key) {
+          Some(arr) => arr.push((child_layout, item.contents_ancestors))
+          None =>
+            contents_layouts.set(key, [(child_layout, item.contents_ancestors)])
+        }
+      } else {
+        // Direct child - push normally with original_child_index for DOM ordering
+        indexed_layouts.push({
+          dom_index: item.original_child_index,
+          layout: child_layout,
+        })
+      }
 
       // Update position for next item
       if is_reverse {
@@ -3770,8 +3894,8 @@ fn compute_internal(
     indexed_layouts.push({ dom_index: i, layout: child_layout })
   }
 
-  // Add display:none children that were skipped during flex item processing
-  // These children need to be in the final layout array with zero size
+  // Add display:none and display:contents children that were skipped during flex item processing
+  // These children need to be in the final layout array with zero size (none) or wrapper structure (contents)
   for i = 0; i < child_count; i = i + 1 {
     let child = children[i]
     let child_style = child.style
@@ -3783,6 +3907,29 @@ fn compute_internal(
     // Add zero-sized layout for display:none children
     if child_style.display == @style.None {
       indexed_layouts.push({ dom_index: i, layout: create_hidden_layout(child) })
+      continue
+    }
+    // Handle display:contents children - build wrapper with collected layouts
+    if child_style.display == @style.Contents {
+      match contents_layouts.get(i) {
+        Some(layouts_with_ancestors) => {
+          // Build the contents tree structure
+          // For simple case (single level of contents), just wrap the layouts
+          let inner_layouts : Array[@node.Layout] = []
+          for pair in layouts_with_ancestors {
+            let (layout, _ancestors) = pair
+            inner_layouts.push(layout)
+          }
+          let contents_layout = create_contents_layout(child, inner_layouts)
+          indexed_layouts.push({ dom_index: i, layout: contents_layout })
+        }
+        None =>
+          // Contents element with no children, create empty wrapper
+          indexed_layouts.push({
+            dom_index: i,
+            layout: create_contents_layout(child, []),
+          })
+      }
     }
   }
 
@@ -3987,7 +4134,9 @@ fn compute_nested(
 ///|
 /// Flex item intermediate data
 priv struct FlexItem {
-  index : Int
+  index : Int // Index in flattened array (used for sorting)
+  original_child_index : Int // Index of immediate child of flex container (for DOM ordering)
+  node : @node.Node // The actual node for this flex item
   order : Int // CSS order property for visual ordering
   base_main : Double
   base_cross : Double
@@ -4012,6 +4161,9 @@ priv struct FlexItem {
   baseline : Double
   // Align self for this item (resolved from style)
   align_self : @style.AlignSelf
+  // Contents ancestors for display: contents support
+  // Empty for direct children, contains parent nodes for nested contents
+  contents_ancestors : Array[@node.Node]
 }
 
 ///|

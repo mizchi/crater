@@ -324,8 +324,10 @@ fn compute_inline_child(
     None => ()
   }
 
-  // For inline-block, use shrink-to-fit via layout dispatcher
-  if style.display == @style.InlineBlock {
+  // For inline-block, inline-flex, inline-grid, use shrink-to-fit via layout dispatcher
+  if style.display == @style.InlineBlock ||
+    style.display == @style.InlineFlex ||
+    style.display == @style.InlineGrid {
     // Use the global layout dispatcher to get proper block/flex/grid layout
     let ctx : @node.LayoutContext = {
       available_width,
