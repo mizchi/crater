@@ -23,6 +23,9 @@ pub(all) enum Display {
   // Special display type - element doesn't generate a box
   // but its children are treated as if they were children of the parent
   Contents
+  // Flow-root creates a new block formatting context
+  // Similar to Block but establishes BFC (contains floats, prevents margin collapse)
+  FlowRoot
 } derive(Show, Eq)
 
 ///|

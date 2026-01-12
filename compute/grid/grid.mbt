@@ -347,7 +347,7 @@ pub fn compute_layout(
   }
   match node.style.display {
     @style.Flex | @style.InlineFlex => @flex.compute_root(node, ctx)
-    @style.Block | @style.Inline | @style.InlineBlock =>
+    @style.Block | @style.Inline | @style.InlineBlock | @style.FlowRoot =>
       @block.compute(node, ctx)
     @style.Grid =>
       compute_grid_layout_internal(

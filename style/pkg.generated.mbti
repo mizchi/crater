@@ -100,6 +100,7 @@ pub(all) enum Display {
   TableColumnGroup
   None
   Contents
+  FlowRoot
 }
 pub impl Eq for Display
 pub impl Show for Display

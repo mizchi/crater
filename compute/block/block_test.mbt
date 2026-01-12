@@ -1314,3 +1314,54 @@ test "max-width max-content with explicit width" {
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
 }
+
+///|
+test "replaced element aspect ratio with percent height" {
+  // Test for canvas/img with height: % and aspect_ratio
+  // When height is a percentage of parent and aspect_ratio is set,
+  // width should be derived from height * aspect_ratio
+  let canvas_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Inline,
+    height: @types.Percent(1.0),
+    width: @types.Auto,
+    aspect_ratio: Some(1.0),
+  }
+  let float_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Block,
+    height: @types.Length(100.0),
+    width: @types.Auto,
+    float: @style.Float::Left,
+  }
+  let body_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @style.Block,
+    width: @types.Length(800.0),
+    height: @types.Length(600.0),
+  }
+  let measure : @node.MeasureFunc = {
+    func: fn(_w, _h) {
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+    },
+  }
+  let canvas = @node.Node::with_measure("canvas", canvas_style, measure)
+  let float_div = @node.Node::new("float", float_style, [canvas])
+  let body = @node.Node::new("body", body_style, [float_div])
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = @block.compute(body, ctx)
+  let float_layout = layout.children[0]
+  let canvas_layout = float_layout.children[0]
+
+  // Canvas should have width=100 (from aspect ratio 1:1 with height 100)
+  inspect(canvas_layout.width, content="100")
+  inspect(canvas_layout.height, content="100")
+  // Float should shrink-to-fit to canvas width
+  inspect(float_layout.width, content="100")
+}

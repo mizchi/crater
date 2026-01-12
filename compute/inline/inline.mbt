@@ -247,7 +247,7 @@ fn compute_inline_child(
   let padding = @types.resolve_rect(style.padding, available_width)
   let border = @types.resolve_rect(style.border, available_width)
 
-  // Handle leaf nodes with MeasureFunc (e.g., text nodes)
+  // Handle leaf nodes with MeasureFunc (e.g., text nodes, replaced elements)
   match node.measure {
     Some(mf) => {
       // First, get unconstrained intrinsic sizes (for min-content, max-content)
@@ -256,7 +256,33 @@ fn compute_inline_child(
         available_height.unwrap_or(0.0),
       )
 
-      // Calculate content width based on sizing mode
+      // Check if we should use aspect_ratio to derive dimensions
+      // For replaced elements like canvas/img with aspect_ratio:
+      // - If width is Auto and height is definite (Length or Percent), derive width from height * aspect_ratio
+      let height_is_definite = match style.height {
+        @types.Length(_) | @types.Percent(_) => true
+        _ => false
+      }
+      let width_is_definite = match style.width {
+        @types.Length(_) | @types.Percent(_) => true
+        _ => false
+      }
+
+      // Calculate height first (needed for aspect_ratio calculation)
+      let initial_height : Double? = match style.height {
+        @types.Length(h) => Some(h)
+        @types.Percent(p) =>
+          match available_height {
+            Some(ah) => Some(ah * p)
+            None => None
+          }
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => None
+      }
+
+      // Calculate content width based on sizing mode and aspect_ratio
       let content_width = match style.width {
         @types.Length(w) =>
           w - padding.horizontal_sum() - border.horizontal_sum()
@@ -266,23 +292,42 @@ fn compute_inline_child(
           border.horizontal_sum()
         @types.MinContent => unconstrained.min_width
         @types.MaxContent => unconstrained.max_width
-        @types.FitContent(_) | @types.Auto => {
-          // Auto: constrain to available_width
-          let max_content = unconstrained.max_width
-          let content_available = available_width -
-            padding.horizontal_sum() -
-            border.horizontal_sum()
-          let clamped_available = if content_available > 0.0 {
-            content_available
-          } else {
-            0.0
+        @types.FitContent(_) | @types.Auto =>
+          // Check if we can derive width from aspect_ratio
+          match (style.aspect_ratio, initial_height, height_is_definite) {
+            (Some(ratio), Some(h), true) if ratio > 0.0 =>
+              // Derive width from height using aspect_ratio
+              // For content-box sizing, use content height
+              if style.box_sizing == @style.BorderBox {
+                h * ratio - padding.horizontal_sum() - border.horizontal_sum()
+              } else {
+                let content_h = h -
+                  padding.vertical_sum() -
+                  border.vertical_sum()
+                if content_h > 0.0 {
+                  content_h * ratio
+                } else {
+                  unconstrained.max_width
+                }
+              }
+            _ => {
+              // Fallback: use intrinsic width, constrained to available_width
+              let max_content = unconstrained.max_width
+              let content_available = available_width -
+                padding.horizontal_sum() -
+                border.horizontal_sum()
+              let clamped_available = if content_available > 0.0 {
+                content_available
+              } else {
+                0.0
+              }
+              if max_content < clamped_available {
+                max_content
+              } else {
+                clamped_available
+              }
+            }
           }
-          if max_content < clamped_available {
-            max_content
-          } else {
-            clamped_available
-          }
-        }
       }
 
       // Re-call MeasureFunc with constrained width to get correct height
@@ -294,17 +339,42 @@ fn compute_inline_child(
         padding.horizontal_sum() +
         border.horizontal_sum()
 
-      // Calculate height
+      // Calculate final height
       let height = match style.height {
         @types.Length(h) => h
-        @types.Percent(p) => available_height.unwrap_or(0.0) * p
+        @types.Percent(p) =>
+          match available_height {
+            Some(ah) => ah * p
+            None =>
+              // No definite parent height, fall back to intrinsic + aspect_ratio
+              match style.aspect_ratio {
+                Some(ratio) if ratio > 0.0 => width / ratio
+                _ =>
+                  constrained.max_height +
+                  padding.vertical_sum() +
+                  border.vertical_sum()
+              }
+          }
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
         | @types.FitContent(_) =>
-          constrained.max_height +
-          padding.vertical_sum() +
-          border.vertical_sum()
+          // Check if we can derive height from aspect_ratio
+          match (style.aspect_ratio, width_is_definite) {
+            (Some(ratio), true) if ratio > 0.0 =>
+              // Derive height from width using aspect_ratio
+              if style.box_sizing == @style.BorderBox {
+                width / ratio
+              } else {
+                content_width / ratio +
+                padding.vertical_sum() +
+                border.vertical_sum()
+              }
+            _ =>
+              constrained.max_height +
+              padding.vertical_sum() +
+              border.vertical_sum()
+          }
       }
       return {
         id: node.id,

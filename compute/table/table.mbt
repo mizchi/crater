@@ -49,6 +49,46 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
 }
 
 ///|
+/// Calculate position offset for position: relative elements
+/// Returns (x_offset, y_offset) based on inset properties
+fn calculate_relative_offset(
+  style : @style.Style,
+  container_width : Double,
+  container_height : Double,
+) -> (Double, Double) {
+  // Only apply offset for position: relative
+  if style.position != @style.Relative {
+    return (0.0, 0.0)
+  }
+  let inset = style.inset
+  // X offset: left takes precedence over right
+  let x_offset = match inset.left {
+    @types.Length(l) => l
+    @types.Percent(p) => container_width * p
+    @types.Auto =>
+      match inset.right {
+        @types.Length(r) => -r
+        @types.Percent(p) => -(container_width * p)
+        _ => 0.0
+      }
+    _ => 0.0
+  }
+  // Y offset: top takes precedence over bottom
+  let y_offset = match inset.top {
+    @types.Length(t) => t
+    @types.Percent(p) => container_height * p
+    @types.Auto =>
+      match inset.bottom {
+        @types.Length(b) => -b
+        @types.Percent(p) => -(container_height * p)
+        _ => 0.0
+      }
+    _ => 0.0
+  }
+  (x_offset, y_offset)
+}
+
+///|
 /// Check if a display type is a table row group (thead, tbody, tfoot)
 fn is_table_row_group(display : @style.Display) -> Bool {
   match display {
@@ -819,7 +859,13 @@ fn layout_row(
       }
     }
     let cell_layout = layout_cell(child, cell_width, cell_ctx, border_collapse)
-    let positioned_cell = { ..cell_layout, x: x_offset, y: 0.0 }
+    // Apply position: relative offset for cells
+    let (rel_x, rel_y) = calculate_relative_offset(
+      child.style,
+      cell_width,
+      cell_layout.height,
+    )
+    let positioned_cell = { ..cell_layout, x: x_offset + rel_x, y: rel_y }
     // Only count rowspan=1 cells towards max_height
     // Rowspan cells have their height distributed separately
     let rowspan = if child.style.rowspan > 0 { child.style.rowspan } else { 1 }
@@ -1462,7 +1508,17 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         child, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
         grid,
       )
-      let positioned_row = { ..row_layout, x: row_x_offset, y: y_offset }
+      // Apply position: relative offset for rows
+      let (rel_x, rel_y) = calculate_relative_offset(
+        child.style,
+        row_layout.width,
+        row_layout.height,
+      )
+      let positioned_row = {
+        ..row_layout,
+        x: row_x_offset + rel_x,
+        y: y_offset + rel_y,
+      }
       y_offset = y_offset + row_layout.height + border_spacing
       layout_map[idx] = positioned_row
       global_row_idx = global_row_idx + 1
@@ -1495,10 +1551,16 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
             row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
             grid,
           )
+          // Apply position: relative offset for rows inside groups
+          let (rel_x, rel_y) = calculate_relative_offset(
+            row.style,
+            row_layout.width,
+            row_layout.height,
+          )
           let positioned_row = {
             ..row_layout,
-            x: group_padding.left + group_border.left,
-            y: group_y + group_padding.top + group_border.top,
+            x: group_padding.left + group_border.left + rel_x,
+            y: group_y + group_padding.top + group_border.top + rel_y,
           }
           group_y = group_y + row_layout.height + border_spacing
           // Track max row width for consistent group width
@@ -1526,10 +1588,14 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       } else {
         row_content_width
       }
+      // Apply position: relative offset for row groups
+      let (rel_x, rel_y) = calculate_relative_offset(
+        group_style, row_content_width, group_height,
+      )
       let group_layout : @node.Layout = {
         id: child.id,
-        x: row_x_offset,
-        y: y_offset,
+        x: row_x_offset + rel_x,
+        y: y_offset + rel_y,
         width: group_width,
         height: group_height,
         margin: group_margin,

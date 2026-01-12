@@ -636,31 +636,54 @@ fn compute_with_collapse(
           parent_height, @double.infinity,
         )
 
+        // Check if height/width are definite (non-Auto) for aspect_ratio handling
+        let height_is_definite = match style.height {
+          @types.Length(_) | @types.Percent(_) => true
+          _ => false
+        }
+        let width_is_definite = match style.width {
+          @types.Length(_) | @types.Percent(_) => true
+          _ => false
+        }
+
         // Calculate initial width
+        // For replaced elements with aspect_ratio:
+        // - If width is Auto AND height is definite, let aspect_ratio compute width
         let initial_width : Double? = match style.width {
           @types.Length(w) => Some(w)
           @types.Percent(p) => Some(parent_width * p)
-          @types.Auto => {
-            let content_width = intrinsic.max_width +
-              padding.horizontal_sum() +
-              border.horizontal_sum()
-            // Text should not exceed parent width
-            Some(@types.min(content_width, parent_width))
-          }
+          @types.Auto =>
+            // If aspect_ratio is set and height is definite, use None to let aspect_ratio calculate
+            if style.aspect_ratio is Some(_) && height_is_definite {
+              None
+            } else {
+              let content_width = intrinsic.max_width +
+                padding.horizontal_sum() +
+                border.horizontal_sum()
+              // Text should not exceed parent width
+              Some(@types.min(content_width, parent_width))
+            }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             Some(parent_width)
         }
 
         // Calculate initial height
+        // For replaced elements with aspect_ratio:
+        // - If height is Auto AND width is definite, let aspect_ratio compute height
         let initial_height : Double? = match style.height {
           @types.Length(h) => Some(h)
           @types.Percent(p) => Some(parent_height * p)
           @types.Auto =>
-            Some(
-              intrinsic.max_height +
-              padding.vertical_sum() +
-              border.vertical_sum(),
-            )
+            // If aspect_ratio is set and width is definite, use None to let aspect_ratio calculate
+            if style.aspect_ratio is Some(_) && width_is_definite {
+              None
+            } else {
+              Some(
+                intrinsic.max_height +
+                padding.vertical_sum() +
+                border.vertical_sum(),
+              )
+            }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             Some(0.0)
         }
@@ -725,17 +748,19 @@ fn compute_with_collapse(
   let border = @types.resolve_rect(style.border, parent_width)
 
   // Check if margins can collapse with children
-  // Collapse blocked by: border, padding, or overflow hidden/scroll/auto
+  // Collapse blocked by: border, padding, overflow hidden/scroll/auto, or display:flow-root
+  // display:flow-root establishes a new BFC, which blocks margin collapse
   let overflow_blocks = match (style.overflow_x, style.overflow_y) {
     (@style.Overflow::Visible, @style.Overflow::Visible) => false
     _ => true
   }
+  let establishes_bfc = overflow_blocks || style.display == @style.FlowRoot
   let can_collapse_top = border.top == 0.0 &&
     padding.top == 0.0 &&
-    not(overflow_blocks)
+    not(establishes_bfc)
   let can_collapse_bottom = border.bottom == 0.0 &&
     padding.bottom == 0.0 &&
-    not(overflow_blocks)
+    not(establishes_bfc)
 
   // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
@@ -1015,46 +1040,86 @@ fn compute_with_collapse(
         let child_min_box = child_padding_left +
           child_padding_right +
           child_border.horizontal_sum()
+        // Helper function to calculate width from aspect-ratio
+        fn calc_aspect_width(
+          ratio : Double,
+          h : Double,
+          box_sizing : @style.BoxSizing,
+          padding_v : Double,
+          border_v : Double,
+          padding_h : Double,
+          border_h : Double,
+          min_box : Double,
+        ) -> Double {
+          if box_sizing == @style.BorderBox {
+            h * ratio
+          } else {
+            let content_height = h - padding_v - border_v
+            if content_height > 0.0 {
+              content_height * ratio + padding_h + border_h
+            } else {
+              min_box
+            }
+          }
+        }
+
+        let child_padding_v = resolve_dimension_intrinsic(
+            child_style.padding.top,
+          ) +
+          resolve_dimension_intrinsic(child_style.padding.bottom)
         let child_intrinsic_width : Double = match child_style.width {
           @types.Length(w) => @types.max(w, child_min_box)
           @types.Percent(_) => child_min_box // At minimum, padding+border
           @types.Auto =>
-            // For width:auto, use max-content of child's content
-            // Leaf nodes with MeasureFunc use intrinsic size
-            match child.measure {
-              Some(mf) => {
-                let intrinsic = (mf.func)(0.0, 0.0)
-                @types.max(intrinsic.max_width + child_min_box, child_min_box)
-              }
-              None =>
-                // Check if child has aspect-ratio with definite height
-                match (child_style.aspect_ratio, child_style.height) {
-                  (Some(ratio), @types.Length(h)) if ratio > 0.0 => {
-                    // Width from aspect-ratio
-                    // CSS spec: aspect-ratio applies to the box indicated by box-sizing
-                    let child_padding_v = resolve_dimension_intrinsic(
-                        child_style.padding.top,
-                      ) +
-                      resolve_dimension_intrinsic(child_style.padding.bottom)
-                    if child_style.box_sizing == @style.BorderBox {
-                      // Border-box: aspect-ratio applies directly to border-box
-                      h * ratio
-                    } else {
-                      // Content-box: height is adjusted to border-box, extract content height
-                      let content_height = h -
-                        child_padding_v -
-                        child_border.vertical_sum()
-                      if content_height > 0.0 {
-                        content_height * ratio +
-                        child_padding_left +
-                        child_padding_right +
-                        child_border.horizontal_sum()
-                      } else {
-                        child_min_box
-                      }
-                    }
+            // For width:auto, check if aspect-ratio can determine width from height
+            // This applies to both MeasureFunc elements (canvas, img) and regular elements
+            match (child_style.aspect_ratio, child_style.height) {
+              (Some(ratio), @types.Length(h)) if ratio > 0.0 =>
+                // Height is explicit length, use aspect-ratio
+                calc_aspect_width(
+                  ratio,
+                  h,
+                  child_style.box_sizing,
+                  child_padding_v,
+                  child_border.vertical_sum(),
+                  child_padding_left + child_padding_right,
+                  child_border.horizontal_sum(),
+                  child_min_box,
+                )
+              (Some(ratio), @types.Percent(p)) if ratio > 0.0 =>
+                // Height is percentage, resolve from parent height
+                match child_available_height {
+                  Some(parent_content_h) => {
+                    // child_available_height is already content height of parent
+                    // Add back padding+border to get border-box height for percentage
+                    let parent_h = parent_content_h +
+                      padding.vertical_sum() +
+                      border.vertical_sum()
+                    let h = parent_h * p
+                    calc_aspect_width(
+                      ratio,
+                      h,
+                      child_style.box_sizing,
+                      child_padding_v,
+                      child_border.vertical_sum(),
+                      child_padding_left + child_padding_right,
+                      child_border.horizontal_sum(),
+                      child_min_box,
+                    )
                   }
-                  _ =>
+                  None => child_min_box // Parent has no definite height
+                }
+              _ =>
+                // No aspect-ratio or height is auto, fall back to intrinsic/content width
+                match child.measure {
+                  Some(mf) => {
+                    let intrinsic = (mf.func)(0.0, 0.0)
+                    @types.max(
+                      intrinsic.max_width + child_min_box,
+                      child_min_box,
+                    )
+                  }
+                  None =>
                     if child.children.length() == 0 {
                       child_min_box // Leaf nodes with no content have padding+border as minimum
                     } else {
@@ -1428,6 +1493,24 @@ fn compute_with_collapse(
       actual_child_available_width,
     )
 
+    // For floats with explicit height, use that height for children's percentage resolution
+    // This is important for intrinsic sizing when children have height: %
+    let float_available_height : Double? = match child_style.height {
+      @types.Length(h) =>
+        Some(h - child_padding.vertical_sum() - child_border.vertical_sum())
+      @types.Percent(p) =>
+        match child_available_height {
+          Some(parent_h) =>
+            Some(
+              parent_h * p -
+              child_padding.vertical_sum() -
+              child_border.vertical_sum(),
+            )
+          None => None
+        }
+      _ => child_available_height
+    }
+
     // Calculate child's width (float elements use shrink-to-fit)
     let child_width = match child_style.width {
       @types.Length(w) => w
@@ -1436,7 +1519,7 @@ fn compute_with_collapse(
         // Shrink-to-fit: compute intrinsic width
         let intrinsic_ctx : @node.LayoutContext = {
           available_width: actual_child_available_width,
-          available_height: child_available_height,
+          available_height: float_available_height,
           sizing_mode: @node.MaxContent,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
@@ -1463,13 +1546,14 @@ fn compute_with_collapse(
       child_border.horizontal_sum()
     // For BFC-establishing children (flex/grid) with auto height, don't pass available_height
     // This allows them to size to their content rather than stretching
+    // Use float_available_height which accounts for float's own explicit height
     let child_height_for_ctx : Double? = match child_style.display {
       @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
         match child_style.height {
           @types.Auto => None
-          _ => child_available_height
+          _ => float_available_height
         }
-      _ => child_available_height
+      _ => float_available_height
     }
     let child_ctx : @node.LayoutContext = {
       available_width: if child_content_width > 0.0 {
@@ -1758,8 +1842,8 @@ fn compute_with_collapse(
   }
 
   // Calculate content height
-  // If this is a BFC (overflow is not visible), include float heights
-  let float_height = if overflow_blocks {
+  // If this is a BFC (overflow is not visible, or display:flow-root), include float heights
+  let float_height = if establishes_bfc {
     // BFC contains floats - include their height
     float_ctx.get_float_height()
   } else {

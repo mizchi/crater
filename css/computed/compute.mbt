@@ -381,6 +381,7 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.Display::TableColumnGroup => "table-column-group"
         @style.Display::None => "none"
         @style.Display::Contents => "contents"
+        @style.Display::FlowRoot => "flow-root"
       }
     "position" =>
       match style.position {
