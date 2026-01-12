@@ -1,9 +1,0 @@
-{
-  "import": [
-    "mizchi/crater/css/selector",
-    "mizchi/crater/css/media"
-  ],
-  "wbtest-import": [
-    "mizchi/crater/css/parser"
-  ]
-}

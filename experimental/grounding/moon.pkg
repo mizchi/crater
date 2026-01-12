@@ -1,0 +1,7 @@
+import { "mizchi/crater/aom" }
+
+import "test" {
+  "mizchi/crater/html",
+  "mizchi/crater/tree",
+  "mizchi/crater/compute/dispatch",
+}

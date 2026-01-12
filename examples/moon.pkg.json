@@ -1,8 +1,0 @@
-{
-  "is-main": true,
-  "import": [
-    "mizchi/crater/tree",
-    "mizchi/crater/style",
-    "mizchi/crater/compute/dispatch"
-  ]
-}

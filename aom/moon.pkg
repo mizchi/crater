@@ -1,0 +1,13 @@
+import {
+  "mizchi/crater/html",
+  "mizchi/crater/css/parser",
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/tree",
+  "mizchi/crater/node",
+}
+
+import "test" {
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+  "mizchi/crater/compute/dispatch",
+}

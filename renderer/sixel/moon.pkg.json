@@ -1,8 +1,0 @@
-{
-  "import": [
-    "mizchi/crater/node",
-    "mizchi/crater/style",
-    "mizchi/crater/paint",
-    "mizchi/crater/types"
-  ]
-}
