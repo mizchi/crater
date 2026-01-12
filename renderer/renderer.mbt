@@ -824,6 +824,12 @@ pub fn render_with_external_css(
     stylesheets.push(stylesheet)
   }
 
+  // Build indexed stylesheets for faster selector matching
+  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  for stylesheet in stylesheets {
+    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+  }
+
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
 
@@ -839,6 +845,7 @@ pub fn render_with_external_css(
     None,
     ctx,
     stylesheets,
+    indexed_stylesheets,
     css_vars,
   )
 
@@ -920,6 +927,12 @@ pub fn render_document_with_external_css(
     stylesheets.push(stylesheet)
   }
 
+  // Build indexed stylesheets for faster selector matching
+  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  for stylesheet in stylesheets {
+    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+  }
+
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
 
@@ -935,6 +948,7 @@ pub fn render_document_with_external_css(
     None,
     ctx,
     stylesheets,
+    indexed_stylesheets,
     css_vars,
   )
 
@@ -1083,13 +1097,25 @@ pub fn render_to_node_with_external_css(
     let stylesheet = @parser.parse_stylesheet(css)
     stylesheets.push(stylesheet)
   }
+  // Build indexed stylesheets for faster selector matching
+  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  for stylesheet in stylesheets {
+    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+  }
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
   let render_root = match find_body(doc.root) {
     Some(body) => body
     None => doc.root
   }
-  element_to_node_with_styles(render_root, None, ctx, stylesheets, css_vars)
+  element_to_node_with_styles(
+    render_root,
+    None,
+    ctx,
+    stylesheets,
+    indexed_stylesheets,
+    css_vars,
+  )
 }
 
 ///|
@@ -1111,13 +1137,25 @@ pub fn render_to_node_with_document(
     let stylesheet = @parser.parse_stylesheet(css)
     stylesheets.push(stylesheet)
   }
+  // Build indexed stylesheets for faster selector matching
+  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  for stylesheet in stylesheets {
+    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+  }
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
   let render_root = match find_body(doc.root) {
     Some(body) => body
     None => doc.root
   }
-  element_to_node_with_styles(render_root, None, ctx, stylesheets, css_vars)
+  element_to_node_with_styles(
+    render_root,
+    None,
+    ctx,
+    stylesheets,
+    indexed_stylesheets,
+    css_vars,
+  )
 }
 
 ///|
@@ -1161,16 +1199,17 @@ fn element_to_node_with_styles(
   parent : @selector.Element?,
   ctx : RenderContext,
   stylesheets : Array[@cascade.Stylesheet],
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
   css_vars : Map[String, String],
 ) -> @node.Node {
   // Convert HTML element to selector element for matching
   let selector_elem = html_to_selector_element(elem, parent)
 
-  // Get style from stylesheet matching + inline style
-  let computed_style = compute_element_style(
+  // Get style from stylesheet matching + inline style (using indexed for performance)
+  let computed_style = compute_element_style_indexed(
     selector_elem,
     elem.style,
-    stylesheets,
+    indexed_stylesheets,
     parent is None,
     ctx,
     None, // Root element has no parent style
@@ -1242,6 +1281,7 @@ fn element_to_node_with_styles(
           child_selector,
           ctx,
           stylesheets,
+          indexed_stylesheets,
           Some(style),
           css_vars,
         )
@@ -1269,14 +1309,15 @@ fn element_to_node_with_styles_internal(
   selector_elem : @selector.Element,
   ctx : RenderContext,
   stylesheets : Array[@cascade.Stylesheet],
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
   parent_style : @style.Style?,
   css_vars : Map[String, String],
 ) -> @node.Node {
-  // Get style from stylesheet matching + inline style
-  let computed_style = compute_element_style(
+  // Get style from stylesheet matching + inline style (using indexed for performance)
+  let computed_style = compute_element_style_indexed(
     selector_elem,
     elem.style,
-    stylesheets,
+    indexed_stylesheets,
     false,
     ctx,
     parent_style,
@@ -1356,6 +1397,7 @@ fn element_to_node_with_styles_internal(
           child_selector,
           ctx,
           stylesheets,
+          indexed_stylesheets,
           Some(style),
           css_vars,
         )
@@ -1854,11 +1896,11 @@ fn get_ua_default_style(tag : String) -> @style.Style {
 }
 
 ///|
-/// Compute element style from stylesheet matches and inline style
-fn compute_element_style(
+/// Compute element style using indexed stylesheets for better performance
+fn compute_element_style_indexed(
   selector_elem : @selector.Element,
   inline_css : String?,
-  stylesheets : Array[@cascade.Stylesheet],
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
   is_root : Bool,
   ctx : RenderContext,
   parent_style : @style.Style?,
@@ -1870,10 +1912,10 @@ fn compute_element_style(
     ctx.viewport_height,
     ctx.color_scheme,
   )
-  // Match stylesheets and get cascaded values with media query evaluation
-  let cascaded = @cascade.cascade_element_with_media(
+  // Match stylesheets using index and get cascaded values
+  let cascaded = @cascade.cascade_element_indexed(
     selector_elem,
-    stylesheets,
+    indexed_stylesheets,
     [],
     Some(media_env),
   )
@@ -1882,19 +1924,16 @@ fn compute_element_style(
   let mut style = @style.Style::default()
 
   // Inherit properties from parent first
-  // CSS inherited properties: color, font-size, line-height, visibility, etc.
   match parent_style {
     Some(ps) => {
-      // Calculate line-height ratio from parent
       let lh_ratio = if ps.font_size > 0.0 {
         ps.line_height / ps.font_size
       } else {
-        1.2 // Default ratio
+        1.2
       }
-      // Apply inherited properties (color and font properties)
       style = {
         ..style,
-        color: ps.color, // CSS color is inherited
+        color: ps.color,
         font_size: ps.font_size,
         line_height: ps.font_size * lh_ratio,
       }
@@ -1902,19 +1941,15 @@ fn compute_element_style(
     None => ()
   }
 
-  // Apply user-agent default style (UA styles override inherited values)
+  // Apply user-agent default style
   let ua_style = get_ua_default_style(selector_elem.tag_name)
-  // Only apply UA color if it's explicitly set (not default black)
-  // This allows UA stylesheet to set link color to blue
   if ua_style.color != @types.Color::black() {
     style = { ..style, color: ua_style.color }
   }
-  // Apply display from UA style
   style = { ..style, display: ua_style.display }
-  // Apply margin/padding from UA style if set
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
 
-  // Apply cascaded values with correct viewport and CSS variables
+  // Apply cascaded values
   for prop in cascaded.properties() {
     match cascaded.get_value(prop) {
       Some(value) =>
@@ -1930,20 +1965,15 @@ fn compute_element_style(
     }
   }
 
-  // Preserve table layout for table elements even if CSS overrides display
-  // This handles cases where generic classes (like .code-line) set display: block
-  // on table elements, breaking table layout. We preserve the UA default display
-  // for table-related HTML elements to ensure proper table rendering.
+  // Preserve table layout
   let tag = selector_elem.tag_name
   if is_table_element(tag) {
-    // If CSS changed display to a non-table value, restore the UA default
     if not(is_table_display(style.display)) {
       style = { ..style, display: ua_style.display }
     }
   }
 
-  // Apply inline styles (override stylesheet styles)
-  // Parse inline CSS properties and apply them one by one
+  // Apply inline styles
   match inline_css {
     Some(css) =>
       style = apply_inline_css_with_vars(
@@ -1956,18 +1986,14 @@ fn compute_element_style(
     None => ()
   }
 
-  // Apply viewport dimensions if this is the root element
+  // Apply viewport dimensions if root
   if is_root {
     match style.width {
       @types.Dimension::Auto =>
         style = { ..style, width: @types.Dimension::Length(ctx.viewport_width) }
       _ => ()
     }
-    // height: auto - let block layout calculate from content
   }
-
-  // Adjust dimensions for box-sizing: content-box
-  // This handles both stylesheet and inline styles
   adjust_for_box_sizing(style)
 }
 

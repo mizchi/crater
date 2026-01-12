@@ -504,8 +504,10 @@ fn compute_min_content_flex_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         child_available_width,
       )
       let child_main = if child_is_row {
@@ -526,9 +528,9 @@ fn compute_min_content_flex_main_size(
         }
       }
       let margin_main = if child_is_row {
-        child_margin.left + child_margin.right
+        child_resolved.margin.left + child_resolved.margin.right
       } else {
-        child_margin.top + child_margin.bottom
+        child_resolved.margin.top + child_resolved.margin.bottom
       }
       total_main = total_main + child_main + margin_main
     }
@@ -551,8 +553,10 @@ fn compute_min_content_flex_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         child_available_width,
       )
       let child_cross = if child_is_row {
@@ -573,9 +577,9 @@ fn compute_min_content_flex_main_size(
         }
       }
       let margin_cross = if child_is_row {
-        child_margin.top + child_margin.bottom
+        child_resolved.margin.top + child_resolved.margin.bottom
       } else {
-        child_margin.left + child_margin.right
+        child_resolved.margin.left + child_resolved.margin.right
       }
       max_cross = max(max_cross, child_cross + margin_cross)
     }
@@ -621,16 +625,19 @@ fn compute_min_content_block_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         available_width,
       )
       let child_width = match child_style.width {
-        @types.Length(w) => w + child_margin.left + child_margin.right
+        @types.Length(w) =>
+          w + child_resolved.margin.left + child_resolved.margin.right
         _ =>
           compute_min_content_main_size(child, true, None, cache) +
-          child_margin.left +
-          child_margin.right
+          child_resolved.margin.left +
+          child_resolved.margin.right
       }
       max_width = max(max_width, child_width)
     }
@@ -648,8 +655,10 @@ fn compute_min_content_block_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         available_width,
       )
       let child_height = match child_style.height {
@@ -664,8 +673,8 @@ fn compute_min_content_block_main_size(
       }
       total_height = total_height +
         child_height +
-        child_margin.top +
-        child_margin.bottom
+        child_resolved.margin.top +
+        child_resolved.margin.bottom
     }
     total_height + padding.top + padding.bottom + border.top + border.bottom
   }
@@ -733,20 +742,15 @@ fn compute_intrinsic_flex_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects for all child box model values
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         child_available_width,
       )
-
-      // CSS rule: padding+border override explicit size if larger
-      let child_padding = @types.resolve_rect(
-        child_style.padding,
-        child_available_width,
-      )
-      let child_border = @types.resolve_rect(
-        child_style.border,
-        child_available_width,
-      )
+      let child_margin = child_resolved.margin
+      let child_padding = child_resolved.padding
+      let child_border = child_resolved.border
       let child_min_width = child_padding.horizontal_sum() +
         child_border.horizontal_sum()
       let child_min_height = child_padding.vertical_sum() +
@@ -857,10 +861,13 @@ fn compute_intrinsic_flex_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         child_available_width,
       )
+      let child_margin = child_resolved.margin
       let (child_main, child_cross) = if child_is_row {
         // Main is width, cross is height
         let main = match child_style.width {
@@ -1083,10 +1090,13 @@ fn compute_intrinsic_block_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         available_width,
       )
+      let child_margin = child_resolved.margin
       let child_width = match child_style.width {
         @types.Length(w) => w + child_margin.left + child_margin.right
         _ =>
@@ -1110,10 +1120,13 @@ fn compute_intrinsic_block_main_size(
         child_style.position == @style.Fixed {
         continue
       }
-      let child_margin = @types.resolve_rect(
-        child_style.margin,
+      // Use cached resolved rects
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
         available_width,
       )
+      let child_margin = child_resolved.margin
       let child_height = match child_style.height {
         @types.Length(h) => h + child_margin.top + child_margin.bottom
         _ =>
@@ -3535,11 +3548,14 @@ fn compute_internal(
     )
 
     // CSS rule: padding+border override explicit size constraints
-    let child_padding = @types.resolve_rect(
-      child_style.padding,
+    // Use cached resolved rects
+    let child_resolved = get_resolved_rects(
+      child_style,
+      child.uid,
       container_width,
     )
-    let child_border = @types.resolve_rect(child_style.border, container_width)
+    let child_padding = child_resolved.padding
+    let child_border = child_resolved.border
     let min_child_width = child_padding.horizontal_sum() +
       child_border.horizontal_sum()
     let min_child_height = child_padding.vertical_sum() +
@@ -3665,7 +3681,8 @@ fn compute_internal(
       // When no inset, child is at content box position (border + padding)
       params.margin_top + align_offset + border.top + padding.top
     }
-    let child_margin = @types.resolve_rect(child_style.margin, container_width)
+    // Use cached resolved rects (already computed above)
+    let child_margin = child_resolved.margin
 
     // Build child layout
     let child_layout : @node.Layout = {
@@ -3871,8 +3888,10 @@ fn compute_internal(
         ctx.viewport_height - child_height - b - params.margin_bottom
       (None, None) => params.margin_top
     }
-    let child_margin = @types.resolve_rect(
-      child_style.margin,
+    // Use cached resolved rects
+    let child_resolved = get_resolved_rects(
+      child_style,
+      child.uid,
       ctx.viewport_width,
     )
 
@@ -3883,7 +3902,7 @@ fn compute_internal(
       y: child_y,
       width: child_width,
       height: child_height,
-      margin: child_margin,
+      margin: child_resolved.margin,
       padding: child_inner.padding,
       border: child_inner.border,
       overflow_x: child_style.overflow_x,

@@ -307,22 +307,6 @@ fn cached_dispatch(
 }
 
 ///|
-/// Recursively check if a node or any descendant is dirty
-fn has_dirty_descendant(node : LayoutNode) -> Bool {
-  if node.dirty {
-    return true
-  }
-  if node.children_dirty {
-    for child in node.children {
-      if has_dirty_descendant(child) {
-        return true
-      }
-    }
-  }
-  false
-}
-
-///|
 /// Check if all children's cached sizes match the given layout's children sizes
 /// Returns true if sizes match AND no children are dirty
 /// (dirty children might compute to different sizes)
@@ -335,7 +319,9 @@ fn children_sizes_match(node : LayoutNode, layout : @node.Layout) -> Bool {
     let expected_layout = layout.children[i]
 
     // If child or any of its descendants is dirty, sizes might change
-    if has_dirty_descendant(child_node) {
+    // Optimization: Use dirty flags directly instead of recursive traversal
+    // children_dirty flag already tracks whether any descendant is dirty
+    if child_node.dirty || child_node.children_dirty {
       return false
     }
     match child_node.cached_layout {
