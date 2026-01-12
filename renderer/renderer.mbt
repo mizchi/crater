@@ -1429,24 +1429,70 @@ fn element_to_node_with_styles_internal(
         None => ()
       }
     }
-    // If intrinsic dimensions are specified, create a node with explicit dimensions
-    // Setting explicit width/height in style prevents flex stretch from overriding
-    if intrinsic_width > 0.0 || intrinsic_height > 0.0 {
+
+    // Check if CSS dimensions are percentages - we need to handle these specially
+    // even if intrinsic dimensions are 0
+    let height_is_percent = match style.height {
+      @types.Percent(_) => true
+      _ => false
+    }
+    let width_is_percent = match style.width {
+      @types.Percent(_) => true
+      _ => false
+    }
+
+    // Handle img with intrinsic dimensions OR CSS percentage dimensions
+    if intrinsic_width > 0.0 ||
+      intrinsic_height > 0.0 ||
+      height_is_percent ||
+      width_is_percent {
       let measure = create_image_measure(intrinsic_width, intrinsic_height)
       // Get alt text for accessibility/placeholder display
       let alt_text = elem.attributes.get("alt")
-      // Create a new style with explicit width/height to prevent flex stretch
+
+      // Calculate intrinsic aspect ratio (width / height)
+      let intrinsic_aspect_ratio = if intrinsic_height > 0.0 &&
+        intrinsic_width > 0.0 {
+        Some(intrinsic_width / intrinsic_height)
+      } else {
+        None
+      }
+
+      // Build img style similar to canvas:
+      // - Use HTML attribute dimension as default when CSS is Auto
+      // - CSS dimensions (%, px, etc.) override HTML attributes
+      // - Set aspect ratio from intrinsic dimensions if not already set
+      // - If height is %, keep width as Auto so aspect_ratio can compute it
       let img_style : @style.Style = {
         ..style,
-        width: if intrinsic_width > 0.0 {
-          @types.Length(intrinsic_width)
+        width: if style.width == @types.Auto {
+          // If height is %, keep width Auto to let aspect_ratio compute it
+          if height_is_percent {
+            @types.Auto
+          } else if intrinsic_width > 0.0 {
+            @types.Length(intrinsic_width)
+          } else {
+            style.width
+          }
         } else {
           style.width
         },
-        height: if intrinsic_height > 0.0 {
-          @types.Length(intrinsic_height)
+        height: if style.height == @types.Auto {
+          // If width is %, keep height Auto to let aspect_ratio compute it
+          if width_is_percent {
+            @types.Auto
+          } else if intrinsic_height > 0.0 {
+            @types.Length(intrinsic_height)
+          } else {
+            style.height
+          }
         } else {
           style.height
+        },
+        // Set aspect ratio from intrinsic dimensions (for % sizing)
+        aspect_ratio: match style.aspect_ratio {
+          Some(_) => style.aspect_ratio // Keep CSS-specified ratio
+          None => intrinsic_aspect_ratio // Use intrinsic ratio
         },
       }
       return match alt_text {
