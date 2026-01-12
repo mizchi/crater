@@ -2605,7 +2605,15 @@ fn compute_nested(
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
   }
-  compute_with_collapse(node, ctx, warnings).layout
+  // Use dispatch_layout for flex/grid containers, block layout for others
+  match node.style.display {
+    @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
+      match @node.get_layout_dispatcher() {
+        Some(_) => @node.dispatch_layout(node, ctx)
+        None => compute_with_collapse(node, ctx, warnings).layout
+      }
+    _ => compute_with_collapse(node, ctx, warnings).layout
+  }
 }
 
 ///|
@@ -2681,5 +2689,13 @@ fn compute_nested_intrinsic(
     viewport_width: 0.0,
     viewport_height: available_height.unwrap_or(0.0),
   }
-  compute_with_collapse(node, ctx, warnings).layout
+  // Use dispatch_layout for flex/grid containers, block layout for others
+  match node.style.display {
+    @style.Flex | @style.InlineFlex | @style.Grid | @style.InlineGrid =>
+      match @node.get_layout_dispatcher() {
+        Some(_) => @node.dispatch_layout(node, ctx)
+        None => compute_with_collapse(node, ctx, warnings).layout
+      }
+    _ => compute_with_collapse(node, ctx, warnings).layout
+  }
 }

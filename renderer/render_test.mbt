@@ -77,3 +77,78 @@ test "renderer_grid_column" {
   let mygrid_layout = layout.children[0]
   inspect(mygrid_layout.children[0].width, content="30")
 }
+
+///|
+test "flex_margin_no_collapse_wpt" {
+  // Mimics the exact WPT test flex-margin-no-collapse.html
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#container {
+    #|  display: flex;
+    #|  flex-direction: column;
+    #|  position: absolute;
+    #|  top: 100px;
+    #|  left: 10px;
+    #|  width: 200px;
+    #|  height: 300px;
+    #|}
+    #|.box {
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  flex: none;
+    #|}
+    #|#box1 { margin: 50px 0; }
+    #|#box2 { margin: 50px 0; }
+    #|</style>
+    #|<div id="container">
+    #|  <div id="box1" class="box"></div>
+    #|  <div id="box2" class="box"></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+
+  // Verify node structure
+  inspect(root.id, content="body")
+  let container = root.children[0]
+  inspect(container.id, content="div#container")
+  let box1 = container.children[0]
+  let box2 = container.children[1]
+  inspect(box1.id, content="div#box1")
+  inspect(box2.id, content="div#box2")
+
+  // Check if flex: none parsed correctly
+  inspect(box1.style.flex_shrink, content="0")
+  inspect(box1.style.flex_grow, content="0")
+  inspect(box2.style.flex_shrink, content="0")
+  inspect(box2.style.flex_grow, content="0")
+
+  // Check margins parsed correctly
+  inspect(box1.style.margin.top, content="Length(50)")
+  inspect(box1.style.margin.bottom, content="Length(50)")
+  inspect(box2.style.margin.top, content="Length(50)")
+  inspect(box2.style.margin.bottom, content="Length(50)")
+
+  // Check position: absolute on container
+  inspect(container.style.position, content="Absolute")
+
+  // Compute layout using render function (same as WASM API)
+  let layout = @renderer.render(html_str, ctx)
+
+  // Debug: check container dimensions
+  let container_layout = layout.children[0]
+  inspect(container_layout.id, content="div#container")
+  inspect(container_layout.x, content="10")
+  inspect(container_layout.y, content="100")
+  let box1_layout = container_layout.children[0]
+  let box2_layout = container_layout.children[1]
+
+  // Expected layout:
+  // box1.y = 50 (margin-top)
+  // box2.y = 50 + 100 + 50 + 50 = 250 (margin-top + height + margin-bottom + margin-top)
+  inspect(box1_layout.y, content="50")
+  inspect(box1_layout.height, content="100")
+  inspect(box2_layout.y, content="250")
+  inspect(box2_layout.height, content="100")
+}

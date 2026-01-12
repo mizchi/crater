@@ -3386,3 +3386,465 @@ test "row_column_nested_flex_with_text" {
   // Text should have its natural height
   inspect(layout.children[0].children[0].children[0].height, content="16")
 }
+
+///|
+// Test single item margin in column flex
+test "flex_column_single_margin" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0),
+    },
+    [box1],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // Check margin-top is applied
+  inspect(layout.children[0].margin.top, content="50")
+  inspect(layout.children[0].y, content="50") // Should be 50, not 0
+}
+
+///|
+// Test two items in column flex - simple case with only box2 having margin
+test "flex_column_two_items_second_margin" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    // No margin
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0),
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: no margin, y=0, height=100
+  inspect(layout.children[0].y, content="0")
+  // box2: margin-top=50, so y should be 100 (box1.height) + 50 = 150
+  inspect(layout.children[1].margin.top, content="50")
+  inspect(layout.children[1].y, content="150") // Expected: 150
+}
+
+///|
+// Test two items with no shrink - same as flex_margin_no_collapse but with flex-shrink: 0
+test "flex_margin_no_collapse_no_shrink" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_shrink: 0.0, // Disable shrink
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_shrink: 0.0, // Disable shrink
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0), // Small container, would have negative free space
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: margin-top=50, y=50
+  inspect(layout.children[0].y, content="50")
+  // box2: y should be 50 + 100 + 50 + 50 = 250
+  inspect(layout.children[1].y, content="250") // Expected: 250
+}
+
+///|
+// Test flex container with position: absolute (to match WPT test)
+test "flex_margin_no_collapse_absolute_container" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0, // flex: none
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0, // flex: none
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  // Container with position: absolute (key difference from previous tests)
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      position: @style.Absolute,
+      width: @types.Length( // This is the key difference!
+        200.0,
+      ),
+      height: @types.Length(300.0),
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: margin-top=50, y should be 50
+  inspect(layout.children[0].y, content="50")
+  // box2: y should be 50 + 100 + 50 + 50 = 250
+  inspect(layout.children[1].y, content="250")
+}
+
+///|
+// Test two items - box1 has all margins, box2 has margin-top only (larger container)
+test "flex_column_first_all_margins" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(0.0), // No bottom margin
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(500.0), // Larger container to have positive free space
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(500.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: margin-top=50, y=50, height=100, margin-bottom=50
+  inspect(layout.children[0].y, content="50")
+  // box2: y should be 50 + 100 + 50 + 50 = 250
+  inspect(layout.children[1].y, content="250") // Expected: 250
+}
+
+///|
+// Test two items - box1 has margin-bottom, box2 has margin-top (adjacent margins)
+test "flex_column_adjacent_margins" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0),
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: y=0, height=100, margin-bottom=50
+  inspect(layout.children[0].y, content="0")
+  // box2: y should be box1.height + box1.margin-bottom + box2.margin-top = 100 + 50 + 50 = 200
+  // In flex, margins do NOT collapse, so gap is 100px total (50+50)
+  inspect(layout.children[1].y, content="200") // Expected: 200
+}
+
+///|
+// Test two items - box1 has margin-top, box2 has margin-top
+test "flex_column_two_items_both_margin_top" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(0.0), // No bottom margin
+      left: @types.Length(0.0),
+    },
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0),
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: margin-top=50, y=50
+  inspect(layout.children[0].y, content="50")
+  // box2: y should be box1.y + box1.height + box2.margin-top = 50 + 100 + 50 = 200
+  inspect(layout.children[1].y, content="200") // Expected: 200
+}
+
+///|
+// Test two items - box1 has margin-bottom only
+test "flex_column_two_items_first_margin_bottom" {
+  let default_style = @style.Style::default()
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    // No margin
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0),
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // box1: y=0, height=100, margin-bottom=50
+  inspect(layout.children[0].y, content="0")
+  // box2: y should be box1.height + box1.margin-bottom = 100 + 50 = 150
+  inspect(layout.children[1].y, content="150") // Expected: 150
+}
+
+///|
+// Test that margins don't collapse in flex containers
+// WPT: flex-margin-no-collapse.html
+// Note: WPT uses flex: none which sets flex-shrink: 0
+test "flex_margin_no_collapse" {
+  let default_style = @style.Style::default()
+  // box1: 100x100, margin: 50px 0, flex: none (no shrink)
+  let box1 = @node.Node::leaf("box1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0, // flex: none
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  // box2: 100x100, margin: 50px 0, flex: none (no shrink)
+  let box2 = @node.Node::leaf("box2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0, // flex: none
+    margin: {
+      top: @types.Length(50.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @style.Flex,
+      flex_direction: @style.Column,
+      width: @types.Length(200.0),
+      height: @types.Length(300.0),
+    },
+    [box1, box2],
+  )
+  let ctx : @node.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(300.0),
+    sizing_mode: @node.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(container, ctx)
+  // Debug: check margin values in output
+  inspect(layout.children[0].margin.top, content="50")
+  inspect(layout.children[0].margin.bottom, content="50")
+  inspect(layout.children[1].margin.top, content="50")
+  // Check positions: margins should NOT collapse in flex
+  // box1.y = 50 (margin-top)
+  // box2.y = 50 + 100 + 50 + 50 = 250
+  inspect(layout.children[0].y, content="50")
+  inspect(layout.children[1].y, content="250")
+}
