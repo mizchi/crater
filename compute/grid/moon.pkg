@@ -4,6 +4,7 @@ import {
   "mizchi/crater/node",
   "mizchi/crater/compute/flex",
   "mizchi/crater/compute/block",
+  "mizchi/crater/compute/inline",
   "mizchi/crater/compute/absolute",
   "mizchi/crater/compute/table",
 }

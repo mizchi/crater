@@ -1,5 +1,6 @@
 import {
   "mizchi/crater/css/cascade",
+  "mizchi/crater/css/parser",
   "mizchi/crater/style",
   "mizchi/crater/types",
 }

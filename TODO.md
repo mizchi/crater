@@ -2,6 +2,7 @@
 
 ## Bugs
 
+
 ### TUI テーブルレンダリングで文字が1文字切れる
 
 **症状**
@@ -32,6 +33,11 @@
 - [x] `visibility: hidden` with child override capability
 - [x] CSS diagnostics system
 - [x] `aria-owns` support in accessibility tree
+- [x] Grid auto-placement dense の詰め戻し
+- [x] grid end line の明示指定に合わせた bounds 拡張
+- [x] repeat(auto-fit, ...) の collapse 対応
+- [x] grid-child-percent-basis-resize-1 の %高さ/スクロールの解決
+- [x] grid-flex-spanning-items-001 の min-content 幅解決
 
 ## High Priority (Remaining Issues)
 

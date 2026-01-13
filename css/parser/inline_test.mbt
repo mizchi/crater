@@ -185,6 +185,19 @@ test "grid-template-columns minmax" {
 }
 
 ///|
+test "grid-template-columns minmax min-content auto" {
+  let style = parse_inline_style(
+    "grid-template-columns: minmax(min-content, 100px) auto",
+  )
+  inspect(style.grid_template_columns.length(), content="2")
+  inspect(
+    style.grid_template_columns[0],
+    content="MinMax(MinContent, Length(100))",
+  )
+  inspect(style.grid_template_columns[1], content="Auto")
+}
+
+///|
 test "grid-template-columns repeat" {
   let style = parse_inline_style("grid-template-columns: repeat(3, 100px)")
   inspect(style.grid_template_columns.length(), content="1")

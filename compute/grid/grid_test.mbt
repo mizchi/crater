@@ -954,6 +954,38 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
   assert_eq(layout.children[2].width, 40.0)
 }
 
+///|
+test "grid_minmax_min_content_auto_track" {
+  let default_style = @style.Style::default()
+  let text_measure : @node.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+      {
+        min_width: 72.0,
+        max_width: 216.0,
+        min_height: 16.0,
+        max_height: 16.0,
+      }
+    },
+  }
+  let text = @node.Node::with_measure("text", default_style, text_measure)
+  let block_child = @node.Node::new("block", default_style, [text])
+  let root_style = {
+    ..default_style,
+    display: @style.Grid,
+    width: @types.Length(800.0),
+    grid_template_columns: [
+      @style.MinMax(
+        @style.MinTrackSizing::MinContent,
+        @style.MaxTrackSizing::Length(100.0),
+      ),
+      @style.Auto,
+    ],
+  }
+  let root = @node.Node::new("root", root_style, [block_child])
+  let layout = compute_grid_layout(root, 800.0, 600.0)
+  assert_eq(layout.children[0].width, 100.0)
+}
+
 // =============================================================================
 // Taffy Ported Tests - span
 // =============================================================================

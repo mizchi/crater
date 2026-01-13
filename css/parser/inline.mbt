@@ -963,6 +963,15 @@ fn parse_grid_template_tracks(
 }
 
 ///|
+/// Parse grid-template-columns or grid-template-rows from a raw string
+pub fn parse_grid_template_tracks_from_string(
+  value : String,
+) -> Array[@style.TrackSizingFunction] {
+  let tokens = @token.tokenize(value)
+  parse_grid_template_tracks(tokens[:])
+}
+
+///|
 /// Parse overflow property
 fn parse_overflow(tokens : ArrayView[@token.Token]) -> @style.Overflow? {
   if tokens.length() == 0 {

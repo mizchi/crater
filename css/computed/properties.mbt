@@ -427,89 +427,12 @@ pub fn parse_integer(value : String) -> Int {
 }
 
 ///|
-/// Parse a single track sizing value from string
-/// Supports: length (px), percentage, fr, auto, min-content, max-content
-fn parse_single_track(value : String) -> @style.TrackSizingFunction? {
-  let v = value.trim()
-  if v.is_empty() {
-    return None
-  }
-  // auto
-  if v == "auto" {
-    return Some(@style.TrackSizingFunction::Auto)
-  }
-  // min-content
-  if v == "min-content" {
-    return Some(@style.TrackSizingFunction::MinContent)
-  }
-  // max-content
-  if v == "max-content" {
-    return Some(@style.TrackSizingFunction::MaxContent)
-  }
-  // none
-  if v == "none" {
-    return None
-  }
-  // fr unit
-  match v.strip_suffix("fr") {
-    Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
-        _ => return None
-      }
-      return Some(@style.TrackSizingFunction::Fr(n))
-    }
-    None => ()
-  }
-  // percentage
-  match v.strip_suffix("%") {
-    Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
-        _ => return None
-      }
-      return Some(@style.TrackSizingFunction::Percent(n / 100.0))
-    }
-    None => ()
-  }
-  // px unit
-  match v.strip_suffix("px") {
-    Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
-        _ => return None
-      }
-      return Some(@style.TrackSizingFunction::Length(n))
-    }
-    None => ()
-  }
-  // Plain number (treated as px)
-  let n = @strconv.parse_double(v.to_string()) catch { _ => return None }
-  Some(@style.TrackSizingFunction::Length(n))
-}
-
-///|
 /// Parse grid-template-columns or grid-template-rows value
-/// Supports space-separated track sizes: "100px 200px 1fr"
-/// Note: minmax() and repeat() are not supported in this simple parser
+/// Delegate to the full parser to support minmax() and repeat().
 pub fn parse_grid_template_tracks(
   value : String,
 ) -> Array[@style.TrackSizingFunction] {
-  let result : Array[@style.TrackSizingFunction] = []
-  let v = value.trim()
-  if v.is_empty() || v == "none" {
-    return result
-  }
-  // Split by whitespace
-  let parts = v.split(" ")
-  for part in parts {
-    let part_str = part.to_string().trim()
-    if part_str.is_empty() {
-      continue
-    }
-    match parse_single_track(part_str.to_string()) {
-      Some(track) => result.push(track)
-      None => ()
-    }
-  }
-  result
+  @parser.parse_grid_template_tracks_from_string(value)
 }
 
 ///|

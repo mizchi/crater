@@ -105,6 +105,9 @@ function inlineExternalCSS(html: string, htmlPath: string): string {
 async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): Promise<LayoutNode> {
   const page = await browser.newPage();
   await page.setViewport(VIEWPORT);
+  page.on('pageerror', (error) => {
+    console.warn(`  Page error: ${error}`);
+  });
 
   // Set timeout for page operations
   page.setDefaultTimeout(5000);
@@ -114,8 +117,8 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
   await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 5000 });
 
   // Extract layout from all elements
-  const layout = await page.evaluate(() => {
-    function getComputedRect(el: Element, prop: 'margin' | 'padding' | 'border'): { top: number; right: number; bottom: number; left: number } {
+  const layout = await page.evaluate(`(() => {
+    function getComputedRect(el, prop) {
       const style = getComputedStyle(el);
       if (prop === 'border') {
         return {
@@ -126,44 +129,36 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
         };
       }
       return {
-        top: parseFloat(style[`${prop}Top` as keyof CSSStyleDeclaration] as string) || 0,
-        right: parseFloat(style[`${prop}Right` as keyof CSSStyleDeclaration] as string) || 0,
-        bottom: parseFloat(style[`${prop}Bottom` as keyof CSSStyleDeclaration] as string) || 0,
-        left: parseFloat(style[`${prop}Left` as keyof CSSStyleDeclaration] as string) || 0,
+        top: parseFloat(style[prop + 'Top']) || 0,
+        right: parseFloat(style[prop + 'Right']) || 0,
+        bottom: parseFloat(style[prop + 'Bottom']) || 0,
+        left: parseFloat(style[prop + 'Left']) || 0,
       };
     }
 
-    function getNodeId(el: Element): string {
-      if (el.id) return `${el.tagName.toLowerCase()}#${el.id}`;
+    function getNodeId(el) {
+      if (el.id) return el.tagName.toLowerCase() + '#' + el.id;
       if (el.className && typeof el.className === 'string') {
         const firstClass = el.className.split(' ')[0];
-        if (firstClass) return `${el.tagName.toLowerCase()}.${firstClass}`;
+        if (firstClass) return el.tagName.toLowerCase() + '.' + firstClass;
       }
       return el.tagName.toLowerCase();
     }
 
-    function extractLayout(el: Element, parentRect?: DOMRect): { top: number; right: number; bottom: number; left: number } & { id: string; x: number; y: number; width: number; height: number; margin: { top: number; right: number; bottom: number; left: number }; padding: { top: number; right: number; bottom: number; left: number }; border: { top: number; right: number; bottom: number; left: number }; children: any[] } {
+    function extractLayout(el, parentRect) {
       const rect = el.getBoundingClientRect();
-      const style = getComputedStyle(el);
       const padding = getComputedRect(el, 'padding');
       const border = getComputedRect(el, 'border');
-      const children: any[] = [];
-
-      // Calculate content box origin for child positioning
-      const contentX = rect.left + border.left + padding.left;
-      const contentY = rect.top + border.top + padding.top;
+      const children = [];
 
       for (const child of el.children) {
-        // Skip script, style, link, meta tags
         if (['SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'HEAD'].includes(child.tagName)) continue;
         children.push(extractLayout(child, rect));
       }
 
-      // Calculate position relative to parent's content box
       let x = rect.left;
       let y = rect.top;
       if (parentRect) {
-        const parentStyle = el.parentElement ? getComputedStyle(el.parentElement) : null;
         const parentPadding = el.parentElement ? getComputedRect(el.parentElement, 'padding') : { top: 0, left: 0, right: 0, bottom: 0 };
         const parentBorder = el.parentElement ? getComputedRect(el.parentElement, 'border') : { top: 0, left: 0, right: 0, bottom: 0 };
         x = rect.left - parentRect.left - parentBorder.left - parentPadding.left;
@@ -172,49 +167,47 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
 
       return {
         id: getNodeId(el),
-        x,
-        y,
+        x: x,
+        y: y,
         width: rect.width,
         height: rect.height,
         margin: getComputedRect(el, 'margin'),
-        padding,
-        border,
-        children,
-        top: 0, right: 0, bottom: 0, left: 0 // placeholder
+        padding: padding,
+        border: border,
+        children: children,
+        top: 0, right: 0, bottom: 0, left: 0
       };
     }
 
-    // Find the test element
     const body = document.body;
-
-    // Helper to normalize root position to (0,0) for comparison
-    function normalizeRoot(layout: any): any {
-      return { ...layout, x: 0, y: 0 };
+    function normalizeRoot(layout) {
+      return Object.assign({}, layout, { x: 0, y: 0 });
     }
 
-    // WPT tests often have a #test or #container element as the main test target
     const testElement = document.getElementById('test') || document.getElementById('container');
     if (testElement) {
       return normalizeRoot(extractLayout(testElement));
     }
 
-    // Otherwise, find the first meaningful element (skip p, script, etc.)
+    const gridElement = document.querySelector('.grid');
+    if (gridElement) {
+      return normalizeRoot(extractLayout(gridElement));
+    }
+
     const children = Array.from(body.children).filter(
-      el => !['SCRIPT', 'STYLE', 'LINK', 'META', 'P'].includes(el.tagName) &&
-            el.id !== 'log'
+      el => !['SCRIPT', 'STYLE', 'LINK', 'META', 'P'].includes(el.tagName) && el.id !== 'log'
     );
     if (children.length === 1) {
       return normalizeRoot(extractLayout(children[0]));
     }
 
-    // If multiple children, try to find a container div (first one)
     const divChildren = children.filter(el => el.tagName === 'DIV');
     if (divChildren.length >= 1) {
       return normalizeRoot(extractLayout(divChildren[0]));
     }
 
     return normalizeRoot(extractLayout(body));
-  });
+  })()`);
 
   await page.close();
   return layout as LayoutNode;
@@ -228,6 +221,9 @@ function prepareHtmlContent(htmlPath: string): string {
 
   // Inline external CSS files
   htmlContent = inlineExternalCSS(htmlContent, htmlPath);
+
+  // Remove scripts (WPT harness/tests) to avoid runtime errors
+  htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
   // Inject CSS reset at the beginning of head or body
   if (htmlContent.includes('<head>')) {
@@ -270,6 +266,11 @@ function getCraterLayout(htmlPath: string): LayoutNode {
       return normalizeRoot(testElement);
     }
 
+    const gridElement = findNodeByClass(layout, 'grid');
+    if (gridElement) {
+      return normalizeRoot(gridElement);
+    }
+
     // If root (body) has a single meaningful child, use that child
     // to match browser behavior
     const meaningfulChildren = layout.children.filter(
@@ -300,6 +301,20 @@ function findNodeById(node: LayoutNode, id: string): LayoutNode | null {
   }
   for (const child of node.children) {
     const found = findNodeById(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Find a node by class name in the layout tree
+ */
+function findNodeByClass(node: LayoutNode, className: string): LayoutNode | null {
+  if (node.id.endsWith('.' + className)) {
+    return node;
+  }
+  for (const child of node.children) {
+    const found = findNodeByClass(child, className);
     if (found) return found;
   }
   return null;
@@ -439,8 +454,18 @@ async function runTest(
 
   try {
     // Get layouts from both sources
-    const browserLayout = await getBrowserLayout(browser, htmlPath);
-    const craterLayout = getCraterLayout(htmlPath);
+    let browserLayout: LayoutNode;
+    try {
+      browserLayout = await getBrowserLayout(browser, htmlPath);
+    } catch (error) {
+      throw new Error(`browser layout failed: ${error}`);
+    }
+    let craterLayout: LayoutNode;
+    try {
+      craterLayout = getCraterLayout(htmlPath);
+    } catch (error) {
+      throw new Error(`crater layout failed: ${error}`);
+    }
 
     // Normalize crater positions to content-box relative (browser already uses content-box)
     const normalizedCraterLayout = normalizeCraterPositions(craterLayout);
