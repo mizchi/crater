@@ -119,17 +119,7 @@ pub fn collect_declarations(
   // Add declarations from matched rules
   for rule_match in matches {
     for decl in rule_match.declarations {
-      // Update specificity from the rule, keep declaration's source_order
-      // (which combines rule order and declaration order for proper cascade)
-      let updated : Declaration = {
-        property: decl.property,
-        value: decl.value,
-        origin: decl.origin,
-        importance: decl.importance,
-        specificity: rule_match.specificity,
-        source_order: decl.source_order,
-      }
-      result.push(updated)
+      result.push(decl)
     }
   }
 
