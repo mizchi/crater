@@ -17,39 +17,20 @@ async fn main {
   // Render function that creates the component tree
   fn render_ui() -> @tui.Component {
     let current_count = count.get()
-    @tui.box_(
-      {
-        ..@tui.BoxOptions::default(),
-        flex_direction: @style.FlexDirection::Column,
-        width: @types.Dimension::Length(width.to_double()),
-        height: @types.Dimension::Length(height.to_double()),
-        padding: 1.0,
-        border: Some(@tui.BorderChars::rounded()),
-        border_color: @tui.Color::cyan(),
-      },
+    @c.column(
       [
         // Title
-        @tui.box_(
-          {
-            ..@tui.BoxOptions::default(),
-            justify_content: @style.Alignment::Center,
-            margin_y: 1.0,
-          },
-          [@tui.styled_text("Counter Demo", fg=@tui.Color::yellow(), bold=true)],
+        @c.row(
+          [@c.text("Counter Demo", fg=@tui.Color::yellow(), bold=true)],
+          justify=@style.Alignment::Center,
+          margin_y=1.0,
         ),
         // Count display
-        @tui.box_(
-          {
-            ..@tui.BoxOptions::default(),
-            flex_direction: @style.FlexDirection::Column,
-            align_items: @style.Alignment::Center,
-            flex_grow: 1.0,
-            justify_content: @style.Alignment::Center,
-          },
+        @c.column(
           [
-            @tui.text("Count:"),
-            @tui.spacer(),
-            @tui.styled_text(
+            @c.text("Count:"),
+            @c.spacer(),
+            @c.text(
               current_count.to_string(),
               fg=if current_count >= 0 {
                 @tui.Color::green()
@@ -59,22 +40,27 @@ async fn main {
               bold=true,
             ),
           ],
+          flex_grow=1.0,
+          justify=@style.Alignment::Center,
+          align=@style.Alignment::Center,
         ),
         // Instructions
-        @tui.box_(
-          {
-            ..@tui.BoxOptions::default(),
-            justify_content: @style.Alignment::Center,
-            margin_y: 1.0,
-          },
+        @c.row(
           [
-            @tui.styled_text(
+            @c.text(
               "q: quit | +/k: increment | -/j: decrement | r: reset",
               fg=@tui.Color::rgb(128, 128, 128),
             ),
           ],
+          justify=@style.Alignment::Center,
+          margin_y=1.0,
         ),
       ],
+      width=@types.Dimension::Length(width.to_double()),
+      height=@types.Dimension::Length(height.to_double()),
+      padding=1.0,
+      border=Some(@tui.BorderChars::rounded()),
+      border_color=@tui.Color::cyan(),
     )
   }
 
