@@ -32,6 +32,12 @@ pub fn ansi_bg_256(color_idx : Int) -> String {
 }
 
 ///|
+/// Reset background color to default
+pub fn ansi_bg_reset() -> String {
+  "\u001b[49m"
+}
+
+///|
 pub fn ansi_move_to(row : Int, col : Int) -> String {
   "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
 }
@@ -146,8 +152,12 @@ pub fn buffer_to_ansi(buf : CharBuffer) -> String {
         sb.write_string(ansi_fg_256(fg_idx))
         last_fg = fg_idx
       }
-      if bg_idx >= 0 && bg_idx != last_bg {
-        sb.write_string(ansi_bg_256(bg_idx))
+      if bg_idx != last_bg {
+        if bg_idx >= 0 {
+          sb.write_string(ansi_bg_256(bg_idx))
+        } else {
+          sb.write_string(ansi_bg_reset())
+        }
         last_bg = bg_idx
       }
       sb.write_char(cell.char)
@@ -211,8 +221,12 @@ pub fn buffer_diff_to_ansi(current : CharBuffer, prev : CharBuffer) -> String {
         sb.write_string(ansi_fg_256(fg_idx))
         last_fg = fg_idx
       }
-      if bg_idx >= 0 && bg_idx != last_bg {
-        sb.write_string(ansi_bg_256(bg_idx))
+      if bg_idx != last_bg {
+        if bg_idx >= 0 {
+          sb.write_string(ansi_bg_256(bg_idx))
+        } else {
+          sb.write_string(ansi_bg_reset())
+        }
         last_bg = bg_idx
       }
       sb.write_char(cell.char)

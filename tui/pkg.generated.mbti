@@ -12,6 +12,8 @@ pub fn ansi_bg_256(Int) -> String
 
 pub fn ansi_bg_color(Color) -> String
 
+pub fn ansi_bg_reset() -> String
+
 pub fn ansi_bold() -> String
 
 pub fn ansi_clear_line() -> String
