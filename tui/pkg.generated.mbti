@@ -107,13 +107,19 @@ pub async fn sleep(Int) -> Unit
 
 pub fn spacer(flex_grow? : Double) -> Component
 
+pub fn start_inline_input(String, String, (InputResult) -> Unit) -> Unit
+
 pub async fn start_input_session(Int, Int, String) -> InputResult
 
 pub fn start_input_session_cb(String, (InputResult) -> Unit) -> Unit
 
 pub fn start_input_session_promise(String) -> @js_async.Promise[InputResult]
 
+pub fn start_keypress_listener((String) -> Unit) -> Unit
+
 pub fn start_render_ticker(Int, () -> Unit) -> Int
+
+pub fn stop_keypress_listener() -> Unit
 
 pub fn stop_render_ticker(Int) -> Unit
 
