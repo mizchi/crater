@@ -109,6 +109,10 @@ moon bench -p html
 - **Baseline alignment**: Partial implementation
 - **Writing modes**: Limited support for vertical text
 
+## Documentation
+
+- [API Reference](docs/api.md) - Public interface documentation
+
 ## Installation
 
 ```bash

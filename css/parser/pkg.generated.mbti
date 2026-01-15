@@ -8,6 +8,8 @@ import(
 )
 
 // Values
+pub fn parse_grid_template_tracks_from_string(String) -> Array[@style.TrackSizingFunction]
+
 pub fn parse_inline_style(String) -> @style.Style
 
 pub fn parse_stylesheet(String) -> @cascade.Stylesheet

@@ -959,12 +959,7 @@ test "grid_minmax_min_content_auto_track" {
   let default_style = @style.Style::default()
   let text_measure : @node.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
-      {
-        min_width: 72.0,
-        max_width: 216.0,
-        min_height: 16.0,
-        max_height: 16.0,
-      }
+      { min_width: 72.0, max_width: 216.0, min_height: 16.0, max_height: 16.0 }
     },
   }
   let text = @node.Node::with_measure("text", default_style, text_measure)
