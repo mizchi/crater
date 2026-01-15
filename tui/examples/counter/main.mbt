@@ -44,11 +44,22 @@ async fn main {
           justify=@style.Alignment::Center,
           align=@style.Alignment::Center,
         ),
+        // Buttons row
+        @c.row(
+          [
+            @c.button(" - ", min_width=7.0, bg=@tui.Color::rgb(100, 50, 50)),
+            @c.hspace(2.0),
+            @c.button("Reset", min_width=9.0, bg=@tui.Color::rgb(60, 60, 60)),
+            @c.hspace(2.0),
+            @c.button(" + ", min_width=7.0, bg=@tui.Color::rgb(50, 100, 50)),
+          ],
+          justify=@style.Alignment::Center,
+        ),
         // Instructions
         @c.row(
           [
             @c.text(
-              "q: quit | +/k: increment | -/j: decrement | r: reset",
+              "Click buttons or: q=quit | +/-=count | r=reset",
               fg=@tui.Color::rgb(128, 128, 128),
             ),
           ],
@@ -105,6 +116,34 @@ async fn main {
             count.set(count.get() - 1)
           // Reset
           @tui.KeyEvent::Char('r', @tui.KeyModifier::None) => count.set(0)
+          _ => need_render = false
+        }
+      @tui.InputEvent::Mouse(mouse_event) =>
+        match (mouse_event.event_type, mouse_event.button) {
+          (@tui.MouseEventType::Press, @tui.MouseButton::Left) => {
+            let x = mouse_event.x
+            let y = mouse_event.y
+            // Use hit_test to find clicked component
+            match app.hit_test(x, y) {
+              Some(hit) => {
+                // Detect button by examining hit result position
+                let hit_center_x = hit.x + hit.width / 2
+                let screen_center_x = width / 2
+                // Button has border (height ~7) and reasonable width
+                if hit.width >= 5 && hit.width <= 12 && hit.height >= 3 {
+                  // Looks like a button - determine which one by position
+                  if hit_center_x < screen_center_x - 8 {
+                    count.set(count.get() - 1) // Left button: decrement
+                  } else if hit_center_x > screen_center_x + 8 {
+                    count.set(count.get() + 1) // Right button: increment
+                  } else {
+                    count.set(0) // Center button: reset
+                  }
+                }
+              }
+              None => ()
+            }
+          }
           _ => need_render = false
         }
       _ => need_render = false

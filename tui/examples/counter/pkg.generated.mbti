@@ -6,6 +6,7 @@ package "mizchi/crater-tui/examples/counter"
 // Errors
 
 // Types and methods
+type ButtonBounds
 
 // Type aliases
 

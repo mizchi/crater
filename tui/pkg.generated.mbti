@@ -40,7 +40,7 @@ pub fn ansi_show_cursor() -> String
 
 pub fn ansi_underline() -> String
 
-pub fn box_(BoxOptions, Array[Component]) -> Component
+pub fn box(Array[Component], width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, flex_direction? : @style.FlexDirection, flex_wrap? : @style.FlexWrap, justify_content? : @style.Alignment, align_items? : @style.Alignment, align_content? : @style.Alignment, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : BorderChars?, border_color? : Color, bg? : Color, fg? : Color) -> Component
 
 pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
 
@@ -61,6 +61,12 @@ pub fn enable_mouse() -> String
 pub fn enable_raw_mode() -> Unit
 
 pub fn get_terminal_size() -> (Int, Int)
+
+pub fn handle_click(@node.Layout, EventHandlers, Int, Int) -> Bool
+
+pub fn hit_test(@node.Layout, Int, Int, Int, Int) -> HitTestResult?
+
+pub fn hit_test_root(@node.Layout, Int, Int) -> HitTestResult?
 
 pub fn key_is_char(KeyEvent, Char) -> Bool
 
@@ -105,10 +111,15 @@ pub struct App {
   width : Int
   height : Int
   mut prev_buffer : CharBuffer?
+  mut last_layout : @node.Layout?
+  handlers : EventHandlers
 }
 pub fn App::create_render_effect(Self, () -> Component, (String) -> Unit) -> () -> Unit
+pub fn App::handle_mouse(Self, MouseEvent) -> Bool
+pub fn App::hit_test(Self, Int, Int) -> HitTestResult?
 pub fn App::init_terminal() -> String
 pub fn App::new(Int, Int) -> Self
+pub fn App::on_click(Self, String, () -> Unit) -> Unit
 pub fn App::render(Self, Component) -> String
 pub fn App::render_frame(Self, Component) -> String
 pub fn App::restore_terminal() -> String
@@ -125,35 +136,6 @@ pub fn BorderChars::ascii() -> Self
 pub fn BorderChars::double() -> Self
 pub fn BorderChars::rounded() -> Self
 pub fn BorderChars::single() -> Self
-
-pub(all) struct BoxOptions {
-  width : @types.Dimension
-  height : @types.Dimension
-  min_width : @types.Dimension
-  min_height : @types.Dimension
-  max_width : @types.Dimension
-  max_height : @types.Dimension
-  flex_grow : Double
-  flex_shrink : Double
-  flex_basis : @types.Dimension
-  flex_direction : @style.FlexDirection
-  flex_wrap : @style.FlexWrap
-  justify_content : @style.Alignment
-  align_items : @style.Alignment
-  align_content : @style.Alignment
-  gap : Double
-  padding : Double
-  padding_x : Double
-  padding_y : Double
-  margin : Double
-  margin_x : Double
-  margin_y : Double
-  border : BorderChars?
-  border_color : Color
-  bg : Color
-  fg : Color
-}
-pub fn BoxOptions::default() -> Self
 
 pub struct CharBuffer {
   width : Int
@@ -183,6 +165,10 @@ pub fn CharCell::from_char(Char) -> Self
 pub fn CharCell::styled(Char, Color, Color) -> Self
 pub impl Eq for CharCell
 
+pub struct ClickHandler(() -> Unit)
+#deprecated
+pub fn ClickHandler::inner(Self) -> () -> Unit
+
 pub(all) struct Color {
   r : Int
   g : Int
@@ -208,6 +194,21 @@ pub struct Component {
   node : @node.Node
   styles : RenderStyleMap
   texts : TextContentMap
+}
+
+pub struct EventHandlers {
+  click_handlers : Map[String, ClickHandler]
+}
+pub fn EventHandlers::get_click(Self, String) -> ClickHandler?
+pub fn EventHandlers::new() -> Self
+pub fn EventHandlers::on_click(Self, String, ClickHandler) -> Unit
+
+pub(all) struct HitTestResult {
+  id : String
+  x : Int
+  y : Int
+  width : Int
+  height : Int
 }
 
 pub(all) enum InputEvent {

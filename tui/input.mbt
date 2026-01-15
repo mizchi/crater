@@ -13,7 +13,7 @@ pub(all) enum KeyModifier {
   CtrlAlt
   ShiftAlt
   CtrlShiftAlt
-}
+} derive(Show)
 
 ///|
 /// Special keys
@@ -34,14 +34,14 @@ pub(all) enum SpecialKey {
   Enter
   Escape
   F(Int)
-}
+} derive(Show)
 
 ///|
 /// Keyboard event
 pub(all) enum KeyEvent {
   Char(Char, KeyModifier)
   Special(SpecialKey, KeyModifier)
-}
+} derive(Show)
 
 ///|
 /// Mouse button
@@ -52,7 +52,7 @@ pub(all) enum MouseButton {
   ScrollUp
   ScrollDown
   None
-}
+} derive(Show)
 
 ///|
 /// Mouse event type
@@ -61,7 +61,7 @@ pub(all) enum MouseEventType {
   Release
   Move
   Drag
-}
+} derive(Show)
 
 ///|
 /// Mouse event
@@ -71,7 +71,7 @@ pub(all) struct MouseEvent {
   x : Int
   y : Int
   modifier : KeyModifier
-}
+} derive(Show)
 
 ///|
 /// Input event
@@ -80,7 +80,7 @@ pub(all) enum InputEvent {
   Mouse(MouseEvent)
   Resize(Int, Int)
   Unknown(String)
-}
+} derive(Show)
 
 ///|
 /// Parse a single byte as a character
@@ -161,6 +161,16 @@ fn parse_csi_sequence(chars : Array[Char]) -> InputEvent {
   }
   let final_char = chars[len - 1]
 
+  // Check for SGR mouse format first (ESC[<...M or ESC[<...m)
+  let is_sgr = len >= 4 && chars[2] == '<'
+  if is_sgr {
+    if final_char == 'M' {
+      return parse_mouse_sgr(chars, MouseEventType::Press)
+    } else if final_char == 'm' {
+      return parse_mouse_sgr(chars, MouseEventType::Release)
+    }
+  }
+
   // Simple arrow keys and navigation
   match final_char {
     'A' => InputEvent::Key(KeyEvent::Special(SpecialKey::Up, KeyModifier::None))
@@ -181,13 +191,7 @@ fn parse_csi_sequence(chars : Array[Char]) -> InputEvent {
     '~' => parse_tilde_sequence(chars)
     'M' => parse_mouse_x10(chars)
     'm' => parse_mouse_sgr(chars, MouseEventType::Release)
-    _ =>
-      // SGR mouse or other sequences
-      if final_char == 'M' && len > 3 {
-        parse_mouse_sgr(chars, MouseEventType::Press)
-      } else {
-        InputEvent::Unknown(String::from_array(chars))
-      }
+    _ => InputEvent::Unknown(String::from_array(chars))
   }
 }
 
