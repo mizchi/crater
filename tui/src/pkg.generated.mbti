@@ -1,0 +1,322 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-tui/src"
+
+import(
+  "mizchi/crater/node"
+  "mizchi/crater/style"
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn ansi_bg_256(Int) -> String
+
+pub fn ansi_bg_color(Color) -> String
+
+pub fn ansi_bold() -> String
+
+pub fn ansi_clear_line() -> String
+
+pub fn ansi_clear_screen() -> String
+
+pub fn ansi_enter_alt_screen() -> String
+
+pub fn ansi_fg_256(Int) -> String
+
+pub fn ansi_fg_color(Color) -> String
+
+pub fn ansi_hide_cursor() -> String
+
+pub fn ansi_leave_alt_screen() -> String
+
+pub fn ansi_move_to(Int, Int) -> String
+
+pub fn ansi_reset() -> String
+
+pub fn ansi_reverse() -> String
+
+pub fn ansi_show_cursor() -> String
+
+pub fn ansi_underline() -> String
+
+pub fn box_(BoxOptions, Array[Component]) -> Component
+
+pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
+
+pub fn buffer_to_ansi(CharBuffer) -> String
+
+pub fn char_display_width(Char) -> Int
+
+pub fn cleanup_stdin() -> Unit
+
+pub fn color_to_256(Color) -> Int
+
+pub fn compute_layout(@node.Node, Int, Int) -> @node.Layout
+
+pub fn disable_mouse() -> String
+
+pub fn enable_mouse() -> String
+
+pub fn enable_raw_mode() -> Unit
+
+pub fn get_terminal_size() -> (Int, Int)
+
+pub fn key_is_char(KeyEvent, Char) -> Bool
+
+pub fn key_is_ctrl_c(KeyEvent) -> Bool
+
+pub fn key_is_ctrl_q(KeyEvent) -> Bool
+
+pub fn key_is_special(KeyEvent, SpecialKey) -> Bool
+
+pub fn parse_input(String) -> InputEvent
+
+pub fn print_raw(String) -> Unit
+
+pub async fn read_key() -> String
+
+pub fn render_layout(CharBuffer, @node.Layout, RenderStyleMap, TextContentMap, Int, Int) -> Unit
+
+pub fn render_once(Int, Int, Component) -> String
+
+pub fn render_to_ansi(@node.Layout, RenderStyleMap, TextContentMap, Int, Int) -> String
+
+pub fn rgb_to_256(Int, Int, Int) -> Int
+
+pub fn run_app(Int, Int, () -> Component, (String) -> Unit) -> () -> Unit
+
+pub async fn sleep(Int) -> Unit
+
+pub fn spacer(flex_grow? : Double) -> Component
+
+pub fn string_display_width(String) -> Int
+
+pub fn styled_text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
+
+pub fn text(String, TextOptions) -> Component
+
+pub fn text_(String) -> Component
+
+pub fn text_measure_func(String) -> @node.MeasureFunc
+
+// Errors
+
+// Types and methods
+pub struct App {
+  width : Int
+  height : Int
+  mut prev_buffer : CharBuffer?
+}
+pub fn App::create_render_effect(Self, () -> Component, (String) -> Unit) -> () -> Unit
+pub fn App::init_terminal() -> String
+pub fn App::new(Int, Int) -> Self
+pub fn App::render(Self, Component) -> String
+pub fn App::render_frame(Self, Component) -> String
+pub fn App::restore_terminal() -> String
+
+pub(all) struct BorderChars {
+  top_left : Char
+  top_right : Char
+  bottom_left : Char
+  bottom_right : Char
+  horizontal : Char
+  vertical : Char
+}
+pub fn BorderChars::ascii() -> Self
+pub fn BorderChars::double() -> Self
+pub fn BorderChars::rounded() -> Self
+pub fn BorderChars::single() -> Self
+
+pub(all) struct BoxOptions {
+  width : @types.Dimension
+  height : @types.Dimension
+  min_width : @types.Dimension
+  min_height : @types.Dimension
+  max_width : @types.Dimension
+  max_height : @types.Dimension
+  flex_grow : Double
+  flex_shrink : Double
+  flex_basis : @types.Dimension
+  flex_direction : @style.FlexDirection
+  flex_wrap : @style.FlexWrap
+  justify_content : @style.Alignment
+  align_items : @style.Alignment
+  align_content : @style.Alignment
+  gap : Double
+  padding : Double
+  padding_x : Double
+  padding_y : Double
+  margin : Double
+  margin_x : Double
+  margin_y : Double
+  border : BorderChars?
+  border_color : Color
+  bg : Color
+  fg : Color
+}
+pub fn BoxOptions::default() -> Self
+
+pub struct CharBuffer {
+  width : Int
+  height : Int
+  cells : Array[CharCell]
+}
+pub fn CharBuffer::clear(Self) -> Unit
+pub fn CharBuffer::clone(Self) -> Self
+pub fn CharBuffer::fill_bg(Self, Int, Int, Int, Int, Color) -> Unit
+pub fn CharBuffer::fill_rect(Self, Int, Int, Int, Int, CharCell) -> Unit
+pub fn CharBuffer::get_cell(Self, Int, Int) -> CharCell
+pub fn CharBuffer::new(Int, Int) -> Self
+pub fn CharBuffer::set_cell(Self, Int, Int, CharCell) -> Unit
+pub fn CharBuffer::write_text(Self, Int, Int, String, TextStyle, Int) -> Int
+pub fn CharBuffer::write_text_wrapped(Self, Int, Int, String, TextStyle, Int, Int) -> Int
+
+pub(all) struct CharCell {
+  char : Char
+  fg : Color
+  bg : Color
+  bold : Bool
+  underline : Bool
+  reverse : Bool
+}
+pub fn CharCell::default() -> Self
+pub fn CharCell::from_char(Char) -> Self
+pub fn CharCell::styled(Char, Color, Color) -> Self
+pub impl Eq for CharCell
+
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+  a : Double
+}
+pub fn Color::black() -> Self
+pub fn Color::blue() -> Self
+pub fn Color::cyan() -> Self
+pub fn Color::from_crater(@types.Color) -> Self
+pub fn Color::green() -> Self
+pub fn Color::is_transparent(Self) -> Bool
+pub fn Color::magenta() -> Self
+pub fn Color::red() -> Self
+pub fn Color::rgb(Int, Int, Int) -> Self
+pub fn Color::rgba(Int, Int, Int, Double) -> Self
+pub fn Color::transparent() -> Self
+pub fn Color::white() -> Self
+pub fn Color::yellow() -> Self
+pub impl Eq for Color
+
+pub struct Component {
+  node : @node.Node
+  styles : RenderStyleMap
+  texts : TextContentMap
+}
+
+pub(all) enum InputEvent {
+  Key(KeyEvent)
+  Mouse(MouseEvent)
+  Resize(Int, Int)
+  Unknown(String)
+}
+
+pub(all) enum KeyEvent {
+  Char(Char, KeyModifier)
+  Special(SpecialKey, KeyModifier)
+}
+
+pub(all) enum KeyModifier {
+  None
+  Shift
+  Ctrl
+  Alt
+  CtrlShift
+  CtrlAlt
+  ShiftAlt
+  CtrlShiftAlt
+}
+
+pub(all) enum MouseButton {
+  Left
+  Middle
+  Right
+  ScrollUp
+  ScrollDown
+  None
+}
+
+pub(all) struct MouseEvent {
+  button : MouseButton
+  event_type : MouseEventType
+  x : Int
+  y : Int
+  modifier : KeyModifier
+}
+
+pub(all) enum MouseEventType {
+  Press
+  Release
+  Move
+  Drag
+}
+
+pub(all) struct RenderStyle {
+  fg : Color
+  bg : Color
+  bold : Bool
+  underline : Bool
+  border : BorderChars?
+  border_fg : Color
+}
+pub fn RenderStyle::default() -> Self
+
+pub struct RenderStyleMap(Map[String, RenderStyle])
+pub fn RenderStyleMap::get(Self, String) -> RenderStyle
+#deprecated
+pub fn RenderStyleMap::inner(Self) -> Map[String, RenderStyle]
+pub fn RenderStyleMap::new() -> Self
+pub fn RenderStyleMap::set(Self, String, RenderStyle) -> Unit
+
+pub(all) enum SpecialKey {
+  Up
+  Down
+  Left
+  Right
+  Home
+  End
+  PageUp
+  PageDown
+  Insert
+  Delete
+  Tab
+  BackTab
+  Backspace
+  Enter
+  Escape
+  F(Int)
+}
+
+pub struct TextContentMap(Map[String, String])
+pub fn TextContentMap::get(Self, String) -> String?
+#deprecated
+pub fn TextContentMap::inner(Self) -> Map[String, String]
+pub fn TextContentMap::new() -> Self
+pub fn TextContentMap::set(Self, String, String) -> Unit
+
+pub(all) struct TextOptions {
+  fg : Color
+  bg : Color
+  bold : Bool
+  underline : Bool
+}
+pub fn TextOptions::default() -> Self
+
+pub(all) struct TextStyle {
+  fg : Color
+  bg : Color
+  bold : Bool
+  underline : Bool
+}
+pub fn TextStyle::default() -> Self
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,12 @@
+{
+  "name": "mizchi/crater-tui",
+  "version": "0.0.1",
+  "deps": {
+    "mizchi/crater": {
+      "path": ".."
+    },
+    "mizchi/signals": "0.1.0",
+    "moonbitlang/async": "0.16.0"
+  },
+  "preferred-target": "js"
+}

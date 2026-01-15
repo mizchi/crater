@@ -1,0 +1,15 @@
+import {
+  "mizchi/crater/types",
+  "mizchi/crater/node",
+  "mizchi/crater/style",
+  "mizchi/crater",
+  "mizchi/signals",
+  "moonbitlang/async/js_async",
+}
+
+options(
+  targets: {
+    "io_js.mbt": ["js"],
+    "io_native.mbt": ["not", "js"],
+  },
+)
