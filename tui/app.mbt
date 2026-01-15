@@ -8,11 +8,19 @@ pub struct App {
   width : Int
   height : Int
   mut prev_buffer : CharBuffer?
+  pub mut last_layout : @node.Layout?
+  handlers : EventHandlers
 }
 
 ///|
 pub fn App::new(width : Int, height : Int) -> App {
-  { width, height, prev_buffer: None }
+  {
+    width,
+    height,
+    prev_buffer: None,
+    last_layout: None,
+    handlers: EventHandlers::new(),
+  }
 }
 
 ///|
@@ -20,6 +28,9 @@ pub fn App::new(width : Int, height : Int) -> App {
 pub fn App::render(self : App, component : Component) -> String {
   // Compute layout
   let layout = compute_layout(component.node, self.width, self.height)
+
+  // Save layout for hit testing
+  self.last_layout = Some(layout)
 
   // Create new buffer
   let buf = CharBuffer::new(self.width, self.height)
@@ -99,4 +110,38 @@ pub fn run_app(
 pub fn render_once(width : Int, height : Int, component : Component) -> String {
   let app = App::new(width, height)
   app.render(component)
+}
+
+///|
+/// Register a click handler for a component ID
+pub fn App::on_click(self : App, id : String, handler : () -> Unit) -> Unit {
+  self.handlers.on_click(id, ClickHandler(handler))
+}
+
+///|
+/// Handle a mouse event
+/// Returns true if an event handler was invoked
+pub fn App::handle_mouse(self : App, event : MouseEvent) -> Bool {
+  match event.event_type {
+    MouseEventType::Press =>
+      match event.button {
+        MouseButton::Left =>
+          match self.last_layout {
+            Some(layout) =>
+              handle_click(layout, self.handlers, event.x, event.y)
+            None => false
+          }
+        _ => false
+      }
+    _ => false
+  }
+}
+
+///|
+/// Perform hit test at coordinates
+pub fn App::hit_test(self : App, x : Int, y : Int) -> HitTestResult? {
+  match self.last_layout {
+    Some(layout) => hit_test_root(layout, x, y)
+    None => None
+  }
 }

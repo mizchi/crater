@@ -34,19 +34,13 @@ pub fn spacer(flex_grow? : Double = 1.0) -> @tui.Component {
 ///|
 /// Fixed-width horizontal spacer
 pub fn hspace(width : Double) -> @tui.Component {
-  @tui.box_(
-    { ..@tui.BoxOptions::default(), width: @types.Dimension::Length(width) },
-    [],
-  )
+  @tui.box([], width=@types.Dimension::Length(width))
 }
 
 ///|
 /// Fixed-height vertical spacer
 pub fn vspace(height : Double) -> @tui.Component {
-  @tui.box_(
-    { ..@tui.BoxOptions::default(), height: @types.Dimension::Length(height) },
-    [],
-  )
+  @tui.box([], height=@types.Dimension::Length(height))
 }
 
 ///|
@@ -55,22 +49,19 @@ pub fn hdivider(
   char? : Char = '-',
   fg? : @tui.Color = @tui.Color::white(),
 ) -> @tui.Component {
-  @tui.box_(
-    {
-      ..@tui.BoxOptions::default(),
-      flex_grow: 1.0,
-      height: @types.Dimension::Length(1.0),
-      border: Some({
-        top_left: char,
-        top_right: char,
-        bottom_left: char,
-        bottom_right: char,
-        horizontal: char,
-        vertical: char,
-      }),
-      border_color: fg,
-    },
+  @tui.box(
     [],
+    flex_grow=1.0,
+    height=@types.Dimension::Length(1.0),
+    border=Some({
+      top_left: char,
+      top_right: char,
+      bottom_left: char,
+      bottom_right: char,
+      horizontal: char,
+      vertical: char,
+    }),
+    border_color=fg,
   )
 }
 
@@ -80,22 +71,19 @@ pub fn vdivider(
   char? : Char = '|',
   fg? : @tui.Color = @tui.Color::white(),
 ) -> @tui.Component {
-  @tui.box_(
-    {
-      ..@tui.BoxOptions::default(),
-      flex_grow: 1.0,
-      width: @types.Dimension::Length(1.0),
-      border: Some({
-        top_left: char,
-        top_right: char,
-        bottom_left: char,
-        bottom_right: char,
-        horizontal: char,
-        vertical: char,
-      }),
-      border_color: fg,
-    },
+  @tui.box(
     [],
+    flex_grow=1.0,
+    width=@types.Dimension::Length(1.0),
+    border=Some({
+      top_left: char,
+      top_right: char,
+      bottom_left: char,
+      bottom_right: char,
+      horizontal: char,
+      vertical: char,
+    }),
+    border_color=fg,
   )
 }
 
@@ -106,10 +94,7 @@ pub fn bordered(
   style? : @tui.BorderChars = @tui.BorderChars::single(),
   color? : @tui.Color = @tui.Color::white(),
 ) -> @tui.Component {
-  @tui.box_(
-    { ..@tui.BoxOptions::default(), border: Some(style), border_color: color },
-    children,
-  )
+  @tui.box(children, border=Some(style), border_color=color)
 }
 
 ///|
@@ -118,24 +103,21 @@ pub fn padded(
   children : Array[@tui.Component],
   padding? : Double = 1.0,
 ) -> @tui.Component {
-  @tui.box_({ ..@tui.BoxOptions::default(), padding, }, children)
+  @tui.box(children, padding~)
 }
 
 ///|
 /// Center content
 pub fn center(children : Array[@tui.Component]) -> @tui.Component {
-  @tui.box_(
-    {
-      ..@tui.BoxOptions::default(),
-      justify_content: @style.Alignment::Center,
-      align_items: @style.Alignment::Center,
-    },
+  @tui.box(
     children,
+    justify_content=@style.Alignment::Center,
+    align_items=@style.Alignment::Center,
   )
 }
 
 ///|
 /// Fill available space
 pub fn fill(children : Array[@tui.Component]) -> @tui.Component {
-  @tui.box_({ ..@tui.BoxOptions::default(), flex_grow: 1.0 }, children)
+  @tui.box(children, flex_grow=1.0)
 }

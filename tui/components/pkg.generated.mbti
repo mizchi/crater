@@ -12,6 +12,8 @@ pub fn bold(String) -> @crater-tui.Component
 
 pub fn bordered(Array[@crater-tui.Component], style? : @crater-tui.BorderChars, color? : @crater-tui.Color) -> @crater-tui.Component
 
+pub fn button(String, id? : String, state? : ButtonState, fg? : @crater-tui.Color, bg? : @crater-tui.Color, hover_bg? : @crater-tui.Color, pressed_bg? : @crater-tui.Color, disabled_fg? : @crater-tui.Color, border_color? : @crater-tui.Color, min_width? : Double, padding_x? : Double, padding_y? : Double) -> @crater-tui.Component
+
 pub fn center(Array[@crater-tui.Component]) -> @crater-tui.Component
 
 pub fn colored(String, @crater-tui.Color) -> @crater-tui.Component
@@ -26,6 +28,8 @@ pub fn hdivider(char? : Char, fg? : @crater-tui.Color) -> @crater-tui.Component
 
 pub fn hspace(Double) -> @crater-tui.Component
 
+pub fn icon_button(String, state? : ButtonState, fg? : @crater-tui.Color, bg? : @crater-tui.Color, hover_bg? : @crater-tui.Color, pressed_bg? : @crater-tui.Color) -> @crater-tui.Component
+
 pub fn padded(Array[@crater-tui.Component], padding? : Double) -> @crater-tui.Component
 
 pub fn row(Array[@crater-tui.Component], width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, justify? : @style.Alignment, align? : @style.Alignment, wrap? : Bool, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : @crater-tui.BorderChars?, border_color? : @crater-tui.Color, bg? : @crater-tui.Color, fg? : @crater-tui.Color) -> @crater-tui.Component
@@ -34,6 +38,8 @@ pub fn spacer(flex_grow? : Double) -> @crater-tui.Component
 
 pub fn text(String, fg? : @crater-tui.Color, bg? : @crater-tui.Color, bold? : Bool, underline? : Bool) -> @crater-tui.Component
 
+pub fn text_button(String, state? : ButtonState, fg? : @crater-tui.Color, hover_fg? : @crater-tui.Color, pressed_fg? : @crater-tui.Color, disabled_fg? : @crater-tui.Color, underline? : Bool) -> @crater-tui.Component
+
 pub fn vdivider(char? : Char, fg? : @crater-tui.Color) -> @crater-tui.Component
 
 pub fn vspace(Double) -> @crater-tui.Component
@@ -41,6 +47,12 @@ pub fn vspace(Double) -> @crater-tui.Component
 // Errors
 
 // Types and methods
+pub(all) enum ButtonState {
+  Normal
+  Hover
+  Pressed
+  Disabled
+}
 
 // Type aliases
 
