@@ -109,6 +109,44 @@ pub fn handle_click(
 }
 
 ///|
+/// Find layout by ID
+/// Returns the position and size of the component with the given ID
+pub fn find_layout_by_id(
+  layout : @node.Layout,
+  target_id : String,
+  offset_x : Int,
+  offset_y : Int,
+) -> HitTestResult? {
+  let x = offset_x + layout.x.to_int()
+  let y = offset_y + layout.y.to_int()
+  let w = layout.width.to_int()
+  let h = layout.height.to_int()
+
+  // Check if this is the target
+  if layout.id == target_id {
+    return Some({ id: layout.id, x, y, width: w, height: h })
+  }
+
+  // Search children
+  for child in layout.children {
+    match find_layout_by_id(child, target_id, x, y) {
+      Some(result) => return Some(result)
+      None => continue
+    }
+  }
+  None
+}
+
+///|
+/// Find layout by ID from root
+pub fn find_layout_by_id_root(
+  layout : @node.Layout,
+  target_id : String,
+) -> HitTestResult? {
+  find_layout_by_id(layout, target_id, 0, 0)
+}
+
+///|
 /// Debug: dump layout tree structure
 pub fn dump_layout(
   layout : @node.Layout,

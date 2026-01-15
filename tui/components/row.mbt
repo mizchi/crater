@@ -5,6 +5,8 @@
 /// Create a horizontal row container
 pub fn row(
   children : Array[@tui.Component],
+  // ID
+  id? : String = "",
   // Size
   width? : @types.Dimension = @types.Dimension::Auto,
   height? : @types.Dimension = @types.Dimension::Auto,
@@ -36,6 +38,7 @@ pub fn row(
 ) -> @tui.Component {
   @tui.box(
     children,
+    id~,
     flex_direction=@style.FlexDirection::Row,
     flex_wrap=if wrap { @style.FlexWrap::Wrap } else { @style.FlexWrap::NoWrap },
     width~,

@@ -46,6 +46,8 @@ fn merge_components(
 /// Create a box component
 pub fn box(
   children : Array[Component],
+  // ID
+  id? : String = "",
   // Layout
   width? : @types.Dimension = @types.Dimension::Auto,
   height? : @types.Dimension = @types.Dimension::Auto,
@@ -74,7 +76,7 @@ pub fn box(
   bg? : Color = Color::transparent(),
   fg? : Color = Color::white(),
 ) -> Component {
-  let id = next_id()
+  let actual_id = if id == "" { next_id() } else { id }
 
   // Merge children's styles and texts
   let (styles, texts) = merge_components(children)
@@ -134,10 +136,10 @@ pub fn box(
 
   // Build node
   let child_nodes = children.map(fn(c) { c.node })
-  let node = @node.Node::new(id, style, child_nodes)
+  let node = @node.Node::new(actual_id, style, child_nodes)
 
   // Add this box's style
-  styles.set(id, {
+  styles.set(actual_id, {
     fg,
     bg,
     bold: false,

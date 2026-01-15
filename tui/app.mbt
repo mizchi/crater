@@ -8,7 +8,7 @@ pub struct App {
   width : Int
   height : Int
   mut prev_buffer : CharBuffer?
-  pub mut last_layout : @node.Layout?
+  mut last_layout : @node.Layout?
   handlers : EventHandlers
 }
 
@@ -144,4 +144,19 @@ pub fn App::hit_test(self : App, x : Int, y : Int) -> HitTestResult? {
     Some(layout) => hit_test_root(layout, x, y)
     None => None
   }
+}
+
+///|
+/// Find component by ID
+pub fn App::find_by_id(self : App, id : String) -> HitTestResult? {
+  match self.last_layout {
+    Some(layout) => find_layout_by_id_root(layout, id)
+    None => None
+  }
+}
+
+///|
+/// Clear the previous buffer to force a full re-render on next render call
+pub fn App::clear_prev_buffer(self : App) -> Unit {
+  self.prev_buffer = None
 }

@@ -5,6 +5,8 @@
 /// Create a vertical column container
 pub fn column(
   children : Array[@tui.Component],
+  // ID
+  id? : String = "",
   // Size
   width? : @types.Dimension = @types.Dimension::Auto,
   height? : @types.Dimension = @types.Dimension::Auto,
@@ -36,6 +38,7 @@ pub fn column(
 ) -> @tui.Component {
   @tui.box(
     children,
+    id~,
     flex_direction=@style.FlexDirection::Column,
     flex_wrap=if wrap { @style.FlexWrap::Wrap } else { @style.FlexWrap::NoWrap },
     width~,

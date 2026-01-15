@@ -5,9 +5,12 @@ import(
   "mizchi/crater/node"
   "mizchi/crater/style"
   "mizchi/crater/types"
+  "moonbitlang/async/js_async"
 )
 
 // Values
+pub fn abort_input_session() -> Unit
+
 pub fn ansi_bg_256(Int) -> String
 
 pub fn ansi_bg_color(Color) -> String
@@ -40,7 +43,7 @@ pub fn ansi_show_cursor() -> String
 
 pub fn ansi_underline() -> String
 
-pub fn box(Array[Component], width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, flex_direction? : @style.FlexDirection, flex_wrap? : @style.FlexWrap, justify_content? : @style.Alignment, align_items? : @style.Alignment, align_content? : @style.Alignment, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : BorderChars?, border_color? : Color, bg? : Color, fg? : Color) -> Component
+pub fn box(Array[Component], id? : String, width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, flex_direction? : @style.FlexDirection, flex_wrap? : @style.FlexWrap, justify_content? : @style.Alignment, align_items? : @style.Alignment, align_content? : @style.Alignment, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : BorderChars?, border_color? : Color, bg? : Color, fg? : Color) -> Component
 
 pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
 
@@ -56,9 +59,15 @@ pub fn compute_layout(@node.Node, Int, Int) -> @node.Layout
 
 pub fn disable_mouse() -> String
 
+pub fn dump_layout(@node.Layout, Int, Int, Int) -> String
+
 pub fn enable_mouse() -> String
 
 pub fn enable_raw_mode() -> Unit
+
+pub fn find_layout_by_id(@node.Layout, String, Int, Int) -> HitTestResult?
+
+pub fn find_layout_by_id_root(@node.Layout, String) -> HitTestResult?
 
 pub fn get_terminal_size() -> (Int, Int)
 
@@ -67,6 +76,8 @@ pub fn handle_click(@node.Layout, EventHandlers, Int, Int) -> Bool
 pub fn hit_test(@node.Layout, Int, Int, Int, Int) -> HitTestResult?
 
 pub fn hit_test_root(@node.Layout, Int, Int) -> HitTestResult?
+
+pub fn keep_alive_nonblocking(Int) -> Unit
 
 pub fn key_is_char(KeyEvent, Char) -> Bool
 
@@ -96,6 +107,16 @@ pub async fn sleep(Int) -> Unit
 
 pub fn spacer(flex_grow? : Double) -> Component
 
+pub async fn start_input_session(Int, Int, String) -> InputResult
+
+pub fn start_input_session_cb(String, (InputResult) -> Unit) -> Unit
+
+pub fn start_input_session_promise(String) -> @js_async.Promise[InputResult]
+
+pub fn start_render_ticker(Int, () -> Unit) -> Int
+
+pub fn stop_render_ticker(Int) -> Unit
+
 pub fn string_display_width(String) -> Int
 
 pub fn styled_text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
@@ -114,7 +135,9 @@ pub struct App {
   mut last_layout : @node.Layout?
   handlers : EventHandlers
 }
+pub fn App::clear_prev_buffer(Self) -> Unit
 pub fn App::create_render_effect(Self, () -> Component, (String) -> Unit) -> () -> Unit
+pub fn App::find_by_id(Self, String) -> HitTestResult?
 pub fn App::handle_mouse(Self, MouseEvent) -> Bool
 pub fn App::hit_test(Self, Int, Int) -> HitTestResult?
 pub fn App::init_terminal() -> String
@@ -203,6 +226,30 @@ pub fn EventHandlers::get_click(Self, String) -> ClickHandler?
 pub fn EventHandlers::new() -> Self
 pub fn EventHandlers::on_click(Self, String, ClickHandler) -> Unit
 
+pub struct FocusManager {
+  mut focus : FocusState
+  mut mode : InputMode
+  focusable_ids : Array[String]
+}
+pub fn FocusManager::blur(Self) -> Unit
+pub fn FocusManager::focus(Self, String) -> Unit
+pub fn FocusManager::focus_next(Self) -> Unit
+pub fn FocusManager::focus_prev(Self) -> Unit
+pub fn FocusManager::get_focused(Self) -> String?
+pub fn FocusManager::get_mode(Self) -> InputMode
+pub fn FocusManager::is_editing(Self) -> Bool
+pub fn FocusManager::is_focused(Self, String) -> Bool
+pub fn FocusManager::new() -> Self
+pub fn FocusManager::register(Self, String) -> Unit
+pub fn FocusManager::start_editing(Self) -> Unit
+pub fn FocusManager::stop_editing(Self) -> Unit
+pub fn FocusManager::unregister(Self, String) -> Unit
+
+pub(all) enum FocusState {
+  None
+  Focused(String)
+}
+
 pub(all) struct HitTestResult {
   id : String
   x : Int
@@ -217,11 +264,23 @@ pub(all) enum InputEvent {
   Resize(Int, Int)
   Unknown(String)
 }
+pub impl Show for InputEvent
+
+pub(all) enum InputMode {
+  Normal
+  Editing
+}
+
+pub(all) enum InputResult {
+  Confirmed(String)
+  Cancelled
+}
 
 pub(all) enum KeyEvent {
   Char(Char, KeyModifier)
   Special(SpecialKey, KeyModifier)
 }
+pub impl Show for KeyEvent
 
 pub(all) enum KeyModifier {
   None
@@ -233,6 +292,7 @@ pub(all) enum KeyModifier {
   ShiftAlt
   CtrlShiftAlt
 }
+pub impl Show for KeyModifier
 
 pub(all) enum MouseButton {
   Left
@@ -242,6 +302,7 @@ pub(all) enum MouseButton {
   ScrollDown
   None
 }
+pub impl Show for MouseButton
 
 pub(all) struct MouseEvent {
   button : MouseButton
@@ -250,6 +311,7 @@ pub(all) struct MouseEvent {
   y : Int
   modifier : KeyModifier
 }
+pub impl Show for MouseEvent
 
 pub(all) enum MouseEventType {
   Press
@@ -257,6 +319,7 @@ pub(all) enum MouseEventType {
   Move
   Drag
 }
+pub impl Show for MouseEventType
 
 pub(all) struct RenderStyle {
   fg : Color
@@ -293,6 +356,7 @@ pub(all) enum SpecialKey {
   Escape
   F(Int)
 }
+pub impl Show for SpecialKey
 
 pub struct TextContentMap(Map[String, String])
 pub fn TextContentMap::get(Self, String) -> String?

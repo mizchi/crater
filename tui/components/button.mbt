@@ -39,6 +39,7 @@ pub fn button(
   // Build button with border
   row(
     [text(label, fg=actual_fg)],
+    id~,
     min_width=@types.Dimension::Length(min_width),
     padding_x~,
     padding_y~,
