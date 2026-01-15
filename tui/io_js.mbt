@@ -6,32 +6,19 @@
 extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #| async () => {
   #|   if (typeof process === 'undefined') return 'q';
-  #|   const { emitKeypressEvents } = await import('node:readline');
-  #|
-  #|   // Setup keypress events if not already done
-  #|   if (!process.stdin.__keypressSetup) {
-  #|     emitKeypressEvents(process.stdin);
-  #|     process.stdin.__keypressSetup = true;
-  #|   }
   #|
   #|   if (process.stdin.isTTY) {
   #|     process.stdin.setRawMode(true);
   #|   }
   #|   process.stdin.resume();
+  #|   process.stdin.setEncoding('utf8');
   #|
   #|   return new Promise((resolve) => {
-  #|     const onKeypress = (str, key) => {
-  #|       process.stdin.removeListener('keypress', onKeypress);
-  #|       // Return the string, or construct from key info
-  #|       if (str) {
-  #|         resolve(str);
-  #|       } else if (key && key.sequence) {
-  #|         resolve(key.sequence);
-  #|       } else {
-  #|         resolve('');
-  #|       }
+  #|     const onData = (data) => {
+  #|       process.stdin.removeListener('data', onData);
+  #|       resolve(data);
   #|     };
-  #|     process.stdin.on('keypress', onKeypress);
+  #|     process.stdin.on('data', onData);
   #|   });
   #| }
 
