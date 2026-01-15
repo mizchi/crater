@@ -1,0 +1,161 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-tui/components"
+
+import(
+  "mizchi/crater-tui"
+  "mizchi/crater/style"
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn bold(String) -> @crater-tui.Component
+
+pub fn bordered(Array[@crater-tui.Component], style? : @crater-tui.BorderChars, color? : @crater-tui.Color) -> @crater-tui.Component
+
+pub fn center(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn colored(String, @crater-tui.Color) -> @crater-tui.Component
+
+pub fn column(ColumnOptions, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn column_(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn column_between(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn column_center(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn column_fill(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn column_gap(Double, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn fill(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn grid(GridOptions, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn grid2(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn grid3(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn grid4(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn grid_cols(Int, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn grid_gap(Int, Double, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn hdivider(char? : Char, fg? : @crater-tui.Color) -> @crater-tui.Component
+
+pub fn hspace(Double) -> @crater-tui.Component
+
+pub fn padded(Double, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row(RowOptions, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row_(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row_around(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row_between(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row_center(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row_evenly(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn row_gap(Double, Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn spacer(flex_grow? : Double) -> @crater-tui.Component
+
+pub fn text(String, fg? : @crater-tui.Color, bg? : @crater-tui.Color, bold? : Bool, underline? : Bool) -> @crater-tui.Component
+
+pub fn text_(String) -> @crater-tui.Component
+
+pub fn vdivider(char? : Char, fg? : @crater-tui.Color) -> @crater-tui.Component
+
+pub fn vspace(Double) -> @crater-tui.Component
+
+// Errors
+
+// Types and methods
+pub(all) struct ColumnOptions {
+  width : @types.Dimension
+  height : @types.Dimension
+  min_width : @types.Dimension
+  min_height : @types.Dimension
+  max_width : @types.Dimension
+  max_height : @types.Dimension
+  flex_grow : Double
+  flex_shrink : Double
+  flex_basis : @types.Dimension
+  justify : @style.Alignment
+  align : @style.Alignment
+  wrap : Bool
+  gap : Double
+  padding : Double
+  padding_x : Double
+  padding_y : Double
+  margin : Double
+  margin_x : Double
+  margin_y : Double
+  border : @crater-tui.BorderChars?
+  border_color : @crater-tui.Color
+  bg : @crater-tui.Color
+  fg : @crater-tui.Color
+}
+pub fn ColumnOptions::default() -> Self
+
+pub(all) struct GridOptions {
+  width : @types.Dimension
+  height : @types.Dimension
+  min_width : @types.Dimension
+  min_height : @types.Dimension
+  max_width : @types.Dimension
+  max_height : @types.Dimension
+  columns : Int
+  rows : Int
+  column_gap : Double
+  row_gap : Double
+  justify_items : @style.Alignment
+  align_items : @style.Alignment
+  padding : Double
+  padding_x : Double
+  padding_y : Double
+  margin : Double
+  margin_x : Double
+  margin_y : Double
+  border : @crater-tui.BorderChars?
+  border_color : @crater-tui.Color
+  bg : @crater-tui.Color
+  fg : @crater-tui.Color
+}
+pub fn GridOptions::default() -> Self
+
+pub(all) struct RowOptions {
+  width : @types.Dimension
+  height : @types.Dimension
+  min_width : @types.Dimension
+  min_height : @types.Dimension
+  max_width : @types.Dimension
+  max_height : @types.Dimension
+  flex_grow : Double
+  flex_shrink : Double
+  flex_basis : @types.Dimension
+  justify : @style.Alignment
+  align : @style.Alignment
+  wrap : Bool
+  gap : Double
+  padding : Double
+  padding_x : Double
+  padding_y : Double
+  margin : Double
+  margin_x : Double
+  margin_y : Double
+  border : @crater-tui.BorderChars?
+  border_color : @crater-tui.Color
+  bg : @crater-tui.Color
+  fg : @crater-tui.Color
+}
+pub fn RowOptions::default() -> Self
+
+// Type aliases
+
+// Traits
+

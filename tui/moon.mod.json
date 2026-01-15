@@ -5,7 +5,7 @@
     "mizchi/crater": {
       "path": ".."
     },
-    "mizchi/signals": "0.1.0",
+    "mizchi/signals": "0.5.0",
     "moonbitlang/async": "0.16.0"
   },
   "preferred-target": "js"

@@ -2,10 +2,4 @@ import {
   "mizchi/crater-tui" as @tui,
   "mizchi/crater/style",
   "mizchi/crater/types",
-  "mizchi/signals",
-  "moonbitlang/async",
 }
-
-options(
-  "is-main": true,
-)
