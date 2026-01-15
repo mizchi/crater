@@ -94,9 +94,7 @@ pub fn string_display_width(String) -> Int
 
 pub fn styled_text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
 
-pub fn text(String, TextOptions) -> Component
-
-pub fn text_(String) -> Component
+pub fn text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
 
 pub fn text_measure_func(String) -> @node.MeasureFunc
 
@@ -301,14 +299,6 @@ pub fn TextContentMap::get(Self, String) -> String?
 pub fn TextContentMap::inner(Self) -> Map[String, String]
 pub fn TextContentMap::new() -> Self
 pub fn TextContentMap::set(Self, String, String) -> Unit
-
-pub(all) struct TextOptions {
-  fg : Color
-  bg : Color
-  bold : Bool
-  underline : Bool
-}
-pub fn TextOptions::default() -> Self
 
 pub(all) struct TextStyle {
   fg : Color

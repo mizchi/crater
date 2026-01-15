@@ -199,27 +199,14 @@ pub fn box_(options : BoxOptions, children : Array[Component]) -> Component {
 }
 
 ///|
-/// Text component options
-pub(all) struct TextOptions {
-  fg : Color
-  bg : Color
-  bold : Bool
-  underline : Bool
-}
-
-///|
-pub fn TextOptions::default() -> TextOptions {
-  {
-    fg: Color::white(),
-    bg: Color::transparent(),
-    bold: false,
-    underline: false,
-  }
-}
-
-///|
 /// Create a text component
-pub fn text(content : String, options : TextOptions) -> Component {
+pub fn text(
+  content : String,
+  fg? : Color = Color::white(),
+  bg? : Color = Color::transparent(),
+  bold? : Bool = false,
+  underline? : Bool = false,
+) -> Component {
   let id = next_id()
 
   // Build style for text measurement
@@ -232,10 +219,10 @@ pub fn text(content : String, options : TextOptions) -> Component {
   let styles = RenderStyleMap::new()
   let texts = TextContentMap::new()
   styles.set(id, {
-    fg: options.fg,
-    bg: options.bg,
-    bold: options.bold,
-    underline: options.underline,
+    fg,
+    bg,
+    bold,
+    underline,
     border: None,
     border_fg: Color::white(),
   })
@@ -244,13 +231,7 @@ pub fn text(content : String, options : TextOptions) -> Component {
 }
 
 ///|
-/// Create simple text with default options
-pub fn text_(content : String) -> Component {
-  text(content, TextOptions::default())
-}
-
-///|
-/// Create a styled text (convenience function)
+/// Create a styled text (alias for text with labeled arguments)
 pub fn styled_text(
   content : String,
   fg? : Color = Color::white(),
@@ -258,7 +239,7 @@ pub fn styled_text(
   bold? : Bool = false,
   underline? : Bool = false,
 ) -> Component {
-  text(content, { fg, bg, bold, underline })
+  text(content, fg~, bg~, bold~, underline~)
 }
 
 ///|

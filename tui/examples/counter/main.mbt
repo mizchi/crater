@@ -47,7 +47,7 @@ async fn main {
             justify_content: @style.Alignment::Center,
           },
           [
-            @tui.text_("Count:"),
+            @tui.text("Count:"),
             @tui.spacer(),
             @tui.styled_text(
               current_count.to_string(),

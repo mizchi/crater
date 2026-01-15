@@ -2,7 +2,7 @@
 /// Utility components - Text, Spacer, Divider, etc.
 
 ///|
-/// Text with color
+/// Text component
 pub fn text(
   content : String,
   fg? : @tui.Color = @tui.Color::white(),
@@ -11,12 +11,6 @@ pub fn text(
   underline? : Bool = false,
 ) -> @tui.Component {
   @tui.styled_text(content, fg~, bg~, bold~, underline~)
-}
-
-///|
-/// Plain text
-pub fn text_(content : String) -> @tui.Component {
-  @tui.text_(content)
 }
 
 ///|
@@ -61,7 +55,6 @@ pub fn hdivider(
   char? : Char = '-',
   fg? : @tui.Color = @tui.Color::white(),
 ) -> @tui.Component {
-  // Create a box that stretches horizontally with a border
   @tui.box_(
     {
       ..@tui.BoxOptions::default(),
@@ -122,8 +115,8 @@ pub fn bordered(
 ///|
 /// Box with padding
 pub fn padded(
-  padding : Double,
   children : Array[@tui.Component],
+  padding? : Double = 1.0,
 ) -> @tui.Component {
   @tui.box_({ ..@tui.BoxOptions::default(), padding, }, children)
 }
