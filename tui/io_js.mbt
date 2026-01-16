@@ -171,11 +171,12 @@ extern "js" fn js_start_inplace_input(
   col : Int,
   width : Int,
   height : Int,
+  multiline : Bool,
   initial : String,
   on_confirmed : (String) -> Unit,
   on_cancelled : () -> Unit,
 ) -> Unit =
-  #| async (row, col, width, height, initial, onConfirmed, onCancelled) => {
+  #| async (row, col, width, height, multiline, initial, onConfirmed, onCancelled) => {
   #|   const { stdin, stdout } = await import('node:process');
   #|
   #|   // Helper to get display width of a character
@@ -207,26 +208,38 @@ extern "js" fn js_start_inplace_input(
   #|     return w;
   #|   };
   #|
-  #|   // Wrap text into lines based on width
+  #|   // Wrap text into lines based on width, handling newlines
   #|   const wrapText = (chars) => {
   #|     const lines = [];
   #|     let currentLine = [];
   #|     let currentWidth = 0;
+  #|     let lineStartIdx = 0;
   #|
   #|     for (let i = 0; i < chars.length; i++) {
   #|       const char = chars[i];
+  #|
+  #|       // Handle explicit newline character
+  #|       if (char === '\n') {
+  #|         lines.push({ chars: currentLine, startIdx: lineStartIdx });
+  #|         currentLine = [];
+  #|         currentWidth = 0;
+  #|         lineStartIdx = i + 1; // Next line starts after the newline
+  #|         continue;
+  #|       }
+  #|
   #|       const charWidth = getCharWidth(char);
   #|
   #|       if (currentWidth + charWidth > width) {
-  #|         lines.push({ chars: currentLine, startIdx: i - currentLine.length });
+  #|         lines.push({ chars: currentLine, startIdx: lineStartIdx });
   #|         currentLine = [char];
   #|         currentWidth = charWidth;
+  #|         lineStartIdx = i;
   #|       } else {
   #|         currentLine.push(char);
   #|         currentWidth += charWidth;
   #|       }
   #|     }
-  #|     lines.push({ chars: currentLine, startIdx: chars.length - currentLine.length });
+  #|     lines.push({ chars: currentLine, startIdx: lineStartIdx });
   #|     return lines;
   #|   };
   #|
@@ -292,6 +305,19 @@ extern "js" fn js_start_inplace_input(
   #|     const hasMoreAbove = scrollOffset > 0;
   #|     const hasMoreBelow = lines.length > scrollOffset + height;
   #|
+  #|     // Helper to truncate text to fit within width
+  #|     const truncateToWidth = (text, maxWidth) => {
+  #|       let w = 0;
+  #|       let result = '';
+  #|       for (const char of text) {
+  #|         const cw = getCharWidth(char);
+  #|         if (w + cw > maxWidth) break;
+  #|         result += char;
+  #|         w += cw;
+  #|       }
+  #|       return result;
+  #|     };
+  #|
   #|     // Draw visible lines
   #|     for (let i = 0; i < height; i++) {
   #|       const lineIdx = scrollOffset + i;
@@ -338,12 +364,15 @@ extern "js" fn js_start_inplace_input(
   #|         }
   #|       }
   #|
+  #|       // Ensure text doesn't exceed width (safety measure)
+  #|       lineText = truncateToWidth(lineText, width);
   #|       stdout.write(lineText);
   #|     }
   #|
-  #|     // Position cursor
-  #|     const displayRow = row + (cursorPos.lineIdx - scrollOffset);
-  #|     const displayCol = col + cursorPos.colOffset;
+  #|     // Position cursor (clamped to valid range)
+  #|     const cursorLineOffset = cursorPos.lineIdx - scrollOffset;
+  #|     const displayRow = row + Math.max(0, Math.min(cursorLineOffset, height - 1));
+  #|     const displayCol = col + Math.max(0, Math.min(cursorPos.colOffset, width - 1));
   #|     stdout.write(`\x1b[${displayRow};${displayCol}H`);
   #|     stdout.write('\x1b[?25h');
   #|   };
@@ -453,6 +482,14 @@ extern "js" fn js_start_inplace_input(
   #|       }
   #|       return;
   #|     }
+  #|     // Check for Shift+Enter (CSI u format: ESC[13;2u or ESC[27;2;13~)
+  #|     if (multiline && (chunk === '\x1b[13;2u' || chunk === '\x1b[27;2;13~' || chunk === '\x1bOM')) {
+  #|       // Shift+Enter in multiline mode - insert newline
+  #|       chars.splice(cursor, 0, '\n');
+  #|       cursor++;
+  #|       redraw();
+  #|       return;
+  #|     }
   #|     if (chunk.startsWith('\x1b[')) {
   #|       return;
   #|     }
@@ -461,15 +498,26 @@ extern "js" fn js_start_inplace_input(
   #|       const code = char.charCodeAt(0);
   #|
   #|       if (code === 3) {
+  #|         // Ctrl+C - cancel
   #|         cancel();
   #|         return;
+  #|       } else if (code === 4 || code === 10) {
+  #|         // Ctrl+D or Ctrl+J - insert newline in multiline mode
+  #|         if (multiline) {
+  #|           chars.splice(cursor, 0, '\n');
+  #|           cursor++;
+  #|           redraw();
+  #|         }
   #|       } else if (code === 1) {
+  #|         // Ctrl+A - Home
   #|         cursor = 0;
   #|         redraw();
   #|       } else if (code === 5) {
+  #|         // Ctrl+E - End
   #|         cursor = chars.length;
   #|         redraw();
   #|       } else if (code === 13) {
+  #|         // Enter always confirms
   #|         finish(chars.join(''));
   #|         return;
   #|       } else if (code === 127 || code === 8) {
@@ -793,6 +841,7 @@ pub fn start_inplace_input(
   col : Int,
   width : Int,
   height : Int,
+  multiline : Bool,
   initial : String,
   on_result : (InputResult) -> Unit,
 ) -> Unit {
@@ -801,6 +850,7 @@ pub fn start_inplace_input(
     col,
     width,
     height,
+    multiline,
     initial,
     fn(value) { on_result(InputResult::Confirmed(value)) },
     fn() { on_result(InputResult::Cancelled) },

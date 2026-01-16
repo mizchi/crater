@@ -50,6 +50,7 @@ pub fn start_edit(
 /// Start editing a field inplace (stays in TUI screen)
 /// row/col are 1-indexed ANSI coordinates
 /// width/height define the input area (supports multi-line wrapping)
+/// multiline: if true, Enter inserts newline, Ctrl+D confirms
 pub fn start_edit_inplace(
   config : EditConfig,
   current_value : String,
@@ -57,6 +58,7 @@ pub fn start_edit_inplace(
   col : Int,
   width : Int,
   height : Int,
+  multiline : Bool,
   on_complete : () -> Unit,
 ) -> Unit {
   // Call optional setup callback
@@ -66,21 +68,29 @@ pub fn start_edit_inplace(
   }
 
   // Start inplace input
-  @tui.start_inplace_input(row, col, width, height, current_value, fn(result) {
-    match result {
-      @tui.InputResult::Confirmed(new_value) => (config.on_change)(new_value)
-      @tui.InputResult::Cancelled => ()
-      _ => ()
-    }
+  @tui.start_inplace_input(
+    row,
+    col,
+    width,
+    height,
+    multiline,
+    current_value,
+    fn(result) {
+      match result {
+        @tui.InputResult::Confirmed(new_value) => (config.on_change)(new_value)
+        @tui.InputResult::Cancelled => ()
+        _ => ()
+      }
 
-    // Call optional cleanup callback
-    match config.on_edit_end {
-      Some(f) => f()
-      None => ()
-    }
+      // Call optional cleanup callback
+      match config.on_edit_end {
+        Some(f) => f()
+        None => ()
+      }
 
-    on_complete()
-  })
+      on_complete()
+    },
+  )
 }
 
 ///|

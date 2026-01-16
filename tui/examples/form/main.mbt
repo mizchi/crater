@@ -143,7 +143,7 @@ fn main {
         @c.row(
           [
             @c.text(
-              "Tab: next | Enter: edit/confirm | Esc: cancel | q: quit",
+              "Tab: next | Enter: edit/confirm | Shift+Enter/Ctrl+D: newline | Esc: cancel",
               fg=@tui.Color::rgb(100, 100, 100),
             ),
           ],
@@ -241,6 +241,8 @@ fn main {
             let col = bounds.x + 2 // +1 for 1-indexed, +1 for border
             let content_width = bounds.width - 2 // Exclude left and right borders
             let content_height = bounds.height - 2 // Exclude top and bottom borders
+            // Determine if this is a multiline textarea
+            let multiline = id == "message-textarea"
             @c.start_edit_inplace(
               config,
               signal.get(),
@@ -248,6 +250,7 @@ fn main {
               col,
               content_width,
               content_height,
+              multiline,
               restore_tui,
             )
           }
