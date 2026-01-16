@@ -923,15 +923,6 @@ pub async fn sleep(ms : Int) -> Unit {
 // --- Input Session for IME support ---
 
 ///|
-/// Result of an input session
-pub(all) enum InputResult {
-  Confirmed(String)
-  Cancelled
-  TabNext(String) // Tab pressed - confirm and move to next
-  TabPrev(String) // Shift+Tab pressed - confirm and move to previous
-}
-
-///|
 /// Start an input session with callback (non-blocking)
 extern "js" fn js_start_input_session_callback(
   initial : String,

@@ -1,0 +1,14 @@
+import {
+  "mizchi/crater-tui" as @tui,
+  "moonbitlang/async",
+  "moonbitlang/async/stdio",
+  "moonbitlang/async/io",
+}
+
+options(
+  "is-main": true,
+  targets: {
+    "main_native.mbt": ["native"],
+    "main_js.mbt": ["js"],
+  },
+)

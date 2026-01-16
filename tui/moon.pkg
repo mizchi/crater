@@ -5,6 +5,9 @@ import {
   "mizchi/crater",
   "mizchi/signals",
   "moonbitlang/async/js_async",
+  "moonbitlang/async",
+  "moonbitlang/async/stdio",
+  "moonbitlang/async/io",
 }
 
 options(
