@@ -1,5 +1,6 @@
 ///|
-/// Form example - demonstrates input/textarea components with IME support
+/// Form example - demonstrates input components with IME support
+/// Focus = Navigate, Enter = Edit (cooked mode with IME)
 
 ///|
 fn main {
@@ -15,13 +16,21 @@ fn main {
   let focused_id = @signals.signal("")
   let running = @signals.signal(true)
 
-  // Focus order
+  // Focus order (inputs only, submit handled separately)
+  let input_ids = ["name-input", "email-input", "message-textarea"]
   let focusable_ids = [
     "name-input", "email-input", "message-textarea", "submit-btn",
   ]
 
   // Create the app
   let app = @tui.App::new(width, height)
+
+  // Field configurations for editing
+  let field_configs : Map[String, (String, @signals.Signal[String])] = {
+    "name-input": ("Name", name),
+    "email-input": ("Email", email),
+    "message-textarea": ("Message", message),
+  }
 
   // Helper to get input state
   fn get_input_state(id : String) -> @c.InputState {
@@ -50,7 +59,7 @@ fn main {
     }
   }
 
-  // Render function that creates the component tree
+  // Render function
   fn render_ui() -> @tui.Component {
     @c.column(
       [
@@ -58,7 +67,7 @@ fn main {
         @c.row(
           [
             @c.text(
-              "Form Demo (IME Enabled)",
+              "Form Demo",
               fg=@tui.Color::yellow(),
               bold=true,
             ),
@@ -78,7 +87,8 @@ fn main {
                   id="name-input",
                   placeholder="Enter your name",
                   state=get_input_state("name-input"),
-                  min_width=30.0,
+                  min_width=40.0,
+                  min_height=3.0,
                 ),
               ],
               margin_y=0.5,
@@ -92,7 +102,8 @@ fn main {
                   id="email-input",
                   placeholder="user@example.com",
                   state=get_input_state("email-input"),
-                  min_width=30.0,
+                  min_width=40.0,
+                  min_height=3.0,
                 ),
               ],
               margin_y=0.5,
@@ -107,7 +118,7 @@ fn main {
                   placeholder="Enter your message...",
                   state=get_textarea_state("message-textarea"),
                   rows=4,
-                  min_width=30.0,
+                  min_width=40.0,
                 ),
               ],
               margin_y=0.5,
@@ -132,9 +143,7 @@ fn main {
         @c.row(
           [
             @c.text(
-              "Focus: " +
-              (if focused_id.get() == "" { "none" } else { focused_id.get() }) +
-              " | Tab: nav | Enter: edit | q: quit",
+              "Tab: next | Enter: edit/confirm | Esc: cancel | q: quit",
               fg=@tui.Color::rgb(100, 100, 100),
             ),
           ],
@@ -185,7 +194,64 @@ fn main {
 
   // Render helper
   fn do_render() -> Unit {
-    @tui.print_raw(app.render_frame(render_ui()))
+    @tui.debug_stderr("do_render: START name=" + name.get())
+    let ui = render_ui()
+    // Debug: check texts map content
+    @tui.debug_stderr("do_render: texts in component:")
+    for entry in ui.texts.inner() {
+      @tui.debug_stderr("  " + entry.0 + " => '" + entry.1 + "'")
+    }
+    let frame = app.render_frame(ui)
+    @tui.debug_stderr("do_render: frame_len=" + frame.length().to_string())
+    @tui.print_raw(frame)
+    @tui.debug_stderr("do_render: DONE")
+  }
+
+  // Restore TUI mode after editing
+  fn restore_tui() -> Unit {
+    @tui.debug_stderr("restore_tui: 1. called")
+    @tui.debug_stderr("restore_tui: 2. name=" + name.get())
+    @tui.print_raw(@tui.ansi_full_reset())
+    @tui.debug_stderr("restore_tui: 3. after ansi_full_reset")
+    @tui.print_raw(@tui.enable_mouse())
+    @tui.debug_stderr("restore_tui: 4. after enable_mouse")
+    app.clear_prev_buffer()
+    @tui.debug_stderr("restore_tui: 5. after clear_prev_buffer")
+    do_render()
+    @tui.debug_stderr("restore_tui: 6. after do_render")
+    @tui.start_keypress_listener(handle_key)
+    @tui.debug_stderr("restore_tui: 7. after start_keypress_listener")
+  }
+
+  // Handle submit
+  fn do_submit() -> Unit {
+    running.set(false)
+    @tui.stop_keypress_listener()
+    @tui.print_raw(@tui.disable_mouse())
+    @tui.cleanup_stdin()
+    @tui.print_raw(@tui.App::restore_terminal())
+    println("Form submitted!")
+    println("Name: " + name.get())
+    println("Email: " + email.get())
+    println("Message: " + message.get())
+  }
+
+  // Start editing an input field using editable API
+  fn start_editing(id : String) -> Unit {
+    match field_configs.get(id) {
+      Some((field_name, signal)) => {
+        let config = @c.form_edit_config(
+          field_name,
+          signal,
+          on_edit_start=Some(fn() {
+            @tui.stop_keypress_listener()
+            @tui.print_raw(@tui.disable_mouse())
+          }),
+        )
+        @c.start_edit(config, signal.get(), restore_tui)
+      }
+      None => ()
+    }
   }
 
   // Handle keypress event
@@ -199,14 +265,7 @@ fn main {
     match event {
       @tui.InputEvent::Key(key_event) =>
         match key_event {
-          // Quit on 'q' or Ctrl+C
-          @tui.KeyEvent::Char('q', @tui.KeyModifier::None) => {
-            running.set(false)
-            @tui.stop_keypress_listener()
-            @tui.print_raw(@tui.disable_mouse())
-            @tui.cleanup_stdin()
-            @tui.print_raw(@tui.App::restore_terminal())
-          }
+          // Ctrl+C - always quit
           @tui.KeyEvent::Char('c', @tui.KeyModifier::Ctrl) => {
             running.set(false)
             @tui.stop_keypress_listener()
@@ -214,9 +273,21 @@ fn main {
             @tui.cleanup_stdin()
             @tui.print_raw(@tui.App::restore_terminal())
           }
-          // Tab navigation
+          // q to quit when not focused on input
+          @tui.KeyEvent::Char('q', @tui.KeyModifier::None) =>
+            if not(input_ids.contains(focused_id.get())) {
+              running.set(false)
+              @tui.stop_keypress_listener()
+              @tui.print_raw(@tui.disable_mouse())
+              @tui.cleanup_stdin()
+              @tui.print_raw(@tui.App::restore_terminal())
+            } else {
+              need_render = false
+            }
+          // Tab - next focus
           @tui.KeyEvent::Special(@tui.SpecialKey::Tab, @tui.KeyModifier::None) =>
             focus_next()
+          // Shift+Tab or BackTab - previous focus
           @tui.KeyEvent::Special(
             @tui.SpecialKey::Tab
             | @tui.SpecialKey::BackTab,
@@ -226,28 +297,22 @@ fn main {
             @tui.SpecialKey::BackTab,
             @tui.KeyModifier::None
           ) => focus_prev()
-          // Enter to start editing or submit
+          // Escape - unfocus
+          @tui.KeyEvent::Special(@tui.SpecialKey::Escape, _) =>
+            focused_id.set("")
+          // Enter - edit if on input, submit if on button
           @tui.KeyEvent::Special(@tui.SpecialKey::Enter, _) => {
             let focus = focused_id.get()
             if focus == "submit-btn" {
-              // Handle submit
-              running.set(false)
-              @tui.stop_keypress_listener()
-              @tui.print_raw(@tui.disable_mouse())
-              @tui.cleanup_stdin()
-              @tui.print_raw(@tui.App::restore_terminal())
-              println("Form submitted!")
-              println("Name: " + name.get())
-              println("Email: " + email.get())
-              println("Message: " + message.get())
-            } else if focus != "" {
+              do_submit()
+              return
+            } else if input_ids.contains(focus) {
               start_edit_id = focus
               need_render = false
+            } else {
+              focus_next()
             }
           }
-          // Escape to unfocus
-          @tui.KeyEvent::Special(@tui.SpecialKey::Escape, _) =>
-            focused_id.set("")
           // Arrow keys for navigation
           @tui.KeyEvent::Special(@tui.SpecialKey::Down, _) => focus_next()
           @tui.KeyEvent::Special(@tui.SpecialKey::Up, _) => focus_prev()
@@ -283,68 +348,6 @@ fn main {
     }
   }
 
-  // Start editing an input field (inline at field position)
-  fn start_editing(id : String) -> Unit {
-    // Stop listening for keypresses while editing
-    @tui.stop_keypress_listener()
-
-    // Get current value
-    let current_value = if id == "name-input" {
-      name.get()
-    } else if id == "email-input" {
-      email.get()
-    } else if id == "message-textarea" {
-      message.get()
-    } else {
-      ""
-    }
-
-    // Get the position and width of the input field
-    let (input_row, input_col, input_width) = match app.find_by_id(id) {
-      Some(result) => {
-        // ANSI coordinates are 1-indexed, layout is 0-indexed
-        // +1 for 0->1 indexing, +1 for border = +2
-        (result.y + 2, result.x + 2, result.width - 2)
-      }
-      None => (10, 15, 30) // Fallback
-    }
-
-    // Stay in alt screen, prepare for inline input
-    @tui.print_raw(@tui.disable_mouse())
-    @tui.print_raw(@tui.ansi_move_to(input_row, input_col))
-
-    // Clear placeholder area with spaces
-    let spaces = " ".repeat(input_width)
-    @tui.print_raw(spaces)
-    @tui.print_raw(@tui.ansi_move_to(input_row, input_col))
-    @tui.print_raw(@tui.ansi_show_cursor())
-
-    // Start inline input session with current value pre-filled
-    @tui.start_inline_input("", current_value, fn(result) {
-      // Update value
-      match result {
-        @tui.InputResult::Confirmed(new_value) =>
-          if id == "name-input" {
-            name.set(new_value)
-          } else if id == "email-input" {
-            email.set(new_value)
-          } else if id == "message-textarea" {
-            message.set(new_value)
-          }
-        @tui.InputResult::Cancelled => ()
-      }
-
-      // Return to TUI mode
-      @tui.print_raw(@tui.ansi_hide_cursor())
-      @tui.print_raw(@tui.enable_mouse())
-      app.clear_prev_buffer()
-      do_render()
-
-      // Resume keypress listening
-      @tui.start_keypress_listener(handle_key)
-    })
-  }
-
   // Initialize terminal
   @tui.print_raw(@tui.App::init_terminal())
   @tui.print_raw(@tui.enable_mouse())
@@ -352,6 +355,6 @@ fn main {
   // Initial render
   do_render()
 
-  // Start event-driven keypress listener (this keeps the process alive)
+  // Start event-driven keypress listener
   @tui.start_keypress_listener(handle_key)
 }

@@ -12,6 +12,7 @@ pub(all) enum InputState {
 
 ///|
 /// Create an input component
+/// Set height for multi-line wrapping support
 pub fn input(
   value : String,
   id? : String = "",
@@ -27,7 +28,9 @@ pub fn input(
   disabled_bg? : @tui.Color = @tui.Color::rgb(30, 30, 35),
   // Size
   width? : @types.Dimension = @types.Dimension::Auto,
+  height? : @types.Dimension = @types.Dimension::Auto,
   min_width? : Double = 10.0,
+  min_height? : Double = 1.0,
   padding_x? : Double = 1.0,
   padding_y? : Double = 0.0,
 ) -> @tui.Component {
@@ -75,16 +78,17 @@ pub fn input(
     display_text
   }
 
-  // Build input field with border
-  row(
+  // Build input field with border - use column + text like textarea
+  // This ensures consistent rendering behavior
+  column(
     [text(text_with_cursor, fg=actual_fg)],
     id~,
     min_width=@types.Dimension::Length(min_width),
+    min_height=@types.Dimension::Length(min_height),
     width~,
+    height~,
     padding_x~,
     padding_y~,
-    justify=@style.Alignment::Start,
-    align=@style.Alignment::Center,
     border=Some(@tui.BorderChars::rounded()),
     border_color~,
     bg=actual_bg,

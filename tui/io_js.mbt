@@ -28,6 +28,33 @@ extern "js" fn js_print_raw(s : String) =
   #| (s) => process.stdout.write(s)
 
 ///|
+/// Debug print to stderr (won't interfere with TUI)
+extern "js" fn js_debug_stderr(s : String) =
+  #| (s) => {
+  #|   process.stderr.write('[DEBUG] ' + s + '\n');
+  #| }
+
+///|
+/// Debug print to stderr (public)
+pub fn debug_stderr(s : String) -> Unit {
+  js_debug_stderr(s)
+}
+
+///|
+/// Debug stdin state
+extern "js" fn js_debug_stdin_state(label : String) =
+  #| async (label) => {
+  #|   const { stdin } = await import('node:process');
+  #|   console.log(`[STDIN ${label}] isTTY=${stdin.isTTY}, isRaw=${stdin.isRaw}, isPaused=${stdin.isPaused()}, readable=${stdin.readable}, listenerCount(data)=${stdin.listenerCount('data')}`);
+  #| }
+
+///|
+/// Debug stdin state (public)
+pub fn debug_stdin_state(label : String) -> Unit {
+  js_debug_stdin_state(label)
+}
+
+///|
 /// Cleanup stdin (turn off raw mode)
 extern "js" fn js_cleanup_stdin() =
   #| () => {
@@ -85,7 +112,7 @@ pub fn keep_alive_nonblocking(ms : Int) -> Unit {
 
 ///|
 /// Start a keypress listener (event-driven, non-blocking)
-/// Uses raw data events for reliability (emitKeypressEvents has issues after removal)
+/// Uses raw data events for reliability
 extern "js" fn js_start_keypress_listener(callback : (String) -> Unit) =
   #| async (callback) => {
   #|   const { stdin } = await import('node:process');
@@ -100,12 +127,8 @@ extern "js" fn js_start_keypress_listener(callback : (String) -> Unit) =
   #|   stdin.resume();
   #|   stdin.setEncoding('utf8');
   #|
-  #|   const onData = (data) => {
-  #|     // In raw mode, we get data character by character (or escape sequences)
-  #|     callback(data);
-  #|   };
+  #|   const onData = (data) => callback(data);
   #|
-  #|   // Store handler for later removal
   #|   stdin.__dataHandler = onData;
   #|   stdin.on('data', onData);
   #| }
@@ -138,40 +161,200 @@ pub fn stop_keypress_listener() -> Unit {
 }
 
 ///|
-/// Start an inline input session (stays in current screen)
-/// Uses raw mode for reliable input handling
-/// Enter confirms, Escape cancels, Backspace deletes
-extern "js" fn js_start_inline_input(
-  label : String,
+/// Start an inline input session with cooked mode (IME enabled)
+/// Exits alternate screen temporarily for proper IME support
+/// Enter confirms, Ctrl+C cancels
+extern "js" fn js_start_inline_input_cooked(
+  field_name : String,
   initial : String,
   on_confirmed : (String) -> Unit,
   on_cancelled : () -> Unit,
 ) -> Unit =
-  #| async (label, initial, onConfirmed, onCancelled) => {
+  #| async (fieldName, initial, onConfirmed, onCancelled) => {
+  #|   const { stdin, stdout } = await import('node:process');
+  #|
+  #|   console.error('[cooked] Start:', fieldName);
+  #|
+  #|   // Exit alternate screen
+  #|   stdout.write('\x1b[?1049l');
+  #|   // Show cursor
+  #|   stdout.write('\x1b[?25h');
+  #|   // Clear screen and move to top
+  #|   stdout.write('\x1b[2J\x1b[H');
+  #|
+  #|   // Show prompt
+  #|   console.log(`\n  Editing: ${fieldName}`);
+  #|   console.log(`  Current: "${initial}"`);
+  #|   console.log(`  (Enter to confirm, Ctrl+C to cancel)\n`);
+  #|   stdout.write('  > ');
+  #|
+  #|   // Clean up any existing handlers
+  #|   if (stdin.__dataHandler) {
+  #|     stdin.removeListener('data', stdin.__dataHandler);
+  #|     stdin.__dataHandler = null;
+  #|   }
+  #|
+  #|   // Set cooked mode for IME support
+  #|   if (stdin.isTTY) {
+  #|     stdin.setRawMode(false);
+  #|   }
+  #|   stdin.resume();
+  #|   stdin.setEncoding('utf8');
+  #|
+  #|   console.error('[cooked] stdin ready, listeners=' + stdin.listenerCount('data'));
+  #|
+  #|   let buffer = '';
+  #|   let done = false;
+  #|
+  #|   const cleanup = () => {
+  #|     if (stdin.__cookedHandler) {
+  #|       stdin.removeListener('data', stdin.__cookedHandler);
+  #|       stdin.__cookedHandler = null;
+  #|     }
+  #|   };
+  #|
+  #|   const finish = (result) => {
+  #|     console.error('[cooked] finish:', result);
+  #|     if (done) return;
+  #|     done = true;
+  #|     cleanup();
+  #|     // Re-enter alternate screen immediately before callback
+  #|     stdout.write('\x1b[?1049h');
+  #|     // Small delay to ensure screen switch completes
+  #|     setImmediate(() => onConfirmed(result));
+  #|   };
+  #|
+  #|   const cancel = () => {
+  #|     console.error('[cooked] cancel');
+  #|     if (done) return;
+  #|     done = true;
+  #|     cleanup();
+  #|     // Re-enter alternate screen immediately before callback
+  #|     stdout.write('\x1b[?1049h');
+  #|     setImmediate(() => onCancelled());
+  #|   };
+  #|
+  #|   // Handle input directly without readline
+  #|   const onData = (chunk) => {
+  #|     if (done) return;
+  #|     console.error('[cooked] data:', JSON.stringify(chunk));
+  #|
+  #|     for (const char of chunk) {
+  #|       const code = char.charCodeAt(0);
+  #|
+  #|       if (code === 3) {
+  #|         // Ctrl+C
+  #|         cancel();
+  #|         return;
+  #|       } else if (code === 13 || code === 10) {
+  #|         // Enter
+  #|         stdout.write('\n');
+  #|         const result = buffer.length > 0 ? buffer : initial;
+  #|         finish(result);
+  #|         return;
+  #|       } else if (code === 127 || code === 8) {
+  #|         // Backspace
+  #|         if (buffer.length > 0) {
+  #|           buffer = buffer.slice(0, -1);
+  #|           stdout.write('\b \b');
+  #|         }
+  #|       } else if (code >= 32) {
+  #|         // Printable
+  #|         buffer += char;
+  #|         stdout.write(char);
+  #|       }
+  #|     }
+  #|   };
+  #|
+  #|   stdin.__cookedHandler = onData;
+  #|   stdin.on('data', onData);
+  #|   console.error('[cooked] handler attached, listeners=' + stdin.listenerCount('data'));
+  #| }
+
+///|
+/// Start an inline input session (stays in current screen)
+/// Uses raw mode for reliable input handling
+/// Enter confirms, Escape cancels, Backspace deletes
+/// Supports text wrapping within max_width
+extern "js" fn js_start_inline_input(
+  label : String,
+  initial : String,
+  start_row : Int,
+  start_col : Int,
+  max_width : Int,
+  max_height : Int,
+  on_confirmed : (String) -> Unit,
+  on_cancelled : () -> Unit,
+  on_tab_next : (String) -> Unit,
+  on_tab_prev : (String) -> Unit,
+) -> Unit =
+  #| async (label, initial, startRow, startCol, maxWidth, maxHeight, onConfirmed, onCancelled, onTabNext, onTabPrev) => {
   #|   const { stdin, stdout } = await import('node:process');
   #|
   #|   // Helper to get display width of a character (1 for half-width, 2 for full-width)
   #|   const getCharWidth = (char) => {
   #|     const code = char.codePointAt(0);
-  #|     // Full-width characters: CJK, Hiragana, Katakana, full-width forms, etc.
   #|     if (code >= 0x1100 && (
-  #|       code <= 0x115F || // Hangul Jamo
+  #|       code <= 0x115F ||
   #|       code === 0x2329 || code === 0x232A ||
-  #|       (code >= 0x2E80 && code <= 0x303E) || // CJK Radicals, Kangxi, etc.
-  #|       (code >= 0x3040 && code <= 0x33FF) || // Hiragana, Katakana, CJK Compatibility
-  #|       (code >= 0x3400 && code <= 0x4DBF) || // CJK Extension A
-  #|       (code >= 0x4E00 && code <= 0x9FFF) || // CJK Unified Ideographs
-  #|       (code >= 0xAC00 && code <= 0xD7A3) || // Hangul Syllables
-  #|       (code >= 0xF900 && code <= 0xFAFF) || // CJK Compatibility Ideographs
-  #|       (code >= 0xFE10 && code <= 0xFE1F) || // Vertical Forms
-  #|       (code >= 0xFE30 && code <= 0xFE6F) || // CJK Compatibility Forms
-  #|       (code >= 0xFF00 && code <= 0xFF60) || // Full-width ASCII
-  #|       (code >= 0xFFE0 && code <= 0xFFE6) || // Full-width symbols
-  #|       (code >= 0x20000 && code <= 0x2FFFF) // CJK Extension B-F
+  #|       (code >= 0x2E80 && code <= 0x303E) ||
+  #|       (code >= 0x3040 && code <= 0x33FF) ||
+  #|       (code >= 0x3400 && code <= 0x4DBF) ||
+  #|       (code >= 0x4E00 && code <= 0x9FFF) ||
+  #|       (code >= 0xAC00 && code <= 0xD7A3) ||
+  #|       (code >= 0xF900 && code <= 0xFAFF) ||
+  #|       (code >= 0xFE10 && code <= 0xFE1F) ||
+  #|       (code >= 0xFE30 && code <= 0xFE6F) ||
+  #|       (code >= 0xFF00 && code <= 0xFF60) ||
+  #|       (code >= 0xFFE0 && code <= 0xFFE6) ||
+  #|       (code >= 0x20000 && code <= 0x2FFFF)
   #|     )) {
   #|       return 2;
   #|     }
   #|     return 1;
+  #|   };
+  #|
+  #|   // Get total display width of a string
+  #|   const getStringWidth = (str) => {
+  #|     let width = 0;
+  #|     for (const char of str) {
+  #|       width += getCharWidth(char);
+  #|     }
+  #|     return width;
+  #|   };
+  #|
+  #|   // Render buffer with wrapping, returns cursor position
+  #|   const renderBuffer = (buf) => {
+  #|     let row = startRow;
+  #|     let col = startCol;
+  #|     let output = '';
+  #|
+  #|     // Move to start position and clear area
+  #|     output += `\x1b[${startRow};${startCol}H`;
+  #|     for (let r = 0; r < maxHeight; r++) {
+  #|       output += `\x1b[${startRow + r};${startCol}H`;
+  #|       output += ' '.repeat(maxWidth);
+  #|     }
+  #|     output += `\x1b[${startRow};${startCol}H`;
+  #|
+  #|     // Render text with wrapping
+  #|     let lineWidth = 0;
+  #|     for (const char of buf) {
+  #|       const charWidth = getCharWidth(char);
+  #|       if (lineWidth + charWidth > maxWidth) {
+  #|         // Wrap to next line
+  #|         row++;
+  #|         col = startCol;
+  #|         lineWidth = 0;
+  #|         output += `\x1b[${row};${col}H`;
+  #|       }
+  #|       output += char;
+  #|       lineWidth += charWidth;
+  #|       col += charWidth;
+  #|     }
+  #|
+  #|     stdout.write(output);
+  #|     return { row, col };
   #|   };
   #|
   #|   // Clear all listeners for clean state
@@ -188,7 +371,7 @@ extern "js" fn js_start_inline_input(
   #|
   #|   // Display initial value
   #|   let buffer = initial || '';
-  #|   stdout.write(buffer);
+  #|   renderBuffer(buffer);
   #|
   #|   let done = false;
   #|
@@ -201,13 +384,28 @@ extern "js" fn js_start_inline_input(
   #|   const onData = (chunk) => {
   #|     if (done) return;
   #|
+  #|     // Check for escape sequences first (they come as multi-char chunks)
+  #|     if (chunk === '\x1b[Z') {
+  #|       // Shift+Tab - confirm and go to previous
+  #|       cleanup();
+  #|       onTabPrev(buffer);
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b' || chunk.startsWith('\x1b[')) {
+  #|       // Escape or other escape sequence - cancel
+  #|       cleanup();
+  #|       onCancelled();
+  #|       return;
+  #|     }
+  #|
+  #|     let needsRender = false;
   #|     for (const char of chunk) {
   #|       const code = char.charCodeAt(0);
   #|
-  #|       if (code === 27) {
-  #|         // Escape - cancel
+  #|       if (code === 9) {
+  #|         // Tab - confirm and go to next
   #|         cleanup();
-  #|         onCancelled();
+  #|         onTabNext(buffer);
   #|         return;
   #|       } else if (code === 13) {
   #|         // Enter - confirm
@@ -223,21 +421,23 @@ extern "js" fn js_start_inline_input(
   #|         // Backspace - delete last character
   #|         if (buffer.length > 0) {
   #|           const chars = [...buffer];
-  #|           const deleted = chars.pop();
+  #|           chars.pop();
   #|           buffer = chars.join('');
-  #|           // Erase based on character width
-  #|           const width = getCharWidth(deleted);
-  #|           if (width === 2) {
-  #|             stdout.write('\b\b  \b\b'); // Full-width: 2 columns
-  #|           } else {
-  #|             stdout.write('\b \b'); // Half-width: 1 column
-  #|           }
+  #|           needsRender = true;
   #|         }
   #|       } else if (code >= 32) {
-  #|         // Printable character
-  #|         buffer += char;
-  #|         stdout.write(char);
+  #|         // Printable character - check if within bounds
+  #|         const newWidth = getStringWidth(buffer + char);
+  #|         const maxTotalWidth = maxWidth * maxHeight;
+  #|         if (newWidth <= maxTotalWidth) {
+  #|           buffer += char;
+  #|           needsRender = true;
+  #|         }
   #|       }
+  #|     }
+  #|
+  #|     if (needsRender) {
+  #|       renderBuffer(buffer);
   #|     }
   #|   };
   #|
@@ -245,17 +445,47 @@ extern "js" fn js_start_inline_input(
   #| }
 
 ///|
+/// Start an inline input session with cooked mode (for IME support)
+/// Temporarily exits alternate screen for proper IME input
+/// field_name: Display name for the field being edited
+/// initial: Current value to pre-fill
+pub fn start_inline_input_cooked(
+  field_name : String,
+  initial : String,
+  on_result : (InputResult) -> Unit,
+) -> Unit {
+  js_start_inline_input_cooked(
+    field_name,
+    initial,
+    fn(value) { on_result(InputResult::Confirmed(value)) },
+    fn() { on_result(InputResult::Cancelled) },
+  )
+}
+
+///|
 /// Start an inline input session (for editing in place)
+/// row/col are 1-indexed ANSI coordinates
+/// max_width/max_height define the input area for text wrapping
 pub fn start_inline_input(
   label : String,
   initial : String,
+  row : Int,
+  col : Int,
+  max_width : Int,
+  max_height : Int,
   on_result : (InputResult) -> Unit,
 ) -> Unit {
   js_start_inline_input(
     label,
     initial,
+    row,
+    col,
+    max_width,
+    max_height,
     fn(value) { on_result(InputResult::Confirmed(value)) },
     fn() { on_result(InputResult::Cancelled) },
+    fn(value) { on_result(InputResult::TabNext(value)) },
+    fn(value) { on_result(InputResult::TabPrev(value)) },
   )
 }
 
@@ -302,6 +532,8 @@ pub async fn sleep(ms : Int) -> Unit {
 pub(all) enum InputResult {
   Confirmed(String)
   Cancelled
+  TabNext(String) // Tab pressed - confirm and move to next
+  TabPrev(String) // Shift+Tab pressed - confirm and move to previous
 }
 
 ///|
