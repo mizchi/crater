@@ -240,12 +240,14 @@ fn main {
             let row = bounds.y + 2 // +1 for 1-indexed, +1 for border
             let col = bounds.x + 2 // +1 for 1-indexed, +1 for border
             let content_width = bounds.width - 2 // Exclude left and right borders
+            let content_height = bounds.height - 2 // Exclude top and bottom borders
             @c.start_edit_inplace(
               config,
               signal.get(),
               row,
               col,
               content_width,
+              content_height,
               restore_tui,
             )
           }

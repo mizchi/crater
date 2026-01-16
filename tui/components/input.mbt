@@ -78,11 +78,12 @@ pub fn input(
     display_text
   }
 
-  // Build input field with border - use column + text like textarea
-  // This ensures consistent rendering behavior
-  column(
-    [text(text_with_cursor, fg=actual_fg)],
+  // Build input field with border
+  // Set text as direct content (not child) for proper wrapping support
+  let component = column(
+    [], // No children - text is set directly
     id~,
+    fg=actual_fg,
     min_width=@types.Dimension::Length(min_width),
     min_height=@types.Dimension::Length(min_height),
     width~,
@@ -93,6 +94,9 @@ pub fn input(
     border_color~,
     bg=actual_bg,
   )
+  // Set text content directly on the component for write_text_wrapped to handle
+  component.texts.set(component.node.id, text_with_cursor)
+  component
 }
 
 ///|

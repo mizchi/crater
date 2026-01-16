@@ -170,11 +170,12 @@ extern "js" fn js_start_inplace_input(
   row : Int,
   col : Int,
   width : Int,
+  height : Int,
   initial : String,
   on_confirmed : (String) -> Unit,
   on_cancelled : () -> Unit,
 ) -> Unit =
-  #| async (row, col, width, initial, onConfirmed, onCancelled) => {
+  #| async (row, col, width, height, initial, onConfirmed, onCancelled) => {
   #|   const { stdin, stdout } = await import('node:process');
   #|
   #|   // Helper to get display width of a character
@@ -206,13 +207,50 @@ extern "js" fn js_start_inplace_input(
   #|     return w;
   #|   };
   #|
-  #|   // Get width up to cursor position
-  #|   const getWidthUpTo = (chars, pos) => {
-  #|     let w = 0;
-  #|     for (let i = 0; i < pos && i < chars.length; i++) {
-  #|       w += getCharWidth(chars[i]);
+  #|   // Wrap text into lines based on width
+  #|   const wrapText = (chars) => {
+  #|     const lines = [];
+  #|     let currentLine = [];
+  #|     let currentWidth = 0;
+  #|
+  #|     for (let i = 0; i < chars.length; i++) {
+  #|       const char = chars[i];
+  #|       const charWidth = getCharWidth(char);
+  #|
+  #|       if (currentWidth + charWidth > width) {
+  #|         lines.push({ chars: currentLine, startIdx: i - currentLine.length });
+  #|         currentLine = [char];
+  #|         currentWidth = charWidth;
+  #|       } else {
+  #|         currentLine.push(char);
+  #|         currentWidth += charWidth;
+  #|       }
   #|     }
-  #|     return w;
+  #|     lines.push({ chars: currentLine, startIdx: chars.length - currentLine.length });
+  #|     return lines;
+  #|   };
+  #|
+  #|   // Find cursor position in wrapped lines
+  #|   const findCursorPos = (lines, cursor) => {
+  #|     for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+  #|       const line = lines[lineIdx];
+  #|       const lineEnd = line.startIdx + line.chars.length;
+  #|       if (cursor <= lineEnd) {
+  #|         const posInLine = cursor - line.startIdx;
+  #|         let colOffset = 0;
+  #|         for (let i = 0; i < posInLine; i++) {
+  #|           colOffset += getCharWidth(line.chars[i]);
+  #|         }
+  #|         return { lineIdx, colOffset };
+  #|       }
+  #|     }
+  #|     // Cursor at end
+  #|     const lastLine = lines[lines.length - 1];
+  #|     let colOffset = 0;
+  #|     for (const char of lastLine.chars) {
+  #|       colOffset += getCharWidth(char);
+  #|     }
+  #|     return { lineIdx: lines.length - 1, colOffset };
   #|   };
   #|
   #|   // Clean up any existing handlers
@@ -229,56 +267,84 @@ extern "js" fn js_start_inplace_input(
   #|   stdin.setEncoding('utf8');
   #|
   #|   let chars = [...initial];
-  #|   let cursor = chars.length; // Cursor position (index into chars array)
+  #|   let cursor = chars.length;
   #|   let done = false;
+  #|   let scrollOffset = 0; // First visible line index
   #|
   #|   const redraw = () => {
-  #|     const buffer = chars.join('');
-  #|     stdout.write(`\x1b[${row};${col}H`);
-  #|     stdout.write(' '.repeat(width));
-  #|     stdout.write(`\x1b[${row};${col}H`);
+  #|     const lines = wrapText(chars);
+  #|     const cursorPos = findCursorPos(lines, cursor);
   #|
-  #|     // Calculate display with scrolling if too wide
-  #|     let displayStr = buffer;
-  #|     let cursorDisplayCol = col + getWidthUpTo(chars, cursor);
-  #|     let displayWidth = getStringWidth(buffer);
-  #|
-  #|     if (displayWidth > width) {
-  #|       // Scroll view to keep cursor visible
-  #|       let cursorWidth = getWidthUpTo(chars, cursor);
-  #|       let startIdx = 0;
-  #|       let w = 0;
-  #|
-  #|       // Find start position to show cursor
-  #|       if (cursorWidth > width - 2) {
-  #|         for (let i = 0; i < chars.length; i++) {
-  #|           const cw = getCharWidth(chars[i]);
-  #|           if (w + cw > cursorWidth - width + 2) break;
-  #|           w += cw;
-  #|           startIdx = i + 1;
-  #|         }
-  #|       }
-  #|
-  #|       // Calculate visible portion
-  #|       let visibleChars = chars.slice(startIdx);
-  #|       let visibleWidth = 0;
-  #|       let endIdx = visibleChars.length;
-  #|       for (let i = 0; i < visibleChars.length; i++) {
-  #|         const cw = getCharWidth(visibleChars[i]);
-  #|         if (visibleWidth + cw > width - (startIdx > 0 ? 1 : 0)) {
-  #|           endIdx = i;
-  #|           break;
-  #|         }
-  #|         visibleWidth += cw;
-  #|       }
-  #|
-  #|       displayStr = (startIdx > 0 ? '…' : '') + visibleChars.slice(0, endIdx).join('');
-  #|       cursorDisplayCol = col + (startIdx > 0 ? 1 : 0) + getWidthUpTo(chars.slice(startIdx), cursor - startIdx);
+  #|     // Adjust scroll to keep cursor visible
+  #|     if (cursorPos.lineIdx < scrollOffset) {
+  #|       scrollOffset = cursorPos.lineIdx;
+  #|     } else if (cursorPos.lineIdx >= scrollOffset + height) {
+  #|       scrollOffset = cursorPos.lineIdx - height + 1;
   #|     }
   #|
-  #|     stdout.write(displayStr);
-  #|     // Move cursor to correct position
-  #|     stdout.write(`\x1b[${row};${cursorDisplayCol}H`);
+  #|     // Clear all lines
+  #|     for (let i = 0; i < height; i++) {
+  #|       stdout.write(`\x1b[${row + i};${col}H`);
+  #|       stdout.write(' '.repeat(width));
+  #|     }
+  #|
+  #|     // Determine if we need ellipsis
+  #|     const hasMoreAbove = scrollOffset > 0;
+  #|     const hasMoreBelow = lines.length > scrollOffset + height;
+  #|
+  #|     // Draw visible lines
+  #|     for (let i = 0; i < height; i++) {
+  #|       const lineIdx = scrollOffset + i;
+  #|       if (lineIdx >= lines.length) break;
+  #|
+  #|       const line = lines[lineIdx];
+  #|       let lineText = line.chars.join('');
+  #|
+  #|       stdout.write(`\x1b[${row + i};${col}H`);
+  #|
+  #|       // Show ellipsis for overflow
+  #|       if (i === 0 && hasMoreAbove) {
+  #|         // First visible line with content above
+  #|         const displayWidth = getStringWidth(lineText);
+  #|         if (displayWidth > width - 1) {
+  #|           // Truncate and add ellipsis at start
+  #|           let w = 0;
+  #|           let startIdx = 0;
+  #|           for (let j = line.chars.length - 1; j >= 0; j--) {
+  #|             const cw = getCharWidth(line.chars[j]);
+  #|             if (w + cw > width - 1) break;
+  #|             w += cw;
+  #|             startIdx = j;
+  #|           }
+  #|           lineText = '…' + line.chars.slice(startIdx).join('');
+  #|         }
+  #|       } else if (i === height - 1 && hasMoreBelow) {
+  #|         // Last visible line with content below - show ellipsis at end
+  #|         const displayWidth = getStringWidth(lineText);
+  #|         if (displayWidth > width - 1) {
+  #|           let w = 0;
+  #|           let endIdx = line.chars.length;
+  #|           for (let j = 0; j < line.chars.length; j++) {
+  #|             const cw = getCharWidth(line.chars[j]);
+  #|             if (w + cw > width - 1) {
+  #|               endIdx = j;
+  #|               break;
+  #|             }
+  #|             w += cw;
+  #|           }
+  #|           lineText = line.chars.slice(0, endIdx).join('') + '…';
+  #|         } else {
+  #|           lineText = lineText + '…';
+  #|         }
+  #|       }
+  #|
+  #|       stdout.write(lineText);
+  #|     }
+  #|
+  #|     // Position cursor
+  #|     const displayRow = row + (cursorPos.lineIdx - scrollOffset);
+  #|     const displayCol = col + cursorPos.colOffset;
+  #|     stdout.write(`\x1b[${displayRow};${displayCol}H`);
   #|     stdout.write('\x1b[?25h');
   #|   };
   #|
@@ -290,7 +356,6 @@ extern "js" fn js_start_inplace_input(
   #|       stdin.removeListener('data', stdin.__inplaceHandler);
   #|       stdin.__inplaceHandler = null;
   #|     }
-  #|     // Hide cursor
   #|     stdout.write('\x1b[?25l');
   #|   };
   #|
@@ -313,12 +378,51 @@ extern "js" fn js_start_inplace_input(
   #|
   #|     // Handle escape sequences
   #|     if (chunk === '\x1b') {
-  #|       // Plain Esc - cancel
   #|       cancel();
   #|       return;
   #|     }
+  #|     if (chunk === '\x1b[A') {
+  #|       // Up arrow - move to previous line
+  #|       const lines = wrapText(chars);
+  #|       const pos = findCursorPos(lines, cursor);
+  #|       if (pos.lineIdx > 0) {
+  #|         const prevLine = lines[pos.lineIdx - 1];
+  #|         // Find position in previous line at same column offset
+  #|         let targetCol = pos.colOffset;
+  #|         let newCursor = prevLine.startIdx;
+  #|         let w = 0;
+  #|         for (let i = 0; i < prevLine.chars.length; i++) {
+  #|           const cw = getCharWidth(prevLine.chars[i]);
+  #|           if (w + cw > targetCol) break;
+  #|           w += cw;
+  #|           newCursor = prevLine.startIdx + i + 1;
+  #|         }
+  #|         cursor = Math.min(newCursor, prevLine.startIdx + prevLine.chars.length);
+  #|         redraw();
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b[B') {
+  #|       // Down arrow - move to next line
+  #|       const lines = wrapText(chars);
+  #|       const pos = findCursorPos(lines, cursor);
+  #|       if (pos.lineIdx < lines.length - 1) {
+  #|         const nextLine = lines[pos.lineIdx + 1];
+  #|         let targetCol = pos.colOffset;
+  #|         let newCursor = nextLine.startIdx;
+  #|         let w = 0;
+  #|         for (let i = 0; i < nextLine.chars.length; i++) {
+  #|           const cw = getCharWidth(nextLine.chars[i]);
+  #|           if (w + cw > targetCol) break;
+  #|           w += cw;
+  #|           newCursor = nextLine.startIdx + i + 1;
+  #|         }
+  #|         cursor = Math.min(newCursor, nextLine.startIdx + nextLine.chars.length);
+  #|         redraw();
+  #|       }
+  #|       return;
+  #|     }
   #|     if (chunk === '\x1b[D') {
-  #|       // Left arrow
   #|       if (cursor > 0) {
   #|         cursor--;
   #|         redraw();
@@ -326,7 +430,6 @@ extern "js" fn js_start_inplace_input(
   #|       return;
   #|     }
   #|     if (chunk === '\x1b[C') {
-  #|       // Right arrow
   #|       if (cursor < chars.length) {
   #|         cursor++;
   #|         redraw();
@@ -334,19 +437,16 @@ extern "js" fn js_start_inplace_input(
   #|       return;
   #|     }
   #|     if (chunk === '\x1b[H' || chunk === '\x1b[1~') {
-  #|       // Home
   #|       cursor = 0;
   #|       redraw();
   #|       return;
   #|     }
   #|     if (chunk === '\x1b[F' || chunk === '\x1b[4~') {
-  #|       // End
   #|       cursor = chars.length;
   #|       redraw();
   #|       return;
   #|     }
   #|     if (chunk === '\x1b[3~') {
-  #|       // Delete
   #|       if (cursor < chars.length) {
   #|         chars.splice(cursor, 1);
   #|         redraw();
@@ -354,7 +454,6 @@ extern "js" fn js_start_inplace_input(
   #|       return;
   #|     }
   #|     if (chunk.startsWith('\x1b[')) {
-  #|       // Other escape sequence - ignore
   #|       return;
   #|     }
   #|
@@ -362,30 +461,24 @@ extern "js" fn js_start_inplace_input(
   #|       const code = char.charCodeAt(0);
   #|
   #|       if (code === 3) {
-  #|         // Ctrl+C - cancel
   #|         cancel();
   #|         return;
   #|       } else if (code === 1) {
-  #|         // Ctrl+A - Home
   #|         cursor = 0;
   #|         redraw();
   #|       } else if (code === 5) {
-  #|         // Ctrl+E - End
   #|         cursor = chars.length;
   #|         redraw();
   #|       } else if (code === 13) {
-  #|         // Enter - confirm
   #|         finish(chars.join(''));
   #|         return;
   #|       } else if (code === 127 || code === 8) {
-  #|         // Backspace - delete char before cursor
   #|         if (cursor > 0) {
   #|           chars.splice(cursor - 1, 1);
   #|           cursor--;
   #|           redraw();
   #|         }
   #|       } else if (code >= 32) {
-  #|         // Printable character - insert at cursor
   #|         chars.splice(cursor, 0, char);
   #|         cursor++;
   #|         redraw();
@@ -699,6 +792,7 @@ pub fn start_inplace_input(
   row : Int,
   col : Int,
   width : Int,
+  height : Int,
   initial : String,
   on_result : (InputResult) -> Unit,
 ) -> Unit {
@@ -706,6 +800,7 @@ pub fn start_inplace_input(
     row,
     col,
     width,
+    height,
     initial,
     fn(value) { on_result(InputResult::Confirmed(value)) },
     fn() { on_result(InputResult::Cancelled) },

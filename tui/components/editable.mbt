@@ -49,13 +49,14 @@ pub fn start_edit(
 ///|
 /// Start editing a field inplace (stays in TUI screen)
 /// row/col are 1-indexed ANSI coordinates
-/// width is the max display width for the input
+/// width/height define the input area (supports multi-line wrapping)
 pub fn start_edit_inplace(
   config : EditConfig,
   current_value : String,
   row : Int,
   col : Int,
   width : Int,
+  height : Int,
   on_complete : () -> Unit,
 ) -> Unit {
   // Call optional setup callback
@@ -65,7 +66,7 @@ pub fn start_edit_inplace(
   }
 
   // Start inplace input
-  @tui.start_inplace_input(row, col, width, current_value, fn(result) {
+  @tui.start_inplace_input(row, col, width, height, current_value, fn(result) {
     match result {
       @tui.InputResult::Confirmed(new_value) => (config.on_change)(new_value)
       @tui.InputResult::Cancelled => ()
