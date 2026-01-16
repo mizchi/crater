@@ -1,44 +1,83 @@
 ///|
-/// Simple readline example for native target
-/// Demonstrates line-based input/output with ANSI colors
+/// Simple key input example for native target
+/// Demonstrates raw mode key reading with ANSI colors
 
 ///|
-async fn main {
+fn main {
   // Print welcome message with ANSI colors
-  print_colored("Welcome to the Native Readline Example!", Color::Cyan, bold=true)
+  print_colored("Welcome to the Native Key Input Example!", Color::Cyan, bold=true)
   println("")
-  println("Type something and press Enter. Type 'quit' to exit.")
+  println("Press keys to see them. Press 'q' to quit.")
   println("")
+
+  // Enable raw mode for character-by-character input
+  @tui.enable_raw_mode()
 
   // Main loop
   for {
-    // Print prompt
-    print_colored("> ", Color::Green, bold=true)
-
-    // Read a line from stdin
-    let line = read_line_async()
+    let key = @tui.read_key()
+    if key.length() == 0 {
+      // No key available, sleep a bit
+      @tui.sleep(50)
+      continue
+    }
 
     // Check for quit
-    if line == "quit" || line == "exit" {
-      print_colored("Goodbye!", Color::Yellow, bold=false)
-      println("")
+    if key == "q" || key == "Q" {
       break
     }
 
-    // Echo back with some formatting
-    if line.length() > 0 {
-      print_colored("You said: ", Color::Blue, bold=false)
-      print_colored(line, Color::White, bold=true)
-      println("")
-
-      // Show some info about the input
-      print_colored("  Length: ", Color::Magenta, bold=false)
-      println(line.length().to_string())
+    // Handle special keys
+    if key == "\u001b[A" {
+      @tui.print_raw("[Up Arrow]\r\n")
+    } else if key == "\u001b[B" {
+      @tui.print_raw("[Down Arrow]\r\n")
+    } else if key == "\u001b[C" {
+      @tui.print_raw("[Right Arrow]\r\n")
+    } else if key == "\u001b[D" {
+      @tui.print_raw("[Left Arrow]\r\n")
+    } else if key == "\u001b" {
+      @tui.print_raw("[Escape]\r\n")
+    } else if key == "\r" || key == "\n" {
+      @tui.print_raw("[Enter]\r\n")
+    } else if key == "\u007f" {
+      @tui.print_raw("[Backspace]\r\n")
+    } else if key == "\t" {
+      @tui.print_raw("[Tab]\r\n")
+    } else if key.length() == 1 {
+      let code = key[0].to_int()
+      if code < 32 {
+        // Control character
+        @tui.print_raw("[Ctrl+")
+        @tui.print_raw((code + 64).to_string())
+        @tui.print_raw("]\r\n")
+      } else {
+        // Regular character
+        @tui.print_raw("Key: '")
+        @tui.print_raw(key)
+        @tui.print_raw("'\r\n")
+      }
     } else {
-      print_colored("(empty input)", Color::Red, bold=false)
-      println("")
+      // Multi-byte character (UTF-8 or escape sequence)
+      @tui.print_raw("Sequence: [")
+      for i = 0; i < key.length(); i = i + 1 {
+        let c = key[i]
+        @tui.print_raw("0x")
+        @tui.print_raw(c.to_int().to_string())
+        if i < key.length() - 1 {
+          @tui.print_raw(" ")
+        }
+      }
+      @tui.print_raw("]\r\n")
     }
   }
+
+  // Restore terminal settings
+  @tui.cleanup_stdin()
+
+  println("")
+  print_colored("Goodbye!", Color::Yellow, bold=false)
+  println("")
 }
 
 ///|
@@ -69,27 +108,10 @@ fn color_code(color : Color) -> Int {
 }
 
 ///|
-/// Print text with ANSI color (uses println since native doesn't have print)
+/// Print text with ANSI color
 fn print_colored(text : String, color : Color, bold~ : Bool = false) -> Unit {
   let bold_code = if bold { "1;" } else { "" }
   let ansi_start = "\u001b[" + bold_code + color_code(color).to_string() + "m"
   let ansi_end = "\u001b[0m"
-  // Note: using println instead of print since native doesn't have print without newline
-  // This will add extra newlines but it's a limitation of the native stub
   println(ansi_start + text + ansi_end)
-}
-
-///|
-/// Read a line from stdin asynchronously
-async fn read_line_async() -> String {
-  let buf = FixedArray::make(1024, b'\x00')
-  let n = @stdio.stdin.read(buf, offset=0, max_len=1024)
-  if n <= 0 {
-    return ""
-  }
-  // Convert bytes to string, trim trailing newline
-  let bytes = Bytes::from_array(buf)
-  let s = bytes.to_unchecked_string()
-  let view = s[:n]
-  view.to_string().trim_end(chars="\n\r").to_string()
 }

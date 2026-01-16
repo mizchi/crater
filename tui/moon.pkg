@@ -15,4 +15,5 @@ options(
     "io_js.mbt": ["js"],
     "io_native.mbt": ["not", "js"],
   },
+  "native-stub": ["tui_native.c"],
 )

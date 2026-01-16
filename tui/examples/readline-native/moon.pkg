@@ -1,8 +1,5 @@
 import {
   "mizchi/crater-tui" as @tui,
-  "moonbitlang/async",
-  "moonbitlang/async/stdio",
-  "moonbitlang/async/io",
 }
 
 options(
