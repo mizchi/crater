@@ -195,6 +195,92 @@ pub fn styled_text(
 }
 
 ///|
+/// Create a box with text content that wraps within the box's bounds
+/// Unlike text(), this renders the text directly within the box's layout dimensions
+pub fn text_box(
+  content : String,
+  // ID
+  id? : String = "",
+  // Size
+  width? : @types.Dimension = @types.Dimension::Auto,
+  height? : @types.Dimension = @types.Dimension::Auto,
+  min_width? : @types.Dimension = @types.Dimension::Auto,
+  min_height? : @types.Dimension = @types.Dimension::Auto,
+  max_width? : @types.Dimension = @types.Dimension::Auto,
+  max_height? : @types.Dimension = @types.Dimension::Auto,
+  // Flex properties
+  flex_grow? : Double = 0.0,
+  flex_shrink? : Double = 1.0,
+  flex_basis? : @types.Dimension = @types.Dimension::Auto,
+  // Padding & Margin
+  padding? : Double = 0.0,
+  padding_x? : Double = 0.0,
+  padding_y? : Double = 0.0,
+  margin? : Double = 0.0,
+  margin_x? : Double = 0.0,
+  margin_y? : Double = 0.0,
+  // Border
+  border? : BorderChars? = None,
+  border_color? : Color = Color::white(),
+  // Style
+  bg? : Color = Color::transparent(),
+  fg? : Color = Color::white(),
+  bold? : Bool = false,
+  underline? : Bool = false,
+) -> Component {
+  let actual_id = if id == "" { next_id() } else { id }
+
+  // Build style
+  let style = @style.Style::default()
+  style.width = width
+  style.height = height
+  style.min_width = min_width
+  style.min_height = min_height
+  style.max_width = max_width
+  style.max_height = max_height
+  style.flex_grow = flex_grow
+  style.flex_shrink = flex_shrink
+  style.flex_basis = flex_basis
+  // Padding
+  let pad = padding
+  let pad_x = if padding_x > 0.0 { padding_x } else { pad }
+  let pad_y = if padding_y > 0.0 { padding_y } else { pad }
+  style.padding = @types.Rect::new(
+    @types.Dimension::Length(pad_y),
+    @types.Dimension::Length(pad_x),
+    @types.Dimension::Length(pad_y),
+    @types.Dimension::Length(pad_x),
+  )
+  // Margin
+  let mar = margin
+  let mar_x = if margin_x > 0.0 { margin_x } else { mar }
+  let mar_y = if margin_y > 0.0 { margin_y } else { mar }
+  style.margin = @types.Rect::new(
+    @types.Dimension::Length(mar_y),
+    @types.Dimension::Length(mar_x),
+    @types.Dimension::Length(mar_y),
+    @types.Dimension::Length(mar_x),
+  )
+
+  // Build node (no children, text rendered directly in this box)
+  let node = @node.Node::new(actual_id, style, [])
+
+  // Create style and text maps
+  let styles = RenderStyleMap::new()
+  let texts = TextContentMap::new()
+  styles.set(actual_id, {
+    fg,
+    bg,
+    bold,
+    underline,
+    border,
+    border_fg: border_color,
+  })
+  texts.set(actual_id, content)
+  { node, styles, texts }
+}
+
+///|
 /// Spacer component - flexible empty space
 pub fn spacer(flex_grow? : Double = 1.0) -> Component {
   let id = next_id()

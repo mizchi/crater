@@ -47,6 +47,42 @@ pub fn start_edit(
 }
 
 ///|
+/// Start editing a field inplace (stays in TUI screen)
+/// row/col are 1-indexed ANSI coordinates
+/// width is the max display width for the input
+pub fn start_edit_inplace(
+  config : EditConfig,
+  current_value : String,
+  row : Int,
+  col : Int,
+  width : Int,
+  on_complete : () -> Unit,
+) -> Unit {
+  // Call optional setup callback
+  match config.on_edit_start {
+    Some(f) => f()
+    None => ()
+  }
+
+  // Start inplace input
+  @tui.start_inplace_input(row, col, width, current_value, fn(result) {
+    match result {
+      @tui.InputResult::Confirmed(new_value) => (config.on_change)(new_value)
+      @tui.InputResult::Cancelled => ()
+      _ => ()
+    }
+
+    // Call optional cleanup callback
+    match config.on_edit_end {
+      Some(f) => f()
+      None => ()
+    }
+
+    on_complete()
+  })
+}
+
+///|
 /// Helper to create a standard edit config for form fields
 pub fn form_edit_config(
   field_name : String,

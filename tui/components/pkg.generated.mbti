@@ -30,7 +30,7 @@ pub fn hspace(Double) -> @crater-tui.Component
 
 pub fn icon_button(String, state? : ButtonState, fg? : @crater-tui.Color, bg? : @crater-tui.Color, hover_bg? : @crater-tui.Color, pressed_bg? : @crater-tui.Color) -> @crater-tui.Component
 
-pub fn input(String, id? : String, placeholder? : String, state? : InputState, fg? : @crater-tui.Color, bg? : @crater-tui.Color, placeholder_fg? : @crater-tui.Color, focus_border_color? : @crater-tui.Color, edit_border_color? : @crater-tui.Color, disabled_fg? : @crater-tui.Color, disabled_bg? : @crater-tui.Color, width? : @types.Dimension, min_width? : Double, padding_x? : Double, padding_y? : Double) -> @crater-tui.Component
+pub fn input(String, id? : String, placeholder? : String, state? : InputState, fg? : @crater-tui.Color, bg? : @crater-tui.Color, placeholder_fg? : @crater-tui.Color, focus_border_color? : @crater-tui.Color, edit_border_color? : @crater-tui.Color, disabled_fg? : @crater-tui.Color, disabled_bg? : @crater-tui.Color, width? : @types.Dimension, height? : @types.Dimension, min_width? : Double, min_height? : Double, padding_x? : Double, padding_y? : Double) -> @crater-tui.Component
 
 pub fn input_plain(String, placeholder? : String, state? : InputState, fg? : @crater-tui.Color, bg? : @crater-tui.Color, placeholder_fg? : @crater-tui.Color, underline? : Bool) -> @crater-tui.Component
 

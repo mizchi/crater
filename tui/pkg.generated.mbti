@@ -107,7 +107,9 @@ pub async fn sleep(Int) -> Unit
 
 pub fn spacer(flex_grow? : Double) -> Component
 
-pub fn start_inline_input(String, String, (InputResult) -> Unit) -> Unit
+pub fn start_inline_input(String, String, Int, Int, Int, Int, (InputResult) -> Unit) -> Unit
+
+pub fn start_inline_input_cooked(String, Int, Int, Int, (InputResult) -> Unit) -> Unit
 
 pub async fn start_input_session(Int, Int, String) -> InputResult
 
@@ -128,6 +130,8 @@ pub fn string_display_width(String) -> Int
 pub fn styled_text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
 
 pub fn text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
+
+pub fn text_box(String, id? : String, width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : BorderChars?, border_color? : Color, bg? : Color, fg? : Color, bold? : Bool, underline? : Bool) -> Component
 
 pub fn text_measure_func(String) -> @node.MeasureFunc
 
@@ -280,6 +284,8 @@ pub(all) enum InputMode {
 pub(all) enum InputResult {
   Confirmed(String)
   Cancelled
+  TabNext(String)
+  TabPrev(String)
 }
 
 pub(all) enum KeyEvent {

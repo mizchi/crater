@@ -86,7 +86,8 @@ pub(all) enum InputEvent {
 /// Parse a single byte as a character
 fn is_printable(c : Char) -> Bool {
   let code = c.to_int()
-  code >= 32 && code < 127
+  // ASCII printable or Unicode characters (above 127)
+  (code >= 32 && code < 127) || code >= 128
 }
 
 ///|
@@ -147,6 +148,12 @@ pub fn parse_input(input : String) -> InputEvent {
         return InputEvent::Key(KeyEvent::Char(c, KeyModifier::Alt))
       }
     }
+  }
+
+  // Multi-character printable input (e.g., pasted text or unicode)
+  // Return the first character as a key event
+  if chars.length() > 0 && is_printable(chars[0]) {
+    return InputEvent::Key(KeyEvent::Char(chars[0], KeyModifier::None))
   }
   InputEvent::Unknown(input)
 }

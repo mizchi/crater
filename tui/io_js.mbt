@@ -161,6 +161,243 @@ pub fn stop_keypress_listener() -> Unit {
 }
 
 ///|
+/// Start an inplace input session with raw mode
+/// Stays in alternate screen, edits at specified position
+/// row/col are 1-indexed ANSI coordinates
+/// Enter confirms, Esc cancels
+/// Supports arrow keys, Home, End, Delete for cursor movement
+extern "js" fn js_start_inplace_input(
+  row : Int,
+  col : Int,
+  width : Int,
+  initial : String,
+  on_confirmed : (String) -> Unit,
+  on_cancelled : () -> Unit,
+) -> Unit =
+  #| async (row, col, width, initial, onConfirmed, onCancelled) => {
+  #|   const { stdin, stdout } = await import('node:process');
+  #|
+  #|   // Helper to get display width of a character
+  #|   const getCharWidth = (char) => {
+  #|     const code = char.codePointAt(0);
+  #|     if (code >= 0x1100 && (
+  #|       code <= 0x115F ||
+  #|       code === 0x2329 || code === 0x232A ||
+  #|       (code >= 0x2E80 && code <= 0x303E) ||
+  #|       (code >= 0x3040 && code <= 0x33FF) ||
+  #|       (code >= 0x3400 && code <= 0x4DBF) ||
+  #|       (code >= 0x4E00 && code <= 0x9FFF) ||
+  #|       (code >= 0xAC00 && code <= 0xD7A3) ||
+  #|       (code >= 0xF900 && code <= 0xFAFF) ||
+  #|       (code >= 0xFE10 && code <= 0xFE1F) ||
+  #|       (code >= 0xFE30 && code <= 0xFE6F) ||
+  #|       (code >= 0xFF00 && code <= 0xFF60) ||
+  #|       (code >= 0xFFE0 && code <= 0xFFE6) ||
+  #|       (code >= 0x20000 && code <= 0x2FFFF)
+  #|     )) {
+  #|       return 2;
+  #|     }
+  #|     return 1;
+  #|   };
+  #|
+  #|   const getStringWidth = (str) => {
+  #|     let w = 0;
+  #|     for (const char of str) w += getCharWidth(char);
+  #|     return w;
+  #|   };
+  #|
+  #|   // Get width up to cursor position
+  #|   const getWidthUpTo = (chars, pos) => {
+  #|     let w = 0;
+  #|     for (let i = 0; i < pos && i < chars.length; i++) {
+  #|       w += getCharWidth(chars[i]);
+  #|     }
+  #|     return w;
+  #|   };
+  #|
+  #|   // Clean up any existing handlers
+  #|   if (stdin.__dataHandler) {
+  #|     stdin.removeListener('data', stdin.__dataHandler);
+  #|     stdin.__dataHandler = null;
+  #|   }
+  #|
+  #|   // Keep raw mode for character-by-character input
+  #|   if (stdin.isTTY) {
+  #|     stdin.setRawMode(true);
+  #|   }
+  #|   stdin.resume();
+  #|   stdin.setEncoding('utf8');
+  #|
+  #|   let chars = [...initial];
+  #|   let cursor = chars.length; // Cursor position (index into chars array)
+  #|   let done = false;
+  #|
+  #|   const redraw = () => {
+  #|     const buffer = chars.join('');
+  #|     stdout.write(`\x1b[${row};${col}H`);
+  #|     stdout.write(' '.repeat(width));
+  #|     stdout.write(`\x1b[${row};${col}H`);
+  #|
+  #|     // Calculate display with scrolling if too wide
+  #|     let displayStr = buffer;
+  #|     let cursorDisplayCol = col + getWidthUpTo(chars, cursor);
+  #|     let displayWidth = getStringWidth(buffer);
+  #|
+  #|     if (displayWidth > width) {
+  #|       // Scroll view to keep cursor visible
+  #|       let cursorWidth = getWidthUpTo(chars, cursor);
+  #|       let startIdx = 0;
+  #|       let w = 0;
+  #|
+  #|       // Find start position to show cursor
+  #|       if (cursorWidth > width - 2) {
+  #|         for (let i = 0; i < chars.length; i++) {
+  #|           const cw = getCharWidth(chars[i]);
+  #|           if (w + cw > cursorWidth - width + 2) break;
+  #|           w += cw;
+  #|           startIdx = i + 1;
+  #|         }
+  #|       }
+  #|
+  #|       // Calculate visible portion
+  #|       let visibleChars = chars.slice(startIdx);
+  #|       let visibleWidth = 0;
+  #|       let endIdx = visibleChars.length;
+  #|       for (let i = 0; i < visibleChars.length; i++) {
+  #|         const cw = getCharWidth(visibleChars[i]);
+  #|         if (visibleWidth + cw > width - (startIdx > 0 ? 1 : 0)) {
+  #|           endIdx = i;
+  #|           break;
+  #|         }
+  #|         visibleWidth += cw;
+  #|       }
+  #|
+  #|       displayStr = (startIdx > 0 ? '…' : '') + visibleChars.slice(0, endIdx).join('');
+  #|       cursorDisplayCol = col + (startIdx > 0 ? 1 : 0) + getWidthUpTo(chars.slice(startIdx), cursor - startIdx);
+  #|     }
+  #|
+  #|     stdout.write(displayStr);
+  #|     // Move cursor to correct position
+  #|     stdout.write(`\x1b[${row};${cursorDisplayCol}H`);
+  #|     stdout.write('\x1b[?25h');
+  #|   };
+  #|
+  #|   // Initial display
+  #|   redraw();
+  #|
+  #|   const cleanup = () => {
+  #|     if (stdin.__inplaceHandler) {
+  #|       stdin.removeListener('data', stdin.__inplaceHandler);
+  #|       stdin.__inplaceHandler = null;
+  #|     }
+  #|     // Hide cursor
+  #|     stdout.write('\x1b[?25l');
+  #|   };
+  #|
+  #|   const finish = (result) => {
+  #|     if (done) return;
+  #|     done = true;
+  #|     cleanup();
+  #|     setImmediate(() => onConfirmed(result));
+  #|   };
+  #|
+  #|   const cancel = () => {
+  #|     if (done) return;
+  #|     done = true;
+  #|     cleanup();
+  #|     setImmediate(() => onCancelled());
+  #|   };
+  #|
+  #|   const onData = (chunk) => {
+  #|     if (done) return;
+  #|
+  #|     // Handle escape sequences
+  #|     if (chunk === '\x1b') {
+  #|       // Plain Esc - cancel
+  #|       cancel();
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b[D') {
+  #|       // Left arrow
+  #|       if (cursor > 0) {
+  #|         cursor--;
+  #|         redraw();
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b[C') {
+  #|       // Right arrow
+  #|       if (cursor < chars.length) {
+  #|         cursor++;
+  #|         redraw();
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b[H' || chunk === '\x1b[1~') {
+  #|       // Home
+  #|       cursor = 0;
+  #|       redraw();
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b[F' || chunk === '\x1b[4~') {
+  #|       // End
+  #|       cursor = chars.length;
+  #|       redraw();
+  #|       return;
+  #|     }
+  #|     if (chunk === '\x1b[3~') {
+  #|       // Delete
+  #|       if (cursor < chars.length) {
+  #|         chars.splice(cursor, 1);
+  #|         redraw();
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (chunk.startsWith('\x1b[')) {
+  #|       // Other escape sequence - ignore
+  #|       return;
+  #|     }
+  #|
+  #|     for (const char of chunk) {
+  #|       const code = char.charCodeAt(0);
+  #|
+  #|       if (code === 3) {
+  #|         // Ctrl+C - cancel
+  #|         cancel();
+  #|         return;
+  #|       } else if (code === 1) {
+  #|         // Ctrl+A - Home
+  #|         cursor = 0;
+  #|         redraw();
+  #|       } else if (code === 5) {
+  #|         // Ctrl+E - End
+  #|         cursor = chars.length;
+  #|         redraw();
+  #|       } else if (code === 13) {
+  #|         // Enter - confirm
+  #|         finish(chars.join(''));
+  #|         return;
+  #|       } else if (code === 127 || code === 8) {
+  #|         // Backspace - delete char before cursor
+  #|         if (cursor > 0) {
+  #|           chars.splice(cursor - 1, 1);
+  #|           cursor--;
+  #|           redraw();
+  #|         }
+  #|       } else if (code >= 32) {
+  #|         // Printable character - insert at cursor
+  #|         chars.splice(cursor, 0, char);
+  #|         cursor++;
+  #|         redraw();
+  #|       }
+  #|     }
+  #|   };
+  #|
+  #|   stdin.__inplaceHandler = onData;
+  #|   stdin.on('data', onData);
+  #| }
+
+///|
 /// Start an inline input session with cooked mode (IME enabled)
 /// Exits alternate screen temporarily for proper IME support
 /// Enter confirms, Ctrl+C cancels
@@ -172,8 +409,6 @@ extern "js" fn js_start_inline_input_cooked(
 ) -> Unit =
   #| async (fieldName, initial, onConfirmed, onCancelled) => {
   #|   const { stdin, stdout } = await import('node:process');
-  #|
-  #|   console.error('[cooked] Start:', fieldName);
   #|
   #|   // Exit alternate screen
   #|   stdout.write('\x1b[?1049l');
@@ -201,8 +436,6 @@ extern "js" fn js_start_inline_input_cooked(
   #|   stdin.resume();
   #|   stdin.setEncoding('utf8');
   #|
-  #|   console.error('[cooked] stdin ready, listeners=' + stdin.listenerCount('data'));
-  #|
   #|   let buffer = '';
   #|   let done = false;
   #|
@@ -214,18 +447,15 @@ extern "js" fn js_start_inline_input_cooked(
   #|   };
   #|
   #|   const finish = (result) => {
-  #|     console.error('[cooked] finish:', result);
   #|     if (done) return;
   #|     done = true;
   #|     cleanup();
   #|     // Re-enter alternate screen immediately before callback
   #|     stdout.write('\x1b[?1049h');
-  #|     // Small delay to ensure screen switch completes
   #|     setImmediate(() => onConfirmed(result));
   #|   };
   #|
   #|   const cancel = () => {
-  #|     console.error('[cooked] cancel');
   #|     if (done) return;
   #|     done = true;
   #|     cleanup();
@@ -237,7 +467,6 @@ extern "js" fn js_start_inline_input_cooked(
   #|   // Handle input directly without readline
   #|   const onData = (chunk) => {
   #|     if (done) return;
-  #|     console.error('[cooked] data:', JSON.stringify(chunk));
   #|
   #|     for (const char of chunk) {
   #|       const code = char.charCodeAt(0);
@@ -268,7 +497,6 @@ extern "js" fn js_start_inline_input_cooked(
   #|
   #|   stdin.__cookedHandler = onData;
   #|   stdin.on('data', onData);
-  #|   console.error('[cooked] handler attached, listeners=' + stdin.listenerCount('data'));
   #| }
 
 ///|
@@ -456,6 +684,28 @@ pub fn start_inline_input_cooked(
 ) -> Unit {
   js_start_inline_input_cooked(
     field_name,
+    initial,
+    fn(value) { on_result(InputResult::Confirmed(value)) },
+    fn() { on_result(InputResult::Cancelled) },
+  )
+}
+
+///|
+/// Start an inplace input session with cooked mode (IME enabled)
+/// Stays in alternate screen, edits at specified position
+/// row/col are 1-indexed ANSI coordinates
+/// width is the max display width for the input
+pub fn start_inplace_input(
+  row : Int,
+  col : Int,
+  width : Int,
+  initial : String,
+  on_result : (InputResult) -> Unit,
+) -> Unit {
+  js_start_inplace_input(
+    row,
+    col,
+    width,
     initial,
     fn(value) { on_result(InputResult::Confirmed(value)) },
     fn() { on_result(InputResult::Cancelled) },

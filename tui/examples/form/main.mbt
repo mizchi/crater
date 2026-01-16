@@ -194,33 +194,16 @@ fn main {
 
   // Render helper
   fn do_render() -> Unit {
-    @tui.debug_stderr("do_render: START name=" + name.get())
-    let ui = render_ui()
-    // Debug: check texts map content
-    @tui.debug_stderr("do_render: texts in component:")
-    for entry in ui.texts.inner() {
-      @tui.debug_stderr("  " + entry.0 + " => '" + entry.1 + "'")
-    }
-    let frame = app.render_frame(ui)
-    @tui.debug_stderr("do_render: frame_len=" + frame.length().to_string())
-    @tui.print_raw(frame)
-    @tui.debug_stderr("do_render: DONE")
+    @tui.print_raw(app.render_frame(render_ui()))
   }
 
   // Restore TUI mode after editing
   fn restore_tui() -> Unit {
-    @tui.debug_stderr("restore_tui: 1. called")
-    @tui.debug_stderr("restore_tui: 2. name=" + name.get())
     @tui.print_raw(@tui.ansi_full_reset())
-    @tui.debug_stderr("restore_tui: 3. after ansi_full_reset")
     @tui.print_raw(@tui.enable_mouse())
-    @tui.debug_stderr("restore_tui: 4. after enable_mouse")
     app.clear_prev_buffer()
-    @tui.debug_stderr("restore_tui: 5. after clear_prev_buffer")
     do_render()
-    @tui.debug_stderr("restore_tui: 6. after do_render")
     @tui.start_keypress_listener(handle_key)
-    @tui.debug_stderr("restore_tui: 7. after start_keypress_listener")
   }
 
   // Handle submit
@@ -236,19 +219,49 @@ fn main {
     println("Message: " + message.get())
   }
 
-  // Start editing an input field using editable API
+  // Start editing an input field using inplace editable API
   fn start_editing(id : String) -> Unit {
     match field_configs.get(id) {
       Some((field_name, signal)) => {
-        let config = @c.form_edit_config(
-          field_name,
-          signal,
-          on_edit_start=Some(fn() {
-            @tui.stop_keypress_listener()
-            @tui.print_raw(@tui.disable_mouse())
-          }),
-        )
-        @c.start_edit(config, signal.get(), restore_tui)
+        // Get the element bounds for inplace editing
+        match app.find_by_id(id) {
+          Some(bounds) => {
+            let config = @c.form_edit_config(
+              field_name,
+              signal,
+              on_edit_start=Some(fn() {
+                @tui.stop_keypress_listener()
+                @tui.print_raw(@tui.disable_mouse())
+              }),
+            )
+            // Calculate position for inplace editing
+            // bounds.x/y are 0-indexed, ANSI coordinates are 1-indexed
+            // +1 for 0-to-1 index conversion, +1 for border
+            let row = bounds.y + 2 // +1 for 1-indexed, +1 for border
+            let col = bounds.x + 2 // +1 for 1-indexed, +1 for border
+            let content_width = bounds.width - 2 // Exclude left and right borders
+            @c.start_edit_inplace(
+              config,
+              signal.get(),
+              row,
+              col,
+              content_width,
+              restore_tui,
+            )
+          }
+          None => {
+            // Fallback to cooked mode if bounds not found
+            let config = @c.form_edit_config(
+              field_name,
+              signal,
+              on_edit_start=Some(fn() {
+                @tui.stop_keypress_listener()
+                @tui.print_raw(@tui.disable_mouse())
+              }),
+            )
+            @c.start_edit(config, signal.get(), restore_tui)
+          }
+        }
       }
       None => ()
     }

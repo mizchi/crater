@@ -31,7 +31,7 @@ pub fn input(
   height? : @types.Dimension = @types.Dimension::Auto,
   min_width? : Double = 10.0,
   min_height? : Double = 1.0,
-  padding_x? : Double = 1.0,
+  padding_x? : Double = 0.0,
   padding_y? : Double = 0.0,
 ) -> @tui.Component {
   // Determine display text

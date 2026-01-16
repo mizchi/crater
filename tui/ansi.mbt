@@ -73,6 +73,19 @@ pub fn ansi_leave_alt_screen() -> String {
 }
 
 ///|
+/// Reset all terminal attributes (colors, styles)
+pub fn ansi_reset_attrs() -> String {
+  "\u001b[0m"
+}
+
+///|
+/// Full terminal reset sequence for recovering from corrupted state
+pub fn ansi_full_reset() -> String {
+  // Reset attributes + enter alt screen + hide cursor + clear + move to origin
+  "\u001b[0m\u001b[?1049h\u001b[?25l\u001b[2J\u001b[H"
+}
+
+///|
 /// Convert RGB color to 256-color palette index
 pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
   if r == g && g == b {
