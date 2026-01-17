@@ -95,6 +95,11 @@ void tui_print_raw(const char* str, int len) {
     write(STDOUT_FILENO, str, len);
 }
 
+// Write bytes to stdout without newline
+void tui_write_bytes(const unsigned char* buf, int len) {
+    write(STDOUT_FILENO, buf, len);
+}
+
 // Flush stdout
 void tui_flush(void) {
     fflush(stdout);

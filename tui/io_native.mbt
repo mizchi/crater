@@ -31,6 +31,10 @@ extern "C" fn tui_read_bytes(buf : FixedArray[Byte], max_len : Int) -> Int = "tu
 extern "C" fn tui_print_raw_ffi(str : Bytes, len : Int) = "tui_print_raw"
 
 ///|
+#borrow(buf)
+extern "C" fn tui_write_bytes_ffi(buf : FixedArray[Byte], len : Int) = "tui_write_bytes"
+
+///|
 extern "C" fn tui_flush() = "tui_flush"
 
 ///|
@@ -42,14 +46,52 @@ extern "C" fn tui_sleep_ms(ms : Int) = "tui_sleep_ms"
 // --- Helper functions ---
 
 ///|
-/// Convert a fixed array of bytes to a string with a specific length
+/// Decode UTF-8 bytes to a MoonBit String (UTF-16)
 fn bytes_to_string(buf : FixedArray[Byte], len : Int) -> String {
-  // Create a smaller fixed array with only the needed bytes
-  let small_buf = FixedArray::make(len, b'\x00')
-  for i = 0; i < len; i = i + 1 {
-    small_buf[i] = buf[i]
+  let chars : Array[Char] = []
+  let mut i = 0
+
+  while i < len {
+    let b0 = buf[i].to_int()
+
+    if b0 < 0x80 {
+      // ASCII (single byte)
+      chars.push(b0.unsafe_to_char())
+      i = i + 1
+    } else if (b0 & 0xE0) == 0xC0 && i + 1 < len {
+      // 2-byte UTF-8 sequence
+      let b1 = buf[i + 1].to_int()
+      let code = ((b0 & 0x1F) << 6) | (b1 & 0x3F)
+      chars.push(code.unsafe_to_char())
+      i = i + 2
+    } else if (b0 & 0xF0) == 0xE0 && i + 2 < len {
+      // 3-byte UTF-8 sequence
+      let b1 = buf[i + 1].to_int()
+      let b2 = buf[i + 2].to_int()
+      let code = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)
+      chars.push(code.unsafe_to_char())
+      i = i + 3
+    } else if (b0 & 0xF8) == 0xF0 && i + 3 < len {
+      // 4-byte UTF-8 sequence (outside BMP, needs surrogate pair)
+      let b1 = buf[i + 1].to_int()
+      let b2 = buf[i + 2].to_int()
+      let b3 = buf[i + 3].to_int()
+      let code = ((b0 & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F)
+      // Encode as UTF-16 surrogate pair
+      let adjusted = code - 0x10000
+      let high = 0xD800 + (adjusted >> 10)
+      let low = 0xDC00 + (adjusted & 0x3FF)
+      chars.push(high.unsafe_to_char())
+      chars.push(low.unsafe_to_char())
+      i = i + 4
+    } else {
+      // Invalid or unexpected byte, skip
+      i = i + 1
+    }
   }
-  Bytes::from_array(small_buf).to_unchecked_string().to_string()
+
+  // Convert Array[Char] to String
+  chars.iter().map(fn(c) { c.to_string() }).fold(init="", fn(a, b) { a + b })
 }
 
 // --- Public API ---
@@ -96,19 +138,40 @@ pub fn read_key() -> String {
     buf[0] = first.to_byte()
     let mut len = 1
 
-    // Read additional bytes with short timeout
-    for i = 1; i < 16; i = i + 1 {
-      let b = tui_read_byte()
-      if b < 0 {
-        break
+    // Read second byte
+    let second = tui_read_byte()
+    if second < 0 {
+      // Just ESC
+      return bytes_to_string(buf, len)
+    }
+    buf[1] = second.to_byte()
+    len = 2
+
+    // Check if it's a CSI sequence (ESC [)
+    if second == 0x5b {
+      // CSI sequence - read until final byte (0x40-0x7E, excluding '[')
+      for i = 2; i < 16; i = i + 1 {
+        let b = tui_read_byte()
+        if b < 0 {
+          break
+        }
+        buf[i] = b.to_byte()
+        len = len + 1
+        // Final byte of CSI is in 0x40-0x7E range (letters and some symbols)
+        // But not '[' (0x5B) and not intermediate/parameter bytes (0x20-0x3F)
+        if b >= 0x40 && b <= 0x7e && b != 0x5b {
+          break
+        }
       }
-      buf[i] = b.to_byte()
-      len = len + 1
-      // Stop after certain sequences
-      if b >= 0x40 && b <= 0x7e {
-        break
+    } else if second == 0x4f {
+      // SS3 sequence (ESC O) - read one more byte
+      let b = tui_read_byte()
+      if b >= 0 {
+        buf[2] = b.to_byte()
+        len = 3
       }
     }
+    // Other escape sequences: just return what we have
 
     // Convert to string
     bytes_to_string(buf, len)
@@ -153,10 +216,61 @@ pub fn read_key() -> String {
 }
 
 ///|
+/// Encode a Unicode code point to UTF-8 bytes
+fn encode_utf8(code : Int, buf : FixedArray[Byte], pos : Int) -> Int {
+  if code < 0x80 {
+    buf[pos] = code.to_byte()
+    1
+  } else if code < 0x800 {
+    buf[pos] = (0xC0 | (code >> 6)).to_byte()
+    buf[pos + 1] = (0x80 | (code & 0x3F)).to_byte()
+    2
+  } else if code < 0x10000 {
+    buf[pos] = (0xE0 | (code >> 12)).to_byte()
+    buf[pos + 1] = (0x80 | ((code >> 6) & 0x3F)).to_byte()
+    buf[pos + 2] = (0x80 | (code & 0x3F)).to_byte()
+    3
+  } else {
+    buf[pos] = (0xF0 | (code >> 18)).to_byte()
+    buf[pos + 1] = (0x80 | ((code >> 12) & 0x3F)).to_byte()
+    buf[pos + 2] = (0x80 | ((code >> 6) & 0x3F)).to_byte()
+    buf[pos + 3] = (0x80 | (code & 0x3F)).to_byte()
+    4
+  }
+}
+
+///|
 /// Print string to stdout without newline
 pub fn print_raw(s : String) -> Unit {
-  let bytes = s.to_bytes()
-  tui_print_raw_ffi(bytes, bytes.length())
+  // Convert UTF-16 string to UTF-8 bytes
+  let str_len = s.length()
+  // Max 4 bytes per code point
+  let max_size = str_len * 4
+  let buf = FixedArray::make(max_size, b'\x00')
+  let mut pos = 0
+  let mut i = 0
+
+  while i < str_len {
+    let unit = s[i].to_int()
+
+    // Check for surrogate pair (for characters outside BMP)
+    if unit >= 0xD800 && unit <= 0xDBFF && i + 1 < str_len {
+      let unit2 = s[i + 1].to_int()
+      if unit2 >= 0xDC00 && unit2 <= 0xDFFF {
+        // Decode surrogate pair to code point
+        let code = 0x10000 + ((unit - 0xD800) << 10) + (unit2 - 0xDC00)
+        pos = pos + encode_utf8(code, buf, pos)
+        i = i + 2
+        continue
+      }
+    }
+
+    // Regular BMP character
+    pos = pos + encode_utf8(unit, buf, pos)
+    i = i + 1
+  }
+
+  tui_write_bytes_ffi(buf, pos)
   tui_flush()
 }
 
@@ -254,18 +368,271 @@ pub fn poll_keypress() -> Bool {
 }
 
 ///|
-/// Start inplace input (stub - complex implementation needed)
+/// Get character display width (simplified: ASCII=1, CJK=2)
+fn char_width_code(code : Int) -> Int {
+  if code < 0x80 {
+    1
+  } else if code >= 0x1100 &&
+    (code <= 0x115F ||
+    code == 0x2329 ||
+    code == 0x232A ||
+    (code >= 0x2E80 && code <= 0x9FFF) ||
+    (code >= 0xAC00 && code <= 0xD7A3) ||
+    (code >= 0xF900 && code <= 0xFAFF) ||
+    (code >= 0xFE10 && code <= 0xFE1F) ||
+    (code >= 0xFE30 && code <= 0xFE6F) ||
+    (code >= 0xFF00 && code <= 0xFF60) ||
+    (code >= 0xFFE0 && code <= 0xFFE6)) {
+    2
+  } else {
+    1
+  }
+}
+
+///|
+/// Get string display width
+fn string_width(s : String) -> Int {
+  let mut width = 0
+  for i = 0; i < s.length(); i = i + 1 {
+    width = width + char_width_code(s[i].to_int())
+  }
+  width
+}
+
+///|
+/// Render text buffer at position with wrapping
+fn render_inplace_buffer(
+  text : String,
+  start_row : Int,
+  start_col : Int,
+  max_width : Int,
+  max_height : Int,
+) -> (Int, Int) {
+  let mut output = ""
+  let mut row = start_row
+  let mut col = start_col
+
+  // Move to start position and clear area
+  for r = 0; r < max_height; r = r + 1 {
+    output = output + "\u001b[" + (start_row + r).to_string() + ";" + start_col.to_string() + "H"
+    for w = 0; w < max_width; w = w + 1 {
+      output = output + " "
+    }
+  }
+  output = output + "\u001b[" + start_row.to_string() + ";" + start_col.to_string() + "H"
+
+  // Render text with wrapping
+  let mut line_width = 0
+  for i = 0; i < text.length(); i = i + 1 {
+    let code = text[i].to_int()
+    let cw = char_width_code(code)
+
+    // Handle newline
+    if code == 10 {
+      // '\n'
+      row = row + 1
+      col = start_col
+      line_width = 0
+      if row < start_row + max_height {
+        output = output + "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
+      }
+      continue
+    }
+
+    // Wrap if needed
+    if line_width + cw > max_width {
+      row = row + 1
+      col = start_col
+      line_width = 0
+      if row < start_row + max_height {
+        output = output + "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
+      }
+    }
+
+    if row < start_row + max_height {
+      output = output + Int::unsafe_to_char(code).to_string()
+      line_width = line_width + cw
+      col = col + cw
+    }
+  }
+
+  print_raw(output)
+  (row, col)
+}
+
+///|
+/// Helper to convert buffer to string
+fn buf_to_string(buf : Array[Char]) -> String {
+  buf.iter().map(fn(c) { c.to_string() }).fold(init="", fn(a, b) { a + b })
+}
+
+///|
+/// Start inplace input (native implementation with raw mode editing)
+/// Blocks until user confirms, cancels, or tabs
 pub fn start_inplace_input(
-  _row : Int,
-  _col : Int,
-  _width : Int,
-  _height : Int,
-  _multiline : Bool,
-  _initial : String,
-  _on_result : (InputResult) -> Unit,
+  row : Int,
+  col : Int,
+  width : Int,
+  height : Int,
+  multiline : Bool,
+  initial : String,
+  on_result : (InputResult) -> Unit,
 ) -> Unit {
-  // Inplace input requires complex cursor management
-  // This is a stub that would need full implementation
+  // Ensure raw mode is enabled
+  let was_raw = is_raw_mode()
+  if not(was_raw) {
+    enable_raw_mode()
+  }
+
+  // Initialize buffer with initial value
+  let buf : Array[Char] = []
+  for i = 0; i < initial.length(); i = i + 1 {
+    buf.push(Int::unsafe_to_char(initial[i].to_int()))
+  }
+
+  // Cursor position within buffer
+  let mut cursor_pos = buf.length()
+
+  // Render initial state and show cursor
+  let _ = render_inplace_buffer(buf_to_string(buf), row, col, width, height)
+  let text_before = buf_to_string(buf.iter().take(cursor_pos).collect())
+  let offset = string_width(text_before)
+  print_raw("\u001b[" + (row + offset / width).to_string() + ";" + (col + offset % width).to_string() + "H")
+  print_raw(ansi_show_cursor())
+
+  // Edit loop
+  for {
+    let key = read_key()
+    if key.length() == 0 {
+      sleep(10)
+      continue
+    }
+
+    let mut need_render = false
+    let mut done = false
+    let mut result : InputResult = InputResult::Cancelled
+
+    // Check for escape sequences
+    if key.length() > 1 && key[0].to_int() == 0x1b {
+      if key == "\u001b[Z" {
+        // Shift+Tab - confirm and go to previous
+        done = true
+        result = InputResult::TabPrev(buf_to_string(buf))
+      } else if key == "\u001b[D" {
+        // Left arrow - move cursor left
+        if cursor_pos > 0 {
+          cursor_pos = cursor_pos - 1
+          need_render = true
+        }
+      } else if key == "\u001b[C" {
+        // Right arrow - move cursor right
+        if cursor_pos < buf.length() {
+          cursor_pos = cursor_pos + 1
+          need_render = true
+        }
+      } else if key == "\u001b[A" || key == "\u001b[B" {
+        // Up/Down arrows - ignore for now (TODO: multiline navigation)
+        ()
+      } else if key == "\u001b[H" {
+        // Home - move to start
+        cursor_pos = 0
+        need_render = true
+      } else if key == "\u001b[F" {
+        // End - move to end
+        cursor_pos = buf.length()
+        need_render = true
+      }
+    } else if key == "\u001b" {
+      // Escape - cancel
+      done = true
+      result = InputResult::Cancelled
+    } else if key.length() == 1 {
+      let code = key[0].to_int()
+
+      if code == 9 {
+        // Tab - confirm and go to next
+        done = true
+        result = InputResult::TabNext(buf_to_string(buf))
+      } else if code == 13 {
+        // Enter (CR) - confirm (both single and multiline)
+        done = true
+        result = InputResult::Confirmed(buf_to_string(buf))
+      } else if code == 10 {
+        // Ctrl+J (LF) - newline in multiline, confirm in single line
+        if multiline {
+          buf.insert(cursor_pos, '\n')
+          cursor_pos = cursor_pos + 1
+          need_render = true
+        } else {
+          done = true
+          result = InputResult::Confirmed(buf_to_string(buf))
+        }
+      } else if code == 4 {
+        // Ctrl+D - also confirm
+        done = true
+        result = InputResult::Confirmed(buf_to_string(buf))
+      } else if code == 3 {
+        // Ctrl+C - cancel
+        done = true
+        result = InputResult::Cancelled
+      } else if code == 127 || code == 8 {
+        // Backspace - delete char before cursor
+        if cursor_pos > 0 {
+          let _ = buf.remove(cursor_pos - 1)
+          cursor_pos = cursor_pos - 1
+          need_render = true
+        }
+      } else if code == 1 {
+        // Ctrl+A - move to start
+        cursor_pos = 0
+        need_render = true
+      } else if code == 5 {
+        // Ctrl+E - move to end
+        cursor_pos = buf.length()
+        need_render = true
+      } else if code >= 32 {
+        // Printable character - insert at cursor
+        let c = Int::unsafe_to_char(code)
+        let new_str = buf_to_string(buf) + c.to_string()
+        let new_width = string_width(new_str)
+        let max_total = width * height
+        if new_width <= max_total {
+          buf.insert(cursor_pos, c)
+          cursor_pos = cursor_pos + 1
+          need_render = true
+        }
+      }
+    } else {
+      // Multi-byte UTF-8 character - insert at cursor
+      for i = 0; i < key.length(); i = i + 1 {
+        buf.insert(cursor_pos, Int::unsafe_to_char(key[i].to_int()))
+        cursor_pos = cursor_pos + 1
+      }
+      need_render = true
+    }
+
+    if need_render {
+      let _ = render_inplace_buffer(buf_to_string(buf), row, col, width, height)
+      // Update cursor position display
+      let text_before_cursor = buf_to_string(buf.iter().take(cursor_pos).collect())
+      let cursor_offset = string_width(text_before_cursor)
+      let cursor_row = row + cursor_offset / width
+      let cursor_col = col + cursor_offset % width
+      print_raw("\u001b[" + cursor_row.to_string() + ";" + cursor_col.to_string() + "H")
+      print_raw(ansi_show_cursor())
+    }
+
+    if done {
+      // Hide cursor before exiting
+      print_raw(ansi_hide_cursor())
+      // Restore raw mode state if we changed it
+      if not(was_raw) {
+        cleanup_stdin()
+      }
+      on_result(result)
+      return
+    }
+  }
 }
 
 ///|
