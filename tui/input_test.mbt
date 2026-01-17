@@ -139,3 +139,58 @@ test "parse_input: control characters" {
   let event3 = parse_input("\u001b")
   inspect(event3, content="Key(Special(Escape, None))")
 }
+
+///|
+test "parse_input: Tab and BackTab" {
+  // Tab
+  let event = parse_input("\t")
+  inspect(event, content="Key(Special(Tab, None))")
+  // Shift+Tab (BackTab)
+  let event2 = parse_input("\u001b[Z")
+  inspect(event2, content="Key(Special(BackTab, Shift))")
+}
+
+///|
+test "parse_input: Backspace and Delete" {
+  // Backspace (DEL)
+  let event = parse_input("\u007f")
+  inspect(event, content="Key(Special(Backspace, None))")
+  // Delete key
+  let event2 = parse_input("\u001b[3~")
+  inspect(event2, content="Key(Special(Delete, None))")
+}
+
+///|
+test "parse_input: Home and End" {
+  // Home
+  let event = parse_input("\u001b[H")
+  inspect(event, content="Key(Special(Home, None))")
+  // End
+  let event2 = parse_input("\u001b[F")
+  inspect(event2, content="Key(Special(End, None))")
+}
+
+///|
+test "parse_input: Function keys" {
+  // F1 - F4 use SS3 format
+  inspect(parse_input("\u001bOP"), content="Key(Special(F(1), None))")
+  inspect(parse_input("\u001bOQ"), content="Key(Special(F(2), None))")
+  inspect(parse_input("\u001bOR"), content="Key(Special(F(3), None))")
+  inspect(parse_input("\u001bOS"), content="Key(Special(F(4), None))")
+}
+
+///|
+test "parse_input: Page Up/Down" {
+  inspect(parse_input("\u001b[5~"), content="Key(Special(PageUp, None))")
+  inspect(parse_input("\u001b[6~"), content="Key(Special(PageDown, None))")
+}
+
+///|
+test "parse_input: unknown sequences" {
+  // Unknown CSI sequence
+  let event = parse_input("\u001b[999X")
+  match event {
+    InputEvent::Unknown(_) => ()
+    _ => fail("Expected Unknown event")
+  }
+}
