@@ -2,7 +2,7 @@
 /// Button example - demonstrates interactive buttons with mouse support
 
 ///|
-async fn main {
+fn main {
   let (cols, rows) = @tui.get_terminal_size()
   let width = cols
   let height = rows
@@ -10,6 +10,7 @@ async fn main {
   // Create reactive state
   let count = @signals.signal(0)
   let message = @signals.signal("Click a button!")
+  let running = @signals.signal(true)
 
   // Create the app
   let app = @tui.App::new(width, height)
@@ -51,11 +52,11 @@ async fn main {
         // Buttons row
         @c.row(
           [
-            @c.button("[ - ]", bg=@tui.Color::rgb(80, 40, 40)),
+            @c.button("[ - ]", bg=@tui.Color::rgb(80, 40, 40), id="btn-minus"),
             @c.hspace(2.0),
-            @c.button("[ Reset ]", bg=@tui.Color::rgb(60, 60, 60)),
+            @c.button("[ Reset ]", bg=@tui.Color::rgb(60, 60, 60), id="btn-reset"),
             @c.hspace(2.0),
-            @c.button("[ + ]", bg=@tui.Color::rgb(40, 80, 40)),
+            @c.button("[ + ]", bg=@tui.Color::rgb(40, 80, 40), id="btn-plus"),
           ],
           justify=@style.Alignment::Center,
         ),
@@ -81,30 +82,44 @@ async fn main {
     )
   }
 
-  // Initialize terminal
-  @tui.print_raw(@tui.App::init_terminal())
-  @tui.enable_raw_mode()
-  @tui.print_raw(@tui.enable_mouse())
+  // Render helper
+  fn do_render() -> Unit {
+    @tui.print_raw(app.render_frame(render_ui()))
+  }
 
-  // Initial render
-  @tui.print_raw(app.render_frame(render_ui()))
+  // Quit helper
+  fn do_quit() -> Unit {
+    running.set(false)
+    @tui.stop_keypress_listener()
+    @tui.print_raw(@tui.disable_mouse())
+    @tui.cleanup_stdin()
+    @tui.print_raw(@tui.App::restore_terminal())
+    println("Goodbye! Final count: " + count.get().to_string())
+  }
 
-  // Event loop
-  let mut running = true
-  while running {
-    let key = @tui.read_key()
+  // Handle key event
+  fn handle_key(key : String) -> Unit {
     if key.length() == 0 {
-      continue
+      return
     }
     let event = @tui.parse_input(key)
     let mut need_render = true
     match event {
       @tui.InputEvent::Key(key_event) =>
         match key_event {
-          @tui.KeyEvent::Char('q', @tui.KeyModifier::None) => running = false
-          @tui.KeyEvent::Char('c', @tui.KeyModifier::Ctrl) => running = false
-          @tui.KeyEvent::Special(@tui.SpecialKey::Escape, _) => running = false
-          @tui.KeyEvent::Char('+', _) => {
+          @tui.KeyEvent::Char('q', @tui.KeyModifier::None) => {
+            do_quit()
+            return
+          }
+          @tui.KeyEvent::Char('c', @tui.KeyModifier::Ctrl) => {
+            do_quit()
+            return
+          }
+          @tui.KeyEvent::Special(@tui.SpecialKey::Escape, _) => {
+            do_quit()
+            return
+          }
+          @tui.KeyEvent::Char('+', _) | @tui.KeyEvent::Char('=', _) => {
             count.set(count.get() + 1)
             message.set("Incremented!")
           }
@@ -123,15 +138,21 @@ async fn main {
           (@tui.MouseEventType::Press, @tui.MouseButton::Left) =>
             // Perform hit test
             match app.hit_test(mouse_event.x, mouse_event.y) {
-              Some(hit) =>
-                message.set(
-                  "Clicked at (" +
-                  mouse_event.x.to_string() +
-                  "," +
-                  mouse_event.y.to_string() +
-                  ") on " +
-                  hit.id,
-                )
+              Some(hit) => {
+                // Handle button clicks
+                if hit.id == "btn-plus" {
+                  count.set(count.get() + 1)
+                  message.set("Incremented!")
+                } else if hit.id == "btn-minus" {
+                  count.set(count.get() - 1)
+                  message.set("Decremented!")
+                } else if hit.id == "btn-reset" {
+                  count.set(0)
+                  message.set("Reset!")
+                } else {
+                  message.set("Clicked: " + hit.id)
+                }
+              }
               None =>
                 message.set(
                   "Clicked at (" +
@@ -145,14 +166,18 @@ async fn main {
         }
       _ => need_render = false
     }
-    if need_render && running {
-      @tui.print_raw(app.render_frame(render_ui()))
+    if need_render && running.get() {
+      do_render()
     }
   }
 
-  // Restore terminal
-  @tui.print_raw(@tui.disable_mouse())
-  @tui.cleanup_stdin()
-  @tui.print_raw(@tui.App::restore_terminal())
-  println("Goodbye! Final count: " + count.get().to_string())
+  // Initialize terminal
+  @tui.print_raw(@tui.App::init_terminal())
+  @tui.print_raw(@tui.enable_mouse())
+
+  // Initial render
+  do_render()
+
+  // Start event-driven keypress listener
+  @tui.start_keypress_listener(handle_key)
 }
