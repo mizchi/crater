@@ -333,17 +333,36 @@ pub async fn sleep_async(ms : Int) -> Unit {
 /// Keypress handler storage
 let keypress_handler : Ref[(String) -> Unit] = { val: fn(_s) {  } }
 let keypress_running : Ref[Bool] = { val: false }
+let inside_listener_loop : Ref[Bool] = { val: false }
 
 ///|
-/// Start keypress listener (raw mode)
+/// Start keypress listener (raw mode) - blocks until stop_keypress_listener is called
+/// This provides the same interface as JS where the listener runs until stopped
+/// If called from within a handler (e.g., from restore_tui), just updates the handler
 pub fn start_keypress_listener(handler : (String) -> Unit) -> Unit {
   keypress_handler.val = handler
   keypress_running.val = true
   enable_raw_mode()
 
-  // Note: In native, this would need to be run in a loop
-  // For now, this is a basic implementation
-  // A full implementation would need threading or async polling
+  // If called from within a handler, just update the handler reference
+  // The original loop will continue with the new handler
+  if inside_listener_loop.val {
+    return
+  }
+
+  inside_listener_loop.val = true
+
+  // Run polling loop internally - this blocks until stop_keypress_listener is called
+  while keypress_running.val {
+    let key = read_key()
+    if key.length() > 0 {
+      (keypress_handler.val)(key)
+    } else {
+      sleep(10)
+    }
+  }
+
+  inside_listener_loop.val = false
 }
 
 ///|
@@ -354,7 +373,7 @@ pub fn stop_keypress_listener() -> Unit {
 }
 
 ///|
-/// Poll for keypress (call this in a loop)
+/// Poll for keypress (call this in a loop) - for manual polling if needed
 pub fn poll_keypress() -> Bool {
   if not(keypress_running.val) {
     return false
