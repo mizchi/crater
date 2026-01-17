@@ -900,12 +900,14 @@ pub fn print_raw(s : String) -> Unit {
 /// Cleanup stdin state
 pub fn cleanup_stdin() -> Unit {
   js_cleanup_stdin()
+  raw_mode_flag.val = false
 }
 
 ///|
 /// Enable raw mode
 pub fn enable_raw_mode() -> Unit {
   js_enable_raw_mode()
+  raw_mode_flag.val = true
 }
 
 ///|
@@ -1088,4 +1090,29 @@ pub fn start_render_ticker(ms : Int, callback : () -> Unit) -> Int {
 /// Stop a render ticker
 pub fn stop_render_ticker(ticker_id : Int) -> Unit {
   js_stop_render_ticker(ticker_id)
+}
+
+// --- Functions for native compatibility ---
+
+///|
+/// Check if raw mode is enabled (always true after enable_raw_mode in JS)
+let raw_mode_flag : Ref[Bool] = { val: false }
+
+///|
+pub fn is_raw_mode() -> Bool {
+  raw_mode_flag.val
+}
+
+///|
+/// Check if stdin is a TTY (always true in JS terminal context)
+pub fn is_tty() -> Bool {
+  true
+}
+
+///|
+/// Poll for keypress (not applicable in JS - use start_keypress_listener instead)
+/// Returns false as JS uses event-driven model
+pub fn poll_keypress() -> Bool {
+  // JS uses event-driven model, not polling
+  false
 }

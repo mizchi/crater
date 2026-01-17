@@ -645,3 +645,58 @@ pub fn start_inline_input_cooked(
   // Cooked mode input would need async context
   // This is a stub
 }
+
+// --- Functions for JS compatibility ---
+
+///|
+/// Keep alive non-blocking (no-op for native, used in JS for event loop)
+pub fn keep_alive_nonblocking(_ms : Int) -> Unit {
+  // No-op for native - native uses blocking loop
+}
+
+///|
+/// Start inline input (same as inplace input for native)
+pub fn start_inline_input(
+  row : Int,
+  col : Int,
+  width : Int,
+  height : Int,
+  multiline : Bool,
+  initial : String,
+  on_result : (InputResult) -> Unit,
+) -> Unit {
+  start_inplace_input(row, col, width, height, multiline, initial, on_result)
+}
+
+///|
+/// Start render ticker (stub - native uses polling loop instead)
+pub fn start_render_ticker(_ms : Int, _callback : () -> Unit) -> Int {
+  // Native doesn't need a render ticker - it uses a polling loop
+  0
+}
+
+///|
+/// Stop render ticker (stub)
+pub fn stop_render_ticker(_ticker_id : Int) -> Unit {
+  // No-op for native
+}
+
+///|
+/// Start input session with callback (wrapper for start_inplace_input)
+pub fn start_input_session_cb(
+  row : Int,
+  col : Int,
+  width : Int,
+  height : Int,
+  multiline : Bool,
+  initial : String,
+  on_result : (InputResult) -> Unit,
+) -> Unit {
+  start_inplace_input(row, col, width, height, multiline, initial, on_result)
+}
+
+///|
+/// Abort input session (stub)
+pub fn abort_input_session() -> Unit {
+  // Native input is blocking, cannot be aborted externally
+}
