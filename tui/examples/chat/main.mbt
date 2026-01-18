@@ -25,17 +25,16 @@ fn main {
   // Create reactive state
   let messages : @signals.Signal[Array[Message]] = @signals.signal([])
   let input_value = @signals.signal("")
-  let scroll_offset = @signals.signal(0)
   let is_editing = @signals.signal(false)
   let running = @signals.signal(true)
+
+  // Scroll state using ScrollState component
+  let scroll_state = @c.ScrollState::new()
 
   // Streaming state
   let streaming_full_text = @signals.signal("") // Full response to stream
   let streaming_position = @signals.signal(0) // Current displayed position
   let streaming_ticker_id : Ref[Int] = { val: 0 }
-
-  // Auto-scroll state: true when user is at bottom, false when scrolled up
-  let auto_scroll = @signals.signal(true)
 
   // Create the app
   let app = @tui.App::new(width, height)
@@ -98,35 +97,19 @@ fn main {
     total
   }
 
-  // Get max scroll offset (uses fixed layout)
-  fn get_max_scroll() -> Int {
-    // Fixed layout: max_input_rows(5) + 4 for padding/status = 9, +1 for divider
-    let fixed_input_h = 5 + 4
-    let fixed_msg_h = height - fixed_input_h - 1
-    let visible_height = fixed_msg_h - 2 // -2 for padding
-    let total = get_total_lines()
-    // Reserve 1 line for scroll indicator when scrolling is needed
-    let content_height = if total > visible_height {
-      visible_height - 1
-    } else {
-      visible_height
-    }
-    if total > content_height {
-      total - content_height
-    } else {
-      0
-    }
-  }
+  // Fixed layout dimensions
+  let max_input_rows = 5
+  let fixed_input_height = max_input_rows + 4
+  let fixed_message_height = height - fixed_input_height - 1 // -1 for divider
+  let visible_message_lines = fixed_message_height - 2 // -2 for padding
 
   // Add a message
   fn add_message(role : MessageRole, content : String) -> Unit {
     let current = messages.get()
     current.push({ role, content })
     messages.set(current)
-    // Auto-scroll to bottom only if enabled
-    if auto_scroll.get() {
-      scroll_offset.set(get_max_scroll())
-    }
+    // Auto-scroll to bottom using ScrollState
+    scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
   }
 
   // Helper to get substring by iterating characters
@@ -278,41 +261,9 @@ fn main {
         ),
       ]
     }
-    // Reserve 1 line for scroll indicator if needed
-    let total = all_lines.length()
-    let has_scroll = total > visible_height
-    let content_height = if has_scroll { visible_height - 1 } else { visible_height }
-    // Apply scroll offset - skip first N lines
-    let offset = scroll_offset.get()
-    let result : Array[@tui.Component] = []
-    let mut line_idx = 0
-    let mut added = 0
-    for line in all_lines {
-      if line_idx >= offset && added < content_height {
-        result.push(line)
-        added = added + 1
-      }
-      line_idx = line_idx + 1
-    }
-    // Show scroll indicator if there's more content (uses reserved line)
-    if has_scroll {
-      let indicator = if offset > 0 && offset + content_height < total {
-        "↑↓ scroll"
-      } else if offset > 0 {
-        "↑ scroll"
-      } else {
-        "↓ scroll"
-      }
-      result.push(@c.text(indicator, fg=@tui.Color::rgb(80, 80, 80)))
-    }
-    result
+    // Use ScrollState's scrollable_list helper
+    @c.scrollable_list(all_lines, scroll_state, visible_height)
   }
-
-  // Fixed input area height (always reserve max height)
-  // +2 for border, +1 for status bar, +1 for spacing
-  let max_input_rows = 5
-  let fixed_input_height = max_input_rows + 4
-  let fixed_message_height = height - fixed_input_height - 1 // -1 for divider
 
   // Render function
   fn render_ui() -> @tui.Component {
@@ -418,7 +369,7 @@ fn main {
     let total = all_lines.length()
     let has_scroll = total > visible_height
     let content_height = if has_scroll { visible_height - 1 } else { visible_height }
-    let offset = scroll_offset.get()
+    let offset = scroll_state.offset.get()
 
     // Start synchronized output
     @tui.print_raw("\u001b[?2026h")
@@ -446,14 +397,10 @@ fn main {
         }
         added = added + 1
       } else if has_scroll && added == content_height {
-        let indicator = if offset > 0 && offset + content_height < total {
-          "↑↓ scroll"
-        } else if offset > 0 {
-          "↑ scroll"
-        } else {
-          "↓ scroll"
-        }
-        @tui.print_raw("\u001b[38;2;80;80;80m" + indicator + "\u001b[0m")
+        // Scroll indicator using ScrollState helper
+        let indicator = scroll_state.get_indicator(total, visible_height)
+        let text = @c.scroll_indicator_text(indicator)
+        @tui.print_raw("\u001b[38;2;80;80;80m" + text + "\u001b[0m")
         added = added + 1
       }
     }
@@ -571,7 +518,7 @@ fn main {
     let total = all_lines.length()
     let has_scroll = total > visible_height
     let content_height = if has_scroll { visible_height - 1 } else { visible_height }
-    let offset = scroll_offset.get()
+    let offset = scroll_state.offset.get()
 
     // Start synchronized output
     @tui.print_raw("\u001b[?2026h")
@@ -603,15 +550,10 @@ fn main {
         }
         added = added + 1
       } else if has_scroll && added == content_height {
-        // Scroll indicator line
-        let indicator = if offset > 0 && offset + content_height < total {
-          "↑↓ scroll"
-        } else if offset > 0 {
-          "↑ scroll"
-        } else {
-          "↓ scroll"
-        }
-        @tui.print_raw("\u001b[38;2;80;80;80m" + indicator + "\u001b[0m")
+        // Scroll indicator line using ScrollState helper
+        let indicator = scroll_state.get_indicator(total, visible_height)
+        let text = @c.scroll_indicator_text(indicator)
+        @tui.print_raw("\u001b[38;2;80;80;80m" + text + "\u001b[0m")
         added = added + 1
       }
     }
@@ -642,10 +584,8 @@ fn main {
       // Then add the completed message
       add_message(Assistant, full)
     }
-    // Auto-scroll to bottom only if user hasn't scrolled up
-    if auto_scroll.get() {
-      scroll_offset.set(get_max_scroll())
-    }
+    // Auto-scroll to bottom using ScrollState
+    scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
   }
 
   // Streaming tick callback
@@ -655,10 +595,8 @@ fn main {
     if pos < full.length() {
       // Advance by 1 character per tick (200ms interval = 5 chars/sec)
       streaming_position.set(pos + 1)
-      // Auto-scroll to bottom only if user hasn't scrolled up
-      if auto_scroll.get() {
-        scroll_offset.set(get_max_scroll())
-      }
+      // Auto-scroll to bottom using ScrollState
+      scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
       // Use partial render during editing to preserve input box
       if is_editing.get() {
         render_message_area()
@@ -702,7 +640,7 @@ fn main {
     let text = raw.trim(chars=" \t\n\r").to_string()
     if text.length() > 0 {
       // Re-enable auto-scroll when sending a message
-      auto_scroll.set(true)
+      scroll_state.auto_scroll.set(true)
       add_message(User, text)
       input_value.set("")
       // Start streaming assistant response
@@ -804,27 +742,14 @@ fn main {
           @tui.KeyEvent::Char(_, @tui.KeyModifier::None) => should_edit = true
           // Scroll up
           @tui.KeyEvent::Special(@tui.SpecialKey::Up, _)
-          | @tui.KeyEvent::Special(@tui.SpecialKey::PageUp, _) => {
-            let current = scroll_offset.get()
-            if current > 0 {
-              scroll_offset.set(current - 1)
-              auto_scroll.set(false) // User scrolled up, disable auto-scroll
-            }
-          }
+          | @tui.KeyEvent::Special(@tui.SpecialKey::PageUp, _) =>
+            ignore(scroll_state.scroll_up(1))
           // Scroll down
           @tui.KeyEvent::Special(@tui.SpecialKey::Down, _)
-          | @tui.KeyEvent::Special(@tui.SpecialKey::PageDown, _) => {
-            let max_scroll = get_max_scroll()
-            let current = scroll_offset.get()
-            if current < max_scroll {
-              let new_offset = current + 1
-              scroll_offset.set(new_offset)
-              // Re-enable auto-scroll if at bottom
-              if new_offset >= max_scroll {
-                auto_scroll.set(true)
-              }
-            }
-          }
+          | @tui.KeyEvent::Special(@tui.SpecialKey::PageDown, _) =>
+            ignore(
+              scroll_state.scroll_down(1, get_total_lines(), visible_message_lines),
+            )
           _ => need_render = false
         }
       @tui.InputEvent::Mouse(mouse_event) =>
@@ -834,30 +759,12 @@ fn main {
               Some(hit) => if hit.id == "chat-input" { should_edit = true }
               None => ()
             }
-          (@tui.MouseEventType::Press, @tui.MouseButton::ScrollUp) => {
-            let current = scroll_offset.get()
-            if current > 0 {
-              let new_offset = if current >= 3 { current - 3 } else { 0 }
-              scroll_offset.set(new_offset)
-              auto_scroll.set(false) // User scrolled up, disable auto-scroll
-            }
-          }
-          (@tui.MouseEventType::Press, @tui.MouseButton::ScrollDown) => {
-            let max_scroll = get_max_scroll()
-            let current = scroll_offset.get()
-            if current < max_scroll {
-              let new_offset = if current + 3 > max_scroll {
-                max_scroll
-              } else {
-                current + 3
-              }
-              scroll_offset.set(new_offset)
-              // Re-enable auto-scroll if at bottom
-              if new_offset >= max_scroll {
-                auto_scroll.set(true)
-              }
-            }
-          }
+          (@tui.MouseEventType::Press, @tui.MouseButton::ScrollUp) =>
+            ignore(scroll_state.scroll_up(3))
+          (@tui.MouseEventType::Press, @tui.MouseButton::ScrollDown) =>
+            ignore(
+              scroll_state.scroll_down(3, get_total_lines(), visible_message_lines),
+            )
           _ => need_render = false
         }
       _ => need_render = false
