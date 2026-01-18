@@ -108,186 +108,6 @@ fn main {
     scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
   }
 
-  // Use @c.split_lines from streaming.mbt for string splitting
-
-  // Build all message lines as flat array for scrolling
-  fn build_message_lines() -> Array[@tui.Component] {
-    let msgs = messages.get()
-    let lines : Array[@tui.Component] = []
-    for msg in msgs {
-      let (icon, role_color) = match msg.role {
-        User => ("◆", @tui.Color::cyan())
-        Assistant => ("✦", @tui.Color::rgb(255, 150, 100)) // coral/salmon like Claude
-      }
-      // Role line with icon
-      lines.push(
-        @c.row([
-          @c.text(icon + " ", fg=role_color, bold=true),
-          @c.text(
-            match msg.role {
-              User => "You"
-              Assistant => "Assistant"
-            },
-            fg=role_color,
-            bold=true,
-          ),
-        ]),
-      )
-      // Content lines (split by newlines)
-      let content_lines = @c.split_lines(msg.content)
-      for line in content_lines {
-        lines.push(
-          @c.row([
-            @c.hspace(2.0), // indent
-            @c.text(line, fg=@tui.Color::rgb(220, 220, 220)),
-          ]),
-        )
-      }
-      lines.push(@c.vspace(1.0))
-    }
-    // Add streaming message if in progress
-    if streaming.is_streaming() {
-      let role_color = @tui.Color::rgb(255, 150, 100)
-      // Role line
-      lines.push(
-        @c.row([
-          @c.text("✦ ", fg=role_color, bold=true),
-          @c.text("Assistant", fg=role_color, bold=true),
-        ]),
-      )
-      // Partial content (split by newlines)
-      let partial = streaming.get_partial()
-      let partial_lines = @c.split_lines(partial)
-      for i, line in partial_lines {
-        let display = if i == partial_lines.length() - 1 {
-          line + "▌" // cursor on last line
-        } else {
-          line
-        }
-        lines.push(
-          @c.row([
-            @c.hspace(2.0),
-            @c.text(display, fg=@tui.Color::rgb(220, 220, 220)),
-          ]),
-        )
-      }
-      lines.push(@c.vspace(1.0))
-    }
-    lines
-  }
-
-  // Build input lines for multiline display
-  fn build_input_lines(
-    text : String,
-    cursor : String,
-    fg : @tui.Color
-  ) -> Array[@tui.Component] {
-    let lines : Array[@tui.Component] = []
-    if text.length() == 0 {
-      lines.push(@c.text(cursor, fg=fg))
-      return lines
-    }
-    // Split by newlines
-    let parts : Array[String] = []
-    let mut current = StringBuilder::new()
-    for c in text {
-      if c == '\n' {
-        parts.push(current.to_string())
-        current = StringBuilder::new()
-      } else {
-        current.write_char(c)
-      }
-    }
-    parts.push(current.to_string())
-    // Build components for each line
-    for i, part in parts {
-      if i == parts.length() - 1 {
-        // Last line gets the cursor
-        lines.push(@c.text(part + cursor, fg=fg))
-      } else {
-        lines.push(@c.text(part, fg=fg))
-      }
-    }
-    lines
-  }
-
-  // Render messages with scroll offset applied
-  fn render_messages(visible_height : Int) -> Array[@tui.Component] {
-    let all_lines = build_message_lines()
-    if all_lines.is_empty() {
-      return [
-        @c.vspace(2.0),
-        @c.row(
-          [
-            @c.text(
-              "Start typing to begin a conversation...",
-              fg=@tui.Color::rgb(100, 100, 100),
-            ),
-          ],
-          justify=@style.Alignment::Center,
-        ),
-      ]
-    }
-    // Use ScrollState's scrollable_list helper
-    @c.scrollable_list(all_lines, scroll_state, visible_height)
-  }
-
-  // Render function
-  fn render_ui() -> @tui.Component {
-    let editing = is_editing.get()
-    let input_width = width - 4 // Account for padding
-    let actual_rows = calc_actual_rows(input_value.get(), input_width)
-    // Build input display text
-    let input_text = input_value.get()
-    let divider_color = @tui.Color::rgb(60, 60, 60)
-    let active_divider = @tui.Color::rgb(100, 150, 255)
-    // Show placeholder when empty and not editing
-    let display_text = if input_text.length() == 0 && not(editing) {
-      "Type a message... (press Enter to start)"
-    } else {
-      input_text
-    }
-    let cursor = if editing { "█" } else { "" }
-    let input_fg = if input_text.length() == 0 && not(editing) {
-      @tui.Color::rgb(100, 100, 100) // Placeholder color
-    } else {
-      @tui.Color::white()
-    }
-    // Build status text with line count
-    let line_info = actual_rows.to_string() + "/" + max_input_rows.to_string() + " lines"
-    let status_text = line_info + " · Enter: send · Alt+Enter: newline · Ctrl+C: quit"
-    @c.column(
-      [
-        // Message area (fixed height)
-        @c.column(
-          render_messages(fixed_message_height - 2),
-          height=@types.Dimension::Length(fixed_message_height.to_double()),
-          padding=1.0,
-        ),
-        // Divider line (changes color when editing)
-        @c.hdivider(char='─', fg=if editing { active_divider } else { divider_color }),
-        // Input area (fixed height, no border)
-        @c.column(
-          [
-            @c.column(
-              build_input_lines(display_text, cursor, input_fg),
-              id="chat-input",
-              height=@types.Dimension::Length(max_input_rows.to_double()),
-            ),
-            // Status bar (right aligned)
-            @c.row([
-              @c.spacer(),
-              @c.text(status_text, fg=@tui.Color::rgb(80, 80, 80)),
-            ]),
-          ],
-          padding=1.0,
-        ),
-      ],
-      width=@types.Dimension::Length(width.to_double()),
-      height=@types.Dimension::Length(height.to_double()),
-    )
-  }
-
   // Render helper with synchronized output to prevent flickering
   // Uses direct ANSI output for consistent coordinates with render_message_area()
   fn do_render() -> Unit {
@@ -582,8 +402,8 @@ fn main {
     do_render()
   }
 
-  // Restore TUI and send message
-  fn restore_tui_and_send() -> Unit {
+  // Mutually recursive functions: restore_tui_and_send <-> start_editing <-> handle_key
+  letrec restore_tui_and_send : () -> Unit = fn() {
     let raw = input_value.get()
     let text = raw.trim(chars=" \t\n\r").to_string()
     if text.length() > 0 {
@@ -602,9 +422,7 @@ fn main {
     do_render()
     @tui.start_keypress_listener(handle_key)
   }
-
-  // Start editing
-  fn start_editing() -> Unit {
+  and start_editing : () -> Unit = fn() {
     is_editing.set(true)
     // Clear and re-render completely before entering edit mode
     do_render()
@@ -661,9 +479,7 @@ fn main {
       on_lines_change=Some(on_lines_change),
     )
   }
-
-  // Handle keypress event
-  fn handle_key(key : String) -> Unit {
+  and handle_key : (String) -> Unit = fn(key) {
     if key.length() == 0 {
       return
     }

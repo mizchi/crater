@@ -191,15 +191,6 @@ fn main {
     @tui.print_raw(app.render_frame(render_ui()))
   }
 
-  // Restore TUI mode after editing
-  fn restore_tui() -> Unit {
-    @tui.print_raw(@tui.ansi_full_reset())
-    @tui.print_raw(@tui.enable_mouse())
-    app.clear_prev_buffer()
-    do_render()
-    @tui.start_keypress_listener(handle_key)
-  }
-
   // Handle submit
   fn do_submit() -> Unit {
     running.set(false)
@@ -213,8 +204,15 @@ fn main {
     println("Message: " + message.get())
   }
 
-  // Start editing an input field using inplace editable API
-  fn start_editing(id : String) -> Unit {
+  // Mutually recursive functions: restore_tui <-> start_editing <-> handle_key
+  letrec restore_tui : () -> Unit = fn() {
+    @tui.print_raw(@tui.ansi_full_reset())
+    @tui.print_raw(@tui.enable_mouse())
+    app.clear_prev_buffer()
+    do_render()
+    @tui.start_keypress_listener(handle_key)
+  }
+  and start_editing : (String) -> Unit = fn(id) {
     match field_configs.get(id) {
       Some((field_name, signal)) =>
         // Get the element bounds for inplace editing
@@ -264,9 +262,7 @@ fn main {
       None => ()
     }
   }
-
-  // Handle keypress event
-  fn handle_key(key : String) -> Unit {
+  and handle_key : (String) -> Unit = fn(key) {
     if key.length() == 0 {
       return
     }

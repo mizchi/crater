@@ -4,7 +4,6 @@ import {
   "mizchi/crater/style",
   "mizchi/crater/types",
   "mizchi/signals",
-  "moonbitlang/async",
 }
 
 options(
