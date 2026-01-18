@@ -34,6 +34,9 @@ fn main {
   let streaming_position = @signals.signal(0) // Current displayed position
   let streaming_ticker_id : Ref[Int] = { val: 0 }
 
+  // Auto-scroll state: true when user is at bottom, false when scrolled up
+  let auto_scroll = @signals.signal(true)
+
   // Create the app
   let app = @tui.App::new(width, height)
 
@@ -120,8 +123,10 @@ fn main {
     let current = messages.get()
     current.push({ role, content })
     messages.set(current)
-    // Auto-scroll to bottom
-    scroll_offset.set(get_max_scroll())
+    // Auto-scroll to bottom only if enabled
+    if auto_scroll.get() {
+      scroll_offset.set(get_max_scroll())
+    }
   }
 
   // Helper to get substring by iterating characters
@@ -637,8 +642,10 @@ fn main {
       // Then add the completed message
       add_message(Assistant, full)
     }
-    // Auto-scroll to bottom
-    scroll_offset.set(get_max_scroll())
+    // Auto-scroll to bottom only if user hasn't scrolled up
+    if auto_scroll.get() {
+      scroll_offset.set(get_max_scroll())
+    }
   }
 
   // Streaming tick callback
@@ -648,8 +655,10 @@ fn main {
     if pos < full.length() {
       // Advance by 1 character per tick (200ms interval = 5 chars/sec)
       streaming_position.set(pos + 1)
-      // Auto-scroll to bottom
-      scroll_offset.set(get_max_scroll())
+      // Auto-scroll to bottom only if user hasn't scrolled up
+      if auto_scroll.get() {
+        scroll_offset.set(get_max_scroll())
+      }
       // Use partial render during editing to preserve input box
       if is_editing.get() {
         render_message_area()
@@ -692,6 +701,8 @@ fn main {
     let raw = input_value.get()
     let text = raw.trim(chars=" \t\n\r").to_string()
     if text.length() > 0 {
+      // Re-enable auto-scroll when sending a message
+      auto_scroll.set(true)
       add_message(User, text)
       input_value.set("")
       // Start streaming assistant response
@@ -797,6 +808,7 @@ fn main {
             let current = scroll_offset.get()
             if current > 0 {
               scroll_offset.set(current - 1)
+              auto_scroll.set(false) // User scrolled up, disable auto-scroll
             }
           }
           // Scroll down
@@ -805,7 +817,12 @@ fn main {
             let max_scroll = get_max_scroll()
             let current = scroll_offset.get()
             if current < max_scroll {
-              scroll_offset.set(current + 1)
+              let new_offset = current + 1
+              scroll_offset.set(new_offset)
+              // Re-enable auto-scroll if at bottom
+              if new_offset >= max_scroll {
+                auto_scroll.set(true)
+              }
             }
           }
           _ => need_render = false
@@ -820,14 +837,25 @@ fn main {
           (@tui.MouseEventType::Press, @tui.MouseButton::ScrollUp) => {
             let current = scroll_offset.get()
             if current > 0 {
-              scroll_offset.set(current - 3)
+              let new_offset = if current >= 3 { current - 3 } else { 0 }
+              scroll_offset.set(new_offset)
+              auto_scroll.set(false) // User scrolled up, disable auto-scroll
             }
           }
           (@tui.MouseEventType::Press, @tui.MouseButton::ScrollDown) => {
             let max_scroll = get_max_scroll()
             let current = scroll_offset.get()
             if current < max_scroll {
-              scroll_offset.set(current + 3)
+              let new_offset = if current + 3 > max_scroll {
+                max_scroll
+              } else {
+                current + 3
+              }
+              scroll_offset.set(new_offset)
+              // Re-enable auto-scroll if at bottom
+              if new_offset >= max_scroll {
+                auto_scroll.set(true)
+              }
             }
           }
           _ => need_render = false
