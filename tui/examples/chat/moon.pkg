@@ -1,0 +1,11 @@
+import {
+  "mizchi/crater-tui" as @tui,
+  "mizchi/crater-tui/components" as @c,
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+  "mizchi/signals",
+}
+
+options(
+  "is-main": true,
+)

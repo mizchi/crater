@@ -50,10 +50,8 @@ extern "C" fn tui_sleep_ms(ms : Int) = "tui_sleep_ms"
 fn bytes_to_string(buf : FixedArray[Byte], len : Int) -> String {
   let chars : Array[Char] = []
   let mut i = 0
-
   while i < len {
     let b0 = buf[i].to_int()
-
     if b0 < 0x80 {
       // ASCII (single byte)
       chars.push(b0.unsafe_to_char())
@@ -76,7 +74,10 @@ fn bytes_to_string(buf : FixedArray[Byte], len : Int) -> String {
       let b1 = buf[i + 1].to_int()
       let b2 = buf[i + 2].to_int()
       let b3 = buf[i + 3].to_int()
-      let code = ((b0 & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F)
+      let code = ((b0 & 0x07) << 18) |
+        ((b1 & 0x3F) << 12) |
+        ((b2 & 0x3F) << 6) |
+        (b3 & 0x3F)
       // Encode as UTF-16 surrogate pair
       let adjusted = code - 0x10000
       let high = 0xD800 + (adjusted >> 10)
@@ -100,12 +101,14 @@ fn bytes_to_string(buf : FixedArray[Byte], len : Int) -> String {
 /// Enable raw mode for character-by-character input
 pub fn enable_raw_mode() -> Unit {
   let _ = tui_enable_raw_mode()
+
 }
 
 ///|
 /// Disable raw mode and restore terminal settings
 pub fn cleanup_stdin() -> Unit {
   let _ = tui_disable_raw_mode()
+
 }
 
 ///|
@@ -210,7 +213,6 @@ pub fn read_key() -> String {
         len = len + 1
       }
     }
-
     bytes_to_string(buf, len)
   }
 }
@@ -249,7 +251,6 @@ pub fn print_raw(s : String) -> Unit {
   let buf = FixedArray::make(max_size, b'\x00')
   let mut pos = 0
   let mut i = 0
-
   while i < str_len {
     let unit = s[i].to_int()
 
@@ -269,7 +270,6 @@ pub fn print_raw(s : String) -> Unit {
     pos = pos + encode_utf8(unit, buf, pos)
     i = i + 1
   }
-
   tui_write_bytes_ffi(buf, pos)
   tui_flush()
 }
@@ -332,7 +332,11 @@ pub async fn sleep_async(ms : Int) -> Unit {
 ///|
 /// Keypress handler storage
 let keypress_handler : Ref[(String) -> Unit] = { val: fn(_s) {  } }
+
+///|
 let keypress_running : Ref[Bool] = { val: false }
+
+///|
 let inside_listener_loop : Ref[Bool] = { val: false }
 
 ///|
@@ -349,7 +353,6 @@ pub fn start_keypress_listener(handler : (String) -> Unit) -> Unit {
   if inside_listener_loop.val {
     return
   }
-
   inside_listener_loop.val = true
 
   // Run polling loop internally - this blocks until stop_keypress_listener is called
@@ -361,7 +364,6 @@ pub fn start_keypress_listener(handler : (String) -> Unit) -> Unit {
       sleep(10)
     }
   }
-
   inside_listener_loop.val = false
 }
 
@@ -392,16 +394,18 @@ fn char_width_code(code : Int) -> Int {
   if code < 0x80 {
     1
   } else if code >= 0x1100 &&
-    (code <= 0x115F ||
-    code == 0x2329 ||
-    code == 0x232A ||
-    (code >= 0x2E80 && code <= 0x9FFF) ||
-    (code >= 0xAC00 && code <= 0xD7A3) ||
-    (code >= 0xF900 && code <= 0xFAFF) ||
-    (code >= 0xFE10 && code <= 0xFE1F) ||
-    (code >= 0xFE30 && code <= 0xFE6F) ||
-    (code >= 0xFF00 && code <= 0xFF60) ||
-    (code >= 0xFFE0 && code <= 0xFFE6)) {
+    (
+      code <= 0x115F ||
+      code == 0x2329 ||
+      code == 0x232A ||
+      (code >= 0x2E80 && code <= 0x9FFF) ||
+      (code >= 0xAC00 && code <= 0xD7A3) ||
+      (code >= 0xF900 && code <= 0xFAFF) ||
+      (code >= 0xFE10 && code <= 0xFE1F) ||
+      (code >= 0xFE30 && code <= 0xFE6F) ||
+      (code >= 0xFF00 && code <= 0xFF60) ||
+      (code >= 0xFFE0 && code <= 0xFFE6)
+    ) {
     2
   } else {
     1
@@ -420,6 +424,146 @@ fn string_width(s : String) -> Int {
 
 ///|
 /// Render text buffer at position with wrapping
+///|
+/// Line info for scrolling
+struct LineInfo {
+  start_idx : Int
+  chars : Array[Char]
+}
+
+///|
+/// Wrap text into lines (considering newlines and max_width)
+fn wrap_text_to_lines(buf : Array[Char], max_width : Int) -> Array[LineInfo] {
+  let lines : Array[LineInfo] = []
+  let mut current_chars : Array[Char] = []
+  let mut current_width = 0
+  let mut line_start_idx = 0
+  for i, c in buf {
+    let code = c.to_int()
+    // Handle newline
+    if code == 10 {
+      lines.push({ start_idx: line_start_idx, chars: current_chars })
+      current_chars = []
+      current_width = 0
+      line_start_idx = i + 1
+      continue
+    }
+    let cw = char_width_code(code)
+    // Wrap if needed
+    if current_width + cw > max_width {
+      lines.push({ start_idx: line_start_idx, chars: current_chars })
+      current_chars = [c]
+      current_width = cw
+      line_start_idx = i
+    } else {
+      current_chars.push(c)
+      current_width = current_width + cw
+    }
+  }
+  lines.push({ start_idx: line_start_idx, chars: current_chars })
+  lines
+}
+
+///|
+/// Find cursor line index and column offset
+fn find_cursor_line(
+  lines : Array[LineInfo],
+  cursor : Int
+) -> (Int, Int) {
+  for line_idx, line in lines {
+    let line_end = line.start_idx + line.chars.length()
+    if cursor <= line_end {
+      let pos_in_line = cursor - line.start_idx
+      let mut col_offset = 0
+      for i = 0; i < pos_in_line && i < line.chars.length(); i = i + 1 {
+        col_offset = col_offset + char_width_code(line.chars[i].to_int())
+      }
+      return (line_idx, col_offset)
+    }
+  }
+  // Cursor at end
+  let last_idx = lines.length() - 1
+  let last_line = lines[last_idx]
+  let mut col_offset = 0
+  for c in last_line.chars {
+    col_offset = col_offset + char_width_code(c.to_int())
+  }
+  (last_idx, col_offset)
+}
+
+///|
+/// Render buffer with scroll support
+fn render_inplace_buffer_scroll(
+  buf : Array[Char],
+  start_row : Int,
+  start_col : Int,
+  max_width : Int,
+  max_height : Int,
+  scroll_offset : Int
+) -> Unit {
+  let lines = wrap_text_to_lines(buf, max_width)
+  let mut output = ""
+  // Clear area
+  for r = 0; r < max_height; r = r + 1 {
+    output = output +
+      "\u001b[" +
+      (start_row + r).to_string() +
+      ";" +
+      start_col.to_string() +
+      "H"
+    for w = 0; w < max_width; w = w + 1 {
+      output = output + " "
+    }
+  }
+  // Draw visible lines
+  let has_more_above = scroll_offset > 0
+  let has_more_below = lines.length() > scroll_offset + max_height
+  for i = 0; i < max_height; i = i + 1 {
+    let line_idx = scroll_offset + i
+    if line_idx >= lines.length() {
+      break
+    }
+    let line = lines[line_idx]
+    output = output +
+      "\u001b[" +
+      (start_row + i).to_string() +
+      ";" +
+      start_col.to_string() +
+      "H"
+    // Show ellipsis for overflow
+    if i == 0 && has_more_above {
+      output = output + "…"
+      // Show remaining chars that fit
+      let mut w = 1
+      for c in line.chars {
+        let cw = char_width_code(c.to_int())
+        if w + cw > max_width {
+          break
+        }
+        output = output + c.to_string()
+        w = w + cw
+      }
+    } else if i == max_height - 1 && has_more_below {
+      // Show chars that fit, then ellipsis
+      let mut w = 0
+      for c in line.chars {
+        let cw = char_width_code(c.to_int())
+        if w + cw > max_width - 1 {
+          break
+        }
+        output = output + c.to_string()
+        w = w + cw
+      }
+      output = output + "…"
+    } else {
+      for c in line.chars {
+        output = output + c.to_string()
+      }
+    }
+  }
+  print_raw(output)
+}
+
 fn render_inplace_buffer(
   text : String,
   start_row : Int,
@@ -433,12 +577,22 @@ fn render_inplace_buffer(
 
   // Move to start position and clear area
   for r = 0; r < max_height; r = r + 1 {
-    output = output + "\u001b[" + (start_row + r).to_string() + ";" + start_col.to_string() + "H"
+    output = output +
+      "\u001b[" +
+      (start_row + r).to_string() +
+      ";" +
+      start_col.to_string() +
+      "H"
     for w = 0; w < max_width; w = w + 1 {
       output = output + " "
     }
   }
-  output = output + "\u001b[" + start_row.to_string() + ";" + start_col.to_string() + "H"
+  output = output +
+    "\u001b[" +
+    start_row.to_string() +
+    ";" +
+    start_col.to_string() +
+    "H"
 
   // Render text with wrapping
   let mut line_width = 0
@@ -453,7 +607,12 @@ fn render_inplace_buffer(
       col = start_col
       line_width = 0
       if row < start_row + max_height {
-        output = output + "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
+        output = output +
+          "\u001b[" +
+          row.to_string() +
+          ";" +
+          col.to_string() +
+          "H"
       }
       continue
     }
@@ -464,17 +623,20 @@ fn render_inplace_buffer(
       col = start_col
       line_width = 0
       if row < start_row + max_height {
-        output = output + "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
+        output = output +
+          "\u001b[" +
+          row.to_string() +
+          ";" +
+          col.to_string() +
+          "H"
       }
     }
-
     if row < start_row + max_height {
       output = output + Int::unsafe_to_char(code).to_string()
       line_width = line_width + cw
       col = col + cw
     }
   }
-
   print_raw(output)
   (row, col)
 }
@@ -483,6 +645,35 @@ fn render_inplace_buffer(
 /// Helper to convert buffer to string
 fn buf_to_string(buf : Array[Char]) -> String {
   buf.iter().map(fn(c) { c.to_string() }).fold(init="", fn(a, b) { a + b })
+}
+
+///|
+/// Calculate cursor position considering newlines and wrapping
+fn calc_cursor_position(
+  text_before : String,
+  start_row : Int,
+  start_col : Int,
+  max_width : Int
+) -> (Int, Int) {
+  let mut row = start_row
+  let mut line_width = 0
+  for i = 0; i < text_before.length(); i = i + 1 {
+    let code = text_before[i].to_int()
+    let cw = char_width_code(code)
+    // Handle newline
+    if code == 10 {
+      row = row + 1
+      line_width = 0
+      continue
+    }
+    // Wrap if needed
+    if line_width + cw > max_width {
+      row = row + 1
+      line_width = 0
+    }
+    line_width = line_width + cw
+  }
+  (row, start_col + line_width)
 }
 
 ///|
@@ -496,6 +687,7 @@ pub fn start_inplace_input(
   multiline : Bool,
   initial : String,
   on_result : (InputResult) -> Unit,
+  on_lines_change~ : ((Int) -> Int)? = None,
 ) -> Unit {
   // Ensure raw mode is enabled
   let was_raw = is_raw_mode()
@@ -511,13 +703,82 @@ pub fn start_inplace_input(
 
   // Cursor position within buffer
   let mut cursor_pos = buf.length()
+  // Scroll offset for multiline
+  let mut scroll_offset = 0
+  // Current height (can change dynamically)
+  let mut current_height = height
+  // Base row is the bottom of input area (fixed)
+  // Input grows upward from this position
+  let base_row = row + height - 1
 
-  // Render initial state and show cursor
-  let _ = render_inplace_buffer(buf_to_string(buf), row, col, width, height)
-  let text_before = buf_to_string(buf.iter().take(cursor_pos).collect())
-  let offset = string_width(text_before)
-  print_raw("\u001b[" + (row + offset / width).to_string() + ";" + (col + offset % width).to_string() + "H")
-  print_raw(ansi_show_cursor())
+  // Helper to render and position cursor with scroll
+  fn do_render() {
+    let lines = wrap_text_to_lines(buf, width)
+    let (cursor_line_idx, cursor_col_offset) = find_cursor_line(lines, cursor_pos)
+    // Calculate current start row (grows upward)
+    let old_height = current_height
+    let old_start_row = base_row - old_height + 1
+    // Update height if callback provided
+    match on_lines_change {
+      Some(callback) => {
+        let new_height = callback(lines.length())
+        if new_height != current_height {
+          current_height = new_height
+          scroll_offset = 0
+        }
+      }
+      None => ()
+    }
+    // Calculate new start row
+    let start_row = base_row - current_height + 1
+    // Clear old area if height changed
+    if old_height != current_height {
+      // Clear the area that's no longer used
+      if current_height < old_height {
+        // Shrinking: clear above
+        for r = old_start_row; r < start_row; r = r + 1 {
+          print_raw(
+            "\u001b[" +
+            r.to_string() +
+            ";" +
+            col.to_string() +
+            "H" +
+            " ".repeat(width),
+          )
+        }
+      } else {
+        // Growing: clear new area above
+        for r = start_row; r < old_start_row; r = r + 1 {
+          print_raw(
+            "\u001b[" +
+            r.to_string() +
+            ";" +
+            col.to_string() +
+            "H" +
+            " ".repeat(width),
+          )
+        }
+      }
+    }
+    // Adjust scroll to keep cursor visible
+    if cursor_line_idx < scroll_offset {
+      scroll_offset = cursor_line_idx
+    } else if cursor_line_idx >= scroll_offset + current_height {
+      scroll_offset = cursor_line_idx - current_height + 1
+    }
+    // Render with scroll (at calculated start row)
+    render_inplace_buffer_scroll(buf, start_row, col, width, current_height, scroll_offset)
+    // Position cursor
+    let display_row = start_row + cursor_line_idx - scroll_offset
+    let display_col = col + cursor_col_offset
+    print_raw(
+      "\u001b[" + display_row.to_string() + ";" + display_col.to_string() + "H",
+    )
+    print_raw(ansi_show_cursor())
+  }
+
+  // Initial render
+  do_render()
 
   // Edit loop
   for {
@@ -526,7 +787,6 @@ pub fn start_inplace_input(
       sleep(10)
       continue
     }
-
     let mut need_render = false
     let mut done = false
     let mut result : InputResult = InputResult::Cancelled
@@ -537,6 +797,16 @@ pub fn start_inplace_input(
         // Shift+Tab - confirm and go to previous
         done = true
         result = InputResult::TabPrev(buf_to_string(buf))
+      } else if key == "\u001b[13;2u" ||
+        key == "\u001b[27;2;13~" ||
+        key == "\u001bOM" ||
+        key == "\u001b\r" ||
+        key == "\u001b\n" {
+        // Shift+Enter or Alt+Enter - insert newline
+        // ESC CR or ESC LF is Alt+Enter in many terminals
+        buf.insert(cursor_pos, '\n')
+        cursor_pos = cursor_pos + 1
+        need_render = true
       } else if key == "\u001b[D" {
         // Left arrow - move cursor left
         if cursor_pos > 0 {
@@ -567,7 +837,6 @@ pub fn start_inplace_input(
       result = InputResult::Cancelled
     } else if key.length() == 1 {
       let code = key[0].to_int()
-
       if code == 9 {
         // Tab - confirm and go to next
         done = true
@@ -602,45 +871,74 @@ pub fn start_inplace_input(
           need_render = true
         }
       } else if code == 1 {
-        // Ctrl+A - move to start
-        cursor_pos = 0
+        // Ctrl+A - move to start of current line
+        let mut new_pos = 0
+        for i = cursor_pos - 1; i >= 0; i = i - 1 {
+          if buf[i] == '\n' {
+            new_pos = i + 1
+            break
+          }
+        }
+        cursor_pos = new_pos
         need_render = true
       } else if code == 5 {
-        // Ctrl+E - move to end
-        cursor_pos = buf.length()
+        // Ctrl+E - move to end of current line
+        let mut new_pos = buf.length()
+        for i = cursor_pos; i < buf.length(); i = i + 1 {
+          if buf[i] == '\n' {
+            new_pos = i
+            break
+          }
+        }
+        cursor_pos = new_pos
+        need_render = true
+      } else if code == 11 {
+        // Ctrl+K - delete from cursor to end of current line
+        let mut end_pos = buf.length()
+        for i = cursor_pos; i < buf.length(); i = i + 1 {
+          if buf[i] == '\n' {
+            end_pos = i
+            break
+          }
+        }
+        while cursor_pos < end_pos && buf.length() > cursor_pos {
+          let _ = buf.remove(cursor_pos)
+          end_pos = end_pos - 1
+        }
+        need_render = true
+      } else if code == 21 {
+        // Ctrl+U - delete from start of current line to cursor
+        let mut start_pos = 0
+        for i = cursor_pos - 1; i >= 0; i = i - 1 {
+          if buf[i] == '\n' {
+            start_pos = i + 1
+            break
+          }
+        }
+        while cursor_pos > start_pos {
+          let _ = buf.remove(start_pos)
+          cursor_pos = cursor_pos - 1
+        }
         need_render = true
       } else if code >= 32 {
-        // Printable character - insert at cursor
+        // Printable character - insert at cursor (no limit with scroll)
         let c = Int::unsafe_to_char(code)
-        let new_str = buf_to_string(buf) + c.to_string()
-        let new_width = string_width(new_str)
-        let max_total = width * height
-        if new_width <= max_total {
-          buf.insert(cursor_pos, c)
-          cursor_pos = cursor_pos + 1
-          need_render = true
-        }
+        buf.insert(cursor_pos, c)
+        cursor_pos = cursor_pos + 1
+        need_render = true
       }
     } else {
       // Multi-byte UTF-8 character - insert at cursor
-      for i = 0; i < key.length(); i = i + 1 {
-        buf.insert(cursor_pos, Int::unsafe_to_char(key[i].to_int()))
+      // Use iterator to properly handle Unicode codepoints
+      for c in key {
+        buf.insert(cursor_pos, c)
         cursor_pos = cursor_pos + 1
       }
       need_render = true
     }
-
     if need_render {
-      let _ = render_inplace_buffer(buf_to_string(buf), row, col, width, height)
-      // Update cursor position display
-      let text_before_cursor = buf_to_string(buf.iter().take(cursor_pos).collect())
-      let cursor_offset = string_width(text_before_cursor)
-      let cursor_row = row + cursor_offset / width
-      let cursor_col = col + cursor_offset % width
-      print_raw("\u001b[" + cursor_row.to_string() + ";" + cursor_col.to_string() + "H")
-      print_raw(ansi_show_cursor())
+      do_render()
     }
-
     if done {
       // Hide cursor before exiting
       print_raw(ansi_hide_cursor())

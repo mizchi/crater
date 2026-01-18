@@ -5,6 +5,7 @@ import(
   "mizchi/crater-tui"
   "mizchi/crater/style"
   "mizchi/crater/types"
+  "mizchi/signals"
 )
 
 // Values
@@ -21,6 +22,8 @@ pub fn colored(String, @crater-tui.Color) -> @crater-tui.Component
 pub fn column(Array[@crater-tui.Component], id? : String, width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, justify? : @style.Alignment, align? : @style.Alignment, wrap? : Bool, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : @crater-tui.BorderChars?, border_color? : @crater-tui.Color, bg? : @crater-tui.Color, fg? : @crater-tui.Color) -> @crater-tui.Component
 
 pub fn fill(Array[@crater-tui.Component]) -> @crater-tui.Component
+
+pub fn form_edit_config(String, @signals.Signal[String], on_edit_start? : (() -> Unit)?, on_edit_end? : (() -> Unit)?) -> EditConfig
 
 pub fn grid(Array[@crater-tui.Component], columns? : Int, column_gap? : Double, row_gap? : Double, width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, justify_items? : @style.Alignment, align_items? : @style.Alignment, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : @crater-tui.BorderChars?, border_color? : @crater-tui.Color, bg? : @crater-tui.Color, fg? : @crater-tui.Color) -> @crater-tui.Component
 
@@ -39,6 +42,10 @@ pub fn padded(Array[@crater-tui.Component], padding? : Double) -> @crater-tui.Co
 pub fn row(Array[@crater-tui.Component], id? : String, width? : @types.Dimension, height? : @types.Dimension, min_width? : @types.Dimension, min_height? : @types.Dimension, max_width? : @types.Dimension, max_height? : @types.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @types.Dimension, justify? : @style.Alignment, align? : @style.Alignment, wrap? : Bool, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : @crater-tui.BorderChars?, border_color? : @crater-tui.Color, bg? : @crater-tui.Color, fg? : @crater-tui.Color) -> @crater-tui.Component
 
 pub fn spacer(flex_grow? : Double) -> @crater-tui.Component
+
+pub fn start_edit(EditConfig, String, () -> Unit) -> Unit
+
+pub fn start_edit_inplace(EditConfig, String, Int, Int, Int, Int, Bool, () -> Unit) -> Unit
 
 pub fn text(String, fg? : @crater-tui.Color, bg? : @crater-tui.Color, bold? : Bool, underline? : Bool) -> @crater-tui.Component
 
@@ -59,6 +66,23 @@ pub(all) enum ButtonState {
   Pressed
   Disabled
 }
+
+pub(all) struct EditConfig {
+  field_name : String
+  on_change : (String) -> Unit
+  on_edit_start : (() -> Unit)?
+  on_edit_end : (() -> Unit)?
+}
+
+pub(all) struct EditContext {
+  focused_id : @signals.Signal[String]
+  configs : Map[String, EditConfig]
+  restore_tui : () -> Unit
+}
+pub fn EditContext::edit(Self, String, String) -> Bool
+pub fn EditContext::edit_focused(Self) -> Bool
+pub fn EditContext::new(@signals.Signal[String], () -> Unit) -> Self
+pub fn EditContext::register(Self, String, EditConfig) -> Unit
 
 pub(all) enum InputState {
   Idle

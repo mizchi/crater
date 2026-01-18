@@ -65,13 +65,7 @@ fn main {
       [
         // Title
         @c.row(
-          [
-            @c.text(
-              "Form Demo",
-              fg=@tui.Color::yellow(),
-              bold=true,
-            ),
-          ],
+          [@c.text("Form Demo", fg=@tui.Color::yellow(), bold=true)],
           justify=@style.Alignment::Center,
           margin_y=1.0,
         ),
@@ -222,7 +216,7 @@ fn main {
   // Start editing an input field using inplace editable API
   fn start_editing(id : String) -> Unit {
     match field_configs.get(id) {
-      Some((field_name, signal)) => {
+      Some((field_name, signal)) =>
         // Get the element bounds for inplace editing
         match app.find_by_id(id) {
           Some(bounds) => {
@@ -267,7 +261,6 @@ fn main {
             @c.start_edit(config, signal.get(), restore_tui)
           }
         }
-      }
       None => ()
     }
   }

@@ -41,7 +41,6 @@ pub fn start_edit(
       Some(f) => f()
       None => ()
     }
-
     on_complete()
   })
 }
@@ -51,6 +50,7 @@ pub fn start_edit(
 /// row/col are 1-indexed ANSI coordinates
 /// width/height define the input area (supports multi-line wrapping)
 /// multiline: if true, Enter inserts newline, Ctrl+D confirms
+/// on_lines_change: optional callback (line_count) -> new_height for dynamic resizing
 pub fn start_edit_inplace(
   config : EditConfig,
   current_value : String,
@@ -60,6 +60,7 @@ pub fn start_edit_inplace(
   height : Int,
   multiline : Bool,
   on_complete : () -> Unit,
+  on_lines_change~ : ((Int) -> Int)? = None,
 ) -> Unit {
   // Call optional setup callback
   match config.on_edit_start {
@@ -87,9 +88,9 @@ pub fn start_edit_inplace(
         Some(f) => f()
         None => ()
       }
-
       on_complete()
     },
+    on_lines_change=on_lines_change,
   )
 }
 

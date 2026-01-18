@@ -482,9 +482,9 @@ extern "js" fn js_start_inplace_input(
   #|       }
   #|       return;
   #|     }
-  #|     // Check for Shift+Enter (CSI u format: ESC[13;2u or ESC[27;2;13~)
-  #|     if (multiline && (chunk === '\x1b[13;2u' || chunk === '\x1b[27;2;13~' || chunk === '\x1bOM')) {
-  #|       // Shift+Enter in multiline mode - insert newline
+  #|     // Check for Shift+Enter or Alt+Enter
+  #|     if (chunk === '\x1b[13;2u' || chunk === '\x1b[27;2;13~' || chunk === '\x1bOM' || chunk === '\x1b\r' || chunk === '\x1b\n') {
+  #|       // Shift+Enter or Alt+Enter - insert newline
   #|       chars.splice(cursor, 0, '\n');
   #|       cursor++;
   #|       redraw();
@@ -515,6 +515,15 @@ extern "js" fn js_start_inplace_input(
   #|       } else if (code === 5) {
   #|         // Ctrl+E - End
   #|         cursor = chars.length;
+  #|         redraw();
+  #|       } else if (code === 11) {
+  #|         // Ctrl+K - delete from cursor to end
+  #|         chars.splice(cursor, chars.length - cursor);
+  #|         redraw();
+  #|       } else if (code === 21) {
+  #|         // Ctrl+U - delete from start to cursor
+  #|         chars.splice(0, cursor);
+  #|         cursor = 0;
   #|         redraw();
   #|       } else if (code === 13) {
   #|         // Enter always confirms
@@ -844,7 +853,10 @@ pub fn start_inplace_input(
   multiline : Bool,
   initial : String,
   on_result : (InputResult) -> Unit,
+  on_lines_change~ : ((Int) -> Int)? = None,
 ) -> Unit {
+  // Note: on_lines_change is currently ignored in JS version (uses scroll)
+  let _ = on_lines_change
   js_start_inplace_input(
     row,
     col,

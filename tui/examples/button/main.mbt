@@ -54,7 +54,11 @@ fn main {
           [
             @c.button("[ - ]", bg=@tui.Color::rgb(80, 40, 40), id="btn-minus"),
             @c.hspace(2.0),
-            @c.button("[ Reset ]", bg=@tui.Color::rgb(60, 60, 60), id="btn-reset"),
+            @c.button(
+              "[ Reset ]",
+              bg=@tui.Color::rgb(60, 60, 60),
+              id="btn-reset",
+            ),
             @c.hspace(2.0),
             @c.button("[ + ]", bg=@tui.Color::rgb(40, 80, 40), id="btn-plus"),
           ],
@@ -138,7 +142,7 @@ fn main {
           (@tui.MouseEventType::Press, @tui.MouseButton::Left) =>
             // Perform hit test
             match app.hit_test(mouse_event.x, mouse_event.y) {
-              Some(hit) => {
+              Some(hit) =>
                 // Handle button clicks
                 if hit.id == "btn-plus" {
                   count.set(count.get() + 1)
@@ -152,7 +156,6 @@ fn main {
                 } else {
                   message.set("Clicked: " + hit.id)
                 }
-              }
               None =>
                 message.set(
                   "Clicked at (" +
