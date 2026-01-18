@@ -108,20 +108,4 @@ pub fn textarea(
   )
 }
 
-///|
-/// Helper function to split string into lines
-fn split_lines(s : String) -> Array[String] {
-  let lines : Array[String] = []
-  let current = StringBuilder::new()
-  for c in s {
-    if c == '\n' {
-      lines.push(current.to_string())
-      current.reset()
-    } else {
-      current.write_char(c)
-    }
-  }
-  // Add the last line (even if empty after last newline)
-  lines.push(current.to_string())
-  lines
-}
+// split_lines is now defined in streaming.mbt

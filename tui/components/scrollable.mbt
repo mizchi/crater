@@ -184,7 +184,7 @@ pub fn scroll_indicator(
 ///|
 /// Apply scroll offset to an array of items
 /// Returns the visible slice based on scroll offset and visible height
-pub fn apply_scroll[T](
+pub fn[T] apply_scroll(
   items : Array[T],
   offset : Int,
   visible_height : Int,
