@@ -31,10 +31,8 @@ fn main {
   // Scroll state using ScrollState component
   let scroll_state = @c.ScrollState::new()
 
-  // Streaming state
-  let streaming_full_text = @signals.signal("") // Full response to stream
-  let streaming_position = @signals.signal(0) // Current displayed position
-  let streaming_ticker_id : Ref[Int] = { val: 0 }
+  // Streaming state using StreamingState component
+  let streaming = @c.StreamingState::new()
 
   // Create the app
   let app = @tui.App::new(width, height)
@@ -86,10 +84,8 @@ fn main {
       total = total + 1 // spacer
     }
     // Add streaming message if in progress
-    let full = streaming_full_text.get()
-    let pos = streaming_position.get()
-    if full.length() > 0 && pos < full.length() {
-      let partial = get_substring(full, 0, pos)
+    if streaming.is_streaming() {
+      let partial = streaming.get_partial()
       total = total + 1 // role
       total = total + count_content_lines(partial) // partial content
       total = total + 1 // spacer
@@ -112,34 +108,7 @@ fn main {
     scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
   }
 
-  // Helper to get substring by iterating characters
-  fn get_substring(s : String, start : Int, end : Int) -> String {
-    let sb = StringBuilder::new()
-    let mut idx = 0
-    for c in s {
-      if idx >= start && idx < end {
-        sb.write_char(c)
-      }
-      idx = idx + 1
-    }
-    sb.to_string()
-  }
-
-  // Split string by newlines
-  fn split_lines(text : String) -> Array[String] {
-    let result : Array[String] = []
-    let mut current = StringBuilder::new()
-    for c in text {
-      if c == '\n' {
-        result.push(current.to_string())
-        current = StringBuilder::new()
-      } else {
-        current.write_char(c)
-      }
-    }
-    result.push(current.to_string())
-    result
-  }
+  // Use @c.split_lines from streaming.mbt for string splitting
 
   // Build all message lines as flat array for scrolling
   fn build_message_lines() -> Array[@tui.Component] {
@@ -165,7 +134,7 @@ fn main {
         ]),
       )
       // Content lines (split by newlines)
-      let content_lines = split_lines(msg.content)
+      let content_lines = @c.split_lines(msg.content)
       for line in content_lines {
         lines.push(
           @c.row([
@@ -177,9 +146,7 @@ fn main {
       lines.push(@c.vspace(1.0))
     }
     // Add streaming message if in progress
-    let full_text = streaming_full_text.get()
-    let pos = streaming_position.get()
-    if full_text.length() > 0 && pos < full_text.length() {
+    if streaming.is_streaming() {
       let role_color = @tui.Color::rgb(255, 150, 100)
       // Role line
       lines.push(
@@ -189,8 +156,8 @@ fn main {
         ]),
       )
       // Partial content (split by newlines)
-      let partial = get_substring(full_text, 0, pos)
-      let partial_lines = split_lines(partial)
+      let partial = streaming.get_partial()
+      let partial_lines = @c.split_lines(partial)
       for i, line in partial_lines {
         let display = if i == partial_lines.length() - 1 {
           line + "▌" // cursor on last line
@@ -340,7 +307,7 @@ fn main {
         Assistant => "Assistant"
       }
       all_lines.push((0, icon + " " + role_name, color_code))
-      let content_lines = split_lines(msg.content)
+      let content_lines = @c.split_lines(msg.content)
       for line in content_lines {
         all_lines.push((1, line, "\u001b[38;2;220;220;220m"))
       }
@@ -348,14 +315,12 @@ fn main {
     }
 
     // Add streaming message if in progress
-    let full = streaming_full_text.get()
-    let pos = streaming_position.get()
-    if full.length() > 0 && pos > 0 {
+    if streaming.has_content() {
       all_lines.push((0, "✦ Assistant", "\u001b[38;2;255;150;100m"))
-      let partial = get_substring(full, 0, pos)
-      let partial_lines = split_lines(partial)
+      let partial = streaming.get_partial()
+      let partial_lines = @c.split_lines(partial)
       for i, line in partial_lines {
-        let display = if i == partial_lines.length() - 1 {
+        let display = if i == partial_lines.length() - 1 && streaming.is_streaming() {
           line + "▌"
         } else {
           line
@@ -434,7 +399,7 @@ fn main {
     @tui.print_raw("\u001b[" + input_start_row.to_string() + ";1H\u001b[2K")
 
     // Rows for input content (max_input_rows)
-    let input_lines = split_lines(display_text)
+    let input_lines = @c.split_lines(display_text)
     for i = 0; i < max_input_rows; i = i + 1 {
       let row = input_start_row + 1 + i
       @tui.print_raw("\u001b[" + row.to_string() + ";1H\u001b[2K")
@@ -485,7 +450,7 @@ fn main {
       // Role line
       all_lines.push((0, icon + " " + role_name, color_code))
       // Content lines (split by newlines)
-      let content_lines = split_lines(msg.content)
+      let content_lines = @c.split_lines(msg.content)
       for line in content_lines {
         all_lines.push((1, line, "\u001b[38;2;220;220;220m"))
       }
@@ -494,16 +459,14 @@ fn main {
     }
 
     // Add streaming message if in progress
-    let full = streaming_full_text.get()
-    let pos = streaming_position.get()
-    if full.length() > 0 && pos > 0 {
+    if streaming.has_content() {
       // Role line
       all_lines.push((0, "✦ Assistant", "\u001b[38;2;255;150;100m"))
       // Partial content lines
-      let partial = get_substring(full, 0, pos)
-      let partial_lines = split_lines(partial)
+      let partial = streaming.get_partial()
+      let partial_lines = @c.split_lines(partial)
       for i, line in partial_lines {
-        let display = if i == partial_lines.length() - 1 {
+        let display = if i == partial_lines.length() - 1 && streaming.is_streaming() {
           line + "▌" // cursor on last line
         } else {
           line
@@ -576,25 +539,18 @@ fn main {
 
   // Complete streaming and add to messages
   fn finish_streaming() -> Unit {
-    let full = streaming_full_text.get()
-    if full.length() > 0 {
-      // Clear streaming state first to avoid double display
-      streaming_full_text.set("")
-      streaming_position.set(0)
-      // Then add the completed message
-      add_message(Assistant, full)
+    let text = streaming.take() // Get text and clear state
+    if text.length() > 0 {
+      add_message(Assistant, text)
     }
     // Auto-scroll to bottom using ScrollState
     scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
   }
 
-  // Streaming tick callback
-  fn streaming_tick() -> Unit {
-    let full = streaming_full_text.get()
-    let pos = streaming_position.get()
-    if pos < full.length() {
-      // Advance by 1 character per tick (200ms interval = 5 chars/sec)
-      streaming_position.set(pos + 1)
+  // Start streaming response
+  fn start_streaming(response : String) -> Unit {
+    // Callbacks for streaming
+    fn on_tick() {
       // Auto-scroll to bottom using ScrollState
       scroll_state.auto_scroll_to_bottom(get_total_lines(), visible_message_lines)
       // Use partial render during editing to preserve input box
@@ -603,10 +559,9 @@ fn main {
       } else {
         do_render()
       }
-    } else {
-      // Done streaming
-      @tui.stop_render_ticker(streaming_ticker_id.val)
-      streaming_ticker_id.val = 0
+    }
+
+    fn on_complete() {
       finish_streaming()
       // Use partial render during editing
       if is_editing.get() {
@@ -615,20 +570,13 @@ fn main {
         do_render()
       }
     }
-  }
 
-  // Start streaming response
-  fn start_streaming(response : String) -> Unit {
-    streaming_full_text.set(response)
-    streaming_position.set(0)
-    // Start ticker (200ms interval, 1 char per tick = 5 chars/sec)
-    let ticker_id = @tui.start_render_ticker(200, streaming_tick)
-    streaming_ticker_id.val = ticker_id
-    // If ticker_id is 0, native mode - show immediately without streaming
-    if ticker_id == 0 {
-      // Fallback: add message immediately (native doesn't support render ticker)
-      streaming_full_text.set("")
-      streaming_position.set(0)
+    // Start streaming (200ms interval = 5 chars/sec)
+    let started = streaming.start(response, 200, on_tick, on_complete)
+    // If not started (already streaming or native mode fallback)
+    if not(started) || streaming.ticker_id.val == 0 {
+      // Fallback: add message immediately
+      streaming.clear()
       add_message(Assistant, response)
     }
     do_render()
