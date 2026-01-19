@@ -10,11 +10,11 @@ import(
 // Values
 pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
 
-pub fn from_layout(@node.Layout) -> PaintNode
+pub fn from_layout(@types.Layout) -> PaintNode
 
-pub fn from_node_and_layout(@node.Node, @node.Layout) -> PaintNode
+pub fn from_node_and_layout(@node.Node, @types.Layout) -> PaintNode
 
-pub fn from_node_and_layout_with_viewport(@node.Node, @node.Layout, Double, Double, Double) -> PaintNode?
+pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> PaintNode?
 
 pub fn sort_by_stacking_order(Array[PaintNode]) -> Array[PaintNode]
 

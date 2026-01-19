@@ -8,15 +8,15 @@ import(
 )
 
 // Values
-pub fn compute_block_layout(@node.Node, @node.LayoutContext) -> @node.Layout
+pub fn compute_block_layout(@node.Node, @types.LayoutContext) -> @types.Layout
 
 pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @webvitals.LayoutShift
 
-pub fn compute_flex_layout(@node.Node, @node.LayoutContext) -> @node.Layout
+pub fn compute_flex_layout(@node.Node, @types.LayoutContext) -> @types.Layout
 
-pub fn compute_layout(@node.Node, @types.Size[Double]) -> @node.Layout
+pub fn compute_layout(@node.Node, @types.Size[Double]) -> @types.Layout
 
-pub fn compute_layout_with_warnings(@node.Node, @types.Size[Double]) -> @node.LayoutResult
+pub fn compute_layout_with_warnings(@node.Node, @types.Size[Double]) -> @types.LayoutResult
 
 pub fn compute_total_cls(Array[@types.BoundingRect], Array[@types.BoundingRect], @types.Size[Double]) -> Double
 

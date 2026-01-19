@@ -3,8 +3,8 @@ package "mizchi/crater/aom"
 
 import(
   "mizchi/crater/html"
-  "mizchi/crater/layout/node"
   "mizchi/crater/layout/tree"
+  "mizchi/crater/types"
 )
 
 // Values
@@ -18,7 +18,7 @@ pub fn build_accessibility_tree_lightweight(@html.Document) -> AccessibilityTree
 
 pub fn build_accessibility_tree_with_layout(@html.Document, @tree.LayoutTree) -> AccessibilityTree
 
-pub fn build_accessibility_tree_with_node_layout(@html.Document, @node.Layout) -> AccessibilityTree
+pub fn build_accessibility_tree_with_node_layout(@html.Document, @types.Layout) -> AccessibilityTree
 
 pub fn compute_accessible_description(@html.Element, (String) -> @html.Element?) -> String?
 
@@ -36,7 +36,7 @@ pub fn compute_tab_order(AccessibilityTree) -> Array[FocusableItem]
 
 pub fn extract_bounds_from_layout(@tree.LayoutTree) -> Map[String, Bounds]
 
-pub fn extract_bounds_from_node_layout(@node.Layout) -> Map[String, Bounds]
+pub fn extract_bounds_from_node_layout(@types.Layout) -> Map[String, Bounds]
 
 pub fn find_headings(AccessibilityTree) -> Array[AccessibilityNode]
 

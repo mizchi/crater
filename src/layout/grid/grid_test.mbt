@@ -1035,8 +1035,8 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
 ///|
 test "grid_minmax_min_content_auto_track" {
   let default_style = @style.Style::default()
-  let text_measure : @node.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let text_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 72.0, max_width: 216.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -1429,7 +1429,7 @@ test "grid_measure_function_basic" {
   let default_style = @style.Style::default()
 
   // Create a measure function that returns custom sizes
-  let custom_measure : @node.MeasureFunc = {
+  let custom_measure : @types.MeasureFunc = {
     func: fn(_available_width, _available_height) {
       { min_width: 50.0, max_width: 100.0, min_height: 25.0, max_height: 50.0 }
     },
@@ -1461,7 +1461,7 @@ test "grid_measure_function_basic" {
 test "grid_measure_function_min_content" {
   // Test that min-content uses min_width from measure function
   let default_style = @style.Style::default()
-  let custom_measure : @node.MeasureFunc = {
+  let custom_measure : @types.MeasureFunc = {
     func: fn(_available_width, _available_height) {
       { min_width: 30.0, max_width: 80.0, min_height: 15.0, max_height: 40.0 }
     },
@@ -1559,10 +1559,10 @@ test "grid_fr_sum_less_than_one" {
   let item3 = @node.Node::leaf("item3", default_style)
   let item4 = @node.Node::leaf("item4", default_style)
   let root = @node.Node::new("root", root_style, [item1, item2, item3, item4])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 400.0,
   }

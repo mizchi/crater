@@ -5,7 +5,7 @@
 ///|
 /// Compute layout for a node, dispatching to the appropriate layout algorithm
 /// based on the node's display property.
-pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
+pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
   match node.style.display {
     @types.Flex | @types.InlineFlex => @flex.compute(node, ctx)
     @types.Grid | @types.InlineGrid => @grid.compute(node, ctx)

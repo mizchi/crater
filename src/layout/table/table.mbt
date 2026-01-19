@@ -21,14 +21,14 @@ fn max(a : Double, b : Double) -> Double {
 
 ///|
 /// Create a zero-sized layout for a node
-fn create_zero_layout(node : @node.Node) -> @node.Layout {
+fn create_zero_layout(node : @node.Node) -> @types.Layout {
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
     right: 0.0,
     top: 0.0,
     bottom: 0.0,
   }
-  let children : Array[@node.Layout] = []
+  let children : Array[@types.Layout] = []
   for child in node.children {
     children.push(create_zero_layout(child))
   }
@@ -655,9 +655,9 @@ fn calculate_column_widths(
 fn layout_cell(
   cell : @node.Node,
   cell_width : Double,
-  ctx : @node.LayoutContext,
+  ctx : @types.LayoutContext,
   border_collapse : Bool,
-) -> @node.Layout {
+) -> @types.Layout {
   let style = cell.style
   let parent_width = ctx.available_width
   let margin = @types.resolve_rect(style.margin, parent_width)
@@ -677,7 +677,7 @@ fn layout_cell(
   )
 
   // Layout children with available width
-  let child_ctx : @node.LayoutContext = {
+  let child_ctx : @types.LayoutContext = {
     available_width: content_width,
     available_height: ctx.available_height,
     sizing_mode: ctx.sizing_mode,
@@ -686,7 +686,7 @@ fn layout_cell(
   }
 
   // Layout children and calculate content height
-  let child_layouts : Array[@node.Layout] = []
+  let child_layouts : Array[@types.Layout] = []
   let mut content_height = 0.0
   // Note: In border-collapse mode, border is already 0
   let mut y_offset = padding.top + border.top
@@ -758,10 +758,10 @@ fn layout_row(
   row_index : Int,
   column_widths : Array[Double],
   border_spacing : Double,
-  ctx : @node.LayoutContext,
+  ctx : @types.LayoutContext,
   border_collapse : Bool,
   grid : Map[String, CellOccupancy],
-) -> @node.Layout {
+) -> @types.Layout {
   let style = row.style
   let parent_width = ctx.available_width
   let margin = @types.resolve_rect(style.margin, parent_width)
@@ -780,14 +780,14 @@ fn layout_row(
   }
 
   // Create cell context with row height for percentage height resolution
-  let cell_ctx : @node.LayoutContext = {
+  let cell_ctx : @types.LayoutContext = {
     available_width: ctx.available_width,
     available_height: explicit_row_height,
     sizing_mode: ctx.sizing_mode,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }
-  let cell_layouts : Array[@node.Layout] = []
+  let cell_layouts : Array[@types.Layout] = []
   let mut x_offset = padding.left + border.left
   let mut max_height = 0.0
   let mut col_index = 0
@@ -937,7 +937,7 @@ fn layout_row(
   )
 
   // Update cell heights to match row height (for vertical alignment)
-  let final_cell_layouts : Array[@node.Layout] = []
+  let final_cell_layouts : Array[@types.Layout] = []
   for layout in cell_layouts {
     final_cell_layouts.push({ ..layout, height: row_content_height })
   }
@@ -1280,7 +1280,7 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
 
 ///|
 /// Main table layout computation
-pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
+pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
   let style = node.style
 
   // Handle display:none
@@ -1428,7 +1428,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   }
 
   // Create base child context (use row_content_width for row layout)
-  let base_child_ctx : @node.LayoutContext = {
+  let base_child_ctx : @types.LayoutContext = {
     available_width: row_content_width,
     available_height: None,
     sizing_mode: ctx.sizing_mode,
@@ -1460,7 +1460,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   }
 
   // Create a map to store layouts by original index
-  let layout_map : Map[Int, @node.Layout] = {}
+  let layout_map : Map[Int, @types.Layout] = {}
 
   // Layout all children (including row groups)
   // y_offset includes top edge spacing
@@ -1506,7 +1506,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       } else {
         None
       }
-      let row_ctx : @node.LayoutContext = {
+      let row_ctx : @types.LayoutContext = {
         ..base_child_ctx,
         available_height: row_height,
       }
@@ -1530,7 +1530,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       global_row_idx = global_row_idx + 1
     } else if is_table_row_group(child.style.display) {
       // Row group (thead, tbody, tfoot)
-      let group_layouts : Array[@node.Layout] = []
+      let group_layouts : Array[@types.Layout] = []
       let mut group_y = 0.0
       let mut max_row_width = 0.0
       let group_style = child.style
@@ -1549,7 +1549,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
           } else {
             None
           }
-          let row_ctx : @node.LayoutContext = {
+          let row_ctx : @types.LayoutContext = {
             ..base_child_ctx,
             available_height: row_height,
           }
@@ -1598,7 +1598,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       let (rel_x, rel_y) = calculate_relative_offset(
         group_style, row_content_width, group_height,
       )
-      let group_layout : @node.Layout = {
+      let group_layout : @types.Layout = {
         id: child.id,
         x: row_x_offset + rel_x,
         y: y_offset + rel_y,
@@ -1617,7 +1617,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
     } else if is_table_column_group(child.style.display) {
       // Colgroup: layout with column widths, positioned later
       // These are placeholder layouts that will be updated after we know table height
-      let col_layouts : Array[@node.Layout] = []
+      let col_layouts : Array[@types.Layout] = []
       let mut col_x = 0.0
       let mut col_idx = 0
       for col in child.children {
@@ -1637,7 +1637,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
             top: 0.0,
             bottom: 0.0,
           }
-          let col_layout : @node.Layout = {
+          let col_layout : @types.Layout = {
             id: col.id,
             x: col_x,
             y: 0.0,
@@ -1670,7 +1670,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         top: 0.0,
         bottom: 0.0,
       }
-      let colgroup_layout : @node.Layout = {
+      let colgroup_layout : @types.Layout = {
         id: child.id,
         x: row_x_offset,
         y: y_offset,
@@ -1732,7 +1732,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
 
   // Assemble child_layouts in original order from layout_map
   // Also update colgroup/col heights now that we know the table content height
-  let final_child_layouts : Array[@node.Layout] = []
+  let final_child_layouts : Array[@types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     match layout_map.get(i) {
       Some(layout) =>
@@ -1740,7 +1740,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         // Colgroups/cols have height=0.0 as placeholder
         if layout.height == 0.0 && layout.children.length() > 0 {
           // This might be a colgroup - update its height and children's heights
-          let updated_col_children : Array[@node.Layout] = []
+          let updated_col_children : Array[@types.Layout] = []
           for col_layout in layout.children {
             if col_layout.height == 0.0 && col_layout.width > 0.0 {
               // This is a col element

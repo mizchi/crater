@@ -8,11 +8,11 @@
 pub fn compute_layout(
   node : @node.Node,
   viewport : @types.Size[Double],
-) -> @node.Layout {
-  let ctx : @node.LayoutContext = {
+) -> @types.Layout {
+  let ctx : @types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
   }
@@ -24,11 +24,11 @@ pub fn compute_layout(
 pub fn compute_layout_with_warnings(
   node : @node.Node,
   viewport : @types.Size[Double],
-) -> @node.LayoutResult {
-  let ctx : @node.LayoutContext = {
+) -> @types.LayoutResult {
+  let ctx : @types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
   }
@@ -39,8 +39,8 @@ pub fn compute_layout_with_warnings(
 /// Dispatch to appropriate layout algorithm based on display type
 fn dispatch_compute(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.Layout {
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
   match node.style.display {
     @types.Flex | @types.InlineFlex => @flex.compute(node, ctx)
     @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
@@ -84,8 +84,8 @@ fn dispatch_compute(
 /// Dispatch with warnings
 fn dispatch_compute_with_warnings(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.LayoutResult {
+  ctx : @types.LayoutContext,
+) -> @types.LayoutResult {
   match node.style.display {
     @types.Flex | @types.InlineFlex => @flex.compute_with_warnings(node, ctx)
     @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
@@ -136,8 +136,8 @@ fn dispatch_compute_with_warnings(
 /// Compute block layout directly
 pub fn compute_block_layout(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.Layout {
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
   @block.compute(node, ctx)
 }
 
@@ -145,8 +145,8 @@ pub fn compute_block_layout(
 /// Compute flex layout directly
 pub fn compute_flex_layout(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.Layout {
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
   @flex.compute(node, ctx)
 }
 

@@ -201,3 +201,91 @@ pub(all) struct GridLine {
 pub fn GridLine::auto() -> GridLine {
   { start: Auto, end: Auto }
 }
+
+///|
+/// Intrinsic size measurement result
+pub(all) struct IntrinsicSize {
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
+}
+
+///|
+/// Default intrinsic size for leaf nodes without measure function
+/// Matches Taffy behavior: empty/unmeasured nodes have zero intrinsic size
+pub fn IntrinsicSize::default() -> IntrinsicSize {
+  { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
+}
+
+///|
+/// Measure function type - called to determine intrinsic size of a node
+/// Parameters: (available_width, available_height) -> IntrinsicSize
+pub(all) struct MeasureFunc {
+  func : (Double, Double) -> IntrinsicSize
+}
+
+///|
+/// Sizing mode for layout computation
+/// Definite: Use available space (normal flow)
+/// MaxContent: Use intrinsic max-content (shrink-to-fit)
+pub(all) enum SizingMode {
+  Definite
+  MaxContent
+} derive(Eq)
+
+///|
+/// Context for layout computation
+pub(all) struct LayoutContext {
+  /// Available width from parent
+  available_width : Double
+  /// Available height from parent (may be undefined)
+  available_height : Double?
+  /// Sizing mode (defaults to MaxContent for root-level intrinsic sizing)
+  sizing_mode : SizingMode
+  /// Viewport width for position: fixed elements
+  viewport_width : Double
+  /// Viewport height for position: fixed elements
+  viewport_height : Double
+}
+
+///|
+/// Warnings emitted during layout computation
+pub(all) enum LayoutWarning {
+  UnsupportedFloat(String) // node id with float: left/right
+  UnsupportedPosition(String) // node id with position: absolute/fixed
+  UnsupportedDisplay(String) // node id with unsupported display type
+} derive(Show)
+
+///|
+/// Complete layout result for a node
+pub(all) struct Layout {
+  id : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  // Box model resolved values
+  margin : Rect[Double]
+  padding : Rect[Double]
+  border : Rect[Double]
+  // Overflow clipping info
+  overflow_x : Overflow
+  overflow_y : Overflow
+  // Children layouts
+  children : Array[Layout]
+  // Text content for text nodes
+  text : String?
+}
+
+///|
+pub fn Layout::to_bounding_rect(self : Layout) -> BoundingRect {
+  { x: self.x, y: self.y, width: self.width, height: self.height }
+}
+
+///|
+/// Result of layout computation with warnings
+pub(all) struct LayoutResult {
+  layout : Layout
+  warnings : Array[LayoutWarning]
+}

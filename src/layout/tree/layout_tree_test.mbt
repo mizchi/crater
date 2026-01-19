@@ -3,7 +3,7 @@
 
 ///|
 /// Helper to compare layouts approximately
-fn layouts_equal(a : @node.Layout, b : @node.Layout) -> Bool {
+fn layouts_equal(a : @types.Layout, b : @types.Layout) -> Bool {
   let pos_eq = (a.x - b.x).abs() < 0.001 &&
     (a.y - b.y).abs() < 0.001 &&
     (a.width - b.width).abs() < 0.001 &&

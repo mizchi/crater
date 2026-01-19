@@ -28,10 +28,10 @@ test "simple table layout" {
   let table = @node.Node::new("table", table_style, [row1, row2])
 
   // Create context
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -72,10 +72,10 @@ test "table with row group" {
   let row1 = @node.Node::new("row1", row_style, [cell1])
   let tbody = @node.Node::new("tbody", tbody_style, [row1])
   let table = @node.Node::new("table", table_style, [tbody])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -108,10 +108,10 @@ test "table equal column widths" {
   let cell2 = @node.Node::new("cell2", cell_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
   let table = @node.Node::new("table", table_style, [row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -167,10 +167,10 @@ test "table content-based column widths" {
   let cell2 = @node.Node::new("cell2", narrow_cell_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
   let table = @node.Node::new("table", table_style, [row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -211,10 +211,10 @@ test "table shrink-to-fit width" {
   let cell2 = @node.Node::new("cell2", cell_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
   let table = @node.Node::new("table", table_style, [row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0, // Large available width
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -266,10 +266,10 @@ test "table border-collapse" {
   let cell1 = @node.Node::new("cell1", cell_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell1])
   let table = @node.Node::new("table", table_style, [row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -312,10 +312,10 @@ test "table-layout fixed" {
   let cell2 = @node.Node::new("cell2", cell_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
   let table = @node.Node::new("table", table_style, [row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -361,10 +361,10 @@ test "table-layout fixed with explicit width" {
   let cell2 = @node.Node::new("cell2", cell_auto_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
   let table = @node.Node::new("table", table_style, [row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -417,10 +417,10 @@ test "table rowspan" {
   let cell_c = @node.Node::new("cell_c", cell_c_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell_c])
   let table = @node.Node::new("table", table_style, [row0, row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -482,10 +482,10 @@ test "table rowspan height distribution" {
   let cell_c = @node.Node::new("cell_c", cell_c_style, [])
   let row1 = @node.Node::new("row1", row_style, [cell_c])
   let table = @node.Node::new("table", table_style, [row0, row1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -554,10 +554,10 @@ test "table rowspan with tbody" {
   let row1 = @node.Node::new("row1", row_style, [cell_c])
   let tbody = @node.Node::new("tbody", tbody_style, [row0, row1])
   let table = @node.Node::new("table", table_style, [tbody])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }

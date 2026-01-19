@@ -1,27 +1,4 @@
 ///|
-/// Intrinsic size measurement result
-pub(all) struct IntrinsicSize {
-  min_width : Double
-  max_width : Double
-  min_height : Double
-  max_height : Double
-}
-
-///|
-/// Default intrinsic size for leaf nodes without measure function
-/// Matches Taffy behavior: empty/unmeasured nodes have zero intrinsic size
-pub fn IntrinsicSize::default() -> IntrinsicSize {
-  { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
-}
-
-///|
-/// Measure function type - called to determine intrinsic size of a node
-/// Parameters: (available_width, available_height) -> IntrinsicSize
-pub(all) struct MeasureFunc {
-  func : (Double, Double) -> IntrinsicSize
-}
-
-///|
 /// Global counter for generating unique node IDs
 let node_uid_counter : Ref[Int] = { val: 0 }
 
@@ -40,7 +17,7 @@ pub struct Node {
   uid : Int // Unique identifier for caching
   style : @style.Style
   children : Array[Node]
-  measure : MeasureFunc?
+  measure : @types.MeasureFunc?
   text : String? // Text content for text nodes
 }
 
@@ -71,7 +48,7 @@ pub fn Node::with_uid_and_measure(
   uid : Int,
   style : @style.Style,
   children : Array[Node],
-  measure : MeasureFunc?,
+  measure : @types.MeasureFunc?,
   text : String?,
 ) -> Node {
   { id, uid, style, children, measure, text }
@@ -88,7 +65,7 @@ pub fn Node::leaf(id : String, style : @style.Style) -> Node {
 pub fn Node::with_measure(
   id : String,
   style : @style.Style,
-  measure : MeasureFunc,
+  measure : @types.MeasureFunc,
   text? : String,
 ) -> Node {
   { id, uid: next_uid(), style, children: [], measure: Some(measure), text }
@@ -99,7 +76,7 @@ pub fn Node::with_measure(
 pub fn Node::text(
   id : String,
   style : @style.Style,
-  measure : MeasureFunc,
+  measure : @types.MeasureFunc,
   content : String,
 ) -> Node {
   {
@@ -113,74 +90,11 @@ pub fn Node::text(
 }
 
 ///|
-/// Complete layout result for a node
-pub(all) struct Layout {
-  id : String
-  x : Double
-  y : Double
-  width : Double
-  height : Double
-  // Box model resolved values
-  margin : @types.Rect[Double]
-  padding : @types.Rect[Double]
-  border : @types.Rect[Double]
-  // Overflow clipping info
-  overflow_x : @types.Overflow
-  overflow_y : @types.Overflow
-  // Children layouts
-  children : Array[Layout]
-  // Text content for text nodes
-  text : String?
-}
-
-///|
-pub fn Layout::to_bounding_rect(self : Layout) -> @types.BoundingRect {
-  { x: self.x, y: self.y, width: self.width, height: self.height }
-}
-
-///|
-/// Sizing mode for layout computation
-/// Definite: Use available space (normal flow)
-/// MaxContent: Use intrinsic max-content (shrink-to-fit)
-pub(all) enum SizingMode {
-  Definite
-  MaxContent
-} derive(Eq)
-
-///|
-/// Context for layout computation
-pub(all) struct LayoutContext {
-  /// Available width from parent
-  available_width : Double
-  /// Available height from parent (may be undefined)
-  available_height : Double?
-  /// Sizing mode (defaults to MaxContent for root-level intrinsic sizing)
-  sizing_mode : SizingMode
-  /// Viewport width for position: fixed elements
-  viewport_width : Double
-  /// Viewport height for position: fixed elements
-  viewport_height : Double
-}
-
-///|
-/// Warnings emitted during layout computation
-pub(all) enum LayoutWarning {
-  UnsupportedFloat(String) // node id with float: left/right
-  UnsupportedPosition(String) // node id with position: absolute/fixed
-  UnsupportedDisplay(String) // node id with unsupported display type
-} derive(Show)
-
-///|
-/// Result of layout computation with warnings
-pub(all) struct LayoutResult {
-  layout : Layout
-  warnings : Array[LayoutWarning]
-}
-
-///|
 /// Layout dispatch function type
 /// Used to delegate layout computation to the appropriate algorithm based on display type
-pub(all) struct LayoutDispatchFunc((Node, LayoutContext) -> Layout)
+pub(all) struct LayoutDispatchFunc(
+  (Node, @types.LayoutContext) -> @types.Layout
+)
 
 ///|
 /// Global layout dispatch function
@@ -202,26 +116,29 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
 ///|
 /// Compute layout for a node using the global dispatcher
 /// Falls back to returning a minimal layout if no dispatcher is set
-pub fn dispatch_layout(node : Node, ctx : LayoutContext) -> Layout {
+pub fn dispatch_layout(
+  node : Node,
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
   match layout_dispatcher.val {
     Some(LayoutDispatchFunc(f)) => f(node, ctx)
     None => {
       // Fallback: create minimal layout from node dimensions
       let width = match node.style.width {
-        @types.Length(w) => w
-        @types.Percent(p) => ctx.available_width * p
-        @types.Auto => ctx.available_width
-        @types.MinContent => 0.0 // Fallback: use minimal size
-        @types.MaxContent => ctx.available_width
-        @types.FitContent(_) => ctx.available_width
+        @types.Dimension::Length(w) => w
+        @types.Dimension::Percent(p) => ctx.available_width * p
+        @types.Dimension::Auto => ctx.available_width
+        @types.Dimension::MinContent => 0.0 // Fallback: use minimal size
+        @types.Dimension::MaxContent => ctx.available_width
+        @types.Dimension::FitContent(_) => ctx.available_width
       }
       let height = match node.style.height {
-        @types.Length(h) => h
-        @types.Percent(p) => ctx.available_height.unwrap_or(0.0) * p
-        @types.Auto => 0.0
-        @types.MinContent => 0.0
-        @types.MaxContent => 0.0
-        @types.FitContent(_) => 0.0
+        @types.Dimension::Length(h) => h
+        @types.Dimension::Percent(p) => ctx.available_height.unwrap_or(0.0) * p
+        @types.Dimension::Auto => 0.0
+        @types.Dimension::MinContent => 0.0
+        @types.Dimension::MaxContent => 0.0
+        @types.Dimension::FitContent(_) => 0.0
       }
       {
         id: node.id,

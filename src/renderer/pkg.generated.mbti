@@ -6,6 +6,7 @@ import(
   "mizchi/crater/html"
   "mizchi/crater/layout/node"
   "mizchi/crater/style"
+  "mizchi/crater/types"
 )
 
 // Values
@@ -19,15 +20,15 @@ pub fn get_content_height_with_css(String, Int, Int, Array[String]) -> Int
 
 pub fn get_content_height_with_document(@html.Document, Int, Int, Array[String]) -> Int
 
-pub fn layout_to_json(@node.Layout) -> String
+pub fn layout_to_json(@types.Layout) -> String
 
-pub fn print_layout_tree(@node.Layout, Int) -> Unit
+pub fn print_layout_tree(@types.Layout, Int) -> Unit
 
-pub fn print_layout_tree_with_options(@node.Layout, Int, Bool) -> Unit
+pub fn print_layout_tree_with_options(@types.Layout, Int, Bool) -> Unit
 
-pub fn render(String, RenderContext) -> @node.Layout
+pub fn render(String, RenderContext) -> @types.Layout
 
-pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @node.Layout
+pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @types.Layout
 
 pub fn render_to_node(String, RenderContext) -> @node.Node
 
@@ -43,7 +44,7 @@ pub fn render_to_sixel_with_scroll(String, Int, Int, Int) -> String
 
 pub fn render_to_sixel_with_styles(String, Int, Int) -> String
 
-pub fn render_with_external_css(String, RenderContext, Array[String]) -> @node.Layout
+pub fn render_with_external_css(String, RenderContext, Array[String]) -> @types.Layout
 
 // Errors
 

@@ -75,7 +75,7 @@ pub fn Document::process_mutations(self : Document) -> Int {
 
 ///|
 /// Compute layout if needed
-pub fn Document::compute_layout(self : Document) -> @node.Layout {
+pub fn Document::compute_layout(self : Document) -> @types.Layout {
   self.needs_layout = false
   if self.layout.needs_layout() {
     self.layout.compute_incremental()
@@ -86,7 +86,7 @@ pub fn Document::compute_layout(self : Document) -> @node.Layout {
 
 ///|
 /// Force full layout recomputation
-pub fn Document::compute_layout_full(self : Document) -> @node.Layout {
+pub fn Document::compute_layout_full(self : Document) -> @types.Layout {
   self.needs_layout = false
   self.layout.compute_full()
 }
@@ -401,7 +401,7 @@ pub fn Document::query_selector(
 
 ///|
 /// One-shot: Process mutations and compute layout
-pub fn Document::update(self : Document) -> @node.Layout {
+pub fn Document::update(self : Document) -> @types.Layout {
   let _ = self.process_mutations()
   self.compute_layout()
 }

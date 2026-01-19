@@ -21,10 +21,10 @@ test "trace_simple_layout" {
     [child],
   )
   // Compute layout with tracing
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -65,10 +65,10 @@ test "trace_dependencies_recorded" {
     },
     [child1, child2],
   )
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: None,
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -129,10 +129,10 @@ test "trace_needs_recompute" {
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
-  let ctx1 : @node.LayoutContext = {
+  let ctx1 : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -140,19 +140,19 @@ test "trace_needs_recompute" {
   // Same context should not need recompute
   assert_eq(result.tracer.needs_recompute(node.uid, ctx1), false)
   // Different width should need recompute
-  let ctx2 : @node.LayoutContext = {
+  let ctx2 : @types.LayoutContext = {
     available_width: 500.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
   assert_eq(result.tracer.needs_recompute(node.uid, ctx2), true)
   // Different height should need recompute
-  let ctx3 : @node.LayoutContext = {
+  let ctx3 : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(400.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -190,10 +190,10 @@ test "trace_nested_structure" {
     },
     [middle],
   )
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }

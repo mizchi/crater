@@ -6,7 +6,7 @@
 /// Layout with DOM index for sorting
 priv struct IndexedLayout {
   dom_index : Int
-  layout : @node.Layout
+  layout : @types.Layout
 }
 
 ///|
@@ -287,8 +287,8 @@ fn flatten_children_recursive(
 /// Create a zero-size layout for a display: contents element
 fn create_contents_layout(
   node : @node.Node,
-  children_layouts : Array[@node.Layout],
-) -> @node.Layout {
+  children_layouts : Array[@types.Layout],
+) -> @types.Layout {
   {
     id: node.id,
     x: 0.0,
@@ -332,7 +332,7 @@ fn min(a : Double, b : Double) -> Double {
 ///   - constrained_main: The actual constrained main dimension
 ///   - is_row: true = main is width, cross is height
 fn compute_measured_cross_size(
-  intrinsic : @node.IntrinsicSize,
+  intrinsic : @types.IntrinsicSize,
   constrained_main : Double,
   is_row : Bool,
 ) -> Double {
@@ -1105,10 +1105,10 @@ fn compute_intrinsic_grid_main_size(
     // Computing height - use max-content
     None
   }
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width,
     available_height,
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
   }
@@ -1214,8 +1214,8 @@ fn compute_intrinsic_block_main_size(
 ///|
 /// Create a zero-sized layout for display: none elements.
 /// Recursively creates zero-sized layouts for all children.
-fn create_hidden_layout(node : @node.Node) -> @node.Layout {
-  let children : Array[@node.Layout] = []
+fn create_hidden_layout(node : @node.Node) -> @types.Layout {
+  let children : Array[@types.Layout] = []
   for child in node.children {
     children.push(create_hidden_layout(child))
   }
@@ -1243,8 +1243,8 @@ fn create_hidden_layout(node : @node.Node) -> @node.Layout {
 
 ///|
 /// Compute flex layout for a node and its children
-pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
-  let warnings : Array[@node.LayoutWarning] = []
+pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
+  let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   compute_internal(node, ctx, warnings, cache)
 }
@@ -1254,9 +1254,9 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
 /// Root flex containers with width:auto use content-based sizing (taffy behavior)
 pub fn compute_root(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.Layout {
-  let warnings : Array[@node.LayoutWarning] = []
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
+  let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   compute_internal(node, ctx, warnings, cache, is_root=true)
 }
@@ -1265,9 +1265,9 @@ pub fn compute_root(
 /// Compute flex layout with warnings
 pub fn compute_with_warnings(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.LayoutResult {
-  let warnings : Array[@node.LayoutWarning] = []
+  ctx : @types.LayoutContext,
+) -> @types.LayoutResult {
+  let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   let layout = compute_internal(node, ctx, warnings, cache)
   { layout, warnings }
@@ -1276,8 +1276,8 @@ pub fn compute_with_warnings(
 ///|
 /// Result of traced layout computation
 pub(all) struct TracedLayoutResult {
-  layout : @node.Layout
-  warnings : Array[@node.LayoutWarning]
+  layout : @types.Layout
+  warnings : Array[@types.LayoutWarning]
   tracer : @trace.LayoutTracer
 }
 
@@ -1286,9 +1286,9 @@ pub(all) struct TracedLayoutResult {
 /// The tracer records input/output for each node, enabling future differential recalculation.
 pub fn compute_with_trace(
   node : @node.Node,
-  ctx : @node.LayoutContext,
+  ctx : @types.LayoutContext,
 ) -> TracedLayoutResult {
-  let warnings : Array[@node.LayoutWarning] = []
+  let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   let tracer = @trace.LayoutTracer::new(true)
   // Perform layout computation
@@ -1301,11 +1301,11 @@ pub fn compute_with_trace(
 ///|
 fn compute_internal(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-  warnings : Array[@node.LayoutWarning],
+  ctx : @types.LayoutContext,
+  warnings : Array[@types.LayoutWarning],
   cache : IntrinsicCache,
   is_root? : Bool = false,
-) -> @node.Layout {
+) -> @types.Layout {
   let style = node.style
 
   // Handle display: none - return zero-sized layout with zero-sized children
@@ -1316,7 +1316,7 @@ fn compute_internal(
   // Check for unsupported features
   match style.float {
     @types.Float::Left | @types.Float::Right =>
-      warnings.push(@node.UnsupportedFloat(node.id))
+      warnings.push(@types.UnsupportedFloat(node.id))
     @types.Float::None => ()
   }
   let parent_width = ctx.available_width
@@ -1346,7 +1346,7 @@ fn compute_internal(
       node.measure,
       node.children.length(),
     ) {
-    (@node.MaxContent, true, Some(mf), 0) => {
+    (@types.MaxContent, true, Some(mf), 0) => {
       // Leaf flex node with MeasureFunc - use intrinsic size
       let intrinsic = (mf.func)(parent_width, parent_height)
       Some(
@@ -1373,7 +1373,7 @@ fn compute_internal(
             // Block-level flex containers with width:auto should fill available width minus margins
             // Inline-level flex (InlineFlex) should use content-based sizing
             // Root-level flex should use content-based sizing (taffy behavior)
-            @node.Definite =>
+            @types.Definite =>
               if is_block_level && not(is_root) {
                 let fill_width = parent_width - margin.horizontal_sum()
                 let min_width = padding.horizontal_sum() +
@@ -1404,7 +1404,7 @@ fn compute_internal(
               } else {
                 padding.horizontal_sum() + border.horizontal_sum()
               }
-            @node.MaxContent =>
+            @types.MaxContent =>
               // For MaxContent, compute intrinsic width
               if node.children.length() > 0 {
                 // Use compute_intrinsic_main_size to get max-content width
@@ -1489,7 +1489,7 @@ fn compute_internal(
           // In Definite mode, available_height may represent a constrained size (e.g., max-height applied)
           // If available_height is smaller than explicit height, use available_height
           match (ctx.sizing_mode, ctx.available_height) {
-            (@node.Definite, Some(ah)) if ah < 1.0e9 && ah < h => height = ah
+            (@types.Definite, Some(ah)) if ah < 1.0e9 && ah < h => height = ah
             _ => ()
           }
           Some(height - padding.vertical_sum() - border.vertical_sum())
@@ -1502,7 +1502,7 @@ fn compute_internal(
           // In Definite mode with available_height, use it for stretched items
           // But only if it's not an "infinity" placeholder (< 1e9)
           match (ctx.sizing_mode, ctx.available_height) {
-            (@node.Definite, Some(ah)) if ah < 1.0e9 =>
+            (@types.Definite, Some(ah)) if ah < 1.0e9 =>
               Some(ah - padding.vertical_sum() - border.vertical_sum())
             _ => None
           }
@@ -1526,7 +1526,7 @@ fn compute_internal(
   // For MaxContent/MinContent sizing, main size is NOT defined for auto-sized containers
   // (flex-grow/shrink should not be applied during intrinsic sizing)
   let is_intrinsic_sizing = match ctx.sizing_mode {
-    @node.MaxContent => true
+    @types.MaxContent => true
     _ => false
   }
   // For column flex wrap, we need to consider max-height even when height is auto
@@ -2823,7 +2823,7 @@ fn compute_internal(
 
   // Map to collect layouts for display: contents children
   // Key: original_child_index, Value: array of (layout, contents_ancestors)
-  let contents_layouts : Map[Int, Array[(@node.Layout, Array[@node.Node])]] = {}
+  let contents_layouts : Map[Int, Array[(@types.Layout, Array[@node.Node])]] = {}
 
   // Calculate total cross size for all lines (for auto height)
   let mut total_lines_cross = 0.0
@@ -3337,7 +3337,7 @@ fn compute_internal(
       } else {
         (item_cross, item.final_main)
       }
-      let child_layout : @node.Layout = if child.children.length() == 0 {
+      let child_layout : @types.Layout = if child.children.length() == 0 {
         let child_style = child.style
         let child_padding = @types.resolve_rect(
           child_style.padding,
@@ -3359,10 +3359,10 @@ fn compute_internal(
           text: child.text,
         }
       } else {
-        let child_ctx : @node.LayoutContext = {
+        let child_ctx : @types.LayoutContext = {
           available_width: child_width,
           available_height: Some(child_height),
-          sizing_mode: @node.Definite,
+          sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
@@ -3587,7 +3587,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: Some(h),
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3602,7 +3602,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: None,
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3633,7 +3633,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: Some(h),
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3664,7 +3664,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: None,
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3831,7 +3831,7 @@ fn compute_internal(
     let child_margin = child_resolved.margin
 
     // Build child layout
-    let child_layout : @node.Layout = {
+    let child_layout : @types.Layout = {
       id: child.id,
       x: child_x,
       y: child_y,
@@ -3894,7 +3894,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: Some(h),
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3909,7 +3909,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: None,
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3936,7 +3936,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: Some(h),
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -3963,7 +3963,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: None,
-            sizing_mode: @node.Definite,
+            sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
           },
@@ -4042,7 +4042,7 @@ fn compute_internal(
     )
 
     // Build child layout
-    let child_layout : @node.Layout = {
+    let child_layout : @types.Layout = {
       id: child.id,
       x: child_x,
       y: child_y,
@@ -4080,7 +4080,7 @@ fn compute_internal(
         Some(layouts_with_ancestors) => {
           // Build the contents tree structure
           // For simple case (single level of contents), just wrap the layouts
-          let inner_layouts : Array[@node.Layout] = []
+          let inner_layouts : Array[@types.Layout] = []
           for pair in layouts_with_ancestors {
             let (layout, _ancestors) = pair
             inner_layouts.push(layout)
@@ -4102,7 +4102,7 @@ fn compute_internal(
   indexed_layouts.sort_by(fn(a, b) { a.dom_index - b.dom_index })
 
   // Extract layouts from indexed_layouts
-  let child_layouts : Array[@node.Layout] = Array::new(
+  let child_layouts : Array[@types.Layout] = Array::new(
     capacity=indexed_layouts.length(),
   )
   for il in indexed_layouts {
@@ -4116,10 +4116,10 @@ fn compute_internal(
   // when in MaxContent sizing mode.
   let final_width = if width_is_auto && is_row && child_layouts.length() > 0 {
     match ctx.sizing_mode {
-      @node.Definite =>
+      @types.Definite =>
         // Block-level flex container: use container_width (already includes margin subtraction)
         container_width
-      @node.MaxContent => {
+      @types.MaxContent => {
         // Calculate content width used (only from non-absolute children)
         let mut max_x = 0.0
         let mut has_flow_children = false
@@ -4197,10 +4197,10 @@ fn compute_internal(
 /// Compute nested children for a flex item
 fn compute_nested(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-  warnings : Array[@node.LayoutWarning],
+  ctx : @types.LayoutContext,
+  warnings : Array[@types.LayoutWarning],
   cache : IntrinsicCache,
-) -> @node.Layout {
+) -> @types.Layout {
   let style = node.style
   let parent_width = ctx.available_width
   let padding = @types.resolve_rect(style.padding, parent_width)

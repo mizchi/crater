@@ -18,14 +18,14 @@ fn next_layout_uid() -> Int {
 pub struct ConstraintKey {
   available_width : Double
   available_height : Double? // None means unconstrained
-  sizing_mode : @node.SizingMode
+  sizing_mode : @types.SizingMode
 } derive(Eq)
 
 ///|
 pub fn ConstraintKey::new(
   available_width : Double,
   available_height : Double?,
-  sizing_mode : @node.SizingMode,
+  sizing_mode : @types.SizingMode,
 ) -> ConstraintKey {
   { available_width, available_height, sizing_mode }
 }
@@ -49,7 +49,7 @@ pub fn ConstraintKey::approx_eq(
 /// Cached layout result
 pub struct LayoutCache {
   constraint : ConstraintKey
-  result : @node.Layout
+  result : @types.Layout
 }
 
 ///|
@@ -59,7 +59,7 @@ pub struct LayoutNode {
   uid : Int
   style : @style.Style
   children : Array[LayoutNode]
-  mut measure : @node.MeasureFunc?
+  mut measure : @types.MeasureFunc?
   text : String?
   // Dirty bits
   mut dirty : Bool
@@ -130,7 +130,7 @@ pub fn LayoutNode::leaf(id : String, style : @style.Style) -> LayoutNode {
 pub fn LayoutNode::with_measure(
   id : String,
   style : @style.Style,
-  measure : @node.MeasureFunc,
+  measure : @types.MeasureFunc,
 ) -> LayoutNode {
   {
     id,

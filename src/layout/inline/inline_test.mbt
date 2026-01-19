@@ -185,11 +185,11 @@ test "text_width_constrained_by_available_width" {
   let inline_style = { ..default_style, display: @types.Inline }
 
   // MeasureFunc that returns wide text (max_width=200) that wraps to 4 lines at width=50
-  let measure : @node.MeasureFunc = {
+  let measure : @types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @node.IntrinsicSize {
+    ) -> @types.IntrinsicSize {
       let max_width = 200.0 // Single line width
       let line_height = 16.0
       // Calculate wrapped height based on available_width
@@ -224,11 +224,11 @@ test "text_width_unconstrained_when_smaller" {
   let inline_style = { ..default_style, display: @types.Inline }
 
   // MeasureFunc for short text (max_width=50)
-  let measure : @node.MeasureFunc = {
+  let measure : @types.MeasureFunc = {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @node.IntrinsicSize {
+    ) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
     }, // Single line
   }
@@ -250,11 +250,11 @@ test "text_min_content_width" {
     display: @types.Inline,
     width: @types.MinContent,
   }
-  let measure : @node.MeasureFunc = {
+  let measure : @types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @node.IntrinsicSize {
+    ) -> @types.IntrinsicSize {
       let max_width = 200.0
       let min_width = 40.0 // Longest word
       let line_height = 16.0
@@ -290,8 +290,8 @@ test "inline_element_with_child_has_size" {
   let inline_style = { ..default_style, display: @types.Inline }
 
   // Create a text child with MeasureFunc (simulating text content)
-  let child_measure : @node.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let child_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 80.0, max_width: 80.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -322,8 +322,8 @@ test "inline_element_with_padding_and_child" {
   }
 
   // Create a text child with MeasureFunc
-  let child_measure : @node.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let child_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 20.0, max_height: 20.0 }
     },
   }

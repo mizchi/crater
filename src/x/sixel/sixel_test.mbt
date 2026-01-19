@@ -31,7 +31,7 @@ test "to_sixel basic output" {
 ///|
 test "render_layout simple" {
   // Create a simple layout
-  let layout : @node.Layout = {
+  let layout : @types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

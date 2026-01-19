@@ -339,10 +339,10 @@ test "bench_phase_layout_only_100" (b : @bench.T) {
   html = html + "</body>"
   let ctx = default_render_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }

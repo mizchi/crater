@@ -69,7 +69,7 @@ fn create_text_measure(
   text : String,
   font_size : Double,
   text_line_height : Double,
-) -> @node.MeasureFunc {
+) -> @types.MeasureFunc {
   let trimmed = text.trim()
   let char_width = font_size * char_width_ratio
 
@@ -121,7 +121,7 @@ fn create_text_measure(
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @node.IntrinsicSize {
+    ) -> @types.IntrinsicSize {
       // Calculate how many single-width columns fit in available width
       let cols_available = if available_width > 0.0 {
         (available_width / char_width).to_int()
@@ -465,12 +465,12 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
 fn create_image_measure(
   intrinsic_width : Double,
   intrinsic_height : Double,
-) -> @node.MeasureFunc {
+) -> @types.MeasureFunc {
   {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @node.IntrinsicSize {
+    ) -> @types.IntrinsicSize {
       // If intrinsic size is specified, use it
       // Otherwise default to 0
       let width = if intrinsic_width > 0.0 { intrinsic_width } else { 0.0 }
@@ -492,12 +492,12 @@ fn create_image_measure(
 fn create_input_measure(
   intrinsic_width : Double,
   intrinsic_height : Double,
-) -> @node.MeasureFunc {
+) -> @types.MeasureFunc {
   {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @node.IntrinsicSize {
+    ) -> @types.IntrinsicSize {
       // Input elements have fixed intrinsic dimensions based on type
       {
         min_width: intrinsic_width,
@@ -797,7 +797,7 @@ fn find_body_in_children(elem : @html.Element) -> @html.Element? {
 
 ///|
 /// Render HTML string to Layout
-pub fn render(html : String, ctx : RenderContext) -> @node.Layout {
+pub fn render(html : String, ctx : RenderContext) -> @types.Layout {
   render_with_external_css(html, ctx, [])
 }
 
@@ -807,7 +807,7 @@ pub fn render_with_external_css(
   html : String,
   ctx : RenderContext,
   external_css : Array[String],
-) -> @node.Layout {
+) -> @types.Layout {
   // Parse HTML document (includes stylesheet extraction)
   let doc = @html.parse_document(html)
 
@@ -856,10 +856,10 @@ pub fn render_with_external_css(
     root_margin.right
   // Use None for available_height to allow content to grow naturally (scrollable)
   // If we pass Some(viewport_height), the layout might constrain to viewport
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width,
     available_height: None,
-    sizing_mode: @node.SizingMode::Definite,
+    sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }
@@ -913,7 +913,7 @@ pub fn render_document_with_external_css(
   doc : @html.Document,
   ctx : RenderContext,
   external_css : Array[String],
-) -> @node.Layout {
+) -> @types.Layout {
   // Parse stylesheets from <style> tags and external CSS
   let stylesheets : Array[@cascade.Stylesheet] = []
   // First add external CSS (lower priority)
@@ -959,10 +959,10 @@ pub fn render_document_with_external_css(
     root_margin.right
   // Use None for available_height to allow content to grow naturally (scrollable)
   // If we pass Some(viewport_height), the layout might constrain to viewport
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width,
     available_height: None,
-    sizing_mode: @node.SizingMode::Definite,
+    sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }
@@ -2267,7 +2267,7 @@ pub fn get_content_height(html : String, width : Int, height : Int) -> Int {
 ///|
 /// Calculate the actual content extent (maximum y + height of all elements)
 /// This handles cases where parent has height: 100% but children extend beyond
-fn calculate_content_extent(layout : @node.Layout) -> Double {
+fn calculate_content_extent(layout : @types.Layout) -> Double {
   // Start with this element's bottom edge
   let mut max_extent = layout.y + layout.height
   // Check all children recursively
@@ -2303,14 +2303,14 @@ pub fn get_content_height_with_document(
 
 ///|
 /// Print layout tree for debugging
-pub fn print_layout_tree(layout : @node.Layout, indent : Int) -> Unit {
+pub fn print_layout_tree(layout : @types.Layout, indent : Int) -> Unit {
   print_layout_tree_with_options(layout, indent, false)
 }
 
 ///|
 /// Print layout tree with optional detailed box model info
 pub fn print_layout_tree_with_options(
-  layout : @node.Layout,
+  layout : @types.Layout,
   indent : Int,
   show_box_model : Bool,
 ) -> Unit {
@@ -2422,14 +2422,14 @@ fn rect_to_json(rect : @types.Rect[Double]) -> String {
 
 ///|
 /// Convert layout to JSON string (with Box Model)
-pub fn layout_to_json(layout : @node.Layout) -> String {
+pub fn layout_to_json(layout : @types.Layout) -> String {
   let buf = StringBuilder::new()
   layout_to_json_impl(layout, buf)
   buf.to_string()
 }
 
 ///|
-fn layout_to_json_impl(layout : @node.Layout, buf : StringBuilder) -> Unit {
+fn layout_to_json_impl(layout : @types.Layout, buf : StringBuilder) -> Unit {
   buf.write_string("{\"id\":\"")
   buf.write_string(escape_json_string(layout.id))
   buf.write_string("\",\"x\":")

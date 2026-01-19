@@ -2,7 +2,6 @@
 package "mizchi/crater/layout/absolute"
 
 import(
-  "mizchi/crater/layout/node"
   "mizchi/crater/style"
   "mizchi/crater/types"
 )
@@ -18,7 +17,7 @@ pub fn compute_position_with_margin_auto(AbsoluteSizeParams, @style.Style, Doubl
 
 pub fn compute_size_params(@style.Style, Double, Double) -> AbsoluteSizeParams
 
-pub fn create_zero_layout(String) -> @node.Layout
+pub fn create_zero_layout(String) -> @types.Layout
 
 pub fn has_dimension_constraint(@style.Style, Bool) -> Bool
 

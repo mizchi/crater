@@ -28,10 +28,10 @@ test "intrinsic_percent_replaced_wpt_style" {
 
   // Compute layout
   @dispatch.setup()
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -64,10 +64,10 @@ test "renderer_grid_column" {
 
   // Now compute layout
   @dispatch.setup()
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }

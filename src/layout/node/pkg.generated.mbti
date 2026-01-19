@@ -7,7 +7,7 @@ import(
 )
 
 // Values
-pub fn dispatch_layout(Node, LayoutContext) -> Layout
+pub fn dispatch_layout(Node, @types.LayoutContext) -> @types.Layout
 
 pub fn get_layout_dispatcher() -> LayoutDispatchFunc?
 
@@ -16,78 +16,24 @@ pub fn set_layout_dispatcher(LayoutDispatchFunc) -> Unit
 // Errors
 
 // Types and methods
-pub(all) struct IntrinsicSize {
-  min_width : Double
-  max_width : Double
-  min_height : Double
-  max_height : Double
-}
-pub fn IntrinsicSize::default() -> Self
-
-pub(all) struct Layout {
-  id : String
-  x : Double
-  y : Double
-  width : Double
-  height : Double
-  margin : @types.Rect[Double]
-  padding : @types.Rect[Double]
-  border : @types.Rect[Double]
-  overflow_x : @types.Overflow
-  overflow_y : @types.Overflow
-  children : Array[Layout]
-  text : String?
-}
-pub fn Layout::to_bounding_rect(Self) -> @types.BoundingRect
-
-pub(all) struct LayoutContext {
-  available_width : Double
-  available_height : Double?
-  sizing_mode : SizingMode
-  viewport_width : Double
-  viewport_height : Double
-}
-
-pub(all) struct LayoutDispatchFunc((Node, LayoutContext) -> Layout)
+pub(all) struct LayoutDispatchFunc((Node, @types.LayoutContext) -> @types.Layout)
 #deprecated
-pub fn LayoutDispatchFunc::inner(Self) -> (Node, LayoutContext) -> Layout
-
-pub(all) struct LayoutResult {
-  layout : Layout
-  warnings : Array[LayoutWarning]
-}
-
-pub(all) enum LayoutWarning {
-  UnsupportedFloat(String)
-  UnsupportedPosition(String)
-  UnsupportedDisplay(String)
-}
-pub impl Show for LayoutWarning
-
-pub(all) struct MeasureFunc {
-  func : (Double, Double) -> IntrinsicSize
-}
+pub fn LayoutDispatchFunc::inner(Self) -> (Node, @types.LayoutContext) -> @types.Layout
 
 pub struct Node {
   id : String
   uid : Int
   style : @style.Style
   children : Array[Node]
-  measure : MeasureFunc?
+  measure : @types.MeasureFunc?
   text : String?
 }
 pub fn Node::leaf(String, @style.Style) -> Self
 pub fn Node::new(String, @style.Style, Array[Self]) -> Self
-pub fn Node::text(String, @style.Style, MeasureFunc, String) -> Self
-pub fn Node::with_measure(String, @style.Style, MeasureFunc, text? : String) -> Self
+pub fn Node::text(String, @style.Style, @types.MeasureFunc, String) -> Self
+pub fn Node::with_measure(String, @style.Style, @types.MeasureFunc, text? : String) -> Self
 pub fn Node::with_uid(String, Int, @style.Style, Array[Self]) -> Self
-pub fn Node::with_uid_and_measure(String, Int, @style.Style, Array[Self], MeasureFunc?, String?) -> Self
-
-pub(all) enum SizingMode {
-  Definite
-  MaxContent
-}
-pub impl Eq for SizingMode
+pub fn Node::with_uid_and_measure(String, Int, @style.Style, Array[Self], @types.MeasureFunc?, String?) -> Self
 
 // Type aliases
 

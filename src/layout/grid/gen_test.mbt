@@ -6325,8 +6325,8 @@ test "taffy/grid_aspect_ratio_child_fill_content_height" {
     ..@style.Style::default(),
     aspect_ratio: Some(0.5000),
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 40.0, min_height: 80.0, max_height: 80.0 }
     },
   }
@@ -6364,8 +6364,8 @@ test "taffy/grid_aspect_ratio_child_fill_content_width" {
     ..@style.Style::default(),
     aspect_ratio: Some(2.0000),
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 40.0, min_height: 20.0, max_height: 20.0 }
     },
   }
@@ -6437,8 +6437,8 @@ test "taffy/grid_aspect_ratio_fill_child_max_height" {
     max_width: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       {
         min_width: 240.0,
         max_width: 240.0,
@@ -6477,8 +6477,8 @@ test "taffy/grid_aspect_ratio_fill_child_max_width" {
     max_height: @types.Length(20.0),
     aspect_ratio: Some(2.0000),
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0 }
     },
   }
@@ -7517,8 +7517,8 @@ test "taffy/grid_available_space_greater_than_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -7527,8 +7527,8 @@ test "taffy/grid_available_space_greater_than_max_content" {
   )
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -7564,8 +7564,8 @@ test "taffy/grid_available_space_smaller_than_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -7574,8 +7574,8 @@ test "taffy/grid_available_space_smaller_than_max_content" {
   )
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -7611,8 +7611,8 @@ test "taffy/grid_available_space_smaller_than_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -7621,8 +7621,8 @@ test "taffy/grid_available_space_smaller_than_min_content" {
   )
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8013,8 +8013,8 @@ test "taffy/grid_fit_content_percent_definite_argument" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8045,8 +8045,8 @@ test "taffy/grid_fit_content_percent_definite_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8077,8 +8077,8 @@ test "taffy/grid_fit_content_percent_definite_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8108,8 +8108,8 @@ test "taffy/grid_fit_content_percent_indefinite_argument" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8139,8 +8139,8 @@ test "taffy/grid_fit_content_percent_indefinite_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8174,8 +8174,8 @@ test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8205,8 +8205,8 @@ test "taffy/grid_fit_content_percent_indefinite_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8240,8 +8240,8 @@ test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8271,8 +8271,8 @@ test "taffy/grid_fit_content_points_argument" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8302,8 +8302,8 @@ test "taffy/grid_fit_content_points_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8333,8 +8333,8 @@ test "taffy/grid_fit_content_points_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -8368,8 +8368,8 @@ test "taffy/grid_fit_content_points_min_content_hidden" {
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -11647,8 +11647,8 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
     align_self: @types.AlignSelf::Stretch,
     justify_self: @types.AlignSelf::Stretch,
   }
-  let root_child6_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child6_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -12394,8 +12394,8 @@ test "taffy/grid_max_content_maximum_single_item" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -12489,8 +12489,8 @@ test "taffy/grid_max_content_single_item" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -12592,8 +12592,8 @@ test "taffy/grid_max_content_single_item_margin_auto" {
       bottom: @types.Auto,
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -12695,8 +12695,8 @@ test "taffy/grid_max_content_single_item_margin_fixed" {
       bottom: @types.Length(15.0),
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -12798,8 +12798,8 @@ test "taffy/grid_max_content_single_item_margin_percent" {
       bottom: @types.Percent(0.1500),
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -12899,8 +12899,8 @@ test "taffy/grid_max_content_single_item_span_2" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13001,8 +13001,8 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13104,8 +13104,8 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13206,8 +13206,8 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13299,8 +13299,8 @@ test "taffy/grid_max_width_greater_than_max_content" {
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
-  let root_child0_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13309,8 +13309,8 @@ test "taffy/grid_max_width_greater_than_max_content" {
   )
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = { ..@style.Style::default() }
-  let root_child0_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13361,8 +13361,8 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
-  let root_child0_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13371,8 +13371,8 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
   )
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = { ..@style.Style::default() }
-  let root_child0_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13423,8 +13423,8 @@ test "taffy/grid_max_width_smaller_than_max_content" {
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
-  let root_child0_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13433,8 +13433,8 @@ test "taffy/grid_max_width_smaller_than_max_content" {
   )
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = { ..@style.Style::default() }
-  let root_child0_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13485,8 +13485,8 @@ test "taffy/grid_max_width_smaller_than_min_content" {
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
-  let root_child0_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13495,8 +13495,8 @@ test "taffy/grid_max_width_smaller_than_min_content" {
   )
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = { ..@style.Style::default() }
-  let root_child0_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13544,8 +13544,8 @@ test "taffy/grid_min_content_flex_column" {
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
-  let root_child0_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13554,8 +13554,8 @@ test "taffy/grid_min_content_flex_column" {
   )
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = { ..@style.Style::default() }
-  let root_child0_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13564,8 +13564,8 @@ test "taffy/grid_min_content_flex_column" {
   )
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = { ..@style.Style::default() }
-  let root_child0_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13617,8 +13617,8 @@ test "taffy/grid_min_content_flex_row" {
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
-  let root_child0_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13627,8 +13627,8 @@ test "taffy/grid_min_content_flex_row" {
   )
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = { ..@style.Style::default() }
-  let root_child0_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13637,8 +13637,8 @@ test "taffy/grid_min_content_flex_row" {
   )
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = { ..@style.Style::default() }
-  let root_child0_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13713,8 +13713,8 @@ test "taffy/grid_min_content_flex_single_item" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child4_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child4_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13822,8 +13822,8 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child4_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child4_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -13931,8 +13931,8 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child4_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child4_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14040,8 +14040,8 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
       end: @types.GridPlacement::Auto,
     },
   }
-  let root_child4_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child4_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14122,8 +14122,8 @@ test "taffy/grid_min_content_maximum_single_item" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14217,8 +14217,8 @@ test "taffy/grid_min_content_single_item" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14306,8 +14306,8 @@ test "taffy/grid_minmax_auto_fixed_10px" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14342,8 +14342,8 @@ test "taffy/grid_minmax_auto_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14378,8 +14378,8 @@ test "taffy/grid_minmax_auto_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14415,8 +14415,8 @@ test "taffy/grid_minmax_auto_percent_definite" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14451,8 +14451,8 @@ test "taffy/grid_minmax_auto_percent_indefinite" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14930,8 +14930,8 @@ test "taffy/grid_minmax_max_content_1fr" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -14966,8 +14966,8 @@ test "taffy/grid_minmax_max_content_auto" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15002,8 +15002,8 @@ test "taffy/grid_minmax_max_content_fixed_10px" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15038,8 +15038,8 @@ test "taffy/grid_minmax_max_content_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15075,8 +15075,8 @@ test "taffy/grid_minmax_max_content_percent_definite" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15111,8 +15111,8 @@ test "taffy/grid_minmax_max_content_percent_indefinite" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15147,8 +15147,8 @@ test "taffy/grid_minmax_min_content_1fr" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15183,8 +15183,8 @@ test "taffy/grid_minmax_min_content_auto" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15219,8 +15219,8 @@ test "taffy/grid_minmax_min_content_fixed_10px" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15255,8 +15255,8 @@ test "taffy/grid_minmax_min_content_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15292,8 +15292,8 @@ test "taffy/grid_minmax_min_content_percent_definite" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15328,8 +15328,8 @@ test "taffy/grid_minmax_min_content_percent_indefinite" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15483,8 +15483,8 @@ test "taffy/grid_overflow_inline_axis_hidden" {
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15518,8 +15518,8 @@ test "taffy/grid_overflow_inline_axis_scroll" {
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15549,8 +15549,8 @@ test "taffy/grid_overflow_inline_axis_visible" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -15594,8 +15594,8 @@ test "taffy/grid_overflow_rows" {
       end: @types.GridPlacement::Span(4),
     },
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 160.0, max_width: 320.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17027,8 +17027,8 @@ test "taffy/grid_relayout_vertical_text" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 10.0, max_width: 10.0, min_height: 140.0, max_height: 140.0 }
     },
   }
@@ -17037,8 +17037,8 @@ test "taffy/grid_relayout_vertical_text" {
   )
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default() }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17263,8 +17263,8 @@ test "taffy/grid_size_child_fixed_tracks" {
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17278,8 +17278,8 @@ test "taffy/grid_size_child_fixed_tracks" {
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 30.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17293,8 +17293,8 @@ test "taffy/grid_size_child_fixed_tracks" {
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17309,8 +17309,8 @@ test "taffy/grid_size_child_fixed_tracks" {
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
-  let root_child3_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child3_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17325,8 +17325,8 @@ test "taffy/grid_size_child_fixed_tracks" {
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
-  let root_child4_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child4_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17416,8 +17416,8 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
       end: @types.GridPlacement::Span(13),
     },
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 160.0, max_width: 320.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17584,8 +17584,8 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
       end: @types.GridPlacement::Span(13),
     },
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 160.0, max_width: 320.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17748,8 +17748,8 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17885,8 +17885,8 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -17968,8 +17968,8 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18049,8 +18049,8 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18132,8 +18132,8 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18213,8 +18213,8 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18267,8 +18267,8 @@ test "taffy/grid_span_2_min_content_auto_indefinite" {
       end: @types.GridPlacement::Span(2),
     },
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18323,8 +18323,8 @@ test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
       end: @types.GridPlacement::Span(2),
     },
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18404,8 +18404,8 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18487,8 +18487,8 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18568,8 +18568,8 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18651,8 +18651,8 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18732,8 +18732,8 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18815,8 +18815,8 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18896,8 +18896,8 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -18977,8 +18977,8 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
     },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
-  let root_child2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -19032,8 +19032,8 @@ test "taffy/grid_span_6_all_non_flex_indefinite" {
       end: @types.GridPlacement::Span(6),
     },
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 80.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -19123,8 +19123,8 @@ test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
       end: @types.GridPlacement::Span(6),
     },
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 80.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -19214,8 +19214,8 @@ test "taffy/grid_span_8_all_track_types_indefinite" {
       end: @types.GridPlacement::Span(8),
     },
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 80.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
     },
   }

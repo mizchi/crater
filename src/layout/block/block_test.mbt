@@ -7,10 +7,10 @@ test "block_basic" {
   let child2 = @node.Node::leaf("child2", child2_style)
   let root_style = { ..default_style, width: @types.Length(50.0) }
   let root = @node.Node::new("test-root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -46,10 +46,10 @@ test "block_border_fixed_size" {
     },
   }
   let root = @node.Node::new("test-root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -84,10 +84,10 @@ test "block_margin_x_fixed_size_positive" {
   let child2 = @node.Node::leaf("child2", child2_style)
   let root_style = { ..default_style, width: @types.Length(50.0) }
   let root = @node.Node::new("test-root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -123,10 +123,10 @@ test "block_padding_fixed_size" {
     },
   }
   let root = @node.Node::new("test-root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -169,10 +169,10 @@ test "block_nested" {
     },
   }
   let root = @node.Node::new("root", root_style, [middle])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -204,10 +204,10 @@ test "block_percentage_width" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -231,10 +231,10 @@ test "block_percentage_height" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -264,10 +264,10 @@ test "block_max_width" {
     height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -292,10 +292,10 @@ test "block_min_width" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -319,10 +319,10 @@ test "block_max_height" {
     height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -346,10 +346,10 @@ test "block_min_height" {
     height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -384,10 +384,10 @@ test "block_margin_collapse_siblings" {
   let child2 = @node.Node::leaf("child2", child2_style)
   let root_style = { ..default_style, width: @types.Length(100.0) }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -416,10 +416,10 @@ test "block_percentage_padding" {
   let child = @node.Node::new("child", child_style, [grandchild])
   let root_style = { ..default_style, width: @types.Length(200.0) }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -449,10 +449,10 @@ test "block_percentage_margin_vertical" {
   let child = @node.Node::leaf("child", child_style)
   let root_style = { ..default_style, width: @types.Length(100.0) }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -476,10 +476,10 @@ test "block_float_supported" {
   let float_child = @node.Node::leaf("float-child", float_child_style)
   let root_style = { ..default_style, width: @types.Length(100.0) }
   let root = @node.Node::new("root", root_style, [float_child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -515,10 +515,10 @@ test "block_absolute_positioning_works" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [abs_child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -552,10 +552,10 @@ test "block_display_none" {
   let child3 = @node.Node::leaf("child3", child3_style)
   let root_style = { ..default_style, width: @types.Length(50.0) }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -592,10 +592,10 @@ test "block_auto_width_fills_parent" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -615,10 +615,10 @@ test "block_multiple_children_stacking" {
   }
   let root_style = { ..default_style, width: @types.Length(100.0) }
   let root = @node.Node::new("root", root_style, children)
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -650,10 +650,10 @@ test "block_percentage_nested" {
   let child = @node.Node::new("child", child_style, [grandchild])
   let root_style = { ..default_style, width: @types.Length(200.0) }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -687,10 +687,10 @@ test "block_border_and_padding_combined" {
     },
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -756,10 +756,10 @@ test "block_margin_collapse_blocked_by_padding" {
   let child3 = @node.Node::leaf("child3", child3_style)
   let root_style = { ..default_style, width: @types.Length(50.0) }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -794,10 +794,10 @@ test "block_min_width_percentage" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -825,10 +825,10 @@ test "block_max_width_percentage" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -858,10 +858,10 @@ test "block_percentage_height_nested" {
     height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -897,10 +897,10 @@ test "block_multiple_display_none" {
   let root = @node.Node::new("root", root_style, [
     visible1, hidden1, hidden2, visible2,
   ])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -968,10 +968,10 @@ test "block_deeply_nested" {
     },
   }
   let root = @node.Node::new("root", root_style, [level1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -1024,10 +1024,10 @@ test "inline_block_shrink_to_fit" {
   // Create parent block container
   let root_style = { ..default_style, width: @types.Length(400.0) }
   let root = @node.Node::new("root", root_style, [inline_block])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -1051,8 +1051,8 @@ test "anonymous_block_basic" {
   let default_style = @style.Style::default()
   // Create inline element (text-like)
   let inline_style = { ..default_style, display: @types.Inline }
-  let inline1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let inline1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 50.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -1063,8 +1063,8 @@ test "anonymous_block_basic" {
   let block_style = { ..default_style, height: @types.Length(20.0) }
   let block1 = @node.Node::leaf("block1", block_style)
   // Create another inline element
-  let inline2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let inline2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -1074,10 +1074,10 @@ test "anonymous_block_basic" {
   // Root container
   let root_style = { ..default_style, width: @types.Length(200.0) }
   let root = @node.Node::new("root", root_style, [inline1, block1, inline2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -1109,24 +1109,24 @@ test "anonymous_block_multiple_inline_in_group" {
   let default_style = @style.Style::default()
   let inline_style = { ..default_style, display: @types.Inline }
   // Three inline elements followed by a block
-  let inline1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let inline1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0 }
     },
   }
   let inline1 = @node.Node::with_measure(
     "inline1", inline_style, inline1_measure,
   )
-  let inline2_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let inline2_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0 }
     },
   }
   let inline2 = @node.Node::with_measure(
     "inline2", inline_style, inline2_measure,
   )
-  let inline3_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let inline3_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -1141,10 +1141,10 @@ test "anonymous_block_multiple_inline_in_group" {
   let root = @node.Node::new("root", root_style, [
     inline1, inline2, inline3, block1,
   ])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -1196,10 +1196,10 @@ test "float_flex_wrap_reverse_align_start" {
   // Parent block
   let root_style = { ..default_style, width: @types.Length(800.0) }
   let root = @node.Node::new("root", root_style, [flex_container])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -1263,10 +1263,10 @@ test "nonfloat_flex_wrap_reverse_align_start" {
   // Parent block
   let root_style = { ..default_style, width: @types.Length(800.0) }
   let root = @node.Node::new("root", root_style, [flex_container])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -1300,10 +1300,10 @@ test "max-width max-content with explicit width" {
     max_height: @types.MaxContent,
   }
   let parent = @node.Node::new("parent", parent_style, [child])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
@@ -1340,7 +1340,7 @@ test "replaced element aspect ratio with percent height" {
     width: @types.Length(800.0),
     height: @types.Length(600.0),
   }
-  let measure : @node.MeasureFunc = {
+  let measure : @types.MeasureFunc = {
     func: fn(_w, _h) {
       { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
     },
@@ -1348,10 +1348,10 @@ test "replaced element aspect ratio with percent height" {
   let canvas = @node.Node::with_measure("canvas", canvas_style, measure)
   let float_div = @node.Node::new("float", float_style, [canvas])
   let body = @node.Node::new("body", body_style, [float_div])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
   }

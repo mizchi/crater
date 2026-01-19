@@ -312,8 +312,8 @@ test "taffy/blockflex_overflow_hidden" {
     overflow_y: @types.Overflow::Hidden,
     flex_grow: 1.0,
   }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -322,8 +322,8 @@ test "taffy/blockflex_overflow_hidden" {
   )
   root_children.push(root_child0)
   let root_child1_style = { ..@style.Style::default(), flex_grow: 1.0 }
-  let root_child1_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child1_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
     },
   }

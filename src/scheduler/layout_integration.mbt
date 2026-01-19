@@ -13,7 +13,7 @@ pub struct LayoutManager {
   /// レイアウトツリー (初期化後に設定)
   mut layout_tree : @tree.LayoutTree?
   /// 最後のレイアウト結果
-  mut last_layout : @node.Layout?
+  mut last_layout : @types.Layout?
   /// レイアウトパス統計
   mut full_layout_count : Int
   mut incremental_layout_count : Int
@@ -132,7 +132,7 @@ pub fn LayoutManager::execute_layout(
     }
     None => {
       // ツリーがない場合はダミーレイアウトを返す
-      let empty_layout : @node.Layout = {
+      let empty_layout : @types.Layout = {
         id: "",
         x: 0.0,
         y: 0.0,
@@ -154,7 +154,7 @@ pub fn LayoutManager::execute_layout(
 ///|
 /// レイアウト計算結果
 pub(all) struct LayoutComputeResult {
-  layout : @node.Layout
+  layout : @types.Layout
   was_incremental : Bool
   pending_images : Int
 }

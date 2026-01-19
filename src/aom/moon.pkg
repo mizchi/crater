@@ -4,10 +4,10 @@ import {
   "mizchi/crater/css/cascade",
   "mizchi/crater/layout/tree",
   "mizchi/crater/layout/node",
+  "mizchi/crater/types",
 }
 
 import "test" {
   "mizchi/crater/style",
-  "mizchi/crater/types",
   "mizchi/crater/layout/dispatch",
 }

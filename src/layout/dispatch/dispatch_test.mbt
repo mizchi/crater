@@ -18,10 +18,10 @@ test "dispatch_ifc_horizontal_layout" {
   let child2 = @node.Node::leaf("child2", inline_style)
   let root_style = { ..default_style, width: @types.Dimension::Length(400.0) }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -59,10 +59,10 @@ test "dispatch_ifc_line_wrap" {
   // Actually 60+60 = 120 > 100, so second child wraps
   let root_style = { ..default_style, width: @types.Dimension::Length(100.0) }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -105,10 +105,10 @@ test "dispatch_ifc_with_padding" {
     },
   }
   let root = @node.Node::new("root", root_style, [child1])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
@@ -146,10 +146,10 @@ test "dispatch_inline_block_shrink_to_fit" {
   let inline_block = @node.Node::new("inline-block", inline_block_style, [leaf])
   let root_style = { ..default_style, width: @types.Dimension::Length(400.0) }
   let root = @node.Node::new("root", root_style, [inline_block])
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
   }

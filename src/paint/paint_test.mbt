@@ -140,7 +140,7 @@ test "viewport_culling_basic" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child1_layout : @node.Layout = {
+  let child1_layout : @types.Layout = {
     id: "child1",
     x: 0.0,
     y: 0.0,
@@ -154,7 +154,7 @@ test "viewport_culling_basic" {
     children: [],
     text: None,
   }
-  let child2_layout : @node.Layout = {
+  let child2_layout : @types.Layout = {
     id: "child2",
     x: 0.0,
     y: 100.0,
@@ -168,7 +168,7 @@ test "viewport_culling_basic" {
     children: [],
     text: None,
   }
-  let child3_layout : @node.Layout = {
+  let child3_layout : @types.Layout = {
     id: "child3",
     x: 0.0,
     y: 200.0,
@@ -182,7 +182,7 @@ test "viewport_culling_basic" {
     children: [],
     text: None,
   }
-  let root_layout : @node.Layout = {
+  let root_layout : @types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,
@@ -249,7 +249,7 @@ test "viewport_culling_zero_height_container" {
     bottom: 0.0,
   }
   // Child has actual height (e.g., 1000px of content)
-  let child_layout : @node.Layout = {
+  let child_layout : @types.Layout = {
     id: "child",
     x: 0.0,
     y: 0.0,
@@ -264,7 +264,7 @@ test "viewport_culling_zero_height_container" {
     text: None,
   }
   // Container (body) has height=0 due to CSS height: 100%
-  let container_layout : @node.Layout = {
+  let container_layout : @types.Layout = {
     id: "body",
     x: 0.0,
     y: 0.0,
@@ -324,7 +324,7 @@ test "viewport_culling_scroll_simulation" {
     top: 0.0,
     bottom: 0.0,
   }
-  let root_layout : @node.Layout = {
+  let root_layout : @types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

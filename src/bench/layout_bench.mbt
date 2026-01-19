@@ -7,11 +7,11 @@
 fn compute_layout(
   node : @node.Node,
   viewport : @types.Size[Double],
-) -> @node.Layout {
-  let ctx : @node.LayoutContext = {
+) -> @types.Layout {
+  let ctx : @types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
   }

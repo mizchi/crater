@@ -3,12 +3,13 @@ package "mizchi/crater/layout/dispatch"
 
 import(
   "mizchi/crater/layout/node"
+  "mizchi/crater/types"
 )
 
 // Values
 pub fn clear_intrinsic_cache_for_node(Int) -> Unit
 
-pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
+pub fn compute(@node.Node, @types.LayoutContext) -> @types.Layout
 
 pub fn reset_intrinsic_cache() -> Unit
 

@@ -329,7 +329,7 @@ fn extract_tag_from_id(id : String) -> String {
 /// This combines style information from Node with position from Layout
 pub fn from_node_and_layout(
   node : @node.Node,
-  layout : @node.Layout,
+  layout : @types.Layout,
 ) -> PaintNode {
   let paint = PaintProperties::from_style(node.style)
   let children : Array[PaintNode] = []
@@ -378,7 +378,7 @@ pub fn from_node_and_layout(
 ///   - parent_y: Absolute Y position of parent (for computing absolute positions)
 pub fn from_node_and_layout_with_viewport(
   node : @node.Node,
-  layout : @node.Layout,
+  layout : @types.Layout,
   viewport_top : Double,
   viewport_bottom : Double,
   parent_y : Double,
@@ -461,7 +461,7 @@ pub fn from_node_and_layout_with_viewport(
 ///|
 /// Convert a Layout tree to PaintNode tree using default styles
 /// Use this when Node tree is not available
-pub fn from_layout(layout : @node.Layout) -> PaintNode {
+pub fn from_layout(layout : @types.Layout) -> PaintNode {
   let default_style = @style.Style::default()
   let paint = PaintProperties::from_style(default_style)
   let children : Array[PaintNode] = []

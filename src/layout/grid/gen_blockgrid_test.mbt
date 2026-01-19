@@ -11,8 +11,8 @@ test "taffy/blockgrid_block_in_grid_auto" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -48,8 +48,8 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_larger" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -85,8 +85,8 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_middle" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -122,8 +122,8 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_smaller" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -159,8 +159,8 @@ test "taffy/blockgrid_block_in_grid_fixed_larger" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -196,8 +196,8 @@ test "taffy/blockgrid_block_in_grid_fixed_middle" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -233,8 +233,8 @@ test "taffy/blockgrid_block_in_grid_fixed_smaller" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -270,8 +270,8 @@ test "taffy/blockgrid_block_in_grid_fr" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -307,8 +307,8 @@ test "taffy/blockgrid_block_in_grid_max_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -344,8 +344,8 @@ test "taffy/blockgrid_block_in_grid_min_content" {
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
-  let root_child0_measure = @node.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
+  let root_child0_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }

@@ -1,14 +1,14 @@
 ///|
 /// Create a zero-sized layout for a node (used for display:none)
 /// Recursively creates zero layouts for all descendants
-fn create_zero_layout(node : @node.Node) -> @node.Layout {
+fn create_zero_layout(node : @node.Node) -> @types.Layout {
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
     right: 0.0,
     top: 0.0,
     bottom: 0.0,
   }
-  let children : Array[@node.Layout] = []
+  let children : Array[@types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     children.push(create_zero_layout(node.children[i]))
   }
@@ -65,7 +65,7 @@ priv struct CollapsedMargins {
 ///|
 /// Internal layout result with collapsed margin tracking
 priv struct LayoutWithCollapse {
-  layout : @node.Layout
+  layout : @types.Layout
   collapsed : CollapsedMargins
 }
 
@@ -241,7 +241,7 @@ fn calculate_children_max_content_height(
 /// Calculate total height contribution from children layouts
 /// Used for display: contents elements where the parent needs children's height
 /// Note: margins are handled through margin collapsing, not added to height
-fn get_children_total_height(children : Array[@node.Layout]) -> Double {
+fn get_children_total_height(children : Array[@types.Layout]) -> Double {
   let mut total_height = 0.0
   for child in children {
     // Only count the child's box height, not margins
@@ -333,9 +333,9 @@ fn compute_mixed_content_layout(
   available_height : Double?,
   padding : @types.Rect[Double],
   border : @types.Rect[Double],
-  ctx : @node.LayoutContext,
-  warnings : Array[@node.LayoutWarning],
-  layout_map : Map[Int, @node.Layout],
+  ctx : @types.LayoutContext,
+  warnings : Array[@types.LayoutWarning],
+  layout_map : Map[Int, @types.Layout],
 ) -> MixedContentResult {
   let mut current_y = 0.0
   let mut prev_margin_bottom = 0.0
@@ -372,10 +372,10 @@ fn compute_mixed_content_layout(
       }
       BlockChild(node~, index~) => {
         // Process block child with margin collapsing
-        let child_ctx : @node.LayoutContext = {
+        let child_ctx : @types.LayoutContext = {
           available_width,
           available_height,
-          sizing_mode: @node.Definite,
+          sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
@@ -405,7 +405,7 @@ fn compute_mixed_content_layout(
           current_y = current_y + collapsed
         }
         // Position and store layout
-        let positioned_layout : @node.Layout = {
+        let positioned_layout : @types.Layout = {
           id: child_layout.id,
           x: content_offset_x + child_layout.margin.left,
           y: content_offset_y + current_y,
@@ -439,9 +439,9 @@ fn compute_mixed_content_layout(
 /// Compute layout with collapse at root level (no parent to escape to)
 fn compute_root_layout(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-  warnings : Array[@node.LayoutWarning],
-) -> @node.Layout {
+  ctx : @types.LayoutContext,
+  warnings : Array[@types.LayoutWarning],
+) -> @types.Layout {
   let result = compute_with_collapse(node, ctx, warnings)
   let layout = result.layout
 
@@ -451,7 +451,7 @@ fn compute_root_layout(
       // Adjust first child position and height
       if layout.children.length() > 0 {
         // Need to adjust children positions by escaped margin
-        let adjusted_children : Array[@node.Layout] = []
+        let adjusted_children : Array[@types.Layout] = []
         for i = 0; i < layout.children.length(); i = i + 1 {
           let child = layout.children[i]
           // All children: shift by escaped margin
@@ -520,17 +520,17 @@ fn compute_root_layout(
 /// Compute block layout with warnings for unsupported features
 pub fn compute_with_warnings(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-) -> @node.LayoutResult {
-  let warnings : Array[@node.LayoutWarning] = []
+  ctx : @types.LayoutContext,
+) -> @types.LayoutResult {
+  let warnings : Array[@types.LayoutWarning] = []
   let layout = compute_root_layout(node, ctx, warnings)
   { layout, warnings }
 }
 
 ///|
 /// Compute block layout for a node and its children
-pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
-  let warnings : Array[@node.LayoutWarning] = []
+pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
+  let warnings : Array[@types.LayoutWarning] = []
   compute_root_layout(node, ctx, warnings)
 }
 
@@ -538,8 +538,8 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
 /// Internal function that computes layout with margin collapse tracking
 fn compute_with_collapse(
   node : @node.Node,
-  ctx : @node.LayoutContext,
-  warnings : Array[@node.LayoutWarning],
+  ctx : @types.LayoutContext,
+  warnings : Array[@types.LayoutWarning],
 ) -> LayoutWithCollapse {
   let style = node.style
 
@@ -547,7 +547,7 @@ fn compute_with_collapse(
   if style.display == @types.Contents {
     // Compute children layouts using parent context
     // Position children as if they were direct children of the parent
-    let children_layouts : Array[@node.Layout] = []
+    let children_layouts : Array[@types.Layout] = []
     let mut current_y = 0.0
     let mut prev_margin_bottom = 0.0
     let mut first_child_margin_top : Double? = None
@@ -570,7 +570,7 @@ fn compute_with_collapse(
       }
       current_y = current_y + collapsed
       // Position child
-      let positioned_child : @node.Layout = {
+      let positioned_child : @types.Layout = {
         id: child_layout.id,
         x: child_layout.x,
         y: current_y,
@@ -732,8 +732,8 @@ fn compute_with_collapse(
   let parent_width = ctx.available_width
   let parent_height = ctx.available_height.unwrap_or(0.0)
   let is_intrinsic_sizing = match ctx.sizing_mode {
-    @node.MaxContent => true
-    @node.Definite => false
+    @types.MaxContent => true
+    @types.Definite => false
   }
   let margin = if is_intrinsic_sizing {
     @types.resolve_rect_intrinsic(style.margin)
@@ -767,7 +767,7 @@ fn compute_with_collapse(
   // InlineBlock elements also use shrink-to-fit (max-content) when width is auto
   let is_inline_block = style.display == @types.InlineBlock
   let use_max_content = match (ctx.sizing_mode, style.width) {
-    (@node.MaxContent, @types.Auto) => true
+    (@types.MaxContent, @types.Auto) => true
     (_, @types.MaxContent) => true
     (_, @types.MinContent) => true
     (_, @types.FitContent(_)) => true
@@ -924,7 +924,7 @@ fn compute_with_collapse(
   }
 
   // Map to store layouts by original index
-  let layout_map : Map[Int, @node.Layout] = {}
+  let layout_map : Map[Int, @types.Layout] = {}
 
   // Map to store static positions for absolute children (their position in flow order)
   let absolute_static_positions : Map[Int, Int] = {} // index -> flow position (0 = before all, 1 = after first flow child, etc.)
@@ -1124,10 +1124,10 @@ fn compute_with_collapse(
                       child_min_box // Leaf nodes with no content have padding+border as minimum
                     } else {
                       // Recursively compute child's max-content width
-                      let intrinsic_ctx : @node.LayoutContext = {
+                      let intrinsic_ctx : @types.LayoutContext = {
                         available_width: parent_width, // Use parent_width as reference for percentages
                         available_height: child_available_height,
-                        sizing_mode: @node.MaxContent,
+                        sizing_mode: @types.MaxContent,
                         viewport_width: ctx.viewport_width,
                         viewport_height: ctx.viewport_height,
                       }
@@ -1296,14 +1296,14 @@ fn compute_with_collapse(
     }
 
     // Assemble child_layouts in original order
-    let child_layouts : Array[@node.Layout] = []
+    let child_layouts : Array[@types.Layout] = []
     for i = 0; i < node.children.length(); i = i + 1 {
       match layout_map.get(i) {
         Some(layout) => child_layouts.push(layout)
         None => ()
       }
     }
-    let layout : @node.Layout = {
+    let layout : @types.Layout = {
       id: node.id,
       x: 0.0,
       y: 0.0,
@@ -1390,14 +1390,14 @@ fn compute_with_collapse(
       }
     }
     // Assemble child_layouts in original order
-    let child_layouts : Array[@node.Layout] = []
+    let child_layouts : Array[@types.Layout] = []
     for i = 0; i < node.children.length(); i = i + 1 {
       match layout_map.get(i) {
         Some(layout) => child_layouts.push(layout)
         None => ()
       }
     }
-    let layout : @node.Layout = {
+    let layout : @types.Layout = {
       id: node.id,
       x: 0.0,
       y: 0.0,
@@ -1443,10 +1443,10 @@ fn compute_with_collapse(
           @types.Auto => None
           _ => child_available_height
         }
-        let child_ctx : @node.LayoutContext = {
+        let child_ctx : @types.LayoutContext = {
           available_width: actual_child_available_width,
           available_height: child_height_for_ctx,
-          sizing_mode: @node.Definite,
+          sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
@@ -1459,10 +1459,10 @@ fn compute_with_collapse(
         { layout, collapsed: { top: None, bottom: None } }
       }
       _ => {
-        let child_ctx : @node.LayoutContext = {
+        let child_ctx : @types.LayoutContext = {
           available_width: actual_child_available_width,
           available_height: child_available_height,
-          sizing_mode: @node.Definite,
+          sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
@@ -1474,7 +1474,7 @@ fn compute_with_collapse(
 
   // Layout float elements
   // Float elements are positioned using the float context
-  let float_layouts : Array[@node.Layout] = []
+  let float_layouts : Array[@types.Layout] = []
   for i = 0; i < float_nodes.length(); i = i + 1 {
     let child = float_nodes[i]
     let child_style = child.style
@@ -1517,10 +1517,10 @@ fn compute_with_collapse(
       @types.Percent(p) => actual_child_available_width * p
       @types.Auto => {
         // Shrink-to-fit: compute intrinsic width
-        let intrinsic_ctx : @node.LayoutContext = {
+        let intrinsic_ctx : @types.LayoutContext = {
           available_width: actual_child_available_width,
           available_height: float_available_height,
-          sizing_mode: @node.MaxContent,
+          sizing_mode: @types.MaxContent,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
@@ -1555,14 +1555,14 @@ fn compute_with_collapse(
         }
       _ => float_available_height
     }
-    let child_ctx : @node.LayoutContext = {
+    let child_ctx : @types.LayoutContext = {
       available_width: if child_content_width > 0.0 {
         child_content_width
       } else {
         0.0
       },
       available_height: child_height_for_ctx,
-      sizing_mode: @node.Definite,
+      sizing_mode: @types.Definite,
       viewport_width: ctx.viewport_width,
       viewport_height: ctx.viewport_height,
     }
@@ -1591,7 +1591,7 @@ fn compute_with_collapse(
       child_margin.bottom,
       0.0, // Start from top
     )
-    let float_layout : @node.Layout = {
+    let float_layout : @types.Layout = {
       id: child.id,
       x: float_x,
       y: float_y,
@@ -1799,7 +1799,7 @@ fn compute_with_collapse(
     }
 
     // Position child and store in map with original index
-    let positioned_layout : @node.Layout = {
+    let positioned_layout : @types.Layout = {
       id: child_layout.id,
       x: final_x,
       y: final_y,
@@ -2053,14 +2053,14 @@ fn compute_with_collapse(
   }
 
   // Assemble child_layouts in original order
-  let child_layouts : Array[@node.Layout] = []
+  let child_layouts : Array[@types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     match layout_map.get(i) {
       Some(layout) => child_layouts.push(layout)
       None => () // Should not happen
     }
   }
-  let layout : @node.Layout = {
+  let layout : @types.Layout = {
     id: node.id,
     x: 0.0,
     y: 0.0,
@@ -2085,8 +2085,8 @@ fn layout_absolute_child(
   container_height : Double,
   parent_border : @types.Rect[Double],
   static_y : Double, // Y position where the element would be in normal flow
-  warnings : Array[@node.LayoutWarning],
-) -> @node.Layout {
+  warnings : Array[@types.LayoutWarning],
+) -> @types.Layout {
   let child_style = child.style
 
   // Handle display:none - return zero-sized layout
@@ -2343,8 +2343,8 @@ fn layout_fixed_child(
   child : @node.Node,
   viewport_width : Double,
   viewport_height : Double,
-  warnings : Array[@node.LayoutWarning],
-) -> @node.Layout {
+  warnings : Array[@types.LayoutWarning],
+) -> @types.Layout {
   let child_style = child.style
 
   // Handle display:none - return zero-sized layout
@@ -2535,8 +2535,8 @@ fn compute_nested(
   node : @node.Node,
   available_width : Double,
   available_height : Double?,
-  warnings : Array[@node.LayoutWarning],
-) -> @node.Layout {
+  warnings : Array[@types.LayoutWarning],
+) -> @types.Layout {
   let style = node.style
   let padding = @types.resolve_rect(style.padding, available_width)
   let border = @types.resolve_rect(style.border, available_width)
@@ -2598,10 +2598,10 @@ fn compute_nested(
   }
 
   // For containers, recurse
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width,
     available_height,
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
   }
@@ -2622,8 +2622,8 @@ fn compute_nested(
 fn compute_nested_intrinsic(
   node : @node.Node,
   available_height : Double?,
-  warnings : Array[@node.LayoutWarning],
-) -> @node.Layout {
+  warnings : Array[@types.LayoutWarning],
+) -> @types.Layout {
   let style = node.style
   // Use 0 for percentage resolution in intrinsic sizing
   let padding = @types.resolve_rect(style.padding, 0.0)
@@ -2682,10 +2682,10 @@ fn compute_nested_intrinsic(
   }
 
   // For containers, use MaxContent sizing mode
-  let ctx : @node.LayoutContext = {
+  let ctx : @types.LayoutContext = {
     available_width: @double.infinity,
     available_height,
-    sizing_mode: @node.MaxContent,
+    sizing_mode: @types.MaxContent,
     viewport_width: 0.0,
     viewport_height: available_height.unwrap_or(0.0),
   }

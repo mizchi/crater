@@ -586,7 +586,7 @@ test "img_alt_text_propagation" {
     None
   }
 
-  fn find_img_layout(l : @node.Layout) -> @node.Layout? {
+  fn find_img_layout(l : @types.Layout) -> @types.Layout? {
     if l.id.has_prefix("img") {
       return Some(l)
     }

@@ -196,6 +196,50 @@ pub(all) enum GridPlacement {
 pub impl Eq for GridPlacement
 pub impl Show for GridPlacement
 
+pub(all) struct IntrinsicSize {
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
+}
+pub fn IntrinsicSize::default() -> Self
+
+pub(all) struct Layout {
+  id : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  margin : Rect[Double]
+  padding : Rect[Double]
+  border : Rect[Double]
+  overflow_x : Overflow
+  overflow_y : Overflow
+  children : Array[Layout]
+  text : String?
+}
+pub fn Layout::to_bounding_rect(Self) -> BoundingRect
+
+pub(all) struct LayoutContext {
+  available_width : Double
+  available_height : Double?
+  sizing_mode : SizingMode
+  viewport_width : Double
+  viewport_height : Double
+}
+
+pub(all) struct LayoutResult {
+  layout : Layout
+  warnings : Array[LayoutWarning]
+}
+
+pub(all) enum LayoutWarning {
+  UnsupportedFloat(String)
+  UnsupportedPosition(String)
+  UnsupportedDisplay(String)
+}
+pub impl Show for LayoutWarning
+
 pub struct Line[T] {
   start : T
   end : T
@@ -213,6 +257,10 @@ pub(all) enum MaxTrackSizing {
 }
 pub impl Eq for MaxTrackSizing
 pub impl Show for MaxTrackSizing
+
+pub(all) struct MeasureFunc {
+  func : (Double, Double) -> IntrinsicSize
+}
 
 pub(all) enum MinTrackSizing {
   Length(Double)
@@ -295,6 +343,12 @@ pub fn[T, U] Size::map(Self[T], (T) -> U) -> Self[U]
 pub fn[T] Size::new(T, T) -> Self[T]
 pub fn Size::zero() -> Self[Double]
 pub impl[T : Show] Show for Size[T]
+
+pub(all) enum SizingMode {
+  Definite
+  MaxContent
+}
+pub impl Eq for SizingMode
 
 pub(all) enum TrackSizingFunction {
   Length(Double)

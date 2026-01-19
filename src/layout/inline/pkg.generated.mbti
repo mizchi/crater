@@ -17,7 +17,7 @@ pub fn should_establish_ifc(Array[@node.Node]) -> Bool
 
 // Types and methods
 pub struct InlineLayoutResult {
-  layouts : Array[@node.Layout]
+  layouts : Array[@types.Layout]
   total_height : Double
 }
 

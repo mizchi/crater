@@ -3,12 +3,13 @@ package "mizchi/crater/layout/block"
 
 import(
   "mizchi/crater/layout/node"
+  "mizchi/crater/types"
 )
 
 // Values
-pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
+pub fn compute(@node.Node, @types.LayoutContext) -> @types.Layout
 
-pub fn compute_with_warnings(@node.Node, @node.LayoutContext) -> @node.LayoutResult
+pub fn compute_with_warnings(@node.Node, @types.LayoutContext) -> @types.LayoutResult
 
 // Errors
 

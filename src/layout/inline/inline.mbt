@@ -15,7 +15,7 @@ priv struct LineBox {
 /// An item positioned within a line box
 priv struct LineItem {
   index : Int // Original child index
-  layout : @node.Layout // Computed layout
+  layout : @types.Layout // Computed layout
   baseline : Double // Distance from top of item to its baseline
 }
 
@@ -29,7 +29,7 @@ fn LineBox::new() -> LineBox {
 fn LineBox::add_item(
   self : LineBox,
   index : Int,
-  layout : @node.Layout,
+  layout : @types.Layout,
   baseline : Double,
   margin_left : Double,
   margin_right : Double,
@@ -78,7 +78,7 @@ fn LineBox::can_fit(
 ///|
 /// Result of IFC computation
 pub struct InlineLayoutResult {
-  layouts : Array[@node.Layout] // Positioned child layouts
+  layouts : Array[@types.Layout] // Positioned child layouts
   total_height : Double // Total height of all line boxes
 }
 
@@ -99,7 +99,7 @@ pub fn compute_ifc(
   // Collect inline-level children and compute their layouts
   let line_boxes : Array[LineBox] = []
   let mut current_line = LineBox::new()
-  let layout_map : Map[Int, @node.Layout] = {}
+  let layout_map : Map[Int, @types.Layout] = {}
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
 
@@ -205,7 +205,7 @@ pub fn compute_ifc(
           baseline_y - child.style.font_size * 0.4
         }
       }
-      let positioned : @node.Layout = {
+      let positioned : @types.Layout = {
         id: item.layout.id,
         x,
         y,
@@ -226,7 +226,7 @@ pub fn compute_ifc(
   }
 
   // Assemble layouts in original order
-  let layouts : Array[@node.Layout] = []
+  let layouts : Array[@types.Layout] = []
   for i = 0; i < children.length(); i = i + 1 {
     match layout_map.get(i) {
       Some(layout) => layouts.push(layout)
@@ -242,7 +242,7 @@ fn compute_inline_child(
   node : @node.Node,
   available_width : Double,
   available_height : Double?,
-) -> @node.Layout {
+) -> @types.Layout {
   let style = node.style
   let padding = @types.resolve_rect(style.padding, available_width)
   let border = @types.resolve_rect(style.border, available_width)
@@ -399,10 +399,10 @@ fn compute_inline_child(
     style.display == @types.InlineFlex ||
     style.display == @types.InlineGrid {
     // Use the global layout dispatcher to get proper block/flex/grid layout
-    let ctx : @node.LayoutContext = {
+    let ctx : @types.LayoutContext = {
       available_width,
       available_height,
-      sizing_mode: @node.MaxContent,
+      sizing_mode: @types.MaxContent,
       viewport_width: available_width,
       viewport_height: available_height.unwrap_or(0.0),
     } // Use MaxContent for shrink-to-fit
@@ -412,7 +412,7 @@ fn compute_inline_child(
 
   // For plain inline elements (no MeasureFunc), calculate size based on children
   // and handle absolute positioned children
-  let children : Array[@node.Layout] = []
+  let children : Array[@types.Layout] = []
   let mut content_width = 0.0
   let mut content_height = 0.0
 
@@ -424,10 +424,10 @@ fn compute_inline_child(
       child.style.position == @types.Fixed {
       // Absolute/fixed children need to be laid out
       // Use dispatch_layout to get proper sizing
-      let child_ctx : @node.LayoutContext = {
+      let child_ctx : @types.LayoutContext = {
         available_width,
         available_height,
-        sizing_mode: @node.MaxContent,
+        sizing_mode: @types.MaxContent,
         viewport_width: available_width,
         viewport_height: available_height.unwrap_or(0.0),
       }
@@ -477,14 +477,14 @@ fn compute_inline_child(
 
 ///|
 /// Create a zero-sized layout for display:none nodes
-fn create_zero_layout(node : @node.Node) -> @node.Layout {
+fn create_zero_layout(node : @node.Node) -> @types.Layout {
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
     right: 0.0,
     top: 0.0,
     bottom: 0.0,
   }
-  let children : Array[@node.Layout] = []
+  let children : Array[@types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     children.push(create_zero_layout(node.children[i]))
   }

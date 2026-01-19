@@ -37,7 +37,7 @@ pub(all) struct ComputeInput {
   node_uid : Int
   available_width : Double
   available_height : Double?
-  sizing_mode : @node.SizingMode
+  sizing_mode : @types.SizingMode
 }
 
 ///|
@@ -87,7 +87,7 @@ pub fn LayoutTracer::is_enabled(self : LayoutTracer) -> Bool {
 pub fn LayoutTracer::begin_compute(
   self : LayoutTracer,
   node_uid : Int,
-  ctx : @node.LayoutContext,
+  ctx : @types.LayoutContext,
 ) -> Unit {
   if not(self.enabled) {
     return
@@ -176,7 +176,7 @@ pub fn LayoutTracer::get_traced_nodes(self : LayoutTracer) -> Array[Int] {
 pub fn LayoutTracer::needs_recompute(
   self : LayoutTracer,
   node_uid : Int,
-  new_ctx : @node.LayoutContext,
+  new_ctx : @types.LayoutContext,
 ) -> Bool {
   match self.traces.get(node_uid) {
     Some(trace) => {
@@ -211,8 +211,8 @@ pub fn LayoutTracer::clear(_self : LayoutTracer) -> Unit {
 pub fn LayoutTracer::collect_from_tree(
   self : LayoutTracer,
   node : @node.Node,
-  layout : @node.Layout,
-  ctx : @node.LayoutContext,
+  layout : @types.Layout,
+  ctx : @types.LayoutContext,
 ) -> Unit {
   if not(self.enabled) {
     return
@@ -254,7 +254,7 @@ pub fn LayoutTracer::collect_from_tree(
     let child_node = node.children[i]
     let child_layout = layout.children[i]
     // Child's context is based on parent's content area
-    let child_ctx : @node.LayoutContext = {
+    let child_ctx : @types.LayoutContext = {
       available_width: layout.width -
       layout.padding.left -
       layout.padding.right -
@@ -267,7 +267,7 @@ pub fn LayoutTracer::collect_from_tree(
         layout.border.top -
         layout.border.bottom,
       ),
-      sizing_mode: @node.Definite,
+      sizing_mode: @types.Definite,
       viewport_width: ctx.viewport_width,
       viewport_height: ctx.viewport_height,
     }

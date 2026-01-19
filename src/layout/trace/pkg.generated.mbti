@@ -3,6 +3,7 @@ package "mizchi/crater/layout/trace"
 
 import(
   "mizchi/crater/layout/node"
+  "mizchi/crater/types"
 )
 
 // Values
@@ -14,7 +15,7 @@ pub(all) struct ComputeInput {
   node_uid : Int
   available_width : Double
   available_height : Double?
-  sizing_mode : @node.SizingMode
+  sizing_mode : @types.SizingMode
 }
 
 pub(all) struct ComputeOutput {
@@ -46,16 +47,16 @@ pub struct LayoutTracer {
   enabled : Bool
 }
 pub fn LayoutTracer::add_dependency(Self, Int, DependencyKind) -> Unit
-pub fn LayoutTracer::begin_compute(Self, Int, @node.LayoutContext) -> Unit
+pub fn LayoutTracer::begin_compute(Self, Int, @types.LayoutContext) -> Unit
 pub fn LayoutTracer::clear(Self) -> Unit
-pub fn LayoutTracer::collect_from_tree(Self, @node.Node, @node.Layout, @node.LayoutContext) -> Unit
+pub fn LayoutTracer::collect_from_tree(Self, @node.Node, @types.Layout, @types.LayoutContext) -> Unit
 pub fn LayoutTracer::disabled() -> Self
 pub fn LayoutTracer::end_compute(Self, Int, Double, Double) -> Unit
 pub fn LayoutTracer::get_trace(Self, Int) -> NodeTrace?
 pub fn LayoutTracer::get_traced_nodes(Self) -> Array[Int]
 pub fn LayoutTracer::get_traces(Self) -> Map[Int, NodeTrace]
 pub fn LayoutTracer::is_enabled(Self) -> Bool
-pub fn LayoutTracer::needs_recompute(Self, Int, @node.LayoutContext) -> Bool
+pub fn LayoutTracer::needs_recompute(Self, Int, @types.LayoutContext) -> Bool
 pub fn LayoutTracer::new(Bool) -> Self
 
 pub(all) struct NodeTrace {

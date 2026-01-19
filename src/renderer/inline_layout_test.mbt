@@ -120,7 +120,7 @@ test "preactjs_actual_css_both_inline_block" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   let layout = render_with_external_css(html, ctx, [css])
-  fn show_layout(l : @node.Layout, depth : Int) -> Unit {
+  fn show_layout(l : @types.Layout, depth : Int) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let _ = match l.text {
       Some(t) => " \"" + t + "\""

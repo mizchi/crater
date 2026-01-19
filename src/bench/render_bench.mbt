@@ -270,10 +270,10 @@ test "bench_layout_only_flex_d5" (b : @bench.T) {
   let html = flex_nested(5, 3)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }
@@ -288,10 +288,10 @@ test "bench_layout_only_grid_10x10" (b : @bench.T) {
   let html = grid_simple(10, 10)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }
@@ -306,10 +306,10 @@ test "bench_layout_only_dashboard" (b : @bench.T) {
   let html = dashboard(15, 12)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }
@@ -324,10 +324,10 @@ test "bench_layout_only_large_2k5" (b : @bench.T) {
   let html = large_website(15, 10, 8)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @node.LayoutContext = {
+  let layout_ctx : @types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @node.Definite,
+    sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
   }

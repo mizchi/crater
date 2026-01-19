@@ -3,14 +3,15 @@ package "mizchi/crater/layout/grid"
 
 import(
   "mizchi/crater/layout/node"
+  "mizchi/crater/types"
 )
 
 // Values
-pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
+pub fn compute(@node.Node, @types.LayoutContext) -> @types.Layout
 
-pub fn compute_grid_layout(@node.Node, Double, Double) -> @node.Layout
+pub fn compute_grid_layout(@node.Node, Double, Double) -> @types.Layout
 
-pub fn compute_layout(@node.Node, Double, Double) -> @node.Layout
+pub fn compute_layout(@node.Node, Double, Double) -> @types.Layout
 
 // Errors
 

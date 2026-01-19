@@ -14,11 +14,11 @@ import(
 // Values
 pub fn analyze_style_dependencies(@style.Style) -> DependencyKind
 
-pub fn compute_node(LayoutNode, ConstraintSpace, CacheStats) -> @node.Layout
+pub fn compute_node(LayoutNode, ConstraintSpace, CacheStats) -> @types.Layout
 
-pub fn compute_tree_incremental(LayoutTree, CacheStats) -> @node.Layout
+pub fn compute_tree_incremental(LayoutTree, CacheStats) -> @types.Layout
 
-pub fn create_fixed_measure(Double, Double) -> @node.MeasureFunc
+pub fn create_fixed_measure(Double, Double) -> @types.MeasureFunc
 
 pub let default_placeholder_height : Double
 
@@ -56,23 +56,23 @@ pub fn CacheStats::new() -> Self
 pub struct ConstraintKey {
   available_width : Double
   available_height : Double?
-  sizing_mode : @node.SizingMode
+  sizing_mode : @types.SizingMode
 }
 pub fn ConstraintKey::approx_eq(Self, Self) -> Bool
-pub fn ConstraintKey::new(Double, Double?, @node.SizingMode) -> Self
+pub fn ConstraintKey::new(Double, Double?, @types.SizingMode) -> Self
 pub impl Eq for ConstraintKey
 
 pub struct ConstraintSpace {
   available_width : Double
   available_height : Double?
-  sizing_mode : @node.SizingMode
+  sizing_mode : @types.SizingMode
   parent_width : Double
   parent_height : Double?
   viewport_width : Double
   viewport_height : Double
 }
-pub fn ConstraintSpace::new(Double, Double?, @node.SizingMode, Double, Double?, viewport_width? : Double, viewport_height? : Double) -> Self
-pub fn ConstraintSpace::to_context(Self) -> @node.LayoutContext
+pub fn ConstraintSpace::new(Double, Double?, @types.SizingMode, Double, Double?, viewport_width? : Double, viewport_height? : Double) -> Self
+pub fn ConstraintSpace::to_context(Self) -> @types.LayoutContext
 pub fn ConstraintSpace::to_key(Self) -> ConstraintKey
 
 pub(all) enum DependencyKind {
@@ -95,8 +95,8 @@ pub struct Document {
   mut needs_layout : Bool
 }
 pub fn Document::append_child(Self, @dom.NodeId, @dom.NodeId) -> Result[Unit, @dom.CoreError]
-pub fn Document::compute_layout(Self) -> @node.Layout
-pub fn Document::compute_layout_full(Self) -> @node.Layout
+pub fn Document::compute_layout(Self) -> @types.Layout
+pub fn Document::compute_layout_full(Self) -> @types.Layout
 pub fn Document::create_element(Self, String) -> @dom.NodeId
 pub fn Document::create_text(Self, String) -> @dom.NodeId
 pub fn Document::get_document_root(Self) -> @dom.NodeId
@@ -109,7 +109,7 @@ pub fn Document::query_selector(Self, String) -> Result[@dom.NodeId?, @dom.CoreE
 pub fn Document::resize_viewport(Self, Double, Double) -> Unit
 pub fn Document::set_attribute(Self, @dom.NodeId, String, String) -> Result[Unit, @dom.CoreError]
 pub fn Document::set_text_content(Self, @dom.NodeId, String) -> Result[Unit, @dom.CoreError]
-pub fn Document::update(Self) -> @node.Layout
+pub fn Document::update(Self) -> @types.Layout
 
 pub(all) enum IntrinsicState {
   Resolved(width~ : Double, height~ : Double)
@@ -119,7 +119,7 @@ pub(all) enum IntrinsicState {
 
 pub struct LayoutCache {
   constraint : ConstraintKey
-  result : @node.Layout
+  result : @types.Layout
 }
 
 pub struct LayoutNode {
@@ -127,7 +127,7 @@ pub struct LayoutNode {
   uid : Int
   style : @style.Style
   children : Array[LayoutNode]
-  mut measure : @node.MeasureFunc?
+  mut measure : @types.MeasureFunc?
   text : String?
   mut dirty : Bool
   mut children_dirty : Bool
@@ -212,7 +212,7 @@ pub fn LayoutNode::set_width(Self, Double) -> Self
 pub fn LayoutNode::set_width_auto(Self) -> Self
 pub fn LayoutNode::set_width_percent(Self, Double) -> Self
 pub fn LayoutNode::to_node(Self) -> @node.Node
-pub fn LayoutNode::with_measure(String, @style.Style, @node.MeasureFunc) -> Self
+pub fn LayoutNode::with_measure(String, @style.Style, @types.MeasureFunc) -> Self
 
 pub struct LayoutTree {
   root : LayoutNode
@@ -225,10 +225,10 @@ pub struct LayoutTree {
 pub fn LayoutTree::add_node(Self, String, Int, LayoutNode) -> Bool
 pub fn LayoutTree::attach_resource(Self, ResourceId, Int, placeholder_width? : Double, placeholder_height? : Double) -> Unit
 pub fn LayoutTree::batch_update_styles(Self, Array[(String, @cascade.CascadedValues)]) -> Int
-pub fn LayoutTree::calculate_layout(Self, Double, Double) -> @node.Layout
-pub fn LayoutTree::compute_full(Self) -> @node.Layout
-pub fn LayoutTree::compute_incremental(Self) -> @node.Layout
-pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @node.Layout
+pub fn LayoutTree::calculate_layout(Self, Double, Double) -> @types.Layout
+pub fn LayoutTree::compute_full(Self) -> @types.Layout
+pub fn LayoutTree::compute_incremental(Self) -> @types.Layout
+pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @types.Layout
 pub fn LayoutTree::fail_resource(Self, ResourceId) -> Unit
 pub fn LayoutTree::find_node(Self, Int) -> LayoutNode?
 pub fn LayoutTree::find_node_by_id(Self, String) -> LayoutNode?
