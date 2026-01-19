@@ -1,1 +1,1 @@
-import { "mizchi/crater-browser/src/cdp", "mizchi/crater/dom" }
+import { "mizchi/crater-browser/cdp", "mizchi/crater/dom" }

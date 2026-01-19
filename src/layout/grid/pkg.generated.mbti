@@ -7,9 +7,9 @@ import(
 )
 
 // Values
-pub fn compute(@node.Node, @types.LayoutContext) -> @types.Layout
+pub fn compute(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
 
-pub fn compute_grid_layout(@node.Node, Double, Double) -> @types.Layout
+pub fn compute_grid_layout(@node.Node, Double, Double, @node.DispatchFn) -> @types.Layout
 
 pub fn compute_layout(@node.Node, Double, Double) -> @types.Layout
 

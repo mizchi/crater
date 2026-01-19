@@ -9,7 +9,5 @@ export default defineConfig({
       concurrent: false,
     },
     pool: 'forks',
-    // Vitest 4.x: poolOptions moved to top-level
-    singleFork: true,
   },
 });

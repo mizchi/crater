@@ -31,6 +31,7 @@ extern "js" fn js_fetch_internal(
 
 ///|
 /// Parse JSON response into HttpResponse
+#warnings("-unused_error_type")
 fn parse_response_json(json : String) -> HttpResponse raise HttpError {
   // Simple JSON parsing for response
   // Format: {"status":200,"headers":{"key":"value"},"body":"..."}

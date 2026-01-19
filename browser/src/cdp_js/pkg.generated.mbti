@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser/src/cdp_js"
+package "mizchi/crater-browser/cdp_js"
 
 // Values
 pub fn createNetworkRequest(String, String, String, String) -> Int

@@ -1,6 +1,4 @@
 import {
-  "mizchi/crater-browser/src/http",
-  "mizchi/crater-browser/src/tui",
   "mizchi/crater/renderer",
   "mizchi/crater/html",
   "mizchi/crater/css/parser",
@@ -9,4 +7,6 @@ import {
   "mizchi/crater/aom",
   "mizchi/crater/x/arc90",
   "mizchi/crater/x/grounding",
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/tui",
 }

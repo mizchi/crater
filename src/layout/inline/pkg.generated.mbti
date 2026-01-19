@@ -7,7 +7,7 @@ import(
 )
 
 // Values
-pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double) -> InlineLayoutResult
+pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double, @node.DispatchFn) -> InlineLayoutResult
 
 pub fn is_inline_level(@types.Display) -> Bool
 

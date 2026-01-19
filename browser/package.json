@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build:moon": "moon build --target js",
-    "build:minify": "rolldown target/js/release/build/src/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
+    "build:minify": "rolldown target/js/release/build/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
     "build": "npm run build:moon && npm run build:minify",
     "prepublishOnly": "npm run build",
     "test:webdriver": "tsx tests/webdriver-e2e-test.ts",

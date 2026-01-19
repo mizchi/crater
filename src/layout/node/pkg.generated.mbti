@@ -7,7 +7,7 @@ import(
 )
 
 // Values
-pub fn dispatch_layout(Node, @types.LayoutContext) -> @types.Layout
+pub fn fallback_layout(Node, @types.LayoutContext) -> @types.Layout
 
 pub fn get_layout_dispatcher() -> LayoutDispatchFunc?
 
@@ -16,6 +16,10 @@ pub fn set_layout_dispatcher(LayoutDispatchFunc) -> Unit
 // Errors
 
 // Types and methods
+pub(all) struct DispatchFn((Node, @types.LayoutContext, DispatchFn) -> @types.Layout)
+#deprecated
+pub fn DispatchFn::inner(Self) -> (Node, @types.LayoutContext, Self) -> @types.Layout
+
 pub(all) struct LayoutDispatchFunc((Node, @types.LayoutContext) -> @types.Layout)
 #deprecated
 pub fn LayoutDispatchFunc::inner(Self) -> (Node, @types.LayoutContext) -> @types.Layout

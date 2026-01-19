@@ -8,6 +8,7 @@ pub(all) struct HttpResponse {
 
 ///|
 /// HTTP Error types
+#warnings("-unused_constructor")
 pub suberror HttpError {
   NetworkError(String)
   InvalidUrl(String)

@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-browser/src/cdp" as @cdp,
+  "mizchi/crater-browser/cdp" as @cdp,
   "mizchi/crater/scheduler" as @scheduler,
 }
 

@@ -1,8 +1,14 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/tests/taffy_compat"
 
+import(
+  "mizchi/crater/layout/node"
+)
+
 // Values
 pub fn assert_approx(Double, Double) -> Unit raise
+
+pub fn default_dispatch() -> @node.DispatchFn
 
 // Errors
 

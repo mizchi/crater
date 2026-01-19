@@ -9,7 +9,11 @@ import(
 // Values
 pub fn clear_intrinsic_cache_for_node(Int) -> Unit
 
-pub fn compute(@node.Node, @types.LayoutContext) -> @types.Layout
+pub fn compute(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+
+pub fn compute_layout(@node.Node, @types.LayoutContext) -> @types.Layout
+
+pub fn default_dispatch() -> @node.DispatchFn
 
 pub fn reset_intrinsic_cache() -> Unit
 

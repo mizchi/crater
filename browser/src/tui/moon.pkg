@@ -2,10 +2,13 @@ import {
   "mizchi/crater/types",
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
-  "mizchi/crater/renderer",
-  "mizchi/crater/css/media",
   "moonbitlang/x/sys",
   "moonbitlang/async/js_async",
+}
+
+import "test" {
+  "mizchi/crater/renderer",
+  "mizchi/crater/css/media",
 }
 
 options(

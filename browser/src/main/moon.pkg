@@ -1,6 +1,6 @@
 import {
-  "mizchi/crater-browser/src/shell",
-  "mizchi/crater-browser/src/tui",
+  "mizchi/crater-browser/shell",
+  "mizchi/crater-browser/tui",
   "moonbitlang/async",
 }
 

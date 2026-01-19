@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser/src/http"
+package "mizchi/crater-browser/http"
 
 // Values
 pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
@@ -10,6 +10,7 @@ pub fn headers_to_json(Map[String, String]) -> String
 pub suberror HttpError {
   NetworkError(String)
   InvalidUrl(String)
+  TimeoutError
 }
 pub impl Show for HttpError
 

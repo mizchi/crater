@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser/src/tui"
+package "mizchi/crater-browser/tui"
 
 import(
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
   "mizchi/crater/types"
 )
 
@@ -69,7 +69,7 @@ pub fn format_status_bar(String, Int, Int) -> String
 
 pub fn get_args() -> Array[String]
 
-pub fn get_content_height_chars(@node.Layout) -> Int
+pub fn get_content_height_chars(@types.Layout) -> Int
 
 pub fn get_terminal_size() -> (Int, Int)
 
@@ -91,11 +91,11 @@ pub fn read_key() -> String
 
 pub fn read_line(String) -> String
 
-pub fn render_to_ansi(@node.Node, @node.Layout, Int, Int, Int, focused_element_name? : String?) -> RenderResult
+pub fn render_to_ansi(@node.Node, @types.Layout, Int, Int, Int, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_hints(@node.Node, @node.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> RenderResult
+pub fn render_to_ansi_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_status(@node.Node, @node.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> RenderResult
+pub fn render_to_ansi_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> RenderResult
 
 pub fn rgb_to_256(Int, Int, Int) -> Int
 

@@ -8,5 +8,6 @@
     "moonbitlang/async": "0.16.0",
     "moonbitlang/x": "0.4.38"
   },
-  "preferred-target": "native"
+  "source": "src",
+  "preferred-target": "js"
 }
