@@ -11,8 +11,6 @@ pub fn clear_intrinsic_cache_for_node(Int) -> Unit
 
 pub fn clear_intrinsic_cache_for_subtree(@node.Node) -> Unit
 
-pub fn clear_resolved_cache_for_node(Int) -> Unit
-
 pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
 
 pub fn compute_root(@node.Node, @node.LayoutContext) -> @node.Layout

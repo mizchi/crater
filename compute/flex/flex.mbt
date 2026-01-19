@@ -102,22 +102,88 @@ fn get_resolved_rects(
 }
 
 ///|
-/// Clear resolved cache for a specific node
-pub fn clear_resolved_cache_for_node(_uid : Int) -> Unit {
-  // Remove all entries for this node (any parent_width)
-  // Since we can't iterate and remove, we'll clear entries as we encounter them
-  // For now, just note that the cache may have stale entries which will be overwritten
-  let cache = global_resolved_cache.val
-  // Clear common width quantizations (0-5000px in 0.1px steps is too many)
-  // Instead, we'll rely on cache being overwritten on recompute
-  let _ = cache
-
-}
-
-///|
 /// Reset resolved style cache
 pub fn reset_resolved_cache() -> Unit {
   global_resolved_cache.val = {}
+}
+
+///|
+/// Resolve a dimension to pixels for intrinsic sizing
+/// Percentages resolve to 0 in intrinsic sizing mode
+fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(_) => 0.0
+    @types.Auto => 0.0
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+  }
+}
+
+///|
+/// Calculate max-content width of children for intrinsic sizing
+/// This is used when min-width or max-width is max-content/min-content
+fn calculate_children_max_content_width(
+  node : @node.Node,
+  parent_width : Double,
+) -> Double {
+  let mut max_content_width = 0.0
+  match node.measure {
+    Some(mf) => {
+      let intrinsic = (mf.func)(0.0, 0.0)
+      max_content_width = intrinsic.max_width
+    }
+    None => ()
+  }
+  for child in node.children {
+    if child.style.display == @style.None ||
+      child.style.position == @style.Absolute ||
+      child.style.position == @style.Fixed {
+      continue
+    }
+    match child.style.float {
+      @style.Float::Left | @style.Float::Right => continue
+      @style.Float::None => ()
+    }
+    let child_style = child.style
+    let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
+    let child_margin_right = resolve_dimension_intrinsic(
+      child_style.margin.right,
+    )
+    let child_margin_sum = child_margin_left + child_margin_right
+    let child_padding_left = resolve_dimension_intrinsic(
+      child_style.padding.left,
+    )
+    let child_padding_right = resolve_dimension_intrinsic(
+      child_style.padding.right,
+    )
+    let child_border = @types.resolve_rect(child_style.border, parent_width)
+    let child_min_box = child_padding_left +
+      child_padding_right +
+      child_border.horizontal_sum()
+    let child_intrinsic_width : Double = match child_style.width {
+      @types.Length(w) => @types.max(w, child_min_box)
+      @types.Percent(_) => child_min_box
+      @types.Auto =>
+        match child.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(0.0, 0.0)
+            @types.max(intrinsic.max_width + child_min_box, child_min_box)
+          }
+          None =>
+            calculate_children_max_content_width(child, parent_width) +
+            child_min_box
+        }
+      @types.MaxContent | @types.MinContent =>
+        calculate_children_max_content_width(child, parent_width) +
+        child_min_box
+      @types.FitContent(_) => child_min_box
+    }
+    let child_contribution = child_intrinsic_width + child_margin_sum
+    if child_contribution > max_content_width {
+      max_content_width = child_contribution
+    }
+  }
+  max_content_width
 }
 
 ///|
@@ -1971,7 +2037,52 @@ fn compute_internal(
         @types.Length(v) => v
         @types.Percent(p) => content_width * p
         @types.Auto => 1.0e10 // Effectively infinity
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 1.0e10 // Effectively infinity
+        @types.MaxContent | @types.MinContent => {
+          // Calculate intrinsic width for max-width constraint
+          let children_width = calculate_children_max_content_width(
+              child, content_width,
+            ) +
+            child_resolved.padding.horizontal_sum() +
+            child_resolved.border.horizontal_sum()
+          // Consider aspect-ratio if height is specified
+          let aspect_width = match
+            (child_style.aspect_ratio, child_style.height) {
+            (Some(ar), @types.Length(h)) if ar > 0.0 =>
+              if child_style.box_sizing == @style.BorderBox {
+                h * ar
+              } else {
+                (
+                  h -
+                  child_resolved.padding.vertical_sum() -
+                  child_resolved.border.vertical_sum()
+                ) *
+                ar +
+                child_resolved.padding.horizontal_sum() +
+                child_resolved.border.horizontal_sum()
+              }
+            (Some(ar), @types.Percent(_)) if ar > 0.0 => {
+              let h = match content_height {
+                Some(ch) => ch
+                None => 0.0
+              }
+              if child_style.box_sizing == @style.BorderBox {
+                h * ar
+              } else {
+                (
+                  h -
+                  child_resolved.padding.vertical_sum() -
+                  child_resolved.border.vertical_sum()
+                ) *
+                ar +
+                child_resolved.padding.horizontal_sum() +
+                child_resolved.border.horizontal_sum()
+              }
+            }
+            _ => 0.0
+          }
+          @types.max(children_width, aspect_width)
+        }
+        @types.FitContent(_) => 1.0e10 // Effectively infinity
       }
       // CSS spec: padding + border is always the absolute minimum
       // Use cached resolved rects
@@ -2026,7 +2137,41 @@ fn compute_internal(
             None => 1.0e10
           }
         @types.Auto => 1.0e10
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 1.0e10
+        @types.MaxContent | @types.MinContent =>
+          // Calculate intrinsic height for max-height constraint
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              intrinsic.max_height +
+              child_resolved.padding.vertical_sum() +
+              child_resolved.border.vertical_sum()
+            }
+            None => {
+              // Sum children's heights
+              let mut max_height = 0.0
+              let children_for_height = child.children
+              for c in children_for_height {
+                if c.style.display == @style.None ||
+                  c.style.position == @style.Absolute ||
+                  c.style.position == @style.Fixed {
+                  continue
+                }
+                match c.measure {
+                  Some(mf) => {
+                    let intrinsic = (mf.func)(0.0, 0.0)
+                    if intrinsic.max_height > max_height {
+                      max_height = intrinsic.max_height
+                    }
+                  }
+                  None => ()
+                }
+              }
+              max_height +
+              child_resolved.padding.vertical_sum() +
+              child_resolved.border.vertical_sum()
+            }
+          }
+        @types.FitContent(_) => 1.0e10
       }
       // CSS spec: padding + border is always the absolute minimum
       // Use cached resolved rects
