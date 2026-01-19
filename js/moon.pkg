@@ -1,7 +1,7 @@
 import {
   "mizchi/crater/renderer",
   "mizchi/crater/x/sixel",
-  "mizchi/crater/node",
+  "mizchi/crater/layout/node",
   "mizchi/crater/paint",
   "mizchi/crater/types",
   "mizchi/crater/layout/tree",

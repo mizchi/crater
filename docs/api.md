@@ -557,7 +557,7 @@ pub fn PaintProperties::should_render(Self) -> Bool
 
 ## Metrics
 
-### `mizchi/crater/webvitals`
+### `mizchi/crater/x/webvitals`
 
 Web Vitals metrics.
 

@@ -7,6 +7,6 @@ import {
   "mizchi/crater/css/diagnostics",
   "mizchi/crater/css/media",
   "mizchi/crater/aom",
-  "mizchi/crater/experimental/arc90",
-  "mizchi/crater/experimental/grounding",
+  "mizchi/crater/x/arc90",
+  "mizchi/crater/x/grounding",
 }

@@ -5,7 +5,7 @@ import(
   "mizchi/crater/css/cascade"
   "mizchi/crater/dom"
   "mizchi/crater/html"
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
   "mizchi/crater/style"
   "moonbitlang/core/hashset"
 )

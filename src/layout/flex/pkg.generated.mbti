@@ -2,8 +2,8 @@
 package "mizchi/crater/layout/flex"
 
 import(
+  "mizchi/crater/layout/node"
   "mizchi/crater/layout/trace"
-  "mizchi/crater/node"
 )
 
 // Values

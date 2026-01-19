@@ -2,7 +2,7 @@
 package "mizchi/crater/layout/table"
 
 import(
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
 )
 
 // Values

@@ -2,7 +2,7 @@
 package "mizchi/crater/x/sixel"
 
 import(
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
   "mizchi/crater/paint"
 )
 

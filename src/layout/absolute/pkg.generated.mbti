@@ -2,7 +2,7 @@
 package "mizchi/crater/layout/absolute"
 
 import(
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
   "mizchi/crater/style"
   "mizchi/crater/types"
 )

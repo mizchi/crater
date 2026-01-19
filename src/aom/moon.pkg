@@ -3,7 +3,7 @@ import {
   "mizchi/crater/css/parser",
   "mizchi/crater/css/cascade",
   "mizchi/crater/layout/tree",
-  "mizchi/crater/node",
+  "mizchi/crater/layout/node",
 }
 
 import "test" {

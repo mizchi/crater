@@ -1,4 +1,4 @@
-import { "mizchi/crater/node" }
+import { "mizchi/crater/layout/node" }
 
 import "test" {
   "mizchi/crater/types",

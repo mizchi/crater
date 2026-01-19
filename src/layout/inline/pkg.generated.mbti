@@ -2,7 +2,7 @@
 package "mizchi/crater/layout/inline"
 
 import(
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
   "mizchi/crater/style"
 )
 

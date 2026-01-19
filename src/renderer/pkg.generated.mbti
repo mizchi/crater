@@ -4,7 +4,7 @@ package "mizchi/crater/renderer"
 import(
   "mizchi/crater/css/media"
   "mizchi/crater/html"
-  "mizchi/crater/node"
+  "mizchi/crater/layout/node"
   "mizchi/crater/style"
 )
 

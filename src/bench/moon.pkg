@@ -1,7 +1,7 @@
 import {
   "mizchi/crater/html",
   "mizchi/crater/renderer",
-  "mizchi/crater/node",
+  "mizchi/crater/layout/node",
   "mizchi/crater/style",
   "mizchi/crater/types",
   "mizchi/crater/paint",
