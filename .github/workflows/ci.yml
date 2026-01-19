@@ -27,17 +27,31 @@ jobs:
       - name: Update dependencies
         run: moon update
 
+      - name: Update js dependencies
+        run: moon update --directory js
+
+      - name: Update browser dependencies
+        run: moon update --directory browser
+
       - name: Check code
         run: moon check
-
-      - name: Check browser code
-        run: moon check --directory browser
 
       - name: Check js code
         run: moon check --directory js
 
+      - name: Check browser code
+        run: moon check --directory browser
+
       - name: Run tests
         run: moon test
+        continue-on-error: true
+
+      - name: Run js tests
+        run: moon test --directory js
+        continue-on-error: true
+
+      - name: Run browser tests
+        run: moon test --directory browser --target js
         continue-on-error: true
 
       - name: Format check
