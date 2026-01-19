@@ -9,5 +9,5 @@ import {
   "mizchi/crater/style",
   "mizchi/crater/types",
   "mizchi/crater/compute/dispatch",
-  "mizchi/crater/renderer/sixel",
+  "mizchi/crater/x/sixel",
 }
