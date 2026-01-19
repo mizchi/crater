@@ -1,7 +1,7 @@
 ///|
-/// Default dispatch for tests
+/// Default dispatch for tests - uses full dispatcher to handle all display types
 fn default_dispatch() -> @node.DispatchFn {
-  @node.DispatchFn(fn(node, ctx, dispatch) { compute(node, ctx, dispatch) })
+  @dispatch.default_dispatch()
 }
 
 ///|

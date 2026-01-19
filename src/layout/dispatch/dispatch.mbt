@@ -50,9 +50,13 @@ pub fn reset_intrinsic_cache() -> Unit {
 }
 
 ///|
-/// @deprecated Use compute_layout or pass dispatch explicitly
-/// Initialize the global layout dispatcher (kept for backward compatibility)
+/// Initialize the global layout dispatcher
+/// Required for incremental compute caching to work properly
 pub fn setup() -> Unit {
-  // No-op: global dispatcher removed, use compute_layout instead
-  ()
+  @node.set_layout_dispatcher(
+    @node.LayoutDispatchFunc(fn(node, ctx) {
+      let dispatch = default_dispatch()
+      compute(node, ctx, dispatch)
+    }),
+  )
 }

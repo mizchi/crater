@@ -97,22 +97,25 @@ pub(all) struct DispatchFn((Node, @types.LayoutContext, DispatchFn) -> @types.La
 
 ///|
 /// @deprecated Use DispatchFn instead
-/// Layout dispatch function type (kept for backward compatibility)
+/// Layout dispatch function type (kept for backward compatibility with incremental compute)
 pub(all) struct LayoutDispatchFunc(
   (Node, @types.LayoutContext) -> @types.Layout
 )
 
 ///|
-/// @deprecated Global dispatcher removed - use dispatch parameter instead
-pub fn set_layout_dispatcher(_f : LayoutDispatchFunc) -> Unit {
-  // No-op: global dispatcher removed
-  ()
+/// Global layout dispatch function (for incremental compute caching)
+let layout_dispatcher : Ref[LayoutDispatchFunc?] = { val: None }
+
+///|
+/// Set the global layout dispatcher (used by incremental compute for caching)
+pub fn set_layout_dispatcher(f : LayoutDispatchFunc) -> Unit {
+  layout_dispatcher.val = Some(f)
 }
 
 ///|
-/// @deprecated Global dispatcher removed - always returns None
+/// Get the global layout dispatcher
 pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
-  None
+  layout_dispatcher.val
 }
 
 ///|

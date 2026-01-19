@@ -211,10 +211,32 @@ pub fn compute_node(
   }
   stats.cache_misses = stats.cache_misses + 1
 
-  // Convert to Node and compute using existing algorithm
+  // Convert to Node and compute using existing algorithm with cache-aware dispatch
   let immutable_node = node.to_node()
   let ctx = constraint.to_context()
-  let result = @dispatch.compute_layout(immutable_node, ctx)
+
+  // Create a cache-aware dispatch function that checks LayoutNode cache
+  fn make_cached_dispatch() -> @node.DispatchFn {
+    @node.DispatchFn(fn(n, c, dispatch) {
+      // Try cache by uid first
+      match try_cache_by_uid(n.uid, c) {
+        Some(cached) => cached
+        None => {
+          // Count cache miss for child nodes
+          match global_cache_stats.val {
+            Some(s) => s.cache_misses = s.cache_misses + 1
+            None => ()
+          }
+          let result = @dispatch.compute(n, c, dispatch)
+          // Update cache after computation
+          update_cache_by_uid(n.uid, c, result)
+          result
+        }
+      }
+    })
+  }
+
+  let result = @dispatch.compute(immutable_node, ctx, make_cached_dispatch())
 
   // Cache the result
   node.cached_layout = Some({ constraint: constraint.to_key(), result })
