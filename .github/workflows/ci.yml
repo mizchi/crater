@@ -30,6 +30,9 @@ jobs:
       - name: Check code
         run: moon check
 
+      - name: Check browser code
+        run: moon check --directory browser
+
       - name: Run tests
         run: moon test
         continue-on-error: true
@@ -49,6 +52,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -75,14 +81,8 @@ jobs:
       - name: Update MoonBit dependencies
         run: moon update
 
-      - name: Build WASM component
-        run: npm run build:wasm-component
-
-      - name: Transpile with jco
-        run: npm run jco:transpile
-
-      - name: Test WASM component
-        run: npm run test:wasm-component
+      - name: Build and test WASM
+        run: just wasm
 
   wpt-tests:
     runs-on: ubuntu-latest
@@ -94,6 +94,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -120,12 +123,9 @@ jobs:
       - name: Update MoonBit dependencies
         run: moon update
 
-      - name: Build WASM component
-        run: npm run build:wasm-component
-
-      - name: Transpile with jco
-        run: npm run jco:transpile
+      - name: Build WASM
+        run: just build-wasm && just transpile-wasm
 
       - name: Run WPT tests
-        run: npm run wpt:run-all
+        run: just wpt-run-all
         continue-on-error: true

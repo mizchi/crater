@@ -3,22 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "gentest": "node scripts/gentest.ts",
-    "gen-moonbit-tests": "node scripts/gen-moonbit-tests.ts",
-    "gen-html5lib-tests": "node scripts/gen-html5lib-tests.ts",
-    "render": "node scripts/render.ts",
-    "wpt": "node scripts/wpt-runner.ts",
-    "wpt:fetch": "node scripts/fetch-wpt.ts",
-    "wpt:fetch-all": "./scripts/fetch-wpt-tests.sh",
-    "wpt:run-all": "./scripts/run-wpt-tests.sh",
-    "wpt:update-readme": "node scripts/update-wpt-readme.ts",
-    "download": "node scripts/download-site.ts",
-    "test": "vitest",
-    "build:wasm-component": "cd wasm && moon build --target wasm && cd .. && wasm-tools component embed --world crater wasm/wit wasm/target/wasm/release/build/gen/gen.wasm -o wasm/target/crater-embedded.wasm && wasm-tools component new wasm/target/crater-embedded.wasm -o wasm/target/crater.wasm",
-    "jco:transpile": "npx jco transpile wasm/target/crater.wasm -o wasm/dist --name crater",
-    "test:wasm-component": "node --test wasm/test/component.test.mjs"
-  },
   "dependencies": {
     "puppeteer": "^23.0.0"
   },
