@@ -347,7 +347,7 @@ pub(all) struct RenderResult {
 /// Render a Node + Layout tree to ANSI string
 pub fn render_to_ansi(
   node : @node.Node,
-  layout : @node.Layout,
+  layout : @types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -398,7 +398,7 @@ pub fn render_to_ansi(
 /// Render a Node + Layout tree with status bar at top
 pub fn render_to_ansi_with_status(
   node : @node.Node,
-  layout : @node.Layout,
+  layout : @types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -492,7 +492,7 @@ pub fn render_to_ansi_with_status(
 
 ///|
 /// Get total content height in character rows
-pub fn get_content_height_chars(layout : @node.Layout) -> Int {
+pub fn get_content_height_chars(layout : @types.Layout) -> Int {
   px_to_row(layout.height)
 }
 
@@ -569,7 +569,7 @@ fn draw_hints(
 /// Render with hints overlay (for hit-a-hint mode)
 pub fn render_to_ansi_with_hints(
   node : @node.Node,
-  layout : @node.Layout,
+  layout : @types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,

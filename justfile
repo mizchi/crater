@@ -29,21 +29,21 @@ test-pkg pkg:
 test-update:
     moon test --update
 
-# Run vitest (JS tests)
-test-js:
-    pnpm vitest
 
 # === Code Quality ===
 
 # Check compilation (main + browser + js)
 check:
+    moon info
     moon check
-    moon check --directory browser
-    moon check --directory js
+    moon check -C browser
+    moon check -C js
 
 # Format code
 fmt:
     moon fmt
+    moon fmt -C browser
+    moon fmt -C js
 
 # Update interface files (.mbti)
 info:

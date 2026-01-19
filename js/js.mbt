@@ -19,7 +19,7 @@ pub fn renderHtml(html : String, width : Int, height : Int) -> String {
 
 ///|
 fn format_layout(
-  layout : @node.Layout,
+  layout : @types.Layout,
   buf : StringBuilder,
   indent : Int,
 ) -> Unit {
@@ -584,7 +584,7 @@ pub fn setFlexDirection(node_id : String, value : Int) -> Bool {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
         Some(node) => {
-          let dir : @style.FlexDirection = match value {
+          let dir : @types.FlexDirection = match value {
             0 => Row
             1 => RowReverse
             2 => Column
@@ -607,7 +607,7 @@ pub fn setFlexWrap(node_id : String, value : Int) -> Bool {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
         Some(node) => {
-          let wrap : @style.FlexWrap = match value {
+          let wrap : @types.FlexWrap = match value {
             0 => NoWrap
             1 => Wrap
             2 => WrapReverse
@@ -629,7 +629,7 @@ pub fn setJustifyContent(node_id : String, value : Int) -> Bool {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
         Some(node) => {
-          let align : @style.Alignment = match value {
+          let align : @types.Alignment = match value {
             0 => FlexStart
             1 => FlexEnd
             2 => Center
@@ -654,7 +654,7 @@ pub fn setAlignItems(node_id : String, value : Int) -> Bool {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
         Some(node) => {
-          let align : @style.Alignment = match value {
+          let align : @types.Alignment = match value {
             0 => FlexStart
             1 => FlexEnd
             2 => Center
@@ -678,7 +678,7 @@ pub fn setDisplay(node_id : String, value : Int) -> Bool {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
         Some(node) => {
-          let display : @style.Display = match value {
+          let display : @types.Display = match value {
             0 => Flex
             1 => None
             2 => Block
@@ -1010,7 +1010,7 @@ pub(all) struct FlatLayoutResult {
 
 ///|
 /// Flatten a hierarchical Layout tree to FlatLayoutResult
-pub fn flatten_layout(layout : @node.Layout) -> FlatLayoutResult {
+pub fn flatten_layout(layout : @types.Layout) -> FlatLayoutResult {
   let nodes : Array[FlatLayoutNode] = []
   flatten_layout_rec(layout, "", 0, nodes)
   { nodes, root_id: layout.id }
@@ -1018,7 +1018,7 @@ pub fn flatten_layout(layout : @node.Layout) -> FlatLayoutResult {
 
 ///|
 fn flatten_layout_rec(
-  layout : @node.Layout,
+  layout : @types.Layout,
   parent_id : String,
   index : Int,
   nodes : Array[FlatLayoutNode],

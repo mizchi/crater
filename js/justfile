@@ -1,0 +1,16 @@
+# Justfile for crater JS package
+
+# Default target
+default: test
+
+# Run JS tests
+test:
+    node --test 'test/**/*.test.mjs'
+
+# Build JS module
+build:
+    npm run build
+
+# Copy built files to dist
+copy:
+    npm run copy
