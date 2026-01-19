@@ -5,6 +5,7 @@ import {
   "mizchi/crater/renderer",
   "mizchi/crater/css/media",
   "moonbitlang/x/sys",
+  "moonbitlang/async/js_async",
 }
 
 options(

@@ -1,6 +1,7 @@
 import {
   "moonbitlang/async/http" as @async_http,
   "moonbitlang/async/io" as @async_io,
+  "moonbitlang/async/js_async",
 }
 
 options(

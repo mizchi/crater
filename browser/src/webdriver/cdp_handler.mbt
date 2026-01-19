@@ -258,9 +258,7 @@ pub fn handle_get_title(session : @cdp.CdpSession) -> String {
 ///|
 /// CDP Handler errors
 pub enum CdpHandlerError {
-  SessionNotFound(session_id~ : String)
   NoSuchElement(selector~ : String)
-  ElementNotInteractable(element_id~ : Int)
   InvalidSelector(selector~ : String)
   NavigationFailed(url~ : String, reason~ : String)
   InternalCdpError(message~ : String)
@@ -272,15 +270,8 @@ pub fn CdpHandlerError::to_w3c_error(
   self : CdpHandlerError,
 ) -> (String, String) {
   match self {
-    SessionNotFound(session_id~) =>
-      ("invalid session id", "Session not found: " + session_id)
     NoSuchElement(selector~) =>
       ("no such element", "Unable to locate element: " + selector)
-    ElementNotInteractable(element_id~) =>
-      (
-        "element not interactable",
-        "Element not interactable: " + element_id.to_string(),
-      )
     InvalidSelector(selector~) =>
       ("invalid selector", "Invalid selector: " + selector)
     NavigationFailed(url~, reason~) =>

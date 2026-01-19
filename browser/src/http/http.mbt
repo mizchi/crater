@@ -10,19 +10,16 @@ pub(all) struct HttpResponse {
 /// HTTP Error types
 pub suberror HttpError {
   NetworkError(String)
-  TimeoutError
   InvalidUrl(String)
-  NotSupported
+  TimeoutError
 }
 
 ///|
 pub impl Show for HttpError with output(self, logger) {
   match self {
     NetworkError(msg) => logger.write_string("NetworkError: " + msg)
-    TimeoutError => logger.write_string("TimeoutError")
     InvalidUrl(url) => logger.write_string("InvalidUrl: " + url)
-    NotSupported =>
-      logger.write_string("NotSupported: HTTP not available on this platform")
+    TimeoutError => logger.write_string("TimeoutError")
   }
 }
 

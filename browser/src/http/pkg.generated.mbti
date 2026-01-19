@@ -9,9 +9,7 @@ pub fn headers_to_json(Map[String, String]) -> String
 // Errors
 pub suberror HttpError {
   NetworkError(String)
-  TimeoutError
   InvalidUrl(String)
-  NotSupported
 }
 pub impl Show for HttpError
 

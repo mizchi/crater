@@ -56,7 +56,6 @@ pub enum CdpErrorCode {
   InvalidParams // -32602
   InternalError // -32603
   NodeNotFound // -32000
-  NoSuchFrame // -32000
   NoSuchElement // -32000
 } derive(Show)
 
@@ -68,19 +67,12 @@ pub struct CdpError {
 } derive(Show)
 
 ///|
-/// CDP Result type
-pub suberror CdpResult {
-  CdpResult(CdpError)
-}
-
-///|
 /// Create CDP error from code
 pub fn CdpError::from_code(code : CdpErrorCode, message : String) -> CdpError {
   let code_num = match code {
     InvalidParams => -32602
     InternalError => -32603
     NodeNotFound => -32000
-    NoSuchFrame => -32000
     NoSuchElement => -32000
   }
   { code: code_num, message }

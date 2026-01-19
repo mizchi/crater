@@ -196,9 +196,7 @@ pub fn Capabilities::to_json(Self) -> String
 pub impl Show for Capabilities
 
 pub enum CdpHandlerError {
-  SessionNotFound(session_id~ : String)
   NoSuchElement(selector~ : String)
-  ElementNotInteractable(element_id~ : Int)
   InvalidSelector(selector~ : String)
   NavigationFailed(url~ : String, reason~ : String)
   InternalCdpError(message~ : String)
