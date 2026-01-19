@@ -258,9 +258,15 @@ pub fn apply_constraints_with_aspect_ratio(
       if height_has_constraint && not(width_has_constraint) {
         // Height is the driver, calculate width
         (clamped_height * ar, clamped_height)
-      } else {
+      } else if not(height_has_constraint) && width_has_constraint {
         // Width is the driver, calculate height
         (clamped_width, clamped_width / ar)
+      } else if not(height_has_constraint) && not(width_has_constraint) {
+        // No constraints - use aspect ratio with width as driver
+        (clamped_width, clamped_width / ar)
+      } else {
+        // Both have constraints - aspect ratio cannot be applied after clamping
+        (clamped_width, clamped_height)
       }
     }
     _ => (clamped_width, clamped_height)
