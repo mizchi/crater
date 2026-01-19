@@ -253,25 +253,25 @@ fn generate_malformed_html(n : Int) -> String {
 ///|
 test "bench_parse_simple_10" (b : @bench.T) {
   let html = generate_simple_html(10)
-  b.bench(name="parse_simple_10", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_simple_10", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_simple_100" (b : @bench.T) {
   let html = generate_simple_html(100)
-  b.bench(name="parse_simple_100", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_simple_100", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_simple_500" (b : @bench.T) {
   let html = generate_simple_html(500)
-  b.bench(name="parse_simple_500", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_simple_500", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_simple_1000" (b : @bench.T) {
   let html = generate_simple_html(1000)
-  b.bench(name="parse_simple_1000", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_simple_1000", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -281,19 +281,19 @@ test "bench_parse_simple_1000" (b : @bench.T) {
 ///|
 test "bench_parse_nested_10" (b : @bench.T) {
   let html = generate_nested_html(10)
-  b.bench(name="parse_nested_10", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_nested_10", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_nested_50" (b : @bench.T) {
   let html = generate_nested_html(50)
-  b.bench(name="parse_nested_50", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_nested_50", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_nested_100" (b : @bench.T) {
   let html = generate_nested_html(100)
-  b.bench(name="parse_nested_100", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_nested_100", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -303,19 +303,19 @@ test "bench_parse_nested_100" (b : @bench.T) {
 ///|
 test "bench_parse_attrs_50" (b : @bench.T) {
   let html = generate_attribute_heavy_html(50)
-  b.bench(name="parse_attrs_50", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_attrs_50", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_attrs_200" (b : @bench.T) {
   let html = generate_attribute_heavy_html(200)
-  b.bench(name="parse_attrs_200", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_attrs_200", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_attrs_500" (b : @bench.T) {
   let html = generate_attribute_heavy_html(500)
-  b.bench(name="parse_attrs_500", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_attrs_500", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -325,19 +325,19 @@ test "bench_parse_attrs_500" (b : @bench.T) {
 ///|
 test "bench_parse_table_10x5" (b : @bench.T) {
   let html = generate_table_html(10, 5)
-  b.bench(name="parse_table_10x5", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_table_10x5", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_table_50x10" (b : @bench.T) {
   let html = generate_table_html(50, 10)
-  b.bench(name="parse_table_50x10", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_table_50x10", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_table_100x20" (b : @bench.T) {
   let html = generate_table_html(100, 20)
-  b.bench(name="parse_table_100x20", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_table_100x20", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -347,19 +347,19 @@ test "bench_parse_table_100x20" (b : @bench.T) {
 ///|
 test "bench_parse_page_small" (b : @bench.T) {
   let html = generate_page_layout(5, 3)
-  b.bench(name="parse_page_small", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_page_small", fn() { b.keep(@html.parse_document(html)) })
 }
 
 ///|
 test "bench_parse_page_medium" (b : @bench.T) {
   let html = generate_page_layout(15, 10)
-  b.bench(name="parse_page_medium", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_page_medium", fn() { b.keep(@html.parse_document(html)) })
 }
 
 ///|
 test "bench_parse_page_large" (b : @bench.T) {
   let html = generate_page_layout(30, 20)
-  b.bench(name="parse_page_large", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_page_large", fn() { b.keep(@html.parse_document(html)) })
 }
 
 // =============================================================================
@@ -369,13 +369,13 @@ test "bench_parse_page_large" (b : @bench.T) {
 ///|
 test "bench_parse_styled_50" (b : @bench.T) {
   let html = generate_styled_html(50)
-  b.bench(name="parse_styled_50", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_styled_50", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_styled_200" (b : @bench.T) {
   let html = generate_styled_html(200)
-  b.bench(name="parse_styled_200", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_styled_200", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -385,13 +385,13 @@ test "bench_parse_styled_200" (b : @bench.T) {
 ///|
 test "bench_parse_resources_10" (b : @bench.T) {
   let html = generate_resource_heavy_html(10, 10)
-  b.bench(name="parse_resources_10", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_resources_10", fn() { b.keep(@html.parse_document(html)) })
 }
 
 ///|
 test "bench_parse_resources_50" (b : @bench.T) {
   let html = generate_resource_heavy_html(50, 50)
-  b.bench(name="parse_resources_50", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_resources_50", fn() { b.keep(@html.parse_document(html)) })
 }
 
 // =============================================================================
@@ -401,13 +401,13 @@ test "bench_parse_resources_50" (b : @bench.T) {
 ///|
 test "bench_parse_form_10" (b : @bench.T) {
   let html = generate_form_html(10)
-  b.bench(name="parse_form_10", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_form_10", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_form_50" (b : @bench.T) {
   let html = generate_form_html(50)
-  b.bench(name="parse_form_50", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_form_50", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -417,13 +417,13 @@ test "bench_parse_form_50" (b : @bench.T) {
 ///|
 test "bench_parse_malformed_50" (b : @bench.T) {
   let html = generate_malformed_html(50)
-  b.bench(name="parse_malformed_50", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_malformed_50", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_malformed_200" (b : @bench.T) {
   let html = generate_malformed_html(200)
-  b.bench(name="parse_malformed_200", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_malformed_200", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -433,7 +433,7 @@ test "bench_parse_malformed_200" (b : @bench.T) {
 ///|
 test "bench_parse_fragment_simple" (b : @bench.T) {
   let html = "<p>Simple paragraph with <strong>bold</strong> text</p>"
-  b.bench(name="parse_frag_simple", fn() { b.keep(parse_fragment(html)) })
+  b.bench(name="parse_frag_simple", fn() { b.keep(@html.parse_fragment(html)) })
 }
 
 ///|
@@ -447,7 +447,7 @@ test "bench_parse_fragment_list" (b : @bench.T) {
   }
   buf.write_string("</ul>")
   let html = buf.to_string()
-  b.bench(name="parse_frag_list", fn() { b.keep(parse_fragment(html)) })
+  b.bench(name="parse_frag_list", fn() { b.keep(@html.parse_fragment(html)) })
 }
 
 // =============================================================================
@@ -487,19 +487,19 @@ fn generate_card_grid(cards : Int) -> String {
 ///|
 test "bench_parse_card_grid_12" (b : @bench.T) {
   let html = generate_card_grid(12)
-  b.bench(name="parse_card_12", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_card_12", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_card_grid_48" (b : @bench.T) {
   let html = generate_card_grid(48)
-  b.bench(name="parse_card_48", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_card_48", fn() { b.keep(@html.parse(html)) })
 }
 
 ///|
 test "bench_parse_card_grid_100" (b : @bench.T) {
   let html = generate_card_grid(100)
-  b.bench(name="parse_card_100", fn() { b.keep(parse(html)) })
+  b.bench(name="parse_card_100", fn() { b.keep(@html.parse(html)) })
 }
 
 // =============================================================================
@@ -510,10 +510,10 @@ test "bench_parse_card_grid_100" (b : @bench.T) {
 test "bench_tokenize_simple_100" (b : @bench.T) {
   let html = generate_simple_html(100)
   b.bench(name="tokenize_100", fn() {
-    let tokenizer = Tokenizer::new(html)
+    let tokenizer = @html.Tokenizer::new(html)
     while true {
       match tokenizer.next_token() {
-        EOF => break
+        @html.EOF => break
         _ => ()
       }
     }
@@ -525,10 +525,10 @@ test "bench_tokenize_simple_100" (b : @bench.T) {
 test "bench_tokenize_attrs_100" (b : @bench.T) {
   let html = generate_attribute_heavy_html(100)
   b.bench(name="tokenize_attrs_100", fn() {
-    let tokenizer = Tokenizer::new(html)
+    let tokenizer = @html.Tokenizer::new(html)
     while true {
       match tokenizer.next_token() {
-        EOF => break
+        @html.EOF => break
         _ => ()
       }
     }
@@ -540,10 +540,10 @@ test "bench_tokenize_attrs_100" (b : @bench.T) {
 test "bench_tokenize_styled_100" (b : @bench.T) {
   let html = generate_styled_html(100)
   b.bench(name="tokenize_styled_100", fn() {
-    let tokenizer = Tokenizer::new(html)
+    let tokenizer = @html.Tokenizer::new(html)
     while true {
       match tokenizer.next_token() {
-        EOF => break
+        @html.EOF => break
         _ => ()
       }
     }
@@ -589,19 +589,19 @@ fn generate_large_document(
 ///|
 test "bench_parse_large_doc_10x5" (b : @bench.T) {
   let html = generate_large_document(10, 5)
-  b.bench(name="parse_large_10x5", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_large_10x5", fn() { b.keep(@html.parse_document(html)) })
 }
 
 ///|
 test "bench_parse_large_doc_50x10" (b : @bench.T) {
   let html = generate_large_document(50, 10)
-  b.bench(name="parse_large_50x10", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_large_50x10", fn() { b.keep(@html.parse_document(html)) })
 }
 
 ///|
 test "bench_parse_large_doc_100x20" (b : @bench.T) {
   let html = generate_large_document(100, 20)
-  b.bench(name="parse_large_100x20", fn() { b.keep(parse_document(html)) })
+  b.bench(name="parse_large_100x20", fn() { b.keep(@html.parse_document(html)) })
 }
 
 // =============================================================================
@@ -612,8 +612,8 @@ test "bench_parse_large_doc_100x20" (b : @bench.T) {
 test "bench_treebuilder_simple_100" (b : @bench.T) {
   let html = generate_simple_html(100)
   b.bench(name="treebuilder_100", fn() {
-    let tokenizer = Tokenizer::new(html)
-    let builder = TreeBuilder::new(tokenizer)
+    let tokenizer = @html.Tokenizer::new(html)
+    let builder = @html.TreeBuilder::new(tokenizer)
     b.keep(builder.build())
   })
 }
@@ -622,8 +622,8 @@ test "bench_treebuilder_simple_100" (b : @bench.T) {
 test "bench_treebuilder_nested_50" (b : @bench.T) {
   let html = generate_nested_html(50)
   b.bench(name="treebuilder_nested_50", fn() {
-    let tokenizer = Tokenizer::new(html)
-    let builder = TreeBuilder::new(tokenizer)
+    let tokenizer = @html.Tokenizer::new(html)
+    let builder = @html.TreeBuilder::new(tokenizer)
     b.keep(builder.build())
   })
 }
@@ -632,8 +632,8 @@ test "bench_treebuilder_nested_50" (b : @bench.T) {
 test "bench_treebuilder_malformed_100" (b : @bench.T) {
   let html = generate_malformed_html(100)
   b.bench(name="treebuilder_malformed", fn() {
-    let tokenizer = Tokenizer::new(html)
-    let builder = TreeBuilder::new(tokenizer)
+    let tokenizer = @html.Tokenizer::new(html)
+    let builder = @html.TreeBuilder::new(tokenizer)
     b.keep(builder.build())
   })
 }

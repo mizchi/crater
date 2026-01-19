@@ -1,9 +1,27 @@
 ///|
+/// Helper function to compare layouts for equality
+fn layouts_equal(a : @types.Layout, b : @types.Layout) -> Bool {
+  if a.x != b.x ||
+    a.y != b.y ||
+    a.width != b.width ||
+    a.height != b.height ||
+    a.children.length() != b.children.length() {
+    return false
+  }
+  for i = 0; i < a.children.length(); i = i + 1 {
+    if not(layouts_equal(a.children[i], b.children[i])) {
+      return false
+    }
+  }
+  true
+}
+
+///|
 /// Benchmark tests for incremental layout performance
 
 ///|
 /// Create a large tree with specified depth and branching factor
-fn create_large_tree(depth : Int, branching : Int) -> LayoutNode {
+fn create_large_tree(depth : Int, branching : Int) -> @tree.LayoutNode {
   create_subtree("root", depth, branching, 0)
 }
 
@@ -14,24 +32,24 @@ fn create_subtree(
   depth : Int,
   branching : Int,
   level : Int,
-) -> LayoutNode {
+) -> @tree.LayoutNode {
   if depth == 0 {
     // Leaf node
-    LayoutNode::leaf(prefix, @style.Style::{
+    @tree.LayoutNode::leaf(prefix, @style.Style::{
       ..@style.Style::default(),
       width: @types.Length(50.0),
       height: @types.Length(30.0),
     })
   } else {
     // Container node
-    let children : Array[LayoutNode] = []
+    let children : Array[@tree.LayoutNode] = []
     for i = 0; i < branching; i = i + 1 {
       let child_prefix = prefix + "_" + i.to_string()
       children.push(
         create_subtree(child_prefix, depth - 1, branching, level + 1),
       )
     }
-    LayoutNode::new(
+    @tree.LayoutNode::new(
       prefix,
       @style.Style::{
         ..@style.Style::default(),
@@ -57,7 +75,7 @@ fn create_subtree(
 
 ///|
 /// Count total nodes in a tree
-fn count_nodes(node : LayoutNode) -> Int {
+fn count_nodes(node : @tree.LayoutNode) -> Int {
   let mut count = 1
   for child in node.children {
     count = count + count_nodes(child)
@@ -67,7 +85,7 @@ fn count_nodes(node : LayoutNode) -> Int {
 
 ///|
 /// Find a leaf node at a specific path
-fn find_leaf(node : LayoutNode, path : Array[Int]) -> LayoutNode? {
+fn find_leaf(node : @tree.LayoutNode, path : Array[Int]) -> @tree.LayoutNode? {
   if path.length() == 0 {
     return Some(node)
   }
@@ -89,14 +107,14 @@ test "benchmark: cache hit rate on unchanged tree" {
   // Create a medium-sized tree: depth=3, branching=4 = 85 nodes
   let root = create_large_tree(3, 4)
   let total_nodes = count_nodes(root)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute - all misses
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let layout1 = tree.compute_with_stats(stats1)
 
   // Second compute without changes - should have high cache hit rate
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let layout2 = tree.compute_with_stats(stats2)
 
   // Verify results are identical
@@ -119,10 +137,10 @@ test "benchmark: partial update performance" {
   // Create a larger tree: depth=4, branching=3 = 121 nodes
   let root = create_large_tree(4, 3)
   let total_nodes = count_nodes(root)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   let first_misses = stats1.cache_misses
 
@@ -133,7 +151,7 @@ test "benchmark: partial update performance" {
   }
 
   // Second compute - should hit cache for most nodes
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Report statistics
@@ -154,10 +172,10 @@ test "benchmark: multiple partial updates" {
 
   // Create tree: depth=3, branching=5 = 156 nodes
   let root = create_large_tree(3, 5)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Simulate multiple small updates
@@ -169,7 +187,7 @@ test "benchmark: multiple partial updates" {
     Some(leaf) => tree.mark_node_dirty(leaf.uid)
     None => ()
   }
-  let stats_u1 = CacheStats::new()
+  let stats_u1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats_u1)
   total_hits = total_hits + stats_u1.cache_hits
   total_misses = total_misses + stats_u1.cache_misses
@@ -179,7 +197,7 @@ test "benchmark: multiple partial updates" {
     Some(leaf) => tree.mark_node_dirty(leaf.uid)
     None => ()
   }
-  let stats_u2 = CacheStats::new()
+  let stats_u2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats_u2)
   total_hits = total_hits + stats_u2.cache_hits
   total_misses = total_misses + stats_u2.cache_misses
@@ -189,7 +207,7 @@ test "benchmark: multiple partial updates" {
     Some(leaf) => tree.mark_node_dirty(leaf.uid)
     None => ()
   }
-  let stats_u3 = CacheStats::new()
+  let stats_u3 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats_u3)
   total_hits = total_hits + stats_u3.cache_hits
   total_misses = total_misses + stats_u3.cache_misses
@@ -210,7 +228,7 @@ test "benchmark: viewport resize with fixed vs percent nodes" {
 
   // Create tree with all fixed-size nodes
   let fixed_root = create_large_tree(3, 4) // 85 nodes, all fixed
-  let fixed_tree = LayoutTree::new(fixed_root, 1200.0, 800.0)
+  let fixed_tree = @tree.LayoutTree::new(fixed_root, 1200.0, 800.0)
 
   // First compute
   let _ = fixed_tree.compute_incremental()
@@ -222,12 +240,12 @@ test "benchmark: viewport resize with fixed vs percent nodes" {
   inspect(fixed_tree.needs_layout(), content="false")
 
   // Now create tree with percent-based nodes
-  let percent_child = LayoutNode::leaf("percent_child", @style.Style::{
+  let percent_child = @tree.LayoutNode::leaf("percent_child", @style.Style::{
     ..@style.Style::default(),
     width: @types.Percent(0.5),
     height: @types.Length(50.0),
   })
-  let percent_root = LayoutNode::new(
+  let percent_root = @tree.LayoutNode::new(
     "percent_root",
     @style.Style::{
       ..@style.Style::default(),
@@ -237,7 +255,7 @@ test "benchmark: viewport resize with fixed vs percent nodes" {
     },
     [percent_child],
   )
-  let percent_tree = LayoutTree::new(percent_root, 1200.0, 800.0)
+  let percent_tree = @tree.LayoutTree::new(percent_root, 1200.0, 800.0)
 
   // First compute
   let _ = percent_tree.compute_incremental()
@@ -256,14 +274,14 @@ test "benchmark: deep nesting performance" {
   // Create deep but narrow tree: depth=10, branching=2 = 2047 nodes
   let root = create_large_tree(10, 2)
   let total_nodes = count_nodes(root)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let layout1 = tree.compute_with_stats(stats1)
 
   // Second compute without changes
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let layout2 = tree.compute_with_stats(stats2)
 
   // Verify same results
@@ -284,10 +302,10 @@ test "benchmark: wide tree performance" {
   // Create wide but shallow tree: depth=2, branching=10 = 111 nodes
   let root = create_large_tree(2, 10)
   let total_nodes = count_nodes(root)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Mark one leaf dirty
@@ -297,7 +315,7 @@ test "benchmark: wide tree performance" {
   }
 
   // Second compute
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Report statistics
@@ -314,10 +332,10 @@ test "benchmark: incremental vs full recompute savings" {
   // Create a moderately large tree: depth=4, branching=4 = 341 nodes
   let root = create_large_tree(4, 4)
   let total_nodes = count_nodes(root)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // === Full computation ===
-  let full_stats = CacheStats::new()
+  let full_stats = @tree.CacheStats::new()
   let _layout1 = tree.compute_with_stats(full_stats)
   let full_compute_ops = full_stats.cache_misses
 
@@ -330,7 +348,7 @@ test "benchmark: incremental vs full recompute savings" {
       Some(leaf) => tree.mark_node_dirty(leaf.uid)
       None => ()
     }
-    let inc_stats = CacheStats::new()
+    let inc_stats = @tree.CacheStats::new()
     let _ = tree.compute_with_stats(inc_stats)
     incremental_total_ops = incremental_total_ops +
       inc_stats.cache_hits +
@@ -358,17 +376,17 @@ test "benchmark: repeated unchanged queries" {
 
   // Create tree
   let root = create_large_tree(3, 5) // 156 nodes
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   let first_ops = stats1.cache_misses
 
   // Run 100 unchanged queries
   let mut total_ops = 0
   for iter = 0; iter < 100; iter = iter + 1 {
-    let stats = CacheStats::new()
+    let stats = @tree.CacheStats::new()
     let _layout = tree.compute_with_stats(stats)
     total_ops = total_ops + stats.cache_hits + stats.cache_misses
   }
@@ -390,7 +408,7 @@ test "benchmark: correctness after many updates" {
 
   // Create tree
   let root = create_large_tree(3, 4) // 85 nodes
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // Get reference layout with fresh full compute
   let ref_layout = tree.compute_full()
@@ -421,10 +439,10 @@ test "analysis: detailed cache statistics" {
   // Create tree: depth=3, branching=4 = 85 nodes
   let root = create_large_tree(3, 4)
   let total_nodes = count_nodes(root)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute - measure initial misses
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Show detailed stats
@@ -441,7 +459,7 @@ test "analysis: detailed cache statistics" {
   }
 
   // Second compute with one dirty leaf
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
   inspect(stats2.cache_hits, content="6")
   inspect(stats2.cache_misses, content="4")
@@ -454,8 +472,8 @@ test "analysis: cache miss breakdown by tree level" {
 
   // Flat tree: depth=1, branching=10 = 11 nodes
   let flat_root = create_large_tree(1, 10)
-  let flat_tree = LayoutTree::new(flat_root, 1200.0, 800.0)
-  let flat_stats = CacheStats::new()
+  let flat_tree = @tree.LayoutTree::new(flat_root, 1200.0, 800.0)
+  let flat_stats = @tree.CacheStats::new()
   let _ = flat_tree.compute_with_stats(flat_stats)
 
   // Flat tree: root + children go through dispatcher
@@ -465,8 +483,8 @@ test "analysis: cache miss breakdown by tree level" {
 
   // Deep tree: depth=5, branching=2 = 63 nodes
   let deep_root = create_large_tree(5, 2)
-  let deep_tree = LayoutTree::new(deep_root, 1200.0, 800.0)
-  let deep_stats = CacheStats::new()
+  let deep_tree = @tree.LayoutTree::new(deep_root, 1200.0, 800.0)
+  let deep_stats = @tree.CacheStats::new()
   let _ = deep_tree.compute_with_stats(deep_stats)
   inspect(count_nodes(deep_root), content="63")
   inspect(deep_stats.cache_misses, content="32")
@@ -477,7 +495,7 @@ test "analysis: cache miss breakdown by tree level" {
 test "analysis: children_dirty propagation" {
   @dispatch.setup()
   let root = create_large_tree(3, 3) // 40 nodes
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
   let _ = tree.compute_incremental()
@@ -506,12 +524,12 @@ test "analysis: cache key comparison" {
   @dispatch.setup()
 
   // Test that constraint changes invalidate cache appropriately
-  let child = LayoutNode::leaf("child", @style.Style::{
+  let child = @tree.LayoutNode::leaf("child", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -521,21 +539,21 @@ test "analysis: cache key comparison" {
     },
     [child],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Same viewport - should hit cache
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
   inspect(stats2.cache_hits, content="1")
   inspect(stats2.cache_misses, content="0")
 
   // Different viewport - fixed size should still hit cache
   tree.resize_viewport(1000.0, 700.0)
-  let stats3 = CacheStats::new()
+  let stats3 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats3)
 
   // Fixed size nodes don't depend on viewport
@@ -550,10 +568,10 @@ test "analysis: subtree cache hit rate" {
   // Create tree with 4 independent subtrees
   // depth=2, branching=4 = 21 nodes (1 root + 4 subtrees of 5 nodes each)
   let root = create_large_tree(2, 4)
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   inspect(stats1.cache_misses, content="6")
 
@@ -564,7 +582,7 @@ test "analysis: subtree cache hit rate" {
   }
 
   // Second compute - 3 subtrees should be cached
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Expect: 3 subtree hits (children[1,2,3]), some misses for dirty path
@@ -578,7 +596,7 @@ test "analysis: multiple dirty leaves in different subtrees" {
 
   // Create tree: depth=2, branching=4
   let root = create_large_tree(2, 4) // 21 nodes
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
   let _ = tree.compute_incremental()
@@ -594,7 +612,7 @@ test "analysis: multiple dirty leaves in different subtrees" {
   }
 
   // Second compute - 2 subtrees should be cached
-  let stats = CacheStats::new()
+  let stats = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats)
 
   // 2 subtrees (children[1,3]) should hit cache
@@ -606,17 +624,17 @@ test "analysis: hit rate with auto-sized containers" {
   @dispatch.setup()
 
   // Create tree with auto-sized containers
-  let leaf1 = LayoutNode::leaf("leaf1", @style.Style::{
+  let leaf1 = @tree.LayoutNode::leaf("leaf1", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   })
-  let leaf2 = LayoutNode::leaf("leaf2", @style.Style::{
+  let leaf2 = @tree.LayoutNode::leaf("leaf2", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   })
-  let container1 = LayoutNode::new(
+  let container1 = @tree.LayoutNode::new(
     "container1",
     @style.Style::{
       ..@style.Style::default(),
@@ -626,7 +644,7 @@ test "analysis: hit rate with auto-sized containers" {
     }, // Auto-sized
     [leaf1],
   )
-  let container2 = LayoutNode::new(
+  let container2 = @tree.LayoutNode::new(
     "container2",
     @style.Style::{
       ..@style.Style::default(),
@@ -636,7 +654,7 @@ test "analysis: hit rate with auto-sized containers" {
     },
     [leaf2],
   )
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -646,17 +664,17 @@ test "analysis: hit rate with auto-sized containers" {
     },
     [container1, container2],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Mark container1 dirty (not leaf)
   tree.mark_node_dirty(container1.uid)
 
   // Second compute - container2 should be cached
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // container2 should hit cache
@@ -669,17 +687,17 @@ test "benchmark: realistic UI update pattern" {
 
   // Simulate a realistic UI: header, sidebar, main content, footer
   // Each with nested children
-  let header_items : Array[LayoutNode] = []
+  let header_items : Array[@tree.LayoutNode] = []
   for i = 0; i < 5; i = i + 1 {
     header_items.push(
-      LayoutNode::leaf("header_item_" + i.to_string(), @style.Style::{
+      @tree.LayoutNode::leaf("header_item_" + i.to_string(), @style.Style::{
         ..@style.Style::default(),
         width: @types.Length(80.0),
         height: @types.Length(40.0),
       }),
     )
   }
-  let header = LayoutNode::new(
+  let header = @tree.LayoutNode::new(
     "header",
     @style.Style::{
       ..@style.Style::default(),
@@ -689,17 +707,17 @@ test "benchmark: realistic UI update pattern" {
     },
     header_items,
   )
-  let sidebar_items : Array[LayoutNode] = []
+  let sidebar_items : Array[@tree.LayoutNode] = []
   for i = 0; i < 10; i = i + 1 {
     sidebar_items.push(
-      LayoutNode::leaf("sidebar_item_" + i.to_string(), @style.Style::{
+      @tree.LayoutNode::leaf("sidebar_item_" + i.to_string(), @style.Style::{
         ..@style.Style::default(),
         width: @types.Length(150.0),
         height: @types.Length(30.0),
       }),
     )
   }
-  let sidebar = LayoutNode::new(
+  let sidebar = @tree.LayoutNode::new(
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
@@ -710,17 +728,17 @@ test "benchmark: realistic UI update pattern" {
     },
     sidebar_items,
   )
-  let content_items : Array[LayoutNode] = []
+  let content_items : Array[@tree.LayoutNode] = []
   for i = 0; i < 20; i = i + 1 {
     content_items.push(
-      LayoutNode::leaf("content_item_" + i.to_string(), @style.Style::{
+      @tree.LayoutNode::leaf("content_item_" + i.to_string(), @style.Style::{
         ..@style.Style::default(),
         width: @types.Length(300.0),
         height: @types.Length(100.0),
       }),
     )
   }
-  let main_content = LayoutNode::new(
+  let main_content = @tree.LayoutNode::new(
     "main_content",
     @style.Style::{
       ..@style.Style::default(),
@@ -732,12 +750,12 @@ test "benchmark: realistic UI update pattern" {
     },
     content_items,
   )
-  let footer = LayoutNode::leaf("footer", @style.Style::{
+  let footer = @tree.LayoutNode::leaf("footer", @style.Style::{
     ..@style.Style::default(),
     width: @types.Percent(1.0),
     height: @types.Length(40.0),
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -748,18 +766,18 @@ test "benchmark: realistic UI update pattern" {
     },
     [header, sidebar, main_content, footer],
   )
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
   let total_nodes = count_nodes(root)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Simulate user interaction: update one content item
   tree.mark_node_dirty(content_items[5].uid)
 
   // Second compute - most of UI should be cached
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Report
@@ -775,17 +793,17 @@ test "optimization: size-match cache validation" {
   @dispatch.setup()
 
   // Create simple tree with children
-  let child1 = LayoutNode::leaf("child1", @style.Style::{
+  let child1 = @tree.LayoutNode::leaf("child1", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
-  let child2 = LayoutNode::leaf("child2", @style.Style::{
+  let child2 = @tree.LayoutNode::leaf("child2", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -795,10 +813,10 @@ test "optimization: size-match cache validation" {
     },
     [child1, child2],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // First compute - populate caches
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
 
   // Verify all dirty flags cleared
@@ -812,7 +830,7 @@ test "optimization: size-match cache validation" {
   tree.root.mark_children_dirty()
 
   // Second compute - should use size-match optimization
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Size-match optimization should trigger cache hit
@@ -826,13 +844,13 @@ test "optimization: size-match cache validation" {
 
 ///|
 /// Create a realistic card component with image, title, description, and button
-fn create_card(id : String) -> LayoutNode {
-  let image = LayoutNode::leaf(id + "_image", @style.Style::{
+fn create_card(id : String) -> @tree.LayoutNode {
+  let image = @tree.LayoutNode::leaf(id + "_image", @style.Style::{
     ..@style.Style::default(),
     width: @types.Percent(1.0),
     height: @types.Length(150.0),
   })
-  let title = LayoutNode::leaf(id + "_title", @style.Style::{
+  let title = @tree.LayoutNode::leaf(id + "_title", @style.Style::{
     ..@style.Style::default(),
     width: @types.Percent(1.0),
     height: @types.Length(24.0),
@@ -843,12 +861,12 @@ fn create_card(id : String) -> LayoutNode {
       left: @types.Length(0.0),
     },
   })
-  let description = LayoutNode::leaf(id + "_desc", @style.Style::{
+  let description = @tree.LayoutNode::leaf(id + "_desc", @style.Style::{
     ..@style.Style::default(),
     width: @types.Percent(1.0),
     height: @types.Length(48.0),
   })
-  let button = LayoutNode::leaf(id + "_button", @style.Style::{
+  let button = @tree.LayoutNode::leaf(id + "_button", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(36.0),
@@ -859,7 +877,7 @@ fn create_card(id : String) -> LayoutNode {
       left: @types.Length(0.0),
     },
   })
-  LayoutNode::new(
+  @tree.LayoutNode::new(
     id,
     @style.Style::{
       ..@style.Style::default(),
@@ -880,11 +898,11 @@ fn create_card(id : String) -> LayoutNode {
 
 ///|
 /// Create a list item (like a todo item or message)
-fn create_list_item(id : String, has_icon : Bool) -> LayoutNode {
-  let children : Array[LayoutNode] = []
+fn create_list_item(id : String, has_icon : Bool) -> @tree.LayoutNode {
+  let children : Array[@tree.LayoutNode] = []
   if has_icon {
     children.push(
-      LayoutNode::leaf(id + "_icon", @style.Style::{
+      @tree.LayoutNode::leaf(id + "_icon", @style.Style::{
         ..@style.Style::default(),
         width: @types.Length(24.0),
         height: @types.Length(24.0),
@@ -898,7 +916,7 @@ fn create_list_item(id : String, has_icon : Bool) -> LayoutNode {
     )
   }
   children.push(
-    LayoutNode::leaf(id + "_text", @style.Style::{
+    @tree.LayoutNode::leaf(id + "_text", @style.Style::{
       ..@style.Style::default(),
       width: @types.Auto,
       height: @types.Length(20.0),
@@ -906,13 +924,13 @@ fn create_list_item(id : String, has_icon : Bool) -> LayoutNode {
     }),
   )
   children.push(
-    LayoutNode::leaf(id + "_time", @style.Style::{
+    @tree.LayoutNode::leaf(id + "_time", @style.Style::{
       ..@style.Style::default(),
       width: @types.Length(60.0),
       height: @types.Length(16.0),
     }),
   )
-  LayoutNode::new(
+  @tree.LayoutNode::new(
     id,
     @style.Style::{
       ..@style.Style::default(),
@@ -934,9 +952,9 @@ fn create_list_item(id : String, has_icon : Bool) -> LayoutNode {
 
 ///|
 /// Create a navigation item
-fn create_nav_item(id : String, is_active : Bool) -> LayoutNode {
+fn create_nav_item(id : String, is_active : Bool) -> @tree.LayoutNode {
   let padding_left = if is_active { 20.0 } else { 16.0 }
-  LayoutNode::leaf(id, @style.Style::{
+  @tree.LayoutNode::leaf(id, @style.Style::{
     ..@style.Style::default(),
     width: @types.Percent(1.0),
     height: @types.Length(40.0),
@@ -954,11 +972,11 @@ test "realistic: e-commerce product grid" {
   @dispatch.setup()
 
   // Create product grid with 24 cards (6 columns x 4 rows)
-  let cards : Array[LayoutNode] = []
+  let cards : Array[@tree.LayoutNode] = []
   for i = 0; i < 24; i = i + 1 {
     cards.push(create_card("card_" + i.to_string()))
   }
-  let grid = LayoutNode::new(
+  let grid = @tree.LayoutNode::new(
     "product_grid",
     @style.Style::{
       ..@style.Style::default(),
@@ -977,7 +995,7 @@ test "realistic: e-commerce product grid" {
     },
     cards,
   )
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -987,18 +1005,18 @@ test "realistic: e-commerce product grid" {
     },
     [grid],
   )
-  let tree = LayoutTree::new(root, 1400.0, 900.0)
+  let tree = @tree.LayoutTree::new(root, 1400.0, 900.0)
   let total_nodes = count_nodes(root)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   inspect(total_nodes, content="122") // 1 root + 1 grid + 24 cards * 5 elements each
   inspect(stats1.cache_misses, content="27") // Only containers go through cache
 
   // Scenario 1: Mark a card container dirty (not just a leaf)
   tree.mark_node_dirty(cards[5].uid) // Entire card_5
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Other cards should use cache (23 cards untouched)
@@ -1007,7 +1025,7 @@ test "realistic: e-commerce product grid" {
 
   // Scenario 2: Mark a different card dirty
   tree.mark_node_dirty(cards[10].uid)
-  let stats3 = CacheStats::new()
+  let stats3 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats3)
 
   // 22 other cards should hit cache
@@ -1019,11 +1037,11 @@ test "realistic: chat message list" {
   @dispatch.setup()
 
   // Create chat messages (50 messages)
-  let messages : Array[LayoutNode] = []
+  let messages : Array[@tree.LayoutNode] = []
   for i = 0; i < 50; i = i + 1 {
     messages.push(create_list_item("msg_" + i.to_string(), i % 3 == 0))
   }
-  let message_list = LayoutNode::new(
+  let message_list = @tree.LayoutNode::new(
     "message_list",
     @style.Style::{
       ..@style.Style::default(),
@@ -1034,7 +1052,7 @@ test "realistic: chat message list" {
     },
     messages,
   )
-  let input_area = LayoutNode::new(
+  let input_area = @tree.LayoutNode::new(
     "input_area",
     @style.Style::{
       ..@style.Style::default(),
@@ -1049,13 +1067,13 @@ test "realistic: chat message list" {
       },
     },
     [
-      LayoutNode::leaf("text_input", @style.Style::{
+      @tree.LayoutNode::leaf("text_input", @style.Style::{
         ..@style.Style::default(),
         width: @types.Auto,
         height: @types.Length(36.0),
         flex_grow: 1.0,
       }),
-      LayoutNode::leaf("send_button", @style.Style::{
+      @tree.LayoutNode::leaf("send_button", @style.Style::{
         ..@style.Style::default(),
         width: @types.Length(80.0),
         height: @types.Length(36.0),
@@ -1068,7 +1086,7 @@ test "realistic: chat message list" {
       }),
     ],
   )
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "chat_root",
     @style.Style::{
       ..@style.Style::default(),
@@ -1079,18 +1097,18 @@ test "realistic: chat message list" {
     },
     [message_list, input_area],
   )
-  let tree = LayoutTree::new(root, 400.0, 700.0)
+  let tree = @tree.LayoutTree::new(root, 400.0, 700.0)
   let total_nodes = count_nodes(root)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   inspect(total_nodes, content="172") // root + list + 50 msgs * 3-4 children + input area
   inspect(stats1.cache_misses, content="54") // containers only
 
   // Simulate: new message container updated
   tree.mark_node_dirty(messages[49].uid) // Mark message container
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // 49 other messages + input_area should hit cache
@@ -1109,19 +1127,23 @@ test "realistic: dashboard with widgets" {
   @dispatch.setup()
 
   // Create dashboard widgets
-  fn create_widget(id : String, width : Double, height : Double) -> LayoutNode {
-    let header = LayoutNode::leaf(id + "_header", @style.Style::{
+  fn create_widget(
+    id : String,
+    width : Double,
+    height : Double,
+  ) -> @tree.LayoutNode {
+    let header = @tree.LayoutNode::leaf(id + "_header", @style.Style::{
       ..@style.Style::default(),
       width: @types.Percent(1.0),
       height: @types.Length(40.0),
     })
-    let content = LayoutNode::leaf(id + "_content", @style.Style::{
+    let content = @tree.LayoutNode::leaf(id + "_content", @style.Style::{
       ..@style.Style::default(),
       width: @types.Percent(1.0),
       height: @types.Auto,
       flex_grow: 1.0,
     })
-    LayoutNode::new(
+    @tree.LayoutNode::new(
       id,
       @style.Style::{
         ..@style.Style::default(),
@@ -1141,7 +1163,7 @@ test "realistic: dashboard with widgets" {
   }
 
   // Row 1: 3 small widgets
-  let row1 = LayoutNode::new(
+  let row1 = @tree.LayoutNode::new(
     "row1",
     @style.Style::{
       ..@style.Style::default(),
@@ -1159,7 +1181,7 @@ test "realistic: dashboard with widgets" {
   )
 
   // Row 2: 1 large chart + 1 medium widget
-  let row2 = LayoutNode::new(
+  let row2 = @tree.LayoutNode::new(
     "row2",
     @style.Style::{
       ..@style.Style::default(),
@@ -1176,11 +1198,11 @@ test "realistic: dashboard with widgets" {
   )
 
   // Row 3: Table
-  let table_rows : Array[LayoutNode] = []
+  let table_rows : Array[@tree.LayoutNode] = []
   for i = 0; i < 10; i = i + 1 {
     table_rows.push(create_list_item("table_row_" + i.to_string(), false))
   }
-  let table = LayoutNode::new(
+  let table = @tree.LayoutNode::new(
     "table",
     @style.Style::{
       ..@style.Style::default(),
@@ -1191,7 +1213,7 @@ test "realistic: dashboard with widgets" {
     },
     table_rows,
   )
-  let dashboard = LayoutNode::new(
+  let dashboard = @tree.LayoutNode::new(
     "dashboard",
     @style.Style::{
       ..@style.Style::default(),
@@ -1210,11 +1232,11 @@ test "realistic: dashboard with widgets" {
     },
     [row1, row2, table],
   )
-  let tree = LayoutTree::new(dashboard, 1000.0, 800.0)
+  let tree = @tree.LayoutTree::new(dashboard, 1000.0, 800.0)
   let total_nodes = count_nodes(dashboard)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   inspect(total_nodes, content="49")
   inspect(stats1.cache_misses, content="20") // containers only
@@ -1222,7 +1244,7 @@ test "realistic: dashboard with widgets" {
   // Simulate: chart widget updates (mark the widget container, not just leaf content)
   let chart_widget = row2.children[0]
   tree.mark_node_dirty(chart_widget.uid) // Mark chart widget container
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // row1 (3 widgets), activity widget, table (10 rows) should use cache
@@ -1233,7 +1255,7 @@ test "realistic: dashboard with widgets" {
   let mut total_rapid_ops = 0
   for update = 0; update < 10; update = update + 1 {
     tree.mark_node_dirty(chart_widget.uid)
-    let rapid_stats = CacheStats::new()
+    let rapid_stats = @tree.CacheStats::new()
     let _ = tree.compute_with_stats(rapid_stats)
     total_rapid_ops = total_rapid_ops +
       rapid_stats.cache_hits +
@@ -1251,11 +1273,11 @@ test "realistic: sidebar navigation with active state" {
   @dispatch.setup()
 
   // Create navigation items
-  let nav_items : Array[LayoutNode] = []
+  let nav_items : Array[@tree.LayoutNode] = []
   for i = 0; i < 15; i = i + 1 {
     nav_items.push(create_nav_item("nav_" + i.to_string(), i == 0))
   }
-  let sidebar = LayoutNode::new(
+  let sidebar = @tree.LayoutNode::new(
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
@@ -1266,13 +1288,13 @@ test "realistic: sidebar navigation with active state" {
     },
     nav_items,
   )
-  let content = LayoutNode::leaf("main_content", @style.Style::{
+  let content = @tree.LayoutNode::leaf("main_content", @style.Style::{
     ..@style.Style::default(),
     width: @types.Auto,
     height: @types.Percent(1.0),
     flex_grow: 1.0,
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "app_root",
     @style.Style::{
       ..@style.Style::default(),
@@ -1282,10 +1304,10 @@ test "realistic: sidebar navigation with active state" {
     },
     [sidebar, content],
   )
-  let tree = LayoutTree::new(root, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   inspect(stats1.cache_misses, content="3") // root + sidebar + content (nav items are leaves)
 
@@ -1294,14 +1316,14 @@ test "realistic: sidebar navigation with active state" {
   // For this test, marking leaves dirty won't trigger cache behavior
 
   // Second compute without changes - should hit root cache
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
   inspect(stats2.cache_hits, content="1") // Root cache hit
   inspect(stats2.cache_misses, content="0")
 
   // Mark sidebar dirty (container)
   tree.mark_node_dirty(sidebar.uid)
-  let stats3 = CacheStats::new()
+  let stats3 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats3)
 
   // Content should hit cache
@@ -1314,8 +1336,8 @@ test "realistic: form with validation" {
   @dispatch.setup()
 
   // Create form fields
-  fn create_field(id : String) -> LayoutNode {
-    let label = LayoutNode::leaf(id + "_label", @style.Style::{
+  fn create_field(id : String) -> @tree.LayoutNode {
+    let label = @tree.LayoutNode::leaf(id + "_label", @style.Style::{
       ..@style.Style::default(),
       width: @types.Percent(1.0),
       height: @types.Length(20.0),
@@ -1326,12 +1348,12 @@ test "realistic: form with validation" {
         left: @types.Length(0.0),
       },
     })
-    let input = LayoutNode::leaf(id + "_input", @style.Style::{
+    let input = @tree.LayoutNode::leaf(id + "_input", @style.Style::{
       ..@style.Style::default(),
       width: @types.Percent(1.0),
       height: @types.Length(40.0),
     })
-    let error = LayoutNode::leaf(id + "_error", @style.Style::{
+    let error = @tree.LayoutNode::leaf(id + "_error", @style.Style::{
       ..@style.Style::default(),
       width: @types.Percent(1.0),
       height: @types.Length(16.0),
@@ -1342,7 +1364,7 @@ test "realistic: form with validation" {
         left: @types.Length(0.0),
       },
     })
-    LayoutNode::new(
+    @tree.LayoutNode::new(
       id,
       @style.Style::{
         ..@style.Style::default(),
@@ -1361,20 +1383,20 @@ test "realistic: form with validation" {
     )
   }
 
-  let fields : Array[LayoutNode] = []
+  let fields : Array[@tree.LayoutNode] = []
   let field_names = [
     "name", "email", "phone", "address", "city", "state", "zip", "country",
   ]
   for i = 0; i < field_names.length(); i = i + 1 {
     fields.push(create_field(field_names[i]))
   }
-  let submit_button = LayoutNode::leaf("submit", @style.Style::{
+  let submit_button = @tree.LayoutNode::leaf("submit", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(120.0),
     height: @types.Length(44.0),
   })
   fields.push(submit_button)
-  let form = LayoutNode::new(
+  let form = @tree.LayoutNode::new(
     "form",
     @style.Style::{
       ..@style.Style::default(),
@@ -1391,18 +1413,18 @@ test "realistic: form with validation" {
     },
     fields,
   )
-  let tree = LayoutTree::new(form, 500.0, 800.0)
+  let tree = @tree.LayoutTree::new(form, 500.0, 800.0)
   let total_nodes = count_nodes(form)
 
   // First compute
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats1)
   inspect(total_nodes, content="34") // form + 8 fields * 4 elements + submit
   inspect(stats1.cache_misses, content="10") // form + 8 field containers
 
   // Simulate: update one field container (e.g., validation state change)
   tree.mark_node_dirty(fields[1].uid) // email field container
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Other 7 fields should use cache
@@ -1413,7 +1435,7 @@ test "realistic: form with validation" {
   tree.mark_node_dirty(fields[0].uid)
   tree.mark_node_dirty(fields[2].uid)
   tree.mark_node_dirty(fields[3].uid)
-  let stats3 = CacheStats::new()
+  let stats3 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats3)
 
   // 4 untouched fields should use cache (fields[4-7] + email already clean)
@@ -1424,17 +1446,17 @@ test "realistic: form with validation" {
 ///|
 test "optimization: size-match not used when child is dirty" {
   @dispatch.setup()
-  let child1 = LayoutNode::leaf("child1", @style.Style::{
+  let child1 = @tree.LayoutNode::leaf("child1", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
-  let child2 = LayoutNode::leaf("child2", @style.Style::{
+  let child2 = @tree.LayoutNode::leaf("child2", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -1444,7 +1466,7 @@ test "optimization: size-match not used when child is dirty" {
     },
     [child1, child2],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // First compute
   let _ = tree.compute_incremental()
@@ -1457,7 +1479,7 @@ test "optimization: size-match not used when child is dirty" {
   assert_true(tree.root.children_dirty)
 
   // Second compute - should NOT use size-match because child1 is dirty
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Size-match optimization should NOT trigger (child has dirty descendant)
@@ -1472,14 +1494,14 @@ fn create_large_website(
   num_sidebar_items : Int,
   num_content_sections : Int,
   items_per_section : Int,
-) -> (LayoutNode, Array[LayoutNode]) {
+) -> (@tree.LayoutNode, Array[@tree.LayoutNode]) {
   // Track all leaf containers for dirty marking
-  let all_items : Array[LayoutNode] = []
+  let all_items : Array[@tree.LayoutNode] = []
 
   // Header with logo, nav items, and user menu
-  let header_items : Array[LayoutNode] = []
+  let header_items : Array[@tree.LayoutNode] = []
   for i = 0; i < 10; i = i + 1 {
-    let item = LayoutNode::leaf("header_item_" + i.to_string(), @style.Style::{
+    let item = @tree.LayoutNode::leaf("header_item_" + i.to_string(), @style.Style::{
       ..@style.Style::default(),
       width: @types.Length(80.0),
       height: @types.Length(40.0),
@@ -1487,7 +1509,7 @@ fn create_large_website(
     header_items.push(item)
     all_items.push(item)
   }
-  let header = LayoutNode::new(
+  let header = @tree.LayoutNode::new(
     "header",
     @style.Style::{
       ..@style.Style::default(),
@@ -1499,11 +1521,11 @@ fn create_large_website(
   )
 
   // Sidebar with nested navigation groups
-  let sidebar_groups : Array[LayoutNode] = []
+  let sidebar_groups : Array[@tree.LayoutNode] = []
   for g = 0; g < 5; g = g + 1 {
-    let group_items : Array[LayoutNode] = []
+    let group_items : Array[@tree.LayoutNode] = []
     for i = 0; i < num_sidebar_items / 5; i = i + 1 {
-      let item = LayoutNode::new(
+      let item = @tree.LayoutNode::new(
         "sidebar_g" + g.to_string() + "_item_" + i.to_string(),
         @style.Style::{
           ..@style.Style::default(),
@@ -1512,23 +1534,29 @@ fn create_large_website(
           height: @types.Length(36.0),
         },
         [
-          LayoutNode::leaf("icon_" + g.to_string() + "_" + i.to_string(), @style.Style::{
-            ..@style.Style::default(),
-            width: @types.Length(20.0),
-            height: @types.Length(20.0),
-          }),
-          LayoutNode::leaf("label_" + g.to_string() + "_" + i.to_string(), @style.Style::{
-            ..@style.Style::default(),
-            width: @types.Auto,
-            height: @types.Length(20.0),
-            flex_grow: 1.0,
-          }),
+          @tree.LayoutNode::leaf(
+            "icon_" + g.to_string() + "_" + i.to_string(),
+            @style.Style::{
+              ..@style.Style::default(),
+              width: @types.Length(20.0),
+              height: @types.Length(20.0),
+            },
+          ),
+          @tree.LayoutNode::leaf(
+            "label_" + g.to_string() + "_" + i.to_string(),
+            @style.Style::{
+              ..@style.Style::default(),
+              width: @types.Auto,
+              height: @types.Length(20.0),
+              flex_grow: 1.0,
+            },
+          ),
         ],
       )
       group_items.push(item)
       all_items.push(item)
     }
-    let group = LayoutNode::new(
+    let group = @tree.LayoutNode::new(
       "sidebar_group_" + g.to_string(),
       @style.Style::{
         ..@style.Style::default(),
@@ -1540,7 +1568,7 @@ fn create_large_website(
     )
     sidebar_groups.push(group)
   }
-  let sidebar = LayoutNode::new(
+  let sidebar = @tree.LayoutNode::new(
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
@@ -1553,10 +1581,10 @@ fn create_large_website(
   )
 
   // Main content area with multiple sections
-  let sections : Array[LayoutNode] = []
+  let sections : Array[@tree.LayoutNode] = []
   for s = 0; s < num_content_sections; s = s + 1 {
     // Section header
-    let section_header = LayoutNode::new(
+    let section_header = @tree.LayoutNode::new(
       "section_header_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
@@ -1565,13 +1593,13 @@ fn create_large_website(
         height: @types.Length(48.0),
       },
       [
-        LayoutNode::leaf("section_title_" + s.to_string(), @style.Style::{
+        @tree.LayoutNode::leaf("section_title_" + s.to_string(), @style.Style::{
           ..@style.Style::default(),
           width: @types.Auto,
           height: @types.Length(24.0),
           flex_grow: 1.0,
         }),
-        LayoutNode::leaf("section_action_" + s.to_string(), @style.Style::{
+        @tree.LayoutNode::leaf("section_action_" + s.to_string(), @style.Style::{
           ..@style.Style::default(),
           width: @types.Length(100.0),
           height: @types.Length(32.0),
@@ -1580,10 +1608,10 @@ fn create_large_website(
     )
 
     // Section content (grid of cards)
-    let cards : Array[LayoutNode] = []
+    let cards : Array[@tree.LayoutNode] = []
     for i = 0; i < items_per_section; i = i + 1 {
       // Card with image, title, description, metadata, actions
-      let card = LayoutNode::new(
+      let card = @tree.LayoutNode::new(
         "card_" + s.to_string() + "_" + i.to_string(),
         @style.Style::{
           ..@style.Style::default(),
@@ -1593,12 +1621,15 @@ fn create_large_website(
           height: @types.Auto,
         },
         [
-          LayoutNode::leaf("card_img_" + s.to_string() + "_" + i.to_string(), @style.Style::{
-            ..@style.Style::default(),
-            width: @types.Percent(1.0),
-            height: @types.Length(160.0),
-          }),
-          LayoutNode::new(
+          @tree.LayoutNode::leaf(
+            "card_img_" + s.to_string() + "_" + i.to_string(),
+            @style.Style::{
+              ..@style.Style::default(),
+              width: @types.Percent(1.0),
+              height: @types.Length(160.0),
+            },
+          ),
+          @tree.LayoutNode::new(
             "card_body_" + s.to_string() + "_" + i.to_string(),
             @style.Style::{
               ..@style.Style::default(),
@@ -1608,7 +1639,7 @@ fn create_large_website(
               height: @types.Auto,
             },
             [
-              LayoutNode::leaf(
+              @tree.LayoutNode::leaf(
                 "card_title_" + s.to_string() + "_" + i.to_string(),
                 @style.Style::{
                   ..@style.Style::default(),
@@ -1616,7 +1647,7 @@ fn create_large_website(
                   height: @types.Length(24.0),
                 },
               ),
-              LayoutNode::leaf(
+              @tree.LayoutNode::leaf(
                 "card_desc_" + s.to_string() + "_" + i.to_string(),
                 @style.Style::{
                   ..@style.Style::default(),
@@ -1624,7 +1655,7 @@ fn create_large_website(
                   height: @types.Length(48.0),
                 },
               ),
-              LayoutNode::new(
+              @tree.LayoutNode::new(
                 "card_meta_" + s.to_string() + "_" + i.to_string(),
                 @style.Style::{
                   ..@style.Style::default(),
@@ -1633,7 +1664,7 @@ fn create_large_website(
                   height: @types.Length(20.0),
                 },
                 [
-                  LayoutNode::leaf(
+                  @tree.LayoutNode::leaf(
                     "card_date_" + s.to_string() + "_" + i.to_string(),
                     @style.Style::{
                       ..@style.Style::default(),
@@ -1642,7 +1673,7 @@ fn create_large_website(
                       flex_grow: 1.0,
                     },
                   ),
-                  LayoutNode::leaf(
+                  @tree.LayoutNode::leaf(
                     "card_author_" + s.to_string() + "_" + i.to_string(),
                     @style.Style::{
                       ..@style.Style::default(),
@@ -1654,7 +1685,7 @@ fn create_large_website(
               ),
             ],
           ),
-          LayoutNode::new(
+          @tree.LayoutNode::new(
             "card_actions_" + s.to_string() + "_" + i.to_string(),
             @style.Style::{
               ..@style.Style::default(),
@@ -1663,7 +1694,7 @@ fn create_large_website(
               height: @types.Length(40.0),
             },
             [
-              LayoutNode::leaf(
+              @tree.LayoutNode::leaf(
                 "card_btn1_" + s.to_string() + "_" + i.to_string(),
                 @style.Style::{
                   ..@style.Style::default(),
@@ -1671,7 +1702,7 @@ fn create_large_website(
                   height: @types.Length(32.0),
                 },
               ),
-              LayoutNode::leaf(
+              @tree.LayoutNode::leaf(
                 "card_btn2_" + s.to_string() + "_" + i.to_string(),
                 @style.Style::{
                   ..@style.Style::default(),
@@ -1686,7 +1717,7 @@ fn create_large_website(
       cards.push(card)
       all_items.push(card)
     }
-    let section_content = LayoutNode::new(
+    let section_content = @tree.LayoutNode::new(
       "section_content_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
@@ -1697,7 +1728,7 @@ fn create_large_website(
       },
       cards,
     )
-    let section = LayoutNode::new(
+    let section = @tree.LayoutNode::new(
       "section_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
@@ -1710,7 +1741,7 @@ fn create_large_website(
     )
     sections.push(section)
   }
-  let main_content = LayoutNode::new(
+  let main_content = @tree.LayoutNode::new(
     "main_content",
     @style.Style::{
       ..@style.Style::default(),
@@ -1724,7 +1755,7 @@ fn create_large_website(
   )
 
   // Body (sidebar + main)
-  let body = LayoutNode::new(
+  let body = @tree.LayoutNode::new(
     "body",
     @style.Style::{
       ..@style.Style::default(),
@@ -1737,17 +1768,17 @@ fn create_large_website(
   )
 
   // Footer
-  let footer_items : Array[LayoutNode] = []
+  let footer_items : Array[@tree.LayoutNode] = []
   for i = 0; i < 20; i = i + 1 {
     footer_items.push(
-      LayoutNode::leaf("footer_link_" + i.to_string(), @style.Style::{
+      @tree.LayoutNode::leaf("footer_link_" + i.to_string(), @style.Style::{
         ..@style.Style::default(),
         width: @types.Length(100.0),
         height: @types.Length(24.0),
       }),
     )
   }
-  let footer = LayoutNode::new(
+  let footer = @tree.LayoutNode::new(
     "footer",
     @style.Style::{
       ..@style.Style::default(),
@@ -1760,7 +1791,7 @@ fn create_large_website(
   )
 
   // Root
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -1784,14 +1815,14 @@ test "large-scale: 5000 node website layout" {
   // Each card has ~12 nodes = 4800 nodes
   // Plus headers, footer, etc. ≈ 5000+ nodes
   let (root, items) = create_large_website(50, 20, 20)
-  let tree = LayoutTree::new(root, 1440.0, 900.0)
+  let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
   let total_nodes = count_nodes(root)
 
   // Report node count
   inspect(total_nodes, content="4691") // Actual node count
 
   // First compute - full layout
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let layout1 = tree.compute_with_stats(stats1)
 
   // Report initial stats
@@ -1802,7 +1833,7 @@ test "large-scale: 5000 node website layout" {
   // Simulate single item update (common case: user interaction)
   let single_item = items[items.length() / 2] // Pick middle item
   tree.mark_node_dirty(single_item.uid)
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats2)
 
   // Report incremental stats
@@ -1820,7 +1851,7 @@ test "large-scale: 5000 node website layout" {
 test "large-scale: multiple scattered updates" {
   @dispatch.setup()
   let (root, items) = create_large_website(50, 20, 20)
-  let tree = LayoutTree::new(root, 1440.0, 900.0)
+  let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
 
   // First compute
   let _ = tree.compute_incremental()
@@ -1830,7 +1861,7 @@ test "large-scale: multiple scattered updates" {
     let idx = i * items.length() / 10 // Spread across tree
     tree.mark_node_dirty(items[idx].uid)
   }
-  let stats = CacheStats::new()
+  let stats = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats)
 
   // Even with 10 updates, should still have good hit rate
@@ -1844,14 +1875,14 @@ test "large-scale: multiple scattered updates" {
 test "large-scale: worst case - root dirty" {
   @dispatch.setup()
   let (root, _) = create_large_website(50, 20, 20)
-  let tree = LayoutTree::new(root, 1440.0, 900.0)
+  let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
 
   // First compute
   let _ = tree.compute_incremental()
 
   // Worst case: mark root dirty (everything needs recompute)
   tree.mark_node_dirty(root.uid)
-  let stats = CacheStats::new()
+  let stats = @tree.CacheStats::new()
   let _ = tree.compute_with_stats(stats)
 
   // Should have 0 cache hits (all invalidated)
@@ -1864,11 +1895,11 @@ test "perf: incremental vs full recompute comparison" {
   @dispatch.setup()
 
   // Create large tree similar to dashboard
-  let cards : Array[LayoutNode] = []
+  let cards : Array[@tree.LayoutNode] = []
   for i = 0; i < 24; i = i + 1 {
     cards.push(create_card("card_" + i.to_string()))
   }
-  let grid = LayoutNode::new(
+  let grid = @tree.LayoutNode::new(
     "grid",
     @style.Style::{
       ..@style.Style::default(),
@@ -1879,7 +1910,7 @@ test "perf: incremental vs full recompute comparison" {
     },
     cards,
   )
-  let tree = LayoutTree::new(grid, 1200.0, 800.0)
+  let tree = @tree.LayoutTree::new(grid, 1200.0, 800.0)
 
   // Initial compute
   let _ = tree.compute_incremental()
@@ -1888,13 +1919,13 @@ test "perf: incremental vs full recompute comparison" {
   let mut incremental_ops = 0
   for i = 0; i < 100; i = i + 1 {
     tree.mark_node_dirty(cards[i % 24].uid)
-    let stats = CacheStats::new()
+    let stats = @tree.CacheStats::new()
     let _ = tree.compute_with_stats(stats)
     incremental_ops = incremental_ops + stats.cache_hits + stats.cache_misses
   }
 
   // Measure what 100 full computes would cost (cache_misses on first run)
-  let full_stats = CacheStats::new()
+  let full_stats = @tree.CacheStats::new()
   // Clear all caches to simulate full compute
   for card in cards {
     card.mark_dirty()
@@ -1917,7 +1948,7 @@ test "perf: incremental vs full recompute comparison" {
 
 ///|
 /// Create a deeply nested Auto-sized tree for intrinsic size testing
-fn create_deep_auto_tree(depth : Int, branching : Int) -> LayoutNode {
+fn create_deep_auto_tree(depth : Int, branching : Int) -> @tree.LayoutNode {
   create_deep_auto_subtree("root", depth, branching, 0)
 }
 
@@ -1927,24 +1958,24 @@ fn create_deep_auto_subtree(
   depth : Int,
   branching : Int,
   level : Int,
-) -> LayoutNode {
+) -> @tree.LayoutNode {
   if depth == 0 {
     // Leaf node with fixed size
-    LayoutNode::leaf(prefix, @style.Style::{
+    @tree.LayoutNode::leaf(prefix, @style.Style::{
       ..@style.Style::default(),
       width: @types.Length(40.0),
       height: @types.Length(20.0),
     })
   } else {
     // Container with Auto sizing - triggers intrinsic size computation
-    let children : Array[LayoutNode] = []
+    let children : Array[@tree.LayoutNode] = []
     for i = 0; i < branching; i = i + 1 {
       let child_prefix = prefix + "_" + i.to_string()
       children.push(
         create_deep_auto_subtree(child_prefix, depth - 1, branching, level + 1),
       )
     }
-    LayoutNode::new(
+    @tree.LayoutNode::new(
       prefix,
       @style.Style::{
         ..@style.Style::default(),
@@ -1975,11 +2006,11 @@ test "analysis: global intrinsic cache benefit" {
 
   // Create deep Auto-sized tree: many intrinsic calculations
   let root = create_deep_auto_tree(4, 3) // 121 nodes, all with Auto sizing
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
   let total_nodes = count_nodes(root)
 
   // First compute - fills the global intrinsic cache
-  let stats1 = CacheStats::new()
+  let stats1 = @tree.CacheStats::new()
   let layout1 = tree.compute_with_stats(stats1)
 
   // Now mark a deep leaf dirty
@@ -1989,7 +2020,7 @@ test "analysis: global intrinsic cache benefit" {
   }
 
   // Second compute - should benefit from global intrinsic cache
-  let stats2 = CacheStats::new()
+  let stats2 = @tree.CacheStats::new()
   let layout2 = tree.compute_with_stats(stats2)
 
   // Report

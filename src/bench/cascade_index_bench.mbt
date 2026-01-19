@@ -4,8 +4,8 @@
 // Compare indexed vs non-indexed selector matching
 
 ///|
-fn create_test_stylesheet(num_rules : Int) -> Stylesheet {
-  let stylesheet = Stylesheet::new(Author)
+fn create_test_stylesheet(num_rules : Int) -> @cascade.Stylesheet {
+  let stylesheet = @cascade.Stylesheet::new(@cascade.Author)
   // Create various selector patterns using helper functions
   for i = 0; i < num_rules; i = i + 1 {
     let idx = i % 6
@@ -35,12 +35,12 @@ fn create_test_stylesheet(num_rules : Int) -> Stylesheet {
         @selector.ComplexSelector::simple(compound)
       }
     }
-    let decls : Array[Declaration] = [
+    let decls : Array[@cascade.Declaration] = [
       {
         property: "color",
-        value: Value("red"),
-        origin: Author,
-        importance: Normal,
+        value: @cascade.Value("red"),
+        origin: @cascade.Author,
+        importance: @cascade.Normal,
         specificity: { a: 0, b: 0, c: 0 },
         source_order: 0,
       },
@@ -75,7 +75,7 @@ test "bench_selector_match_non_indexed_100" (b : @bench.T) {
 ///|
 test "bench_selector_match_indexed_100" (b : @bench.T) {
   let stylesheet = create_test_stylesheet(100)
-  let indexed = IndexedStylesheet::new(stylesheet)
+  let indexed = @cascade.IndexedStylesheet::new(stylesheet)
   let elem = create_test_element("item-5", ["class-10", "container"])
   b.bench(name="match_indexed_100", fn() { b.keep(indexed.match_element(elem)) })
 }
@@ -92,7 +92,7 @@ test "bench_selector_match_non_indexed_500" (b : @bench.T) {
 ///|
 test "bench_selector_match_indexed_500" (b : @bench.T) {
   let stylesheet = create_test_stylesheet(500)
-  let indexed = IndexedStylesheet::new(stylesheet)
+  let indexed = @cascade.IndexedStylesheet::new(stylesheet)
   let elem = create_test_element("item-25", ["class-20", "container"])
   b.bench(name="match_indexed_500", fn() { b.keep(indexed.match_element(elem)) })
 }
@@ -109,7 +109,7 @@ test "bench_selector_match_non_indexed_1000" (b : @bench.T) {
 ///|
 test "bench_selector_match_indexed_1000" (b : @bench.T) {
   let stylesheet = create_test_stylesheet(1000)
-  let indexed = IndexedStylesheet::new(stylesheet)
+  let indexed = @cascade.IndexedStylesheet::new(stylesheet)
   let elem = create_test_element("item-100", ["class-30", "container", "active"])
   b.bench(name="match_indexed_1k", fn() { b.keep(indexed.match_element(elem)) })
 }
@@ -128,7 +128,7 @@ test "bench_cascade_multiple_elements_non_indexed" (b : @bench.T) {
   }
   b.bench(name="cascade_non_idx", fn() {
     for elem in elements {
-      b.keep(cascade_element(elem, stylesheets, []))
+      b.keep(@cascade.cascade_element(elem, stylesheets, []))
     }
   })
 }
@@ -136,7 +136,7 @@ test "bench_cascade_multiple_elements_non_indexed" (b : @bench.T) {
 ///|
 test "bench_cascade_multiple_elements_indexed" (b : @bench.T) {
   let stylesheet = create_test_stylesheet(200)
-  let indexed = IndexedStylesheet::new(stylesheet)
+  let indexed = @cascade.IndexedStylesheet::new(stylesheet)
   let stylesheets = [indexed]
   let elements : Array[@selector.Element] = []
   for i = 0; i < 100; i = i + 1 {
@@ -148,7 +148,7 @@ test "bench_cascade_multiple_elements_indexed" (b : @bench.T) {
   }
   b.bench(name="cascade_indexed", fn() {
     for elem in elements {
-      b.keep(cascade_element_indexed(elem, stylesheets, [], None))
+      b.keep(@cascade.cascade_element_indexed(elem, stylesheets, [], None))
     }
   })
 }
