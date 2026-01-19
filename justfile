@@ -64,9 +64,21 @@ coverage:
 gentest file:
     node scripts/gentest.ts {{file}}
 
-# Generate MoonBit tests from fixtures
+# Generate MoonBit tests from fixtures (generic)
 gen-moonbit-tests input output *args:
     node scripts/gen-moonbit-tests.ts {{input}} {{output}} {{args}}
+
+# Generate all taffy compatibility tests
+gen-taffy-tests:
+    @echo "Generating taffy compatibility tests..."
+    node scripts/gen-moonbit-tests.ts tests/fixtures/block src/tests/taffy_compat/gen_block_test.mbt --compute-fn "@block.compute"
+    node scripts/gen-moonbit-tests.ts tests/fixtures/flex src/tests/taffy_compat/gen_flex_test.mbt --compute-fn "@flex.compute"
+    node scripts/gen-moonbit-tests.ts tests/fixtures/grid src/tests/taffy_compat/gen_grid_test.mbt --compute-fn "@grid.compute_layout"
+    @echo "Done generating taffy compatibility tests"
+
+# Run taffy compatibility tests
+test-taffy:
+    moon test -p mizchi/crater/tests/taffy_compat
 
 # Generate html5lib tests
 gen-html5lib-tests *args:

@@ -16,7 +16,7 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 45.0)
@@ -37,7 +37,7 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_y_axis" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 45.0)
@@ -62,7 +62,7 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_available_space" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -83,7 +83,7 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_max_size" {
     max_height: @types.Length(4.0),
   }
   let root = @node.Node::leaf("test-root", root_style)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -100,7 +100,7 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_size" {
     height: @types.Length(4.0),
   }
   let root = @node.Node::leaf("test-root", root_style)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -120,7 +120,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -139,7 +139,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -158,7 +158,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_y_axis" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -185,7 +185,7 @@ test "taffy/leaf_padding_border_overrides_max_size" {
     },
   }
   let root = @node.Node::leaf("test-root", root_style)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -212,7 +212,7 @@ test "taffy/leaf_padding_border_overrides_min_size" {
     },
   }
   let root = @node.Node::leaf("test-root", root_style)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -239,7 +239,7 @@ test "taffy/leaf_padding_border_overrides_size" {
     },
   }
   let root = @node.Node::leaf("test-root", root_style)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -263,7 +263,7 @@ test "taffy/leaf_with_content_and_border" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -287,7 +287,7 @@ test "taffy/leaf_with_content_and_padding" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -317,7 +317,7 @@ test "taffy/leaf_with_content_and_padding_border" {
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
-  let layout = compute_layout(root, 800.0, 600.0)
+  let layout = @grid.compute_layout(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 62.0)
