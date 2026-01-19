@@ -2,6 +2,7 @@
   "name": "mizchi/crater-component",
   "version": "0.1.0",
   "deps": {
-    "mizchi/crater": { "path": ".." }
+    "mizchi/crater": { "path": ".." },
+    "mizchi/crater-js": { "path": "../js" }
   }
 }
