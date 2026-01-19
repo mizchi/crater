@@ -710,8 +710,8 @@ fn render_node_with_box_model(
 ///|
 /// Simple print function that outputs sixel to stdout
 pub fn print_layout(layout : @node.Layout, width : Int, height : Int) -> Unit {
-  let sixel = render_layout(layout, width, height)
-  println(sixel)
+  let _ = render_layout(layout, width, height)
+
 }
 
 // =============================================================================

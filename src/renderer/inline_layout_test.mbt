@@ -120,39 +120,22 @@ test "preactjs_actual_css_both_inline_block" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   let layout = render_with_external_css(html, ctx, [css])
-  println("=== Preactjs actual CSS test ===")
   fn show_layout(l : @node.Layout, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    let text_str = match l.text {
+    let _ = String::make(depth * 2, ' ')
+    let _ = match l.text {
       Some(t) => " \"" + t + "\""
       None => ""
     }
-    let row = (l.y / 16.0).to_int()
-    let col = (l.x / 8.0).to_int()
-    println(
-      indent +
-      l.id +
-      " (col=" +
-      col.to_string() +
-      " row=" +
-      row.to_string() +
-      " x=" +
-      l.x.to_string() +
-      " y=" +
-      l.y.to_string() +
-      ")" +
-      text_str,
-    )
+    let _ = (l.y / 16.0).to_int()
+    let _ = (l.x / 8.0).to_int()
     for child in l.children {
       show_layout(child, depth + 1)
     }
   }
 
   show_layout(layout, 0)
-  println("\n=== Node display types ===")
   fn show_node(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    println(indent + n.id + " [" + n.style.display.to_string() + "]")
+    let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_node(child, depth + 1)
     }
@@ -168,20 +151,9 @@ test "preactjs_actual_css_both_inline_block" {
     )
   }
   // Find time and address elements
-  println("\nChildren analysis:")
-  for i, child in container.children {
-    let row = (child.y / 16.0).to_int()
-    let col = (child.x / 8.0).to_int()
-    println(
-      "  [" +
-      i.to_string() +
-      "] " +
-      child.id +
-      " at (col=" +
-      col.to_string() +
-      ", row=" +
-      row.to_string() +
-      ")",
-    )
+  for _, child in container.children {
+    let _ = (child.y / 16.0).to_int()
+    let _ = (child.x / 8.0).to_int()
+
   }
 }

@@ -33,8 +33,6 @@ test "streaming_parser/nested elements" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular: " + regular_count.to_string())
-  println("Streaming: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -59,8 +57,6 @@ test "streaming_parser/article structure" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular elements: " + regular_count.to_string())
-  println("Streaming elements: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -79,8 +75,6 @@ test "streaming_parser/many paragraphs" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular elements: " + regular_count.to_string())
-  println("Streaming elements: " + streaming_count.to_string())
   // Should have: html, head, body, and 100 p elements = 103
   inspect(regular_count, content="103")
   inspect(streaming_count, content="103")
@@ -94,8 +88,6 @@ test "streaming_parser/small chunks" {
   let streaming_large = @html.parse_document_streaming(html, 1024)
   let small_count = stb_count_elements(streaming_small.root)
   let large_count = stb_count_elements(streaming_large.root)
-  println("Small chunks: " + small_count.to_string())
-  println("Large chunks: " + large_count.to_string())
   inspect(small_count == large_count, content="true")
 }
 
@@ -117,8 +109,6 @@ test "streaming_parser/deep nesting" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular: " + regular_count.to_string())
-  println("Streaming: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -138,8 +128,6 @@ test "streaming_parser/script and style tags" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular: " + regular_count.to_string())
-  println("Streaming: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -156,8 +144,6 @@ test "streaming_parser/self-closing tags" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular: " + regular_count.to_string())
-  println("Streaming: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -173,8 +159,6 @@ test "streaming_parser/comments" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular: " + regular_count.to_string())
-  println("Streaming: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -191,8 +175,6 @@ test "streaming_parser/mixed content" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_count = stb_count_elements(regular.root)
   let streaming_count = stb_count_elements(streaming.root)
-  println("Regular: " + regular_count.to_string())
-  println("Streaming: " + streaming_count.to_string())
   inspect(regular_count == streaming_count, content="true")
 }
 
@@ -228,7 +210,5 @@ test "streaming_parser/table with CJK text" {
   let streaming = @html.parse_document_streaming(html, 1024)
   let regular_text = stb_collect_text(regular.root)
   let streaming_text = stb_collect_text(streaming.root)
-  println("Regular text: " + regular_text)
-  println("Streaming text: " + streaming_text)
   inspect(regular_text == streaming_text, content="true")
 }

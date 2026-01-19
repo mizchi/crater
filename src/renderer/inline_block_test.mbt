@@ -17,21 +17,19 @@ test "inline_block_rendering" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    let display = n.style.display.to_string()
+    let _ = String::make(depth * 2, ' ')
+    let _ = n.style.display.to_string()
     let text_content = n.text.unwrap_or("")
-    let text_str = if text_content.length() > 0 {
+    let _ = if text_content.length() > 0 {
       " \"" + text_content + "\""
     } else {
       ""
     }
-    println(indent + n.id + " [" + display + "]" + text_str)
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== Node tree ===")
   show_all(node, 0)
   // Verify structure
   guard node.id == "body" else { fail("Expected body") }
@@ -75,10 +73,8 @@ test "inline_block_layout" {
     color_scheme: @media.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, [css])
-  println("=== Layout ===")
   fn show_layout(l : @node.Layout, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    println(indent + l.id + " x=\{l.x} y=\{l.y} w=\{l.width} h=\{l.height}")
+    let _ = String::make(depth * 2, ' ')
     for child in l.children {
       show_layout(child, depth + 1)
     }

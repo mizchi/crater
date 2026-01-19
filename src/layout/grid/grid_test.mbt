@@ -1523,9 +1523,6 @@ test "grid_min_content_spanning_fr" {
   let item = @node.Node::new("item", item_style, [filler])
   let root = @node.Node::new("root", root_style, [item])
   let layout = compute_grid_layout(root, 800.0, 600.0)
-  println("root width: \{layout.width}")
-  println("item width: \{layout.children[0].width}")
-  println("filler width: \{layout.children[0].children[0].width}")
 
   // Expected: root width = 30 (tracks) + 20 (border) = 50
   // Expected: item width = 30 (spanning 1fr + 30px, where 1fr = 0)

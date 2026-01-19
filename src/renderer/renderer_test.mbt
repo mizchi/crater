@@ -561,18 +561,16 @@ test "img_alt_text_propagation" {
   let layout = render(html, ctx)
   // Debug: print all node IDs
   fn print_nodes(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    let text_info = match n.text {
+    let _ = String::make(depth * 2, ' ')
+    let _ = match n.text {
       Some(t) => " text=\"" + t + "\""
       None => ""
     }
-    println(indent + "Node: " + n.id + text_info)
     for child in n.children {
       print_nodes(child, depth + 1)
     }
   }
 
-  println("=== Node tree ===")
   print_nodes(node, 0)
   // Find img node
   fn find_img_node(n : @node.Node) -> @node.Node? {
@@ -645,8 +643,7 @@ test "tall_content_scrollability" {
     #|  <h2>Section 1: Getting Started</h2>
     #|  <p>First paragraph of section one with detailed explanation of the topic. This text should be long enough to wrap multiple lines in a narrow viewport.</p>
     #|  <pre><code>fn main() {
-    #|  println("Hello, MoonBit!")
-    #|}</code></pre>
+    #|      #|}</code></pre>
     #|  <p>Additional explanation after the code block explaining what the code does and how it works in practice.</p>
     #|
     #|  <h2>Section 2: Advanced Features</h2>
@@ -694,32 +691,21 @@ test "tall_content_scrollability" {
   let layout = render(html, ctx)
 
   // Debug output
-  println("=== Tall Content Scrollability Test ===")
-  println(
-    "Viewport: " +
-    viewport_width.to_string() +
-    "x" +
-    viewport_height.to_string(),
-  )
-  println("Layout height: " + layout.height.to_string())
 
   // CRITICAL: Content height must be greater than viewport height for scrolling
   inspect(layout.height > viewport_height, content="true")
 
   // Content should be significantly taller (at least 3x viewport height for this article)
   let min_expected_height = viewport_height * 2.0
-  println("Min expected height: " + min_expected_height.to_string())
   inspect(layout.height > min_expected_height, content="true")
 
   // Verify scrollable area calculation
   let scrollable_height = layout.height - viewport_height
-  println("Scrollable height: " + scrollable_height.to_string())
   inspect(scrollable_height > 0.0, content="true")
 
   // Test max scroll in character units (16px per char)
   let font_height = 16.0
   let max_scroll_chars = ((layout.height - viewport_height) / font_height).to_int()
-  println("Max scroll (chars): " + max_scroll_chars.to_string())
   inspect(max_scroll_chars > 0, content="true")
 }
 

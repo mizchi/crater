@@ -29,13 +29,6 @@ test "trace_dark_mode_css_variables" {
     color_scheme: @media.ColorScheme::Light,
   }
   let light_node = render_to_node_with_external_css(html, light_ctx, [css])
-  println("=== Light mode ===")
-  println(
-    "body bg=" +
-    light_node.style.background_color.to_hex() +
-    " color=" +
-    light_node.style.color.to_hex(),
-  )
   // Light mode: text should be dark (#333333), background should be white (#ffffff)
   assert_eq(light_node.style.color.to_hex(), "#333333")
   assert_eq(light_node.style.background_color.to_hex(), "#ffffff")
@@ -48,13 +41,6 @@ test "trace_dark_mode_css_variables" {
     color_scheme: @media.ColorScheme::Dark,
   }
   let dark_node = render_to_node_with_external_css(html, dark_ctx, [css])
-  println("=== Dark mode ===")
-  println(
-    "body bg=" +
-    dark_node.style.background_color.to_hex() +
-    " color=" +
-    dark_node.style.color.to_hex(),
-  )
   // Dark mode: text should be light (#eeeeee), background should be dark (#1a1a1a)
   assert_eq(dark_node.style.color.to_hex(), "#eeeeee")
   assert_eq(dark_node.style.background_color.to_hex(), "#1a1a1a")
@@ -98,20 +84,19 @@ test "trace_preact_css" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
+    let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     // Only show non-transparent backgrounds
     if bg.a > 0.0 {
-      println(indent + "** " + n.id + " bg=" + bg.to_hex() + " **")
+
     } else {
-      println(indent + n.id + " color=" + n.style.color.to_hex())
+
     }
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== Preact-like structure ===")
   show_all(node, 0)
 }
 
@@ -145,17 +130,15 @@ test "trace_error_color_check" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
+    let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
-    let fg = n.style.color
-    let bg_str = if bg.a > 0.0 { " bg=" + bg.to_hex() } else { "" }
-    println(indent + n.id + " color=" + fg.to_hex() + bg_str)
+    let _ = n.style.color
+    let _ = if bg.a > 0.0 { " bg=" + bg.to_hex() } else { "" }
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== Error color check ===")
   show_all(node, 0)
   // Key check: error-heading should have color=#f43678, NOT background=#f43678
   // error-section should have background=#ffeddb (not #f43678)
@@ -196,30 +179,20 @@ test "trace_loading_bar_pseudo_element" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
+    let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     // Check for any red/pink colors
     let is_red_ish = bg.r > 200 && bg.g < 150 && bg.b < 150 && bg.a > 0.0
-    let warning = if is_red_ish { " [RED! BUG!]" } else { "" }
+    let _ = if is_red_ish { " [RED! BUG!]" } else { "" }
     // Show element with background info
     if n.id.contains("loading") || bg.a > 0.0 {
-      println(
-        indent +
-        n.id +
-        " bg=" +
-        bg.to_hex() +
-        " (a=" +
-        bg.a.to_string() +
-        ")" +
-        warning,
-      )
+
     }
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== Loading bar pseudo-element test ===")
   show_all(node, 0)
   // The loading-bar element should NOT have the #f2777a background
   // because that style is only for ::after pseudo-element which we don't render
@@ -258,29 +231,19 @@ test "trace_gradient_fallback" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
+    let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     // Gradients should fall back to transparent (a=0), not black
     let is_black = bg.r == 0 && bg.g == 0 && bg.b == 0 && bg.a > 0.0
-    let warning = if is_black { " [BLACK! gradient fallback bug]" } else { "" }
+    let _ = if is_black { " [BLACK! gradient fallback bug]" } else { "" }
     if bg.a > 0.0 || n.id.contains("jumbotron") || n.id.contains("stripes") {
-      println(
-        indent +
-        n.id +
-        " bg=" +
-        bg.to_hex() +
-        " (a=" +
-        bg.a.to_string() +
-        ")" +
-        warning,
-      )
+
     }
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== Gradient fallback test ===")
   show_all(node, 0)
   // Gradient elements should have transparent background (a=0)
   // not black background (which was the old buggy behavior)

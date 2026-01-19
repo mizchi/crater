@@ -17,15 +17,7 @@ test "banner_color_computation" {
   let node = render_to_node_with_external_css(html, ctx, [css])
   // Print computed styles for debugging
   fn show_style(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    println(
-      indent +
-      n.id +
-      " color=" +
-      n.style.color.to_hex() +
-      " bg=" +
-      n.style.background_color.to_hex(),
-    )
+    let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_style(child, depth + 1)
     }
@@ -57,15 +49,7 @@ test "code_token_color" {
   let node = render_to_node_with_external_css(html, ctx, [css])
   // Print all nodes with their styles
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    println(
-      indent +
-      n.id +
-      " color=" +
-      n.style.color.to_hex() +
-      " bg=" +
-      n.style.background_color.to_hex(),
-    )
+    let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_all(child, depth + 1)
     }
@@ -95,21 +79,12 @@ test "css_variable_in_background" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    println(
-      indent +
-      n.id +
-      " color=" +
-      n.style.color.to_hex() +
-      " bg=" +
-      n.style.background_color.to_hex(),
-    )
+    let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== CSS variable test ===")
   show_all(node, 0)
   // .page should have transparent background (not #ff696d!)
 }
@@ -135,20 +110,11 @@ test "nested_background_inheritance" {
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
-    let indent = String::make(depth * 2, ' ')
-    println(
-      indent +
-      n.id +
-      " color=" +
-      n.style.color.to_hex() +
-      " bg=" +
-      n.style.background_color.to_hex(),
-    )
+    let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_all(child, depth + 1)
     }
   }
 
-  println("=== Nested background test ===")
   show_all(node, 0)
 }

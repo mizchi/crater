@@ -203,15 +203,11 @@ test "viewport_culling_basic" {
   )
   inspect(paint1 is Some(_), content="true")
   match paint1 {
-    Some(p) => {
-      println("Test 1: Viewport 0-50")
-      println("  Root visible: true")
-      println("  Children count: " + p.children.length().to_string())
+    Some(p) =>
       // child1 (0-100) overlaps with viewport (0-50)
       // child2 (100-200) is below viewport
       // child3 (200-300) is below viewport
       inspect(p.children.length() >= 1, content="true")
-    }
     None => fail("viewport 0-50 should return Some")
   }
 
@@ -221,14 +217,11 @@ test "viewport_culling_basic" {
   )
   inspect(paint2 is Some(_), content="true")
   match paint2 {
-    Some(p) => {
-      println("Test 2: Viewport 150-250")
-      println("  Children count: " + p.children.length().to_string())
+    Some(p) =>
       // child1 (0-100) is above viewport (100 < 150)
       // child2 (100-200) overlaps with viewport
       // child3 (200-300) overlaps with viewport
       inspect(p.children.length() >= 1, content="true")
-    }
     None => fail("viewport 150-250 should return Some")
   }
 
@@ -236,8 +229,6 @@ test "viewport_culling_basic" {
   let paint3 = from_node_and_layout_with_viewport(
     root, root_layout, 400.0, 500.0, 0.0,
   )
-  println("Test 3: Viewport 400-500 (past content)")
-  println("  Result is None: " + (paint3 is None).to_string())
   // Root spans 0-300, viewport starts at 400, so root should be culled
   inspect(paint3 is None, content="true")
 }
@@ -292,8 +283,6 @@ test "viewport_culling_zero_height_container" {
   let paint0 = from_node_and_layout_with_viewport(
     container, container_layout, 0.0, 400.0, 0.0,
   )
-  println("Zero-height container test:")
-  println("  scroll=0, viewport=0-400: " + (paint0 is Some(_)).to_string())
   inspect(paint0 is Some(_), content="true")
 
   // Scroll = 200px: viewport 200-600 - should STILL see content
@@ -304,23 +293,17 @@ test "viewport_culling_zero_height_container" {
   let paint1 = from_node_and_layout_with_viewport(
     container, container_layout, 200.0, 600.0, 0.0,
   )
-  println("  scroll=200, viewport=200-600: " + (paint1 is Some(_)).to_string())
   inspect(paint1 is Some(_), content="true")
 
   // Scroll = 500px: viewport 500-900 - should STILL see content
   let paint2 = from_node_and_layout_with_viewport(
     container, container_layout, 500.0, 900.0, 0.0,
   )
-  println("  scroll=500, viewport=500-900: " + (paint2 is Some(_)).to_string())
   inspect(paint2 is Some(_), content="true")
 
   // Scroll = 1200px: viewport 1200-1600 - should NOT see content (past 1000)
   let paint3 = from_node_and_layout_with_viewport(
     container, container_layout, 1200.0, 1600.0, 0.0,
-  )
-  println(
-    "  scroll=1200, viewport=1200-1600 (past content): " +
-    (paint3 is None).to_string(),
   )
   inspect(paint3 is None, content="true")
 }
@@ -363,9 +346,6 @@ test "viewport_culling_scroll_simulation" {
   let scroll0 = 0
   let vp_top0 = scroll0.to_double() * font_height
   let vp_bottom0 = (scroll0 + viewport_height_chars).to_double() * font_height
-  println(
-    "Scroll 0: viewport " + vp_top0.to_string() + "-" + vp_bottom0.to_string(),
-  )
   let paint0 = from_node_and_layout_with_viewport(
     root, root_layout, vp_top0, vp_bottom0, 0.0,
   )
@@ -375,9 +355,6 @@ test "viewport_culling_scroll_simulation" {
   let scroll1 = 6
   let vp_top1 = scroll1.to_double() * font_height
   let vp_bottom1 = (scroll1 + viewport_height_chars).to_double() * font_height
-  println(
-    "Scroll 6: viewport " + vp_top1.to_string() + "-" + vp_bottom1.to_string(),
-  )
   let paint1 = from_node_and_layout_with_viewport(
     root, root_layout, vp_top1, vp_bottom1, 0.0,
   )
@@ -387,9 +364,6 @@ test "viewport_culling_scroll_simulation" {
   let scroll2 = 12
   let vp_top2 = scroll2.to_double() * font_height
   let vp_bottom2 = (scroll2 + viewport_height_chars).to_double() * font_height
-  println(
-    "Scroll 12: viewport " + vp_top2.to_string() + "-" + vp_bottom2.to_string(),
-  )
   let paint2 = from_node_and_layout_with_viewport(
     root, root_layout, vp_top2, vp_bottom2, 0.0,
   )
@@ -400,9 +374,6 @@ test "viewport_culling_scroll_simulation" {
   let scroll3 = 13
   let vp_top3 = scroll3.to_double() * font_height
   let vp_bottom3 = (scroll3 + viewport_height_chars).to_double() * font_height
-  println(
-    "Scroll 13: viewport " + vp_top3.to_string() + "-" + vp_bottom3.to_string(),
-  )
   let paint3 = from_node_and_layout_with_viewport(
     root, root_layout, vp_top3, vp_bottom3, 0.0,
   )
@@ -414,9 +385,6 @@ test "viewport_culling_scroll_simulation" {
   let scroll4 = 20
   let vp_top4 = scroll4.to_double() * font_height
   let vp_bottom4 = (scroll4 + viewport_height_chars).to_double() * font_height
-  println(
-    "Scroll 20: viewport " + vp_top4.to_string() + "-" + vp_bottom4.to_string(),
-  )
   let paint4 = from_node_and_layout_with_viewport(
     root, root_layout, vp_top4, vp_bottom4, 0.0,
   )

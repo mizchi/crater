@@ -92,19 +92,8 @@ test "sixel demo layout" {
     ],
     text: None,
   }
-  println("Layout visualization (Sixel):")
-  println("==============================")
-  println("")
 
   // Render to Sixel
-  let sixel = render_layout(layout, 300, 200)
-  println(sixel)
-  println("")
-  println("Layout structure:")
-  println("  root (300x200)")
-  println("    ├─ header (276x40)")
-  println("    ├─ sidebar (80x126)")
-  println("    └─ main (186x126)")
-  println("         ├─ box1 (80x50)")
-  println("         └─ box2 (80x50)")
+  let _ = render_layout(layout, 300, 200)
+
 }
