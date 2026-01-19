@@ -4,7 +4,7 @@ import {
   "mizchi/crater/node",
   "mizchi/crater/paint",
   "mizchi/crater/types",
-  "mizchi/crater/tree",
+  "mizchi/crater/layout/tree",
   "mizchi/crater/css/computed",
   "mizchi/crater/css/media",
   "mizchi/crater/style",

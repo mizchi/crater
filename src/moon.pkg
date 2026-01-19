@@ -2,13 +2,13 @@ import {
   "mizchi/crater/types",
   "mizchi/crater/style",
   "mizchi/crater/node",
-  "mizchi/crater/compute/block",
-  "mizchi/crater/compute/flex",
-  "mizchi/crater/compute/grid",
-  "mizchi/crater/compute/table",
+  "mizchi/crater/layout/block",
+  "mizchi/crater/layout/flex",
+  "mizchi/crater/layout/grid",
+  "mizchi/crater/layout/table",
   "mizchi/crater/webvitals",
-  "mizchi/crater/tree",
-  "mizchi/crater/compute/dispatch",
+  "mizchi/crater/layout/tree",
+  "mizchi/crater/layout/dispatch",
 }
 
-import "test" { "mizchi/crater/compute/trace", "mizchi/crater/css/parser" }
+import "test" { "mizchi/crater/layout/trace", "mizchi/crater/css/parser" }

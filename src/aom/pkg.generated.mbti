@@ -3,8 +3,8 @@ package "mizchi/crater/aom"
 
 import(
   "mizchi/crater/html"
+  "mizchi/crater/layout/tree"
   "mizchi/crater/node"
-  "mizchi/crater/tree"
 )
 
 // Values

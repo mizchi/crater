@@ -2,7 +2,7 @@
 package "mizchi/crater/webvitals"
 
 import(
-  "mizchi/crater/tree"
+  "mizchi/crater/layout/tree"
   "mizchi/crater/types"
 )
 

@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/layout/absolute"
+
+import(
+  "mizchi/crater/node"
+  "mizchi/crater/style"
+  "mizchi/crater/types"
+)
+
+// Values
+pub fn apply_constraints_with_aspect_ratio(Double, Double, @style.Style, Double, Double, Double, Double) -> (Double, Double)
+
+pub fn clamp_value(Double, Double, Double) -> Double
+
+pub fn compute_inset_position(AbsoluteSizeParams, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+
+pub fn compute_position_with_margin_auto(AbsoluteSizeParams, @style.Style, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+
+pub fn compute_size_params(@style.Style, Double, Double) -> AbsoluteSizeParams
+
+pub fn create_zero_layout(String) -> @node.Layout
+
+pub fn has_dimension_constraint(@style.Style, Bool) -> Bool
+
+pub fn is_margin_auto(@types.Dimension) -> Bool
+
+pub fn resolve_inset(@types.Dimension, Double) -> Double?
+
+pub fn resolve_length_dimension(@types.Dimension, Double) -> Double
+
+// Errors
+
+// Types and methods
+pub(all) struct AbsoluteSizeParams {
+  margin_left : Double
+  margin_right : Double
+  margin_top : Double
+  margin_bottom : Double
+  inset_left : Double?
+  inset_right : Double?
+  inset_top : Double?
+  inset_bottom : Double?
+  initial_width : Double?
+  initial_height : Double?
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
+}
+
+// Type aliases
+
+// Traits
+

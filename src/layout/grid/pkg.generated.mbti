@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/layout/grid"
+
+import(
+  "mizchi/crater/node"
+)
+
+// Values
+pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
+
+pub fn compute_grid_layout(@node.Node, Double, Double) -> @node.Layout
+
+pub fn compute_layout(@node.Node, Double, Double) -> @node.Layout
+
+// Errors
+
+// Types and methods
+type BaselineInfo
+pub impl Show for BaselineInfo
+
+type GridAreaBounds
+pub impl Show for GridAreaBounds
+
+// Type aliases
+
+// Traits
+

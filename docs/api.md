@@ -236,7 +236,7 @@ pub struct IntrinsicSize {
 }
 ```
 
-### `mizchi/crater/tree`
+### `mizchi/crater/layout/tree`
 
 Incremental layout tree for efficient updates.
 

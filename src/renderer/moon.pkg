@@ -8,6 +8,6 @@ import {
   "mizchi/crater/node",
   "mizchi/crater/style",
   "mizchi/crater/types",
-  "mizchi/crater/compute/dispatch",
+  "mizchi/crater/layout/dispatch",
   "mizchi/crater/x/sixel",
 }

@@ -1,0 +1,283 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/layout/tree"
+
+import(
+  "mizchi/crater/css/cascade"
+  "mizchi/crater/dom"
+  "mizchi/crater/html"
+  "mizchi/crater/node"
+  "mizchi/crater/style"
+  "moonbitlang/core/hashset"
+)
+
+// Values
+pub fn analyze_style_dependencies(@style.Style) -> DependencyKind
+
+pub fn compute_node(LayoutNode, ConstraintSpace, CacheStats) -> @node.Layout
+
+pub fn compute_tree_incremental(LayoutTree, CacheStats) -> @node.Layout
+
+pub fn create_fixed_measure(Double, Double) -> @node.MeasureFunc
+
+pub let default_placeholder_height : Double
+
+pub let default_placeholder_width : Double
+
+pub fn depends_on_parent_height(DependencyKind) -> Bool
+
+pub fn depends_on_parent_width(DependencyKind) -> Bool
+
+pub fn depends_on_viewport(DependencyKind) -> Bool
+
+pub let error_placeholder_height : Double
+
+pub let error_placeholder_width : Double
+
+pub fn fail_node_resource(ResourceRegistry, (Int) -> LayoutNode?, (Int) -> Unit, ResourceId) -> Unit
+
+pub fn is_static(DependencyKind) -> Bool
+
+pub fn register_node_resource(ResourceRegistry, LayoutNode, (Int) -> Unit, placeholder_width? : Double, placeholder_height? : Double) -> ResourceId
+
+pub fn resolve_node_resource(ResourceRegistry, (Int) -> LayoutNode?, (Int) -> Unit, ResourceId, Double, Double) -> Unit
+
+// Errors
+
+// Types and methods
+pub struct CacheStats {
+  mut cache_hits : Int
+  mut cache_misses : Int
+  mut nodes_computed : Int
+}
+pub fn CacheStats::hit_rate(Self) -> Double
+pub fn CacheStats::new() -> Self
+
+pub struct ConstraintKey {
+  available_width : Double
+  available_height : Double?
+  sizing_mode : @node.SizingMode
+}
+pub fn ConstraintKey::approx_eq(Self, Self) -> Bool
+pub fn ConstraintKey::new(Double, Double?, @node.SizingMode) -> Self
+pub impl Eq for ConstraintKey
+
+pub struct ConstraintSpace {
+  available_width : Double
+  available_height : Double?
+  sizing_mode : @node.SizingMode
+  parent_width : Double
+  parent_height : Double?
+  viewport_width : Double
+  viewport_height : Double
+}
+pub fn ConstraintSpace::new(Double, Double?, @node.SizingMode, Double, Double?, viewport_width? : Double, viewport_height? : Double) -> Self
+pub fn ConstraintSpace::to_context(Self) -> @node.LayoutContext
+pub fn ConstraintSpace::to_key(Self) -> ConstraintKey
+
+pub(all) enum DependencyKind {
+  Static
+  ParentWidth
+  ParentHeight
+  ParentBoth
+  Intrinsic
+  Viewport
+}
+pub fn DependencyKind::merge(Self, Self) -> Self
+pub impl Eq for DependencyKind
+pub impl Show for DependencyKind
+
+pub struct Document {
+  dom : @dom.DomTree
+  layout : LayoutTree
+  dom_to_layout : Map[Int, Int]
+  layout_to_dom : Map[Int, Int]
+  mut needs_layout : Bool
+}
+pub fn Document::append_child(Self, @dom.NodeId, @dom.NodeId) -> Result[Unit, @dom.CoreError]
+pub fn Document::compute_layout(Self) -> @node.Layout
+pub fn Document::compute_layout_full(Self) -> @node.Layout
+pub fn Document::create_element(Self, String) -> @dom.NodeId
+pub fn Document::create_text(Self, String) -> @dom.NodeId
+pub fn Document::get_document_root(Self) -> @dom.NodeId
+pub fn Document::get_dom(Self) -> @dom.DomTree
+pub fn Document::get_layout(Self) -> LayoutTree
+pub fn Document::needs_layout(Self) -> Bool
+pub fn Document::new(Double, Double) -> Self
+pub fn Document::process_mutations(Self) -> Int
+pub fn Document::query_selector(Self, String) -> Result[@dom.NodeId?, @dom.CoreError]
+pub fn Document::resize_viewport(Self, Double, Double) -> Unit
+pub fn Document::set_attribute(Self, @dom.NodeId, String, String) -> Result[Unit, @dom.CoreError]
+pub fn Document::set_text_content(Self, @dom.NodeId, String) -> Result[Unit, @dom.CoreError]
+pub fn Document::update(Self) -> @node.Layout
+
+pub(all) enum IntrinsicState {
+  Resolved(width~ : Double, height~ : Double)
+  Pending(placeholder_width~ : Double, placeholder_height~ : Double)
+  Error
+}
+
+pub struct LayoutCache {
+  constraint : ConstraintKey
+  result : @node.Layout
+}
+
+pub struct LayoutNode {
+  id : String
+  uid : Int
+  style : @style.Style
+  children : Array[LayoutNode]
+  mut measure : @node.MeasureFunc?
+  text : String?
+  mut dirty : Bool
+  mut children_dirty : Bool
+  mut cached_layout : LayoutCache?
+  dependencies : DependencyKind
+  mut computed_x : Double
+  mut computed_y : Double
+  mut computed_width : Double
+  mut computed_height : Double
+  mut has_new_layout : Bool
+  mut intrinsic_state : IntrinsicState?
+}
+pub fn LayoutNode::add_child(Self, Self) -> Self
+pub fn LayoutNode::apply_css_values(Self, @cascade.CascadedValues) -> Bool
+pub fn LayoutNode::clear_dirty(Self) -> Unit
+pub fn LayoutNode::create() -> Self
+pub fn LayoutNode::create_with_id(String) -> Self
+pub fn LayoutNode::from_html_element(@html.Element, @cascade.CascadedValues) -> Self
+pub fn LayoutNode::from_node(@node.Node) -> Self
+pub fn LayoutNode::get_child(Self, Int) -> Self?
+pub fn LayoutNode::get_child_count(Self) -> Int
+pub fn LayoutNode::get_has_new_layout(Self) -> Bool
+pub fn LayoutNode::get_layout_height(Self) -> Double
+pub fn LayoutNode::get_layout_width(Self) -> Double
+pub fn LayoutNode::get_layout_x(Self) -> Double
+pub fn LayoutNode::get_layout_y(Self) -> Double
+pub fn LayoutNode::insert_child(Self, Self, Int) -> Self
+pub fn LayoutNode::is_dirty(Self) -> Bool
+pub fn LayoutNode::leaf(String, @style.Style) -> Self
+pub fn LayoutNode::mark_children_dirty(Self) -> Unit
+pub fn LayoutNode::mark_dirty(Self) -> Unit
+pub fn LayoutNode::mark_layout_seen(Self) -> Unit
+pub fn LayoutNode::needs_layout(Self) -> Bool
+pub fn LayoutNode::new(String, @style.Style, Array[Self]) -> Self
+pub fn LayoutNode::remove_all_children(Self) -> Unit
+pub fn LayoutNode::remove_child_at(Self, Int) -> Self?
+pub fn LayoutNode::set_align_content(Self, @style.Alignment) -> Self
+pub fn LayoutNode::set_align_items(Self, @style.Alignment) -> Self
+pub fn LayoutNode::set_align_self(Self, @style.AlignSelf) -> Self
+pub fn LayoutNode::set_border(Self, Double) -> Self
+pub fn LayoutNode::set_column_gap(Self, Double) -> Self
+pub fn LayoutNode::set_display(Self, @style.Display) -> Self
+pub fn LayoutNode::set_flex_basis(Self, Double) -> Self
+pub fn LayoutNode::set_flex_basis_auto(Self) -> Self
+pub fn LayoutNode::set_flex_direction(Self, @style.FlexDirection) -> Self
+pub fn LayoutNode::set_flex_grow(Self, Double) -> Self
+pub fn LayoutNode::set_flex_shrink(Self, Double) -> Self
+pub fn LayoutNode::set_flex_wrap(Self, @style.FlexWrap) -> Self
+pub fn LayoutNode::set_gap(Self, Double) -> Self
+pub fn LayoutNode::set_grid_area(Self, String?) -> Self
+pub fn LayoutNode::set_grid_auto_columns(Self, Array[@style.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_auto_flow(Self, @style.GridAutoFlow) -> Self
+pub fn LayoutNode::set_grid_auto_rows(Self, Array[@style.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_column(Self, @style.GridPlacement, @style.GridPlacement) -> Self
+pub fn LayoutNode::set_grid_row(Self, @style.GridPlacement, @style.GridPlacement) -> Self
+pub fn LayoutNode::set_grid_template_areas(Self, Array[String]) -> Self
+pub fn LayoutNode::set_grid_template_columns(Self, Array[@style.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_template_rows(Self, Array[@style.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_height(Self, Double) -> Self
+pub fn LayoutNode::set_height_auto(Self) -> Self
+pub fn LayoutNode::set_height_percent(Self, Double) -> Self
+pub fn LayoutNode::set_justify_content(Self, @style.Alignment) -> Self
+pub fn LayoutNode::set_justify_items(Self, @style.Alignment) -> Self
+pub fn LayoutNode::set_justify_self(Self, @style.AlignSelf) -> Self
+pub fn LayoutNode::set_margin(Self, Double) -> Self
+pub fn LayoutNode::set_margin_bottom(Self, Double) -> Self
+pub fn LayoutNode::set_margin_left(Self, Double) -> Self
+pub fn LayoutNode::set_margin_right(Self, Double) -> Self
+pub fn LayoutNode::set_margin_top(Self, Double) -> Self
+pub fn LayoutNode::set_max_height(Self, Double) -> Self
+pub fn LayoutNode::set_max_width(Self, Double) -> Self
+pub fn LayoutNode::set_min_height(Self, Double) -> Self
+pub fn LayoutNode::set_min_width(Self, Double) -> Self
+pub fn LayoutNode::set_padding(Self, Double) -> Self
+pub fn LayoutNode::set_padding_bottom(Self, Double) -> Self
+pub fn LayoutNode::set_padding_left(Self, Double) -> Self
+pub fn LayoutNode::set_padding_right(Self, Double) -> Self
+pub fn LayoutNode::set_padding_top(Self, Double) -> Self
+pub fn LayoutNode::set_position_type(Self, @style.Position) -> Self
+pub fn LayoutNode::set_row_gap(Self, Double) -> Self
+pub fn LayoutNode::set_width(Self, Double) -> Self
+pub fn LayoutNode::set_width_auto(Self) -> Self
+pub fn LayoutNode::set_width_percent(Self, Double) -> Self
+pub fn LayoutNode::to_node(Self) -> @node.Node
+pub fn LayoutNode::with_measure(String, @style.Style, @node.MeasureFunc) -> Self
+
+pub struct LayoutTree {
+  root : LayoutNode
+  parent_map : Map[Int, Int]
+  node_map : Map[Int, LayoutNode]
+  mut viewport_width : Double
+  mut viewport_height : Double
+  resources : ResourceRegistry
+}
+pub fn LayoutTree::add_node(Self, String, Int, LayoutNode) -> Bool
+pub fn LayoutTree::attach_resource(Self, ResourceId, Int, placeholder_width? : Double, placeholder_height? : Double) -> Unit
+pub fn LayoutTree::batch_update_styles(Self, Array[(String, @cascade.CascadedValues)]) -> Int
+pub fn LayoutTree::calculate_layout(Self, Double, Double) -> @node.Layout
+pub fn LayoutTree::compute_full(Self) -> @node.Layout
+pub fn LayoutTree::compute_incremental(Self) -> @node.Layout
+pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @node.Layout
+pub fn LayoutTree::fail_resource(Self, ResourceId) -> Unit
+pub fn LayoutTree::find_node(Self, Int) -> LayoutNode?
+pub fn LayoutTree::find_node_by_id(Self, String) -> LayoutNode?
+pub fn LayoutTree::from_html_document(@html.Document, Double, Double) -> Self
+pub fn LayoutTree::from_node(@node.Node, Double, Double) -> Self
+pub fn LayoutTree::get_parent(Self, Int) -> LayoutNode?
+pub fn LayoutTree::get_pending_resources(Self) -> Array[ResourceId]
+pub fn LayoutTree::get_resources(Self) -> ResourceRegistry
+pub fn LayoutTree::is_resource_pending(Self, ResourceId) -> Bool
+pub fn LayoutTree::mark_node_dirty(Self, Int) -> Unit
+pub fn LayoutTree::needs_layout(Self) -> Bool
+pub fn LayoutTree::new(LayoutNode, Double, Double) -> Self
+pub fn LayoutTree::register_pending_images(Self) -> Map[String, ResourceId]
+pub fn LayoutTree::register_pending_images_with_src(Self, Map[Int, String]) -> Map[String, ResourceId]
+pub fn LayoutTree::register_resource(Self, Int, placeholder_width? : Double, placeholder_height? : Double) -> ResourceId
+pub fn LayoutTree::remove_node(Self, String) -> Bool
+pub fn LayoutTree::resize_viewport(Self, Double, Double) -> Unit
+pub fn LayoutTree::resolve_resource(Self, ResourceId, Double, Double) -> Unit
+pub fn LayoutTree::update_node_style(Self, String, @cascade.CascadedValues) -> Bool
+
+pub(all) struct ResourceId(Int)
+#deprecated
+pub fn ResourceId::inner(Self) -> Int
+pub impl Eq for ResourceId
+pub impl Hash for ResourceId
+pub impl Show for ResourceId
+
+pub struct ResourceRegistry {
+  mut next_id : Int
+  resource_nodes : Map[Int, Array[Int]]
+  pending : @hashset.HashSet[Int]
+}
+pub fn ResourceRegistry::add_node(Self, ResourceId, Int) -> Unit
+pub fn ResourceRegistry::get_all_pending(Self) -> Array[ResourceId]
+pub fn ResourceRegistry::get_nodes(Self, ResourceId) -> Array[Int]
+pub fn ResourceRegistry::is_pending(Self, ResourceId) -> Bool
+pub fn ResourceRegistry::mark_pending(Self, ResourceId) -> Unit
+pub fn ResourceRegistry::mark_resolved(Self, ResourceId) -> Unit
+pub fn ResourceRegistry::new() -> Self
+pub fn ResourceRegistry::next_resource_id(Self) -> ResourceId
+
+pub(all) enum TreeChange {
+  AddNode(String, Int, LayoutNode)
+  RemoveNode(String)
+  MoveNode(String, String, Int)
+  UpdateStyle(String)
+  ReplaceChildren(String, Array[LayoutNode])
+}
+
+// Type aliases
+
+// Traits
+

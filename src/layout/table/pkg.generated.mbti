@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/layout/table"
+
+import(
+  "mizchi/crater/node"
+)
+
+// Values
+pub fn compute(@node.Node, @node.LayoutContext) -> @node.Layout
+
+pub fn compute_intrinsic_size(@node.Node, Bool) -> Double
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
