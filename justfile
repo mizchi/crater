@@ -1,5 +1,8 @@
 # Justfile for crater - CSS Layout Engine
 
+# WPT modules for testing
+wpt_modules := "css-flexbox css-grid css-sizing css-position css-tables css-display"
+
 # Default target
 default: check
 
@@ -17,11 +20,11 @@ setup:
 test:
     moon test
 
-# Run all tests with native target
+# Run tests with native target
 test-native:
     moon test --target native
 
-# Run tests for specific package (e.g., just test-pkg compute/block)
+# Run tests for specific package (e.g., just test-pkg mizchi/crater/layout/flex)
 test-pkg pkg:
     moon test -p {{pkg}}
 
@@ -29,6 +32,9 @@ test-pkg pkg:
 test-update:
     moon test --update
 
+# Run taffy compatibility tests
+test-taffy:
+    moon test -p mizchi/crater/tests/taffy_compat
 
 # === Code Quality ===
 
@@ -58,67 +64,105 @@ coverage:
     moon coverage analyze > uncovered.log
     @echo "Coverage report written to uncovered.log"
 
+# Show test summary
+status:
+    @echo "Running tests..."
+    @moon test 2>&1 | tail -1
+
 # === Test Generation ===
 
 # Generate test from HTML file
 gentest file:
-    node scripts/gentest.ts {{file}}
+    npx tsx scripts/gentest.ts {{file}}
 
-# Generate MoonBit tests from fixtures (generic)
+# Generate MoonBit tests from fixtures
 gen-moonbit-tests input output *args:
-    node scripts/gen-moonbit-tests.ts {{input}} {{output}} {{args}}
-
-# Generate all taffy compatibility tests
-gen-taffy-tests:
-    @echo "Generating taffy compatibility tests..."
-    node scripts/gen-moonbit-tests.ts tests/fixtures/block src/tests/taffy_compat/gen_block_test.mbt --compute-fn "@block.compute"
-    node scripts/gen-moonbit-tests.ts tests/fixtures/flex src/tests/taffy_compat/gen_flex_test.mbt --compute-fn "@flex.compute"
-    node scripts/gen-moonbit-tests.ts tests/fixtures/grid src/tests/taffy_compat/gen_grid_test.mbt --compute-fn "@grid.compute_layout"
-    @echo "Done generating taffy compatibility tests"
-
-# Run taffy compatibility tests
-test-taffy:
-    moon test -p mizchi/crater/tests/taffy_compat
+    npx tsx scripts/gen-moonbit-tests.ts {{input}} {{output}} {{args}}
 
 # Generate html5lib tests
 gen-html5lib-tests *args:
-    node scripts/gen-html5lib-tests.ts {{args}}
+    npx tsx scripts/gen-html5lib-tests.ts {{args}}
 
 # === WPT (Web Platform Tests) ===
 
 # Fetch WPT tests for a module (e.g., css-flexbox)
 wpt-fetch module:
-    node scripts/fetch-wpt.ts {{module}}
+    npx tsx scripts/fetch-wpt.ts {{module}}
 
-# Fetch all available WPT tests
+# Fetch all WPT tests
 wpt-fetch-all:
-    node scripts/fetch-wpt.ts --all
+    #!/usr/bin/env bash
+    set -e
+    echo "Fetching WPT tests..."
+    for module in {{wpt_modules}}; do
+        echo "Fetching $module..."
+        npx tsx scripts/fetch-wpt.ts "$module"
+    done
+    echo "Done. Counting tests..."
+    for module in {{wpt_modules}}; do
+        count=$(ls -1 wpt-tests/"$module"/*.html 2>/dev/null | wc -l | tr -d ' ')
+        echo "$module: $count tests"
+    done
 
 # List available WPT modules
 wpt-list:
-    node scripts/fetch-wpt.ts --list
+    npx tsx scripts/fetch-wpt.ts --list
 
 # Run WPT comparison test
 wpt file:
-    node scripts/wpt-runner.ts {{file}}
+    npx tsx scripts/wpt-runner.ts {{file}}
 
-# Run all WPT tests
+# Run all WPT tests with summary
 wpt-run-all:
-    ./scripts/run-wpt-tests.sh
+    #!/usr/bin/env bash
+    set -e
+    echo "Running WPT tests..."
+    total_passed=0
+    total_failed=0
+    for module in {{wpt_modules}}; do
+        echo "Testing $module..."
+        output=$(npx tsx scripts/wpt-runner.ts "wpt-tests/$module/*.html" 2>&1 || true)
+        summary=$(echo "$output" | grep "^Summary:" | head -1)
+        if [[ "$summary" =~ ([0-9]+)\ passed,\ ([0-9]+)\ failed ]]; then
+            passed="${BASH_REMATCH[1]}"
+            failed="${BASH_REMATCH[2]}"
+            total=$((passed + failed))
+            rate=$(echo "scale=1; $passed * 100 / $total" | bc)
+            echo "$module: $passed/$total ($rate%)"
+            total_passed=$((total_passed + passed))
+            total_failed=$((total_failed + failed))
+        else
+            echo "$module: No results"
+        fi
+    done
+    echo "===================="
+    grand_total=$((total_passed + total_failed))
+    if [ $grand_total -gt 0 ]; then
+        grand_rate=$(echo "scale=1; $total_passed * 100 / $grand_total" | bc)
+        echo "Total: $total_passed/$grand_total ($grand_rate%)"
+    fi
 
-# Run all WPT flexbox tests
+# Run WPT flexbox tests
 wpt-flexbox:
-    node scripts/wpt-runner.ts "wpt-tests/css-flexbox/*.html"
+    npx tsx scripts/wpt-runner.ts "wpt-tests/css-flexbox/*.html"
 
 # Update WPT README
 wpt-update-readme:
-    node scripts/update-wpt-readme.ts
+    npx tsx scripts/update-wpt-readme.ts
 
-# === WASM ===
+# === Build ===
+
+# Build JS module
+build-js:
+    moon build -C js --target js
+
+# Build JS module for WASM-GC
+build-js-wasm:
+    moon build -C js --target wasm-gc
 
 # Build WASM component
 build-wasm:
-    cd wasm && moon build --target wasm
+    moon build -C wasm --target wasm
     wasm-tools component embed --world crater wasm/wit wasm/target/wasm/release/build/gen/gen.wasm -o wasm/target/crater-embedded.wasm
     wasm-tools component new wasm/target/crater-embedded.wasm -o wasm/target/crater.wasm
 
@@ -133,31 +177,18 @@ test-wasm:
 # Full WASM build pipeline
 wasm: build-wasm transpile-wasm test-wasm
 
-# === JS ===
-
-# Build JS module
-build-js:
-    moon build --directory js --target js
-
-# Build JS module for WASM-GC
-build-js-wasm:
-    moon build --directory js --target wasm-gc
-
 # === Utilities ===
 
 # Clean build artifacts
 clean:
     moon clean
+    moon clean -C browser
+    moon clean -C js
 
 # Download a website for testing
 download url:
-    node scripts/download-site.ts {{url}}
+    npx tsx scripts/download-site.ts {{url}}
 
-# Render HTML file
-render file:
-    node scripts/render.ts {{file}}
-
-# Show test summary
-status:
-    @echo "Running tests..."
-    @moon test 2>&1 | tail -1
+# Compare layout between browser and crater
+compare file:
+    npx tsx scripts/compare-layout.ts {{file}}
