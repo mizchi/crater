@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater/experimental/arc90"
+package "mizchi/crater/x/arc90"
 
 import(
   "mizchi/crater/aom"
