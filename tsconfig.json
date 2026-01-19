@@ -10,5 +10,5 @@
     "noEmit": true,
     "resolveJsonModule": true
   },
-  "include": ["tools/**/*.ts"]
+  // "include": ["tools/**/*.ts"]
 }

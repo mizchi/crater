@@ -1,9 +1,0 @@
-import {
-  "mizchi/crater/tree",
-  "mizchi/crater/style",
-  "mizchi/crater/compute/dispatch",
-}
-
-options(
-  "is-main": true,
-)

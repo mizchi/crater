@@ -3,6 +3,22 @@
 // =============================================================================
 
 ///|
+/// Compute layout for a node tree with given viewport
+fn compute_layout(
+  node : @node.Node,
+  viewport : @types.Size[Double],
+) -> @node.Layout {
+  let ctx : @node.LayoutContext = {
+    available_width: viewport.width,
+    available_height: Some(viewport.height),
+    sizing_mode: @node.MaxContent,
+    viewport_width: viewport.width,
+    viewport_height: viewport.height,
+  }
+  @dispatch.compute(node, ctx)
+}
+
+///|
 /// Create a simple flat block layout with N children
 fn create_flat_block(n : Int) -> @node.Node {
   let default_style = @style.Style::default()

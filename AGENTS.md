@@ -52,56 +52,13 @@ This is a [MoonBit](https://docs.moonbitlang.com) project.
 
 ## Test System
 
-### Taffy Compatible Tests
-
-This project includes tests compatible with [taffy](https://github.com/DioxusLabs/taffy), a Rust-based layout engine. These tests ensure layout algorithm correctness.
-
-**Location:**
-- Fixtures: `fixtures/` (JSON format)
-  - `fixtures/flex/` - Flexbox layout tests
-  - `fixtures/grid/` - Grid layout tests
-  - `fixtures/block/` - Block layout tests
-  - `fixtures/blockflex/`, `fixtures/blockgrid/`, `fixtures/gridflex/` - Mixed layout tests
-  - `fixtures/leaf/` - Leaf node tests
-- Generated tests: `compute/*/gen_test.mbt`
-
-**Commands:**
-```bash
-# Generate MoonBit tests from fixtures
-npm run gen-moonbit-tests -- fixtures/flex compute/flex/gen_test.mbt --flex
-npm run gen-moonbit-tests -- fixtures/grid compute/grid/gen_test.mbt --grid
-npm run gen-moonbit-tests -- fixtures/block compute/block/gen_test.mbt --block
-
-# Options:
-# --flex, --grid, --block    Select layout type
-# --no-header                Skip assert_approx helper (for additional test files)
-# --exclude=pattern          Exclude tests matching pattern
-
-# Run tests
-moon test
-```
-
-**Fixture Format (JSON):**
-```json
-{
-  "name": "test_name",
-  "viewport": { "width": 800, "height": 600 },
-  "root": {
-    "id": "root",
-    "style": { "display": "flex", "width": { "unit": "px", "value": 400 }, ... },
-    "layout": { "x": 0, "y": 0, "width": 400, "height": 300 },
-    "children": [ ... ]
-  }
-}
-```
-
 ### WPT (Web Platform Tests)
 
 Browser compatibility tests using actual WPT test files from [web-platform-tests](https://github.com/web-platform-tests/wpt).
 
 **Location:**
 - Test files: `wpt-tests/css-flexbox/` (HTML format)
-- Tools: `tools/fetch-wpt.ts`, `tools/wpt-runner.ts`
+- Tools: `scripts/fetch-wpt.ts`, `scripts/wpt-runner.ts`
 
 **Commands:**
 ```bash

@@ -8,3 +8,5 @@ import {
   "mizchi/crater/compute/trace",
   "mizchi/crater/compute/table",
 }
+
+import "test" { "mizchi/crater/css/parser" }

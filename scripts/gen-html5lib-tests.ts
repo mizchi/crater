@@ -14,7 +14,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const TREE_CONSTRUCTION_DIR = 'html5lib-tests/tree-construction';
+const TREE_CONSTRUCTION_DIR = 'tests/html5lib-tests/tree-construction';
 const OUTPUT_FILE = 'html/html5lib_test.mbt';
 
 interface TreeConstructionTest {
