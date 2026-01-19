@@ -134,7 +134,7 @@ pub fn LayoutNode::set_max_height(
 /// Set flex direction
 pub fn LayoutNode::set_flex_direction(
   self : LayoutNode,
-  dir : @style.FlexDirection,
+  dir : @types.FlexDirection,
 ) -> LayoutNode {
   if self.style.flex_direction != dir {
     self.style.flex_direction = dir
@@ -147,7 +147,7 @@ pub fn LayoutNode::set_flex_direction(
 /// Set flex wrap
 pub fn LayoutNode::set_flex_wrap(
   self : LayoutNode,
-  wrap : @style.FlexWrap,
+  wrap : @types.FlexWrap,
 ) -> LayoutNode {
   if self.style.flex_wrap != wrap {
     self.style.flex_wrap = wrap
@@ -212,7 +212,7 @@ pub fn LayoutNode::set_flex_basis_auto(self : LayoutNode) -> LayoutNode {
 /// Set justify content
 pub fn LayoutNode::set_justify_content(
   self : LayoutNode,
-  value : @style.Alignment,
+  value : @types.Alignment,
 ) -> LayoutNode {
   if self.style.justify_content != value {
     self.style.justify_content = value
@@ -225,7 +225,7 @@ pub fn LayoutNode::set_justify_content(
 /// Set align items
 pub fn LayoutNode::set_align_items(
   self : LayoutNode,
-  value : @style.Alignment,
+  value : @types.Alignment,
 ) -> LayoutNode {
   if self.style.align_items != value {
     self.style.align_items = value
@@ -238,7 +238,7 @@ pub fn LayoutNode::set_align_items(
 /// Set align self
 pub fn LayoutNode::set_align_self(
   self : LayoutNode,
-  value : @style.AlignSelf,
+  value : @types.AlignSelf,
 ) -> LayoutNode {
   if self.style.align_self != value {
     self.style.align_self = value
@@ -251,7 +251,7 @@ pub fn LayoutNode::set_align_self(
 /// Set align content
 pub fn LayoutNode::set_align_content(
   self : LayoutNode,
-  value : @style.Alignment,
+  value : @types.Alignment,
 ) -> LayoutNode {
   if self.style.align_content != value {
     self.style.align_content = value
@@ -264,7 +264,7 @@ pub fn LayoutNode::set_align_content(
 /// Set display type
 pub fn LayoutNode::set_display(
   self : LayoutNode,
-  value : @style.Display,
+  value : @types.Display,
 ) -> LayoutNode {
   if self.style.display != value {
     self.style.display = value
@@ -277,7 +277,7 @@ pub fn LayoutNode::set_display(
 /// Set position type
 pub fn LayoutNode::set_position_type(
   self : LayoutNode,
-  value : @style.Position,
+  value : @types.Position,
 ) -> LayoutNode {
   if self.style.position != value {
     self.style.position = value
@@ -323,7 +323,7 @@ pub fn LayoutNode::set_gap(self : LayoutNode, value : Double) -> LayoutNode {
 /// Set grid template columns
 pub fn LayoutNode::set_grid_template_columns(
   self : LayoutNode,
-  tracks : Array[@style.TrackSizingFunction],
+  tracks : Array[@types.TrackSizingFunction],
 ) -> LayoutNode {
   self.style.grid_template_columns = tracks
   self.mark_dirty()
@@ -334,7 +334,7 @@ pub fn LayoutNode::set_grid_template_columns(
 /// Set grid template rows
 pub fn LayoutNode::set_grid_template_rows(
   self : LayoutNode,
-  tracks : Array[@style.TrackSizingFunction],
+  tracks : Array[@types.TrackSizingFunction],
 ) -> LayoutNode {
   self.style.grid_template_rows = tracks
   self.mark_dirty()
@@ -345,7 +345,7 @@ pub fn LayoutNode::set_grid_template_rows(
 /// Set grid auto columns
 pub fn LayoutNode::set_grid_auto_columns(
   self : LayoutNode,
-  tracks : Array[@style.TrackSizingFunction],
+  tracks : Array[@types.TrackSizingFunction],
 ) -> LayoutNode {
   self.style.grid_auto_columns = tracks
   self.mark_dirty()
@@ -356,7 +356,7 @@ pub fn LayoutNode::set_grid_auto_columns(
 /// Set grid auto rows
 pub fn LayoutNode::set_grid_auto_rows(
   self : LayoutNode,
-  tracks : Array[@style.TrackSizingFunction],
+  tracks : Array[@types.TrackSizingFunction],
 ) -> LayoutNode {
   self.style.grid_auto_rows = tracks
   self.mark_dirty()
@@ -367,7 +367,7 @@ pub fn LayoutNode::set_grid_auto_rows(
 /// Set grid auto flow
 pub fn LayoutNode::set_grid_auto_flow(
   self : LayoutNode,
-  flow : @style.GridAutoFlow,
+  flow : @types.GridAutoFlow,
 ) -> LayoutNode {
   if self.style.grid_auto_flow != flow {
     self.style.grid_auto_flow = flow
@@ -395,8 +395,8 @@ pub fn LayoutNode::set_grid_template_areas(
 /// Set grid row placement
 pub fn LayoutNode::set_grid_row(
   self : LayoutNode,
-  start : @style.GridPlacement,
-  end : @style.GridPlacement,
+  start : @types.GridPlacement,
+  end : @types.GridPlacement,
 ) -> LayoutNode {
   self.style.grid_row = { start, end }
   self.mark_dirty()
@@ -407,8 +407,8 @@ pub fn LayoutNode::set_grid_row(
 /// Set grid column placement
 pub fn LayoutNode::set_grid_column(
   self : LayoutNode,
-  start : @style.GridPlacement,
-  end : @style.GridPlacement,
+  start : @types.GridPlacement,
+  end : @types.GridPlacement,
 ) -> LayoutNode {
   self.style.grid_column = { start, end }
   self.mark_dirty()
@@ -430,7 +430,7 @@ pub fn LayoutNode::set_grid_area(
 /// Set justify items (grid container)
 pub fn LayoutNode::set_justify_items(
   self : LayoutNode,
-  value : @style.Alignment,
+  value : @types.Alignment,
 ) -> LayoutNode {
   if self.style.justify_items != value {
     self.style.justify_items = value
@@ -443,7 +443,7 @@ pub fn LayoutNode::set_justify_items(
 /// Set justify self (grid item)
 pub fn LayoutNode::set_justify_self(
   self : LayoutNode,
-  value : @style.AlignSelf,
+  value : @types.AlignSelf,
 ) -> LayoutNode {
   if self.style.justify_self != value {
     self.style.justify_self = value

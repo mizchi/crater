@@ -160,7 +160,7 @@ pub fn LayoutNode::apply_css_values(
     Some(v) =>
       match parse_dimension(v) {
         Some(@types.Length(n)) => {
-          let new_margin = @types.Rect::all(@types.Length(n))
+          let new_margin = @types.Rect::all(@types.Dimension::Length(n))
           self.style.margin = new_margin
           changed = true
         }
@@ -174,7 +174,7 @@ pub fn LayoutNode::apply_css_values(
     Some(v) =>
       match parse_dimension(v) {
         Some(@types.Length(n)) => {
-          let new_padding = @types.Rect::all(@types.Length(n))
+          let new_padding = @types.Rect::all(@types.Dimension::Length(n))
           self.style.padding = new_padding
           changed = true
         }
@@ -241,50 +241,50 @@ fn parse_dimension(value : String) -> @types.Dimension? {
 }
 
 ///|
-fn parse_display(value : String) -> @style.Display? {
+fn parse_display(value : String) -> @types.Display? {
   match value.trim().to_string() {
-    "block" => Some(@style.Block)
-    "flex" => Some(@style.Flex)
-    "inline-flex" => Some(@style.InlineFlex)
-    "grid" => Some(@style.Grid)
-    "inline-grid" => Some(@style.InlineGrid)
-    "none" => Some(@style.None)
+    "block" => Some(@types.Block)
+    "flex" => Some(@types.Flex)
+    "inline-flex" => Some(@types.InlineFlex)
+    "grid" => Some(@types.Grid)
+    "inline-grid" => Some(@types.InlineGrid)
+    "none" => Some(@types.Display::None)
     _ => None
   }
 }
 
 ///|
-fn parse_flex_direction(value : String) -> @style.FlexDirection? {
+fn parse_flex_direction(value : String) -> @types.FlexDirection? {
   match value.trim().to_string() {
-    "row" => Some(@style.Row)
-    "row-reverse" => Some(@style.RowReverse)
-    "column" => Some(@style.Column)
-    "column-reverse" => Some(@style.ColumnReverse)
+    "row" => Some(@types.Row)
+    "row-reverse" => Some(@types.RowReverse)
+    "column" => Some(@types.Column)
+    "column-reverse" => Some(@types.ColumnReverse)
     _ => None
   }
 }
 
 ///|
-fn parse_flex_wrap(value : String) -> @style.FlexWrap? {
+fn parse_flex_wrap(value : String) -> @types.FlexWrap? {
   match value.trim().to_string() {
-    "nowrap" => Some(@style.NoWrap)
-    "wrap" => Some(@style.Wrap)
-    "wrap-reverse" => Some(@style.WrapReverse)
+    "nowrap" => Some(@types.NoWrap)
+    "wrap" => Some(@types.Wrap)
+    "wrap-reverse" => Some(@types.WrapReverse)
     _ => None
   }
 }
 
 ///|
-fn parse_alignment(value : String) -> @style.Alignment? {
+fn parse_alignment(value : String) -> @types.Alignment? {
   match value.trim().to_string() {
-    "flex-start" | "start" => Some(@style.FlexStart)
-    "flex-end" | "end" => Some(@style.FlexEnd)
-    "center" => Some(@style.Center)
-    "space-between" => Some(@style.SpaceBetween)
-    "space-around" => Some(@style.SpaceAround)
-    "space-evenly" => Some(@style.SpaceEvenly)
-    "stretch" => Some(@style.Stretch)
-    "baseline" => Some(@style.Baseline)
+    "flex-start" | "start" => Some(@types.FlexStart)
+    "flex-end" | "end" => Some(@types.FlexEnd)
+    "center" => Some(@types.Center)
+    "space-between" => Some(@types.SpaceBetween)
+    "space-around" => Some(@types.SpaceAround)
+    "space-evenly" => Some(@types.SpaceEvenly)
+    "stretch" => Some(@types.Stretch)
+    "baseline" => Some(@types.Baseline)
     _ => None
   }
 }

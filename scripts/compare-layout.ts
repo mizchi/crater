@@ -20,7 +20,7 @@ import {
   saveLayoutTrees,
   findLargeDiffs,
   CompareOptions,
-} from './layout_compare';
+} from './layout_compare.ts';
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);

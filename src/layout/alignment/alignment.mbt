@@ -7,7 +7,7 @@
 /// Note: FlexStart/FlexEnd should be resolved by caller before calling this function
 ///       (i.e., caller handles wrap-reverse by flipping FlexStart/FlexEnd)
 pub fn compute_justify(
-  justify : @style.Alignment,
+  justify : @types.Alignment,
   free_space : Double,
   item_count : Int,
 ) -> (Double, Double) {
@@ -18,31 +18,31 @@ pub fn compute_justify(
   // behave like Start (items packed at start, no gap distribution)
   if free_space < 0.0 {
     match justify {
-      @style.SpaceBetween | @style.SpaceAround | @style.SpaceEvenly =>
+      @types.SpaceBetween | @types.SpaceAround | @types.SpaceEvenly =>
         return (0.0, 0.0)
       _ => ()
     }
   }
   match justify {
-    @style.Start | @style.FlexStart => (0.0, 0.0)
-    @style.End | @style.FlexEnd => (free_space, 0.0)
-    @style.Center => (free_space / 2.0, 0.0)
-    @style.SpaceBetween =>
+    @types.Start | @types.FlexStart => (0.0, 0.0)
+    @types.End | @types.FlexEnd => (free_space, 0.0)
+    @types.Center => (free_space / 2.0, 0.0)
+    @types.SpaceBetween =>
       if item_count == 1 {
         (0.0, 0.0)
       } else {
         (0.0, free_space / (item_count - 1).to_double())
       }
-    @style.SpaceAround => {
+    @types.SpaceAround => {
       let gap = free_space / item_count.to_double()
       (gap / 2.0, gap)
     }
-    @style.SpaceEvenly => {
+    @types.SpaceEvenly => {
       let gap = free_space / (item_count + 1).to_double()
       (gap, gap)
     }
-    @style.Stretch => (0.0, 0.0) // Stretch doesn't apply to main axis
-    @style.Baseline => (0.0, 0.0) // Baseline doesn't apply to justify-content
+    @types.Stretch => (0.0, 0.0) // Stretch doesn't apply to main axis
+    @types.Baseline => (0.0, 0.0) // Baseline doesn't apply to justify-content
   }
 }
 
@@ -50,40 +50,40 @@ pub fn compute_justify(
 /// Compute alignment offset for a single item
 /// Used for align-items, align-self, justify-self
 pub fn compute_align_offset(
-  align : @style.Alignment,
+  align : @types.Alignment,
   free_space : Double,
 ) -> Double {
   if free_space <= 0.0 {
     return 0.0
   }
   match align {
-    @style.Start | @style.FlexStart => 0.0
-    @style.End | @style.FlexEnd => free_space
-    @style.Center => free_space / 2.0
-    @style.SpaceBetween => 0.0 // Treat as start for single item
-    @style.SpaceAround => free_space / 2.0 // Center for single item
-    @style.SpaceEvenly => free_space / 2.0 // Center for single item
-    @style.Stretch => 0.0 // Stretch handled elsewhere
-    @style.Baseline => 0.0 // Baseline handled elsewhere
+    @types.Start | @types.FlexStart => 0.0
+    @types.End | @types.FlexEnd => free_space
+    @types.Center => free_space / 2.0
+    @types.SpaceBetween => 0.0 // Treat as start for single item
+    @types.SpaceAround => free_space / 2.0 // Center for single item
+    @types.SpaceEvenly => free_space / 2.0 // Center for single item
+    @types.Stretch => 0.0 // Stretch handled elsewhere
+    @types.Baseline => 0.0 // Baseline handled elsewhere
   }
 }
 
 ///|
 /// Compute alignment offset for align-self (child's override of parent's align-items)
 pub fn compute_align_self_offset(
-  align_self : @style.AlignSelf,
-  parent_align : @style.Alignment,
+  align_self : @types.AlignSelf,
+  parent_align : @types.Alignment,
   free_space : Double,
 ) -> Double {
   if free_space <= 0.0 {
     return 0.0
   }
   match align_self {
-    @style.AlignSelf::Auto => compute_align_offset(parent_align, free_space)
-    @style.AlignSelf::Start => 0.0
-    @style.AlignSelf::End => free_space
-    @style.AlignSelf::Center => free_space / 2.0
-    @style.AlignSelf::Stretch => 0.0 // Stretch handled elsewhere
-    @style.AlignSelf::Baseline => 0.0 // Baseline handled in flex layout
+    @types.AlignSelf::Auto => compute_align_offset(parent_align, free_space)
+    @types.AlignSelf::Start => 0.0
+    @types.AlignSelf::End => free_space
+    @types.AlignSelf::Center => free_space / 2.0
+    @types.AlignSelf::Stretch => 0.0 // Stretch handled elsewhere
+    @types.AlignSelf::Baseline => 0.0 // Baseline handled in flex layout
   }
 }

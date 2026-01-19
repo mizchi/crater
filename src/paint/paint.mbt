@@ -94,8 +94,8 @@ pub(all) struct PaintNode {
   width : Double
   height : Double
   // Overflow clipping
-  overflow_x : @style.Overflow
-  overflow_y : @style.Overflow
+  overflow_x : @types.Overflow
+  overflow_y : @types.Overflow
   // Legacy clip property (for accessibility)
   clip : @types.ClipRect
   // Paint properties
@@ -121,8 +121,8 @@ pub fn PaintNode::new(
   paint : PaintProperties,
   children : Array[PaintNode],
   text? : String? = None,
-  overflow_x? : @style.Overflow = @style.Visible,
-  overflow_y? : @style.Overflow = @style.Visible,
+  overflow_x? : @types.Overflow = @types.Visible,
+  overflow_y? : @types.Overflow = @types.Visible,
   clip? : @types.ClipRect = @types.ClipRect::Auto,
 ) -> PaintNode {
   {
@@ -174,7 +174,7 @@ pub impl Show for PaintNode with output(self, logger) {
 pub fn PaintNode::clips_content(self : PaintNode) -> Bool {
   // Check overflow
   let overflow_clips = match (self.overflow_x, self.overflow_y) {
-    (@style.Visible, @style.Visible) => false
+    (@types.Visible, @types.Visible) => false
     _ => true
   }
   // Check legacy clip property
@@ -233,7 +233,7 @@ pub fn PaintNode::get_clip_rect(
     @types.ClipRect::Auto =>
       // Fall back to overflow clipping
       match (self.overflow_x, self.overflow_y) {
-        (@style.Visible, @style.Visible) => None
+        (@types.Visible, @types.Visible) => None
         _ => Some((self.x, self.y, self.width, self.height))
       }
   }

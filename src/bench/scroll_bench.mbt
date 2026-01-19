@@ -387,11 +387,11 @@ fn create_benchmark_subtree(
       prefix,
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
+        display: @types.Flex,
         flex_direction: if level % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
         width: @types.Auto,
         height: @types.Auto,

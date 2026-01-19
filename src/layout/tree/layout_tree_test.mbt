@@ -39,7 +39,7 @@ fn create_test_tree() -> LayoutNode {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -134,7 +134,7 @@ test "viewport resize with percent nodes triggers relayout" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0), // 100% of viewport
       height: @types.Length(200.0),
     },
@@ -216,7 +216,7 @@ test "partial dirty only recomputes affected subtree" {
     "child1",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -226,7 +226,7 @@ test "partial dirty only recomputes affected subtree" {
     "child2",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -236,7 +236,7 @@ test "partial dirty only recomputes affected subtree" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -280,7 +280,7 @@ test "child caches are synced after computation" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -327,7 +327,7 @@ test "unchanged children use cache on recompute" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -361,7 +361,7 @@ test "constraint change invalidates cache for percent nodes" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0), // Depends on viewport
       height: @types.Length(200.0),
     },
@@ -398,7 +398,7 @@ test "from_node creates correct tree structure" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -432,7 +432,7 @@ test "uid preserved in to_node conversion" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -459,7 +459,7 @@ test "root level cache hit on unchanged tree" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -494,7 +494,7 @@ test "dirty root forces recomputation" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -570,7 +570,7 @@ test "edge: parent and child both dirty" {
     "parent",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(200.0),
       height: @types.Length(100.0),
     },
@@ -580,7 +580,7 @@ test "edge: parent and child both dirty" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -617,7 +617,7 @@ test "edge: all children dirty but parent clean" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -653,7 +653,7 @@ test "edge: viewport resize during dirty state" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Length(200.0),
     },
@@ -692,7 +692,7 @@ test "edge: zero-size node" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -726,7 +726,7 @@ test "edge: deeply nested tree cache consistency" {
         "level_" + depth.to_string(),
         @style.Style::{
           ..@style.Style::default(),
-          display: @style.Flex,
+          display: @types.Flex,
           width: @types.Length(100.0 + depth.to_double() * 10.0),
           height: @types.Length(50.0 + depth.to_double() * 5.0),
           padding: @types.Rect::{
@@ -789,7 +789,7 @@ test "edge: intrinsic cache with Auto-sized nodes" {
     "auto_parent",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Auto,
       height: @types.Auto,
     }, // Intrinsic sizing
@@ -799,7 +799,7 @@ test "edge: intrinsic cache with Auto-sized nodes" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -836,7 +836,7 @@ test "edge: constraint key None vs Some(height)" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -900,7 +900,7 @@ test "edge: alternating nodes dirty" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -961,7 +961,7 @@ test "edge: mixed fixed and Auto siblings" {
     "auto_container",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Auto,
       height: @types.Auto,
     },
@@ -977,7 +977,7 @@ test "edge: mixed fixed and Auto siblings" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -1037,8 +1037,8 @@ test "edge: very wide tree (many siblings)" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_wrap: @style.Wrap,
+      display: @types.Flex,
+      flex_wrap: @types.Wrap,
       width: @types.Length(500.0),
       height: @types.Length(500.0),
     },
@@ -1077,7 +1077,7 @@ test "edge: negative margin handling" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -1112,7 +1112,7 @@ test "edge: percent and viewport edge cases" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Percent(1.0),
     },
@@ -1150,7 +1150,7 @@ test "edge: display none node" {
   })
   let hidden_child = LayoutNode::leaf("hidden", @style.Style::{
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   })
@@ -1158,7 +1158,7 @@ test "edge: display none node" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },

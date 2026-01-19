@@ -42,17 +42,17 @@ fn dispatch_compute(
   ctx : @node.LayoutContext,
 ) -> @node.Layout {
   match node.style.display {
-    @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
-    @style.Block | @style.Inline | @style.InlineBlock | @style.FlowRoot =>
+    @types.Flex | @types.InlineFlex => @flex.compute(node, ctx)
+    @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
       @block.compute(node, ctx)
-    @style.Grid | @style.InlineGrid =>
+    @types.Grid | @types.InlineGrid =>
       @grid.compute_grid_layout(
         node,
         ctx.available_width,
         ctx.available_height.unwrap_or(0.0),
       )
-    @style.Table | @style.InlineTable => @table.compute(node, ctx)
-    @style.None | @style.Contents =>
+    @types.Table | @types.InlineTable => @table.compute(node, ctx)
+    @types.Display::None | @types.Contents =>
       {
         // display: none/contents - return zero-sized layout
         id: node.id,
@@ -63,20 +63,20 @@ fn dispatch_compute(
         margin: @types.Rect::zero(),
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
-        overflow_x: @style.Visible,
-        overflow_y: @style.Visible,
+        overflow_x: @types.Visible,
+        overflow_y: @types.Visible,
         children: [],
         text: node.text,
       }
     // Table sub-elements - handled as blocks when encountered outside table context
-    @style.TableRow
-    | @style.TableCell
-    | @style.TableCaption
-    | @style.TableRowGroup
-    | @style.TableHeaderGroup
-    | @style.TableFooterGroup
-    | @style.TableColumn
-    | @style.TableColumnGroup => @block.compute(node, ctx)
+    @types.TableRow
+    | @types.TableCell
+    | @types.TableCaption
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => @block.compute(node, ctx)
   }
 }
 
@@ -87,10 +87,10 @@ fn dispatch_compute_with_warnings(
   ctx : @node.LayoutContext,
 ) -> @node.LayoutResult {
   match node.style.display {
-    @style.Flex | @style.InlineFlex => @flex.compute_with_warnings(node, ctx)
-    @style.Block | @style.Inline | @style.InlineBlock | @style.FlowRoot =>
+    @types.Flex | @types.InlineFlex => @flex.compute_with_warnings(node, ctx)
+    @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
       @block.compute_with_warnings(node, ctx)
-    @style.Grid | @style.InlineGrid => {
+    @types.Grid | @types.InlineGrid => {
       let layout = @grid.compute_grid_layout(
         node,
         ctx.available_width,
@@ -98,11 +98,11 @@ fn dispatch_compute_with_warnings(
       )
       { layout, warnings: [] }
     }
-    @style.Table | @style.InlineTable => {
+    @types.Table | @types.InlineTable => {
       let layout = @table.compute(node, ctx)
       { layout, warnings: [] }
     }
-    @style.None | @style.Contents =>
+    @types.Display::None | @types.Contents =>
       {
         layout: {
           id: node.id,
@@ -113,22 +113,22 @@ fn dispatch_compute_with_warnings(
           margin: @types.Rect::zero(),
           padding: @types.Rect::zero(),
           border: @types.Rect::zero(),
-          overflow_x: @style.Visible,
-          overflow_y: @style.Visible,
+          overflow_x: @types.Visible,
+          overflow_y: @types.Visible,
           children: [],
           text: node.text,
         },
         warnings: [],
       }
     // Table sub-elements - handled as blocks when encountered outside table context
-    @style.TableRow
-    | @style.TableCell
-    | @style.TableCaption
-    | @style.TableRowGroup
-    | @style.TableHeaderGroup
-    | @style.TableFooterGroup
-    | @style.TableColumn
-    | @style.TableColumnGroup => @block.compute_with_warnings(node, ctx)
+    @types.TableRow
+    | @types.TableCell
+    | @types.TableCaption
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => @block.compute_with_warnings(node, ctx)
   }
 }
 

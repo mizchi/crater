@@ -43,7 +43,7 @@ test "inline_block_rendering" {
   }
   // First child is inline text
   let text_node = blogMeta.children[0]
-  guard text_node.style.display == @style.Inline else {
+  guard text_node.style.display == @types.Inline else {
     fail("Text should be Inline")
   }
   guard text_node.text.unwrap_or("") == "2022/9/24, written by" else {
@@ -51,7 +51,7 @@ test "inline_block_rendering" {
   }
   // Second child is inline-block address
   let address_node = blogMeta.children[1]
-  guard address_node.style.display == @style.InlineBlock else {
+  guard address_node.style.display == @types.InlineBlock else {
     fail("Address should be InlineBlock")
   }
 }

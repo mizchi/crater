@@ -35,11 +35,11 @@ fn create_subtree(
       prefix,
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
+        display: @types.Flex,
         flex_direction: if level % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
         width: @types.Auto,
         height: @types.Auto,
@@ -231,7 +231,7 @@ test "benchmark: viewport resize with fixed vs percent nodes" {
     "percent_root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Length(200.0),
     },
@@ -515,7 +515,7 @@ test "analysis: cache key comparison" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -620,7 +620,7 @@ test "analysis: hit rate with auto-sized containers" {
     "container1",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Auto,
       height: @types.Auto,
     }, // Auto-sized
@@ -630,7 +630,7 @@ test "analysis: hit rate with auto-sized containers" {
     "container2",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Auto,
       height: @types.Auto,
     },
@@ -640,7 +640,7 @@ test "analysis: hit rate with auto-sized containers" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -683,7 +683,7 @@ test "benchmark: realistic UI update pattern" {
     "header",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Length(60.0),
     },
@@ -703,8 +703,8 @@ test "benchmark: realistic UI update pattern" {
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Auto,
     },
@@ -724,9 +724,9 @@ test "benchmark: realistic UI update pattern" {
     "main_content",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
-      flex_wrap: @style.Wrap,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      flex_wrap: @types.Wrap,
       width: @types.Auto,
       height: @types.Auto,
     },
@@ -741,8 +741,8 @@ test "benchmark: realistic UI update pattern" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(1200.0),
       height: @types.Length(800.0),
     },
@@ -789,7 +789,7 @@ test "optimization: size-match cache validation" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -863,8 +863,8 @@ fn create_card(id : String) -> LayoutNode {
     id,
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(280.0),
       height: @types.Auto,
       padding: @types.Rect::{
@@ -916,9 +916,9 @@ fn create_list_item(id : String, has_icon : Bool) -> LayoutNode {
     id,
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Row,
-      align_items: @style.Alignment::Center,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      align_items: @types.Alignment::Center,
       width: @types.Percent(1.0),
       height: @types.Auto,
       padding: @types.Rect::{
@@ -962,8 +962,8 @@ test "realistic: e-commerce product grid" {
     "product_grid",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_wrap: @style.Wrap,
+      display: @types.Flex,
+      flex_wrap: @types.Wrap,
       row_gap: @types.Length(20.0),
       column_gap: @types.Length(20.0),
       width: @types.Percent(1.0),
@@ -981,7 +981,7 @@ test "realistic: e-commerce product grid" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(1400.0),
       height: @types.Length(900.0),
     },
@@ -1027,8 +1027,8 @@ test "realistic: chat message list" {
     "message_list",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(400.0),
       height: @types.Auto,
     },
@@ -1038,7 +1038,7 @@ test "realistic: chat message list" {
     "input_area",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Length(60.0),
       padding: @types.Rect::{
@@ -1072,8 +1072,8 @@ test "realistic: chat message list" {
     "chat_root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(400.0),
       height: @types.Length(700.0),
     },
@@ -1125,8 +1125,8 @@ test "realistic: dashboard with widgets" {
       id,
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_direction: @style.Column,
+        display: @types.Flex,
+        flex_direction: @types.Column,
         width: @types.Length(width),
         height: @types.Length(height),
         padding: @types.Rect::{
@@ -1145,7 +1145,7 @@ test "realistic: dashboard with widgets" {
     "row1",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       row_gap: @types.Length(0.0),
       column_gap: @types.Length(20.0),
       width: @types.Percent(1.0),
@@ -1163,7 +1163,7 @@ test "realistic: dashboard with widgets" {
     "row2",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       row_gap: @types.Length(0.0),
       column_gap: @types.Length(20.0),
       width: @types.Percent(1.0),
@@ -1184,8 +1184,8 @@ test "realistic: dashboard with widgets" {
     "table",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Percent(1.0),
       height: @types.Auto,
     },
@@ -1195,8 +1195,8 @@ test "realistic: dashboard with widgets" {
     "dashboard",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       row_gap: @types.Length(20.0),
       column_gap: @types.Length(0.0),
       width: @types.Length(940.0),
@@ -1259,8 +1259,8 @@ test "realistic: sidebar navigation with active state" {
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(240.0),
       height: @types.Percent(1.0),
     },
@@ -1276,7 +1276,7 @@ test "realistic: sidebar navigation with active state" {
     "app_root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(1200.0),
       height: @types.Length(800.0),
     },
@@ -1346,8 +1346,8 @@ test "realistic: form with validation" {
       id,
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_direction: @style.Column,
+        display: @types.Flex,
+        flex_direction: @types.Column,
         width: @types.Percent(1.0),
         height: @types.Auto,
         margin: @types.Rect::{
@@ -1378,8 +1378,8 @@ test "realistic: form with validation" {
     "form",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(400.0),
       height: @types.Auto,
       padding: @types.Rect::{
@@ -1438,7 +1438,7 @@ test "optimization: size-match not used when child is dirty" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(200.0),
     },
@@ -1491,7 +1491,7 @@ fn create_large_website(
     "header",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Length(60.0),
     },
@@ -1507,7 +1507,7 @@ fn create_large_website(
         "sidebar_g" + g.to_string() + "_item_" + i.to_string(),
         @style.Style::{
           ..@style.Style::default(),
-          display: @style.Flex,
+          display: @types.Flex,
           width: @types.Percent(1.0),
           height: @types.Length(36.0),
         },
@@ -1532,8 +1532,8 @@ fn create_large_website(
       "sidebar_group_" + g.to_string(),
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_direction: @style.Column,
+        display: @types.Flex,
+        flex_direction: @types.Column,
         width: @types.Percent(1.0),
       },
       group_items,
@@ -1544,8 +1544,8 @@ fn create_large_website(
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(240.0),
       height: @types.Auto,
     },
@@ -1560,7 +1560,7 @@ fn create_large_website(
       "section_header_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
+        display: @types.Flex,
         width: @types.Percent(1.0),
         height: @types.Length(48.0),
       },
@@ -1587,8 +1587,8 @@ fn create_large_website(
         "card_" + s.to_string() + "_" + i.to_string(),
         @style.Style::{
           ..@style.Style::default(),
-          display: @style.Flex,
-          flex_direction: @style.Column,
+          display: @types.Flex,
+          flex_direction: @types.Column,
           width: @types.Length(280.0),
           height: @types.Auto,
         },
@@ -1602,8 +1602,8 @@ fn create_large_website(
             "card_body_" + s.to_string() + "_" + i.to_string(),
             @style.Style::{
               ..@style.Style::default(),
-              display: @style.Flex,
-              flex_direction: @style.Column,
+              display: @types.Flex,
+              flex_direction: @types.Column,
               width: @types.Percent(1.0),
               height: @types.Auto,
             },
@@ -1628,7 +1628,7 @@ fn create_large_website(
                 "card_meta_" + s.to_string() + "_" + i.to_string(),
                 @style.Style::{
                   ..@style.Style::default(),
-                  display: @style.Flex,
+                  display: @types.Flex,
                   width: @types.Percent(1.0),
                   height: @types.Length(20.0),
                 },
@@ -1658,7 +1658,7 @@ fn create_large_website(
             "card_actions_" + s.to_string() + "_" + i.to_string(),
             @style.Style::{
               ..@style.Style::default(),
-              display: @style.Flex,
+              display: @types.Flex,
               width: @types.Percent(1.0),
               height: @types.Length(40.0),
             },
@@ -1690,8 +1690,8 @@ fn create_large_website(
       "section_content_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_wrap: @style.Wrap,
+        display: @types.Flex,
+        flex_wrap: @types.Wrap,
         width: @types.Percent(1.0),
         height: @types.Auto,
       },
@@ -1701,8 +1701,8 @@ fn create_large_website(
       "section_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_direction: @style.Column,
+        display: @types.Flex,
+        flex_direction: @types.Column,
         width: @types.Percent(1.0),
         height: @types.Auto,
       },
@@ -1714,8 +1714,8 @@ fn create_large_website(
     "main_content",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Auto,
       height: @types.Auto,
       flex_grow: 1.0,
@@ -1728,7 +1728,7 @@ fn create_large_website(
     "body",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Auto,
       flex_grow: 1.0,
@@ -1751,8 +1751,8 @@ fn create_large_website(
     "footer",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_wrap: @style.Wrap,
+      display: @types.Flex,
+      flex_wrap: @types.Wrap,
       width: @types.Percent(1.0),
       height: @types.Auto,
     },
@@ -1764,8 +1764,8 @@ fn create_large_website(
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(1440.0),
       height: @types.Length(900.0),
     },
@@ -1872,8 +1872,8 @@ test "perf: incremental vs full recompute comparison" {
     "grid",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_wrap: @style.Wrap,
+      display: @types.Flex,
+      flex_wrap: @types.Wrap,
       width: @types.Length(1200.0),
       height: @types.Auto,
     },
@@ -1948,11 +1948,11 @@ fn create_deep_auto_subtree(
       prefix,
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
+        display: @types.Flex,
         flex_direction: if level % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
         width: @types.Auto,
         height: @types.Auto,

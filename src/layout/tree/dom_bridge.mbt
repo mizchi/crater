@@ -325,9 +325,9 @@ fn apply_default_tag_styles(node : LayoutNode, tag : String) -> Unit {
     | "header"
     | "footer"
     | "nav"
-    | "aside" => node.style.display = @style.Block
+    | "aside" => node.style.display = @types.Block
     "span" | "a" | "em" | "strong" | "b" | "i" =>
-      node.style.display = @style.Block // Simplified
+      node.style.display = @types.Block // Simplified
     "img" =>
       // Images have intrinsic sizing
       node.intrinsic_state = Some(

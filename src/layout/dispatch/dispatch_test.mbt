@@ -10,7 +10,7 @@ test "dispatch_ifc_horizontal_layout" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Dimension::Length(50.0),
     height: @types.Dimension::Length(30.0),
   }
@@ -48,7 +48,7 @@ test "dispatch_ifc_line_wrap" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Dimension::Length(60.0),
     height: @types.Dimension::Length(30.0),
   }
@@ -89,7 +89,7 @@ test "dispatch_ifc_with_padding" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Dimension::Length(50.0),
     height: @types.Dimension::Length(30.0),
   }
@@ -135,7 +135,7 @@ test "dispatch_inline_block_shrink_to_fit" {
   let leaf = @node.Node::leaf("leaf", leaf_style)
   let inline_block_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     padding: {
       left: @types.Dimension::Length(10.0),
       right: @types.Dimension::Length(10.0),

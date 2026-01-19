@@ -35,10 +35,10 @@ test "flex_item_height_recalculated_on_shrink" {
   // Container is only 200px, with align-items: flex-start to disable stretch
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
-    align_items: @style.FlexStart,
+    align_items: @types.FlexStart,
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
   let ctx : @node.LayoutContext = {
@@ -76,8 +76,8 @@ test "flex_row_basic" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -116,8 +116,8 @@ test "flex_column_basic" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     width: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
@@ -154,8 +154,8 @@ test "flex_grow" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
   }
@@ -185,9 +185,9 @@ test "flex_justify_center" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.Center,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.Center,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
   }
@@ -225,9 +225,9 @@ test "flex_justify_space_between" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.SpaceBetween,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.SpaceBetween,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
   }
@@ -257,9 +257,9 @@ test "flex_align_center" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.Center,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.Center,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -287,9 +287,9 @@ test "flex_align_stretch" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.Stretch,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.Stretch,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -322,8 +322,8 @@ test "flex_row_reverse" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.RowReverse,
+    display: @types.Flex,
+    flex_direction: @types.RowReverse,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -356,8 +356,8 @@ test "flex_with_padding" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
     padding: {
@@ -409,8 +409,8 @@ test "flex_shrink_to_zero" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(75.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
@@ -451,9 +451,9 @@ test "flex_justify_space_around" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.SpaceAround,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.SpaceAround,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -506,9 +506,9 @@ test "flex_justify_space_evenly" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.SpaceEvenly,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.SpaceEvenly,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -541,9 +541,9 @@ test "flex_align_items_center" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.Center,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.Center,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -572,9 +572,9 @@ test "flex_align_items_end" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.End,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.End,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -607,9 +607,9 @@ test "flex_justify_end" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.End,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.End,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -643,8 +643,8 @@ test "flex_column_reverse" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.ColumnReverse,
+    display: @types.Flex,
+    flex_direction: @types.ColumnReverse,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -686,8 +686,8 @@ test "flex_nested" {
     "inner_flex",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Row,
+      display: @types.Flex,
+      flex_direction: @types.Row,
       width: @types.Length(80.0),
       height: @types.Length(40.0),
     },
@@ -700,8 +700,8 @@ test "flex_nested" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     width: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [inner_flex, leaf])
@@ -741,8 +741,8 @@ test "flex_with_margin" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -772,9 +772,9 @@ test "flex_stretch_respects_explicit_height" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.Stretch,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.Stretch,
     width: @types.Length( // Default stretch
       200.0,
     ),
@@ -805,8 +805,8 @@ test "flex_min_width_constraint" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(50.0), // Smaller than min_width
     height: @types.Length(100.0),
   }
@@ -835,8 +835,8 @@ test "flex_max_width_constraint" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -861,13 +861,13 @@ test "flex_display_none" {
   let child1 = @node.Node::leaf("child1", { ..default_style, flex_grow: 1.0 })
   let child2 = @node.Node::leaf("child2", {
     ..default_style,
-    display: @style.None,
+    display: @types.Display::None,
     flex_grow: 1.0,
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -903,8 +903,8 @@ test "flex_grow_within_constrained_min_column" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     min_height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
@@ -948,8 +948,8 @@ test "flex_percentage_max_width_with_grow" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
   }
@@ -988,8 +988,8 @@ test "flex_grow_child_distribution" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1028,8 +1028,8 @@ test "flex_shrink_child_distribution" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1060,9 +1060,9 @@ test "flex_align_items_start" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.Start,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.Start,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1092,8 +1092,8 @@ test "flex_container_with_border_and_padding" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -1144,8 +1144,8 @@ test "flex_grow_within_max_width" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     max_width: @types.Length(100.0),
     // width is auto, but max-width constrains it
   }
@@ -1184,8 +1184,8 @@ test "flex_shrink_with_margin" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(80.0),
     height: @types.Length(100.0),
   }
@@ -1232,8 +1232,8 @@ test "flex_grow_less_than_factor_one" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(500.0),
     height: @types.Length(200.0),
   }
@@ -1278,8 +1278,8 @@ test "flex_basis_behavior" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -1309,9 +1309,9 @@ test "flex_column_align_stretch" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
-    align_items: @style.Stretch,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    align_items: @types.Stretch,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -1341,9 +1341,9 @@ test "flex_single_item_center" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.Center,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.Center,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -1385,8 +1385,8 @@ test "flex_shrink_all_equally" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
   }
@@ -1427,8 +1427,8 @@ test "flex_nested_mixed_directions" {
     "inner",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       height: @types.Length(100.0),
     },
     [inner_child1, inner_child2],
@@ -1444,8 +1444,8 @@ test "flex_nested_mixed_directions" {
   // Outer row flex
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -1477,9 +1477,9 @@ test "align_items_center" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.Center,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.Center,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1513,9 +1513,9 @@ test "align_items_flex_end" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    align_items: @style.End,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    align_items: @types.End,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1554,9 +1554,9 @@ test "justify_content_space_between" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.SpaceBetween,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.SpaceBetween,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1596,9 +1596,9 @@ test "justify_content_space_around" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.SpaceAround,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.SpaceAround,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1642,9 +1642,9 @@ test "justify_content_center" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    justify_content: @style.Center,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.Center,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1694,8 +1694,8 @@ test "flex_shrink_middle_to_zero" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(75.0),
   }
   let root = @node.Node::new("root", root_style, [child0, child1, child2])
@@ -1728,14 +1728,14 @@ test "align_self_center" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf("child", {
     ..default_style,
-    align_self: @style.Center,
+    align_self: @types.Center,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1771,8 +1771,8 @@ test "flex_basis_flex_grow_column" {
   let child2 = @node.Node::leaf("child2", { ..default_style, flex_grow: 1.0 })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1813,9 +1813,9 @@ test "flex_wrap_fits_one_row" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
   }
@@ -1856,7 +1856,7 @@ test "nested_overflowing_child" {
     "child",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -1864,7 +1864,7 @@ test "nested_overflowing_child" {
   )
   let root_style = {
     ..default_style,
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1911,8 +1911,8 @@ test "gap_column_gap_flexible" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     column_gap: @types.Length(10.0),
     width: @types.Length(80.0),
     height: @types.Length(100.0),
@@ -1957,8 +1957,8 @@ test "gap_column_gap_inflexible" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     column_gap: @types.Length(10.0),
     width: @types.Length(80.0),
     height: @types.Length(100.0),
@@ -2002,8 +2002,8 @@ test "gap_row_gap_column" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     row_gap: @types.Length(10.0),
     width: @types.Length(100.0),
   }
@@ -2057,9 +2057,9 @@ test "wrap_row" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
     width: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [
@@ -2120,9 +2120,9 @@ test "wrap_column" {
   })
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2186,7 +2186,7 @@ test "margin_auto_left_and_right" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(200.0),
       height: @types.Length(200.0),
     },
@@ -2239,10 +2239,10 @@ test "margin_auto_left" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(200.0),
       height: @types.Length(200.0),
-      align_items: @style.Center,
+      align_items: @types.Center,
     },
     [child0, child1],
   )
@@ -2293,10 +2293,10 @@ test "margin_auto_top" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(200.0),
       height: @types.Length(200.0),
-      align_items: @style.Center,
+      align_items: @types.Center,
     },
     [child0, child1],
   )
@@ -2338,8 +2338,8 @@ test "aspect_ratio_flex_row_fill_width" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      align_items: @style.Start,
+      display: @types.Flex,
+      align_items: @types.Start,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2375,8 +2375,8 @@ test "aspect_ratio_flex_row_fill_height" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      align_items: @style.Start,
+      display: @types.Flex,
+      align_items: @types.Start,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2413,7 +2413,7 @@ test "aspect_ratio_flex_row_stretch_fill_height" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(
         // default align_items is Stretch
         100.0,
@@ -2472,8 +2472,8 @@ test "wrap_reverse_row" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_wrap: @style.WrapReverse,
+      display: @types.Flex,
+      flex_wrap: @types.WrapReverse,
       width: @types.Length(100.0),
     },
     [child0, child1, child2, child3],
@@ -2529,9 +2529,9 @@ test "wrap_reverse_column" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
-      flex_wrap: @style.WrapReverse,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      flex_wrap: @types.WrapReverse,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2571,7 +2571,7 @@ test "absolute_layout_width_height_start_top" {
   let default_style = @style.Style::default()
   let child0 = @node.Node::leaf("child0", {
     ..default_style,
-    position: @style.Absolute,
+    position: @types.Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -2585,7 +2585,7 @@ test "absolute_layout_width_height_start_top" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2615,7 +2615,7 @@ test "absolute_layout_start_top_end_bottom" {
   let default_style = @style.Style::default()
   let child0 = @node.Node::leaf("child0", {
     ..default_style,
-    position: @style.Absolute,
+    position: @types.Absolute,
     inset: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -2627,7 +2627,7 @@ test "absolute_layout_start_top_end_bottom" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2655,7 +2655,7 @@ test "absolute_does_not_affect_flex_layout" {
   let default_style = @style.Style::default()
   let abs_child = @node.Node::leaf("abs", {
     ..default_style,
-    position: @style.Absolute,
+    position: @types.Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -2674,7 +2674,7 @@ test "absolute_does_not_affect_flex_layout" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2726,8 +2726,8 @@ test "nested_flex_explicit_sizes" {
     "middle",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(60.0),
       height: @types.Length(60.0),
     },
@@ -2739,7 +2739,7 @@ test "nested_flex_explicit_sizes" {
     "outer",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2782,7 +2782,7 @@ test "nested_flex_with_padding_margin" {
     "parent",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(80.0),
       height: @types.Length(80.0),
       padding: {
@@ -2800,7 +2800,7 @@ test "nested_flex_with_padding_margin" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
       padding: {
@@ -2856,8 +2856,8 @@ test "nested_row_in_column" {
     "row",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Row,
+      display: @types.Flex,
+      flex_direction: @types.Row,
       width: @types.Length(80.0),
       height: @types.Length(40.0),
     },
@@ -2869,8 +2869,8 @@ test "nested_row_in_column" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2916,7 +2916,7 @@ test "nested_overflowing_child_unconstrained" {
   // node0: no explicit size, wraps node00
   let node0 = @node.Node::new(
     "node0",
-    { ..default_style, display: @style.Flex },
+    { ..default_style, display: @types.Flex },
     [node00],
   )
 
@@ -2925,7 +2925,7 @@ test "nested_overflowing_child_unconstrained" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -2970,9 +2970,9 @@ test "min_height_with_nested_fixed_height" {
     "node0",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
-      align_self: @style.AlignSelf::Start,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      align_self: @types.AlignSelf::Start,
       flex_shrink: 0.0,
       min_height: @types.Length(28.0),
       margin: {
@@ -2990,7 +2990,7 @@ test "min_height_with_nested_fixed_height" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(320.0),
       min_height: @types.Length(44.0),
       padding: {
@@ -3051,8 +3051,8 @@ test "align_baseline_nested_child" {
     "node1",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(50.0),
       height: @types.Length(20.0),
     },
@@ -3064,8 +3064,8 @@ test "align_baseline_nested_child" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      align_items: @style.Baseline,
+      display: @types.Flex,
+      align_items: @types.Baseline,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -3117,8 +3117,8 @@ test "align_baseline" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      align_items: @style.Baseline,
+      display: @types.Flex,
+      align_items: @types.Baseline,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },
@@ -3163,9 +3163,9 @@ test "debug_intrinsic_cross_sizing" {
     "parent",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
-      align_self: @style.AlignSelf::Start,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      align_self: @types.AlignSelf::Start,
       min_height: @types.Length(28.0),
       // no margin
     },
@@ -3175,7 +3175,7 @@ test "debug_intrinsic_cross_sizing" {
   // Root is Row with height: Auto - should grow to fit children
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @style.Flex, width: @types.Length(100.0) },
+    { ..default_style, display: @types.Flex, width: @types.Length(100.0) },
     // height: Auto (default)
     [parent],
   )
@@ -3240,8 +3240,8 @@ test "flex_text_wrapping_in_fixed_width_container" {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Row,
+      display: @types.Flex,
+      flex_direction: @types.Row,
       width: @types.Length(100.0),
     },
     [flex_item],
@@ -3282,17 +3282,17 @@ test "row_column_div_with_cache_reset" {
   let text_node = @node.Node::with_measure("text", default_style, text_measure)
   let inner_div = @node.Node::new(
     "div",
-    { ..default_style, display: @style.Block },
+    { ..default_style, display: @types.Block },
     [text_node],
   )
   let column = @node.Node::new(
     "column",
-    { ..default_style, display: @style.Flex, flex_direction: @style.Column },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Column },
     [inner_div],
   )
   let row = @node.Node::new(
     "row",
-    { ..default_style, display: @style.Flex, flex_direction: @style.Row },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Row },
     [column],
   )
   let ctx : @node.LayoutContext = {
@@ -3318,12 +3318,12 @@ test "column_div_nested" {
   let text_node = @node.Node::with_measure("text", default_style, text_measure)
   let inner_div = @node.Node::new(
     "div",
-    { ..default_style, display: @style.Block },
+    { ..default_style, display: @types.Block },
     [text_node],
   )
   let column = @node.Node::new(
     "column",
-    { ..default_style, display: @style.Flex, flex_direction: @style.Column },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Column },
     [inner_div],
   )
   let ctx : @node.LayoutContext = {
@@ -3354,19 +3354,19 @@ test "row_column_nested_flex_with_text" {
   // Inner div containing text (display: block by default)
   let inner_div = @node.Node::new(
     "div",
-    { ..default_style, display: @style.Block },
+    { ..default_style, display: @types.Block },
     [text_node],
   )
   // Column flex container
   let column = @node.Node::new(
     "column",
-    { ..default_style, display: @style.Flex, flex_direction: @style.Column },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Column },
     [inner_div],
   )
   // Row flex container
   let row = @node.Node::new(
     "row",
-    { ..default_style, display: @style.Flex, flex_direction: @style.Row },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Row },
     [column],
   )
   let ctx : @node.LayoutContext = {
@@ -3406,8 +3406,8 @@ test "flex_column_single_margin" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0),
     },
@@ -3451,8 +3451,8 @@ test "flex_column_two_items_second_margin" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0),
     },
@@ -3505,8 +3505,8 @@ test "flex_margin_no_collapse_no_shrink" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0), // Small container, would have negative free space
     },
@@ -3561,9 +3561,9 @@ test "flex_margin_no_collapse_absolute_container" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
-      position: @style.Absolute,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      position: @types.Absolute,
       width: @types.Length( // This is the key difference!
         200.0,
       ),
@@ -3615,8 +3615,8 @@ test "flex_column_first_all_margins" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(500.0), // Larger container to have positive free space
     },
@@ -3666,8 +3666,8 @@ test "flex_column_adjacent_margins" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0),
     },
@@ -3718,8 +3718,8 @@ test "flex_column_two_items_both_margin_top" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0),
     },
@@ -3764,8 +3764,8 @@ test "flex_column_two_items_first_margin_bottom" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0),
     },
@@ -3823,8 +3823,8 @@ test "flex_margin_no_collapse" {
     "container",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Length(300.0),
     },

@@ -696,8 +696,8 @@ test "LayoutComputeResult fields" {
     margin: @types.Rect::all(0.0),
     padding: @types.Rect::all(0.0),
     border: @types.Rect::all(0.0),
-    overflow_x: @style.Overflow::Visible,
-    overflow_y: @style.Overflow::Visible,
+    overflow_x: @types.Overflow::Visible,
+    overflow_y: @types.Overflow::Visible,
     children: [],
     text: None,
   }

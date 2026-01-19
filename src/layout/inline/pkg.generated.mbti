@@ -3,13 +3,13 @@ package "mizchi/crater/layout/inline"
 
 import(
   "mizchi/crater/layout/node"
-  "mizchi/crater/style"
+  "mizchi/crater/types"
 )
 
 // Values
 pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double) -> InlineLayoutResult
 
-pub fn is_inline_level(@style.Display) -> Bool
+pub fn is_inline_level(@types.Display) -> Bool
 
 pub fn should_establish_ifc(Array[@node.Node]) -> Bool
 

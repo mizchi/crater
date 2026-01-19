@@ -6,8 +6,8 @@
 test "taffy/blockgrid_block_in_grid_auto" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Auto],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -43,8 +43,8 @@ test "taffy/blockgrid_block_in_grid_auto" {
 test "taffy/blockgrid_block_in_grid_fixed_fit_content_larger" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(50.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(50.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -80,8 +80,8 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_larger" {
 test "taffy/blockgrid_block_in_grid_fixed_fit_content_middle" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(30.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(30.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -117,8 +117,8 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_middle" {
 test "taffy/blockgrid_block_in_grid_fixed_fit_content_smaller" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(10.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(10.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -154,8 +154,8 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_smaller" {
 test "taffy/blockgrid_block_in_grid_fixed_larger" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(50.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Length(50.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -191,8 +191,8 @@ test "taffy/blockgrid_block_in_grid_fixed_larger" {
 test "taffy/blockgrid_block_in_grid_fixed_middle" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(30.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Length(30.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -228,8 +228,8 @@ test "taffy/blockgrid_block_in_grid_fixed_middle" {
 test "taffy/blockgrid_block_in_grid_fixed_smaller" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(10.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Length(10.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -265,8 +265,8 @@ test "taffy/blockgrid_block_in_grid_fixed_smaller" {
 test "taffy/blockgrid_block_in_grid_fr" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Fr(1.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -302,8 +302,8 @@ test "taffy/blockgrid_block_in_grid_fr" {
 test "taffy/blockgrid_block_in_grid_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MinContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -339,8 +339,8 @@ test "taffy/blockgrid_block_in_grid_max_content" {
 test "taffy/blockgrid_block_in_grid_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MinContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -376,7 +376,7 @@ test "taffy/blockgrid_block_in_grid_min_content" {
 test "taffy/blockgrid_grid_in_block" {
   let root_style = { ..@style.Style::default(), width: @types.Length(200.0) }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_child0_style = { ..@style.Style::default(), display: @types.Grid }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
@@ -434,7 +434,7 @@ test "taffy/blockgrid_margin_y_collapse_through_blocked_by_grid" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -482,7 +482,7 @@ test "taffy/blockgrid_margin_y_first_child_collapse_blocked_by_grid" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -543,7 +543,7 @@ test "taffy/blockgrid_margin_y_last_child_collapse_blocked_by_grid" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     margin: {
       left: @types.Auto,
       right: @types.Auto,

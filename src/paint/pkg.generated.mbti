@@ -30,8 +30,8 @@ pub(all) struct PaintNode {
   y : Double
   width : Double
   height : Double
-  overflow_x : @style.Overflow
-  overflow_y : @style.Overflow
+  overflow_x : @types.Overflow
+  overflow_y : @types.Overflow
   clip : @types.ClipRect
   paint : PaintProperties
   stacking_order : Int
@@ -42,7 +42,7 @@ pub fn PaintNode::clips_content(Self) -> Bool
 pub fn PaintNode::get_clip_rect(Self) -> (Double, Double, Double, Double)?
 pub fn PaintNode::get_legacy_clip(Self) -> (Double, Double, Double, Double)?
 pub fn PaintNode::has_legacy_clip(Self) -> Bool
-pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, overflow_x? : @style.Overflow, overflow_y? : @style.Overflow, clip? : @types.ClipRect) -> Self
+pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, clip? : @types.ClipRect) -> Self
 pub impl Show for PaintNode
 
 pub(all) struct PaintProperties {

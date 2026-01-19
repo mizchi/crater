@@ -9,8 +9,8 @@ test "PaintNode clips_content with overflow hidden" {
     100.0,
     PaintProperties::default(),
     [],
-    overflow_x=@style.Hidden,
-    overflow_y=@style.Hidden,
+    overflow_x=@types.Hidden,
+    overflow_y=@types.Hidden,
   )
   inspect(node.clips_content(), content="true")
 }
@@ -26,8 +26,8 @@ test "PaintNode clips_content with overflow visible" {
     100.0,
     PaintProperties::default(),
     [],
-    overflow_x=@style.Visible,
-    overflow_y=@style.Visible,
+    overflow_x=@types.Visible,
+    overflow_y=@types.Visible,
   )
   inspect(node.clips_content(), content="false")
 }
@@ -43,8 +43,8 @@ test "PaintNode get_clip_rect returns rect when clipping" {
     50.0,
     PaintProperties::default(),
     [],
-    overflow_x=@style.Hidden,
-    overflow_y=@style.Visible,
+    overflow_x=@types.Hidden,
+    overflow_y=@types.Visible,
   )
   inspect(node.get_clip_rect(), content="Some((10, 20, 100, 50))")
 }
@@ -75,8 +75,8 @@ test "PaintNode Show includes clips marker" {
     1.0,
     PaintProperties::default(),
     [],
-    overflow_x=@style.Hidden,
-    overflow_y=@style.Hidden,
+    overflow_x=@types.Hidden,
+    overflow_y=@types.Hidden,
   )
   let s = node.to_string()
   inspect(s.contains("[clips]"), content="true")
@@ -149,8 +149,8 @@ test "viewport_culling_basic" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }
@@ -163,8 +163,8 @@ test "viewport_culling_basic" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }
@@ -177,8 +177,8 @@ test "viewport_culling_basic" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }
@@ -191,8 +191,8 @@ test "viewport_culling_basic" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [child1_layout, child2_layout, child3_layout],
     text: None,
   }
@@ -267,8 +267,8 @@ test "viewport_culling_zero_height_container" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }
@@ -282,8 +282,8 @@ test "viewport_culling_zero_height_container" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [child_layout],
     text: None,
   }
@@ -350,8 +350,8 @@ test "viewport_culling_scroll_simulation" {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }

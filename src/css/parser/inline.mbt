@@ -183,50 +183,50 @@ fn parse_multi_dimensions(
 
 ///|
 /// Parse display property
-fn parse_display(tokens : ArrayView[@token.Token]) -> @style.Display? {
+fn parse_display(tokens : ArrayView[@token.Token]) -> @types.Display? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "block" {
-        Some(@style.Block)
+        Some(@types.Block)
       } else if s == "inline" {
-        Some(@style.Inline)
+        Some(@types.Inline)
       } else if s == "inline-block" {
-        Some(@style.InlineBlock)
+        Some(@types.InlineBlock)
       } else if s == "flex" {
-        Some(@style.Flex)
+        Some(@types.Flex)
       } else if s == "inline-flex" {
-        Some(@style.InlineFlex)
+        Some(@types.InlineFlex)
       } else if s == "grid" {
-        Some(@style.Grid)
+        Some(@types.Grid)
       } else if s == "inline-grid" {
-        Some(@style.InlineGrid)
+        Some(@types.InlineGrid)
       } else if s == "table" {
-        Some(@style.Table)
+        Some(@types.Table)
       } else if s == "inline-table" {
-        Some(@style.InlineTable)
+        Some(@types.InlineTable)
       } else if s == "table-row" {
-        Some(@style.TableRow)
+        Some(@types.TableRow)
       } else if s == "table-cell" {
-        Some(@style.TableCell)
+        Some(@types.TableCell)
       } else if s == "table-caption" {
-        Some(@style.TableCaption)
+        Some(@types.TableCaption)
       } else if s == "table-row-group" {
-        Some(@style.TableRowGroup)
+        Some(@types.TableRowGroup)
       } else if s == "table-header-group" {
-        Some(@style.TableHeaderGroup)
+        Some(@types.TableHeaderGroup)
       } else if s == "table-footer-group" {
-        Some(@style.TableFooterGroup)
+        Some(@types.TableFooterGroup)
       } else if s == "table-column" {
-        Some(@style.TableColumn)
+        Some(@types.TableColumn)
       } else if s == "table-column-group" {
-        Some(@style.TableColumnGroup)
+        Some(@types.TableColumnGroup)
       } else if s == "none" {
-        Some(@style.Display::None)
+        Some(@types.Display::None)
       } else if s == "contents" {
-        Some(@style.Contents)
+        Some(@types.Contents)
       } else {
         None
       }
@@ -236,18 +236,18 @@ fn parse_display(tokens : ArrayView[@token.Token]) -> @style.Display? {
 
 ///|
 /// Parse position property
-fn parse_position(tokens : ArrayView[@token.Token]) -> @style.Position? {
+fn parse_position(tokens : ArrayView[@token.Token]) -> @types.Position? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "relative" {
-        Some(@style.Relative)
+        Some(@types.Relative)
       } else if s == "absolute" {
-        Some(@style.Absolute)
+        Some(@types.Absolute)
       } else if s == "fixed" {
-        Some(@style.Fixed)
+        Some(@types.Fixed)
       } else {
         None
       }
@@ -257,18 +257,18 @@ fn parse_position(tokens : ArrayView[@token.Token]) -> @style.Position? {
 
 ///|
 /// Parse float property
-fn parse_float(tokens : ArrayView[@token.Token]) -> @style.Float? {
+fn parse_float(tokens : ArrayView[@token.Token]) -> @types.Float? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "left" {
-        Some(@style.Float::Left)
+        Some(@types.Float::Left)
       } else if s == "right" {
-        Some(@style.Float::Right)
+        Some(@types.Float::Right)
       } else if s == "none" {
-        Some(@style.Float::None)
+        Some(@types.Float::None)
       } else {
         None
       }
@@ -278,20 +278,20 @@ fn parse_float(tokens : ArrayView[@token.Token]) -> @style.Float? {
 
 ///|
 /// Parse clear property
-fn parse_clear(tokens : ArrayView[@token.Token]) -> @style.Clear? {
+fn parse_clear(tokens : ArrayView[@token.Token]) -> @types.Clear? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "left" {
-        Some(@style.Clear::Left)
+        Some(@types.Clear::Left)
       } else if s == "right" {
-        Some(@style.Clear::Right)
+        Some(@types.Clear::Right)
       } else if s == "both" {
-        Some(@style.Clear::Both)
+        Some(@types.Clear::Both)
       } else if s == "none" {
-        Some(@style.Clear::None)
+        Some(@types.Clear::None)
       } else {
         None
       }
@@ -303,20 +303,20 @@ fn parse_clear(tokens : ArrayView[@token.Token]) -> @style.Clear? {
 /// Parse flex-direction property
 fn parse_flex_direction(
   tokens : ArrayView[@token.Token],
-) -> @style.FlexDirection? {
+) -> @types.FlexDirection? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "row" {
-        Some(@style.Row)
+        Some(@types.Row)
       } else if s == "row-reverse" {
-        Some(@style.RowReverse)
+        Some(@types.RowReverse)
       } else if s == "column" {
-        Some(@style.Column)
+        Some(@types.Column)
       } else if s == "column-reverse" {
-        Some(@style.ColumnReverse)
+        Some(@types.ColumnReverse)
       } else {
         None
       }
@@ -326,18 +326,18 @@ fn parse_flex_direction(
 
 ///|
 /// Parse flex-wrap property
-fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @style.FlexWrap? {
+fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @types.FlexWrap? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "nowrap" {
-        Some(@style.NoWrap)
+        Some(@types.NoWrap)
       } else if s == "wrap" {
-        Some(@style.FlexWrap::Wrap)
+        Some(@types.FlexWrap::Wrap)
       } else if s == "wrap-reverse" {
-        Some(@style.WrapReverse)
+        Some(@types.WrapReverse)
       } else {
         None
       }
@@ -347,32 +347,32 @@ fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @style.FlexWrap? {
 
 ///|
 /// Parse alignment property (justify-content, align-items, etc.)
-fn parse_alignment(tokens : ArrayView[@token.Token]) -> @style.Alignment? {
+fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "flex-start" {
-        Some(@style.Alignment::FlexStart)
+        Some(@types.Alignment::FlexStart)
       } else if s == "start" {
-        Some(@style.Alignment::Start)
+        Some(@types.Alignment::Start)
       } else if s == "flex-end" {
-        Some(@style.Alignment::FlexEnd)
+        Some(@types.Alignment::FlexEnd)
       } else if s == "end" {
-        Some(@style.Alignment::End)
+        Some(@types.Alignment::End)
       } else if s == "center" {
-        Some(@style.Alignment::Center)
+        Some(@types.Alignment::Center)
       } else if s == "space-between" {
-        Some(@style.SpaceBetween)
+        Some(@types.SpaceBetween)
       } else if s == "space-around" {
-        Some(@style.SpaceAround)
+        Some(@types.SpaceAround)
       } else if s == "space-evenly" {
-        Some(@style.SpaceEvenly)
+        Some(@types.SpaceEvenly)
       } else if s == "stretch" {
-        Some(@style.Alignment::Stretch)
+        Some(@types.Alignment::Stretch)
       } else if s == "baseline" {
-        Some(@style.Alignment::Baseline)
+        Some(@types.Alignment::Baseline)
       } else {
         None
       }
@@ -529,13 +529,13 @@ fn parse_flex_shorthand(
 /// flex-flow: <flex-direction> || <flex-wrap>
 fn parse_flex_flow_shorthand(
   tokens : ArrayView[@token.Token],
-) -> (@style.FlexDirection, @style.FlexWrap)? {
+) -> (@types.FlexDirection, @types.FlexWrap)? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
   }
-  let mut direction : @style.FlexDirection? = None
-  let mut wrap : @style.FlexWrap? = None
+  let mut direction : @types.FlexDirection? = None
+  let mut wrap : @types.FlexWrap? = None
 
   // Parse up to 2 tokens
   let mut i = 0
@@ -544,20 +544,20 @@ fn parse_flex_flow_shorthand(
       @token.Token::Ident(s) =>
         // Check if it's a flex-direction value
         if s == "row" {
-          direction = Some(@style.FlexDirection::Row)
+          direction = Some(@types.FlexDirection::Row)
         } else if s == "row-reverse" {
-          direction = Some(@style.FlexDirection::RowReverse)
+          direction = Some(@types.FlexDirection::RowReverse)
         } else if s == "column" {
-          direction = Some(@style.FlexDirection::Column)
+          direction = Some(@types.FlexDirection::Column)
         } else if s == "column-reverse" {
-          direction = Some(@style.FlexDirection::ColumnReverse)
+          direction = Some(@types.FlexDirection::ColumnReverse)
           // Check if it's a flex-wrap value
         } else if s == "nowrap" {
-          wrap = Some(@style.FlexWrap::NoWrap)
+          wrap = Some(@types.FlexWrap::NoWrap)
         } else if s == "wrap" {
-          wrap = Some(@style.FlexWrap::Wrap)
+          wrap = Some(@types.FlexWrap::Wrap)
         } else if s == "wrap-reverse" {
-          wrap = Some(@style.FlexWrap::WrapReverse)
+          wrap = Some(@types.FlexWrap::WrapReverse)
         }
       @token.Token::Whitespace => ()
       _ => ()
@@ -569,8 +569,8 @@ fn parse_flex_flow_shorthand(
   if direction is Some(_) || wrap is Some(_) {
     Some(
       (
-        direction.unwrap_or(@style.FlexDirection::Row),
-        wrap.unwrap_or(@style.FlexWrap::NoWrap),
+        direction.unwrap_or(@types.FlexDirection::Row),
+        wrap.unwrap_or(@types.FlexWrap::NoWrap),
       ),
     )
   } else {
@@ -618,20 +618,20 @@ fn parse_aspect_ratio(tokens : ArrayView[@token.Token]) -> Double? {
 /// Parse grid-auto-flow property
 fn parse_grid_auto_flow(
   tokens : ArrayView[@token.Token],
-) -> @style.GridAutoFlow? {
+) -> @types.GridAutoFlow? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "row" {
-        Some(@style.GridAutoFlow::Row)
+        Some(@types.GridAutoFlow::Row)
       } else if s == "column" {
-        Some(@style.GridAutoFlow::Column)
+        Some(@types.GridAutoFlow::Column)
       } else if s == "row dense" {
-        Some(@style.RowDense)
+        Some(@types.RowDense)
       } else if s == "column dense" {
-        Some(@style.ColumnDense)
+        Some(@types.ColumnDense)
       } else {
         None
       }
@@ -643,7 +643,7 @@ fn parse_grid_auto_flow(
 /// Parse a single track value for MinTrackSizing
 fn parse_min_track_sizing(
   tokens : ArrayView[@token.Token],
-) -> (@style.MinTrackSizing, ArrayView[@token.Token])? {
+) -> (@types.MinTrackSizing, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
@@ -651,27 +651,27 @@ fn parse_min_track_sizing(
   match tokens[0] {
     @token.Token::Dimension(value, unit) =>
       if unit == "px" {
-        Some((@style.MinTrackSizing::Length(value), tokens[1:]))
+        Some((@types.MinTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
-        Some((@style.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
+        Some((@types.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
       } else {
-        Some((@style.MinTrackSizing::Length(value), tokens[1:]))
+        Some((@types.MinTrackSizing::Length(value), tokens[1:]))
       }
     @token.Token::Percentage(value) =>
-      Some((@style.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
+      Some((@types.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
       if value == 0.0 {
-        Some((@style.MinTrackSizing::Length(0.0), tokens[1:]))
+        Some((@types.MinTrackSizing::Length(0.0), tokens[1:]))
       } else {
         None
       }
     @token.Token::Ident(s) =>
       if s == "auto" {
-        Some((@style.MinTrackSizing::Auto, tokens[1:]))
+        Some((@types.MinTrackSizing::Auto, tokens[1:]))
       } else if s == "min-content" {
-        Some((@style.MinTrackSizing::MinContent, tokens[1:]))
+        Some((@types.MinTrackSizing::MinContent, tokens[1:]))
       } else if s == "max-content" {
-        Some((@style.MinTrackSizing::MaxContent, tokens[1:]))
+        Some((@types.MinTrackSizing::MaxContent, tokens[1:]))
       } else {
         None
       }
@@ -683,7 +683,7 @@ fn parse_min_track_sizing(
 /// Parse a single track value for MaxTrackSizing
 fn parse_max_track_sizing(
   tokens : ArrayView[@token.Token],
-) -> (@style.MaxTrackSizing, ArrayView[@token.Token])? {
+) -> (@types.MaxTrackSizing, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
@@ -691,29 +691,29 @@ fn parse_max_track_sizing(
   match tokens[0] {
     @token.Token::Dimension(value, unit) =>
       if unit == "px" {
-        Some((@style.MaxTrackSizing::Length(value), tokens[1:]))
+        Some((@types.MaxTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
-        Some((@style.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
+        Some((@types.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
       } else if unit == "fr" {
-        Some((@style.MaxTrackSizing::Fr(value), tokens[1:]))
+        Some((@types.MaxTrackSizing::Fr(value), tokens[1:]))
       } else {
-        Some((@style.MaxTrackSizing::Length(value), tokens[1:]))
+        Some((@types.MaxTrackSizing::Length(value), tokens[1:]))
       }
     @token.Token::Percentage(value) =>
-      Some((@style.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
+      Some((@types.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
       if value == 0.0 {
-        Some((@style.MaxTrackSizing::Length(0.0), tokens[1:]))
+        Some((@types.MaxTrackSizing::Length(0.0), tokens[1:]))
       } else {
         None
       }
     @token.Token::Ident(s) =>
       if s == "auto" {
-        Some((@style.MaxTrackSizing::Auto, tokens[1:]))
+        Some((@types.MaxTrackSizing::Auto, tokens[1:]))
       } else if s == "min-content" {
-        Some((@style.MaxTrackSizing::MinContent, tokens[1:]))
+        Some((@types.MaxTrackSizing::MinContent, tokens[1:]))
       } else if s == "max-content" {
-        Some((@style.MaxTrackSizing::MaxContent, tokens[1:]))
+        Some((@types.MaxTrackSizing::MaxContent, tokens[1:]))
       } else {
         None
       }
@@ -725,7 +725,7 @@ fn parse_max_track_sizing(
 /// Parse a single track sizing value (without repeat)
 fn parse_single_track_sizing(
   tokens : ArrayView[@token.Token],
-) -> (@style.SingleTrackSizing, ArrayView[@token.Token])? {
+) -> (@types.SingleTrackSizing, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
@@ -733,29 +733,29 @@ fn parse_single_track_sizing(
   match tokens[0] {
     @token.Token::Dimension(value, unit) =>
       if unit == "px" {
-        Some((@style.SingleTrackSizing::Length(value), tokens[1:]))
+        Some((@types.SingleTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
-        Some((@style.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
+        Some((@types.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
       } else if unit == "fr" {
-        Some((@style.SingleTrackSizing::Fr(value), tokens[1:]))
+        Some((@types.SingleTrackSizing::Fr(value), tokens[1:]))
       } else {
-        Some((@style.SingleTrackSizing::Length(value), tokens[1:]))
+        Some((@types.SingleTrackSizing::Length(value), tokens[1:]))
       }
     @token.Token::Percentage(value) =>
-      Some((@style.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
+      Some((@types.SingleTrackSizing::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
       if value == 0.0 {
-        Some((@style.SingleTrackSizing::Length(0.0), tokens[1:]))
+        Some((@types.SingleTrackSizing::Length(0.0), tokens[1:]))
       } else {
         None
       }
     @token.Token::Ident(s) =>
       if s == "auto" {
-        Some((@style.SingleTrackSizing::Auto, tokens[1:]))
+        Some((@types.SingleTrackSizing::Auto, tokens[1:]))
       } else if s == "min-content" {
-        Some((@style.SingleTrackSizing::MinContent, tokens[1:]))
+        Some((@types.SingleTrackSizing::MinContent, tokens[1:]))
       } else if s == "max-content" {
-        Some((@style.SingleTrackSizing::MaxContent, tokens[1:]))
+        Some((@types.SingleTrackSizing::MaxContent, tokens[1:]))
       } else {
         None
       }
@@ -784,7 +784,7 @@ fn parse_single_track_sizing(
                       let next_tokens = rest6[1:]
                       Some(
                         (
-                          @style.SingleTrackSizing::MinMax(min_val, max_val),
+                          @types.SingleTrackSizing::MinMax(min_val, max_val),
                           next_tokens,
                         ),
                       )
@@ -811,7 +811,7 @@ fn parse_single_track_sizing(
 /// Parse a track sizing function (including repeat)
 fn parse_track_sizing_function(
   tokens : ArrayView[@token.Token],
-) -> (@style.TrackSizingFunction, ArrayView[@token.Token])? {
+) -> (@types.TrackSizingFunction, ArrayView[@token.Token])? {
   let tokens = skip_whitespace(tokens)
   if tokens.length() == 0 {
     return None
@@ -826,15 +826,15 @@ fn parse_track_sizing_function(
           return None
         }
         // Parse repeat count
-        let (count, rest2) : (@style.RepeatCount, ArrayView[@token.Token]) = match
+        let (count, rest2) : (@types.RepeatCount, ArrayView[@token.Token]) = match
           rest[0] {
           @token.Token::Number(value, _) =>
-            (@style.RepeatCount::Count(value.to_int()), rest[1:])
+            (@types.RepeatCount::Count(value.to_int()), rest[1:])
           @token.Token::Ident(s) =>
             if s == "auto-fill" {
-              (@style.RepeatCount::AutoFill, rest[1:])
+              (@types.RepeatCount::AutoFill, rest[1:])
             } else if s == "auto-fit" {
-              (@style.RepeatCount::AutoFit, rest[1:])
+              (@types.RepeatCount::AutoFit, rest[1:])
             } else {
               return None
             }
@@ -850,7 +850,7 @@ fn parse_track_sizing_function(
           _ => rest3
         }
         // Parse track list until closing paren
-        let tracks : Array[@style.SingleTrackSizing] = []
+        let tracks : Array[@types.SingleTrackSizing] = []
         let mut remaining = rest4
         while remaining.length() > 0 {
           remaining = skip_whitespace(remaining)
@@ -873,15 +873,15 @@ fn parse_track_sizing_function(
           }
         }
         if tracks.length() > 0 {
-          Some((@style.TrackSizingFunction::Repeat(count, tracks), remaining))
+          Some((@types.TrackSizingFunction::Repeat(count, tracks), remaining))
         } else {
           None
         }
       } else if name == "minmax" {
         // minmax is also valid as TrackSizingFunction
         match parse_single_track_sizing(tokens) {
-          Some((@style.SingleTrackSizing::MinMax(min_val, max_val), rest)) =>
-            Some((@style.TrackSizingFunction::MinMax(min_val, max_val), rest))
+          Some((@types.SingleTrackSizing::MinMax(min_val, max_val), rest)) =>
+            Some((@types.TrackSizingFunction::MinMax(min_val, max_val), rest))
           _ => None
         }
       } else {
@@ -889,29 +889,29 @@ fn parse_track_sizing_function(
       }
     @token.Token::Dimension(value, unit) =>
       if unit == "px" {
-        Some((@style.TrackSizingFunction::Length(value), tokens[1:]))
+        Some((@types.TrackSizingFunction::Length(value), tokens[1:]))
       } else if unit == "%" {
-        Some((@style.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
+        Some((@types.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
       } else if unit == "fr" {
-        Some((@style.TrackSizingFunction::Fr(value), tokens[1:]))
+        Some((@types.TrackSizingFunction::Fr(value), tokens[1:]))
       } else {
-        Some((@style.TrackSizingFunction::Length(value), tokens[1:]))
+        Some((@types.TrackSizingFunction::Length(value), tokens[1:]))
       }
     @token.Token::Percentage(value) =>
-      Some((@style.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
+      Some((@types.TrackSizingFunction::Percent(value / 100.0), tokens[1:]))
     @token.Token::Number(value, _) =>
       if value == 0.0 {
-        Some((@style.TrackSizingFunction::Length(0.0), tokens[1:]))
+        Some((@types.TrackSizingFunction::Length(0.0), tokens[1:]))
       } else {
         None
       }
     @token.Token::Ident(s) =>
       if s == "auto" {
-        Some((@style.TrackSizingFunction::Auto, tokens[1:]))
+        Some((@types.TrackSizingFunction::Auto, tokens[1:]))
       } else if s == "min-content" {
-        Some((@style.TrackSizingFunction::MinContent, tokens[1:]))
+        Some((@types.TrackSizingFunction::MinContent, tokens[1:]))
       } else if s == "max-content" {
-        Some((@style.TrackSizingFunction::MaxContent, tokens[1:]))
+        Some((@types.TrackSizingFunction::MaxContent, tokens[1:]))
       } else if s == "none" {
         // none means empty template
         None
@@ -926,8 +926,8 @@ fn parse_track_sizing_function(
 /// Parse grid-template-columns or grid-template-rows value
 fn parse_grid_template_tracks(
   tokens : ArrayView[@token.Token],
-) -> Array[@style.TrackSizingFunction] {
-  let result : Array[@style.TrackSizingFunction] = []
+) -> Array[@types.TrackSizingFunction] {
+  let result : Array[@types.TrackSizingFunction] = []
   let mut remaining = tokens
   while remaining.length() > 0 {
     remaining = skip_whitespace(remaining)
@@ -966,27 +966,27 @@ fn parse_grid_template_tracks(
 /// Parse grid-template-columns or grid-template-rows from a raw string
 pub fn parse_grid_template_tracks_from_string(
   value : String,
-) -> Array[@style.TrackSizingFunction] {
+) -> Array[@types.TrackSizingFunction] {
   let tokens = @token.tokenize(value)
   parse_grid_template_tracks(tokens[:])
 }
 
 ///|
 /// Parse overflow property
-fn parse_overflow(tokens : ArrayView[@token.Token]) -> @style.Overflow? {
+fn parse_overflow(tokens : ArrayView[@token.Token]) -> @types.Overflow? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "visible" {
-        Some(@style.Visible)
+        Some(@types.Visible)
       } else if s == "hidden" {
-        Some(@style.Hidden)
+        Some(@types.Hidden)
       } else if s == "scroll" {
-        Some(@style.Scroll)
+        Some(@types.Scroll)
       } else if s == "auto" {
-        Some(@style.Overflow::Auto)
+        Some(@types.Overflow::Auto)
       } else {
         None
       }
@@ -1046,16 +1046,16 @@ fn parse_clip(tokens : ArrayView[@token.Token]) -> @types.ClipRect {
 
 ///|
 /// Parse box-sizing property
-fn parse_box_sizing(tokens : ArrayView[@token.Token]) -> @style.BoxSizing? {
+fn parse_box_sizing(tokens : ArrayView[@token.Token]) -> @types.BoxSizing? {
   if tokens.length() == 0 {
     return None
   }
   match tokens[0] {
     @token.Token::Ident(s) =>
       if s == "content-box" {
-        Some(@style.ContentBox)
+        Some(@types.ContentBox)
       } else if s == "border-box" {
-        Some(@style.BorderBox)
+        Some(@types.BorderBox)
       } else {
         None
       }
@@ -1896,8 +1896,8 @@ pub fn parse_inline_style(css : String) -> @style.Style {
 /// The layout engine expects outer dimensions (border-box), so we adjust here.
 fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
   match style.box_sizing {
-    @style.BorderBox => style // No adjustment needed
-    @style.ContentBox => {
+    @types.BorderBox => style // No adjustment needed
+    @types.ContentBox => {
       // Calculate padding and border sums
       let padding_h = resolve_dimension_to_px(style.padding.left) +
         resolve_dimension_to_px(style.padding.right)
@@ -1910,28 +1910,34 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
 
       // Adjust width and height to include padding+border
       let adjusted_width = match style.width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Dimension::Length(w) =>
+          @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_height = match style.height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Dimension::Length(h) =>
+          @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       // Adjust min/max constraints too
       let adjusted_min_width = match style.min_width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Dimension::Length(w) =>
+          @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_min_height = match style.min_height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Dimension::Length(h) =>
+          @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       let adjusted_max_width = match style.max_width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Dimension::Length(w) =>
+          @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_max_height = match style.max_height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Dimension::Length(h) =>
+          @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       {
@@ -1943,7 +1949,7 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
         max_width: adjusted_max_width,
         max_height: adjusted_max_height,
         // Mark as adjusted (now using border-box semantics internally)
-        box_sizing: @style.BorderBox,
+        box_sizing: @types.BorderBox,
       }
     }
   }

@@ -21,22 +21,22 @@ fn assert_approx(actual : Double, expected : Double) -> Unit raise {
 test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_style = {
     ..@style.Style::default(),
-    position: @style.Position::Relative,
+    position: @types.Position::Relative,
     width: @types.Length(300.0),
     height: @types.Length(110.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(50.0),
       right: @types.Auto,
       top: @types.Length(40.0),
       bottom: @types.Auto,
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -55,7 +55,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
@@ -122,7 +122,7 @@ test "taffy/block_absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_in
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(0.0500),
       right: @types.Percent(0.0500),
@@ -162,7 +162,7 @@ test "taffy/block_absolute_aspect_ratio_fill_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(0.5000),
     inset: {
       left: @types.Percent(0.0500),
@@ -203,7 +203,7 @@ test "taffy/block_absolute_aspect_ratio_fill_height_from_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(0.1000),
       right: @types.Percent(0.1000),
@@ -243,7 +243,7 @@ test "taffy/block_absolute_aspect_ratio_fill_max_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_width: @types.Length(50.0),
     aspect_ratio: Some(3.0000),
   }
@@ -290,7 +290,7 @@ test "taffy/block_absolute_aspect_ratio_fill_max_width" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_height: @types.Length(50.0),
     aspect_ratio: Some(0.5000),
   }
@@ -337,7 +337,7 @@ test "taffy/block_absolute_aspect_ratio_fill_min_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_width: @types.Length(50.0),
     aspect_ratio: Some(3.0000),
   }
@@ -372,7 +372,7 @@ test "taffy/block_absolute_aspect_ratio_fill_min_width" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_height: @types.Length(50.0),
     aspect_ratio: Some(0.5000),
   }
@@ -407,7 +407,7 @@ test "taffy/block_absolute_aspect_ratio_fill_width" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     height: @types.Percent(0.2000),
     inset: {
       left: @types.Percent(0.0500),
@@ -448,7 +448,7 @@ test "taffy/block_absolute_aspect_ratio_fill_width_from_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -488,7 +488,7 @@ test "taffy/block_absolute_aspect_ratio_height_overrides_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     height: @types.Percent(0.1000),
     inset: {
       left: @types.Auto,
@@ -529,7 +529,7 @@ test "taffy/block_absolute_aspect_ratio_width_overrides_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(0.4000),
     inset: {
       left: @types.Percent(0.1000),
@@ -570,7 +570,7 @@ test "taffy/block_absolute_child_with_margin_x" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -584,7 +584,7 @@ test "taffy/block_absolute_child_with_margin_x" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -598,7 +598,7 @@ test "taffy/block_absolute_child_with_margin_x" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -647,7 +647,7 @@ test "taffy/block_absolute_child_with_margin_y" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -661,7 +661,7 @@ test "taffy/block_absolute_child_with_margin_y" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -675,7 +675,7 @@ test "taffy/block_absolute_child_with_margin_y" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -724,7 +724,7 @@ test "taffy/block_absolute_child_with_max_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_height: @types.Length(100.0),
     inset: {
       left: @types.Auto,
@@ -774,8 +774,8 @@ test "taffy/block_absolute_layout_child_order" {
     ..@style.Style::default(),
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -787,7 +787,7 @@ test "taffy/block_absolute_layout_child_order" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -837,7 +837,7 @@ test "taffy/block_absolute_layout_no_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -870,7 +870,7 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -884,7 +884,7 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -898,7 +898,7 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -946,7 +946,7 @@ test "taffy/block_absolute_layout_percentage_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Percent(0.5000),
     inset: {
@@ -987,7 +987,7 @@ test "taffy/block_absolute_layout_row_width_height_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1028,7 +1028,7 @@ test "taffy/block_absolute_layout_start_top_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -1067,7 +1067,7 @@ test "taffy/block_absolute_layout_width_height_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1108,7 +1108,7 @@ test "taffy/block_absolute_layout_width_height_start_top" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1149,7 +1149,7 @@ test "taffy/block_absolute_layout_width_height_start_top_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1202,7 +1202,7 @@ test "taffy/block_absolute_layout_within_border" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1216,7 +1216,7 @@ test "taffy/block_absolute_layout_within_border" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1230,7 +1230,7 @@ test "taffy/block_absolute_layout_within_border" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1250,7 +1250,7 @@ test "taffy/block_absolute_layout_within_border" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1309,7 +1309,7 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_with_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1356,7 +1356,7 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_without_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1393,12 +1393,12 @@ test "taffy/block_absolute_margin_auto_bottom_with_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1441,12 +1441,12 @@ test "taffy/block_absolute_margin_auto_bottom_without_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1487,7 +1487,7 @@ test "taffy/block_absolute_margin_auto_left_and_right_with_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1534,7 +1534,7 @@ test "taffy/block_absolute_margin_auto_left_and_right_without_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1575,7 +1575,7 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_with_inset"
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -1622,7 +1622,7 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_without_ins
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -1663,7 +1663,7 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -1710,7 +1710,7 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -1751,7 +1751,7 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_with_
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -1798,7 +1798,7 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_witho
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -1839,7 +1839,7 @@ test "taffy/block_absolute_margin_auto_left_with_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1886,7 +1886,7 @@ test "taffy/block_absolute_margin_auto_left_without_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1923,13 +1923,13 @@ test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
     margin: {
@@ -1949,7 +1949,7 @@ test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1996,13 +1996,13 @@ test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
     margin: {
@@ -2016,7 +2016,7 @@ test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -2057,12 +2057,12 @@ test "taffy/block_absolute_margin_auto_right_with_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -2105,12 +2105,12 @@ test "taffy/block_absolute_margin_auto_right_without_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -2147,12 +2147,12 @@ test "taffy/block_absolute_margin_auto_top_with_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -2195,12 +2195,12 @@ test "taffy/block_absolute_margin_auto_top_without_inset" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -2241,7 +2241,7 @@ test "taffy/block_absolute_margin_bottom_left_with_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     margin: {
@@ -2288,7 +2288,7 @@ test "taffy/block_absolute_margin_bottom_left_without_inset" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     margin: {
@@ -2329,7 +2329,7 @@ test "taffy/block_absolute_minmax_bottom_right_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     max_width: @types.Length(40.0),
@@ -2372,7 +2372,7 @@ test "taffy/block_absolute_minmax_bottom_right_min_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_width: @types.Length(50.0),
     min_height: @types.Length(60.0),
     max_width: @types.Length(40.0),
@@ -2415,7 +2415,7 @@ test "taffy/block_absolute_minmax_bottom_right_min_max_preferred" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     min_width: @types.Length(50.0),
@@ -2460,7 +2460,7 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_width: @types.Length(40.0),
     max_height: @types.Length(30.0),
     inset: {
@@ -2501,7 +2501,7 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_min_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_width: @types.Length(50.0),
     min_height: @types.Length(60.0),
     max_width: @types.Length(40.0),
@@ -2547,7 +2547,7 @@ test "taffy/block_absolute_no_styles" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
@@ -2580,7 +2580,7 @@ test "taffy/block_absolute_padding_border_overrides_max_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
     padding: {
@@ -2623,7 +2623,7 @@ test "taffy/block_absolute_padding_border_overrides_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -2666,7 +2666,7 @@ test "taffy/block_absolute_resolved_insets" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Relative,
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -2685,7 +2685,7 @@ test "taffy/block_absolute_resolved_insets" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2697,7 +2697,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -2709,7 +2709,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -2721,7 +2721,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child2)
   let root_child0_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -2733,7 +2733,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child3)
   let root_child0_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2745,7 +2745,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child4)
   let root_child0_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2763,9 +2763,9 @@ test "taffy/block_absolute_resolved_insets" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Relative,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    position: @types.Position::Relative,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -2784,7 +2784,7 @@ test "taffy/block_absolute_resolved_insets" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2796,7 +2796,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -2808,7 +2808,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -2820,7 +2820,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -2832,7 +2832,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child3)
   let root_child1_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2844,7 +2844,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child4)
   let root_child1_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2862,7 +2862,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Relative,
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -2888,7 +2888,7 @@ test "taffy/block_absolute_resolved_insets" {
   root_child2_children.push(root_child2_child0)
   let root_child2_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2989,11 +2989,11 @@ test "taffy/block_absolute_resolved_insets" {
 test "taffy/block_align_baseline_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3051,11 +3051,11 @@ test "taffy/block_align_baseline_child" {
 test "taffy/block_align_baseline_child_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3125,11 +3125,11 @@ test "taffy/block_align_baseline_child_margin" {
 test "taffy/block_align_baseline_child_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3199,7 +3199,7 @@ test "taffy/block_align_baseline_child_margin_percent" {
 test "taffy/block_align_baseline_child_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -3208,8 +3208,8 @@ test "taffy/block_align_baseline_child_padding" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3273,11 +3273,11 @@ test "taffy/block_align_baseline_child_padding" {
 test "taffy/block_align_baseline_child_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3341,11 +3341,11 @@ test "taffy/block_align_baseline_child_top" {
 test "taffy/block_align_baseline_child_top2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3409,11 +3409,11 @@ test "taffy/block_align_baseline_child_top2" {
 test "taffy/block_align_baseline_double_nested_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3934,7 +3934,7 @@ test "taffy/block_display_none" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -3986,7 +3986,10 @@ test "taffy/block_display_none_with_child" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default(), display: @style.None }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @types.Display::None,
+  }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
@@ -4052,7 +4055,7 @@ test "taffy/block_display_none_with_inset" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     height: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -4096,7 +4099,7 @@ test "taffy/block_display_none_with_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -4147,8 +4150,8 @@ test "taffy/block_display_none_with_position_absolute" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.None,
-    position: @style.Position::Absolute,
+    display: @types.Display::None,
+    position: @types.Position::Absolute,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -4568,7 +4571,7 @@ test "taffy/block_margin_auto_bottom" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -4934,8 +4937,8 @@ test "taffy/block_margin_auto_multiple_children" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5004,7 +5007,7 @@ test "taffy/block_margin_auto_right" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5056,7 +5059,7 @@ test "taffy/block_margin_auto_top" {
     ..@style.Style::default(),
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6472,7 +6475,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6539,7 +6542,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6606,7 +6609,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6673,7 +6676,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7092,7 +7095,7 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
   }
   let root_child1_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -7223,7 +7226,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7291,7 +7294,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7359,7 +7362,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7427,7 +7430,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8666,7 +8669,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8734,7 +8737,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8802,7 +8805,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8870,7 +8873,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10898,13 +10901,13 @@ test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10945,15 +10948,15 @@ test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
 test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     max_width: @types.Length(2.0),
     max_height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10986,15 +10989,15 @@ test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
 test "taffy/block_overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -11027,15 +11030,15 @@ test "taffy/block_overflow_scrollbars_overridden_by_size" {
 test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -11068,14 +11071,14 @@ test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -11108,14 +11111,14 @@ test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
 test "taffy/block_overflow_scrollbars_take_up_space_main_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),

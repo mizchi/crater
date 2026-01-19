@@ -16,8 +16,8 @@ test "yoga_api/basic_usage" {
 
   // Configure root with method chaining
   let _ = root
-    .set_display(@style.Flex)
-    .set_flex_direction(@style.Row)
+    .set_display(@types.Flex)
+    .set_flex_direction(@types.Row)
     .set_width(400.0)
     .set_height(200.0)
     .set_padding(10.0)
@@ -149,8 +149,8 @@ test "yoga_api/flex_layout" {
 
   // Setup flex container
   let _ = container
-    .set_display(@style.Flex)
-    .set_flex_direction(@style.Row)
+    .set_display(@types.Flex)
+    .set_flex_direction(@types.Row)
     .set_width(300.0)
     .set_height(100.0)
 
@@ -182,7 +182,7 @@ test "yoga_api/incremental_layout" {
   setup_dispatch()
   let root = @tree.LayoutNode::create()
   let child = @tree.LayoutNode::create()
-  let _ = root.set_display(@style.Flex).set_width(200.0).set_height(200.0)
+  let _ = root.set_display(@types.Flex).set_width(200.0).set_height(200.0)
   let _ = child.set_width(100.0).set_height(100.0)
   let _ = root.add_child(child)
   let tree = @tree.LayoutTree::new(root, 200.0, 200.0)
@@ -206,11 +206,11 @@ test "yoga_api/alignment" {
   let container = @tree.LayoutNode::create()
   let item = @tree.LayoutNode::create()
   let _ = container
-    .set_display(@style.Flex)
+    .set_display(@types.Flex)
     .set_width(200.0)
     .set_height(200.0)
-    .set_justify_content(@style.Center)
-    .set_align_items(@style.Center)
+    .set_justify_content(@types.Center)
+    .set_align_items(@types.Center)
   let _ = item.set_width(50.0).set_height(50.0)
   let _ = container.add_child(item)
   let tree = @tree.LayoutTree::new(container, 200.0, 200.0)
@@ -228,8 +228,8 @@ test "yoga_api/gap" {
   let item1 = @tree.LayoutNode::create()
   let item2 = @tree.LayoutNode::create()
   let _ = container
-    .set_display(@style.Flex)
-    .set_flex_direction(@style.Row)
+    .set_display(@types.Flex)
+    .set_flex_direction(@types.Row)
     .set_width(200.0)
     .set_height(50.0)
     .set_gap(10.0)

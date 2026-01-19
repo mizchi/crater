@@ -104,7 +104,7 @@ pub fn compute_ifc(
     let child = children[i]
 
     // Skip display:none children
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       layout_map[i] = create_zero_layout(child)
       continue
     }
@@ -298,7 +298,7 @@ fn compute_inline_child(
             (Some(ratio), Some(h), true) if ratio > 0.0 =>
               // Derive width from height using aspect_ratio
               // For content-box sizing, use content height
-              if style.box_sizing == @style.BorderBox {
+              if style.box_sizing == @types.BorderBox {
                 h * ratio - padding.horizontal_sum() - border.horizontal_sum()
               } else {
                 let content_h = h -
@@ -363,7 +363,7 @@ fn compute_inline_child(
           match (style.aspect_ratio, width_is_definite) {
             (Some(ratio), true) if ratio > 0.0 =>
               // Derive height from width using aspect_ratio
-              if style.box_sizing == @style.BorderBox {
+              if style.box_sizing == @types.BorderBox {
                 width / ratio
               } else {
                 content_width / ratio +
@@ -395,9 +395,9 @@ fn compute_inline_child(
   }
 
   // For inline-block, inline-flex, inline-grid, use shrink-to-fit via layout dispatcher
-  if style.display == @style.InlineBlock ||
-    style.display == @style.InlineFlex ||
-    style.display == @style.InlineGrid {
+  if style.display == @types.InlineBlock ||
+    style.display == @types.InlineFlex ||
+    style.display == @types.InlineGrid {
     // Use the global layout dispatcher to get proper block/flex/grid layout
     let ctx : @node.LayoutContext = {
       available_width,
@@ -418,10 +418,10 @@ fn compute_inline_child(
 
   // Process children - handle absolute positioned elements
   for child in node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       children.push(create_zero_layout(child))
-    } else if child.style.position == @style.Absolute ||
-      child.style.position == @style.Fixed {
+    } else if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
       // Absolute/fixed children need to be laid out
       // Use dispatch_layout to get proper sizing
       let child_ctx : @node.LayoutContext = {
@@ -497,8 +497,8 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children,
     text: node.text,
   }
@@ -506,12 +506,12 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
 
 ///|
 /// Check if a node is inline-level (inline or inline-block)
-pub fn is_inline_level(display : @style.Display) -> Bool {
+pub fn is_inline_level(display : @types.Display) -> Bool {
   match display {
-    @style.Inline
-    | @style.InlineBlock
-    | @style.InlineFlex
-    | @style.InlineGrid => true
+    @types.Inline
+    | @types.InlineBlock
+    | @types.InlineFlex
+    | @types.InlineGrid => true
     _ => false
   }
 }
@@ -526,11 +526,11 @@ pub fn should_establish_ifc(children : Array[@node.Node]) -> Bool {
   let mut has_inline = false
   for child in children {
     // Skip absolute positioned children
-    if child.style.position == @style.Absolute {
+    if child.style.position == @types.Absolute {
       continue
     }
     // Skip display:none
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     if is_inline_level(child.style.display) {

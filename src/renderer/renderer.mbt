@@ -192,7 +192,7 @@ fn has_block_display_in_style(elem : @html.Element) -> Bool {
       // Parse the inline style to check display property
       let parsed = @parser.parse_inline_style(style_str)
       match parsed.display {
-        @style.Block | @style.Flex | @style.Grid => true
+        @types.Block | @types.Flex | @types.Grid => true
         _ => false
       }
     }
@@ -445,7 +445,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     // Text nodes should be inline-level to flow with other inline content
     let text_style : @style.Style = {
       ..@style.Style::default(),
-      display: @style.Inline,
+      display: @types.Inline,
       font_size,
       line_height: text_line_height,
       color: parent_style.color,
@@ -1326,9 +1326,9 @@ fn element_to_node_with_styles_internal(
 
   // If this is an inline element containing replaced elements (like <a><img></a>),
   // treat it as inline-block so it gets proper sizing from its content
-  let style = if computed_style.display == @style.Inline &&
+  let style = if computed_style.display == @types.Inline &&
     contains_replaced_element(elem) {
-    { ..computed_style, display: @style.InlineBlock }
+    { ..computed_style, display: @types.InlineBlock }
   } else {
     computed_style
   }
@@ -1705,18 +1705,18 @@ fn is_table_element(tag : String) -> Bool {
 
 ///|
 /// Check if a display value is table-related
-fn is_table_display(display : @style.Display) -> Bool {
+fn is_table_display(display : @types.Display) -> Bool {
   match display {
-    @style.Table
-    | @style.InlineTable
-    | @style.TableRow
-    | @style.TableCell
-    | @style.TableCaption
-    | @style.TableRowGroup
-    | @style.TableHeaderGroup
-    | @style.TableFooterGroup
-    | @style.TableColumn
-    | @style.TableColumnGroup => true
+    @types.Table
+    | @types.InlineTable
+    | @types.TableRow
+    | @types.TableCell
+    | @types.TableCaption
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => true
     _ => false
   }
 }
@@ -1822,8 +1822,8 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         // pre has margin like p, and overflow hidden to prevent wrap issues
         ..default_style,
-        display: @style.Block,
-        overflow_x: @style.Hidden,
+        display: @types.Block,
+        overflow_x: @types.Hidden,
         margin: @types.Rect::new(
           @types.Length(16.0),
           @types.Auto,
@@ -1835,7 +1835,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     "a" =>
       {
         ..default_style,
-        display: @style.Inline,
+        display: @types.Inline,
         // Standard link blue: #0000EE (rgb(0, 0, 238))
         color: @types.Color::rgb(0, 0, 238),
       }
@@ -1868,29 +1868,29 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "rp"
     | "bdi"
     | "bdo"
-    | "wbr" => { ..default_style, display: @style.Inline }
+    | "wbr" => { ..default_style, display: @types.Inline }
     // Replaced inline elements - inline by default
     "img" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" =>
-      { ..default_style, display: @style.Inline }
+      { ..default_style, display: @types.Inline }
     // Form elements - inline-block by default
     "input" | "button" | "select" | "textarea" =>
-      { ..default_style, display: @style.InlineBlock }
-    "label" => { ..default_style, display: @style.Inline }
+      { ..default_style, display: @types.InlineBlock }
+    "label" => { ..default_style, display: @types.Inline }
     // br is inline with no width
-    "br" => { ..default_style, display: @style.Inline }
+    "br" => { ..default_style, display: @types.Inline }
     // Table elements
-    "table" => { ..default_style, display: @style.Table }
-    "tr" => { ..default_style, display: @style.TableRow }
-    "td" | "th" => { ..default_style, display: @style.TableCell }
-    "thead" => { ..default_style, display: @style.TableHeaderGroup }
-    "tbody" => { ..default_style, display: @style.TableRowGroup }
-    "tfoot" => { ..default_style, display: @style.TableFooterGroup }
-    "caption" => { ..default_style, display: @style.TableCaption }
-    "col" => { ..default_style, display: @style.TableColumn }
-    "colgroup" => { ..default_style, display: @style.TableColumnGroup }
+    "table" => { ..default_style, display: @types.Table }
+    "tr" => { ..default_style, display: @types.TableRow }
+    "td" | "th" => { ..default_style, display: @types.TableCell }
+    "thead" => { ..default_style, display: @types.TableHeaderGroup }
+    "tbody" => { ..default_style, display: @types.TableRowGroup }
+    "tfoot" => { ..default_style, display: @types.TableFooterGroup }
+    "caption" => { ..default_style, display: @types.TableCaption }
+    "col" => { ..default_style, display: @types.TableColumn }
+    "colgroup" => { ..default_style, display: @types.TableColumnGroup }
     // Hidden elements - display: none by default
     "template" | "script" | "style" | "head" | "meta" | "link" | "title" =>
-      { ..default_style, display: @style.None }
+      { ..default_style, display: @types.Display::None }
     _ => default_style
   }
 }
@@ -2111,8 +2111,8 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
 /// The layout engine expects outer dimensions (border-box), so we adjust here.
 fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
   match style.box_sizing {
-    @style.BorderBox => style // No adjustment needed
-    @style.ContentBox => {
+    @types.BorderBox => style // No adjustment needed
+    @types.ContentBox => {
       // Calculate padding and border sums
       let padding_h = resolve_dimension_to_px(style.padding.left) +
         resolve_dimension_to_px(style.padding.right)
@@ -2125,28 +2125,28 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
 
       // Adjust width and height to include padding+border
       let adjusted_width = match style.width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Length(w) => @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_height = match style.height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Length(h) => @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       // Adjust min/max constraints too
       let adjusted_min_width = match style.min_width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Length(w) => @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_min_height = match style.min_height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Length(h) => @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       let adjusted_max_width = match style.max_width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Length(w) => @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_max_height = match style.max_height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Length(h) => @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       {
@@ -2158,7 +2158,7 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
         max_width: adjusted_max_width,
         max_height: adjusted_max_height,
         // Mark as adjusted (now using border-box semantics internally)
-        box_sizing: @style.BorderBox,
+        box_sizing: @types.BorderBox,
       }
     }
   }

@@ -40,8 +40,8 @@ test "render_layout simple" {
     margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
     padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
     border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }

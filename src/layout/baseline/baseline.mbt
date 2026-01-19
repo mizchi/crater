@@ -36,9 +36,9 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
 
   // Only Flex containers have special baseline behavior
   match style.display {
-    @style.Flex =>
+    @types.Flex =>
       match style.flex_direction {
-        @style.Column | @style.ColumnReverse => {
+        @types.Column | @types.ColumnReverse => {
           // For Column flex: baseline is padding-top + first child's margin-top + child's baseline
           // Get container's padding-top
           let padding_top = match style.padding.top {
@@ -48,10 +48,10 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
           // Find first in-flow child
           for i = 0; i < children.length(); i = i + 1 {
             let child = children[i]
-            if child.style.display == @style.None {
+            if child.style.display == @types.Display::None {
               continue
             }
-            if child.style.position == @style.Absolute {
+            if child.style.position == @types.Absolute {
               continue
             }
             // Get first child's margin-top (contributes to baseline position)
@@ -72,14 +72,14 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
           // No in-flow children, use own height
           return node_height
         }
-        @style.Row | @style.RowReverse => {
+        @types.Row | @types.RowReverse => {
           // For Row flex: baseline is first in-flow child's baseline
           for i = 0; i < children.length(); i = i + 1 {
             let child = children[i]
-            if child.style.display == @style.None {
+            if child.style.display == @types.Display::None {
               continue
             }
-            if child.style.position == @style.Absolute {
+            if child.style.position == @types.Absolute {
               continue
             }
             // Get first child's height
@@ -94,14 +94,14 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
           node_height
         }
       }
-    @style.Block => {
+    @types.Block => {
       // For Block containers with children: use first in-flow child's baseline
       for i = 0; i < children.length(); i = i + 1 {
         let child = children[i]
-        if child.style.display == @style.None {
+        if child.style.display == @types.Display::None {
           continue
         }
-        if child.style.position == @style.Absolute {
+        if child.style.position == @types.Absolute {
           continue
         }
         // Get first child's height

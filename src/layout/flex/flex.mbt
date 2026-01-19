@@ -135,14 +135,14 @@ fn calculate_children_max_content_width(
     None => ()
   }
   for child in node.children {
-    if child.style.display == @style.None ||
-      child.style.position == @style.Absolute ||
-      child.style.position == @style.Fixed {
+    if child.style.display == @types.Display::None ||
+      child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
       continue
     }
     match child.style.float {
-      @style.Float::Left | @style.Float::Right => continue
-      @style.Float::None => ()
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
     }
     let child_style = child.style
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
@@ -237,7 +237,7 @@ fn flatten_children_for_flex(node : @node.Node) -> Array[FlattenedChild] {
   let children = node.children
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
-    if child.style.display == @style.Contents {
+    if child.style.display == @types.Contents {
       // This is a contents element - flatten its children
       flatten_children_recursive(child.children, i, [child], result)
     } else {
@@ -261,7 +261,7 @@ fn flatten_children_recursive(
   result : Array[FlattenedChild],
 ) -> Unit {
   for child in children {
-    if child.style.display == @style.Contents {
+    if child.style.display == @types.Contents {
       // This is a contents element - flatten its children instead
       // Add this node to the ancestors path
       let new_ancestors = ancestors.copy()
@@ -298,8 +298,8 @@ fn create_contents_layout(
     margin: @types.Rect::zero(),
     padding: @types.Rect::zero(),
     border: @types.Rect::zero(),
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: children_layouts,
     text: node.text,
   }
@@ -438,13 +438,13 @@ fn compute_intrinsic_main_size(
   } else {
     // For containers, compute based on display type and children
     match style.display {
-      @style.Flex =>
+      @types.Flex =>
         compute_intrinsic_flex_main_size(node, is_row, available_cross, cache)
-      @style.Block =>
+      @types.Block =>
         compute_intrinsic_block_main_size(node, is_row, available_cross, cache)
-      @style.Grid | @style.InlineGrid =>
+      @types.Grid | @types.InlineGrid =>
         compute_intrinsic_grid_main_size(node, is_row, available_cross)
-      @style.Table | @style.InlineTable =>
+      @types.Table | @types.InlineTable =>
         @table.compute_intrinsic_size(node, is_row)
       _ => 0.0
     }
@@ -508,9 +508,9 @@ fn compute_min_content_main_size(
     // for each display type, but for now we reuse the max-content functions
     // which gives us a conservative (larger) minimum
     match style.display {
-      @style.Flex =>
+      @types.Flex =>
         compute_min_content_flex_main_size(node, is_row, available_cross, cache)
-      @style.Block =>
+      @types.Block =>
         compute_min_content_block_main_size(
           node, is_row, available_cross, cache,
         )
@@ -534,8 +534,8 @@ fn compute_min_content_flex_main_size(
 
   // Check if this flex container is row or column
   let child_is_row = match style.flex_direction {
-    @style.Row | @style.RowReverse => true
-    @style.Column | @style.ColumnReverse => false
+    @types.Row | @types.RowReverse => true
+    @types.Column | @types.ColumnReverse => false
   }
 
   // Determine if we're computing along this container's main axis or cross axis
@@ -563,11 +563,11 @@ fn compute_min_content_flex_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -612,11 +612,11 @@ fn compute_min_content_flex_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -684,11 +684,11 @@ fn compute_min_content_block_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -714,11 +714,11 @@ fn compute_min_content_block_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -760,8 +760,8 @@ fn compute_intrinsic_flex_main_size(
 
   // Check if this flex container is row or column
   let child_is_row = match style.flex_direction {
-    @style.Row | @style.RowReverse => true
-    @style.Column | @style.ColumnReverse => false
+    @types.Row | @types.RowReverse => true
+    @types.Column | @types.ColumnReverse => false
   }
 
   // Determine if we're computing along this container's main axis or cross axis
@@ -801,11 +801,11 @@ fn compute_intrinsic_flex_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects for all child box model values
@@ -878,7 +878,7 @@ fn compute_intrinsic_flex_main_size(
     // Computing along this container's cross axis
     // For wrap containers, we need to account for multiple lines
     let is_wrap = match style.flex_wrap {
-      @style.Wrap | @style.WrapReverse => true
+      @types.Wrap | @types.WrapReverse => true
       _ => false
     }
 
@@ -920,11 +920,11 @@ fn compute_intrinsic_flex_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -1149,11 +1149,11 @@ fn compute_intrinsic_block_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -1179,11 +1179,11 @@ fn compute_intrinsic_block_main_size(
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
-      if child_style.display == @style.None {
+      if child_style.display == @types.Display::None {
         continue
       }
-      if child_style.position == @style.Absolute ||
-        child_style.position == @style.Fixed {
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
         continue
       }
       // Use cached resolved rects
@@ -1234,8 +1234,8 @@ fn create_hidden_layout(node : @node.Node) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children,
     text: None,
   }
@@ -1309,14 +1309,15 @@ fn compute_internal(
   let style = node.style
 
   // Handle display: none - return zero-sized layout with zero-sized children
-  if style.display == @style.None {
+  if style.display == @types.Display::None {
     return create_hidden_layout(node)
   }
 
   // Check for unsupported features
   match style.float {
-    @style.Left | @style.Right => warnings.push(@node.UnsupportedFloat(node.id))
-    @style.None => ()
+    @types.Float::Left | @types.Float::Right =>
+      warnings.push(@node.UnsupportedFloat(node.id))
+    @types.Float::None => ()
   }
   let parent_width = ctx.available_width
   let parent_height = ctx.available_height.unwrap_or(0.0)
@@ -1360,7 +1361,7 @@ fn compute_internal(
     _ => None
   }
   // Check if this is a block-level flex container (Flex) vs inline-level (InlineFlex)
-  let is_block_level = style.display == @style.Flex
+  let is_block_level = style.display == @types.Flex
   let mut container_width = match intrinsic_from_measure {
     Some((w, _)) => w
     None =>
@@ -1511,11 +1512,11 @@ fn compute_internal(
 
   // Determine main/cross axis based on flex-direction
   let is_row = match style.flex_direction {
-    @style.Row | @style.RowReverse => true
-    @style.Column | @style.ColumnReverse => false
+    @types.Row | @types.RowReverse => true
+    @types.Column | @types.ColumnReverse => false
   }
   let is_reverse = match style.flex_direction {
-    @style.RowReverse | @style.ColumnReverse => true
+    @types.RowReverse | @types.ColumnReverse => true
     _ => false
   }
 
@@ -1637,13 +1638,13 @@ fn compute_internal(
     let child_style = child.style
 
     // Skip display:none children
-    if child_style.display == @style.None {
+    if child_style.display == @types.Display::None {
       continue
     }
 
     // Skip absolutely positioned children (they don't participate in flex layout)
-    if child_style.position == @style.Absolute ||
-      child_style.position == @style.Fixed {
+    if child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed {
       continue
     }
     // Use cached resolved rects for margin
@@ -1783,11 +1784,11 @@ fn compute_internal(
                   // For wrap containers, use available main size as their main size
                   // CSS spec: wrap containers use definite available main size for layout
                   let is_wrap = match child_style.flex_wrap {
-                    @style.Wrap | @style.WrapReverse => true
+                    @types.Wrap | @types.WrapReverse => true
                     _ => false
                   }
                   let is_row_flex = match child_style.flex_direction {
-                    @style.Row | @style.RowReverse => true
+                    @types.Row | @types.RowReverse => true
                     _ => false
                   }
                   // Note: Check for wrap/direction regardless of explicit display
@@ -1819,11 +1820,11 @@ fn compute_internal(
                 _ => {
                   // For wrap containers, use available main size
                   let is_wrap = match child_style.flex_wrap {
-                    @style.Wrap | @style.WrapReverse => true
+                    @types.Wrap | @types.WrapReverse => true
                     _ => false
                   }
                   let is_col_flex = match child_style.flex_direction {
-                    @style.Column | @style.ColumnReverse => true
+                    @types.Column | @types.ColumnReverse => true
                     _ => false
                   }
                   // Note: Check for wrap/direction regardless of explicit display
@@ -1974,11 +1975,11 @@ fn compute_internal(
               // For row wrap containers, use available width
               // (they need a definite width to determine when to wrap)
               let is_wrap = match child_style.flex_wrap {
-                @style.Wrap | @style.WrapReverse => true
+                @types.Wrap | @types.WrapReverse => true
                 _ => false
               }
               let is_row_flex = match child_style.flex_direction {
-                @style.Row | @style.RowReverse => true
+                @types.Row | @types.RowReverse => true
                 _ => false
               }
               // Note: Check for wrap/direction regardless of explicit display
@@ -2029,7 +2030,7 @@ fn compute_internal(
     // Check if overflow is visible (affects automatic minimum size)
     let is_overflow_visible = match
       (child_style.overflow_x, child_style.overflow_y) {
-      (@style.Overflow::Visible, @style.Overflow::Visible) => true
+      (@types.Overflow::Visible, @types.Overflow::Visible) => true
       _ => false
     }
     let (min_main, max_main) = if is_row {
@@ -2048,7 +2049,7 @@ fn compute_internal(
           let aspect_width = match
             (child_style.aspect_ratio, child_style.height) {
             (Some(ar), @types.Length(h)) if ar > 0.0 =>
-              if child_style.box_sizing == @style.BorderBox {
+              if child_style.box_sizing == @types.BorderBox {
                 h * ar
               } else {
                 (
@@ -2065,7 +2066,7 @@ fn compute_internal(
                 Some(ch) => ch
                 None => 0.0
               }
-              if child_style.box_sizing == @style.BorderBox {
+              if child_style.box_sizing == @types.BorderBox {
                 h * ar
               } else {
                 (
@@ -2151,9 +2152,9 @@ fn compute_internal(
               let mut max_height = 0.0
               let children_for_height = child.children
               for c in children_for_height {
-                if c.style.display == @style.None ||
-                  c.style.position == @style.Absolute ||
-                  c.style.position == @style.Fixed {
+                if c.style.display == @types.Display::None ||
+                  c.style.position == @types.Absolute ||
+                  c.style.position == @types.Fixed {
                   continue
                 }
                 match c.measure {
@@ -2341,8 +2342,8 @@ fn compute_internal(
   // Phase 1.5: Split items into flex lines (for wrap support)
   let flex_lines : Array[FlexLine] = Array::new()
   let should_wrap = match style.flex_wrap {
-    @style.Wrap | @style.WrapReverse => true
-    @style.NoWrap => false
+    @types.Wrap | @types.WrapReverse => true
+    @types.NoWrap => false
   }
   if should_wrap && main_size_defined {
     // Wrap mode: split items into lines based on main size overflow
@@ -2586,18 +2587,18 @@ fn compute_internal(
 
     // Determine effective alignment (align-self overrides align-items)
     let effective_align = match child_style.align_self {
-      @style.Auto => style.align_items
-      @style.AlignSelf::Stretch => @style.Stretch
-      @style.AlignSelf::Baseline => @style.Baseline
-      _ => @style.Start
+      @types.AlignSelf::Auto => style.align_items
+      @types.AlignSelf::Stretch => @types.Stretch
+      @types.AlignSelf::Baseline => @types.Baseline
+      _ => @types.Start
     } // Non-stretch/baseline align-self means don't stretch
 
     // For stretch alignment, item takes full cross size only if cross dimension is auto
     // For non-stretch with aspect_ratio, recalculate cross from constrained main dimension
     // NOTE: For wrap containers, stretch is deferred to Phase 5 where line_cross_size is known
     let is_wrap = match style.flex_wrap {
-      @style.Wrap | @style.WrapReverse => true
-      @style.NoWrap => false
+      @types.Wrap | @types.WrapReverse => true
+      @types.NoWrap => false
     }
     // If final_main differs from content_width, we may need to recalculate cross size
     // because base_cross was computed using content_width, not the actual item width
@@ -2613,7 +2614,7 @@ fn compute_internal(
       compute_intrinsic_main_size(child, false, Some(item.final_main), cache)
     }
     let final_cross = match effective_align {
-      @style.Stretch =>
+      @types.Stretch =>
         if item.cross_is_auto {
           if is_wrap {
             // For wrap containers, defer stretch to Phase 5 (use line_cross_size, not container cross_size)
@@ -2877,7 +2878,7 @@ fn compute_internal(
   // Handle align-content: Stretch - distribute extra space to lines
   // NOTE: Stretch applies to line SIZE even in single-line containers
   let line_count = flex_lines.length()
-  if style.align_content == @style.Stretch &&
+  if style.align_content == @types.Stretch &&
     cross_free_space > 0.0 &&
     line_count > 0 {
     // Distribute extra cross space equally among lines
@@ -2895,21 +2896,21 @@ fn compute_internal(
   // For single-line containers (nowrap), line is always positioned at Start
   // Handle wrap-reverse: FlexStart/FlexEnd are flipped, but Start/End are not
   let is_wrap_reverse = match style.flex_wrap {
-    @style.WrapReverse => true
+    @types.WrapReverse => true
     _ => false
   }
   // For wrap-reverse with flex-relative alignment, the line positioning is handled
   // by uses_reversed_layout, so we don't need to flip here
-  let effective_align_content_for_position : @style.Alignment = if should_wrap {
+  let effective_align_content_for_position : @types.Alignment = if should_wrap {
     style.align_content
   } else {
-    @style.FlexStart
+    @types.FlexStart
   }
   let (line_start_offset, line_gap) = @alignment.compute_justify(
     effective_align_content_for_position, cross_free_space, line_count,
   )
   // For Stretch, cross_free_space was distributed to lines, so use 0 for line_gap
-  let effective_line_gap = if style.align_content == @style.Stretch {
+  let effective_line_gap = if style.align_content == @types.Stretch {
     0.0
   } else {
     line_gap
@@ -2929,14 +2930,14 @@ fn compute_internal(
   // - For physical alignment (Start/End): position from physical start, but reverse line ORDER
   // This means lines are always in reverse visual order, but the starting position differs
   let is_flex_relative_align = match style.align_content {
-    @style.FlexStart
-    | @style.FlexEnd
-    | @style.Stretch
-    | @style.Center
-    | @style.SpaceBetween
-    | @style.SpaceAround
-    | @style.SpaceEvenly => true
-    @style.Start | @style.End | @style.Baseline => false
+    @types.FlexStart
+    | @types.FlexEnd
+    | @types.Stretch
+    | @types.Center
+    | @types.SpaceBetween
+    | @types.SpaceAround
+    | @types.SpaceEvenly => true
+    @types.Start | @types.End | @types.Baseline => false
   }
   let uses_reversed_position = is_wrap_reverse && is_flex_relative_align
   let mut cross_pos = if uses_reversed_position {
@@ -3017,8 +3018,8 @@ fn compute_internal(
     // Flipping gives us the correct start_offset for the reversed positioning algorithm
     let effective_justify = if is_reverse {
       match style.justify_content {
-        @style.Start => @style.Alignment::End
-        @style.End => @style.Alignment::Start
+        @types.Start => @types.Alignment::End
+        @types.End => @types.Alignment::Start
         other => other
       }
     } else {
@@ -3094,27 +3095,27 @@ fn compute_internal(
       let has_cross_auto_margin = item.margin_cross_start_auto ||
         item.margin_cross_end_auto
       let raw_effective_align = if has_cross_auto_margin {
-        @style.Alignment::Start // Auto margins will handle alignment
+        @types.Alignment::Start // Auto margins will handle alignment
       } else {
         match child.style.align_self {
-          @style.Auto => style.align_items
-          @style.AlignSelf::Start => @style.Start
-          @style.AlignSelf::End => @style.End
-          @style.AlignSelf::Center => @style.Center
-          @style.AlignSelf::Stretch => @style.Stretch
-          @style.AlignSelf::Baseline => @style.Baseline
+          @types.AlignSelf::Auto => style.align_items
+          @types.AlignSelf::Start => @types.Start
+          @types.AlignSelf::End => @types.End
+          @types.AlignSelf::Center => @types.Center
+          @types.AlignSelf::Stretch => @types.Stretch
+          @types.AlignSelf::Baseline => @types.Baseline
         }
       }
       // For column flex, baseline alignment is not meaningful (cross axis is inline axis)
       // Treat baseline as flex-start per CSS Flexbox spec
       let effective_align = match (is_row, raw_effective_align) {
-        (false, @style.Baseline) => @style.FlexStart
+        (false, @types.Baseline) => @types.FlexStart
         (_, align) => align
       }
 
       // For stretch, use line cross size (with min/max constraints) if cross_is_auto
       let item_cross = match effective_align {
-        @style.Stretch =>
+        @types.Stretch =>
           if item.cross_is_auto {
             // Apply min/max constraints to stretched size
             let stretched = line_cross_size - item.margin_cross
@@ -3200,7 +3201,7 @@ fn compute_internal(
         cross_auto_offset
       } else {
         match effective_align {
-          @style.Baseline => {
+          @types.Baseline => {
             let cross_start_margin = if is_row {
               item.margin.top
             } else {
@@ -3293,8 +3294,8 @@ fn compute_internal(
       // Apply inset offsets for non-absolute positioned children
       // (Static and Relative both apply inset as offset from flow position)
       let child_style = child.style
-      let (child_x, child_y) = if child_style.position != @style.Absolute &&
-        child_style.position != @style.Fixed {
+      let (child_x, child_y) = if child_style.position != @types.Absolute &&
+        child_style.position != @types.Fixed {
         // X offset: left takes precedence, otherwise use negative right
         let x_offset = match child_style.inset.left {
           @types.Length(v) => v
@@ -3545,12 +3546,12 @@ fn compute_internal(
     let child_style = child.style
 
     // Only process absolutely positioned children
-    if child_style.position != @style.Absolute {
+    if child_style.position != @types.Absolute {
       continue
     }
 
     // Skip display:none children - create zero-sized layout
-    if child_style.display == @style.None {
+    if child_style.display == @types.Display::None {
       indexed_layouts.push({
         dom_index: i,
         layout: @absolute.create_zero_layout(child.id),
@@ -3747,7 +3748,7 @@ fn compute_internal(
         params.margin_left -
         params.margin_right
       let is_wrap_reverse = match style.flex_wrap {
-        @style.WrapReverse => true
+        @types.WrapReverse => true
         _ => false
       }
       let align_offset = if is_row {
@@ -3797,7 +3798,7 @@ fn compute_internal(
         params.margin_top -
         params.margin_bottom
       let is_wrap_reverse = match style.flex_wrap {
-        @style.WrapReverse => true
+        @types.WrapReverse => true
         _ => false
       }
       let align_offset = if is_row {
@@ -3853,12 +3854,12 @@ fn compute_internal(
     let child_style = child.style
 
     // Only process fixed positioned children
-    if child_style.position != @style.Fixed {
+    if child_style.position != @types.Fixed {
       continue
     }
 
     // Skip display:none children - create zero-sized layout
-    if child_style.display == @style.None {
+    if child_style.display == @types.Display::None {
       indexed_layouts.push({
         dom_index: i,
         layout: @absolute.create_zero_layout(child.id),
@@ -4064,17 +4065,17 @@ fn compute_internal(
     let child = children[i]
     let child_style = child.style
     // Skip absolute/fixed children (already processed above)
-    if child_style.position == @style.Absolute ||
-      child_style.position == @style.Fixed {
+    if child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed {
       continue
     }
     // Add zero-sized layout for display:none children
-    if child_style.display == @style.None {
+    if child_style.display == @types.Display::None {
       indexed_layouts.push({ dom_index: i, layout: create_hidden_layout(child) })
       continue
     }
     // Handle display:contents children - build wrapper with collected layouts
-    if child_style.display == @style.Contents {
+    if child_style.display == @types.Contents {
       match contents_layouts.get(i) {
         Some(layouts_with_ancestors) => {
           // Build the contents tree structure
@@ -4123,11 +4124,11 @@ fn compute_internal(
         let mut max_x = 0.0
         let mut has_flow_children = false
         for i = 0; i < child_count; i = i + 1 {
-          if children[i].style.position == @style.Absolute ||
-            children[i].style.position == @style.Fixed {
+          if children[i].style.position == @types.Absolute ||
+            children[i].style.position == @types.Fixed {
             continue
           }
-          if children[i].style.display == @style.None {
+          if children[i].style.display == @types.Display::None {
             continue
           }
           has_flow_children = true
@@ -4289,7 +4290,7 @@ fn compute_nested(
     None =>
       // Fall back to direct computation for isolated tests
       match style.display {
-        @style.Flex => compute_internal(node, ctx, warnings, cache)
+        @types.Flex => compute_internal(node, ctx, warnings, cache)
         _ => compute_internal(node, ctx, warnings, cache)
       }
   }
@@ -4324,7 +4325,7 @@ priv struct FlexItem {
   // Baseline for baseline alignment (relative to item's cross start)
   baseline : Double
   // Align self for this item (resolved from style)
-  align_self : @style.AlignSelf
+  align_self : @types.AlignSelf
   // Contents ancestors for display: contents support
   // Empty for direct children, contains parent nodes for nested contents
   contents_ancestors : Array[@node.Node]
@@ -4344,17 +4345,17 @@ priv struct FlexLine {
 /// and baseline_below = item_cross - baseline + margin_bottom (distance from baseline to cross-end)
 fn compute_line_cross_size(
   items : Array[FlexItem],
-  align_items : @style.Alignment,
+  align_items : @types.Alignment,
   is_row : Bool,
 ) -> Double {
   // Fast path: if align_items is not Baseline, check if any item has align_self=Baseline
   // Most layouts don't use baseline alignment, so we can skip the complex calculation
-  if align_items != @style.Baseline {
+  if align_items != @types.Baseline {
     // Quick scan for any baseline-aligned items
     let mut has_baseline_item = false
     for item in items {
       match item.align_self {
-        @style.AlignSelf::Baseline => {
+        @types.AlignSelf::Baseline => {
           has_baseline_item = true
           break
         }
@@ -4379,12 +4380,12 @@ fn compute_line_cross_size(
   for item in items {
     // Determine effective alignment for this item
     let effective_align = match item.align_self {
-      @style.AlignSelf::Auto => align_items
-      @style.AlignSelf::Baseline => @style.Baseline
-      @style.AlignSelf::Start => @style.Start
-      @style.AlignSelf::End => @style.End
-      @style.AlignSelf::Center => @style.Center
-      @style.AlignSelf::Stretch => @style.Stretch
+      @types.AlignSelf::Auto => align_items
+      @types.AlignSelf::Baseline => @types.Baseline
+      @types.AlignSelf::Start => @types.Start
+      @types.AlignSelf::End => @types.End
+      @types.AlignSelf::Center => @types.Center
+      @types.AlignSelf::Stretch => @types.Stretch
     }
 
     // Check for auto margins which override alignment
@@ -4396,7 +4397,7 @@ fn compute_line_cross_size(
 
     // Use final_cross if available (after Phase 3), otherwise base_cross
     let item_cross = item.final_cross
-    if not(has_cross_auto_margin) && effective_align == @style.Baseline {
+    if not(has_cross_auto_margin) && effective_align == @types.Baseline {
       has_baseline_item = true
       // For baseline items, calculate above and below baseline
       let margin_start = if is_row { item.margin.top } else { item.margin.left }
@@ -4430,18 +4431,18 @@ fn compute_line_cross_size(
 ///|
 /// Compute align-items positioning
 fn compute_align(
-  align : @style.Alignment,
+  align : @types.Alignment,
   item_cross : Double,
   container_cross : Double,
   margin_cross : Double,
 ) -> Double {
   let available = container_cross - item_cross - margin_cross
   match align {
-    @style.Start | @style.FlexStart => 0.0
-    @style.End | @style.FlexEnd => available
-    @style.Center => available / 2.0
-    @style.Stretch => 0.0 // Already handled in cross size calculation
-    @style.Baseline => available // For simple boxes, baseline = bottom = End alignment
+    @types.Start | @types.FlexStart => 0.0
+    @types.End | @types.FlexEnd => available
+    @types.Center => available / 2.0
+    @types.Stretch => 0.0 // Already handled in cross size calculation
+    @types.Baseline => available // For simple boxes, baseline = bottom = End alignment
     _ => 0.0 // Default to start for space-* alignments
   }
 }

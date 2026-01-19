@@ -417,8 +417,8 @@ pub fn create_zero_layout(id : String) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children: [],
     text: None,
   }

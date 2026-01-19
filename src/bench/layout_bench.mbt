@@ -75,8 +75,8 @@ fn create_flex_row(n : Int) -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(800.0),
     height: @types.Length(100.0),
   }
@@ -151,8 +151,8 @@ fn create_complex_layout() -> @node.Node {
   // Root flex container
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(1200.0),
     height: @types.Length(800.0),
     padding: {
@@ -184,11 +184,11 @@ fn create_nested_flex(depth : Int) -> @node.Node {
     }
     let style = {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       flex_direction: if is_row {
-        @style.Row
+        @types.Row
       } else {
-        @style.Column
+        @types.Column
       },
     }
     @node.Node::new("flex_d\{d}", style, children)
@@ -196,8 +196,8 @@ fn create_nested_flex(depth : Int) -> @node.Node {
 
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(600.0),
     height: @types.Length(400.0),
   }
@@ -282,7 +282,7 @@ fn create_intrinsic_sizing_test() -> @node.Node {
     "explicit_container",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(600.0),
       height: @types.Length(100.0),
     },
@@ -294,8 +294,8 @@ fn create_intrinsic_sizing_test() -> @node.Node {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(800.0),
       height: @types.Length(600.0),
     },
@@ -322,7 +322,7 @@ fn create_deep_nested_intrinsic(depth : Int) -> @node.Node {
       "container_d\{d}",
       {
         ..default_style,
-        display: @style.Flex,
+        display: @types.Flex,
         width: @types.Length(100.0 + d.to_double() * 20.0),
         height: @types.Length(60.0 + d.to_double() * 10.0),
       },
@@ -372,18 +372,18 @@ fn create_grid_3x3() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(300.0),
     height: @types.Length(300.0),
     grid_template_columns: [
-      @style.Length(100.0),
-      @style.Length(100.0),
-      @style.Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
     ],
     grid_template_rows: [
-      @style.Length(100.0),
-      @style.Length(100.0),
-      @style.Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
     ],
   }
   @node.Node::new("grid", root_style, children)
@@ -397,15 +397,15 @@ fn create_grid_10x10() -> @node.Node {
   for i = 0; i < 100; i = i + 1 {
     children.push(@node.Node::leaf("cell\{i}", default_style))
   }
-  let columns : Array[@style.TrackSizingFunction] = []
-  let rows : Array[@style.TrackSizingFunction] = []
+  let columns : Array[@types.TrackSizingFunction] = []
+  let rows : Array[@types.TrackSizingFunction] = []
   for j = 0; j < 10; j = j + 1 {
-    columns.push(@style.Length(50.0))
-    rows.push(@style.Length(50.0))
+    columns.push(@types.TrackSizingFunction::Length(50.0))
+    rows.push(@types.TrackSizingFunction::Length(50.0))
   }
   let root_style = {
     ..default_style,
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
     grid_template_columns: columns,
@@ -424,15 +424,19 @@ fn create_grid_fr() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(600.0),
     height: @types.Length(400.0),
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(2.0), @style.Fr(1.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(2.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
     grid_template_rows: [
-      @style.Fr(1.0),
-      @style.Fr(1.0),
-      @style.Fr(1.0),
-      @style.Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
     ],
   }
   @node.Node::new("grid", root_style, children)
@@ -453,14 +457,14 @@ fn create_grid_auto() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(500.0),
     grid_template_columns: [
-      @style.Auto,
-      @style.Auto,
-      @style.Auto,
-      @style.Auto,
-      @style.Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
     ],
   }
   @node.Node::new("grid", root_style, children)
@@ -514,9 +518,9 @@ fn create_flex_wrap_many() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
     width: @types.Length(600.0),
     height: @types.Length(600.0),
   }
@@ -539,9 +543,9 @@ fn create_flex_wrap_varied() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
     width: @types.Length(500.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
@@ -587,9 +591,9 @@ fn create_minmax_constraints() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
     width: @types.Length(800.0),
     height: @types.Length(400.0),
   }
@@ -623,8 +627,8 @@ fn create_nested_percent_constraints() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(1000.0),
     height: @types.Length(500.0),
   }
@@ -666,12 +670,12 @@ fn create_complex_alignment() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
-    justify_content: @style.SpaceBetween,
-    align_items: @style.Center,
-    align_content: @style.SpaceAround,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    justify_content: @types.SpaceBetween,
+    align_items: @types.Center,
+    align_content: @types.SpaceAround,
     width: @types.Length(500.0),
     height: @types.Length(400.0),
     row_gap: @types.Length(15.0),
@@ -718,10 +722,18 @@ fn create_mixed_flex_grid() -> @node.Node {
     }
     let grid_style = {
       ..default_style,
-      display: @style.Grid,
+      display: @types.Grid,
       flex_grow: 1.0,
-      grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0), @style.Fr(1.0)],
-      grid_template_rows: [@style.Fr(1.0), @style.Fr(1.0), @style.Fr(1.0)],
+      grid_template_columns: [
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+      ],
+      grid_template_rows: [
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+      ],
       row_gap: @types.Length(5.0),
       column_gap: @types.Length(5.0),
     }
@@ -729,8 +741,8 @@ fn create_mixed_flex_grid() -> @node.Node {
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
     width: @types.Length(900.0),
     height: @types.Length(400.0),
     column_gap: @types.Length(20.0),
@@ -802,10 +814,10 @@ fn create_dashboard_layout() -> @node.Node {
     "header",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Row,
-      justify_content: @style.SpaceBetween,
-      align_items: @style.Center,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      justify_content: @types.SpaceBetween,
+      align_items: @types.Center,
       height: @types.Length(60.0),
       padding: {
         left: @types.Length(24.0),
@@ -859,13 +871,13 @@ fn create_dashboard_layout() -> @node.Node {
     "main_grid",
     {
       ..default_style,
-      display: @style.Grid,
+      display: @types.Grid,
       flex_grow: 1.0,
       grid_template_columns: [
-        @style.Fr(1.0),
-        @style.Fr(1.0),
-        @style.Fr(1.0),
-        @style.Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
+        @types.TrackSizingFunction::Fr(1.0),
       ],
       row_gap: @types.Length(16.0),
       column_gap: @types.Length(16.0),
@@ -884,8 +896,8 @@ fn create_dashboard_layout() -> @node.Node {
     "main_area",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       flex_grow: 1.0,
     },
     [header, main_grid],
@@ -896,8 +908,8 @@ fn create_dashboard_layout() -> @node.Node {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Row,
+      display: @types.Flex,
+      flex_direction: @types.Row,
       width: @types.Length(1440.0),
       height: @types.Length(900.0),
     },
@@ -951,7 +963,7 @@ fn create_form_layout() -> @node.Node {
     }
     let input_row = @node.Node::new(
       "input_row\{i}",
-      { ..default_style, display: @style.Flex, flex_direction: @style.Row },
+      { ..default_style, display: @types.Flex, flex_direction: @types.Row },
       input_row_children,
     )
     field_children.push(input_row)
@@ -1039,20 +1051,20 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
 
     // Alternate between flex, grid, and block
     let display = match d % 3 {
-      0 => @style.Flex
-      1 => @style.Grid
-      _ => @style.Block
+      0 => @types.Flex
+      1 => @types.Grid
+      _ => @types.Block
     }
-    if display == @style.Grid {
+    if display == @types.Grid {
       return @node.Node::new(
         "node_d\{d}",
         {
           ..default_style,
           display,
           grid_template_columns: [
-            @style.Fr(1.0),
-            @style.Fr(1.0),
-            @style.Fr(1.0),
+            @types.TrackSizingFunction::Fr(1.0),
+            @types.TrackSizingFunction::Fr(1.0),
+            @types.TrackSizingFunction::Fr(1.0),
           ],
         },
         children,
@@ -1064,9 +1076,9 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
         ..default_style,
         display,
         flex_direction: if d % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
       },
       children,
@@ -1077,7 +1089,7 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(800.0),
       height: @types.Length(600.0),
     },
@@ -1119,11 +1131,11 @@ fn create_deep_flex_nesting(depth : Int) -> @node.Node {
       "node_d\{d}",
       {
         ..default_style,
-        display: @style.Flex,
+        display: @types.Flex,
         flex_direction: if d % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
       },
       children,
@@ -1134,7 +1146,7 @@ fn create_deep_flex_nesting(depth : Int) -> @node.Node {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(800.0),
       height: @types.Length(600.0),
     },
@@ -1176,11 +1188,11 @@ fn create_deep_flex_fixed(depth : Int) -> @node.Node {
       "node_d\{d}",
       {
         ..default_style,
-        display: @style.Flex,
+        display: @types.Flex,
         flex_direction: if d % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
         width: @types.Length(
           // Fixed size to skip intrinsic calculation
@@ -1196,7 +1208,7 @@ fn create_deep_flex_fixed(depth : Int) -> @node.Node {
     "root",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(800.0),
       height: @types.Length(600.0),
     },
@@ -1237,11 +1249,11 @@ fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
       "flex_d\{d}",
       {
         ..default_style,
-        display: @style.Flex,
+        display: @types.Flex,
         flex_direction: if d % 2 == 0 {
-          @style.Row
+          @types.Row
         } else {
-          @style.Column
+          @types.Column
         },
       },
       children,
@@ -1257,10 +1269,18 @@ fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
     "grid_root",
     {
       ..default_style,
-      display: @style.Grid,
+      display: @types.Grid,
       width: @types.Length(600.0),
-      grid_template_columns: [@style.Auto, @style.Auto, @style.Auto],
-      grid_template_rows: [@style.Auto, @style.Auto, @style.Auto],
+      grid_template_columns: [
+        @types.TrackSizingFunction::Auto,
+        @types.TrackSizingFunction::Auto,
+        @types.TrackSizingFunction::Auto,
+      ],
+      grid_template_rows: [
+        @types.TrackSizingFunction::Auto,
+        @types.TrackSizingFunction::Auto,
+        @types.TrackSizingFunction::Auto,
+      ],
     },
     children,
   )
@@ -1312,7 +1332,7 @@ fn create_large_website_node(
     "header",
     {
       ..default_style,
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Length(60.0),
     },
@@ -1328,7 +1348,7 @@ fn create_large_website_node(
         "sidebar_g\{g}_item\{i}",
         {
           ..default_style,
-          display: @style.Flex,
+          display: @types.Flex,
           width: @types.Percent(1.0),
           height: @types.Length(36.0),
         },
@@ -1353,8 +1373,8 @@ fn create_large_website_node(
         "sidebar_group\{g}",
         {
           ..default_style,
-          display: @style.Flex,
-          flex_direction: @style.Column,
+          display: @types.Flex,
+          flex_direction: @types.Column,
           width: @types.Percent(1.0),
         },
         group_items,
@@ -1365,8 +1385,8 @@ fn create_large_website_node(
     "sidebar",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(240.0),
     },
     sidebar_groups,
@@ -1379,7 +1399,7 @@ fn create_large_website_node(
       "section_header\{s}",
       {
         ..default_style,
-        display: @style.Flex,
+        display: @types.Flex,
         width: @types.Percent(1.0),
         height: @types.Length(48.0),
       },
@@ -1403,8 +1423,8 @@ fn create_large_website_node(
         "card\{s}_\{i}",
         {
           ..default_style,
-          display: @style.Flex,
-          flex_direction: @style.Column,
+          display: @types.Flex,
+          flex_direction: @types.Column,
           width: @types.Length(280.0),
         },
         [
@@ -1417,8 +1437,8 @@ fn create_large_website_node(
             "card_body\{s}_\{i}",
             {
               ..default_style,
-              display: @style.Flex,
-              flex_direction: @style.Column,
+              display: @types.Flex,
+              flex_direction: @types.Column,
               width: @types.Percent(1.0),
             },
             [
@@ -1436,7 +1456,7 @@ fn create_large_website_node(
                 "card_meta\{s}_\{i}",
                 {
                   ..default_style,
-                  display: @style.Flex,
+                  display: @types.Flex,
                   width: @types.Percent(1.0),
                   height: @types.Length(20.0),
                 },
@@ -1460,7 +1480,7 @@ fn create_large_website_node(
             "card_actions\{s}_\{i}",
             {
               ..default_style,
-              display: @style.Flex,
+              display: @types.Flex,
               width: @types.Percent(1.0),
               height: @types.Length(40.0),
             },
@@ -1485,8 +1505,8 @@ fn create_large_website_node(
       "section_content\{s}",
       {
         ..default_style,
-        display: @style.Flex,
-        flex_wrap: @style.Wrap,
+        display: @types.Flex,
+        flex_wrap: @types.Wrap,
         width: @types.Percent(1.0),
       },
       cards,
@@ -1496,8 +1516,8 @@ fn create_large_website_node(
         "section\{s}",
         {
           ..default_style,
-          display: @style.Flex,
-          flex_direction: @style.Column,
+          display: @types.Flex,
+          flex_direction: @types.Column,
           width: @types.Percent(1.0),
         },
         [section_header, section_content],
@@ -1508,8 +1528,8 @@ fn create_large_website_node(
     "main_content",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       flex_grow: 1.0,
     },
     sections,
@@ -1518,7 +1538,7 @@ fn create_large_website_node(
   // Body
   let body = @node.Node::new(
     "body",
-    { ..default_style, display: @style.Flex, flex_grow: 1.0 },
+    { ..default_style, display: @types.Flex, flex_grow: 1.0 },
     [sidebar, main_content],
   )
 
@@ -1537,8 +1557,8 @@ fn create_large_website_node(
     "footer",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_wrap: @style.Wrap,
+      display: @types.Flex,
+      flex_wrap: @types.Wrap,
       width: @types.Percent(1.0),
     },
     footer_items,
@@ -1549,8 +1569,8 @@ fn create_large_website_node(
     "root",
     {
       ..default_style,
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(1440.0),
       height: @types.Length(900.0),
     },
@@ -1616,8 +1636,8 @@ fn create_large_layout_tree(
     "sidebar",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(200.0),
       height: @types.Auto,
     },
@@ -1633,8 +1653,8 @@ fn create_large_layout_tree(
         "card_" + s.to_string() + "_" + c.to_string(),
         @style.Style::{
           ..@style.Style::default(),
-          display: @style.Flex,
-          flex_direction: @style.Column,
+          display: @types.Flex,
+          flex_direction: @types.Column,
           width: @types.Length(280.0),
           height: @types.Length(200.0),
         },
@@ -1663,8 +1683,8 @@ fn create_large_layout_tree(
       "section_" + s.to_string(),
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_wrap: @style.Wrap,
+        display: @types.Flex,
+        flex_wrap: @types.Wrap,
         width: @types.Percent(1.0),
         height: @types.Auto,
       },
@@ -1676,8 +1696,8 @@ fn create_large_layout_tree(
     "main",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Auto,
       height: @types.Auto,
       flex_grow: 1.0,
@@ -1688,7 +1708,7 @@ fn create_large_layout_tree(
     "body",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Percent(1.0),
       height: @types.Auto,
       flex_grow: 1.0,
@@ -1699,8 +1719,8 @@ fn create_large_layout_tree(
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(1440.0),
       height: @types.Length(900.0),
     },
@@ -1822,8 +1842,8 @@ fn create_contained_cards(
   }
   let root_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_wrap: @types.Wrap,
     width: @types.Length(1200.0),
   }
   @node.Node::new("root", root_style, cards)
@@ -1973,7 +1993,7 @@ fn create_intrinsic_dependent_layout(
     cards.push(@node.Node::new("card_\{i}", card_style, items))
   }
   // Parent with AUTO width - depends on children's intrinsic sizes
-  let root_style = { ..default_style, display: @style.Flex, width: @types.Auto }
+  let root_style = { ..default_style, display: @types.Flex, width: @types.Auto }
   @node.Node::new("root", root_style, cards)
 }
 
@@ -2036,7 +2056,7 @@ fn create_pure_intrinsic_tree(
   let root = build(depth)
   @node.Node::new(
     "root",
-    { ..default_style, display: @style.Flex, width: @types.Auto },
+    { ..default_style, display: @types.Flex, width: @types.Auto },
     [root],
   )
 }
@@ -2101,8 +2121,8 @@ fn create_incremental_containment_tree(
         "card_" + s.to_string() + "_" + c.to_string(),
         @style.Style::{
           ..@style.Style::default(),
-          display: @style.Flex,
-          flex_direction: @style.Column,
+          display: @types.Flex,
+          flex_direction: @types.Column,
           width: @types.Length(280.0),
           height: @types.Length(200.0),
         },
@@ -2114,16 +2134,16 @@ fn create_incremental_containment_tree(
     let section_style = if use_containment {
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_wrap: @style.Wrap,
+        display: @types.Flex,
+        flex_wrap: @types.Wrap,
         width: @types.Percent(1.0),
         contain: @style.Contain::content(), // layout + paint + style
       }
     } else {
       @style.Style::{
         ..@style.Style::default(),
-        display: @style.Flex,
-        flex_wrap: @style.Wrap,
+        display: @types.Flex,
+        flex_wrap: @types.Wrap,
         width: @types.Percent(1.0),
       }
     }
@@ -2138,8 +2158,8 @@ fn create_incremental_containment_tree(
     "main",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Percent(1.0),
       flex_grow: 1.0,
     },
@@ -2149,8 +2169,8 @@ fn create_incremental_containment_tree(
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
-      flex_direction: @style.Column,
+      display: @types.Flex,
+      flex_direction: @types.Column,
       width: @types.Length(1440.0),
       height: @types.Length(900.0),
     },

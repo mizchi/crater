@@ -7,7 +7,7 @@ test "ifc_horizontal_layout" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -33,7 +33,7 @@ test "ifc_line_wrapping" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -68,7 +68,7 @@ test "ifc_with_margins" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Length(40.0),
     height: @types.Length(30.0),
     margin: {
@@ -93,7 +93,7 @@ test "ifc_content_offset" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -116,13 +116,13 @@ test "ifc_mixed_heights" {
   let default_style = @style.Style::default()
   let tall_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
   }
   let short_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -140,20 +140,20 @@ test "ifc_mixed_heights" {
 ///|
 test "is_inline_level" {
   // Test inline-level detection
-  inspect(is_inline_level(@style.Inline), content="true")
-  inspect(is_inline_level(@style.InlineBlock), content="true")
-  inspect(is_inline_level(@style.InlineFlex), content="true")
-  inspect(is_inline_level(@style.InlineGrid), content="true")
-  inspect(is_inline_level(@style.Block), content="false")
-  inspect(is_inline_level(@style.Flex), content="false")
-  inspect(is_inline_level(@style.Grid), content="false")
-  inspect(is_inline_level(@style.None), content="false")
+  inspect(is_inline_level(@types.Inline), content="true")
+  inspect(is_inline_level(@types.InlineBlock), content="true")
+  inspect(is_inline_level(@types.InlineFlex), content="true")
+  inspect(is_inline_level(@types.InlineGrid), content="true")
+  inspect(is_inline_level(@types.Block), content="false")
+  inspect(is_inline_level(@types.Flex), content="false")
+  inspect(is_inline_level(@types.Grid), content="false")
+  inspect(is_inline_level(@types.Display::None), content="false")
 }
 
 ///|
 test "should_establish_ifc_all_inline" {
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.InlineBlock }
+  let inline_style = { ..default_style, display: @types.InlineBlock }
   let child1 = @node.Node::leaf("c1", inline_style)
   let child2 = @node.Node::leaf("c2", inline_style)
   // All inline-level children should establish IFC
@@ -163,8 +163,8 @@ test "should_establish_ifc_all_inline" {
 ///|
 test "should_establish_ifc_mixed" {
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.InlineBlock }
-  let block_style = { ..default_style, display: @style.Block }
+  let inline_style = { ..default_style, display: @types.InlineBlock }
+  let block_style = { ..default_style, display: @types.Block }
   let inline_child = @node.Node::leaf("inline", inline_style)
   let block_child = @node.Node::leaf("block", block_style)
   // Mixed inline and block should NOT establish IFC
@@ -182,7 +182,7 @@ test "should_establish_ifc_empty" {
 test "text_width_constrained_by_available_width" {
   // Text node with MeasureFunc should be constrained by available_width
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_style = { ..default_style, display: @types.Inline }
 
   // MeasureFunc that returns wide text (max_width=200) that wraps to 4 lines at width=50
   let measure : @node.MeasureFunc = {
@@ -221,7 +221,7 @@ test "text_width_constrained_by_available_width" {
 test "text_width_unconstrained_when_smaller" {
   // Text node narrower than available_width should use its max_width
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_style = { ..default_style, display: @types.Inline }
 
   // MeasureFunc for short text (max_width=50)
   let measure : @node.MeasureFunc = {
@@ -247,7 +247,7 @@ test "text_min_content_width" {
   let default_style = @style.Style::default()
   let inline_style = {
     ..default_style,
-    display: @style.Inline,
+    display: @types.Inline,
     width: @types.MinContent,
   }
   let measure : @node.MeasureFunc = {
@@ -287,7 +287,7 @@ test "inline_element_with_child_has_size" {
   // An inline element (like <a>) containing a child should have proper size
   // This tests the fix for 0x0 link size issue
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_style = { ..default_style, display: @types.Inline }
 
   // Create a text child with MeasureFunc (simulating text content)
   let child_measure : @node.MeasureFunc = {
@@ -310,7 +310,7 @@ test "inline_element_with_child_has_size" {
 test "inline_element_with_padding_and_child" {
   // An inline element with padding containing a child
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_style = { ..default_style, display: @types.Inline }
   let inline_with_padding = {
     ..inline_style,
     padding: {

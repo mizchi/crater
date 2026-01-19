@@ -14,7 +14,7 @@ test "trace_simple_layout" {
     "parent",
     {
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(200.0),
       height: @types.Length(100.0),
     },
@@ -60,7 +60,7 @@ test "trace_dependencies_recorded" {
     "parent",
     {
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(200.0),
     },
     [child1, child2],
@@ -174,7 +174,7 @@ test "trace_nested_structure" {
     "middle",
     {
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(60.0),
       height: @types.Length(60.0),
     },
@@ -184,7 +184,7 @@ test "trace_nested_structure" {
     "parent",
     {
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(100.0),
       height: @types.Length(100.0),
     },

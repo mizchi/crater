@@ -21,23 +21,23 @@ fn assert_approx(actual : Double, expected : Double) -> Unit raise {
 test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    position: @style.Position::Relative,
+    display: @types.Grid,
+    position: @types.Position::Relative,
     width: @types.Length(300.0),
     height: @types.Length(110.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(50.0),
       right: @types.Auto,
       top: @types.Length(40.0),
       bottom: @types.Auto,
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -56,7 +56,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
@@ -110,10 +110,10 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
 test "taffy/chrome_issue_325928327" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Percent(1.0000),
     height: @types.Length(40.0),
-    justify_items: @style.Center,
+    justify_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -152,98 +152,98 @@ test "taffy/chrome_issue_325928327" {
 test "taffy/grid_absolute_align_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
   }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
@@ -291,7 +291,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
 test "taffy/grid_absolute_column_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -299,21 +299,24 @@ test "taffy/grid_absolute_column_end" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
-    grid_column: { start: @style.Auto, end: @style.Line(1) },
+    position: @types.Position::Absolute,
+    grid_column: {
+      start: @types.GridPlacement::Auto,
+      end: @types.GridPlacement::Line(1),
+    },
     inset: {
       left: @types.Length(4.0),
       right: @types.Length(3.0),
@@ -339,7 +342,7 @@ test "taffy/grid_absolute_column_end" {
 test "taffy/grid_absolute_column_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -347,21 +350,24 @@ test "taffy/grid_absolute_column_start" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
-    grid_column: { start: @style.Line(1), end: @style.Auto },
+    position: @types.Position::Absolute,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     inset: {
       left: @types.Length(4.0),
       right: @types.Length(3.0),
@@ -387,7 +393,7 @@ test "taffy/grid_absolute_column_start" {
 test "taffy/grid_absolute_container_bottom_left" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -395,20 +401,20 @@ test "taffy/grid_absolute_container_bottom_left" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -490,7 +496,7 @@ test "taffy/grid_absolute_container_bottom_left" {
 test "taffy/grid_absolute_container_bottom_left_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -498,20 +504,20 @@ test "taffy/grid_absolute_container_bottom_left_margin" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     margin: {
@@ -601,7 +607,7 @@ test "taffy/grid_absolute_container_bottom_left_margin" {
 test "taffy/grid_absolute_container_left_overrides_right" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -609,20 +615,20 @@ test "taffy/grid_absolute_container_left_overrides_right" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     inset: {
       left: @types.Length(5.0),
@@ -705,7 +711,7 @@ test "taffy/grid_absolute_container_left_overrides_right" {
 test "taffy/grid_absolute_container_left_right" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -713,20 +719,20 @@ test "taffy/grid_absolute_container_left_right" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(5.0),
       right: @types.Length(2.0),
@@ -808,7 +814,7 @@ test "taffy/grid_absolute_container_left_right" {
 test "taffy/grid_absolute_container_left_right_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -816,20 +822,20 @@ test "taffy/grid_absolute_container_left_right_margin" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -917,7 +923,7 @@ test "taffy/grid_absolute_container_left_right_margin" {
 test "taffy/grid_absolute_container_negative_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -925,20 +931,20 @@ test "taffy/grid_absolute_container_negative_position" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Length(-15.0),
@@ -950,7 +956,7 @@ test "taffy/grid_absolute_container_negative_position" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(-35.0),
       right: @types.Auto,
@@ -1029,7 +1035,7 @@ test "taffy/grid_absolute_container_negative_position" {
 test "taffy/grid_absolute_container_negative_position_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -1037,20 +1043,20 @@ test "taffy/grid_absolute_container_negative_position_margin" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1068,7 +1074,7 @@ test "taffy/grid_absolute_container_negative_position_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1153,7 +1159,7 @@ test "taffy/grid_absolute_container_negative_position_margin" {
 test "taffy/grid_absolute_container_top_bottom" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -1161,20 +1167,20 @@ test "taffy/grid_absolute_container_top_bottom" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -1256,7 +1262,7 @@ test "taffy/grid_absolute_container_top_bottom" {
 test "taffy/grid_absolute_container_top_bottom_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -1264,20 +1270,20 @@ test "taffy/grid_absolute_container_top_bottom_margin" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1365,7 +1371,7 @@ test "taffy/grid_absolute_container_top_bottom_margin" {
 test "taffy/grid_absolute_container_top_right" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -1373,20 +1379,20 @@ test "taffy/grid_absolute_container_top_right" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Length(0.0),
@@ -1468,7 +1474,7 @@ test "taffy/grid_absolute_container_top_right" {
 test "taffy/grid_absolute_container_top_right_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -1476,20 +1482,20 @@ test "taffy/grid_absolute_container_top_right_margin" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1577,90 +1583,90 @@ test "taffy/grid_absolute_container_top_right_margin" {
 test "taffy/grid_absolute_justify_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::Center,
+    justify_self: @types.AlignSelf::Center,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::Center,
+    justify_self: @types.AlignSelf::Center,
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
@@ -1708,7 +1714,7 @@ test "taffy/grid_absolute_justify_self_sized_all" {
 test "taffy/grid_absolute_layout_within_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -1727,7 +1733,7 @@ test "taffy/grid_absolute_layout_within_border" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1741,7 +1747,7 @@ test "taffy/grid_absolute_layout_within_border" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1755,7 +1761,7 @@ test "taffy/grid_absolute_layout_within_border" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1775,7 +1781,7 @@ test "taffy/grid_absolute_layout_within_border" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1821,7 +1827,7 @@ test "taffy/grid_absolute_layout_within_border" {
 test "taffy/grid_absolute_layout_within_border_static" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -1840,30 +1846,30 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    align_self: @style.AlignSelf::End,
-    justify_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1872,15 +1878,15 @@ test "taffy/grid_absolute_layout_within_border_static" {
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1889,8 +1895,8 @@ test "taffy/grid_absolute_layout_within_border_static" {
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    align_self: @style.AlignSelf::End,
-    justify_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
@@ -1924,8 +1930,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    position: @style.Position::Relative,
+    display: @types.Grid,
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -1944,7 +1950,7 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -1956,7 +1962,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -1968,7 +1974,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -1980,7 +1986,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child2)
   let root_child0_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -1992,7 +1998,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child3)
   let root_child0_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2004,7 +2010,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child0_children.push(root_child0_child4)
   let root_child0_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2022,10 +2028,10 @@ test "taffy/grid_absolute_resolved_insets" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    position: @style.Position::Relative,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Grid,
+    position: @types.Position::Relative,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -2044,7 +2050,7 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2056,7 +2062,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -2068,7 +2074,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -2080,7 +2086,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -2092,7 +2098,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child3)
   let root_child1_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2104,7 +2110,7 @@ test "taffy/grid_absolute_resolved_insets" {
   root_child1_children.push(root_child1_child4)
   let root_child1_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2188,7 +2194,7 @@ test "taffy/grid_absolute_resolved_insets" {
 test "taffy/grid_absolute_row_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -2196,21 +2202,24 @@ test "taffy/grid_absolute_row_end" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
-    grid_row: { start: @style.Auto, end: @style.Line(1) },
+    position: @types.Position::Absolute,
+    grid_row: {
+      start: @types.GridPlacement::Auto,
+      end: @types.GridPlacement::Line(1),
+    },
     inset: {
       left: @types.Length(4.0),
       right: @types.Length(3.0),
@@ -2236,7 +2245,7 @@ test "taffy/grid_absolute_row_end" {
 test "taffy/grid_absolute_row_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -2244,21 +2253,24 @@ test "taffy/grid_absolute_row_start" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    position: @types.Position::Absolute,
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     inset: {
       left: @types.Length(4.0),
       right: @types.Length(3.0),
@@ -2284,7 +2296,7 @@ test "taffy/grid_absolute_row_start" {
 test "taffy/grid_absolute_top_overrides_bottom" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -2292,20 +2304,20 @@ test "taffy/grid_absolute_top_overrides_bottom" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     height: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -2388,7 +2400,7 @@ test "taffy/grid_absolute_top_overrides_bottom" {
 test "taffy/grid_absolute_with_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -2396,20 +2408,20 @@ test "taffy/grid_absolute_with_padding" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Length(0.0),
@@ -2421,7 +2433,7 @@ test "taffy/grid_absolute_with_padding" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(10.0),
       right: @types.Auto,
@@ -2500,7 +2512,7 @@ test "taffy/grid_absolute_with_padding" {
 test "taffy/grid_absolute_with_padding_and_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -2508,20 +2520,20 @@ test "taffy/grid_absolute_with_padding_and_margin" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -2539,7 +2551,7 @@ test "taffy/grid_absolute_with_padding_and_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -2624,20 +2636,20 @@ test "taffy/grid_absolute_with_padding_and_margin" {
 test "taffy/grid_align_content_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.Center,
+    align_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -2715,7 +2727,7 @@ test "taffy/grid_align_content_center" {
 test "taffy/grid_align_content_center_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -2728,23 +2740,23 @@ test "taffy/grid_align_content_center_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Center,
+    justify_content: @types.Center,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -2830,20 +2842,20 @@ test "taffy/grid_align_content_center_negative_space_gap" {
 test "taffy/grid_align_content_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.End,
+    align_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -2921,7 +2933,7 @@ test "taffy/grid_align_content_end" {
 test "taffy/grid_align_content_end_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -2934,23 +2946,23 @@ test "taffy/grid_align_content_end_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.End,
+    justify_content: @types.Center,
+    align_content: @types.End,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -3036,7 +3048,7 @@ test "taffy/grid_align_content_end_negative_space_gap" {
 test "taffy/grid_align_content_end_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -3052,16 +3064,16 @@ test "taffy/grid_align_content_end_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.End,
+    align_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -3139,20 +3151,20 @@ test "taffy/grid_align_content_end_with_padding_border" {
 test "taffy/grid_align_content_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.SpaceAround,
+    align_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -3230,7 +3242,7 @@ test "taffy/grid_align_content_space_around" {
 test "taffy/grid_align_content_space_around_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -3243,23 +3255,23 @@ test "taffy/grid_align_content_space_around_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceAround,
+    justify_content: @types.Center,
+    align_content: @types.SpaceAround,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -3345,7 +3357,7 @@ test "taffy/grid_align_content_space_around_negative_space_gap" {
 test "taffy/grid_align_content_space_around_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -3361,16 +3373,16 @@ test "taffy/grid_align_content_space_around_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.SpaceAround,
+    align_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -3448,20 +3460,20 @@ test "taffy/grid_align_content_space_around_with_padding_border" {
 test "taffy/grid_align_content_space_between" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.SpaceBetween,
+    align_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -3539,7 +3551,7 @@ test "taffy/grid_align_content_space_between" {
 test "taffy/grid_align_content_space_between_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -3552,23 +3564,23 @@ test "taffy/grid_align_content_space_between_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceBetween,
+    justify_content: @types.Center,
+    align_content: @types.SpaceBetween,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -3654,7 +3666,7 @@ test "taffy/grid_align_content_space_between_negative_space_gap" {
 test "taffy/grid_align_content_space_between_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -3670,16 +3682,16 @@ test "taffy/grid_align_content_space_between_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.SpaceBetween,
+    align_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -3757,20 +3769,20 @@ test "taffy/grid_align_content_space_between_with_padding_border" {
 test "taffy/grid_align_content_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.SpaceEvenly,
+    align_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -3848,7 +3860,7 @@ test "taffy/grid_align_content_space_evenly" {
 test "taffy/grid_align_content_space_evenly_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -3861,23 +3873,23 @@ test "taffy/grid_align_content_space_evenly_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceBetween,
+    justify_content: @types.Center,
+    align_content: @types.SpaceBetween,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -3963,7 +3975,7 @@ test "taffy/grid_align_content_space_evenly_negative_space_gap" {
 test "taffy/grid_align_content_space_evenly_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -3979,16 +3991,16 @@ test "taffy/grid_align_content_space_evenly_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.SpaceEvenly,
+    align_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -4066,20 +4078,20 @@ test "taffy/grid_align_content_space_evenly_with_padding_border" {
 test "taffy/grid_align_content_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.Start,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -4157,7 +4169,7 @@ test "taffy/grid_align_content_start" {
 test "taffy/grid_align_content_start_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -4170,23 +4182,23 @@ test "taffy/grid_align_content_start_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Start,
+    justify_content: @types.Center,
+    align_content: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -4272,7 +4284,7 @@ test "taffy/grid_align_content_start_negative_space_gap" {
 test "taffy/grid_align_content_start_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -4288,16 +4300,16 @@ test "taffy/grid_align_content_start_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_content: @style.Start,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -4375,15 +4387,15 @@ test "taffy/grid_align_content_start_with_padding_border" {
 test "taffy/grid_align_items_baseline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -4391,7 +4403,7 @@ test "taffy/grid_align_items_baseline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
@@ -4417,15 +4429,15 @@ test "taffy/grid_align_items_baseline" {
 test "taffy/grid_align_items_baseline_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -4433,14 +4445,14 @@ test "taffy/grid_align_items_baseline_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -4474,15 +4486,15 @@ test "taffy/grid_align_items_baseline_child" {
 test "taffy/grid_align_items_baseline_child_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -4496,14 +4508,14 @@ test "taffy/grid_align_items_baseline_child_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     margin: {
@@ -4543,15 +4555,15 @@ test "taffy/grid_align_items_baseline_child_margin" {
 test "taffy/grid_align_items_baseline_child_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -4565,14 +4577,14 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     margin: {
@@ -4612,14 +4624,14 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
 test "taffy/grid_align_items_baseline_child_multiline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
   }
@@ -4627,15 +4639,18 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
-    flex_wrap: @style.Wrap,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
   }
@@ -4643,7 +4658,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
   }
@@ -4651,7 +4666,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
   }
@@ -4659,7 +4674,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
   }
@@ -4705,15 +4720,15 @@ test "taffy/grid_align_items_baseline_child_multiline" {
 test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
   }
@@ -4721,15 +4736,18 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(25.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
   }
@@ -4737,7 +4755,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
   }
@@ -4745,7 +4763,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
   }
@@ -4753,10 +4771,10 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -4800,15 +4818,15 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
 test "taffy/grid_align_items_baseline_child_multiline_override" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
   }
@@ -4816,15 +4834,18 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(25.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
   }
@@ -4832,16 +4853,16 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_child1 = @node.Node::leaf("node", root_child1_child1_style)
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
   }
@@ -4849,10 +4870,10 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -4896,7 +4917,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
 test "taffy/grid_align_items_baseline_child_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -4905,12 +4926,12 @@ test "taffy/grid_align_items_baseline_child_padding" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -4918,7 +4939,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
     padding: {
@@ -4931,7 +4952,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -4965,15 +4986,15 @@ test "taffy/grid_align_items_baseline_child_padding" {
 test "taffy/grid_align_items_baseline_child_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -4987,14 +5008,14 @@ test "taffy/grid_align_items_baseline_child_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -5028,15 +5049,15 @@ test "taffy/grid_align_items_baseline_child_top" {
 test "taffy/grid_align_items_baseline_child_top2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5044,7 +5065,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
     inset: {
@@ -5057,7 +5078,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -5091,20 +5112,20 @@ test "taffy/grid_align_items_baseline_child_top2" {
 test "taffy/grid_align_items_baseline_complex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5270,22 +5291,22 @@ test "taffy/grid_align_items_baseline_complex" {
 test "taffy/grid_align_items_baseline_double_nested_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
@@ -5297,14 +5318,14 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(15.0),
   }
@@ -5342,16 +5363,19 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
 test "taffy/grid_align_items_baseline_multiline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
-    align_items: @style.Baseline,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5359,14 +5383,14 @@ test "taffy/grid_align_items_baseline_multiline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -5378,14 +5402,14 @@ test "taffy/grid_align_items_baseline_multiline" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -5397,7 +5421,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5439,16 +5463,19 @@ test "taffy/grid_align_items_baseline_multiline" {
 test "taffy/grid_align_items_baseline_multiline_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
-    align_items: @style.Baseline,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5456,14 +5483,14 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(30.0),
     height: @types.Length(50.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -5475,14 +5502,14 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(40.0),
     height: @types.Length(70.0),
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
   }
@@ -5494,7 +5521,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
@@ -5536,16 +5563,19 @@ test "taffy/grid_align_items_baseline_multiline_column" {
 test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
-    align_items: @style.Baseline,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5553,14 +5583,14 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -5572,14 +5602,14 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -5591,7 +5621,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
@@ -5633,32 +5663,32 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
 test "taffy/grid_align_items_baseline_nested_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_child1_style = { ..@style.Style::default(), display: @types.Grid }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(80.0),
   }
   let root_child1_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -5668,7 +5698,7 @@ test "taffy/grid_align_items_baseline_nested_column" {
   root_child1_child0_children.push(root_child1_child0_child0)
   let root_child1_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(40.0),
   }
@@ -5716,28 +5746,34 @@ test "taffy/grid_align_items_baseline_nested_column" {
 test "taffy/grid_align_items_sized_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -5746,8 +5782,14 @@ test "taffy/grid_align_items_sized_center" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5772,28 +5814,34 @@ test "taffy/grid_align_items_sized_center" {
 test "taffy/grid_align_items_sized_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_items: @style.End,
+    align_items: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -5802,8 +5850,14 @@ test "taffy/grid_align_items_sized_end" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5828,28 +5882,34 @@ test "taffy/grid_align_items_sized_end" {
 test "taffy/grid_align_items_sized_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -5858,8 +5918,14 @@ test "taffy/grid_align_items_sized_start" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5884,28 +5950,34 @@ test "taffy/grid_align_items_sized_start" {
 test "taffy/grid_align_items_sized_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    align_items: @style.Stretch,
+    align_items: @types.Stretch,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -5914,8 +5986,14 @@ test "taffy/grid_align_items_sized_stretch" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5940,90 +6018,90 @@ test "taffy/grid_align_items_sized_stretch" {
 test "taffy/grid_align_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    align_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
   }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
@@ -6071,14 +6149,14 @@ test "taffy/grid_align_self_sized_all" {
 test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(0.0500),
       right: @types.Percent(0.0500),
@@ -6105,14 +6183,14 @@ test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_ins
 test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(0.1000),
       right: @types.Percent(0.1000),
@@ -6139,14 +6217,14 @@ test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
 test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -6173,14 +6251,14 @@ test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
 test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     height: @types.Percent(0.1000),
     inset: {
       left: @types.Auto,
@@ -6208,14 +6286,14 @@ test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
 test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(0.4000),
     inset: {
       left: @types.Percent(0.1000),
@@ -6241,7 +6319,7 @@ test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
 
 ///|
 test "taffy/grid_aspect_ratio_child_fill_content_height" {
-  let root_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_style = { ..@style.Style::default(), display: @types.Grid }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -6280,7 +6358,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_height" {
 
 ///|
 test "taffy/grid_aspect_ratio_child_fill_content_width" {
-  let root_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_style = { ..@style.Style::default(), display: @types.Grid }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -6321,7 +6399,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_width" {
 test "taffy/grid_aspect_ratio_fill_child_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6349,7 +6427,7 @@ test "taffy/grid_aspect_ratio_fill_child_height" {
 test "taffy/grid_aspect_ratio_fill_child_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6389,7 +6467,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_height" {
 test "taffy/grid_aspect_ratio_fill_child_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6424,7 +6502,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_width" {
 test "taffy/grid_aspect_ratio_fill_child_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6452,7 +6530,7 @@ test "taffy/grid_aspect_ratio_fill_child_min_height" {
 test "taffy/grid_aspect_ratio_fill_child_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6480,7 +6558,7 @@ test "taffy/grid_aspect_ratio_fill_child_width" {
 test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6509,7 +6587,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
 test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -6538,20 +6616,23 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
 test "taffy/grid_auto_columns" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(40.0)],
-    grid_template_rows: [@style.Length(100.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(100.0)],
     grid_auto_columns: [
-      @style.Length(10.0),
-      @style.Length(20.0),
-      @style.Length(30.0),
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(30.0),
     ],
-    grid_auto_flow: @style.GridAutoFlow::Column,
+    grid_auto_flow: @types.GridAutoFlow::Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(-3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(-3),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -6620,20 +6701,20 @@ test "taffy/grid_auto_columns" {
 test "taffy/grid_auto_columns_fixed_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Auto,
-      @style.Length(40.0),
-      @style.Auto,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Auto,
-      @style.Length(40.0),
-      @style.Auto,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -6761,17 +6842,17 @@ test "taffy/grid_auto_columns_fixed_width" {
 test "taffy/grid_auto_fill_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Repeat(@style.AutoFill, [@style.SingleTrackSizing::Length(40.0)]),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -6850,18 +6931,18 @@ test "taffy/grid_auto_fill_fixed_size" {
 test "taffy/grid_auto_fill_with_empty_auto_track" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Repeat(@style.AutoFill, [@style.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceEvenly,
+    justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -6896,7 +6977,7 @@ test "taffy/grid_auto_fit_definite_percentage" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     padding: {
@@ -6906,10 +6987,10 @@ test "taffy/grid_auto_fit_definite_percentage" {
       bottom: @types.Length(10.0),
     },
     grid_template_columns: [
-      @style.Repeat(@style.AutoFill, [
-        @style.SingleTrackSizing::MinMax(
-          @style.MinTrackSizing::Length(150.0),
-          @style.MaxTrackSizing::Fr(1.0),
+      @types.Repeat(@types.AutoFill, [
+        @types.SingleTrackSizing::MinMax(
+          @types.MinTrackSizing::Length(150.0),
+          @types.MaxTrackSizing::Fr(1.0),
         ),
       ]),
     ],
@@ -6993,18 +7074,18 @@ test "taffy/grid_auto_fit_definite_percentage" {
 test "taffy/grid_auto_fit_with_empty_auto_track" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Repeat(@style.AutoFit, [@style.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFit, [@types.SingleTrackSizing::Length(40.0)]),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceEvenly,
+    justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7033,19 +7114,22 @@ test "taffy/grid_auto_fit_with_empty_auto_track" {
 test "taffy/grid_auto_rows" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(100.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Length(100.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
     grid_auto_rows: [
-      @style.Length(10.0),
-      @style.Length(20.0),
-      @style.Length(30.0),
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(30.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_row: { start: @style.Line(-4), end: @style.Auto },
+    grid_row: {
+      start: @types.GridPlacement::Line(-4),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -7114,16 +7198,16 @@ test "taffy/grid_auto_rows" {
 test "taffy/grid_auto_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Auto,
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -7205,13 +7289,17 @@ test "taffy/grid_auto_single_item" {
 test "taffy/grid_auto_single_item_fixed_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
-    grid_template_columns: [@style.Length(40.0), @style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -7293,13 +7381,17 @@ test "taffy/grid_auto_single_item_fixed_width" {
 test "taffy/grid_auto_single_item_fixed_width_with_definite_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
-    grid_template_columns: [@style.Length(40.0), @style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -7381,11 +7473,14 @@ test "taffy/grid_auto_single_item_fixed_width_with_definite_width" {
 test "taffy/grid_auto_takes_precedence_over_fr" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    grid_template_columns: [@style.Auto, @style.Fr(1.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7414,8 +7509,11 @@ test "taffy/grid_auto_takes_precedence_over_fr" {
 test "taffy/grid_available_space_greater_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto, @style.Auto],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7458,8 +7556,11 @@ test "taffy/grid_available_space_greater_than_max_content" {
 test "taffy/grid_available_space_smaller_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto, @style.Auto],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7502,8 +7603,11 @@ test "taffy/grid_available_space_smaller_than_max_content" {
 test "taffy/grid_available_space_smaller_than_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto, @style.Auto],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7546,18 +7650,18 @@ test "taffy/grid_available_space_smaller_than_min_content" {
 test "taffy/grid_basic" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -7636,9 +7740,9 @@ test "taffy/grid_basic" {
 test "taffy/grid_basic_implicit_tracks" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(40.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7671,18 +7775,18 @@ test "taffy/grid_basic_implicit_tracks" {
 test "taffy/grid_basic_with_overflow" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -7768,7 +7872,7 @@ test "taffy/grid_basic_with_overflow" {
 test "taffy/grid_basic_with_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -7776,14 +7880,14 @@ test "taffy/grid_basic_with_padding" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -7862,21 +7966,21 @@ test "taffy/grid_basic_with_padding" {
 test "taffy/grid_display_none_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -7902,10 +8006,10 @@ test "taffy/grid_display_none_fixed_size" {
 test "taffy/grid_fit_content_percent_definite_argument" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(60.0),
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7934,10 +8038,10 @@ test "taffy/grid_fit_content_percent_definite_argument" {
 test "taffy/grid_fit_content_percent_definite_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(60.0),
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7966,10 +8070,10 @@ test "taffy/grid_fit_content_percent_definite_max_content" {
 test "taffy/grid_fit_content_percent_definite_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(60.0),
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -7998,9 +8102,9 @@ test "taffy/grid_fit_content_percent_definite_min_content" {
 test "taffy/grid_fit_content_percent_indefinite_argument" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8029,9 +8133,9 @@ test "taffy/grid_fit_content_percent_indefinite_argument" {
 test "taffy/grid_fit_content_percent_indefinite_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8060,15 +8164,15 @@ test "taffy/grid_fit_content_percent_indefinite_max_content" {
 test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -8095,9 +8199,9 @@ test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
 test "taffy/grid_fit_content_percent_indefinite_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8126,15 +8230,15 @@ test "taffy/grid_fit_content_percent_indefinite_min_content" {
 test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentPercent(0.5000)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentPercent(0.5000)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -8161,9 +8265,9 @@ test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
 test "taffy/grid_fit_content_points_argument" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(30.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(30.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8192,9 +8296,9 @@ test "taffy/grid_fit_content_points_argument" {
 test "taffy/grid_fit_content_points_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(30.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(30.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8223,9 +8327,9 @@ test "taffy/grid_fit_content_points_max_content" {
 test "taffy/grid_fit_content_points_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(30.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(30.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8254,15 +8358,15 @@ test "taffy/grid_fit_content_points_min_content" {
 test "taffy/grid_fit_content_points_min_content_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.FitContentLength(30.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.FitContentLength(30.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -8289,10 +8393,14 @@ test "taffy/grid_fit_content_points_min_content_hidden" {
 test "taffy/grid_fr_fixed_size_no_content_proportions" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(2.0), @style.Fr(3.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(2.0),
+      @types.TrackSizingFunction::Fr(3.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8328,10 +8436,13 @@ test "taffy/grid_fr_fixed_size_no_content_proportions" {
 test "taffy/grid_fr_fixed_size_no_content_proportions_sub_1_sum" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
-    grid_template_columns: [@style.Fr(0.3), @style.Fr(0.2)],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(0.3),
+      @types.TrackSizingFunction::Fr(0.2),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8360,11 +8471,19 @@ test "taffy/grid_fr_fixed_size_no_content_proportions_sub_1_sum" {
 test "taffy/grid_fr_fixed_size_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    grid_template_columns: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8445,9 +8564,17 @@ test "taffy/grid_fr_fixed_size_single_item" {
 test "taffy/grid_fr_no_sized_items_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8525,11 +8652,19 @@ test "taffy/grid_fr_no_sized_items_indefinite" {
 test "taffy/grid_fr_single_item_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Auto,
     height: @types.Auto,
-    grid_template_columns: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Fr(1.0), @style.Fr(1.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -8610,15 +8745,24 @@ test "taffy/grid_fr_single_item_indefinite" {
 test "taffy/grid_fr_span_2_proportion" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(2.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(2.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(60.0),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8652,15 +8796,24 @@ test "taffy/grid_fr_span_2_proportion" {
 test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(0.2), @style.Fr(0.3)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(0.2),
+      @types.TrackSizingFunction::Fr(0.3),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(60.0),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8694,15 +8847,25 @@ test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
 test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(2.0), @style.Fr(3.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(2.0),
+      @types.TrackSizingFunction::Fr(3.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(60.0),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8750,15 +8913,24 @@ test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
 test "taffy/grid_fr_span_2_proportion_zero_sum" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(0.0), @style.Fr(0.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(0.0),
+      @types.TrackSizingFunction::Fr(0.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(60.0),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8792,15 +8964,25 @@ test "taffy/grid_fr_span_2_proportion_zero_sum" {
 test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(0.0), @style.Fr(0.0), @style.Fr(0.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(0.0),
+      @types.TrackSizingFunction::Fr(0.0),
+      @types.TrackSizingFunction::Fr(0.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(60.0),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -8848,18 +9030,18 @@ test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
 test "taffy/grid_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(40.0),
     column_gap: @types.Length(40.0),
@@ -8940,25 +9122,28 @@ test "taffy/grid_gap" {
 test "taffy/grid_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default(), display: @style.None }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    display: @types.Display::None,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = { ..@style.Style::default() }
@@ -8967,13 +9152,19 @@ test "taffy/grid_hidden" {
   let root_child3_style = { ..@style.Style::default() }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default(), display: @style.None }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    display: @types.Display::None,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root_child5_style = { ..@style.Style::default() }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default(), display: @style.None }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    display: @types.Display::None,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root_child7_style = { ..@style.Style::default() }
@@ -9030,20 +9221,20 @@ test "taffy/grid_hidden" {
 test "taffy/grid_justify_content_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -9121,7 +9312,7 @@ test "taffy/grid_justify_content_center" {
 test "taffy/grid_justify_content_center_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -9134,23 +9325,23 @@ test "taffy/grid_justify_content_center_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Center,
+    justify_content: @types.Center,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -9236,7 +9427,7 @@ test "taffy/grid_justify_content_center_negative_space_gap" {
 test "taffy/grid_justify_content_center_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -9252,16 +9443,16 @@ test "taffy/grid_justify_content_center_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -9339,20 +9530,20 @@ test "taffy/grid_justify_content_center_with_padding_border" {
 test "taffy/grid_justify_content_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.End,
+    justify_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -9430,7 +9621,7 @@ test "taffy/grid_justify_content_end" {
 test "taffy/grid_justify_content_end_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -9443,23 +9634,23 @@ test "taffy/grid_justify_content_end_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.End,
-    align_content: @style.Center,
+    justify_content: @types.End,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -9545,7 +9736,7 @@ test "taffy/grid_justify_content_end_negative_space_gap" {
 test "taffy/grid_justify_content_end_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -9561,16 +9752,16 @@ test "taffy/grid_justify_content_end_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.End,
+    justify_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -9648,20 +9839,20 @@ test "taffy/grid_justify_content_end_with_padding_border" {
 test "taffy/grid_justify_content_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceAround,
+    justify_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -9739,7 +9930,7 @@ test "taffy/grid_justify_content_space_around" {
 test "taffy/grid_justify_content_space_around_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -9752,23 +9943,23 @@ test "taffy/grid_justify_content_space_around_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceAround,
-    align_content: @style.Center,
+    justify_content: @types.SpaceAround,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -9854,7 +10045,7 @@ test "taffy/grid_justify_content_space_around_negative_space_gap" {
 test "taffy/grid_justify_content_space_around_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -9870,16 +10061,16 @@ test "taffy/grid_justify_content_space_around_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceAround,
+    justify_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -9957,20 +10148,20 @@ test "taffy/grid_justify_content_space_around_with_padding_border" {
 test "taffy/grid_justify_content_space_between" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceBetween,
+    justify_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -10048,7 +10239,7 @@ test "taffy/grid_justify_content_space_between" {
 test "taffy/grid_justify_content_space_between_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -10061,23 +10252,23 @@ test "taffy/grid_justify_content_space_between_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceBetween,
-    align_content: @style.Center,
+    justify_content: @types.SpaceBetween,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -10163,7 +10354,7 @@ test "taffy/grid_justify_content_space_between_negative_space_gap" {
 test "taffy/grid_justify_content_space_between_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -10179,16 +10370,16 @@ test "taffy/grid_justify_content_space_between_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceBetween,
+    justify_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -10266,20 +10457,20 @@ test "taffy/grid_justify_content_space_between_with_padding_border" {
 test "taffy/grid_justify_content_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceEvenly,
+    justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -10357,7 +10548,7 @@ test "taffy/grid_justify_content_space_evenly" {
 test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -10370,23 +10561,23 @@ test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceEvenly,
-    align_content: @style.Center,
+    justify_content: @types.SpaceEvenly,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -10472,7 +10663,7 @@ test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
 test "taffy/grid_justify_content_space_evenly_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -10488,16 +10679,16 @@ test "taffy/grid_justify_content_space_evenly_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.SpaceEvenly,
+    justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -10575,20 +10766,20 @@ test "taffy/grid_justify_content_space_evenly_with_padding_border" {
 test "taffy/grid_justify_content_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.Start,
+    justify_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -10666,7 +10857,7 @@ test "taffy/grid_justify_content_start" {
 test "taffy/grid_justify_content_start_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
     border: {
@@ -10679,23 +10870,23 @@ test "taffy/grid_justify_content_start_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Start,
-    align_content: @style.Center,
+    justify_content: @types.Start,
+    align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -10781,7 +10972,7 @@ test "taffy/grid_justify_content_start_negative_space_gap" {
 test "taffy/grid_justify_content_start_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -10797,16 +10988,16 @@ test "taffy/grid_justify_content_start_with_padding_border" {
       bottom: @types.Length(6.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_content: @style.Start,
+    justify_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -10884,28 +11075,34 @@ test "taffy/grid_justify_content_start_with_padding_border" {
 test "taffy/grid_justify_items_sized_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_items: @style.Center,
+    justify_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -10914,8 +11111,14 @@ test "taffy/grid_justify_items_sized_center" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -10940,28 +11143,34 @@ test "taffy/grid_justify_items_sized_center" {
 test "taffy/grid_justify_items_sized_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_items: @style.End,
+    justify_items: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -10970,8 +11179,14 @@ test "taffy/grid_justify_items_sized_end" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -10996,28 +11211,34 @@ test "taffy/grid_justify_items_sized_end" {
 test "taffy/grid_justify_items_sized_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_items: @style.Start,
+    justify_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -11026,8 +11247,14 @@ test "taffy/grid_justify_items_sized_start" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -11052,28 +11279,34 @@ test "taffy/grid_justify_items_sized_start" {
 test "taffy/grid_justify_items_sized_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    justify_items: @style.Stretch,
+    justify_items: @types.Stretch,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -11082,8 +11315,14 @@ test "taffy/grid_justify_items_sized_stretch" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    grid_column: { start: @style.Line(3), end: @style.Auto },
-    grid_row: { start: @style.Line(3), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("3 / 3"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -11108,18 +11347,18 @@ test "taffy/grid_justify_items_sized_stretch" {
 test "taffy/grid_justify_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -11127,7 +11366,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11135,7 +11374,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
@@ -11143,7 +11382,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
@@ -11151,7 +11390,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
@@ -11159,7 +11398,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::Center,
+    justify_self: @types.AlignSelf::Center,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
@@ -11167,7 +11406,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::Center,
+    justify_self: @types.AlignSelf::Center,
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
@@ -11175,7 +11414,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    justify_self: @style.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
@@ -11183,7 +11422,7 @@ test "taffy/grid_justify_self_sized_all" {
     ..@style.Style::default(),
     width: @types.Length(60.0),
     height: @types.Length(60.0),
-    justify_self: @style.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
@@ -11231,7 +11470,7 @@ test "taffy/grid_justify_self_sized_all" {
 test "taffy/grid_margins_auto_margins" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -11239,14 +11478,14 @@ test "taffy/grid_margins_auto_margins" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -11265,7 +11504,7 @@ test "taffy/grid_margins_auto_margins" {
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    justify_self: @style.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
@@ -11274,7 +11513,7 @@ test "taffy/grid_margins_auto_margins" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     margin: {
       left: @types.Length(0.0),
@@ -11282,7 +11521,7 @@ test "taffy/grid_margins_auto_margins" {
       top: @types.Auto,
       bottom: @types.Auto,
     },
-    align_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
@@ -11291,7 +11530,7 @@ test "taffy/grid_margins_auto_margins" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11300,8 +11539,8 @@ test "taffy/grid_margins_auto_margins" {
       top: @types.Auto,
       bottom: @types.Auto,
     },
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
@@ -11359,7 +11598,7 @@ test "taffy/grid_margins_auto_margins" {
 test "taffy/grid_margins_auto_margins_override_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -11367,14 +11606,14 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -11398,15 +11637,15 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
       top: @types.Auto,
       bottom: @types.Auto,
     },
-    align_self: @style.AlignSelf::Stretch,
-    justify_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child6_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -11471,7 +11710,7 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
 test "taffy/grid_margins_fixed_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -11479,20 +11718,20 @@ test "taffy/grid_margins_fixed_center" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11501,8 +11740,8 @@ test "taffy/grid_margins_fixed_center" {
       top: @types.Length(2.0),
       bottom: @types.Length(6.0),
     },
-    align_self: @style.AlignSelf::Center,
-    justify_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
+    justify_self: @types.AlignSelf::Center,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11557,7 +11796,7 @@ test "taffy/grid_margins_fixed_center" {
 test "taffy/grid_margins_fixed_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -11565,20 +11804,20 @@ test "taffy/grid_margins_fixed_end" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11587,8 +11826,8 @@ test "taffy/grid_margins_fixed_end" {
       top: @types.Length(1.0),
       bottom: @types.Length(3.0),
     },
-    align_self: @style.AlignSelf::End,
-    justify_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11643,7 +11882,7 @@ test "taffy/grid_margins_fixed_end" {
 test "taffy/grid_margins_fixed_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -11651,20 +11890,20 @@ test "taffy/grid_margins_fixed_start" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11673,8 +11912,8 @@ test "taffy/grid_margins_fixed_start" {
       top: @types.Length(1.0),
       bottom: @types.Length(3.0),
     },
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11729,7 +11968,7 @@ test "taffy/grid_margins_fixed_start" {
 test "taffy/grid_margins_fixed_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
       right: @types.Length(20.0),
@@ -11737,20 +11976,20 @@ test "taffy/grid_margins_fixed_stretch" {
       bottom: @types.Length(30.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11759,8 +11998,8 @@ test "taffy/grid_margins_fixed_stretch" {
       top: @types.Length(1.0),
       bottom: @types.Length(3.0),
     },
-    align_self: @style.AlignSelf::Stretch,
-    justify_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11815,22 +12054,22 @@ test "taffy/grid_margins_fixed_stretch" {
 test "taffy/grid_margins_percent_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11839,8 +12078,8 @@ test "taffy/grid_margins_percent_center" {
       top: @types.Percent(0.0500),
       bottom: @types.Percent(0.1500),
     },
-    align_self: @style.AlignSelf::Center,
-    justify_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
+    justify_self: @types.AlignSelf::Center,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11895,22 +12134,22 @@ test "taffy/grid_margins_percent_center" {
 test "taffy/grid_margins_percent_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11919,8 +12158,8 @@ test "taffy/grid_margins_percent_end" {
       top: @types.Percent(0.0500),
       bottom: @types.Percent(0.1500),
     },
-    align_self: @style.AlignSelf::End,
-    justify_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
+    justify_self: @types.AlignSelf::End,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -11975,22 +12214,22 @@ test "taffy/grid_margins_percent_end" {
 test "taffy/grid_margins_percent_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11999,8 +12238,8 @@ test "taffy/grid_margins_percent_start" {
       top: @types.Percent(0.0500),
       bottom: @types.Percent(0.1500),
     },
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -12055,22 +12294,22 @@ test "taffy/grid_margins_percent_start" {
 test "taffy/grid_margins_percent_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(20.0),
-      @style.Length(20.0),
-      @style.Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
+      @types.TrackSizingFunction::Length(20.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -12079,8 +12318,8 @@ test "taffy/grid_margins_percent_stretch" {
       top: @types.Percent(0.0500),
       bottom: @types.Percent(0.1500),
     },
-    align_self: @style.AlignSelf::Stretch,
-    justify_self: @style.AlignSelf::Stretch,
+    align_self: @types.AlignSelf::Stretch,
+    justify_self: @types.AlignSelf::Stretch,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -12135,19 +12374,19 @@ test "taffy/grid_margins_percent_stretch" {
 test "taffy/grid_max_content_maximum_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(0.0),
-        @style.MaxTrackSizing::MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(0.0),
+        @types.MaxTrackSizing::MaxContent,
       ),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -12233,16 +12472,16 @@ test "taffy/grid_max_content_maximum_single_item" {
 test "taffy/grid_max_content_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -12328,16 +12567,16 @@ test "taffy/grid_max_content_single_item" {
 test "taffy/grid_max_content_single_item_margin_auto" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -12431,16 +12670,16 @@ test "taffy/grid_max_content_single_item_margin_auto" {
 test "taffy/grid_max_content_single_item_margin_fixed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -12534,16 +12773,16 @@ test "taffy/grid_max_content_single_item_margin_fixed" {
 test "taffy/grid_max_content_single_item_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -12637,16 +12876,16 @@ test "taffy/grid_max_content_single_item_margin_percent" {
 test "taffy/grid_max_content_single_item_span_2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::MaxContent,
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -12655,7 +12894,10 @@ test "taffy/grid_max_content_single_item_span_2" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -12735,16 +12977,16 @@ test "taffy/grid_max_content_single_item_span_2" {
 test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::MaxContent,
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     column_gap: @types.Length(20.0),
   }
@@ -12754,7 +12996,10 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -12834,17 +13079,17 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
 test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::MaxContent,
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     column_gap: @types.Percent(0.2000),
   }
@@ -12854,7 +13099,10 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -12934,16 +13182,16 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
 test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MaxContent,
-      @style.MaxContent,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::MaxContent,
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     column_gap: @types.Percent(0.2000),
   }
@@ -12953,7 +13201,10 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -13033,15 +13284,18 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
 test "taffy/grid_max_width_greater_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MaxContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     max_width: @types.Length(400.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -13092,15 +13346,18 @@ test "taffy/grid_max_width_greater_than_max_content" {
 test "taffy/grid_max_width_less_than_max_content_with_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MinContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     max_width: @types.Length(80.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -13151,15 +13408,18 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
 test "taffy/grid_max_width_smaller_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MaxContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     max_width: @types.Length(80.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -13210,15 +13470,18 @@ test "taffy/grid_max_width_smaller_than_max_content" {
 test "taffy/grid_max_width_smaller_than_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MaxContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     max_width: @types.Length(60.0),
-    grid_template_columns: [@style.Auto, @style.Auto],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -13269,15 +13532,15 @@ test "taffy/grid_max_width_smaller_than_min_content" {
 test "taffy/grid_min_content_flex_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MinContent],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -13342,15 +13605,15 @@ test "taffy/grid_min_content_flex_column" {
 test "taffy/grid_min_content_flex_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MinContent],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -13415,16 +13678,16 @@ test "taffy/grid_min_content_flex_row" {
 test "taffy/grid_min_content_flex_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinContent,
-      @style.Fr(1.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Fr(1.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -13445,7 +13708,10 @@ test "taffy/grid_min_content_flex_single_item" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child4_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -13509,16 +13775,16 @@ test "taffy/grid_min_content_flex_single_item" {
 test "taffy/grid_min_content_flex_single_item_margin_auto" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinContent,
-      @style.Fr(1.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Fr(1.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -13551,7 +13817,10 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
       top: @types.Auto,
       bottom: @types.Auto,
     },
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child4_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -13615,16 +13884,16 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
 test "taffy/grid_min_content_flex_single_item_margin_fixed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinContent,
-      @style.Fr(1.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Fr(1.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -13657,7 +13926,10 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
       top: @types.Length(5.0),
       bottom: @types.Length(15.0),
     },
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child4_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -13721,16 +13993,16 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
 test "taffy/grid_min_content_flex_single_item_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinContent,
-      @style.Fr(1.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Fr(1.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -13763,7 +14035,10 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
       top: @types.Percent(0.0500),
       bottom: @types.Percent(0.1500),
     },
-    grid_column: { start: @style.Span(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Span(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child4_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -13827,19 +14102,19 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
 test "taffy/grid_min_content_maximum_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(0.0),
-        @style.MaxTrackSizing::MinContent,
+      @types.TrackSizingFunction::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(0.0),
+        @types.MaxTrackSizing::MinContent,
       ),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -13925,16 +14200,16 @@ test "taffy/grid_min_content_maximum_single_item" {
 test "taffy/grid_min_content_single_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinContent,
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -14020,14 +14295,14 @@ test "taffy/grid_min_content_single_item" {
 test "taffy/grid_minmax_auto_fixed_10px" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Auto,
-        @style.MaxTrackSizing::Length(10.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Auto,
+        @types.MaxTrackSizing::Length(10.0),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14056,14 +14331,14 @@ test "taffy/grid_minmax_auto_fixed_10px" {
 test "taffy/grid_minmax_auto_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Auto,
-        @style.MaxTrackSizing::MaxContent,
+      @types.MinMax(
+        @types.MinTrackSizing::Auto,
+        @types.MaxTrackSizing::MaxContent,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14092,14 +14367,14 @@ test "taffy/grid_minmax_auto_max_content" {
 test "taffy/grid_minmax_auto_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Auto,
-        @style.MaxTrackSizing::MinContent,
+      @types.MinMax(
+        @types.MinTrackSizing::Auto,
+        @types.MaxTrackSizing::MinContent,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14128,15 +14403,15 @@ test "taffy/grid_minmax_auto_min_content" {
 test "taffy/grid_minmax_auto_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Auto,
-        @style.MaxTrackSizing::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::Auto,
+        @types.MaxTrackSizing::Percent(0.2000),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14165,14 +14440,14 @@ test "taffy/grid_minmax_auto_percent_definite" {
 test "taffy/grid_minmax_auto_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Auto,
-        @style.MaxTrackSizing::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::Auto,
+        @types.MaxTrackSizing::Percent(0.2000),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14201,20 +14476,20 @@ test "taffy/grid_minmax_auto_percent_indefinite" {
 test "taffy/grid_minmax_column_fixed_width_above_range" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(140.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(20.0),
-        @style.MaxTrackSizing::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(20.0),
+        @types.MaxTrackSizing::Length(40.0),
       ),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -14293,20 +14568,20 @@ test "taffy/grid_minmax_column_fixed_width_above_range" {
 test "taffy/grid_minmax_column_fixed_width_below_range" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(90.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(20.0),
-        @style.MaxTrackSizing::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(20.0),
+        @types.MaxTrackSizing::Length(40.0),
       ),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -14385,20 +14660,20 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
 test "taffy/grid_minmax_column_fixed_width_within_range" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(110.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(20.0),
-        @style.MaxTrackSizing::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(20.0),
+        @types.MaxTrackSizing::Length(40.0),
       ),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -14477,19 +14752,19 @@ test "taffy/grid_minmax_column_fixed_width_within_range" {
 test "taffy/grid_minmax_column_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(20.0),
-        @style.MaxTrackSizing::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(20.0),
+        @types.MaxTrackSizing::Length(40.0),
       ),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -14568,16 +14843,16 @@ test "taffy/grid_minmax_column_indefinite" {
 test "taffy/grid_minmax_column_with_auto_fixed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Length(20.0),
-        @style.MaxTrackSizing::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(20.0),
+        @types.MaxTrackSizing::Length(40.0),
       ),
-      @style.Auto,
+      @types.TrackSizingFunction::Auto,
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14606,16 +14881,16 @@ test "taffy/grid_minmax_column_with_auto_fixed" {
 test "taffy/grid_minmax_column_with_fr_fixed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::Length(20.0),
-        @style.MaxTrackSizing::Length(40.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(20.0),
+        @types.MaxTrackSizing::Length(40.0),
       ),
-      @style.Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14644,14 +14919,14 @@ test "taffy/grid_minmax_column_with_fr_fixed" {
 test "taffy/grid_minmax_max_content_1fr" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Fr(1.0),
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Fr(1.0),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14680,14 +14955,14 @@ test "taffy/grid_minmax_max_content_1fr" {
 test "taffy/grid_minmax_max_content_auto" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Auto,
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Auto,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14716,14 +14991,14 @@ test "taffy/grid_minmax_max_content_auto" {
 test "taffy/grid_minmax_max_content_fixed_10px" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Length(10.0),
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Length(10.0),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14752,14 +15027,14 @@ test "taffy/grid_minmax_max_content_fixed_10px" {
 test "taffy/grid_minmax_max_content_min_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::MinContent,
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::MinContent,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14788,15 +15063,15 @@ test "taffy/grid_minmax_max_content_min_content" {
 test "taffy/grid_minmax_max_content_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Percent(0.2000),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14825,14 +15100,14 @@ test "taffy/grid_minmax_max_content_percent_definite" {
 test "taffy/grid_minmax_max_content_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Percent(0.2000),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14861,14 +15136,14 @@ test "taffy/grid_minmax_max_content_percent_indefinite" {
 test "taffy/grid_minmax_min_content_1fr" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Fr(1.0),
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Fr(1.0),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14897,14 +15172,14 @@ test "taffy/grid_minmax_min_content_1fr" {
 test "taffy/grid_minmax_min_content_auto" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Auto,
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Auto,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14933,14 +15208,14 @@ test "taffy/grid_minmax_min_content_auto" {
 test "taffy/grid_minmax_min_content_fixed_10px" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Length(10.0),
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Length(10.0),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -14969,14 +15244,14 @@ test "taffy/grid_minmax_min_content_fixed_10px" {
 test "taffy/grid_minmax_min_content_max_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::MaxContent,
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::MaxContent,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -15005,15 +15280,15 @@ test "taffy/grid_minmax_min_content_max_content" {
 test "taffy/grid_minmax_min_content_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Percent(0.2000),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -15042,14 +15317,14 @@ test "taffy/grid_minmax_min_content_percent_definite" {
 test "taffy/grid_minmax_min_content_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Percent(0.2000),
       ),
     ],
-    grid_template_rows: [@style.Length(40.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -15078,20 +15353,20 @@ test "taffy/grid_minmax_min_content_percent_indefinite" {
 test "taffy/grid_out_of_order_items" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
-    grid_auto_flow: @style.GridAutoFlow::Row,
+    grid_auto_flow: @types.GridAutoFlow::Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -15104,7 +15379,10 @@ test "taffy/grid_out_of_order_items" {
     ..@style.Style::default(),
     width: @types.Length(35.0),
     height: @types.Length(35.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
@@ -15118,8 +15396,14 @@ test "taffy/grid_out_of_order_items" {
     ..@style.Style::default(),
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
@@ -15131,7 +15415,10 @@ test "taffy/grid_out_of_order_items" {
     ..@style.Style::default(),
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
@@ -15186,15 +15473,15 @@ test "taffy/grid_out_of_order_items" {
 test "taffy/grid_overflow_inline_axis_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -15221,15 +15508,15 @@ test "taffy/grid_overflow_inline_axis_hidden" {
 test "taffy/grid_overflow_inline_axis_scroll" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -15256,7 +15543,7 @@ test "taffy/grid_overflow_inline_axis_scroll" {
 test "taffy/grid_overflow_inline_axis_visible" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -15287,19 +15574,25 @@ test "taffy/grid_overflow_inline_axis_visible" {
 test "taffy/grid_overflow_rows" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinContent,
-      @style.MaxContent,
-      @style.Length(10.0),
-      @style.Percent(0.2000),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Percent(0.2000),
     ],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(4) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(4),
+    },
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -15361,16 +15654,16 @@ test "taffy/grid_overflow_rows" {
 test "taffy/grid_overflow_scrollbars_overridden_by_available_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Grid,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -15400,9 +15693,9 @@ test "taffy/grid_overflow_scrollbars_overridden_by_available_space" {
 test "taffy/grid_overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Grid,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     max_width: @types.Length(2.0),
     max_height: @types.Length(4.0),
   }
@@ -15426,9 +15719,9 @@ test "taffy/grid_overflow_scrollbars_overridden_by_max_size" {
 test "taffy/grid_overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Grid,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
@@ -15452,9 +15745,9 @@ test "taffy/grid_overflow_scrollbars_overridden_by_size" {
 test "taffy/grid_overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Grid,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -15478,8 +15771,8 @@ test "taffy/grid_overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/grid_overflow_scrollbars_take_up_space_x_axis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    overflow_x: @style.Overflow::Scroll,
+    display: @types.Grid,
+    overflow_x: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -15503,8 +15796,8 @@ test "taffy/grid_overflow_scrollbars_take_up_space_x_axis" {
 test "taffy/grid_overflow_scrollbars_take_up_space_y_axis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Grid,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -15528,7 +15821,7 @@ test "taffy/grid_overflow_scrollbars_take_up_space_y_axis" {
 test "taffy/grid_padding_border_overrides_container_max_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
     padding: {
@@ -15564,7 +15857,7 @@ test "taffy/grid_padding_border_overrides_container_max_size" {
 test "taffy/grid_padding_border_overrides_container_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -15598,7 +15891,7 @@ test "taffy/grid_padding_border_overrides_container_size" {
 
 ///|
 test "taffy/grid_padding_border_overrides_max_size" {
-  let root_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_style = { ..@style.Style::default(), display: @types.Grid }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -15633,7 +15926,7 @@ test "taffy/grid_padding_border_overrides_max_size" {
 
 ///|
 test "taffy/grid_padding_border_overrides_min_size" {
-  let root_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_style = { ..@style.Style::default(), display: @types.Grid }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -15668,7 +15961,7 @@ test "taffy/grid_padding_border_overrides_min_size" {
 
 ///|
 test "taffy/grid_padding_border_overrides_size" {
-  let root_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_style = { ..@style.Style::default(), display: @types.Grid }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -15705,16 +15998,16 @@ test "taffy/grid_padding_border_overrides_size" {
 test "taffy/grid_percent_item_inside_stretch_item" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_child0_style = { ..@style.Style::default(), display: @types.Grid }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Percent(0.5000),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -15743,15 +16036,15 @@ test "taffy/grid_percent_item_inside_stretch_item" {
 test "taffy/grid_percent_items_nested_inside_stretch_alignment" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @style.Grid }
+  let root_child0_style = { ..@style.Style::default(), display: @types.Grid }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -15785,7 +16078,7 @@ test "taffy/grid_percent_items_nested_inside_stretch_alignment" {
 test "taffy/grid_percent_items_nested_moderate" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     padding: {
       left: @types.Length(3.0),
@@ -15797,7 +16090,7 @@ test "taffy/grid_percent_items_nested_moderate" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Percent(0.5000),
     margin: {
       left: @types.Length(5.0),
@@ -15855,13 +16148,13 @@ test "taffy/grid_percent_items_nested_moderate" {
 test "taffy/grid_percent_items_nested_with_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Percent(0.5000),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -15901,15 +16194,18 @@ test "taffy/grid_percent_items_nested_with_margin" {
 test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    grid_template_rows: [@style.Fr(1.0), @style.Fr(4.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(4.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     min_width: @types.Percent(0.6000),
     margin: {
       left: @types.Length(5.0),
@@ -15927,7 +16223,7 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Percent(0.5000),
     margin: {
       left: @types.Length(5.0),
@@ -16002,7 +16298,7 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
 test "taffy/grid_percent_items_width_and_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     padding: {
       left: @types.Length(3.0),
@@ -16046,7 +16342,7 @@ test "taffy/grid_percent_items_width_and_margin" {
 test "taffy/grid_percent_items_width_and_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
@@ -16078,15 +16374,18 @@ test "taffy/grid_percent_items_width_and_padding" {
 test "taffy/grid_percent_tracks_definite_overflow" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(60.0),
     grid_template_columns: [
-      @style.Percent(0.4000),
-      @style.Percent(0.4000),
-      @style.Percent(0.4000),
+      @types.TrackSizingFunction::Percent(0.4000),
+      @types.TrackSizingFunction::Percent(0.4000),
+      @types.TrackSizingFunction::Percent(0.4000),
     ],
-    grid_template_rows: [@style.Percent(0.5000), @style.Percent(0.8000)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.5000),
+      @types.TrackSizingFunction::Percent(0.8000),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -16143,15 +16442,18 @@ test "taffy/grid_percent_tracks_definite_overflow" {
 test "taffy/grid_percent_tracks_definite_underflow" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(60.0),
     grid_template_columns: [
-      @style.Percent(0.1000),
-      @style.Percent(0.2000),
-      @style.Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.1000),
+      @types.TrackSizingFunction::Percent(0.2000),
+      @types.TrackSizingFunction::Percent(0.3000),
     ],
-    grid_template_rows: [@style.Percent(0.3000), @style.Percent(0.6000)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.6000),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -16208,13 +16510,16 @@ test "taffy/grid_percent_tracks_definite_underflow" {
 test "taffy/grid_percent_tracks_indefinite_only" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Percent(0.1000),
-      @style.Percent(0.2000),
-      @style.Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.1000),
+      @types.TrackSizingFunction::Percent(0.2000),
+      @types.TrackSizingFunction::Percent(0.3000),
     ],
-    grid_template_rows: [@style.Percent(0.3000), @style.Percent(0.6000)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.6000),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -16271,29 +16576,44 @@ test "taffy/grid_percent_tracks_indefinite_only" {
 test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Percent(0.4000),
-      @style.Percent(0.4000),
-      @style.Percent(0.4000),
+      @types.TrackSizingFunction::Percent(0.4000),
+      @types.TrackSizingFunction::Percent(0.4000),
+      @types.TrackSizingFunction::Percent(0.4000),
     ],
-    grid_template_rows: [@style.Percent(0.5000), @style.Percent(0.8000)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.5000),
+      @types.TrackSizingFunction::Percent(0.8000),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -16353,29 +16673,44 @@ test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
 test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.Percent(0.1000),
-      @style.Percent(0.2000),
-      @style.Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.1000),
+      @types.TrackSizingFunction::Percent(0.2000),
+      @types.TrackSizingFunction::Percent(0.3000),
     ],
-    grid_template_rows: [@style.Percent(0.3000), @style.Percent(0.6000)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.6000),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -16435,17 +16770,29 @@ test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
 test "taffy/grid_placement_auto_negative" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
-    grid_template_columns: [@style.Length(40.0), @style.Length(40.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(-5), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(-5),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / -5"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -16455,7 +16802,10 @@ test "taffy/grid_placement_auto_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_row: { start: @style.Line(2), end: @style.Auto },
+    grid_row: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
@@ -16483,30 +16833,48 @@ test "taffy/grid_placement_auto_negative" {
 test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negative" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
-    grid_template_columns: [@style.Length(40.0), @style.Length(40.0)],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_row: { start: @style.Line(2), end: @style.Auto },
+    grid_row: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(-4), end: @style.Auto },
-    grid_row: { start: @style.Line(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(-4),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("2 / -4"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
@@ -16534,39 +16902,57 @@ test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negati
 test "taffy/grid_placement_definite_primary" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    grid_template_columns: [@style.Percent(0.3300), @style.Percent(0.7400)],
+    grid_template_columns: [
+      @types.TrackSizingFunction::Percent(0.3300),
+      @types.TrackSizingFunction::Percent(0.7400),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
@@ -16602,7 +16988,7 @@ test "taffy/grid_placement_definite_primary" {
 test "taffy/grid_relative_all_sides" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -16635,9 +17021,9 @@ test "taffy/grid_relative_all_sides" {
 test "taffy/grid_relayout_vertical_text" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::MinContent],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -16680,14 +17066,14 @@ test "taffy/grid_relayout_vertical_text" {
 test "taffy/grid_repeat_integer" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Repeat(@style.Count(3), [@style.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)]),
     ],
     grid_template_rows: [
-      @style.Repeat(@style.Count(3), [@style.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)]),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -16766,18 +17152,18 @@ test "taffy/grid_repeat_integer" {
 test "taffy/grid_repeat_mixed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Repeat(@style.Count(1), [@style.SingleTrackSizing::Length(40.0)]),
-      @style.Repeat(@style.AutoFill, [@style.SingleTrackSizing::Length(40.0)]),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.Repeat(@types.Count(1), [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Repeat(@style.Count(1), [@style.SingleTrackSizing::Length(40.0)]),
-      @style.Repeat(@style.AutoFill, [@style.SingleTrackSizing::Length(40.0)]),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.Repeat(@types.Count(1), [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -16856,26 +17242,26 @@ test "taffy/grid_repeat_mixed" {
 test "taffy/grid_size_child_fixed_tracks" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    display: @types.Flex,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -16888,9 +17274,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    display: @types.Flex,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -16903,9 +17289,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    display: @types.Flex,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child2_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -16918,10 +17304,10 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child3_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -16934,10 +17320,10 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Length(30.0),
-    align_self: @style.AlignSelf::Start,
-    justify_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
+    justify_self: @types.AlignSelf::Start,
   }
   let root_child4_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -16980,49 +17366,55 @@ test "taffy/grid_size_child_fixed_tracks" {
 test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinContent,
-      @style.MaxContent,
-      @style.FitContentLength(20.0),
-      @style.Auto,
-      @style.Length(10.0),
-      @style.Percent(0.2000),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::Auto,
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(20.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::Auto,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::Length(4.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::Length(4.0),
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::MinContent,
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::MinContent,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::MaxContent,
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::MaxContent,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::MaxContent,
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::MaxContent,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Auto,
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Auto,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Auto,
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Auto,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(13) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(13),
+    },
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -17140,51 +17532,57 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
 test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinContent,
-      @style.MaxContent,
-      @style.FitContentLength(20.0),
-      @style.Auto,
-      @style.Length(10.0),
-      @style.Percent(0.2000),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::Auto,
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(20.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Percent(0.2000),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::Auto,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::Length(4.0),
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::Length(4.0),
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::MinContent,
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::MinContent,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::Length(2.0),
-        @style.MaxTrackSizing::MaxContent,
+      @types.MinMax(
+        @types.MinTrackSizing::Length(2.0),
+        @types.MaxTrackSizing::MaxContent,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::MaxContent,
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::MaxContent,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::MinContent,
-        @style.MaxTrackSizing::Auto,
+      @types.MinMax(
+        @types.MinTrackSizing::MinContent,
+        @types.MaxTrackSizing::Auto,
       ),
-      @style.MinMax(
-        @style.MinTrackSizing::MaxContent,
-        @style.MaxTrackSizing::Auto,
+      @types.MinMax(
+        @types.MinTrackSizing::MaxContent,
+        @types.MaxTrackSizing::Auto,
       ),
     ],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(13) },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(13),
+    },
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -17302,31 +17700,52 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_auto_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.Auto],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Auto,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17362,23 +17781,38 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
 test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.Auto],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::Auto,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -17403,31 +17837,52 @@ test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.FitContentLength(10.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(10.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17463,33 +17918,54 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
 test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.FitContentLength(10.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(10.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17525,31 +18001,52 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.FitContentLength(80.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(80.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17585,33 +18082,54 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
 test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.FitContentLength(80.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(80.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17647,31 +18165,52 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_max_content_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MaxContent, @style.MaxContent],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MaxContent,
+      @types.TrackSizingFunction::MaxContent,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17707,9 +18246,12 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
 test "taffy/grid_span_2_min_content_auto_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.Auto],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Auto,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -17720,7 +18262,10 @@ test "taffy/grid_span_2_min_content_auto_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
   }
   let root_child2_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -17755,9 +18300,12 @@ test "taffy/grid_span_2_min_content_auto_indefinite" {
 test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.Auto],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::Auto,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -17768,9 +18316,12 @@ test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
   }
   let root_child2_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -17805,31 +18356,52 @@ test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.FitContentLength(10.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.FitContentLength(10.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17865,33 +18437,54 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
 test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.FitContentLength(10.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.FitContentLength(10.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17927,31 +18520,52 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.FitContentLength(30.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.FitContentLength(30.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -17987,33 +18601,54 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
 test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.FitContentLength(30.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.FitContentLength(30.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -18049,31 +18684,52 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.FitContentLength(80.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.FitContentLength(80.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -18109,33 +18765,54 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
 test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.FitContentLength(80.0)],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.FitContentLength(80.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -18171,31 +18848,52 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_max_content_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.MaxContent],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -18231,31 +18929,52 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
 test "taffy/grid_span_2_min_content_min_content_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.MinContent, @style.MinContent],
-    grid_template_rows: [@style.Length(40.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MinContent,
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(2), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Auto },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
     grid_area: Some("1 / 1 / auto / span 2"),
   }
   let root_child2_measure = @node.MeasureFunc::{
@@ -18291,21 +19010,27 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
 test "taffy/grid_span_6_all_non_flex_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinContent,
-      @style.MaxContent,
-      @style.FitContentLength(20.0),
-      @style.Auto,
-      @style.Length(10.0),
-      @style.Percent(0.2000),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(20.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Percent(0.2000),
     ],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(6) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(6),
+    },
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -18374,23 +19099,29 @@ test "taffy/grid_span_6_all_non_flex_indefinite" {
 test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinContent,
-      @style.MaxContent,
-      @style.FitContentLength(20.0),
-      @style.Auto,
-      @style.Length(10.0),
-      @style.Percent(0.2000),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(20.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Percent(0.2000),
     ],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
-    grid_column: { start: @style.Line(1), end: @style.Span(6) },
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(6),
+    },
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -18459,23 +19190,29 @@ test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
 test "taffy/grid_span_8_all_track_types_indefinite" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     grid_template_columns: [
-      @style.MinContent,
-      @style.MaxContent,
-      @style.FitContentLength(20.0),
-      @style.Auto,
-      @style.Length(10.0),
-      @style.Percent(0.2000),
-      @style.Fr(1.0),
-      @style.Fr(2.0),
+      @types.TrackSizingFunction::MinContent,
+      @types.TrackSizingFunction::MaxContent,
+      @types.FitContentLength(20.0),
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(10.0),
+      @types.TrackSizingFunction::Percent(0.2000),
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(2.0),
     ],
-    grid_template_rows: [@style.Length(40.0), @style.Length(40.0)],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(8) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(8),
+    },
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -18558,21 +19295,36 @@ test "taffy/grid_span_8_all_track_types_indefinite" {
 test "taffy/grid_taffy_issue_624" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(320.0),
     height: @types.Length(640.0),
-    grid_template_columns: [@style.Auto, @style.Auto, @style.Fr(1.0)],
-    grid_template_rows: [@style.Auto, @style.Auto, @style.Auto, @style.Fr(1.0)],
-    justify_content: @style.Start,
-    justify_items: @style.Start,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    justify_content: @types.Start,
+    justify_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
     width: @types.Length(100.0),
     height: @types.Length(50.0),
-    grid_column: { start: @style.Line(1), end: @style.Auto },
-    grid_row: { start: @style.Line(1), end: @style.Span(2) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Auto,
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
     grid_area: Some("1 / 1 / span 2"),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -18581,8 +19333,14 @@ test "taffy/grid_taffy_issue_624" {
     ..@style.Style::default(),
     width: @types.Length(40.0),
     height: @types.Length(30.0),
-    grid_column: { start: @style.Line(2), end: @style.Span(2) },
-    grid_row: { start: @style.Line(1), end: @style.Span(2) },
+    grid_column: {
+      start: @types.GridPlacement::Line(2),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
     grid_area: Some("1 / 2 / span 2 / span 2"),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -18591,8 +19349,14 @@ test "taffy/grid_taffy_issue_624" {
     ..@style.Style::default(),
     width: @types.Length(120.0),
     height: @types.Length(20.0),
-    grid_column: { start: @style.Line(1), end: @style.Span(2) },
-    grid_row: { start: @style.Line(3), end: @style.Span(1) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(2),
+    },
+    grid_row: {
+      start: @types.GridPlacement::Line(3),
+      end: @types.GridPlacement::Span(1),
+    },
     grid_area: Some("3 / 1 / span 1 / span 2"),
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)

@@ -33,8 +33,8 @@ pub(all) struct Layout {
   margin : @types.Rect[Double]
   padding : @types.Rect[Double]
   border : @types.Rect[Double]
-  overflow_x : @style.Overflow
-  overflow_y : @style.Overflow
+  overflow_x : @types.Overflow
+  overflow_y : @types.Overflow
   children : Array[Layout]
   text : String?
 }

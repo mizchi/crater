@@ -6,10 +6,10 @@
 test "taffy/blockflex_block_in_flex_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -41,7 +41,7 @@ test "taffy/blockflex_block_in_flex_column" {
 test "taffy/blockflex_block_in_flex_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(50.0),
   }
@@ -75,7 +75,7 @@ test "taffy/blockflex_block_in_flex_row" {
 test "taffy/blockflex_flex_in_block" {
   let root_style = { ..@style.Style::default(), width: @types.Length(200.0) }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @style.Flex }
+  let root_child0_style = { ..@style.Style::default(), display: @types.Flex }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
@@ -133,7 +133,7 @@ test "taffy/blockflex_margin_y_collapse_through_blocked_by_flex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -181,7 +181,7 @@ test "taffy/blockflex_margin_y_first_child_collapse_blocked_by_flex" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -242,7 +242,7 @@ test "taffy/blockflex_margin_y_last_child_collapse_blocked_by_flex" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -301,15 +301,15 @@ test "taffy/blockflex_margin_y_last_child_collapse_blocked_by_flex" {
 test "taffy/blockflex_overflow_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     flex_grow: 1.0,
   }
   let root_child0_measure = @node.MeasureFunc::{

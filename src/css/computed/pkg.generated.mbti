@@ -28,13 +28,13 @@ pub fn initial_value(String) -> String
 
 pub fn is_inherited(String) -> Bool
 
-pub fn parse_align_self(String) -> @style.AlignSelf
+pub fn parse_align_self(String) -> @types.AlignSelf
 
-pub fn parse_alignment(String) -> @style.Alignment
+pub fn parse_alignment(String) -> @types.Alignment
 
 pub fn parse_aspect_ratio(String) -> Double?
 
-pub fn parse_clear(String) -> @style.Clear
+pub fn parse_clear(String) -> @types.Clear
 
 pub fn parse_clip(String) -> @types.ClipRect
 
@@ -44,29 +44,29 @@ pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue
 
 pub fn parse_dimension(String) -> @types.Dimension
 
-pub fn parse_display(String) -> @style.Display
+pub fn parse_display(String) -> @types.Display
 
-pub fn parse_flex_direction(String) -> @style.FlexDirection
+pub fn parse_flex_direction(String) -> @types.FlexDirection
 
-pub fn parse_flex_wrap(String) -> @style.FlexWrap
+pub fn parse_flex_wrap(String) -> @types.FlexWrap
 
-pub fn parse_float(String) -> @style.Float
+pub fn parse_float(String) -> @types.Float
 
-pub fn parse_grid_auto_flow(String) -> @style.GridAutoFlow
+pub fn parse_grid_auto_flow(String) -> @types.GridAutoFlow
 
-pub fn parse_grid_line_shorthand(String) -> (@style.GridPlacement, @style.GridPlacement)
+pub fn parse_grid_line_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement)
 
-pub fn parse_grid_placement(String) -> @style.GridPlacement
+pub fn parse_grid_placement(String) -> @types.GridPlacement
 
-pub fn parse_grid_template_tracks(String) -> Array[@style.TrackSizingFunction]
+pub fn parse_grid_template_tracks(String) -> Array[@types.TrackSizingFunction]
 
 pub fn parse_integer(String) -> Int
 
 pub fn parse_number(String) -> Double
 
-pub fn parse_overflow(String) -> @style.Overflow
+pub fn parse_overflow(String) -> @types.Overflow
 
-pub fn parse_position(String) -> @style.Position
+pub fn parse_position(String) -> @types.Position
 
 pub fn resolve_current_color(CssColorValue, @types.Color) -> @types.Color
 

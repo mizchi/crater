@@ -20,7 +20,7 @@ test "register pending resource and resolve later" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -72,7 +72,7 @@ test "register resource with custom placeholder size" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -115,7 +115,7 @@ test "attach multiple nodes to same resource" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(800.0),
       height: @types.Length(600.0),
     },
@@ -157,7 +157,7 @@ test "fail resource shows error placeholder" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -197,7 +197,7 @@ test "resolved resource sets aspect-ratio" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -235,7 +235,7 @@ test "css aspect-ratio not overwritten by resource" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -273,7 +273,7 @@ test "explicit dimensions do not require resource registration" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -304,7 +304,7 @@ test "resolve resource before first compute" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(400.0),
       height: @types.Length(300.0),
     },
@@ -361,7 +361,7 @@ test "resolve triggers dirty propagation" {
     "container",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Auto,
       height: @types.Auto,
     }, // Size depends on children
@@ -371,7 +371,7 @@ test "resolve triggers dirty propagation" {
     "root",
     @style.Style::{
       ..@style.Style::default(),
-      display: @style.Flex,
+      display: @types.Flex,
       width: @types.Length(800.0),
       height: @types.Length(600.0),
     },

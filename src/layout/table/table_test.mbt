@@ -4,17 +4,17 @@ test "simple table layout" {
   // Create styles
   let cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(200.0),
   }
 
@@ -51,21 +51,21 @@ test "simple table layout" {
 test "table with row group" {
   let cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let tbody_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRowGroup,
+    display: @types.TableRowGroup,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(200.0),
   }
   let cell1 = @node.Node::new("cell1", cell_style, [])
@@ -93,15 +93,15 @@ test "table with row group" {
 test "table equal column widths" {
   let cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(200.0),
   }
   let cell1 = @node.Node::new("cell1", cell_style, [])
@@ -146,21 +146,21 @@ test "table content-based column widths" {
   // Cell with explicit width should affect column width
   let wide_cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(150.0),
   }
   let narrow_cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(50.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(300.0),
   }
   let cell1 = @node.Node::new("cell1", wide_cell_style, [])
@@ -192,18 +192,18 @@ test "table shrink-to-fit width" {
   // Cells with explicit widths
   let cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   // Table with auto width (should shrink to fit content)
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     border_spacing: 10.0,
   } // 10px border-spacing
   // width: Auto (default)
@@ -243,7 +243,7 @@ test "table border-collapse" {
   // Here we simulate that by setting width/height to 70 (50 content + 20 border)
   let cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(70.0), // 50 content + 10 + 10 border (simulating adjust_for_box_sizing)
     height: @types.Length(70.0), // 50 content + 10 + 10 border
     border: {
@@ -255,12 +255,12 @@ test "table border-collapse" {
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   // Table with border-collapse: collapse
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     border_collapse: @style.Collapse,
   }
   let cell1 = @node.Node::new("cell1", cell_style, [])
@@ -293,18 +293,18 @@ test "table-layout fixed" {
   // Two cells with auto width
   let cell_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     height: @types.Length(100.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   // Table with table-layout: fixed and explicit width
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
-    table_layout: @style.Fixed,
+    display: @types.Table,
+    table_layout: @style.TableLayout::Fixed,
     width: @types.Length(200.0),
     border_spacing: 0.0,
   }
@@ -337,23 +337,23 @@ test "table-layout fixed with explicit width" {
   // First row has cell with 150px width
   let cell_w150_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(150.0),
     height: @types.Length(50.0),
   }
   let cell_auto_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     height: @types.Length(50.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
-    table_layout: @style.Fixed,
+    display: @types.Table,
+    table_layout: @style.TableLayout::Fixed,
     width: @types.Length(200.0),
     border_spacing: 0.0,
   }
@@ -384,30 +384,30 @@ test "table rowspan" {
   // Row 1: Cell C (should be at column 1, 100px wide)
   let cell_a_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
     rowspan: 2,
   }
   let cell_b_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   }
   let cell_c_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(200.0),
     border_spacing: 0.0,
   }
@@ -449,30 +449,30 @@ test "table rowspan height distribution" {
   // The rowspan cell's height should be distributed across both rows
   let cell_a_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(100.0), // Tall cell
     rowspan: 2,
   }
   let cell_b_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(20.0), // Short cell
   }
   let cell_c_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(20.0), // Short cell
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(200.0),
     border_spacing: 0.0,
   }
@@ -516,34 +516,34 @@ test "table rowspan with tbody" {
   // Row 1: Cell C (should be at column 1)
   let cell_a_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
     rowspan: 2,
   }
   let cell_b_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   }
   let cell_c_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableCell,
+    display: @types.TableCell,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
   }
   let row_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRow,
+    display: @types.TableRow,
   }
   let tbody_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.TableRowGroup,
+    display: @types.TableRowGroup,
   }
   let table_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Table,
+    display: @types.Table,
     width: @types.Length(200.0),
     border_spacing: 0.0,
   }

@@ -235,77 +235,77 @@ fn split_whitespace(s : String) -> Array[String] {
 
 ///|
 /// Parse display value
-pub fn parse_display(value : String) -> @style.Display {
+pub fn parse_display(value : String) -> @types.Display {
   match value.trim().to_lower() {
-    "block" => @style.Display::Block
-    "inline" => @style.Display::Inline
-    "inline-block" => @style.Display::InlineBlock
-    "flex" => @style.Display::Flex
-    "inline-flex" => @style.Display::InlineFlex
-    "grid" => @style.Display::Grid
-    "inline-grid" => @style.Display::InlineGrid
-    "none" => @style.Display::None
-    "contents" => @style.Display::Contents
-    "flow-root" => @style.Display::FlowRoot
-    _ => @style.Display::Block
+    "block" => @types.Display::Block
+    "inline" => @types.Display::Inline
+    "inline-block" => @types.Display::InlineBlock
+    "flex" => @types.Display::Flex
+    "inline-flex" => @types.Display::InlineFlex
+    "grid" => @types.Display::Grid
+    "inline-grid" => @types.Display::InlineGrid
+    "none" => @types.Display::None
+    "contents" => @types.Display::Contents
+    "flow-root" => @types.Display::FlowRoot
+    _ => @types.Display::Block
   }
 }
 
 ///|
 /// Parse position value
-pub fn parse_position(value : String) -> @style.Position {
+pub fn parse_position(value : String) -> @types.Position {
   match value.trim().to_lower() {
-    "static" => @style.Position::Static
-    "absolute" => @style.Position::Absolute
-    "fixed" => @style.Position::Fixed
-    "relative" | "sticky" => @style.Position::Relative
-    _ => @style.Position::Static // Default is static
+    "static" => @types.Position::Static
+    "absolute" => @types.Position::Absolute
+    "fixed" => @types.Position::Fixed
+    "relative" | "sticky" => @types.Position::Relative
+    _ => @types.Position::Static // Default is static
   }
 }
 
 ///|
 /// Parse float value
-pub fn parse_float(value : String) -> @style.Float {
+pub fn parse_float(value : String) -> @types.Float {
   match value.trim().to_lower() {
-    "left" => @style.Float::Left
-    "right" => @style.Float::Right
-    "none" => @style.Float::None
-    _ => @style.Float::None
+    "left" => @types.Float::Left
+    "right" => @types.Float::Right
+    "none" => @types.Float::None
+    _ => @types.Float::None
   }
 }
 
 ///|
 /// Parse clear value
-pub fn parse_clear(value : String) -> @style.Clear {
+pub fn parse_clear(value : String) -> @types.Clear {
   match value.trim().to_lower() {
-    "left" => @style.Clear::Left
-    "right" => @style.Clear::Right
-    "both" => @style.Clear::Both
-    "none" => @style.Clear::None
-    _ => @style.Clear::None
+    "left" => @types.Clear::Left
+    "right" => @types.Clear::Right
+    "both" => @types.Clear::Both
+    "none" => @types.Clear::None
+    _ => @types.Clear::None
   }
 }
 
 ///|
 /// Parse flex-direction value
-pub fn parse_flex_direction(value : String) -> @style.FlexDirection {
+pub fn parse_flex_direction(value : String) -> @types.FlexDirection {
   match value.trim().to_lower() {
-    "row" => @style.FlexDirection::Row
-    "row-reverse" => @style.FlexDirection::RowReverse
-    "column" => @style.FlexDirection::Column
-    "column-reverse" => @style.FlexDirection::ColumnReverse
-    _ => @style.FlexDirection::Row
+    "row" => @types.FlexDirection::Row
+    "row-reverse" => @types.FlexDirection::RowReverse
+    "column" => @types.FlexDirection::Column
+    "column-reverse" => @types.FlexDirection::ColumnReverse
+    _ => @types.FlexDirection::Row
   }
 }
 
 ///|
 /// Parse flex-wrap value
-pub fn parse_flex_wrap(value : String) -> @style.FlexWrap {
+pub fn parse_flex_wrap(value : String) -> @types.FlexWrap {
   match value.trim().to_lower() {
-    "nowrap" => @style.FlexWrap::NoWrap
-    "wrap" => @style.FlexWrap::Wrap
-    "wrap-reverse" => @style.FlexWrap::WrapReverse
-    _ => @style.FlexWrap::NoWrap
+    "nowrap" => @types.FlexWrap::NoWrap
+    "wrap" => @types.FlexWrap::Wrap
+    "wrap-reverse" => @types.FlexWrap::WrapReverse
+    _ => @types.FlexWrap::NoWrap
   }
 }
 
@@ -313,80 +313,80 @@ pub fn parse_flex_wrap(value : String) -> @style.FlexWrap {
 /// Parse alignment value (justify-content, align-items, align-content)
 /// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
 ///       start/end are physical/logical (not affected by wrap-reverse)
-pub fn parse_alignment(value : String) -> @style.Alignment {
+pub fn parse_alignment(value : String) -> @types.Alignment {
   match value.trim().to_lower() {
-    "flex-start" => @style.Alignment::FlexStart
-    "flex-end" => @style.Alignment::FlexEnd
-    "start" => @style.Alignment::Start
-    "end" => @style.Alignment::End
-    "center" => @style.Alignment::Center
-    "space-between" => @style.Alignment::SpaceBetween
-    "space-around" => @style.Alignment::SpaceAround
-    "space-evenly" => @style.Alignment::SpaceEvenly
-    "stretch" => @style.Alignment::Stretch
-    "baseline" => @style.Alignment::Baseline
-    _ => @style.Alignment::FlexStart
+    "flex-start" => @types.Alignment::FlexStart
+    "flex-end" => @types.Alignment::FlexEnd
+    "start" => @types.Alignment::Start
+    "end" => @types.Alignment::End
+    "center" => @types.Alignment::Center
+    "space-between" => @types.Alignment::SpaceBetween
+    "space-around" => @types.Alignment::SpaceAround
+    "space-evenly" => @types.Alignment::SpaceEvenly
+    "stretch" => @types.Alignment::Stretch
+    "baseline" => @types.Alignment::Baseline
+    _ => @types.Alignment::FlexStart
   }
 }
 
 ///|
 /// Parse align-self value
-pub fn parse_align_self(value : String) -> @style.AlignSelf {
+pub fn parse_align_self(value : String) -> @types.AlignSelf {
   match value.trim().to_lower() {
-    "auto" => @style.AlignSelf::Auto
-    "flex-start" | "start" => @style.AlignSelf::Start
-    "flex-end" | "end" => @style.AlignSelf::End
-    "center" => @style.AlignSelf::Center
-    "stretch" => @style.AlignSelf::Stretch
-    "baseline" => @style.AlignSelf::Baseline
-    _ => @style.AlignSelf::Auto
+    "auto" => @types.AlignSelf::Auto
+    "flex-start" | "start" => @types.AlignSelf::Start
+    "flex-end" | "end" => @types.AlignSelf::End
+    "center" => @types.AlignSelf::Center
+    "stretch" => @types.AlignSelf::Stretch
+    "baseline" => @types.AlignSelf::Baseline
+    _ => @types.AlignSelf::Auto
   }
 }
 
 ///|
 /// Parse overflow value
-pub fn parse_overflow(value : String) -> @style.Overflow {
+pub fn parse_overflow(value : String) -> @types.Overflow {
   match value.trim().to_lower() {
-    "visible" => @style.Overflow::Visible
-    "hidden" => @style.Overflow::Hidden
-    "scroll" => @style.Overflow::Scroll
-    "auto" => @style.Overflow::Auto
-    _ => @style.Overflow::Visible
+    "visible" => @types.Overflow::Visible
+    "hidden" => @types.Overflow::Hidden
+    "scroll" => @types.Overflow::Scroll
+    "auto" => @types.Overflow::Auto
+    _ => @types.Overflow::Visible
   }
 }
 
 ///|
 /// Parse grid-auto-flow value
-pub fn parse_grid_auto_flow(value : String) -> @style.GridAutoFlow {
+pub fn parse_grid_auto_flow(value : String) -> @types.GridAutoFlow {
   match value.trim().to_lower() {
-    "row" => @style.GridAutoFlow::Row
-    "column" => @style.GridAutoFlow::Column
-    "row dense" | "dense row" => @style.GridAutoFlow::RowDense
-    "column dense" | "dense column" => @style.GridAutoFlow::ColumnDense
-    _ => @style.GridAutoFlow::Row
+    "row" => @types.GridAutoFlow::Row
+    "column" => @types.GridAutoFlow::Column
+    "row dense" | "dense row" => @types.GridAutoFlow::RowDense
+    "column dense" | "dense column" => @types.GridAutoFlow::ColumnDense
+    _ => @types.GridAutoFlow::Row
   }
 }
 
 ///|
 /// Parse a grid placement value (for grid-column-start, grid-row-end, etc.)
 /// Supports: auto, <integer>, span <integer>
-pub fn parse_grid_placement(value : String) -> @style.GridPlacement {
+pub fn parse_grid_placement(value : String) -> @types.GridPlacement {
   let v = value.trim().to_lower()
   if v == "auto" {
-    return @style.GridPlacement::Auto
+    return @types.GridPlacement::Auto
   }
   // Check for "span N" pattern
   if v.has_prefix("span") {
     let num_str = v[4:].to_string() catch { _ => "" }
     let num = @strconv.parse_int(num_str.trim().to_string()) catch { _ => 1 }
-    return @style.GridPlacement::Span(num)
+    return @types.GridPlacement::Span(num)
   }
   // Otherwise, parse as integer (line number)
   let line = @strconv.parse_int(v.to_string()) catch { _ => 0 }
   if line != 0 {
-    @style.GridPlacement::Line(line)
+    @types.GridPlacement::Line(line)
   } else {
-    @style.GridPlacement::Auto
+    @types.GridPlacement::Auto
   }
 }
 
@@ -395,7 +395,7 @@ pub fn parse_grid_placement(value : String) -> @style.GridPlacement {
 /// Formats: <start>, <start> / <end>, <start> / span <n>
 pub fn parse_grid_line_shorthand(
   value : String,
-) -> (@style.GridPlacement, @style.GridPlacement) {
+) -> (@types.GridPlacement, @types.GridPlacement) {
   let v = value.trim()
   // Check for "/" separator
   let parts = v.split("/").map(fn(s) { s.trim().to_string() }).collect()
@@ -406,7 +406,7 @@ pub fn parse_grid_line_shorthand(
   } else {
     // Single value: applies to start, end is auto
     let start = parse_grid_placement(v.to_string())
-    (start, @style.GridPlacement::Auto)
+    (start, @types.GridPlacement::Auto)
   }
 }
 
@@ -431,7 +431,7 @@ pub fn parse_integer(value : String) -> Int {
 /// Delegate to the full parser to support minmax() and repeat().
 pub fn parse_grid_template_tracks(
   value : String,
-) -> Array[@style.TrackSizingFunction] {
+) -> Array[@types.TrackSizingFunction] {
   @parser.parse_grid_template_tracks_from_string(value)
 }
 

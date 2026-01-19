@@ -20,9 +20,9 @@ test "extract bounds from LayoutTree" {
       ..@style.Style::default(),
       width: @types.Length(800.0),
       height: @types.Length(600.0),
-      display: @style.Flex,
-      justify_content: @style.Center,
-      align_items: @style.Center,
+      display: @types.Flex,
+      justify_content: @types.Center,
+      align_items: @types.Center,
     },
     [child],
   )

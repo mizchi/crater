@@ -21,14 +21,14 @@ fn assert_approx(actual : Double, expected : Double) -> Unit raise {
 test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(0.0500),
       right: @types.Percent(0.0500),
@@ -62,14 +62,14 @@ test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
 test "taffy/absolute_aspect_ratio_fill_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(0.5000),
     inset: {
       left: @types.Percent(0.0500),
@@ -104,14 +104,14 @@ test "taffy/absolute_aspect_ratio_fill_height" {
 test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(0.1000),
       right: @types.Percent(0.1000),
@@ -145,14 +145,14 @@ test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
 test "taffy/absolute_aspect_ratio_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_width: @types.Length(50.0),
     aspect_ratio: Some(3.0000),
   }
@@ -193,14 +193,14 @@ test "taffy/absolute_aspect_ratio_fill_max_height" {
 test "taffy/absolute_aspect_ratio_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_height: @types.Length(50.0),
     aspect_ratio: Some(0.5000),
   }
@@ -241,14 +241,14 @@ test "taffy/absolute_aspect_ratio_fill_max_width" {
 test "taffy/absolute_aspect_ratio_fill_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_width: @types.Length(50.0),
     aspect_ratio: Some(3.0000),
   }
@@ -277,14 +277,14 @@ test "taffy/absolute_aspect_ratio_fill_min_height" {
 test "taffy/absolute_aspect_ratio_fill_min_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_height: @types.Length(50.0),
     aspect_ratio: Some(0.5000),
   }
@@ -313,14 +313,14 @@ test "taffy/absolute_aspect_ratio_fill_min_width" {
 test "taffy/absolute_aspect_ratio_fill_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     height: @types.Percent(0.2000),
     inset: {
       left: @types.Percent(0.0500),
@@ -355,14 +355,14 @@ test "taffy/absolute_aspect_ratio_fill_width" {
 test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -396,14 +396,14 @@ test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
 test "taffy/absolute_aspect_ratio_height_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     height: @types.Percent(0.1000),
     inset: {
       left: @types.Auto,
@@ -438,14 +438,14 @@ test "taffy/absolute_aspect_ratio_height_overrides_inset" {
 test "taffy/absolute_aspect_ratio_width_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(0.4000),
     inset: {
       left: @types.Percent(0.1000),
@@ -480,29 +480,29 @@ test "taffy/absolute_aspect_ratio_width_overrides_inset" {
 test "taffy/absolute_child_with_cross_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(311.0),
     min_height: @types.Length(0.0),
     max_width: @types.Length(311.0),
     max_height: @types.Length(36893500000000000000.0),
-    justify_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(28.0),
     height: @types.Length(27.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Length(15.0),
     margin: {
@@ -511,18 +511,18 @@ test "taffy/absolute_child_with_cross_margin" {
       top: @types.Length(4.0),
       bottom: @types.Length(0.0),
     },
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(25.0),
     height: @types.Length(27.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
@@ -557,15 +557,15 @@ test "taffy/absolute_child_with_cross_margin" {
 test "taffy/absolute_child_with_main_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(37.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(9.0),
     height: @types.Length(9.0),
     margin: {
@@ -600,16 +600,16 @@ test "taffy/absolute_child_with_main_margin" {
 test "taffy/absolute_child_with_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     max_height: @types.Length(100.0),
     inset: {
       left: @types.Auto,
@@ -617,7 +617,7 @@ test "taffy/absolute_child_with_max_height" {
       top: @types.Auto,
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -658,16 +658,16 @@ test "taffy/absolute_child_with_max_height" {
 test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     max_height: @types.Length(100.0),
     inset: {
       left: @types.Auto,
@@ -675,12 +675,12 @@ test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
       top: @types.Auto,
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     flex_basis: @types.Length(150.0),
   }
@@ -717,22 +717,22 @@ test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
 test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_style = {
     ..@style.Style::default(),
-    position: @style.Position::Relative,
+    position: @types.Position::Relative,
     width: @types.Length(300.0),
     height: @types.Length(110.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(50.0),
       right: @types.Auto,
       top: @types.Length(40.0),
       bottom: @types.Auto,
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -751,7 +751,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
@@ -812,16 +812,16 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
 test "taffy/absolute_layout_align_items_and_justify_content_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -850,16 +850,16 @@ test "taffy/absolute_layout_align_items_and_justify_content_center" {
 test "taffy/absolute_layout_align_items_and_justify_content_center_and_bottom_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
     inset: {
@@ -894,16 +894,16 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_bottom_po
 test "taffy/absolute_layout_align_items_and_justify_content_center_and_left_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
     inset: {
@@ -938,16 +938,16 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_left_posi
 test "taffy/absolute_layout_align_items_and_justify_content_center_and_right_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
     inset: {
@@ -982,16 +982,16 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_right_pos
 test "taffy/absolute_layout_align_items_and_justify_content_center_and_top_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
     inset: {
@@ -1026,16 +1026,16 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_top_posit
 test "taffy/absolute_layout_align_items_and_justify_content_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    align_items: @style.End,
+    justify_content: @types.End,
+    align_items: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -1064,15 +1064,15 @@ test "taffy/absolute_layout_align_items_and_justify_content_flex_end" {
 test "taffy/absolute_layout_align_items_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -1107,11 +1107,11 @@ test "taffy/absolute_layout_align_items_center_on_child_only" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -1138,11 +1138,11 @@ test "taffy/absolute_layout_align_items_center_on_child_only" {
 test "taffy/absolute_layout_child_order" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -1154,7 +1154,7 @@ test "taffy/absolute_layout_child_order" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -1198,16 +1198,16 @@ test "taffy/absolute_layout_child_order" {
 test "taffy/absolute_layout_in_wrap_reverse_column_container" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
-    flex_wrap: @style.WrapReverse,
+    flex_direction: @types.Column,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -1236,20 +1236,20 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container" {
 test "taffy/absolute_layout_in_wrap_reverse_column_container_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
-    flex_wrap: @style.WrapReverse,
+    flex_direction: @types.Column,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -1276,16 +1276,16 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container_flex_end" {
 test "taffy/absolute_layout_in_wrap_reverse_row_container" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -1314,20 +1314,20 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container" {
 test "taffy/absolute_layout_in_wrap_reverse_row_container_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -1354,15 +1354,15 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container_flex_end" {
 test "taffy/absolute_layout_justify_content_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -1397,7 +1397,7 @@ test "taffy/absolute_layout_no_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -1430,7 +1430,7 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1444,7 +1444,7 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1458,7 +1458,7 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -1506,7 +1506,7 @@ test "taffy/absolute_layout_percentage_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Percent(0.5000),
     inset: {
@@ -1541,15 +1541,15 @@ test "taffy/absolute_layout_percentage_height" {
 test "taffy/absolute_layout_row_width_height_end_bottom" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1590,7 +1590,7 @@ test "taffy/absolute_layout_start_top_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -1629,7 +1629,7 @@ test "taffy/absolute_layout_width_height_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1670,7 +1670,7 @@ test "taffy/absolute_layout_width_height_start_top" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1711,7 +1711,7 @@ test "taffy/absolute_layout_width_height_start_top_end_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -1764,7 +1764,7 @@ test "taffy/absolute_layout_within_border" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1778,7 +1778,7 @@ test "taffy/absolute_layout_within_border" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1792,7 +1792,7 @@ test "taffy/absolute_layout_within_border" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1812,7 +1812,7 @@ test "taffy/absolute_layout_within_border" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1865,16 +1865,16 @@ test "taffy/absolute_layout_within_border" {
 test "taffy/absolute_margin_bottom_left" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     margin: {
@@ -1915,7 +1915,7 @@ test "taffy/absolute_minmax_bottom_right_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     max_width: @types.Length(40.0),
@@ -1958,7 +1958,7 @@ test "taffy/absolute_minmax_bottom_right_min_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_width: @types.Length(50.0),
     min_height: @types.Length(60.0),
     max_width: @types.Length(40.0),
@@ -2001,7 +2001,7 @@ test "taffy/absolute_minmax_bottom_right_min_max_preferred" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     min_width: @types.Length(50.0),
@@ -2046,7 +2046,7 @@ test "taffy/absolute_minmax_top_left_bottom_right_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_width: @types.Length(40.0),
     max_height: @types.Length(30.0),
     inset: {
@@ -2087,7 +2087,7 @@ test "taffy/absolute_minmax_top_left_bottom_right_min_max" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     min_width: @types.Length(50.0),
     min_height: @types.Length(60.0),
     max_width: @types.Length(40.0),
@@ -2126,7 +2126,7 @@ test "taffy/absolute_padding_border_overrides_max_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
     padding: {
@@ -2169,7 +2169,7 @@ test "taffy/absolute_padding_border_overrides_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -2212,8 +2212,8 @@ test "taffy/absolute_resolved_insets" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
+    display: @types.Flex,
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -2232,7 +2232,7 @@ test "taffy/absolute_resolved_insets" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2244,7 +2244,7 @@ test "taffy/absolute_resolved_insets" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -2256,7 +2256,7 @@ test "taffy/absolute_resolved_insets" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -2268,7 +2268,7 @@ test "taffy/absolute_resolved_insets" {
   root_child0_children.push(root_child0_child2)
   let root_child0_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -2280,7 +2280,7 @@ test "taffy/absolute_resolved_insets" {
   root_child0_children.push(root_child0_child3)
   let root_child0_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2292,7 +2292,7 @@ test "taffy/absolute_resolved_insets" {
   root_child0_children.push(root_child0_child4)
   let root_child0_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2310,10 +2310,10 @@ test "taffy/absolute_resolved_insets" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Flex,
+    position: @types.Position::Relative,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     padding: {
@@ -2332,7 +2332,7 @@ test "taffy/absolute_resolved_insets" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2344,7 +2344,7 @@ test "taffy/absolute_resolved_insets" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -2356,7 +2356,7 @@ test "taffy/absolute_resolved_insets" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -2368,7 +2368,7 @@ test "taffy/absolute_resolved_insets" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -2380,7 +2380,7 @@ test "taffy/absolute_resolved_insets" {
   root_child1_children.push(root_child1_child3)
   let root_child1_child4_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2392,7 +2392,7 @@ test "taffy/absolute_resolved_insets" {
   root_child1_children.push(root_child1_child4)
   let root_child1_child5_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2483,10 +2483,10 @@ test "taffy/absolute_resolved_insets" {
 test "taffy/align_baseline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2530,11 +2530,11 @@ test "taffy/align_baseline" {
 test "taffy/align_baseline_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2546,10 +2546,10 @@ test "taffy/align_baseline_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -2594,11 +2594,11 @@ test "taffy/align_baseline_child" {
 test "taffy/align_baseline_child_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2616,10 +2616,10 @@ test "taffy/align_baseline_child_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -2670,11 +2670,11 @@ test "taffy/align_baseline_child_margin" {
 test "taffy/align_baseline_child_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2692,10 +2692,10 @@ test "taffy/align_baseline_child_margin_percent" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -2746,9 +2746,9 @@ test "taffy/align_baseline_child_margin_percent" {
 test "taffy/align_baseline_child_multiline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2760,9 +2760,9 @@ test "taffy/align_baseline_child_multiline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -2840,11 +2840,11 @@ test "taffy/align_baseline_child_multiline" {
 test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2856,11 +2856,11 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(25.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -2886,10 +2886,10 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -2940,11 +2940,11 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
 test "taffy/align_baseline_child_multiline_override" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -2956,11 +2956,11 @@ test "taffy/align_baseline_child_multiline_override" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(25.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -2972,10 +2972,10 @@ test "taffy/align_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_child1 = @node.Node::leaf("node", root_child1_child1_style)
   root_child1_children.push(root_child1_child1)
@@ -2988,10 +2988,10 @@ test "taffy/align_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_child3 = @node.Node::leaf("node", root_child1_child3_style)
   root_child1_children.push(root_child1_child3)
@@ -3042,7 +3042,7 @@ test "taffy/align_baseline_child_multiline_override" {
 test "taffy/align_baseline_child_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -3051,8 +3051,8 @@ test "taffy/align_baseline_child_padding" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3064,7 +3064,7 @@ test "taffy/align_baseline_child_padding" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
     padding: {
@@ -3073,7 +3073,7 @@ test "taffy/align_baseline_child_padding" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -3118,11 +3118,11 @@ test "taffy/align_baseline_child_padding" {
 test "taffy/align_baseline_child_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3140,10 +3140,10 @@ test "taffy/align_baseline_child_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -3188,11 +3188,11 @@ test "taffy/align_baseline_child_top" {
 test "taffy/align_baseline_child_top2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3256,11 +3256,11 @@ test "taffy/align_baseline_child_top2" {
 test "taffy/align_baseline_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Column,
+    align_items: @types.Baseline,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3304,11 +3304,11 @@ test "taffy/align_baseline_column" {
 test "taffy/align_baseline_double_nested_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3380,12 +3380,12 @@ test "taffy/align_baseline_double_nested_child" {
 test "taffy/align_baseline_multiline" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3397,10 +3397,10 @@ test "taffy/align_baseline_multiline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -3416,10 +3416,10 @@ test "taffy/align_baseline_multiline" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
@@ -3483,12 +3483,12 @@ test "taffy/align_baseline_multiline" {
 test "taffy/align_baseline_multiline_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Baseline,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3500,10 +3500,10 @@ test "taffy/align_baseline_multiline_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(30.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -3519,10 +3519,10 @@ test "taffy/align_baseline_multiline_column" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(70.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
@@ -3586,37 +3586,37 @@ test "taffy/align_baseline_multiline_column" {
 test "taffy/align_baseline_multiline_column2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Baseline,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(30.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_child0 = @node.Node::leaf("node", root_child1_child0_style)
   root_child1_children.push(root_child1_child0)
@@ -3626,18 +3626,18 @@ test "taffy/align_baseline_multiline_column2" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(70.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child2_child0 = @node.Node::leaf("node", root_child2_child0_style)
   root_child2_children.push(root_child2_child0)
@@ -3647,10 +3647,10 @@ test "taffy/align_baseline_multiline_column2" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
@@ -3697,12 +3697,12 @@ test "taffy/align_baseline_multiline_column2" {
 test "taffy/align_baseline_multiline_row_and_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3714,10 +3714,10 @@ test "taffy/align_baseline_multiline_row_and_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -3733,10 +3733,10 @@ test "taffy/align_baseline_multiline_row_and_column" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
@@ -3800,10 +3800,10 @@ test "taffy/align_baseline_multiline_row_and_column" {
 test "taffy/align_baseline_nested_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
+    align_items: @types.Baseline,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3815,10 +3815,10 @@ test "taffy/align_baseline_nested_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -3863,11 +3863,11 @@ test "taffy/align_baseline_nested_child" {
 test "taffy/align_baseline_nested_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Baseline,
-    flex_direction: @style.Row,
+    align_items: @types.Baseline,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -3879,24 +3879,24 @@ test "taffy/align_baseline_nested_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(80.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_child0_child0 = @node.Node::leaf(
     "node", root_child1_child0_child0_style,
@@ -3904,10 +3904,10 @@ test "taffy/align_baseline_nested_column" {
   root_child1_child0_children.push(root_child1_child0_child0)
   let root_child1_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(40.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child1_child0_child1 = @node.Node::leaf(
     "node", root_child1_child0_child1_style,
@@ -3960,21 +3960,21 @@ test "taffy/align_baseline_nested_column" {
 test "taffy/align_center_should_size_based_on_content" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    justify_content: @style.Center,
+    display: @types.Flex,
+    justify_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_children : Array[@node.Node] = []
@@ -4026,11 +4026,11 @@ test "taffy/align_center_should_size_based_on_content" {
 test "taffy/align_content_center_single_line" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(120.0),
     height: @types.Length(100.0),
-    align_content: @style.Center,
-    flex_direction: @style.Row,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -4118,7 +4118,7 @@ test "taffy/align_content_center_single_line" {
 test "taffy/align_content_center_single_line_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4127,21 +4127,21 @@ test "taffy/align_content_center_single_line_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -4179,7 +4179,7 @@ test "taffy/align_content_center_single_line_negative_space" {
 test "taffy/align_content_center_single_line_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4188,23 +4188,23 @@ test "taffy/align_content_center_single_line_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -4242,12 +4242,12 @@ test "taffy/align_content_center_single_line_negative_space_gap" {
 test "taffy/align_content_center_wrapped" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(120.0),
     height: @types.Length(100.0),
-    align_content: @style.Center,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -4335,7 +4335,7 @@ test "taffy/align_content_center_wrapped" {
 test "taffy/align_content_center_wrapped_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4344,22 +4344,22 @@ test "taffy/align_content_center_wrapped_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4368,7 +4368,7 @@ test "taffy/align_content_center_wrapped_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4377,7 +4377,7 @@ test "taffy/align_content_center_wrapped_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4423,7 +4423,7 @@ test "taffy/align_content_center_wrapped_negative_space" {
 test "taffy/align_content_center_wrapped_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4432,24 +4432,24 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4458,7 +4458,7 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4467,7 +4467,7 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4513,12 +4513,12 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
 test "taffy/align_content_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.End,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_content: @types.End,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -4595,7 +4595,7 @@ test "taffy/align_content_end" {
 test "taffy/align_content_end_single_line_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4604,21 +4604,21 @@ test "taffy/align_content_end_single_line_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.End,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.End,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -4656,7 +4656,7 @@ test "taffy/align_content_end_single_line_negative_space" {
 test "taffy/align_content_end_single_line_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4665,23 +4665,23 @@ test "taffy/align_content_end_single_line_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.End,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.End,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -4719,7 +4719,7 @@ test "taffy/align_content_end_single_line_negative_space_gap" {
 test "taffy/align_content_end_wrapped_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4728,22 +4728,22 @@ test "taffy/align_content_end_wrapped_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.End,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.End,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4752,7 +4752,7 @@ test "taffy/align_content_end_wrapped_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4761,7 +4761,7 @@ test "taffy/align_content_end_wrapped_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4807,7 +4807,7 @@ test "taffy/align_content_end_wrapped_negative_space" {
 test "taffy/align_content_end_wrapped_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -4816,24 +4816,24 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.End,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.End,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4842,7 +4842,7 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4851,7 +4851,7 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -4897,12 +4897,12 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
 test "taffy/align_content_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.End,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_content: @types.End,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -4979,12 +4979,12 @@ test "taffy/align_content_flex_end" {
 test "taffy/align_content_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(130.0),
     height: @types.Length(100.0),
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5061,17 +5061,17 @@ test "taffy/align_content_flex_start" {
 test "taffy/align_content_flex_start_with_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(120.0),
-    align_content: @style.Start,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Start,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
     flex_shrink: 0.0,
@@ -5081,7 +5081,7 @@ test "taffy/align_content_flex_start_with_flex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -5098,7 +5098,7 @@ test "taffy/align_content_flex_start_with_flex" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
@@ -5150,12 +5150,12 @@ test "taffy/align_content_flex_start_with_flex" {
 test "taffy/align_content_flex_start_without_height_on_children" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.Start,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Start,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5229,18 +5229,18 @@ test "taffy/align_content_flex_start_without_height_on_children" {
 test "taffy/align_content_not_stretch_with_align_items_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(328.0),
     height: @types.Length(52.0),
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -5256,8 +5256,8 @@ test "taffy/align_content_not_stretch_with_align_items_stretch" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -5306,11 +5306,11 @@ test "taffy/align_content_not_stretch_with_align_items_stretch" {
 test "taffy/align_content_space_around_single_line" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5398,7 +5398,7 @@ test "taffy/align_content_space_around_single_line" {
 test "taffy/align_content_space_around_single_line_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -5407,21 +5407,21 @@ test "taffy/align_content_space_around_single_line_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -5459,7 +5459,7 @@ test "taffy/align_content_space_around_single_line_negative_space" {
 test "taffy/align_content_space_around_single_line_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -5468,23 +5468,23 @@ test "taffy/align_content_space_around_single_line_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -5522,12 +5522,12 @@ test "taffy/align_content_space_around_single_line_negative_space_gap" {
 test "taffy/align_content_space_around_wrapped" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5615,7 +5615,7 @@ test "taffy/align_content_space_around_wrapped" {
 test "taffy/align_content_space_around_wrapped_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -5624,22 +5624,22 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -5648,7 +5648,7 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -5657,7 +5657,7 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -5703,7 +5703,7 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
 test "taffy/align_content_space_around_wrapped_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -5712,24 +5712,24 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -5738,7 +5738,7 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -5747,7 +5747,7 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -5793,12 +5793,12 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
 test "taffy/align_content_space_around_wrapped_single" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5831,11 +5831,11 @@ test "taffy/align_content_space_around_wrapped_single" {
 test "taffy/align_content_space_between_single_line" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -5923,7 +5923,7 @@ test "taffy/align_content_space_between_single_line" {
 test "taffy/align_content_space_between_single_line_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -5932,21 +5932,21 @@ test "taffy/align_content_space_between_single_line_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -5984,7 +5984,7 @@ test "taffy/align_content_space_between_single_line_negative_space" {
 test "taffy/align_content_space_between_single_line_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -5993,23 +5993,23 @@ test "taffy/align_content_space_between_single_line_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -6047,12 +6047,12 @@ test "taffy/align_content_space_between_single_line_negative_space_gap" {
 test "taffy/align_content_space_between_wrapped" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6140,7 +6140,7 @@ test "taffy/align_content_space_between_wrapped" {
 test "taffy/align_content_space_between_wrapped_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -6149,22 +6149,22 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6173,7 +6173,7 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6182,7 +6182,7 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6228,7 +6228,7 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
 test "taffy/align_content_space_between_wrapped_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -6237,24 +6237,24 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6263,7 +6263,7 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6272,7 +6272,7 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6318,12 +6318,12 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
 test "taffy/align_content_space_between_wrapped_single" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6356,11 +6356,11 @@ test "taffy/align_content_space_between_wrapped_single" {
 test "taffy/align_content_space_evenly_single_line" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
+    align_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6448,7 +6448,7 @@ test "taffy/align_content_space_evenly_single_line" {
 test "taffy/align_content_space_evenly_single_line_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -6457,21 +6457,21 @@ test "taffy/align_content_space_evenly_single_line_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -6509,7 +6509,7 @@ test "taffy/align_content_space_evenly_single_line_negative_space" {
 test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -6518,23 +6518,23 @@ test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -6572,12 +6572,12 @@ test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
 test "taffy/align_content_space_evenly_wrapped" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6665,7 +6665,7 @@ test "taffy/align_content_space_evenly_wrapped" {
 test "taffy/align_content_space_evenly_wrapped_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -6674,22 +6674,22 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6698,7 +6698,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6707,7 +6707,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6753,7 +6753,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
 test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -6762,24 +6762,24 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6788,7 +6788,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6797,7 +6797,7 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -6843,12 +6843,12 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
 test "taffy/align_content_space_evenly_wrapped_single" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6881,12 +6881,12 @@ test "taffy/align_content_space_evenly_wrapped_single" {
 test "taffy/align_content_spacearound" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(140.0),
     height: @types.Length(120.0),
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -6963,12 +6963,12 @@ test "taffy/align_content_spacearound" {
 test "taffy/align_content_spacebetween" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(130.0),
     height: @types.Length(100.0),
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7045,12 +7045,12 @@ test "taffy/align_content_spacebetween" {
 test "taffy/align_content_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(130.0),
     height: @types.Length(100.0),
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7127,7 +7127,7 @@ test "taffy/align_content_start" {
 test "taffy/align_content_start_single_line_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -7136,21 +7136,21 @@ test "taffy/align_content_start_single_line_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Start,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -7188,7 +7188,7 @@ test "taffy/align_content_start_single_line_negative_space" {
 test "taffy/align_content_start_single_line_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -7197,23 +7197,23 @@ test "taffy/align_content_start_single_line_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Start,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(60.0),
     flex_shrink: 0.0,
@@ -7251,7 +7251,7 @@ test "taffy/align_content_start_single_line_negative_space_gap" {
 test "taffy/align_content_start_wrapped_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -7260,22 +7260,22 @@ test "taffy/align_content_start_wrapped_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -7284,7 +7284,7 @@ test "taffy/align_content_start_wrapped_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -7293,7 +7293,7 @@ test "taffy/align_content_start_wrapped_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -7339,12 +7339,12 @@ test "taffy/align_content_start_wrapped_negative_space" {
 test "taffy/align_content_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7416,24 +7416,24 @@ test "taffy/align_content_stretch" {
 test "taffy/align_content_stretch_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(150.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -7445,7 +7445,7 @@ test "taffy/align_content_stretch_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
@@ -7513,26 +7513,26 @@ test "taffy/align_content_stretch_column" {
 test "taffy/align_content_stretch_is_not_overriding_align_items" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
+    display: @types.Flex,
+    align_content: @types.Stretch,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_content: @style.Stretch,
+    align_content: @types.Stretch,
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
@@ -7567,12 +7567,12 @@ test "taffy/align_content_stretch_is_not_overriding_align_items" {
 test "taffy/align_content_stretch_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7644,24 +7644,24 @@ test "taffy/align_content_stretch_row" {
 test "taffy/align_content_stretch_row_with_children" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -7738,12 +7738,12 @@ test "taffy/align_content_stretch_row_with_children" {
 test "taffy/align_content_stretch_row_with_fixed_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7816,12 +7816,12 @@ test "taffy/align_content_stretch_row_with_fixed_height" {
 test "taffy/align_content_stretch_row_with_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7832,7 +7832,7 @@ test "taffy/align_content_stretch_row_with_flex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
@@ -7847,7 +7847,7 @@ test "taffy/align_content_stretch_row_with_flex" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
@@ -7899,12 +7899,12 @@ test "taffy/align_content_stretch_row_with_flex" {
 test "taffy/align_content_stretch_row_with_flex_no_shrink" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -7915,7 +7915,7 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
@@ -7930,7 +7930,7 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
     flex_shrink: 0.0,
@@ -7983,12 +7983,12 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
 test "taffy/align_content_stretch_row_with_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8072,12 +8072,12 @@ test "taffy/align_content_stretch_row_with_margin" {
 test "taffy/align_content_stretch_row_with_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8150,12 +8150,12 @@ test "taffy/align_content_stretch_row_with_max_height" {
 test "taffy/align_content_stretch_row_with_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8228,12 +8228,12 @@ test "taffy/align_content_stretch_row_with_min_height" {
 test "taffy/align_content_stretch_row_with_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8317,12 +8317,12 @@ test "taffy/align_content_stretch_row_with_padding" {
 test "taffy/align_content_stretch_row_with_single_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8364,12 +8364,12 @@ test "taffy/align_content_stretch_row_with_single_row" {
 test "taffy/align_content_stretch_row_wrap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8421,19 +8421,19 @@ test "taffy/align_flex_start_with_shrinking_children" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Start,
+    display: @types.Flex,
+    align_items: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8485,20 +8485,20 @@ test "taffy/align_flex_start_with_shrinking_children_with_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Start,
+    display: @types.Flex,
+    align_items: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Stretch,
+    display: @types.Flex,
+    align_items: @types.Stretch,
     flex_grow: 1.0,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8550,19 +8550,19 @@ test "taffy/align_flex_start_with_stretching_children" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Stretch,
+    display: @types.Flex,
+    align_items: @types.Stretch,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8608,10 +8608,10 @@ test "taffy/align_flex_start_with_stretching_children" {
 test "taffy/align_items_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8644,17 +8644,17 @@ test "taffy/align_items_center" {
 test "taffy/align_items_center_child_with_margin_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Center,
+    display: @types.Flex,
+    align_items: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -8701,17 +8701,17 @@ test "taffy/align_items_center_child_with_margin_bigger_than_parent" {
 test "taffy/align_items_center_child_without_margin_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Center,
+    display: @types.Flex,
+    align_items: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -8752,24 +8752,24 @@ test "taffy/align_items_center_child_without_margin_bigger_than_parent" {
 test "taffy/align_items_center_justify_content_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Percent(1.0000),
     margin: {
       left: @types.Length(10.0),
@@ -8777,9 +8777,9 @@ test "taffy/align_items_center_justify_content_center" {
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -8830,7 +8830,7 @@ test "taffy/align_items_center_justify_content_center" {
 test "taffy/align_items_center_min_max_with_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(320.0),
     min_height: @types.Length(72.0),
     max_width: @types.Length(320.0),
@@ -8841,8 +8841,8 @@ test "taffy/align_items_center_min_max_with_padding" {
       top: @types.Length(8.0),
       bottom: @types.Length(8.0),
     },
-    align_items: @style.Center,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8875,10 +8875,10 @@ test "taffy/align_items_center_min_max_with_padding" {
 test "taffy/align_items_center_with_child_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8917,10 +8917,10 @@ test "taffy/align_items_center_with_child_margin" {
 test "taffy/align_items_center_with_child_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -8961,12 +8961,12 @@ test "taffy/align_items_center_with_height_with_padding_border_with_wrap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
-    align_content: @style.Start,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    align_content: @types.Start,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -8989,11 +8989,11 @@ test "taffy/align_items_center_with_height_with_padding_border_with_wrap" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -9063,12 +9063,12 @@ test "taffy/align_items_center_with_max_height_percentage_with_align_content_fle
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     max_height: @types.Percent(0.5000),
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9120,11 +9120,11 @@ test "taffy/align_items_center_with_max_height_percentage_with_align_content_fle
 test "taffy/align_items_center_with_max_height_with_align_content_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     max_height: @types.Length(100.0),
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -9168,13 +9168,13 @@ test "taffy/align_items_center_with_max_height_with_align_content_flex_start" {
 test "taffy/align_items_center_with_max_height_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     max_height: @types.Length(100.0),
     padding: {
@@ -9189,8 +9189,8 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9213,7 +9213,7 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     max_height: @types.Length(100.0),
     padding: {
@@ -9228,9 +9228,9 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    align_items: @style.Center,
-    align_content: @style.Start,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    align_content: @types.Start,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -9300,11 +9300,11 @@ test "taffy/align_items_center_with_min_height_percentage_with_align_content_fle
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Percent(1.0000),
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9356,11 +9356,11 @@ test "taffy/align_items_center_with_min_height_percentage_with_align_content_fle
 test "taffy/align_items_center_with_min_height_with_align_content_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -9406,12 +9406,12 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
-    align_items: @style.Center,
-    align_content: @style.Start,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    align_content: @types.Start,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9434,11 +9434,11 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
-    align_items: @style.Center,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -9461,10 +9461,10 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
@@ -9487,11 +9487,11 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_child3_children : Array[@node.Node] = []
   let root_child3_child0_style = {
@@ -9581,7 +9581,7 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
     padding: {
@@ -9596,8 +9596,8 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
       top: @types.Length(7.0),
       bottom: @types.Length(7.0),
     },
-    align_items: @style.Center,
-    align_content: @style.Start,
+    align_items: @types.Center,
+    align_content: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9620,7 +9620,7 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
     padding: {
@@ -9635,9 +9635,9 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
       top: @types.Length(7.0),
       bottom: @types.Length(7.0),
     },
-    align_items: @style.Center,
-    align_content: @style.Start,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    align_content: @types.Start,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -9701,10 +9701,10 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
 test "taffy/align_items_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.End,
+    align_items: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -9737,17 +9737,17 @@ test "taffy/align_items_flex_end" {
 test "taffy/align_items_flex_end_child_with_margin_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.End,
+    display: @types.Flex,
+    align_items: @types.End,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9794,17 +9794,17 @@ test "taffy/align_items_flex_end_child_with_margin_bigger_than_parent" {
 test "taffy/align_items_flex_end_child_without_margin_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.End,
+    display: @types.Flex,
+    align_items: @types.End,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -9845,10 +9845,10 @@ test "taffy/align_items_flex_end_child_without_margin_bigger_than_parent" {
 test "taffy/align_items_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -9881,12 +9881,12 @@ test "taffy/align_items_flex_start" {
 test "taffy/align_items_min_max" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     min_width: @types.Length(100.0),
     max_width: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -9952,15 +9952,15 @@ test "taffy/align_items_stretch" {
 test "taffy/align_items_stretch_min_cross" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(400.0),
     min_height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(36.0),
     flex_shrink: 0.0,
   }
@@ -9995,19 +9995,19 @@ test "taffy/align_self_baseline" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
-    align_self: @style.AlignSelf::Baseline,
+    align_self: @types.AlignSelf::Baseline,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -10058,10 +10058,10 @@ test "taffy/align_self_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -10088,10 +10088,10 @@ test "taffy/align_self_center" {
 test "taffy/align_self_center_undefined_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(280.0),
     min_height: @types.Length(52.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -10103,10 +10103,10 @@ test "taffy/align_self_center_undefined_max_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(56.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
@@ -10143,10 +10143,10 @@ test "taffy/align_self_flex_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -10173,18 +10173,18 @@ test "taffy/align_self_flex_end" {
 test "taffy/align_self_flex_end_override_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::End,
+    align_self: @types.AlignSelf::End,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -10217,10 +10217,10 @@ test "taffy/align_self_flex_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Start,
+    align_self: @types.AlignSelf::Start,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
@@ -10253,13 +10253,13 @@ test "taffy/align_stretch_should_size_based_on_parent" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    justify_content: @style.Center,
+    display: @types.Flex,
+    justify_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_children : Array[@node.Node] = []
@@ -10311,62 +10311,62 @@ test "taffy/align_stretch_should_size_based_on_parent" {
 test "taffy/android_news_feed" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(1080.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
     flex_shrink: 0.0,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_shrink: 0.0,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(36.0),
       right: @types.Length(0.0),
       top: @types.Length(24.0),
       bottom: @types.Length(0.0),
     },
-    align_items: @style.Start,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_items: @types.Start,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
     flex_shrink: 0.0,
   }
   let root_child0_child0_child0_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
-    align_content: @style.Stretch,
+    align_content: @types.Stretch,
     flex_shrink: 0.0,
   }
   let root_child0_child0_child0_child0_child0_child0 = @node.Node::leaf(
@@ -10383,7 +10383,7 @@ test "taffy/android_news_feed" {
   )
   let root_child0_child0_child0_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(36.0),
@@ -10396,15 +10396,15 @@ test "taffy/android_news_feed" {
       top: @types.Length(21.0),
       bottom: @types.Length(18.0),
     },
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_child0_child0_child1_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_child0_child0_child1_child0 = @node.Node::leaf(
     "node", root_child0_child0_child0_child0_child1_child0_style,
@@ -10414,8 +10414,8 @@ test "taffy/android_news_feed" {
   )
   let root_child0_child0_child0_child0_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
+    display: @types.Flex,
+    align_content: @types.Stretch,
   }
   let root_child0_child0_child0_child0_child1_child1 = @node.Node::leaf(
     "node", root_child0_child0_child0_child0_child1_child1_style,
@@ -10439,39 +10439,39 @@ test "taffy/android_news_feed" {
   root_child0_child0_children.push(root_child0_child0_child0)
   let root_child0_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_child1_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(174.0),
       right: @types.Length(0.0),
       top: @types.Length(24.0),
       bottom: @types.Length(0.0),
     },
-    align_items: @style.Start,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_items: @types.Start,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_child1_child0_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
     flex_shrink: 0.0,
   }
   let root_child0_child0_child1_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
-    align_content: @style.Stretch,
+    align_content: @types.Stretch,
     flex_shrink: 0.0,
   }
   let root_child0_child0_child1_child0_child0_child0 = @node.Node::leaf(
@@ -10488,7 +10488,7 @@ test "taffy/android_news_feed" {
   )
   let root_child0_child0_child1_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(36.0),
@@ -10501,15 +10501,15 @@ test "taffy/android_news_feed" {
       top: @types.Length(21.0),
       bottom: @types.Length(18.0),
     },
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_child1_child0_child1_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_child1_child0_child1_child0 = @node.Node::leaf(
     "node", root_child0_child0_child1_child0_child1_child0_style,
@@ -10519,8 +10519,8 @@ test "taffy/android_news_feed" {
   )
   let root_child0_child0_child1_child0_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
+    display: @types.Flex,
+    align_content: @types.Stretch,
   }
   let root_child0_child0_child1_child0_child1_child1 = @node.Node::leaf(
     "node", root_child0_child0_child1_child0_child1_child1_style,
@@ -10765,11 +10765,11 @@ test "taffy/android_news_feed" {
 test "taffy/aspect_ratio_flex_column_fill_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -10802,11 +10802,11 @@ test "taffy/aspect_ratio_flex_column_fill_height" {
 test "taffy/aspect_ratio_flex_column_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -10851,11 +10851,11 @@ test "taffy/aspect_ratio_flex_column_fill_max_height" {
 test "taffy/aspect_ratio_flex_column_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -10895,11 +10895,11 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
 test "taffy/aspect_ratio_flex_column_fill_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -10932,11 +10932,11 @@ test "taffy/aspect_ratio_flex_column_fill_min_height" {
 test "taffy/aspect_ratio_flex_column_fill_min_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -10969,11 +10969,11 @@ test "taffy/aspect_ratio_flex_column_fill_min_width" {
 test "taffy/aspect_ratio_flex_column_fill_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11006,10 +11006,10 @@ test "taffy/aspect_ratio_flex_column_fill_width" {
 test "taffy/aspect_ratio_flex_column_fill_width_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11042,10 +11042,10 @@ test "taffy/aspect_ratio_flex_column_fill_width_flex" {
 test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11078,10 +11078,10 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
 test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11126,10 +11126,10 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
 test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11169,10 +11169,10 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
 test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11205,10 +11205,10 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
 test "taffy/aspect_ratio_flex_row_fill_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11241,10 +11241,10 @@ test "taffy/aspect_ratio_flex_row_fill_height" {
 test "taffy/aspect_ratio_flex_row_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11289,10 +11289,10 @@ test "taffy/aspect_ratio_flex_row_fill_max_height" {
 test "taffy/aspect_ratio_flex_row_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11332,10 +11332,10 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
 test "taffy/aspect_ratio_flex_row_fill_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11368,10 +11368,10 @@ test "taffy/aspect_ratio_flex_row_fill_min_height" {
 test "taffy/aspect_ratio_flex_row_fill_min_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11404,10 +11404,10 @@ test "taffy/aspect_ratio_flex_row_fill_min_width" {
 test "taffy/aspect_ratio_flex_row_fill_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11440,10 +11440,10 @@ test "taffy/aspect_ratio_flex_row_fill_width" {
 test "taffy/aspect_ratio_flex_row_fill_width_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -11476,7 +11476,7 @@ test "taffy/aspect_ratio_flex_row_fill_width_flex" {
 test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -11511,7 +11511,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
 test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -11558,7 +11558,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
 test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -11600,7 +11600,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
 test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -11635,17 +11635,17 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
 test "taffy/bevy_issue_10343_block" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceAround,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceAround,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -11704,22 +11704,22 @@ test "taffy/bevy_issue_10343_block" {
 test "taffy/bevy_issue_10343_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceAround,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceAround,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     margin: {
@@ -11774,22 +11774,22 @@ test "taffy/bevy_issue_10343_flex" {
 test "taffy/bevy_issue_10343_grid" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceAround,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceAround,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     margin: {
@@ -11842,22 +11842,22 @@ test "taffy/bevy_issue_10343_grid" {
 
 ///|
 test "taffy/bevy_issue_16304" {
-  let root_style = { ..@style.Style::default(), display: @style.Flex }
+  let root_style = { ..@style.Style::default(), display: @types.Flex }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(50.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -11921,7 +11921,7 @@ test "taffy/bevy_issue_16304" {
 test "taffy/bevy_issue_21240" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
+    display: @types.Grid,
     padding: {
       left: @types.Length(8.0),
       right: @types.Length(8.0),
@@ -11929,15 +11929,15 @@ test "taffy/bevy_issue_21240" {
       bottom: @types.Length(8.0),
     },
     grid_template_columns: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     grid_template_rows: [
-      @style.Length(40.0),
-      @style.Length(40.0),
-      @style.Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
     ],
     row_gap: @types.Length(8.0),
     column_gap: @types.Length(8.0),
@@ -11957,13 +11957,19 @@ test "taffy/bevy_issue_21240" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Line(-1) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Line(-1),
+    },
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
-    grid_column: { start: @style.Line(1), end: @style.Span(4) },
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::Span(4),
+    },
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
@@ -12010,10 +12016,10 @@ test "taffy/bevy_issue_21240" {
 test "taffy/bevy_issue_7976_3_level" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_content: @style.Start,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -12078,10 +12084,10 @@ test "taffy/bevy_issue_7976_3_level" {
 test "taffy/bevy_issue_7976_4_level" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_content: @style.Start,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -12158,9 +12164,9 @@ test "taffy/bevy_issue_7976_4_level" {
 test "taffy/bevy_issue_7976_reduced" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(200.0),
-    align_content: @style.Start,
+    align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -12192,7 +12198,7 @@ test "taffy/bevy_issue_7976_reduced" {
 test "taffy/bevy_issue_8017" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(400.0),
     padding: {
@@ -12203,12 +12209,12 @@ test "taffy/bevy_issue_8017" {
     },
     row_gap: @types.Length(8.0),
     column_gap: @types.Length(8.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     height: @types.Percent(0.5000),
     row_gap: @types.Length(8.0),
@@ -12235,7 +12241,7 @@ test "taffy/bevy_issue_8017" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     height: @types.Percent(0.5000),
     row_gap: @types.Length(8.0),
@@ -12303,12 +12309,12 @@ test "taffy/bevy_issue_8017" {
 test "taffy/bevy_issue_8017_reduced" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
     row_gap: @types.Length(8.0),
     column_gap: @types.Length(8.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -12370,22 +12376,22 @@ test "taffy/bevy_issue_8017_reduced" {
 test "taffy/bevy_issue_8082" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    justify_content: @style.Start,
-    align_items: @style.Stretch,
-    align_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Start,
+    align_items: @types.Stretch,
+    align_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    justify_content: @style.Center,
-    align_items: @style.Start,
-    align_content: @style.Center,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    justify_content: @types.Center,
+    align_items: @types.Start,
+    align_content: @types.Center,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -12483,23 +12489,23 @@ test "taffy/bevy_issue_8082" {
 test "taffy/bevy_issue_8082_percent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    justify_content: @style.Start,
-    align_items: @style.Stretch,
-    align_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Start,
+    align_items: @types.Stretch,
+    align_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.5000),
-    justify_content: @style.Center,
-    align_items: @style.Start,
-    align_content: @style.Center,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_items: @types.Start,
+    align_content: @types.Center,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -12573,7 +12579,7 @@ test "taffy/bevy_issue_8082_percent" {
 test "taffy/bevy_issue_9530" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(300.0),
     height: @types.Length(300.0),
     margin: {
@@ -12582,23 +12588,23 @@ test "taffy/bevy_issue_9530" {
       top: @types.Auto,
       bottom: @types.Auto,
     },
-    align_items: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Column,
+    align_items: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     height: @types.Length(20.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     margin: {
       left: @types.Length(20.0),
@@ -12612,7 +12618,7 @@ test "taffy/bevy_issue_9530" {
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
@@ -12625,16 +12631,16 @@ test "taffy/bevy_issue_9530" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(20.0),
       right: @types.Length(20.0),
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    align_content: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    align_content: @types.Center,
     flex_grow: 1.0,
   }
   let root_child1_child1_measure = @node.MeasureFunc::{
@@ -12696,21 +12702,21 @@ test "taffy/bevy_issue_9530" {
 test "taffy/bevy_issue_9530_reduced" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_measure = @node.MeasureFunc::{
@@ -12753,13 +12759,13 @@ test "taffy/bevy_issue_9530_reduced" {
 test "taffy/bevy_issue_9530_reduced2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     margin: {
       left: @types.Length(20.0),
@@ -12767,13 +12773,13 @@ test "taffy/bevy_issue_9530_reduced2" {
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_measure = @node.MeasureFunc::{
@@ -12816,14 +12822,14 @@ test "taffy/bevy_issue_9530_reduced2" {
 test "taffy/bevy_issue_9530_reduced3" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(20.0),
       right: @types.Length(20.0),
@@ -12864,9 +12870,9 @@ test "taffy/bevy_issue_9530_reduced3" {
 test "taffy/bevy_issue_9530_reduced4" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -12912,14 +12918,14 @@ test "taffy/blitz_issue_88" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    justify_content: @style.Start,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    justify_content: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0_children : Array[@node.Node] = []
@@ -12976,7 +12982,7 @@ test "taffy/blitz_issue_88" {
 test "taffy/border_center_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     border: {
@@ -12985,8 +12991,8 @@ test "taffy/border_center_child" {
       top: @types.Length(10.0),
       bottom: @types.Length(20.0),
     },
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -13019,14 +13025,14 @@ test "taffy/border_center_child" {
 test "taffy/border_container_match_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     border: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -13071,7 +13077,7 @@ test "taffy/border_flex_child" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -13126,14 +13132,14 @@ test "taffy/border_no_child" {
 test "taffy/border_no_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     border: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root = @node.Node::leaf("test-root", root_style)
   let ctx : @node.LayoutContext = {
@@ -13193,16 +13199,16 @@ test "taffy/border_stretch_child" {
 test "taffy/child_min_max_width_flexing" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(120.0),
     height: @types.Length(50.0),
-    align_items: @style.Stretch,
-    flex_direction: @style.Row,
+    align_items: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
     flex_shrink: 0.0,
@@ -13212,7 +13218,7 @@ test "taffy/child_min_max_width_flexing" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Length(20.0),
     flex_grow: 1.0,
     flex_shrink: 0.0,
@@ -13247,12 +13253,12 @@ test "taffy/child_min_max_width_flexing" {
 test "taffy/child_with_padding_align_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    justify_content: @style.End,
-    align_items: @style.End,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    align_items: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -13321,11 +13327,11 @@ test "taffy/container_with_unsized_child" {
 test "taffy/content_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Flex,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -13335,8 +13341,8 @@ test "taffy/content_size" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Length(20.0),
     inset: {
@@ -13387,22 +13393,22 @@ test "taffy/content_size" {
 test "taffy/display_none" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -13434,23 +13440,23 @@ test "taffy/display_none" {
 test "taffy/display_none_absolute_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
-    position: @style.Position::Absolute,
+    display: @types.Display::None,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     inset: {
@@ -13489,22 +13495,22 @@ test "taffy/display_none_absolute_child" {
 test "taffy/display_none_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -13537,7 +13543,7 @@ test "taffy/display_none_fixed_size" {
 test "taffy/display_none_only_node" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -13560,15 +13566,15 @@ test "taffy/display_none_only_node" {
 test "taffy/display_none_with_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -13576,15 +13582,15 @@ test "taffy/display_none_with_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
-    flex_direction: @style.Column,
+    display: @types.Display::None,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
@@ -13597,7 +13603,7 @@ test "taffy/display_none_with_child" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -13638,15 +13644,15 @@ test "taffy/display_none_with_child" {
 test "taffy/display_none_with_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -13660,7 +13666,7 @@ test "taffy/display_none_with_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -13692,22 +13698,22 @@ test "taffy/display_none_with_margin" {
 test "taffy/display_none_with_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.None,
+    display: @types.Display::None,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -13751,8 +13757,8 @@ test "taffy/display_none_with_position_absolute" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.None,
-    position: @style.Position::Absolute,
+    display: @types.Display::None,
+    position: @types.Position::Absolute,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -13781,25 +13787,25 @@ test "taffy/display_none_with_position_absolute" {
 test "taffy/do_not_clamp_height_of_absolute_node_to_height_of_its_overflow_hidden_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
       top: @types.Length(0.0),
       bottom: @types.Auto,
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -13840,14 +13846,14 @@ test "taffy/do_not_clamp_height_of_absolute_node_to_height_of_its_overflow_hidde
 test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_grow: 1.0,
@@ -13857,7 +13863,7 @@ test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
     height: @types.Length(50.0),
     flex_grow: 1.0,
@@ -13892,15 +13898,15 @@ test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
 test "taffy/flex_basis_flex_grow_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
   }
@@ -13908,7 +13914,7 @@ test "taffy/flex_basis_flex_grow_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -13940,15 +13946,15 @@ test "taffy/flex_basis_flex_grow_column" {
 test "taffy/flex_basis_flex_grow_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
   }
@@ -13956,7 +13962,7 @@ test "taffy/flex_basis_flex_grow_row" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -13988,22 +13994,22 @@ test "taffy/flex_basis_flex_grow_row" {
 test "taffy/flex_basis_flex_shrink_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(100.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(50.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -14035,22 +14041,22 @@ test "taffy/flex_basis_flex_shrink_column" {
 test "taffy/flex_basis_flex_shrink_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(100.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(50.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -14082,15 +14088,15 @@ test "taffy/flex_basis_flex_shrink_row" {
 test "taffy/flex_basis_larger_than_content_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -14132,15 +14138,15 @@ test "taffy/flex_basis_larger_than_content_column" {
 test "taffy/flex_basis_larger_than_content_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -14188,7 +14194,7 @@ test "taffy/flex_basis_overrides_main_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
@@ -14197,7 +14203,7 @@ test "taffy/flex_basis_overrides_main_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -14205,7 +14211,7 @@ test "taffy/flex_basis_overrides_main_size" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -14242,15 +14248,15 @@ test "taffy/flex_basis_overrides_main_size" {
 test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(60.0),
   }
@@ -14268,8 +14274,8 @@ test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" 
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14320,15 +14326,15 @@ test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" 
 test "taffy/flex_basis_smaller_than_content_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -14370,15 +14376,15 @@ test "taffy/flex_basis_smaller_than_content_column" {
 test "taffy/flex_basis_smaller_than_content_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -14420,14 +14426,14 @@ test "taffy/flex_basis_smaller_than_content_row" {
 test "taffy/flex_basis_smaller_than_main_dimen_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_basis: @types.Length(10.0),
@@ -14457,14 +14463,14 @@ test "taffy/flex_basis_smaller_than_main_dimen_column" {
 test "taffy/flex_basis_smaller_than_main_dimen_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_basis: @types.Length(10.0),
@@ -14494,15 +14500,15 @@ test "taffy/flex_basis_smaller_than_main_dimen_row" {
 test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14520,8 +14526,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14572,15 +14578,15 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
 test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14598,8 +14604,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14650,14 +14656,14 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
 test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14675,8 +14681,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14727,15 +14733,15 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
 test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14753,8 +14759,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -14805,13 +14811,13 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
 test "taffy/flex_basis_unconstraint_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     flex_basis: @types.Length(50.0),
   }
@@ -14840,13 +14846,13 @@ test "taffy/flex_basis_unconstraint_column" {
 test "taffy/flex_basis_unconstraint_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     flex_basis: @types.Length(50.0),
   }
@@ -14875,14 +14881,14 @@ test "taffy/flex_basis_unconstraint_row" {
 test "taffy/flex_basis_zero_undefined_main_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(0.0),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -14924,10 +14930,10 @@ test "taffy/flex_basis_zero_undefined_main_size" {
 test "taffy/flex_column_relative_all_sides" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -14965,10 +14971,10 @@ test "taffy/flex_column_relative_all_sides" {
 test "taffy/flex_direction_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -15020,9 +15026,9 @@ test "taffy/flex_direction_column" {
 test "taffy/flex_direction_column_no_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -15074,10 +15080,10 @@ test "taffy/flex_direction_column_no_height" {
 test "taffy/flex_direction_column_reverse" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.ColumnReverse,
+    flex_direction: @types.ColumnReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -15129,9 +15135,9 @@ test "taffy/flex_direction_column_reverse" {
 test "taffy/flex_direction_column_reverse_no_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.ColumnReverse,
+    flex_direction: @types.ColumnReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -15285,10 +15291,10 @@ test "taffy/flex_direction_row_no_width" {
 test "taffy/flex_direction_row_reverse" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.RowReverse,
+    flex_direction: @types.RowReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -15340,7 +15346,7 @@ test "taffy/flex_direction_row_reverse" {
 test "taffy/flex_grow_0_min_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(100.0),
     border: {
@@ -15349,12 +15355,12 @@ test "taffy/flex_grow_0_min_size" {
       top: @types.Length(1.0),
       bottom: @types.Length(1.0),
     },
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_shrink: 0.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -15369,7 +15375,7 @@ test "taffy/flex_grow_0_min_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_shrink: 0.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -15384,7 +15390,7 @@ test "taffy/flex_grow_0_min_size" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_shrink: 0.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -15399,7 +15405,7 @@ test "taffy/flex_grow_0_min_size" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_shrink: 0.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -15447,13 +15453,13 @@ test "taffy/flex_grow_0_min_size" {
 test "taffy/flex_grow_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
@@ -15483,14 +15489,14 @@ test "taffy/flex_grow_child" {
 test "taffy/flex_grow_flex_basis_percent_min_max" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(120.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
@@ -15501,7 +15507,7 @@ test "taffy/flex_grow_flex_basis_percent_min_max" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     max_width: @types.Length(20.0),
@@ -15538,24 +15544,24 @@ test "taffy/flex_grow_flex_basis_percent_min_max" {
 test "taffy/flex_grow_height_maximized" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(100.0),
     max_height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(200.0),
   }
@@ -15602,22 +15608,22 @@ test "taffy/flex_grow_height_maximized" {
 test "taffy/flex_grow_in_at_most_container" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Row,
+    align_items: @types.Start,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(0.0),
   }
@@ -15660,7 +15666,7 @@ test "taffy/flex_grow_less_than_factor_one" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 0.2,
     flex_shrink: 0.0,
     flex_basis: @types.Length(40.0),
@@ -15669,7 +15675,7 @@ test "taffy/flex_grow_less_than_factor_one" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 0.2,
     flex_shrink: 0.0,
   }
@@ -15677,7 +15683,7 @@ test "taffy/flex_grow_less_than_factor_one" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 0.4,
     flex_shrink: 0.0,
   }
@@ -15714,25 +15720,25 @@ test "taffy/flex_grow_less_than_factor_one" {
 test "taffy/flex_grow_root_minimized" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
     max_height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(100.0),
     max_height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(200.0),
   }
@@ -15787,7 +15793,7 @@ test "taffy/flex_grow_shrink_at_most" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -15823,16 +15829,16 @@ test "taffy/flex_grow_shrink_at_most" {
 test "taffy/flex_grow_to_min" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
     max_height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -15870,15 +15876,15 @@ test "taffy/flex_grow_to_min" {
 test "taffy/flex_grow_within_constrained_max_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     max_height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(100.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -15916,22 +15922,22 @@ test "taffy/flex_grow_within_constrained_max_column" {
 test "taffy/flex_grow_within_constrained_max_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     max_width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(100.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -15977,22 +15983,22 @@ test "taffy/flex_grow_within_constrained_max_row" {
 test "taffy/flex_grow_within_constrained_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Length(300.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
   }
@@ -16029,14 +16035,14 @@ test "taffy/flex_grow_within_constrained_max_width" {
 test "taffy/flex_grow_within_constrained_min_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -16074,15 +16080,15 @@ test "taffy/flex_grow_within_constrained_min_column" {
 test "taffy/flex_grow_within_constrained_min_max_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(100.0),
     max_height: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -16120,15 +16126,15 @@ test "taffy/flex_grow_within_constrained_min_max_column" {
 test "taffy/flex_grow_within_constrained_min_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     min_width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -16166,22 +16172,22 @@ test "taffy/flex_grow_within_constrained_min_row" {
 test "taffy/flex_grow_within_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
   }
@@ -16218,16 +16224,16 @@ test "taffy/flex_grow_within_max_width" {
 test "taffy/flex_root_ignored" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
     max_height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(200.0),
   }
@@ -16305,10 +16311,10 @@ test "taffy/flex_row_relative_all_sides" {
 test "taffy/flex_shrink_by_outer_margin_with_max_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     max_height: @types.Length(80.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -16347,15 +16353,15 @@ test "taffy/flex_shrink_by_outer_margin_with_max_size" {
 test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(100.0),
   }
@@ -16363,7 +16369,7 @@ test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(100.0),
     flex_grow: 1.0,
@@ -16397,15 +16403,15 @@ test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
 test "taffy/flex_shrink_flex_grow_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(100.0),
   }
@@ -16413,7 +16419,7 @@ test "taffy/flex_shrink_flex_grow_row" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(100.0),
   }
@@ -16448,7 +16454,7 @@ test "taffy/flex_shrink_to_zero" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_shrink: 0.0,
@@ -16457,7 +16463,7 @@ test "taffy/flex_shrink_to_zero" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -16465,7 +16471,7 @@ test "taffy/flex_shrink_to_zero" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_shrink: 0.0,
@@ -16503,11 +16509,11 @@ test "taffy/flex_shrink_to_zero" {
 test "taffy/flex_wrap_align_stretch_fits_one_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(150.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -16549,15 +16555,15 @@ test "taffy/flex_wrap_align_stretch_fits_one_row" {
 test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
     min_width: @types.Length(55.0),
     flex_basis: @types.Length(50.0),
@@ -16566,7 +16572,7 @@ test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
     min_width: @types.Length(55.0),
     flex_basis: @types.Length(50.0),
@@ -16600,23 +16606,23 @@ test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
 test "taffy/flex_wrap_wrap_to_child_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_items: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    align_items: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -16678,16 +16684,16 @@ test "taffy/flex_wrap_wrap_to_child_height" {
 test "taffy/gap_column_gap_child_margins" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(2.0),
       right: @types.Length(2.0),
@@ -16701,7 +16707,7 @@ test "taffy/gap_column_gap_child_margins" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -16715,7 +16721,7 @@ test "taffy/gap_column_gap_child_margins" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(15.0),
       right: @types.Length(15.0),
@@ -16758,11 +16764,11 @@ test "taffy/gap_column_gap_child_margins" {
 test "taffy/gap_column_gap_determines_parent_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    align_items: @style.Stretch,
-    flex_direction: @style.Row,
+    align_items: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -16814,17 +16820,17 @@ test "taffy/gap_column_gap_determines_parent_width" {
 test "taffy/gap_column_gap_flexible" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -16832,7 +16838,7 @@ test "taffy/gap_column_gap_flexible" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -16840,7 +16846,7 @@ test "taffy/gap_column_gap_flexible" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -16877,16 +16883,16 @@ test "taffy/gap_column_gap_flexible" {
 test "taffy/gap_column_gap_flexible_undefined_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -16894,7 +16900,7 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -16902,7 +16908,7 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -16939,11 +16945,11 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
 test "taffy/gap_column_gap_inflexible" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -16995,10 +17001,10 @@ test "taffy/gap_column_gap_inflexible" {
 test "taffy/gap_column_gap_inflexible_undefined_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17050,12 +17056,12 @@ test "taffy/gap_column_gap_inflexible_undefined_parent" {
 test "taffy/gap_column_gap_justify_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17107,12 +17113,12 @@ test "taffy/gap_column_gap_justify_center" {
 test "taffy/gap_column_gap_justify_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.End,
-    flex_direction: @style.Row,
+    justify_content: @types.End,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17164,12 +17170,12 @@ test "taffy/gap_column_gap_justify_flex_end" {
 test "taffy/gap_column_gap_justify_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Start,
-    flex_direction: @style.Row,
+    justify_content: @types.Start,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17221,12 +17227,12 @@ test "taffy/gap_column_gap_justify_flex_start" {
 test "taffy/gap_column_gap_justify_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceAround,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceAround,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17278,12 +17284,12 @@ test "taffy/gap_column_gap_justify_space_around" {
 test "taffy/gap_column_gap_justify_space_between" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17335,12 +17341,12 @@ test "taffy/gap_column_gap_justify_space_between" {
 test "taffy/gap_column_gap_justify_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17392,11 +17398,11 @@ test "taffy/gap_column_gap_justify_space_evenly" {
 test "taffy/gap_column_gap_mixed_flexible" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     height: @types.Length(100.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17407,7 +17413,7 @@ test "taffy/gap_column_gap_mixed_flexible" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17450,14 +17456,14 @@ test "taffy/gap_column_gap_mixed_flexible" {
 test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     column_gap: @types.Percent(0.5000),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(40.0),
     flex_shrink: 0.0,
@@ -17473,7 +17479,7 @@ test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(40.0),
     flex_shrink: 0.0,
@@ -17511,9 +17517,9 @@ test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
 test "taffy/gap_column_gap_percentage_cyclic_shrinkable" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     column_gap: @types.Percent(0.2000),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17568,14 +17574,14 @@ test "taffy/gap_column_gap_percentage_cyclic_shrinkable" {
 test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     column_gap: @types.Percent(0.2000),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(40.0),
     flex_shrink: 0.0,
@@ -17584,7 +17590,7 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(40.0),
     flex_shrink: 0.0,
@@ -17593,7 +17599,7 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(20.0),
     height: @types.Length(40.0),
     flex_shrink: 0.0,
@@ -17631,17 +17637,17 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
 test "taffy/gap_column_gap_percentage_flexible" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Percent(0.1000),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17649,7 +17655,7 @@ test "taffy/gap_column_gap_percentage_flexible" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17657,7 +17663,7 @@ test "taffy/gap_column_gap_percentage_flexible" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17694,7 +17700,7 @@ test "taffy/gap_column_gap_percentage_flexible" {
 test "taffy/gap_column_gap_percentage_flexible_with_padding" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -17705,12 +17711,12 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
     },
     row_gap: @types.Length(20.0),
     column_gap: @types.Percent(0.1000),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17718,7 +17724,7 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17726,7 +17732,7 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.0000),
   }
@@ -17763,11 +17769,11 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
 test "taffy/gap_column_gap_percentage_inflexible" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     column_gap: @types.Percent(0.2000),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17819,12 +17825,12 @@ test "taffy/gap_column_gap_percentage_inflexible" {
 test "taffy/gap_column_gap_row_gap_wrapping" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -17945,17 +17951,17 @@ test "taffy/gap_column_gap_row_gap_wrapping" {
 test "taffy/gap_column_gap_start_index" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -18017,14 +18023,14 @@ test "taffy/gap_column_gap_start_index" {
 test "taffy/gap_column_gap_wrap_align_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_content: @style.Center,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18112,14 +18118,14 @@ test "taffy/gap_column_gap_wrap_align_center" {
 test "taffy/gap_column_gap_wrap_align_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_content: @style.End,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.End,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18207,14 +18213,14 @@ test "taffy/gap_column_gap_wrap_align_flex_end" {
 test "taffy/gap_column_gap_wrap_align_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18302,14 +18308,14 @@ test "taffy/gap_column_gap_wrap_align_flex_start" {
 test "taffy/gap_column_gap_wrap_align_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18397,14 +18403,14 @@ test "taffy/gap_column_gap_wrap_align_space_around" {
 test "taffy/gap_column_gap_wrap_align_space_between" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18492,18 +18498,18 @@ test "taffy/gap_column_gap_wrap_align_space_between" {
 test "taffy/gap_column_gap_wrap_align_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(300.0),
     height: @types.Length(300.0),
     column_gap: @types.Length(5.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -18511,7 +18517,7 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -18519,7 +18525,7 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -18527,7 +18533,7 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -18535,7 +18541,7 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -18580,12 +18586,12 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
 test "taffy/gap_column_row_gap_wrapping" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18706,14 +18712,14 @@ test "taffy/gap_column_row_gap_wrapping" {
 test "taffy/gap_row_gap_align_items_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_items: @style.End,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_items: @types.End,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18795,15 +18801,15 @@ test "taffy/gap_row_gap_align_items_end" {
 test "taffy/gap_row_gap_align_items_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
     row_gap: @types.Length(20.0),
     column_gap: @types.Length(10.0),
-    align_items: @style.Stretch,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Stretch,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -18885,16 +18891,16 @@ test "taffy/gap_row_gap_align_items_stretch" {
 test "taffy/gap_row_gap_column_child_margins" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
     row_gap: @types.Length(10.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -18908,7 +18914,7 @@ test "taffy/gap_row_gap_column_child_margins" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -18922,7 +18928,7 @@ test "taffy/gap_row_gap_column_child_margins" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -18965,11 +18971,11 @@ test "taffy/gap_row_gap_column_child_margins" {
 test "taffy/gap_row_gap_determines_parent_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     row_gap: @types.Length(10.0),
-    align_items: @style.Stretch,
-    flex_direction: @style.Column,
+    align_items: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -19021,12 +19027,12 @@ test "taffy/gap_row_gap_determines_parent_height" {
 test "taffy/gap_row_gap_percentage_wrapping" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(80.0),
     row_gap: @types.Percent(0.1000),
     column_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -19147,12 +19153,12 @@ test "taffy/gap_row_gap_percentage_wrapping" {
 test "taffy/gap_row_gap_row_wrap_child_margins" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
     row_gap: @types.Length(10.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -19222,8 +19228,8 @@ test "taffy/gap_row_gap_row_wrap_child_margins" {
 test "taffy/intrinsic_sizing_cross_size_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -19249,8 +19255,8 @@ test "taffy/intrinsic_sizing_cross_size_column" {
 test "taffy/intrinsic_sizing_main_size_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -19276,14 +19282,14 @@ test "taffy/intrinsic_sizing_main_size_column" {
 test "taffy/intrinsic_sizing_main_size_column_nested" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -19317,15 +19323,15 @@ test "taffy/intrinsic_sizing_main_size_column_nested" {
 test "taffy/intrinsic_sizing_main_size_column_wrap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -19338,8 +19344,8 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -19377,15 +19383,15 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
 test "taffy/intrinsic_sizing_main_size_min_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(300.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     max_width: @types.Length(100.0),
     max_height: @types.Length(100.0),
     padding: {
@@ -19394,8 +19400,8 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -19406,7 +19412,7 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(50.0),
     min_height: @types.Length(50.0),
     padding: {
@@ -19505,8 +19511,8 @@ test "taffy/intrinsic_sizing_main_size_row_nested" {
 test "taffy/intrinsic_sizing_main_size_row_wrap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = { ..@style.Style::default() }
@@ -19556,11 +19562,11 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
 test "taffy/justify_content_column_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -19612,7 +19618,7 @@ test "taffy/justify_content_column_center" {
 test "taffy/justify_content_column_center_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -19621,21 +19627,21 @@ test "taffy/justify_content_column_center_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19644,7 +19650,7 @@ test "taffy/justify_content_column_center_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19653,7 +19659,7 @@ test "taffy/justify_content_column_center_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19699,7 +19705,7 @@ test "taffy/justify_content_column_center_negative_space" {
 test "taffy/justify_content_column_center_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -19708,23 +19714,23 @@ test "taffy/justify_content_column_center_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19733,7 +19739,7 @@ test "taffy/justify_content_column_center_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19742,7 +19748,7 @@ test "taffy/justify_content_column_center_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19788,11 +19794,11 @@ test "taffy/justify_content_column_center_negative_space_gap" {
 test "taffy/justify_content_column_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -19844,7 +19850,7 @@ test "taffy/justify_content_column_end" {
 test "taffy/justify_content_column_end_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -19853,21 +19859,21 @@ test "taffy/justify_content_column_end_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.End,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19876,7 +19882,7 @@ test "taffy/justify_content_column_end_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19885,7 +19891,7 @@ test "taffy/justify_content_column_end_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19931,7 +19937,7 @@ test "taffy/justify_content_column_end_negative_space" {
 test "taffy/justify_content_column_end_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -19940,23 +19946,23 @@ test "taffy/justify_content_column_end_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.End,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19965,7 +19971,7 @@ test "taffy/justify_content_column_end_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -19974,7 +19980,7 @@ test "taffy/justify_content_column_end_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20020,11 +20026,11 @@ test "taffy/justify_content_column_end_negative_space_gap" {
 test "taffy/justify_content_column_end_reverse" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20076,11 +20082,11 @@ test "taffy/justify_content_column_end_reverse" {
 test "taffy/justify_content_column_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20132,11 +20138,11 @@ test "taffy/justify_content_column_flex_end" {
 test "taffy/justify_content_column_flex_end_reverse" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.ColumnReverse,
+    justify_content: @types.End,
+    flex_direction: @types.ColumnReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20188,11 +20194,11 @@ test "taffy/justify_content_column_flex_end_reverse" {
 test "taffy/justify_content_column_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Start,
-    flex_direction: @style.Column,
+    justify_content: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20244,11 +20250,11 @@ test "taffy/justify_content_column_flex_start" {
 test "taffy/justify_content_column_flex_start_reverse" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Start,
-    flex_direction: @style.ColumnReverse,
+    justify_content: @types.Start,
+    flex_direction: @types.ColumnReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20302,7 +20308,7 @@ test "taffy/justify_content_column_max_height_and_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(100.0),
     max_height: @types.Length(80.0),
     margin: {
@@ -20311,8 +20317,8 @@ test "taffy/justify_content_column_max_height_and_margin" {
       top: @types.Length(100.0),
       bottom: @types.Length(0.0),
     },
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -20355,7 +20361,7 @@ test "taffy/justify_content_column_min_height_and_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(50.0),
     margin: {
       left: @types.Length(0.0),
@@ -20363,8 +20369,8 @@ test "taffy/justify_content_column_min_height_and_margin" {
       top: @types.Length(100.0),
       bottom: @types.Length(0.0),
     },
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -20405,10 +20411,10 @@ test "taffy/justify_content_column_min_height_and_margin" {
 test "taffy/justify_content_column_min_height_and_margin_bottom" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(50.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20447,10 +20453,10 @@ test "taffy/justify_content_column_min_height_and_margin_bottom" {
 test "taffy/justify_content_column_min_height_and_margin_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(50.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20489,11 +20495,11 @@ test "taffy/justify_content_column_min_height_and_margin_top" {
 test "taffy/justify_content_column_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceAround,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceAround,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20545,7 +20551,7 @@ test "taffy/justify_content_column_space_around" {
 test "taffy/justify_content_column_space_around_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -20554,21 +20560,21 @@ test "taffy/justify_content_column_space_around_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.SpaceAround,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceAround,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20577,7 +20583,7 @@ test "taffy/justify_content_column_space_around_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20586,7 +20592,7 @@ test "taffy/justify_content_column_space_around_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20632,7 +20638,7 @@ test "taffy/justify_content_column_space_around_negative_space" {
 test "taffy/justify_content_column_space_around_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -20641,23 +20647,23 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceAround,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceAround,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20666,7 +20672,7 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20675,7 +20681,7 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20721,11 +20727,11 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
 test "taffy/justify_content_column_space_between" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceBetween,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceBetween,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -20777,7 +20783,7 @@ test "taffy/justify_content_column_space_between" {
 test "taffy/justify_content_column_space_between_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -20786,21 +20792,21 @@ test "taffy/justify_content_column_space_between_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.SpaceBetween,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceBetween,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20809,7 +20815,7 @@ test "taffy/justify_content_column_space_between_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20818,7 +20824,7 @@ test "taffy/justify_content_column_space_between_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20864,7 +20870,7 @@ test "taffy/justify_content_column_space_between_negative_space" {
 test "taffy/justify_content_column_space_between_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -20873,23 +20879,23 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceBetween,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceBetween,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20898,7 +20904,7 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20907,7 +20913,7 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -20953,11 +20959,11 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
 test "taffy/justify_content_column_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceEvenly,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceEvenly,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21009,7 +21015,7 @@ test "taffy/justify_content_column_space_evenly" {
 test "taffy/justify_content_column_space_evenly_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -21018,21 +21024,21 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.SpaceEvenly,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceEvenly,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21041,7 +21047,7 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21050,7 +21056,7 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21096,7 +21102,7 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
 test "taffy/justify_content_column_space_evenly_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -21105,23 +21111,23 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.SpaceEvenly,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.SpaceEvenly,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21130,7 +21136,7 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21139,7 +21145,7 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21185,11 +21191,11 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
 test "taffy/justify_content_column_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Start,
-    flex_direction: @style.Column,
+    justify_content: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21241,7 +21247,7 @@ test "taffy/justify_content_column_start" {
 test "taffy/justify_content_column_start_negative_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -21250,21 +21256,21 @@ test "taffy/justify_content_column_start_negative_space" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    justify_content: @style.Start,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Start,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21273,7 +21279,7 @@ test "taffy/justify_content_column_start_negative_space" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21282,7 +21288,7 @@ test "taffy/justify_content_column_start_negative_space" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21328,7 +21334,7 @@ test "taffy/justify_content_column_start_negative_space" {
 test "taffy/justify_content_column_start_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     height: @types.Length(320.0),
     border: {
@@ -21337,23 +21343,23 @@ test "taffy/justify_content_column_start_negative_space_gap" {
       top: @types.Length(60.0),
       bottom: @types.Length(60.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
-    justify_content: @style.Start,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Start,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21362,7 +21368,7 @@ test "taffy/justify_content_column_start_negative_space_gap" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21371,7 +21377,7 @@ test "taffy/justify_content_column_start_negative_space_gap" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.8000),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -21417,11 +21423,11 @@ test "taffy/justify_content_column_start_negative_space_gap" {
 test "taffy/justify_content_column_start_reverse" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Start,
-    flex_direction: @style.ColumnReverse,
+    justify_content: @types.Start,
+    flex_direction: @types.ColumnReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21473,12 +21479,12 @@ test "taffy/justify_content_column_start_reverse" {
 test "taffy/justify_content_min_max" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     min_height: @types.Length(100.0),
     max_height: @types.Length(200.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21511,23 +21517,23 @@ test "taffy/justify_content_min_max" {
 test "taffy/justify_content_min_width_with_padding_child_width_greater_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(1000.0),
     height: @types.Length(1584.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(400.0),
     padding: {
       left: @types.Length(100.0),
@@ -21535,18 +21541,18 @@ test "taffy/justify_content_min_width_with_padding_child_width_greater_than_pare
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    justify_content: @style.Center,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_child0 = @node.Node::leaf(
     "node", root_child0_child0_child0_style,
@@ -21591,23 +21597,23 @@ test "taffy/justify_content_min_width_with_padding_child_width_greater_than_pare
 test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(1080.0),
     height: @types.Length(1584.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Column,
+    align_content: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(400.0),
     padding: {
       left: @types.Length(100.0),
@@ -21615,18 +21621,18 @@ test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    justify_content: @style.Center,
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(199.0),
     height: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_child0 = @node.Node::leaf(
     "node", root_child0_child0_child0_style,
@@ -21671,16 +21677,16 @@ test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent
 test "taffy/justify_content_overflow_min_max" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(100.0),
     max_height: @types.Length(110.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_shrink: 0.0,
@@ -21689,7 +21695,7 @@ test "taffy/justify_content_overflow_min_max" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_shrink: 0.0,
@@ -21698,7 +21704,7 @@ test "taffy/justify_content_overflow_min_max" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_shrink: 0.0,
@@ -21736,11 +21742,11 @@ test "taffy/justify_content_overflow_min_max" {
 test "taffy/justify_content_row_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21792,11 +21798,11 @@ test "taffy/justify_content_row_center" {
 test "taffy/justify_content_row_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Row,
+    justify_content: @types.End,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21848,11 +21854,11 @@ test "taffy/justify_content_row_flex_end" {
 test "taffy/justify_content_row_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.Start,
-    flex_direction: @style.Row,
+    justify_content: @types.Start,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21904,11 +21910,11 @@ test "taffy/justify_content_row_flex_start" {
 test "taffy/justify_content_row_max_width_and_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     max_width: @types.Length(80.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21947,10 +21953,10 @@ test "taffy/justify_content_row_max_width_and_margin" {
 test "taffy/justify_content_row_min_width_and_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(50.0),
-    justify_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -21989,11 +21995,11 @@ test "taffy/justify_content_row_min_width_and_margin" {
 test "taffy/justify_content_row_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceAround,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceAround,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22045,11 +22051,11 @@ test "taffy/justify_content_row_space_around" {
 test "taffy/justify_content_row_space_between" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceBetween,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceBetween,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22101,11 +22107,11 @@ test "taffy/justify_content_row_space_between" {
 test "taffy/justify_content_row_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.SpaceEvenly,
-    flex_direction: @style.Row,
+    justify_content: @types.SpaceEvenly,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22157,15 +22163,15 @@ test "taffy/justify_content_row_space_evenly" {
 test "taffy/margin_and_flex_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -22199,15 +22205,15 @@ test "taffy/margin_and_flex_column" {
 test "taffy/margin_and_flex_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -22241,15 +22247,15 @@ test "taffy/margin_and_flex_row" {
 test "taffy/margin_and_stretch_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -22283,15 +22289,15 @@ test "taffy/margin_and_stretch_column" {
 test "taffy/margin_and_stretch_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -22325,10 +22331,10 @@ test "taffy/margin_and_stretch_row" {
 test "taffy/margin_auto_bottom" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22378,10 +22384,10 @@ test "taffy/margin_auto_bottom" {
 test "taffy/margin_auto_bottom_and_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22431,10 +22437,10 @@ test "taffy/margin_auto_bottom_and_top" {
 test "taffy/margin_auto_bottom_and_top_justify_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22484,10 +22490,10 @@ test "taffy/margin_auto_bottom_and_top_justify_center" {
 test "taffy/margin_auto_left" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22588,11 +22594,11 @@ test "taffy/margin_auto_left_and_right" {
 test "taffy/margin_auto_left_and_right_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22642,10 +22648,10 @@ test "taffy/margin_auto_left_and_right_column" {
 test "taffy/margin_auto_left_and_right_column_and_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22695,11 +22701,11 @@ test "taffy/margin_auto_left_and_right_column_and_center" {
 test "taffy/margin_auto_left_and_right_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Stretch,
-    flex_direction: @style.Row,
+    align_items: @types.Stretch,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22749,10 +22755,10 @@ test "taffy/margin_auto_left_and_right_stretch" {
 test "taffy/margin_auto_left_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22791,10 +22797,10 @@ test "taffy/margin_auto_left_child_bigger_than_parent" {
 test "taffy/margin_auto_left_fix_right_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22833,10 +22839,10 @@ test "taffy/margin_auto_left_fix_right_child_bigger_than_parent" {
 test "taffy/margin_auto_left_right_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -22875,15 +22881,15 @@ test "taffy/margin_auto_left_right_child_bigger_than_parent" {
 test "taffy/margin_auto_left_stretching_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Auto,
       right: @types.Length(0.0),
@@ -22929,11 +22935,11 @@ test "taffy/margin_auto_left_stretching_child" {
 test "taffy/margin_auto_multiple_children_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23000,11 +23006,11 @@ test "taffy/margin_auto_multiple_children_column" {
 test "taffy/margin_auto_multiple_children_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Row,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23071,10 +23077,10 @@ test "taffy/margin_auto_multiple_children_row" {
 test "taffy/margin_auto_right" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23124,10 +23130,10 @@ test "taffy/margin_auto_right" {
 test "taffy/margin_auto_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23177,11 +23183,11 @@ test "taffy/margin_auto_top" {
 test "taffy/margin_auto_top_and_bottom_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Stretch,
-    flex_direction: @style.Column,
+    align_items: @types.Stretch,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23231,15 +23237,15 @@ test "taffy/margin_auto_top_and_bottom_stretch" {
 test "taffy/margin_auto_top_stretching_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -23285,11 +23291,11 @@ test "taffy/margin_auto_top_stretching_child" {
 test "taffy/margin_bottom" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Column,
+    justify_content: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23327,10 +23333,10 @@ test "taffy/margin_bottom" {
 test "taffy/margin_fix_left_auto_right_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23369,10 +23375,10 @@ test "taffy/margin_fix_left_auto_right_child_bigger_than_parent" {
 test "taffy/margin_left" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23410,11 +23416,11 @@ test "taffy/margin_left" {
 test "taffy/margin_right" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
-    flex_direction: @style.Row,
+    justify_content: @types.End,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23534,10 +23540,10 @@ test "taffy/margin_should_not_be_part_of_max_width" {
 test "taffy/margin_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23575,15 +23581,15 @@ test "taffy/margin_top" {
 test "taffy/margin_with_sibling_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -23596,7 +23602,7 @@ test "taffy/margin_with_sibling_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -23628,15 +23634,15 @@ test "taffy/margin_with_sibling_column" {
 test "taffy/margin_with_sibling_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(10.0),
@@ -23649,7 +23655,7 @@ test "taffy/margin_with_sibling_row" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -23681,10 +23687,10 @@ test "taffy/margin_with_sibling_row" {
 test "taffy/max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23769,10 +23775,10 @@ test "taffy/max_height_overrides_height_on_root" {
 test "taffy/max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -23896,7 +23902,7 @@ test "taffy/measure_child_absolute" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -24129,8 +24135,8 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
   }
   let root_child1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -24168,9 +24174,9 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
 test "taffy/measure_child_with_min_size_greater_than_available_space" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -24282,10 +24288,10 @@ test "taffy/measure_height_overrides_measure" {
 test "taffy/measure_remeasure_child_after_growing" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Auto,
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -24332,15 +24338,15 @@ test "taffy/measure_remeasure_child_after_growing" {
 test "taffy/measure_remeasure_child_after_shrinking" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Auto,
-    align_items: @style.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     flex_shrink: 0.0,
@@ -24450,7 +24456,7 @@ test "taffy/measure_stretch_overrides_measure" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(5.0),
   }
@@ -24458,7 +24464,7 @@ test "taffy/measure_stretch_overrides_measure" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Length(5.0),
   }
@@ -24534,15 +24540,15 @@ test "taffy/measure_width_overrides_measure" {
 test "taffy/min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -24550,7 +24556,7 @@ test "taffy/min_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -24582,10 +24588,10 @@ test "taffy/min_height" {
 test "taffy/min_height_larger_than_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -24700,7 +24706,7 @@ test "taffy/min_height_overrides_max_height" {
 test "taffy/min_height_with_nested_fixed_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     min_height: @types.Length(44.0),
     padding: {
@@ -24709,12 +24715,12 @@ test "taffy/min_height_with_nested_fixed_height" {
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(28.0),
     margin: {
       left: @types.Length(0.0),
@@ -24722,8 +24728,8 @@ test "taffy/min_height_with_nested_fixed_height" {
       top: @types.Length(8.0),
       bottom: @types.Length(9.0),
     },
-    align_self: @style.AlignSelf::Start,
-    flex_direction: @style.Column,
+    align_self: @types.AlignSelf::Start,
+    flex_direction: @types.Column,
     flex_shrink: 0.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -24765,11 +24771,11 @@ test "taffy/min_height_with_nested_fixed_height" {
 test "taffy/min_max_percent_different_width_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -24804,11 +24810,11 @@ test "taffy/min_max_percent_different_width_height" {
 test "taffy/min_max_percent_no_width_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -24843,15 +24849,15 @@ test "taffy/min_max_percent_no_width_height" {
 test "taffy/min_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Length(60.0),
     flex_grow: 1.0,
   }
@@ -24859,7 +24865,7 @@ test "taffy/min_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -24891,10 +24897,10 @@ test "taffy/min_width" {
 test "taffy/min_width_larger_than_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -25009,15 +25015,15 @@ test "taffy/min_width_overrides_width_on_root" {
 test "taffy/multiline_column_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_height: @types.Length(200.0),
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25026,7 +25032,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25035,7 +25041,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25044,7 +25050,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25053,7 +25059,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25062,7 +25068,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25071,7 +25077,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25080,7 +25086,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25089,7 +25095,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child7)
   let root_child8_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25098,7 +25104,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child8)
   let root_child9_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25107,7 +25113,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child9)
   let root_child10_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25116,7 +25122,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child10)
   let root_child11_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25125,7 +25131,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child11)
   let root_child12_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25134,7 +25140,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child12)
   let root_child13_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25143,7 +25149,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child13)
   let root_child14_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25152,7 +25158,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child14)
   let root_child15_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25161,7 +25167,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child15)
   let root_child16_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25170,7 +25176,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child16)
   let root_child17_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25179,7 +25185,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child17)
   let root_child18_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25188,7 +25194,7 @@ test "taffy/multiline_column_max_height" {
   root_children.push(root_child18)
   let root_child19_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(40.0),
     height: @types.Length(20.0),
     flex_shrink: 0.0,
@@ -25294,8 +25300,8 @@ test "taffy/multiline_column_max_height" {
 test "taffy/multiline_min_max_12" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
+    display: @types.Flex,
+    position: @types.Position::Relative,
     width: @types.Length(600.0),
     height: @types.Length(20.0),
     border: {
@@ -25304,12 +25310,12 @@ test "taffy/multiline_min_max_12" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     max_width: @types.Length(300.0),
     padding: {
@@ -25325,7 +25331,7 @@ test "taffy/multiline_min_max_12" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25335,7 +25341,7 @@ test "taffy/multiline_min_max_12" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25345,7 +25351,7 @@ test "taffy/multiline_min_max_12" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25388,8 +25394,8 @@ test "taffy/multiline_min_max_12" {
 test "taffy/multiline_min_max_13" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
+    display: @types.Flex,
+    position: @types.Position::Relative,
     width: @types.Length(600.0),
     height: @types.Length(20.0),
     border: {
@@ -25398,12 +25404,12 @@ test "taffy/multiline_min_max_13" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     max_width: @types.Length(300.0),
     border: {
@@ -25419,7 +25425,7 @@ test "taffy/multiline_min_max_13" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25429,7 +25435,7 @@ test "taffy/multiline_min_max_13" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25439,7 +25445,7 @@ test "taffy/multiline_min_max_13" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25482,8 +25488,8 @@ test "taffy/multiline_min_max_13" {
 test "taffy/multiline_min_max_14" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
+    display: @types.Flex,
+    position: @types.Position::Relative,
     width: @types.Length(600.0),
     height: @types.Length(20.0),
     border: {
@@ -25492,12 +25498,12 @@ test "taffy/multiline_min_max_14" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     max_width: @types.Length(300.0),
     margin: {
@@ -25513,7 +25519,7 @@ test "taffy/multiline_min_max_14" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25523,7 +25529,7 @@ test "taffy/multiline_min_max_14" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25533,7 +25539,7 @@ test "taffy/multiline_min_max_14" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25576,8 +25582,8 @@ test "taffy/multiline_min_max_14" {
 test "taffy/multiline_min_max_5" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
+    display: @types.Flex,
+    position: @types.Position::Relative,
     width: @types.Length(600.0),
     height: @types.Length(20.0),
     border: {
@@ -25586,12 +25592,12 @@ test "taffy/multiline_min_max_5" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     max_width: @types.Length(300.0),
     flex_grow: 1.0,
@@ -25601,7 +25607,7 @@ test "taffy/multiline_min_max_5" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25611,7 +25617,7 @@ test "taffy/multiline_min_max_5" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25621,7 +25627,7 @@ test "taffy/multiline_min_max_5" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25664,8 +25670,8 @@ test "taffy/multiline_min_max_5" {
 test "taffy/multiline_min_max_8" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Relative,
+    display: @types.Flex,
+    position: @types.Position::Relative,
     width: @types.Length(600.0),
     height: @types.Length(20.0),
     border: {
@@ -25674,12 +25680,12 @@ test "taffy/multiline_min_max_8" {
       top: @types.Length(5.0),
       bottom: @types.Length(5.0),
     },
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     max_width: @types.Length(300.0),
     margin: {
@@ -25695,7 +25701,7 @@ test "taffy/multiline_min_max_8" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25705,7 +25711,7 @@ test "taffy/multiline_min_max_8" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25715,7 +25721,7 @@ test "taffy/multiline_min_max_8" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     flex_grow: 1.0,
@@ -25850,22 +25856,22 @@ test "taffy/nested_overflowing_child_in_constraint_parent" {
 test "taffy/only_shrinkable_item_with_flex_basis_zero" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(480.0),
     max_height: @types.Length(764.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(0.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -25879,7 +25885,7 @@ test "taffy/only_shrinkable_item_with_flex_basis_zero" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_shrink: 0.0,
     flex_basis: @types.Length(764.0),
   }
@@ -25956,7 +25962,7 @@ test "taffy/overflow_main_axis" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -25991,9 +25997,9 @@ test "taffy/overflow_main_axis_shrink_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -26033,9 +26039,9 @@ test "taffy/overflow_main_axis_shrink_scroll" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
   }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -26073,7 +26079,7 @@ test "taffy/overflow_main_axis_shrink_visible" {
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @style.Flex }
+  let root_child0_style = { ..@style.Style::default(), display: @types.Flex }
   let root_child0_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
@@ -26106,15 +26112,15 @@ test "taffy/overflow_main_axis_shrink_visible" {
 test "taffy/overflow_scroll_main_axis_justify_content_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    justify_content: @style.End,
+    justify_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -26149,15 +26155,15 @@ test "taffy/overflow_scrollbars_overridden_by_available_space" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -26193,15 +26199,15 @@ test "taffy/overflow_scrollbars_overridden_by_available_space" {
 test "taffy/overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     max_width: @types.Length(2.0),
     max_height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -26229,15 +26235,15 @@ test "taffy/overflow_scrollbars_overridden_by_max_size" {
 test "taffy/overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -26265,15 +26271,15 @@ test "taffy/overflow_scrollbars_overridden_by_size" {
 test "taffy/overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -26301,14 +26307,14 @@ test "taffy/overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/overflow_scrollbars_take_up_space_cross_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -26336,14 +26342,14 @@ test "taffy/overflow_scrollbars_take_up_space_cross_axis" {
 test "taffy/overflow_scrollbars_take_up_space_main_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -26371,11 +26377,11 @@ test "taffy/overflow_scrollbars_take_up_space_main_axis" {
 test "taffy/padding_align_end_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    justify_content: @style.End,
-    align_items: @style.End,
+    justify_content: @types.End,
+    align_items: @types.End,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -26542,7 +26548,7 @@ test "taffy/padding_border_overrides_size_flex_basis_0_growable" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -26564,7 +26570,7 @@ test "taffy/padding_border_overrides_size_flex_basis_0_growable" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     flex_grow: 1.0,
@@ -26641,7 +26647,7 @@ test "taffy/padding_border_overrides_size_root" {
 test "taffy/padding_center_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -26650,8 +26656,8 @@ test "taffy/padding_center_child" {
       top: @types.Length(10.0),
       bottom: @types.Length(20.0),
     },
-    justify_content: @style.Center,
-    align_items: @style.Center,
+    justify_content: @types.Center,
+    align_items: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -26684,14 +26690,14 @@ test "taffy/padding_center_child" {
 test "taffy/padding_container_match_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     padding: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
       top: @types.Length(10.0),
       bottom: @types.Length(10.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -26736,7 +26742,7 @@ test "taffy/padding_flex_child" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -26903,16 +26909,16 @@ test "taffy/parent_wrap_child_size_overflowing_parent" {
 test "taffy/percent_absolute_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(60.0),
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    position: @style.Position::Absolute,
+    display: @types.Flex,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Length(50.0),
     inset: {
@@ -26921,7 +26927,7 @@ test "taffy/percent_absolute_position" {
       top: @types.Auto,
       bottom: @types.Auto,
     },
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -26971,10 +26977,10 @@ test "taffy/percent_absolute_position" {
 test "taffy/percent_within_flex_grow" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(350.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -26985,8 +26991,8 @@ test "taffy/percent_within_flex_grow" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
@@ -27041,15 +27047,15 @@ test "taffy/percent_within_flex_grow" {
 test "taffy/percentage_absolute_position" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     inset: {
@@ -27084,26 +27090,26 @@ test "taffy/percentage_absolute_position" {
 test "taffy/percentage_container_in_wrapping_container" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
-    justify_content: @style.Center,
-    flex_direction: @style.Row,
+    justify_content: @types.Center,
+    flex_direction: @types.Row,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -27167,15 +27173,15 @@ test "taffy/percentage_container_in_wrapping_container" {
 test "taffy/percentage_different_width_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(300.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Percent(0.3000),
     flex_grow: 1.0,
   }
@@ -27214,15 +27220,15 @@ test "taffy/percentage_different_width_height" {
 test "taffy/percentage_different_width_height_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(300.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -27260,15 +27266,15 @@ test "taffy/percentage_different_width_height_column" {
 test "taffy/percentage_flex_basis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.5000),
   }
@@ -27276,7 +27282,7 @@ test "taffy/percentage_flex_basis" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.2500),
   }
@@ -27309,15 +27315,15 @@ test "taffy/percentage_flex_basis" {
 test "taffy/percentage_flex_basis_cross" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.5000),
   }
@@ -27325,7 +27331,7 @@ test "taffy/percentage_flex_basis_cross" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.2500),
   }
@@ -27358,15 +27364,15 @@ test "taffy/percentage_flex_basis_cross" {
 test "taffy/percentage_flex_basis_cross_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_height: @types.Percent(0.6000),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1000),
@@ -27375,7 +27381,7 @@ test "taffy/percentage_flex_basis_cross_max_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_height: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1000),
@@ -27409,15 +27415,15 @@ test "taffy/percentage_flex_basis_cross_max_height" {
 test "taffy/percentage_flex_basis_cross_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Percent(0.6000),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1000),
@@ -27426,7 +27432,7 @@ test "taffy/percentage_flex_basis_cross_max_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1500),
@@ -27460,15 +27466,15 @@ test "taffy/percentage_flex_basis_cross_max_width" {
 test "taffy/percentage_flex_basis_cross_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Percent(0.6000),
     flex_grow: 1.0,
   }
@@ -27476,7 +27482,7 @@ test "taffy/percentage_flex_basis_cross_min_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Percent(0.1000),
     flex_grow: 2.0,
   }
@@ -27509,15 +27515,15 @@ test "taffy/percentage_flex_basis_cross_min_height" {
 test "taffy/percentage_flex_basis_cross_min_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Percent(0.6000),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1000),
@@ -27526,7 +27532,7 @@ test "taffy/percentage_flex_basis_cross_min_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1500),
@@ -27560,15 +27566,15 @@ test "taffy/percentage_flex_basis_cross_min_width" {
 test "taffy/percentage_flex_basis_main_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_height: @types.Percent(0.6000),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1000),
@@ -27577,7 +27583,7 @@ test "taffy/percentage_flex_basis_main_max_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_height: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1000),
@@ -27611,15 +27617,15 @@ test "taffy/percentage_flex_basis_main_max_height" {
 test "taffy/percentage_flex_basis_main_max_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Percent(0.6000),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1500),
@@ -27628,7 +27634,7 @@ test "taffy/percentage_flex_basis_main_max_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_width: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1000),
@@ -27662,15 +27668,15 @@ test "taffy/percentage_flex_basis_main_max_width" {
 test "taffy/percentage_flex_basis_main_min_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Percent(0.6000),
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1500),
@@ -27679,7 +27685,7 @@ test "taffy/percentage_flex_basis_main_min_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1000),
@@ -27713,29 +27719,29 @@ test "taffy/percentage_flex_basis_main_min_width" {
 test "taffy/percentage_main_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(71.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(151.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(15.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     max_height: @types.Percent(0.3300),
     flex_basis: @types.Length(48.0),
   }
@@ -27776,22 +27782,22 @@ test "taffy/percentage_main_max_height" {
 test "taffy/percentage_margin_should_calculate_based_only_on_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Percent(0.1000),
       right: @types.Percent(0.1000),
       top: @types.Percent(0.1000),
       bottom: @types.Percent(0.1000),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -27833,7 +27839,7 @@ test "taffy/percentage_margin_should_calculate_based_only_on_width" {
 test "taffy/percentage_moderate_complexity" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     padding: {
       left: @types.Length(3.0),
@@ -27841,12 +27847,12 @@ test "taffy/percentage_moderate_complexity" {
       top: @types.Length(3.0),
       bottom: @types.Length(3.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.5000),
     margin: {
       left: @types.Length(5.0),
@@ -27860,7 +27866,7 @@ test "taffy/percentage_moderate_complexity" {
       top: @types.Percent(0.0300),
       bottom: @types.Percent(0.0300),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -27912,15 +27918,15 @@ test "taffy/percentage_moderate_complexity" {
 test "taffy/percentage_moderate_complexity2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.5000),
     padding: {
       left: @types.Percent(0.1000),
@@ -27928,7 +27934,7 @@ test "taffy/percentage_moderate_complexity2" {
       top: @types.Percent(0.1000),
       bottom: @types.Percent(0.1000),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -27969,15 +27975,15 @@ test "taffy/percentage_moderate_complexity2" {
 test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Percent(0.6000),
     margin: {
       left: @types.Length(5.0),
@@ -27991,14 +27997,14 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
       top: @types.Length(3.0),
       bottom: @types.Length(3.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
     flex_basis: @types.Percent(0.1000),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.5000),
     margin: {
       left: @types.Length(5.0),
@@ -28012,7 +28018,7 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
       top: @types.Percent(0.0300),
       bottom: @types.Percent(0.0300),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -28045,7 +28051,7 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_width: @types.Percent(0.2000),
     flex_grow: 4.0,
     flex_basis: @types.Percent(0.1500),
@@ -28087,22 +28093,22 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
 test "taffy/percentage_padding_should_calculate_based_only_on_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     padding: {
       left: @types.Percent(0.1000),
       right: @types.Percent(0.1000),
       top: @types.Percent(0.1000),
       bottom: @types.Percent(0.1000),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -28144,10 +28150,10 @@ test "taffy/percentage_padding_should_calculate_based_only_on_width" {
 test "taffy/percentage_position_bottom_right" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -28186,10 +28192,10 @@ test "taffy/percentage_position_bottom_right" {
 test "taffy/percentage_position_left_top" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(400.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -28228,7 +28234,7 @@ test "taffy/percentage_position_left_top" {
 test "taffy/percentage_size_based_on_parent_inner_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
     padding: {
@@ -28237,7 +28243,7 @@ test "taffy/percentage_size_based_on_parent_inner_size" {
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -28270,14 +28276,14 @@ test "taffy/percentage_size_based_on_parent_inner_size" {
 test "taffy/percentage_size_of_flex_basis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
@@ -28362,10 +28368,10 @@ test "taffy/percentage_sizes_should_not_prevent_flex_shrinking" {
 test "taffy/percentage_width_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(400.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -28398,8 +28404,8 @@ test "taffy/percentage_width_height" {
 test "taffy/percentage_width_height_undefined_parent_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -28468,10 +28474,10 @@ test "taffy/position_root_with_rtl_should_position_withoutdirection" {
 test "taffy/relative_position_should_not_nudge_siblings" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -28525,43 +28531,43 @@ test "taffy/relative_position_should_not_nudge_siblings" {
 test "taffy/rounding_flex_basis_flex_grow_row_prime_number_width" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(113.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
@@ -28605,29 +28611,29 @@ test "taffy/rounding_flex_basis_flex_grow_row_prime_number_width" {
 test "taffy/rounding_flex_basis_flex_grow_row_width_of_100" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
@@ -28663,29 +28669,29 @@ test "taffy/rounding_flex_basis_flex_grow_row_width_of_100" {
 test "taffy/rounding_flex_basis_flex_shrink_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(101.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(100.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(25.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_basis: @types.Length(25.0),
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
@@ -28721,15 +28727,15 @@ test "taffy/rounding_flex_basis_flex_shrink_row" {
 test "taffy/rounding_flex_basis_overrides_main_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(113.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
@@ -28738,7 +28744,7 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28746,7 +28752,7 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28783,15 +28789,15 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
 test "taffy/rounding_fractial_input_1" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(113.4),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
@@ -28800,7 +28806,7 @@ test "taffy/rounding_fractial_input_1" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28808,7 +28814,7 @@ test "taffy/rounding_fractial_input_1" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28845,15 +28851,15 @@ test "taffy/rounding_fractial_input_1" {
 test "taffy/rounding_fractial_input_2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(113.6),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
@@ -28862,7 +28868,7 @@ test "taffy/rounding_fractial_input_2" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28870,7 +28876,7 @@ test "taffy/rounding_fractial_input_2" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28907,15 +28913,15 @@ test "taffy/rounding_fractial_input_2" {
 test "taffy/rounding_fractial_input_3" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(113.4),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
@@ -28924,7 +28930,7 @@ test "taffy/rounding_fractial_input_3" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28932,7 +28938,7 @@ test "taffy/rounding_fractial_input_3" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28969,15 +28975,15 @@ test "taffy/rounding_fractial_input_3" {
 test "taffy/rounding_fractial_input_4" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(113.4),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.0),
     flex_grow: 1.0,
     flex_basis: @types.Length(50.0),
@@ -28986,7 +28992,7 @@ test "taffy/rounding_fractial_input_4" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -28994,7 +29000,7 @@ test "taffy/rounding_fractial_input_4" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29031,10 +29037,10 @@ test "taffy/rounding_fractial_input_4" {
 test "taffy/rounding_fractial_input_5" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(963.3),
     height: @types.Length(100.0),
-    justify_content: @style.Center,
+    justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -29080,9 +29086,9 @@ test "taffy/rounding_fractial_input_6" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.5000),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -29105,9 +29111,9 @@ test "taffy/rounding_fractial_input_6" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.5000),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -29173,9 +29179,9 @@ test "taffy/rounding_fractial_input_7" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.2500),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -29198,9 +29204,9 @@ test "taffy/rounding_fractial_input_7" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.2500),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
@@ -29223,9 +29229,9 @@ test "taffy/rounding_fractial_input_7" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.2500),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
@@ -29248,9 +29254,9 @@ test "taffy/rounding_fractial_input_7" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(0.2500),
-    flex_wrap: @style.Wrap,
+    flex_wrap: @types.Wrap,
   }
   let root_child3_children : Array[@node.Node] = []
   let root_child3_child0_style = {
@@ -29338,15 +29344,15 @@ test "taffy/rounding_fractial_input_7" {
 test "taffy/rounding_inner_node_controversy_combined" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(640.0),
     height: @types.Length(320.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Percent(1.0000),
     flex_grow: 1.0,
   }
@@ -29354,15 +29360,15 @@ test "taffy/rounding_inner_node_controversy_combined" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Percent(1.0000),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     flex_grow: 1.0,
   }
@@ -29370,15 +29376,15 @@ test "taffy/rounding_inner_node_controversy_combined" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_child1_children : Array[@node.Node] = []
   let root_child1_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     flex_grow: 1.0,
   }
@@ -29392,7 +29398,7 @@ test "taffy/rounding_inner_node_controversy_combined" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Percent(1.0000),
     flex_grow: 1.0,
   }
@@ -29404,7 +29410,7 @@ test "taffy/rounding_inner_node_controversy_combined" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Percent(1.0000),
     flex_grow: 1.0,
   }
@@ -29457,14 +29463,14 @@ test "taffy/rounding_inner_node_controversy_combined" {
 test "taffy/rounding_inner_node_controversy_horizontal" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29472,15 +29478,15 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29492,7 +29498,7 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29533,14 +29539,14 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
 test "taffy/rounding_inner_node_controversy_vertical" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(320.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29548,15 +29554,15 @@ test "taffy/rounding_inner_node_controversy_vertical" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29568,7 +29574,7 @@ test "taffy/rounding_inner_node_controversy_vertical" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     flex_grow: 1.0,
   }
@@ -29609,15 +29615,15 @@ test "taffy/rounding_inner_node_controversy_vertical" {
 test "taffy/rounding_total_fractial" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(87.4),
     height: @types.Length(113.4),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.3),
     flex_grow: 0.7,
     flex_basis: @types.Length(50.3),
@@ -29626,7 +29632,7 @@ test "taffy/rounding_total_fractial" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.6,
   }
@@ -29634,7 +29640,7 @@ test "taffy/rounding_total_fractial" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.7),
     flex_grow: 1.1,
   }
@@ -29671,24 +29677,24 @@ test "taffy/rounding_total_fractial" {
 test "taffy/rounding_total_fractial_nested" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(87.4),
     height: @types.Length(113.4),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(20.3),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 0.7,
     flex_basis: @types.Length(50.3),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(9.9),
     inset: {
       left: @types.Auto,
@@ -29703,7 +29709,7 @@ test "taffy/rounding_total_fractial_nested" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(1.1),
     inset: {
       left: @types.Auto,
@@ -29722,7 +29728,7 @@ test "taffy/rounding_total_fractial_nested" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.0),
     flex_grow: 1.6,
   }
@@ -29730,7 +29736,7 @@ test "taffy/rounding_total_fractial_nested" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(10.7),
     flex_grow: 1.1,
   }
@@ -29775,18 +29781,18 @@ test "taffy/rounding_total_fractial_nested" {
 test "taffy/scroll_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
-    justify_content: @style.Start,
-    align_items: @style.Start,
+    justify_content: @types.Start,
+    align_items: @types.Start,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     flex_shrink: 0.0,
@@ -29849,10 +29855,10 @@ test "taffy/simple_child" {
   let root_child0_child1_children : Array[@node.Node] = []
   let root_child0_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child0_child1_child0 = @node.Node::leaf(
     "node", root_child0_child1_child0_style,
@@ -29860,10 +29866,10 @@ test "taffy/simple_child" {
   root_child0_child1_children.push(root_child0_child1_child0)
   let root_child0_child1_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
-    align_self: @style.AlignSelf::Center,
+    align_self: @types.AlignSelf::Center,
   }
   let root_child0_child1_child1 = @node.Node::leaf(
     "node", root_child0_child1_child1_style,
@@ -29920,15 +29926,15 @@ test "taffy/simple_child" {
 test "taffy/single_flex_child_after_absolute_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(428.0),
     height: @types.Length(845.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    position: @style.Position::Absolute,
+    position: @types.Position::Absolute,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
   }
@@ -29936,14 +29942,14 @@ test "taffy/single_flex_child_after_absolute_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_grow: 1.0,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     flex_shrink: 0.0,
     flex_basis: @types.Length(174.0),
   }
@@ -30126,16 +30132,16 @@ test "taffy/size_defined_by_grand_child" {
 test "taffy/taffy_issue_696" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     min_height: @types.Length(100.0),
     padding: {
       left: @types.Length(20.0),
@@ -30143,13 +30149,13 @@ test "taffy/taffy_issue_696" {
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(0.0),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -30186,16 +30192,16 @@ test "taffy/taffy_issue_696" {
 test "taffy/taffy_issue_696_flex_basis_20" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     min_height: @types.Length(100.0),
     padding: {
       left: @types.Length(20.0),
@@ -30203,13 +30209,13 @@ test "taffy/taffy_issue_696_flex_basis_20" {
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(20.0),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -30246,14 +30252,14 @@ test "taffy/taffy_issue_696_flex_basis_20" {
 test "taffy/taffy_issue_696_min_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     min_height: @types.Length(100.0),
     padding: {
       left: @types.Length(20.0),
@@ -30261,13 +30267,13 @@ test "taffy/taffy_issue_696_min_height" {
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(0.0),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -30304,16 +30310,16 @@ test "taffy/taffy_issue_696_min_height" {
 test "taffy/taffy_issue_696_no_flex_basis" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     min_height: @types.Length(100.0),
     padding: {
       left: @types.Length(20.0),
@@ -30321,12 +30327,12 @@ test "taffy/taffy_issue_696_no_flex_basis" {
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -30363,29 +30369,29 @@ test "taffy/taffy_issue_696_no_flex_basis" {
 test "taffy/taffy_issue_696_overflow_hidden" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Hidden,
-    overflow_y: @style.Overflow::Hidden,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
     padding: {
       left: @types.Length(20.0),
       right: @types.Length(20.0),
       top: @types.Length(20.0),
       bottom: @types.Length(20.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_basis: @types.Length(0.0),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(200.0),
     flex_shrink: 0.0,
   }
@@ -30422,10 +30428,10 @@ test "taffy/taffy_issue_696_overflow_hidden" {
 test "taffy/undefined_height_with_min_max" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(320.0),
     min_height: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -30458,9 +30464,9 @@ test "taffy/undefined_height_with_min_max" {
 test "taffy/undefined_width_with_min_max" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -30493,9 +30499,9 @@ test "taffy/undefined_width_with_min_max" {
 test "taffy/undefined_width_with_min_max_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     height: @types.Length(50.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -30542,16 +30548,16 @@ test "taffy/undefined_width_with_min_max_row" {
 test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -30568,9 +30574,9 @@ test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
@@ -30620,16 +30626,16 @@ test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
 test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(10.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -30646,9 +30652,9 @@ test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
@@ -30698,15 +30704,15 @@ test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
 test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
+    display: @types.Flex,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -30723,9 +30729,9 @@ test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
@@ -30775,16 +30781,16 @@ test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
 test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
-    flex_direction: @style.Row,
+    flex_direction: @types.Row,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child0_children : Array[@node.Node] = []
@@ -30801,9 +30807,9 @@ test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(0.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
     flex_grow: 1.0,
   }
   let root_child1_children : Array[@node.Node] = []
@@ -30853,8 +30859,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
 test "taffy/wrap_child" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -30887,11 +30893,11 @@ test "taffy/wrap_child" {
 test "taffy/wrap_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -30997,24 +31003,24 @@ test "taffy/wrap_grandchild" {
 test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(70.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -31032,14 +31038,14 @@ test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
       top: @types.Length(10.0),
       bottom: @types.Length(0.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_child1_children : Array[@node.Node] = []
   let root_child0_child1_child0_style = {
@@ -31098,24 +31104,24 @@ test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
 test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(500.0),
     height: @types.Length(500.0),
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(85.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
@@ -31133,14 +31139,14 @@ test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(10.0),
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
-    flex_direction: @style.Column,
+    flex_direction: @types.Column,
   }
   let root_child0_child1_children : Array[@node.Node] = []
   let root_child0_child1_child0_style = {
@@ -31199,11 +31205,11 @@ test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
 test "taffy/wrap_reverse_column" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
-    flex_direction: @style.Column,
-    flex_wrap: @style.WrapReverse,
+    flex_direction: @types.Column,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31269,12 +31275,12 @@ test "taffy/wrap_reverse_column" {
 test "taffy/wrap_reverse_column_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
-    align_items: @style.Center,
-    flex_direction: @style.Column,
-    flex_wrap: @style.WrapReverse,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31351,10 +31357,10 @@ test "taffy/wrap_reverse_column_fixed_size" {
 test "taffy/wrap_reverse_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31420,11 +31426,11 @@ test "taffy/wrap_reverse_row" {
 test "taffy/wrap_reverse_row_align_content_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_content: @style.Center,
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    align_content: @types.Center,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31501,11 +31507,11 @@ test "taffy/wrap_reverse_row_align_content_center" {
 test "taffy/wrap_reverse_row_align_content_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31582,11 +31588,11 @@ test "taffy/wrap_reverse_row_align_content_flex_start" {
 test "taffy/wrap_reverse_row_align_content_space_around" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_content: @style.SpaceAround,
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    align_content: @types.SpaceAround,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31663,11 +31669,11 @@ test "taffy/wrap_reverse_row_align_content_space_around" {
 test "taffy/wrap_reverse_row_align_content_stretch" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_content: @style.Stretch,
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    align_content: @types.Stretch,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31744,11 +31750,11 @@ test "taffy/wrap_reverse_row_align_content_stretch" {
 test "taffy/wrap_reverse_row_single_line_different_size" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(300.0),
-    align_content: @style.Start,
-    flex_direction: @style.Row,
-    flex_wrap: @style.WrapReverse,
+    align_content: @types.Start,
+    flex_direction: @types.Row,
+    flex_wrap: @types.WrapReverse,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31825,10 +31831,10 @@ test "taffy/wrap_reverse_row_single_line_different_size" {
 test "taffy/wrap_row" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31894,11 +31900,11 @@ test "taffy/wrap_row" {
 test "taffy/wrap_row_align_items_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_items: @style.Center,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_items: @types.Center,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -31964,11 +31970,11 @@ test "taffy/wrap_row_align_items_center" {
 test "taffy/wrap_row_align_items_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
-    align_items: @style.End,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    align_items: @types.End,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -32034,14 +32040,14 @@ test "taffy/wrap_row_align_items_flex_end" {
 test "taffy/wrapped_column_max_height" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(700.0),
     height: @types.Length(500.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
@@ -32103,19 +32109,19 @@ test "taffy/wrapped_column_max_height" {
 test "taffy/wrapped_column_max_height_flex" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(700.0),
     height: @types.Length(500.0),
-    justify_content: @style.Center,
-    align_items: @style.Center,
-    align_content: @style.Center,
-    flex_direction: @style.Column,
-    flex_wrap: @style.Wrap,
+    justify_content: @types.Center,
+    align_items: @types.Center,
+    align_content: @types.Center,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(100.0),
     height: @types.Length(500.0),
     max_height: @types.Length(200.0),
@@ -32126,7 +32132,7 @@ test "taffy/wrapped_column_max_height_flex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     margin: {
@@ -32178,18 +32184,18 @@ test "taffy/wrapped_column_max_height_flex" {
 test "taffy/wrapped_row_within_align_items_center" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Center,
-    flex_direction: @style.Column,
+    align_items: @types.Center,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -32241,18 +32247,18 @@ test "taffy/wrapped_row_within_align_items_center" {
 test "taffy/wrapped_row_within_align_items_flex_end" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.End,
-    flex_direction: @style.Column,
+    align_items: @types.End,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -32304,18 +32310,18 @@ test "taffy/wrapped_row_within_align_items_flex_end" {
 test "taffy/wrapped_row_within_align_items_flex_start" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
-    align_items: @style.Start,
-    flex_direction: @style.Column,
+    align_items: @types.Start,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Row,
-    flex_wrap: @style.Wrap,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {

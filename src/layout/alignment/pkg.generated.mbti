@@ -2,15 +2,15 @@
 package "mizchi/crater/layout/alignment"
 
 import(
-  "mizchi/crater/style"
+  "mizchi/crater/types"
 )
 
 // Values
-pub fn compute_align_offset(@style.Alignment, Double) -> Double
+pub fn compute_align_offset(@types.Alignment, Double) -> Double
 
-pub fn compute_align_self_offset(@style.AlignSelf, @style.Alignment, Double) -> Double
+pub fn compute_align_self_offset(@types.AlignSelf, @types.Alignment, Double) -> Double
 
-pub fn compute_justify(@style.Alignment, Double, Int) -> (Double, Double)
+pub fn compute_justify(@types.Alignment, Double, Int) -> (Double, Double)
 
 // Errors
 

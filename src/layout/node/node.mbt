@@ -125,8 +125,8 @@ pub(all) struct Layout {
   padding : @types.Rect[Double]
   border : @types.Rect[Double]
   // Overflow clipping info
-  overflow_x : @style.Overflow
-  overflow_y : @style.Overflow
+  overflow_x : @types.Overflow
+  overflow_y : @types.Overflow
   // Children layouts
   children : Array[Layout]
   // Text content for text nodes
@@ -232,8 +232,8 @@ pub fn dispatch_layout(node : Node, ctx : LayoutContext) -> Layout {
         margin: @types.Rect::zero(),
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
-        overflow_x: @style.Visible,
-        overflow_y: @style.Visible,
+        overflow_x: @types.Visible,
+        overflow_y: @types.Visible,
         children: [],
         text: node.text,
       }

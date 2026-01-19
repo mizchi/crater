@@ -83,13 +83,13 @@ pub fn ComputeContext::with_viewport(
 ///|
 /// Mutable style builder for collecting computed values
 priv struct StyleBuilder {
-  mut display : @style.Display
-  mut position : @style.Position
-  mut float : @style.Float
-  mut clear : @style.Clear
-  mut box_sizing : @style.BoxSizing
-  mut overflow_x : @style.Overflow
-  mut overflow_y : @style.Overflow
+  mut display : @types.Display
+  mut position : @types.Position
+  mut float : @types.Float
+  mut clear : @types.Clear
+  mut box_sizing : @types.BoxSizing
+  mut overflow_x : @types.Overflow
+  mut overflow_y : @types.Overflow
   mut width : @types.Dimension
   mut height : @types.Dimension
   mut min_width : @types.Dimension
@@ -108,12 +108,12 @@ priv struct StyleBuilder {
   mut border_right : @types.Dimension
   mut border_bottom : @types.Dimension
   mut border_left : @types.Dimension
-  mut flex_direction : @style.FlexDirection
-  mut flex_wrap : @style.FlexWrap
-  mut justify_content : @style.Alignment
-  mut align_items : @style.Alignment
-  mut align_content : @style.Alignment
-  mut align_self : @style.AlignSelf
+  mut flex_direction : @types.FlexDirection
+  mut flex_wrap : @types.FlexWrap
+  mut justify_content : @types.Alignment
+  mut align_items : @types.Alignment
+  mut align_content : @types.Alignment
+  mut align_self : @types.AlignSelf
   mut flex_grow : Double
   mut flex_shrink : Double
   mut flex_basis : @types.Dimension
@@ -125,14 +125,14 @@ priv struct StyleBuilder {
   mut inset_right : @types.Dimension
   mut inset_bottom : @types.Dimension
   mut inset_left : @types.Dimension
-  mut grid_auto_flow : @style.GridAutoFlow
-  mut grid_template_columns : Array[@style.TrackSizingFunction]
-  mut grid_template_rows : Array[@style.TrackSizingFunction]
+  mut grid_auto_flow : @types.GridAutoFlow
+  mut grid_template_columns : Array[@types.TrackSizingFunction]
+  mut grid_template_rows : Array[@types.TrackSizingFunction]
   // Grid item placement
-  mut grid_column_start : @style.GridPlacement
-  mut grid_column_end : @style.GridPlacement
-  mut grid_row_start : @style.GridPlacement
-  mut grid_row_end : @style.GridPlacement
+  mut grid_column_start : @types.GridPlacement
+  mut grid_column_end : @types.GridPlacement
+  mut grid_row_start : @types.GridPlacement
+  mut grid_row_end : @types.GridPlacement
   // Font properties
   mut font_size : Double
   mut line_height : Double
@@ -164,13 +164,13 @@ priv struct StyleBuilder {
 ///|
 fn StyleBuilder::new() -> StyleBuilder {
   {
-    display: @style.Display::Block,
-    position: @style.Position::Static,
-    float: @style.Float::None,
-    clear: @style.Clear::None,
-    box_sizing: @style.BoxSizing::ContentBox,
-    overflow_x: @style.Overflow::Visible,
-    overflow_y: @style.Overflow::Visible,
+    display: @types.Display::Block,
+    position: @types.Position::Static,
+    float: @types.Float::None,
+    clear: @types.Clear::None,
+    box_sizing: @types.BoxSizing::ContentBox,
+    overflow_x: @types.Overflow::Visible,
+    overflow_y: @types.Overflow::Visible,
     width: @types.Dimension::Auto,
     height: @types.Dimension::Auto,
     min_width: @types.Dimension::Auto,
@@ -189,12 +189,12 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_right: @types.Dimension::Length(0.0),
     border_bottom: @types.Dimension::Length(0.0),
     border_left: @types.Dimension::Length(0.0),
-    flex_direction: @style.FlexDirection::Row,
-    flex_wrap: @style.FlexWrap::NoWrap,
-    justify_content: @style.Alignment::Start,
-    align_items: @style.Alignment::Stretch,
-    align_content: @style.Alignment::Stretch,
-    align_self: @style.AlignSelf::Auto,
+    flex_direction: @types.FlexDirection::Row,
+    flex_wrap: @types.FlexWrap::NoWrap,
+    justify_content: @types.Alignment::Start,
+    align_items: @types.Alignment::Stretch,
+    align_content: @types.Alignment::Stretch,
+    align_self: @types.AlignSelf::Auto,
     flex_grow: 0.0,
     flex_shrink: 1.0,
     flex_basis: @types.Dimension::Auto,
@@ -206,13 +206,13 @@ fn StyleBuilder::new() -> StyleBuilder {
     inset_right: @types.Dimension::Auto,
     inset_bottom: @types.Dimension::Auto,
     inset_left: @types.Dimension::Auto,
-    grid_auto_flow: @style.GridAutoFlow::Row,
+    grid_auto_flow: @types.GridAutoFlow::Row,
     grid_template_columns: [],
     grid_template_rows: [],
-    grid_column_start: @style.GridPlacement::Auto,
-    grid_column_end: @style.GridPlacement::Auto,
-    grid_row_start: @style.GridPlacement::Auto,
-    grid_row_end: @style.GridPlacement::Auto,
+    grid_column_start: @types.GridPlacement::Auto,
+    grid_column_end: @types.GridPlacement::Auto,
+    grid_row_start: @types.GridPlacement::Auto,
+    grid_row_end: @types.GridPlacement::Auto,
     font_size: 16.0,
     line_height: 16.0,
     vertical_align: @style.VerticalAlign::Baseline,
@@ -368,8 +368,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     grid_row: { start: self.grid_row_start, end: self.grid_row_end },
     grid_column: { start: self.grid_column_start, end: self.grid_column_end },
     grid_area: None,
-    justify_items: @style.Alignment::Stretch,
-    justify_self: @style.AlignSelf::Auto,
+    justify_items: @types.Alignment::Stretch,
+    justify_self: @types.AlignSelf::Auto,
     font_size: self.font_size,
     line_height: self.line_height,
     vertical_align: self.vertical_align,
@@ -435,46 +435,46 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
   match property {
     "display" =>
       match style.display {
-        @style.Display::Block => "block"
-        @style.Display::Inline => "inline"
-        @style.Display::InlineBlock => "inline-block"
-        @style.Display::Flex => "flex"
-        @style.Display::InlineFlex => "inline-flex"
-        @style.Display::Grid => "grid"
-        @style.Display::InlineGrid => "inline-grid"
-        @style.Display::Table => "table"
-        @style.Display::InlineTable => "inline-table"
-        @style.Display::TableRow => "table-row"
-        @style.Display::TableCell => "table-cell"
-        @style.Display::TableCaption => "table-caption"
-        @style.Display::TableRowGroup => "table-row-group"
-        @style.Display::TableHeaderGroup => "table-header-group"
-        @style.Display::TableFooterGroup => "table-footer-group"
-        @style.Display::TableColumn => "table-column"
-        @style.Display::TableColumnGroup => "table-column-group"
-        @style.Display::None => "none"
-        @style.Display::Contents => "contents"
-        @style.Display::FlowRoot => "flow-root"
+        @types.Display::Block => "block"
+        @types.Display::Inline => "inline"
+        @types.Display::InlineBlock => "inline-block"
+        @types.Display::Flex => "flex"
+        @types.Display::InlineFlex => "inline-flex"
+        @types.Display::Grid => "grid"
+        @types.Display::InlineGrid => "inline-grid"
+        @types.Display::Table => "table"
+        @types.Display::InlineTable => "inline-table"
+        @types.Display::TableRow => "table-row"
+        @types.Display::TableCell => "table-cell"
+        @types.Display::TableCaption => "table-caption"
+        @types.Display::TableRowGroup => "table-row-group"
+        @types.Display::TableHeaderGroup => "table-header-group"
+        @types.Display::TableFooterGroup => "table-footer-group"
+        @types.Display::TableColumn => "table-column"
+        @types.Display::TableColumnGroup => "table-column-group"
+        @types.Display::None => "none"
+        @types.Display::Contents => "contents"
+        @types.Display::FlowRoot => "flow-root"
       }
     "position" =>
       match style.position {
-        @style.Position::Static => "static"
-        @style.Position::Relative => "relative"
-        @style.Position::Absolute => "absolute"
-        @style.Position::Fixed => "fixed"
+        @types.Position::Static => "static"
+        @types.Position::Relative => "relative"
+        @types.Position::Absolute => "absolute"
+        @types.Position::Fixed => "fixed"
       }
     "flex-direction" =>
       match style.flex_direction {
-        @style.FlexDirection::Row => "row"
-        @style.FlexDirection::RowReverse => "row-reverse"
-        @style.FlexDirection::Column => "column"
-        @style.FlexDirection::ColumnReverse => "column-reverse"
+        @types.FlexDirection::Row => "row"
+        @types.FlexDirection::RowReverse => "row-reverse"
+        @types.FlexDirection::Column => "column"
+        @types.FlexDirection::ColumnReverse => "column-reverse"
       }
     "flex-wrap" =>
       match style.flex_wrap {
-        @style.FlexWrap::NoWrap => "nowrap"
-        @style.FlexWrap::Wrap => "wrap"
-        @style.FlexWrap::WrapReverse => "wrap-reverse"
+        @types.FlexWrap::NoWrap => "nowrap"
+        @types.FlexWrap::Wrap => "wrap"
+        @types.FlexWrap::WrapReverse => "wrap-reverse"
       }
     "width" => dimension_to_string(style.width)
     "height" => dimension_to_string(style.height)
@@ -629,9 +629,9 @@ fn apply_property(
     "clear" => builder.clear = parse_clear(value)
     "box-sizing" =>
       builder.box_sizing = match value.trim().to_lower() {
-        "border-box" => @style.BoxSizing::BorderBox
-        "content-box" | "initial" | "inherit" => @style.BoxSizing::ContentBox
-        _ => @style.BoxSizing::ContentBox
+        "border-box" => @types.BoxSizing::BorderBox
+        "content-box" | "initial" | "inherit" => @types.BoxSizing::ContentBox
+        _ => @types.BoxSizing::ContentBox
       }
     // Sizing
     "width" => builder.width = resolve_dimension(value, ctx)
@@ -981,20 +981,20 @@ fn apply_property(
         let p = part.to_string()
         // Check flex-direction values
         if p == "row" {
-          builder.flex_direction = @style.FlexDirection::Row
+          builder.flex_direction = @types.FlexDirection::Row
         } else if p == "row-reverse" {
-          builder.flex_direction = @style.FlexDirection::RowReverse
+          builder.flex_direction = @types.FlexDirection::RowReverse
         } else if p == "column" {
-          builder.flex_direction = @style.FlexDirection::Column
+          builder.flex_direction = @types.FlexDirection::Column
         } else if p == "column-reverse" {
-          builder.flex_direction = @style.FlexDirection::ColumnReverse
+          builder.flex_direction = @types.FlexDirection::ColumnReverse
           // Check flex-wrap values
         } else if p == "nowrap" {
-          builder.flex_wrap = @style.FlexWrap::NoWrap
+          builder.flex_wrap = @types.FlexWrap::NoWrap
         } else if p == "wrap" {
-          builder.flex_wrap = @style.FlexWrap::Wrap
+          builder.flex_wrap = @types.FlexWrap::Wrap
         } else if p == "wrap-reverse" {
-          builder.flex_wrap = @style.FlexWrap::WrapReverse
+          builder.flex_wrap = @types.FlexWrap::WrapReverse
         }
       }
     }
@@ -1145,7 +1145,7 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
 /// Parse table-layout value
 fn parse_table_layout(value : String) -> @style.TableLayout {
   match value.trim() {
-    "fixed" => @style.Fixed
+    "fixed" => @style.TableLayout::Fixed
     "auto" => @style.Auto
     _ => @style.Auto
   }
@@ -2140,8 +2140,8 @@ pub fn apply_property_direct(
 /// The layout engine expects outer dimensions (border-box), so we adjust here.
 fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
   match style.box_sizing {
-    @style.BorderBox => style // No adjustment needed
-    @style.ContentBox => {
+    @types.BorderBox => style // No adjustment needed
+    @types.ContentBox => {
       // Calculate padding and border sums
       let padding_h = resolve_dimension_to_px(style.padding.left) +
         resolve_dimension_to_px(style.padding.right)
@@ -2154,28 +2154,34 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
 
       // Adjust width and height to include padding+border
       let adjusted_width = match style.width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Dimension::Length(w) =>
+          @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_height = match style.height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Dimension::Length(h) =>
+          @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       // Adjust min/max constraints too
       let adjusted_min_width = match style.min_width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Dimension::Length(w) =>
+          @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_min_height = match style.min_height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Dimension::Length(h) =>
+          @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       let adjusted_max_width = match style.max_width {
-        @types.Length(w) => @types.Length(w + padding_h + border_h)
+        @types.Dimension::Length(w) =>
+          @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_max_height = match style.max_height {
-        @types.Length(h) => @types.Length(h + padding_v + border_v)
+        @types.Dimension::Length(h) =>
+          @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       {
@@ -2187,7 +2193,7 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
         max_width: adjusted_max_width,
         max_height: adjusted_max_height,
         // Mark as adjusted (now using border-box semantics internally)
-        box_sizing: @style.BorderBox,
+        box_sizing: @types.BorderBox,
       }
     }
   }

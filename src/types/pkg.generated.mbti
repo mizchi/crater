@@ -21,6 +21,32 @@ pub fn resolve_rect_intrinsic(Rect[Dimension]) -> Rect[Double]
 // Errors
 
 // Types and methods
+pub(all) enum AlignSelf {
+  Auto
+  Start
+  End
+  Center
+  Stretch
+  Baseline
+}
+pub impl Eq for AlignSelf
+pub impl Show for AlignSelf
+
+pub(all) enum Alignment {
+  Start
+  End
+  FlexStart
+  FlexEnd
+  Center
+  SpaceBetween
+  SpaceAround
+  SpaceEvenly
+  Stretch
+  Baseline
+}
+pub impl Eq for Alignment
+pub impl Show for Alignment
+
 pub(all) struct BoundingRect {
   x : Double
   y : Double
@@ -34,6 +60,22 @@ pub fn BoundingRect::right(Self) -> Double
 pub fn BoundingRect::union(Self, Self) -> Self
 pub fn BoundingRect::zero() -> Self
 pub impl Show for BoundingRect
+
+pub(all) enum BoxSizing {
+  ContentBox
+  BorderBox
+}
+pub impl Eq for BoxSizing
+pub impl Show for BoxSizing
+
+pub(all) enum Clear {
+  None
+  Left
+  Right
+  Both
+}
+pub impl Eq for Clear
+pub impl Show for Clear
 
 pub(all) enum ClipRect {
   Auto
@@ -79,12 +121,117 @@ pub fn Dimension::resolve_or_intrinsic(Self, Double, Double) -> Double
 pub impl Eq for Dimension
 pub impl Show for Dimension
 
+pub(all) enum Display {
+  Block
+  Inline
+  InlineBlock
+  Flex
+  InlineFlex
+  Grid
+  InlineGrid
+  Table
+  InlineTable
+  TableRow
+  TableCell
+  TableCaption
+  TableRowGroup
+  TableHeaderGroup
+  TableFooterGroup
+  TableColumn
+  TableColumnGroup
+  None
+  Contents
+  FlowRoot
+}
+pub impl Eq for Display
+pub impl Show for Display
+
+pub(all) enum FlexDirection {
+  Row
+  RowReverse
+  Column
+  ColumnReverse
+}
+pub impl Eq for FlexDirection
+pub impl Show for FlexDirection
+
+pub(all) enum FlexWrap {
+  NoWrap
+  Wrap
+  WrapReverse
+}
+pub impl Eq for FlexWrap
+pub impl Show for FlexWrap
+
+pub(all) enum Float {
+  None
+  Left
+  Right
+}
+pub impl Eq for Float
+pub impl Show for Float
+
+pub(all) enum GridAutoFlow {
+  Row
+  Column
+  RowDense
+  ColumnDense
+}
+pub impl Eq for GridAutoFlow
+pub impl Show for GridAutoFlow
+
+pub(all) struct GridLine {
+  start : GridPlacement
+  end : GridPlacement
+}
+pub fn GridLine::auto() -> Self
+pub impl Eq for GridLine
+pub impl Show for GridLine
+
+pub(all) enum GridPlacement {
+  Auto
+  Line(Int)
+  Span(Int)
+}
+pub impl Eq for GridPlacement
+pub impl Show for GridPlacement
+
 pub struct Line[T] {
   start : T
   end : T
 }
 pub fn[T] Line::new(T, T) -> Self[T]
 pub impl[T : Show] Show for Line[T]
+
+pub(all) enum MaxTrackSizing {
+  Length(Double)
+  Percent(Double)
+  Fr(Double)
+  Auto
+  MinContent
+  MaxContent
+}
+pub impl Eq for MaxTrackSizing
+pub impl Show for MaxTrackSizing
+
+pub(all) enum MinTrackSizing {
+  Length(Double)
+  Percent(Double)
+  Auto
+  MinContent
+  MaxContent
+}
+pub impl Eq for MinTrackSizing
+pub impl Show for MinTrackSizing
+
+pub(all) enum Overflow {
+  Visible
+  Hidden
+  Scroll
+  Auto
+}
+pub impl Eq for Overflow
+pub impl Show for Overflow
 
 pub struct Point[T] {
   x : T
@@ -94,6 +241,15 @@ pub fn[T, U] Point::map(Self[T], (T) -> U) -> Self[U]
 pub fn[T] Point::new(T, T) -> Self[T]
 pub fn Point::zero() -> Self[Double]
 pub impl[T : Show] Show for Point[T]
+
+pub(all) enum Position {
+  Static
+  Relative
+  Absolute
+  Fixed
+}
+pub impl Eq for Position
+pub impl Show for Position
 
 pub(all) struct Rect[T] {
   left : T
@@ -109,6 +265,28 @@ pub fn Rect::vertical_sum(Self[Double]) -> Double
 pub fn Rect::zero() -> Self[Double]
 pub impl[T : Show] Show for Rect[T]
 
+pub(all) enum RepeatCount {
+  Count(Int)
+  AutoFill
+  AutoFit
+}
+pub impl Eq for RepeatCount
+pub impl Show for RepeatCount
+
+pub(all) enum SingleTrackSizing {
+  Length(Double)
+  Percent(Double)
+  Fr(Double)
+  Auto
+  MinContent
+  MaxContent
+  MinMax(MinTrackSizing, MaxTrackSizing)
+  FitContentLength(Double)
+  FitContentPercent(Double)
+}
+pub impl Eq for SingleTrackSizing
+pub impl Show for SingleTrackSizing
+
 pub struct Size[T] {
   width : T
   height : T
@@ -117,6 +295,21 @@ pub fn[T, U] Size::map(Self[T], (T) -> U) -> Self[U]
 pub fn[T] Size::new(T, T) -> Self[T]
 pub fn Size::zero() -> Self[Double]
 pub impl[T : Show] Show for Size[T]
+
+pub(all) enum TrackSizingFunction {
+  Length(Double)
+  Percent(Double)
+  Fr(Double)
+  Auto
+  MinContent
+  MaxContent
+  MinMax(MinTrackSizing, MaxTrackSizing)
+  Repeat(RepeatCount, Array[SingleTrackSizing])
+  FitContentLength(Double)
+  FitContentPercent(Double)
+}
+pub impl Eq for TrackSizingFunction
+pub impl Show for TrackSizingFunction
 
 // Type aliases
 

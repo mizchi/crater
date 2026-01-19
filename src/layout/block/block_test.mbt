@@ -469,7 +469,7 @@ test "block_float_supported" {
   let default_style = @style.Style::default()
   let float_child_style = {
     ..default_style,
-    float: @style.Left,
+    float: @types.Float::Left,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -498,7 +498,7 @@ test "block_absolute_positioning_works" {
   let default_style = @style.Style::default()
   let abs_child_style = {
     ..default_style,
-    position: @style.Absolute,
+    position: @types.Absolute,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
     inset: {
@@ -544,7 +544,7 @@ test "block_display_none" {
   // This child has display: none
   let child2_style = {
     ..default_style,
-    display: @style.None,
+    display: @types.Display::None,
     height: @types.Length(10.0),
   }
   let child2 = @node.Node::leaf("child2", child2_style)
@@ -881,13 +881,13 @@ test "block_multiple_display_none" {
   let visible1 = @node.Node::leaf("visible1", visible1_style)
   let hidden1_style = {
     ..default_style,
-    display: @style.None,
+    display: @types.Display::None,
     height: @types.Length(50.0),
   }
   let hidden1 = @node.Node::leaf("hidden1", hidden1_style)
   let hidden2_style = {
     ..default_style,
-    display: @style.None,
+    display: @types.Display::None,
     height: @types.Length(50.0),
   }
   let hidden2 = @node.Node::leaf("hidden2", hidden2_style)
@@ -1011,7 +1011,7 @@ test "inline_block_shrink_to_fit" {
   // Create inline-block container with auto width
   let inline_block_style = {
     ..default_style,
-    display: @style.InlineBlock,
+    display: @types.InlineBlock,
     padding: {
       left: @types.Length(10.0),
       right: @types.Length(10.0),
@@ -1050,7 +1050,7 @@ test "anonymous_block_basic" {
   @dispatch.setup()
   let default_style = @style.Style::default()
   // Create inline element (text-like)
-  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_style = { ..default_style, display: @types.Inline }
   let inline1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
       { min_width: 50.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
@@ -1107,7 +1107,7 @@ test "anonymous_block_basic" {
 test "anonymous_block_multiple_inline_in_group" {
   @dispatch.setup()
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @style.Inline }
+  let inline_style = { ..default_style, display: @types.Inline }
   // Three inline elements followed by a block
   let inline1_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -1178,10 +1178,10 @@ test "float_flex_wrap_reverse_align_start" {
   // Flex container with float: left, wrap-reverse, align-content: start
   let flex_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_wrap: @style.WrapReverse,
-    align_content: @style.Start,
-    float: @style.Left,
+    display: @types.Flex,
+    flex_wrap: @types.WrapReverse,
+    align_content: @types.Start,
+    float: @types.Float::Left,
     width: @types.Length(75.0),
     height: @types.Length(150.0),
     border: {
@@ -1243,9 +1243,9 @@ test "nonfloat_flex_wrap_reverse_align_start" {
   // Flex container WITHOUT float, with wrap-reverse, align-content: start
   let flex_style = {
     ..default_style,
-    display: @style.Flex,
-    flex_wrap: @style.WrapReverse,
-    align_content: @style.Start,
+    display: @types.Flex,
+    flex_wrap: @types.WrapReverse,
+    align_content: @types.Start,
     width: @types.Length(
       // NO float
       75.0,
@@ -1293,7 +1293,7 @@ test "max-width max-content with explicit width" {
   let child = @node.Node::new("child", child_style, [])
   let parent_style = {
     ..@style.Style::default(),
-    position: @style.Absolute,
+    position: @types.Absolute,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     max_width: @types.MaxContent,
@@ -1322,21 +1322,21 @@ test "replaced element aspect ratio with percent height" {
   // width should be derived from height * aspect_ratio
   let canvas_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Inline,
+    display: @types.Inline,
     height: @types.Percent(1.0),
     width: @types.Auto,
     aspect_ratio: Some(1.0),
   }
   let float_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Block,
+    display: @types.Block,
     height: @types.Length(100.0),
     width: @types.Auto,
-    float: @style.Float::Left,
+    float: @types.Float::Left,
   }
   let body_style : @style.Style = {
     ..@style.Style::default(),
-    display: @style.Block,
+    display: @types.Block,
     width: @types.Length(800.0),
     height: @types.Length(600.0),
   }

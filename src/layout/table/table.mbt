@@ -41,8 +41,8 @@ fn create_zero_layout(node : @node.Node) -> @node.Layout {
     margin: zero_rect,
     padding: zero_rect,
     border: zero_rect,
-    overflow_x: @style.Visible,
-    overflow_y: @style.Visible,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
     children,
     text: node.text,
   }
@@ -57,7 +57,7 @@ fn calculate_relative_offset(
   container_height : Double,
 ) -> (Double, Double) {
   // Only apply offset for position: relative
-  if style.position != @style.Relative {
+  if style.position != @types.Relative {
     return (0.0, 0.0)
   }
   let inset = style.inset
@@ -90,9 +90,9 @@ fn calculate_relative_offset(
 
 ///|
 /// Check if a display type is a table row group (thead, tbody, tfoot)
-fn is_table_row_group(display : @style.Display) -> Bool {
+fn is_table_row_group(display : @types.Display) -> Bool {
   match display {
-    @style.TableRowGroup | @style.TableHeaderGroup | @style.TableFooterGroup =>
+    @types.TableRowGroup | @types.TableHeaderGroup | @types.TableFooterGroup =>
       true
     _ => false
   }
@@ -100,14 +100,14 @@ fn is_table_row_group(display : @style.Display) -> Bool {
 
 ///|
 /// Check if a display type is a table row
-fn is_table_row(display : @style.Display) -> Bool {
-  display == @style.TableRow
+fn is_table_row(display : @types.Display) -> Bool {
+  display == @types.TableRow
 }
 
 ///|
 /// Check if a display type is a table cell
-fn is_table_cell(display : @style.Display) -> Bool {
-  display == @style.TableCell
+fn is_table_cell(display : @types.Display) -> Bool {
+  display == @types.TableCell
 }
 
 ///|
@@ -138,7 +138,7 @@ fn build_occupancy_grid(
     let mut col_idx = 0
     let mut cell_idx = 0
     for child in row.children {
-      if child.style.display == @style.None {
+      if child.style.display == @types.Display::None {
         cell_idx = cell_idx + 1
         continue
       }
@@ -193,14 +193,14 @@ fn key_for_pos(row : Int, col : Int) -> String {
 
 ///|
 /// Check if a display type is a table column group
-fn is_table_column_group(display : @style.Display) -> Bool {
-  display == @style.TableColumnGroup
+fn is_table_column_group(display : @types.Display) -> Bool {
+  display == @types.TableColumnGroup
 }
 
 ///|
 /// Check if a display type is a table column
-fn is_table_column(display : @style.Display) -> Bool {
-  display == @style.TableColumn
+fn is_table_column(display : @types.Display) -> Bool {
+  display == @types.TableColumn
 }
 
 ///|
@@ -212,13 +212,13 @@ fn collect_column_widths(
 ) -> Array[Double?] {
   let widths : Array[Double?] = []
   for child in table_node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     if is_table_column_group(child.style.display) {
       // Collect columns from colgroup
       for col in child.children {
-        if col.style.display == @style.None {
+        if col.style.display == @types.Display::None {
           continue
         }
         if is_table_column(col.style.display) {
@@ -252,13 +252,14 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
   // Priority: thead > direct rows > tbody > tfoot
   // First check for thead
   for child in table_node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
-    if child.style.display == @style.TableHeaderGroup {
+    if child.style.display == @types.TableHeaderGroup {
       // Found thead, return first row
       for row in child.children {
-        if row.style.display != @style.None && is_table_row(row.style.display) {
+        if row.style.display != @types.Display::None &&
+          is_table_row(row.style.display) {
           return Some(row)
         }
       }
@@ -266,15 +267,16 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
   }
   // Check for direct rows or tbody
   for child in table_node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     if is_table_row(child.style.display) {
       return Some(child)
     }
-    if child.style.display == @style.TableRowGroup {
+    if child.style.display == @types.TableRowGroup {
       for row in child.children {
-        if row.style.display != @style.None && is_table_row(row.style.display) {
+        if row.style.display != @types.Display::None &&
+          is_table_row(row.style.display) {
           return Some(row)
         }
       }
@@ -282,12 +284,13 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
   }
   // Check for tfoot
   for child in table_node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
-    if child.style.display == @style.TableFooterGroup {
+    if child.style.display == @types.TableFooterGroup {
       for row in child.children {
-        if row.style.display != @style.None && is_table_row(row.style.display) {
+        if row.style.display != @types.Display::None &&
+          is_table_row(row.style.display) {
           return Some(row)
         }
       }
@@ -302,7 +305,7 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
 fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
   let rows : Array[@node.Node] = []
   for child in table_node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     if is_table_row(child.style.display) {
@@ -310,7 +313,8 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
     } else if is_table_row_group(child.style.display) {
       // Collect rows from row group
       for row in child.children {
-        if row.style.display != @style.None && is_table_row(row.style.display) {
+        if row.style.display != @types.Display::None &&
+          is_table_row(row.style.display) {
           rows.push(row)
         }
       }
@@ -337,7 +341,7 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
   // Measure children's intrinsic width
   let mut max_child_width = 0.0
   for child in cell.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     // Check if child has measure function (text node)
@@ -383,7 +387,7 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
   let box_extra = padding.horizontal_sum() + border.horizontal_sum()
   let mut max_width = 0.0
   for child in node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     let child_width = measure_node_intrinsic_width(child)
@@ -397,7 +401,8 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
 fn get_row_cells(row : @node.Node) -> Array[@node.Node] {
   let cells : Array[@node.Node] = []
   for child in row.children {
-    if child.style.display != @style.None && is_table_cell(child.style.display) {
+    if child.style.display != @types.Display::None &&
+      is_table_cell(child.style.display) {
       cells.push(child)
     }
   }
@@ -686,7 +691,7 @@ fn layout_cell(
   // Note: In border-collapse mode, border is already 0
   let mut y_offset = padding.top + border.top
   for child in cell.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       child_layouts.push(create_zero_layout(child))
       continue
     }
@@ -792,7 +797,7 @@ fn layout_row(
   let mut last_cell_right_border = 0.0
   let mut cell_idx = 0
   for child in row.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       cell_layouts.push(create_zero_layout(child))
       cell_idx = cell_idx + 1
       continue
@@ -962,7 +967,7 @@ pub fn compute_intrinsic_size(
   let style = node.style
 
   // Handle display:none
-  if style.display == @style.None {
+  if style.display == @types.Display::None {
     return 0.0
   }
   let padding = @types.resolve_rect_intrinsic(style.padding)
@@ -993,7 +998,7 @@ pub fn compute_intrinsic_size(
     // Compute intrinsic height
     let mut total_height = 0.0
     for child in node.children {
-      if child.style.display == @style.None {
+      if child.style.display == @types.Display::None {
         continue
       }
       if is_table_row(child.style.display) {
@@ -1003,7 +1008,8 @@ pub fn compute_intrinsic_size(
       } else if is_table_row_group(child.style.display) {
         // Row group (thead, tbody, tfoot)
         for row in child.children {
-          if row.style.display != @style.None && is_table_row(row.style.display) {
+          if row.style.display != @types.Display::None &&
+            is_table_row(row.style.display) {
             let row_height = compute_row_intrinsic_height(row)
             total_height = total_height + row_height + border_spacing
           }
@@ -1030,7 +1036,7 @@ fn compute_row_intrinsic_height(row : @node.Node) -> Double {
   // Find max cell height
   let mut max_height = 0.0
   for child in row.children {
-    if child.style.display == @style.None ||
+    if child.style.display == @types.Display::None ||
       not(is_table_cell(child.style.display)) {
       continue
     }
@@ -1064,7 +1070,7 @@ fn compute_base_row_heights(
     // Find max cell height among cells that DON'T have rowspan > 1
     let mut cell_idx = 0
     for child in row.children {
-      if child.style.display == @style.None ||
+      if child.style.display == @types.Display::None ||
         not(is_table_cell(child.style.display)) {
         cell_idx = cell_idx + 1
         continue
@@ -1115,7 +1121,7 @@ fn compute_cell_height_for_row(
       // Measure children's intrinsic height
       let mut total_height = 0.0
       for child in cell.children {
-        if child.style.display == @style.None {
+        if child.style.display == @types.Display::None {
           continue
         }
         match child.measure {
@@ -1142,7 +1148,7 @@ fn collect_rowspan_cells(rows : Array[@node.Node]) -> Array[RowspanCellInfo] {
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
     for child in row.children {
-      if child.style.display == @style.None ||
+      if child.style.display == @types.Display::None ||
         not(is_table_cell(child.style.display)) {
         continue
       }
@@ -1219,7 +1225,7 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   // Measure children's intrinsic height
   let mut total_height = 0.0
   for child in cell.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     // Check if child has measure function (text node)
@@ -1263,7 +1269,7 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
   let box_extra = padding.vertical_sum() + border.vertical_sum()
   let mut total_height = 0.0
   for child in node.children {
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       continue
     }
     let child_height = measure_node_intrinsic_height(child)
@@ -1278,7 +1284,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let style = node.style
 
   // Handle display:none
-  if style.display == @style.None {
+  if style.display == @types.Display::None {
     return create_zero_layout(node)
   }
   let parent_width = ctx.available_width
@@ -1356,7 +1362,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let row_content_width = max(0.0, content_width - edge_spacing)
 
   // Check if using fixed layout
-  let is_fixed_layout = style.table_layout == @style.Fixed
+  let is_fixed_layout = style.table_layout == @style.TableLayout::Fixed
 
   // Calculate column widths with proper distribution
   let column_widths = if is_fixed_layout {
@@ -1438,7 +1444,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   let row_children : Array[(@node.Node, Int)] = [] // rows, row groups, cols
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
-    if child.style.display == @style.TableCaption {
+    if child.style.display == @types.TableCaption {
       // Use caption's own caption-side, or inherit from table
       let caption_side = child.style.caption_side
       // Note: CSS cascade handles inheritance, so if caption has its own value, use it
@@ -1463,7 +1469,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   // First: layout top captions
   for entry in top_captions {
     let (child, idx) = entry
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       layout_map[idx] = create_zero_layout(child)
       continue
     }
@@ -1489,7 +1495,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   // Second: layout rows and row groups
   for entry in row_children {
     let (child, idx) = entry
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       layout_map[idx] = create_zero_layout(child)
       continue
     }
@@ -1532,7 +1538,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       let group_padding = @types.resolve_rect(group_style.padding, parent_width)
       let group_border = @types.resolve_rect(group_style.border, parent_width)
       for row in child.children {
-        if row.style.display == @style.None {
+        if row.style.display == @types.Display::None {
           group_layouts.push(create_zero_layout(row))
           continue
         }
@@ -1615,7 +1621,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
       let mut col_x = 0.0
       let mut col_idx = 0
       for col in child.children {
-        if col.style.display == @style.None {
+        if col.style.display == @types.Display::None {
           col_layouts.push(create_zero_layout(col))
           continue
         }
@@ -1640,8 +1646,8 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
             margin: zero_rect,
             padding: zero_rect,
             border: zero_rect,
-            overflow_x: @style.Visible,
-            overflow_y: @style.Visible,
+            overflow_x: @types.Visible,
+            overflow_y: @types.Visible,
             children: [],
             text: col.text,
           }
@@ -1673,8 +1679,8 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
         margin: zero_rect,
         padding: zero_rect,
         border: zero_rect,
-        overflow_x: @style.Visible,
-        overflow_y: @style.Visible,
+        overflow_x: @types.Visible,
+        overflow_y: @types.Visible,
         children: col_layouts,
         text: child.text,
       }
@@ -1691,7 +1697,7 @@ pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   // Third: layout bottom captions
   for entry in bottom_captions {
     let (child, idx) = entry
-    if child.style.display == @style.None {
+    if child.style.display == @types.Display::None {
       layout_map[idx] = create_zero_layout(child)
       continue
     }

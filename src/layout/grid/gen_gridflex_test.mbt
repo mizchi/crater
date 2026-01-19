@@ -6,15 +6,21 @@
 test "taffy/gridflex_column_integration" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    flex_direction: @style.Column,
+    display: @types.Flex,
+    flex_direction: @types.Column,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Fr(1.0), @style.Fr(1.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -95,9 +101,15 @@ test "taffy/gridflex_kitchen_sink" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Fr(1.0), @style.Fr(1.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }
@@ -112,16 +124,22 @@ test "taffy/gridflex_kitchen_sink" {
   root_child0_child0_children.push(root_child0_child0_child0)
   let root_child0_child0_child1_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
   }
   let root_child0_child0_child1_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto, @style.Percent(0.1000)],
-    grid_template_rows: [@style.Percent(0.3000), @style.Percent(0.1000)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Percent(0.1000),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.1000),
+    ],
   }
   let root_child0_child0_child1_child0_children : Array[@node.Node] = []
   let root_child0_child0_child1_child0_child0_style = {
@@ -323,9 +341,12 @@ test "taffy/gridflex_kitchen_sink_minimise" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Length(20.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(20.0)],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -365,16 +386,16 @@ test "taffy/gridflex_kitchen_sink_minimise" {
 test "taffy/gridflex_kitchen_sink_minimise2" {
   let root_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
+    display: @types.Flex,
     width: @types.Length(50.0),
     flex_grow: 1.0,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto],
-    grid_template_rows: [@style.Auto],
+    display: @types.Grid,
+    grid_template_columns: [@types.TrackSizingFunction::Auto],
+    grid_template_rows: [@types.TrackSizingFunction::Auto],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -410,9 +431,15 @@ test "taffy/gridflex_kitchen_sink_minimise3" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Auto, @style.Percent(0.1000)],
-    grid_template_rows: [@style.Percent(0.3000), @style.Percent(0.1000)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Percent(0.1000),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Percent(0.3000),
+      @types.TrackSizingFunction::Percent(0.1000),
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
@@ -469,9 +496,15 @@ test "taffy/gridflex_row_integration" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Grid,
-    grid_template_columns: [@style.Fr(1.0), @style.Fr(1.0)],
-    grid_template_rows: [@style.Fr(1.0), @style.Fr(1.0)],
+    display: @types.Grid,
+    grid_template_columns: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Fr(1.0),
+      @types.TrackSizingFunction::Fr(1.0),
+    ],
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = { ..@style.Style::default() }

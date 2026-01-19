@@ -6,7 +6,7 @@
 test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
     width: @types.Length(45.0),
     height: @types.Length(45.0),
   }
@@ -27,7 +27,7 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
 test "taffy/leaf_overflow_scrollbars_affect_available_space_y_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(45.0),
     height: @types.Length(45.0),
   }
@@ -54,9 +54,9 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_available_space" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
-    display: @style.Flex,
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    display: @types.Flex,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
@@ -77,8 +77,8 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_available_space" {
 test "taffy/leaf_overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     max_width: @types.Length(2.0),
     max_height: @types.Length(4.0),
   }
@@ -94,8 +94,8 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_max_size" {
 test "taffy/leaf_overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
@@ -111,8 +111,8 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_size" {
 test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
-    overflow_y: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
   }
   let root_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -131,7 +131,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_x: @style.Overflow::Scroll,
+    overflow_x: @types.Overflow::Scroll,
   }
   let root_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {
@@ -150,7 +150,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
 test "taffy/leaf_overflow_scrollbars_take_up_space_y_axis" {
   let root_style = {
     ..@style.Style::default(),
-    overflow_y: @style.Overflow::Scroll,
+    overflow_y: @types.Overflow::Scroll,
   }
   let root_measure = @node.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {

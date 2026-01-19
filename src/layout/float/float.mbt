@@ -14,7 +14,7 @@ pub(all) struct FloatBox {
   /// Height of the float (including margin)
   height : Double
   /// The float direction (Left or Right)
-  float_type : @style.Float
+  float_type : @types.Float
 }
 
 ///|
@@ -57,12 +57,12 @@ pub fn FloatContext::new(
 /// Returns the Y position below all floats that need to be cleared
 pub fn FloatContext::get_clear_y(
   self : FloatContext,
-  clear : @style.Clear,
+  clear : @types.Clear,
   current_y : Double,
 ) -> Double {
   let mut clear_y = current_y
   match clear {
-    @style.Clear::Left | @style.Clear::Both =>
+    @types.Clear::Left | @types.Clear::Both =>
       // Find the bottom of all left floats
       for float in self.left_floats {
         if float.bottom() > clear_y {
@@ -72,7 +72,7 @@ pub fn FloatContext::get_clear_y(
     _ => ()
   }
   match clear {
-    @style.Clear::Right | @style.Clear::Both =>
+    @types.Clear::Right | @types.Clear::Both =>
       // Find the bottom of all right floats
       for float in self.right_floats {
         if float.bottom() > clear_y {
@@ -183,7 +183,7 @@ pub fn FloatContext::find_y_with_space(
 /// Returns (x, y) position for the float
 pub fn FloatContext::place_float(
   self : FloatContext,
-  float_type : @style.Float,
+  float_type : @types.Float,
   width : Double,
   height : Double,
   margin_left : Double,
@@ -201,9 +201,9 @@ pub fn FloatContext::place_float(
 
   // Position based on float type
   let x = match float_type {
-    @style.Float::Left => left_edge + margin_left
-    @style.Float::Right => right_edge - width - margin_right
-    @style.Float::None => left_edge + margin_left // Shouldn't happen
+    @types.Float::Left => left_edge + margin_left
+    @types.Float::Right => right_edge - width - margin_right
+    @types.Float::None => left_edge + margin_left // Shouldn't happen
   }
 
   // Add to float list
@@ -215,9 +215,9 @@ pub fn FloatContext::place_float(
     float_type,
   }
   match float_type {
-    @style.Float::Left => self.left_floats.push(float_box)
-    @style.Float::Right => self.right_floats.push(float_box)
-    @style.Float::None => ()
+    @types.Float::Left => self.left_floats.push(float_box)
+    @types.Float::Right => self.right_floats.push(float_box)
+    @types.Float::None => ()
   }
   (x, y + margin_top)
 }

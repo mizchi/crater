@@ -7,9 +7,9 @@
 /// based on the node's display property.
 pub fn compute(node : @node.Node, ctx : @node.LayoutContext) -> @node.Layout {
   match node.style.display {
-    @style.Flex | @style.InlineFlex => @flex.compute(node, ctx)
-    @style.Grid | @style.InlineGrid => @grid.compute(node, ctx)
-    @style.Table | @style.InlineTable => @table.compute(node, ctx)
+    @types.Flex | @types.InlineFlex => @flex.compute(node, ctx)
+    @types.Grid | @types.InlineGrid => @grid.compute(node, ctx)
+    @types.Table | @types.InlineTable => @table.compute(node, ctx)
     _ => @block.compute(node, ctx)
   }
 }

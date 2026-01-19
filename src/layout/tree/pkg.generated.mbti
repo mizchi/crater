@@ -7,6 +7,7 @@ import(
   "mizchi/crater/html"
   "mizchi/crater/layout/node"
   "mizchi/crater/style"
+  "mizchi/crater/types"
   "moonbitlang/core/hashset"
 )
 
@@ -163,34 +164,34 @@ pub fn LayoutNode::needs_layout(Self) -> Bool
 pub fn LayoutNode::new(String, @style.Style, Array[Self]) -> Self
 pub fn LayoutNode::remove_all_children(Self) -> Unit
 pub fn LayoutNode::remove_child_at(Self, Int) -> Self?
-pub fn LayoutNode::set_align_content(Self, @style.Alignment) -> Self
-pub fn LayoutNode::set_align_items(Self, @style.Alignment) -> Self
-pub fn LayoutNode::set_align_self(Self, @style.AlignSelf) -> Self
+pub fn LayoutNode::set_align_content(Self, @types.Alignment) -> Self
+pub fn LayoutNode::set_align_items(Self, @types.Alignment) -> Self
+pub fn LayoutNode::set_align_self(Self, @types.AlignSelf) -> Self
 pub fn LayoutNode::set_border(Self, Double) -> Self
 pub fn LayoutNode::set_column_gap(Self, Double) -> Self
-pub fn LayoutNode::set_display(Self, @style.Display) -> Self
+pub fn LayoutNode::set_display(Self, @types.Display) -> Self
 pub fn LayoutNode::set_flex_basis(Self, Double) -> Self
 pub fn LayoutNode::set_flex_basis_auto(Self) -> Self
-pub fn LayoutNode::set_flex_direction(Self, @style.FlexDirection) -> Self
+pub fn LayoutNode::set_flex_direction(Self, @types.FlexDirection) -> Self
 pub fn LayoutNode::set_flex_grow(Self, Double) -> Self
 pub fn LayoutNode::set_flex_shrink(Self, Double) -> Self
-pub fn LayoutNode::set_flex_wrap(Self, @style.FlexWrap) -> Self
+pub fn LayoutNode::set_flex_wrap(Self, @types.FlexWrap) -> Self
 pub fn LayoutNode::set_gap(Self, Double) -> Self
 pub fn LayoutNode::set_grid_area(Self, String?) -> Self
-pub fn LayoutNode::set_grid_auto_columns(Self, Array[@style.TrackSizingFunction]) -> Self
-pub fn LayoutNode::set_grid_auto_flow(Self, @style.GridAutoFlow) -> Self
-pub fn LayoutNode::set_grid_auto_rows(Self, Array[@style.TrackSizingFunction]) -> Self
-pub fn LayoutNode::set_grid_column(Self, @style.GridPlacement, @style.GridPlacement) -> Self
-pub fn LayoutNode::set_grid_row(Self, @style.GridPlacement, @style.GridPlacement) -> Self
+pub fn LayoutNode::set_grid_auto_columns(Self, Array[@types.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_auto_flow(Self, @types.GridAutoFlow) -> Self
+pub fn LayoutNode::set_grid_auto_rows(Self, Array[@types.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_column(Self, @types.GridPlacement, @types.GridPlacement) -> Self
+pub fn LayoutNode::set_grid_row(Self, @types.GridPlacement, @types.GridPlacement) -> Self
 pub fn LayoutNode::set_grid_template_areas(Self, Array[String]) -> Self
-pub fn LayoutNode::set_grid_template_columns(Self, Array[@style.TrackSizingFunction]) -> Self
-pub fn LayoutNode::set_grid_template_rows(Self, Array[@style.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_template_columns(Self, Array[@types.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_template_rows(Self, Array[@types.TrackSizingFunction]) -> Self
 pub fn LayoutNode::set_height(Self, Double) -> Self
 pub fn LayoutNode::set_height_auto(Self) -> Self
 pub fn LayoutNode::set_height_percent(Self, Double) -> Self
-pub fn LayoutNode::set_justify_content(Self, @style.Alignment) -> Self
-pub fn LayoutNode::set_justify_items(Self, @style.Alignment) -> Self
-pub fn LayoutNode::set_justify_self(Self, @style.AlignSelf) -> Self
+pub fn LayoutNode::set_justify_content(Self, @types.Alignment) -> Self
+pub fn LayoutNode::set_justify_items(Self, @types.Alignment) -> Self
+pub fn LayoutNode::set_justify_self(Self, @types.AlignSelf) -> Self
 pub fn LayoutNode::set_margin(Self, Double) -> Self
 pub fn LayoutNode::set_margin_bottom(Self, Double) -> Self
 pub fn LayoutNode::set_margin_left(Self, Double) -> Self
@@ -205,7 +206,7 @@ pub fn LayoutNode::set_padding_bottom(Self, Double) -> Self
 pub fn LayoutNode::set_padding_left(Self, Double) -> Self
 pub fn LayoutNode::set_padding_right(Self, Double) -> Self
 pub fn LayoutNode::set_padding_top(Self, Double) -> Self
-pub fn LayoutNode::set_position_type(Self, @style.Position) -> Self
+pub fn LayoutNode::set_position_type(Self, @types.Position) -> Self
 pub fn LayoutNode::set_row_gap(Self, Double) -> Self
 pub fn LayoutNode::set_width(Self, Double) -> Self
 pub fn LayoutNode::set_width_auto(Self) -> Self

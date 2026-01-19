@@ -5,10 +5,11 @@ import(
   "mizchi/crater/css/cascade"
   "mizchi/crater/css/diagnostics"
   "mizchi/crater/style"
+  "mizchi/crater/types"
 )
 
 // Values
-pub fn parse_grid_template_tracks_from_string(String) -> Array[@style.TrackSizingFunction]
+pub fn parse_grid_template_tracks_from_string(String) -> Array[@types.TrackSizingFunction]
 
 pub fn parse_inline_style(String) -> @style.Style
 

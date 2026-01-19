@@ -9,8 +9,8 @@
  */
 
 import puppeteer from 'puppeteer';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 import { renderer } from '../wasm/dist/crater.js';
 
 // Types
@@ -261,7 +261,7 @@ function getCraterLayout(htmlPath: string): LayoutNode {
 
     // Find #test or #container element if it exists (WPT tests)
     const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
-                        findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
+      findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
     if (testElement) {
       return normalizeRoot(testElement);
     }
