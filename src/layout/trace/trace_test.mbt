@@ -3,6 +3,12 @@
 // =============================================================================
 
 ///|
+/// Default dispatch for tests
+fn default_dispatch() -> @node.DispatchFn {
+  @node.DispatchFn(fn(node, ctx, dispatch) { @flex.compute(node, ctx, dispatch) })
+}
+
+///|
 test "trace_simple_layout" {
   // Create a simple parent-child structure
   let child = @node.Node::leaf("child", {
@@ -28,7 +34,7 @@ test "trace_simple_layout" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let result = @flex.compute_with_trace(parent, ctx)
+  let result = @flex.compute_with_trace(parent, ctx, default_dispatch())
   // Verify traces were collected
   let parent_trace = result.tracer.get_trace(parent.uid)
   assert_true(parent_trace is Some(_))
@@ -72,7 +78,7 @@ test "trace_dependencies_recorded" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let result = @flex.compute_with_trace(parent, ctx)
+  let result = @flex.compute_with_trace(parent, ctx, default_dispatch())
   // Parent should have dependencies on children's intrinsic sizes
   let parent_trace = result.tracer.get_trace(parent.uid)
   assert_true(parent_trace is Some(_))
@@ -136,7 +142,7 @@ test "trace_needs_recompute" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let result = @flex.compute_with_trace(node, ctx1)
+  let result = @flex.compute_with_trace(node, ctx1, default_dispatch())
   // Same context should not need recompute
   assert_eq(result.tracer.needs_recompute(node.uid, ctx1), false)
   // Different width should need recompute
@@ -197,7 +203,7 @@ test "trace_nested_structure" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let result = @flex.compute_with_trace(parent, ctx)
+  let result = @flex.compute_with_trace(parent, ctx, default_dispatch())
   // All three nodes should have traces
   assert_true(result.tracer.get_trace(parent.uid) is Some(_))
   assert_true(result.tracer.get_trace(middle.uid) is Some(_))

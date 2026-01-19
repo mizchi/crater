@@ -15,7 +15,7 @@ fn compute_layout(
     viewport_width: viewport.width,
     viewport_height: viewport.height,
   }
-  @dispatch.compute(node, ctx)
+  @dispatch.compute_layout(node, ctx)
 }
 
 ///|

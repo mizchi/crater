@@ -34,7 +34,7 @@ fn make_ctx(width : Double, height : Double) -> @types.LayoutContext {
 ///|
 test "e2e: simple fixed size box" {
   let root = node_from_css("root", "width: 200px; height: 100px")
-  let layout = @flex.compute(root, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(root, make_ctx(800.0, 600.0), default_dispatch())
   inspect(layout.width, content="200")
   inspect(layout.height, content="100")
 }
@@ -48,7 +48,7 @@ test "e2e: flex container with children" {
     "display: flex; width: 300px; height: 100px",
     [child1, child2],
   )
-  let layout = @flex.compute(container, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(container, make_ctx(800.0, 600.0), default_dispatch())
 
   // Container size
   inspect(layout.width, content="300")
@@ -68,7 +68,7 @@ test "e2e: flex column direction" {
     "display: flex; flex-direction: column; width: 200px; height: 200px",
     [child1, child2],
   )
-  let layout = @flex.compute(container, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(container, make_ctx(800.0, 600.0), default_dispatch())
 
   // Children should be laid out vertically
   inspect(layout.children[0].y, content="0")
@@ -83,7 +83,7 @@ test "e2e: flex justify-content center" {
     "display: flex; justify-content: center; width: 300px; height: 100px",
     [child],
   )
-  let layout = @flex.compute(container, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(container, make_ctx(800.0, 600.0), default_dispatch())
 
   // Child should be centered: (300 - 100) / 2 = 100
   inspect(layout.children[0].x, content="100")
@@ -98,7 +98,7 @@ test "e2e: flex-grow distribution" {
     "display: flex; width: 300px; height: 100px",
     [child1, child2],
   )
-  let layout = @flex.compute(container, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(container, make_ctx(800.0, 600.0), default_dispatch())
 
   // flex-grow 1:2 ratio, so 100px : 200px
   inspect(layout.children[0].width, content="100")
@@ -113,7 +113,7 @@ test "e2e: margin and padding" {
     "display: flex; width: 300px; height: 100px; padding: 10px",
     [child],
   )
-  let layout = @flex.compute(container, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(container, make_ctx(800.0, 600.0), default_dispatch())
 
   // Child should start after padding
   inspect(layout.children[0].x, content="10")
@@ -129,7 +129,7 @@ test "e2e: gap between flex items" {
     "display: flex; width: 300px; height: 100px; gap: 20px",
     [child1, child2],
   )
-  let layout = @flex.compute(container, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(container, make_ctx(800.0, 600.0), default_dispatch())
 
   // Second child should have gap
   inspect(layout.children[0].x, content="0")
@@ -151,7 +151,7 @@ test "e2e: nested flex containers" {
     "display: flex; width: 300px; height: 150px",
     [inner, outer_child],
   )
-  let layout = @flex.compute(outer, make_ctx(800.0, 600.0))
+  let layout = @flex.compute(outer, make_ctx(800.0, 600.0), default_dispatch())
 
   // Inner container children should be vertical
   let inner_layout = layout.children[0]

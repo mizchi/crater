@@ -3,6 +3,12 @@
 // =============================================================================
 
 ///|
+/// Default dispatch for tests
+fn default_dispatch() -> @node.DispatchFn {
+  @node.DispatchFn(fn(node, ctx, dispatch) { compute(node, ctx, dispatch) })
+}
+
+///|
 test "grid_basic" {
   // 120x120 grid container with 3x3 cells of 40px each
   // 9 children should be placed in row-first order
@@ -28,7 +34,7 @@ test "grid_basic" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Check root size
   assert_eq(layout.width, 120.0)
@@ -87,7 +93,7 @@ test "grid_with_gap" {
     column_gap: @types.Length(10.0),
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Check child positions with gaps
   // Row 0: (0,0), (50,0)  <- 40 + 10 gap
@@ -123,7 +129,7 @@ test "grid_with_fr_units" {
     grid_template_rows: [@types.TrackSizingFunction::Length(100.0)],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // 1fr + 2fr = 3fr total, 300px / 3 = 100px per fr
   // First column: 1fr = 100px, Second column: 2fr = 200px
@@ -158,7 +164,7 @@ test "grid_align_content_start" {
     align_content: @types.Start,
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // All items should be positioned from (0,0)
   assert_eq(layout.children[0].x, 0.0)
@@ -222,7 +228,7 @@ test "grid_explicit_placement" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // node0 at (0, 0)
   assert_eq(layout.children[0].x, 0.0)
@@ -264,7 +270,7 @@ test "grid_span" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // node0 should span 2 columns (80px width)
   assert_eq(layout.children[0].x, 0.0)
@@ -300,7 +306,7 @@ test "grid_with_padding" {
     },
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Children should be offset by padding
   assert_eq(layout.children[0].x, 10.0)
@@ -367,7 +373,7 @@ test "taffy/grid_align_items_sized_center" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
   assert_eq(layout.width, 120.0)
   assert_eq(layout.height, 120.0)
 
@@ -436,7 +442,7 @@ test "taffy/grid_align_items_sized_start" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // node0: at start -> y = 0
   assert_eq(layout.children[0].y, 0.0)
@@ -497,7 +503,7 @@ test "taffy/grid_align_items_sized_end" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // node0: 20px height at end of 40px cell -> y = 20
   assert_eq(layout.children[0].y, 20.0)
@@ -539,7 +545,7 @@ test "taffy/grid_auto_single_item" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container should be 180px wide (40 + 100 + 40)
   assert_eq(layout.width, 180.0)
@@ -588,7 +594,7 @@ test "taffy/grid_auto_columns" {
     grid_auto_flow: @types.Column,
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container: 190px wide (30 + 40 + 10 + 20 + 30 + 10 + 20 + 30)
   assert_eq(layout.width, 190.0)
@@ -637,7 +643,7 @@ test "taffy/grid_align_content_center" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Total track height = 120, container = 200, offset = (200-120)/2 = 40
   // First row should start at y = 40
@@ -672,7 +678,7 @@ test "taffy/grid_align_content_space_between" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // space-between: first row at 0, last row at 200-40=160
   // gap = (200 - 120) / 2 = 40
@@ -707,7 +713,7 @@ test "taffy/grid_align_content_space_around" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // space-around: 80px free space / 3 = 26.67 per track side
   // Positions approximately: 13.33, 66.67, 120
@@ -741,7 +747,7 @@ test "taffy/grid_align_content_space_evenly" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // space-evenly: 80px free space / 4 gaps = 20px each
   // Positions: 20, 80, 140
@@ -776,7 +782,7 @@ test "taffy/grid_align_content_end" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Tracks at end: offset = 200 - 120 = 80
   assert_eq(layout.children[0].y, 80.0)
@@ -814,7 +820,7 @@ test "taffy/grid_justify_content_center" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Total track width = 120, container = 200, offset = (200-120)/2 = 40
   assert_eq(layout.children[0].x, 40.0)
@@ -848,7 +854,7 @@ test "taffy/grid_justify_content_end" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // offset = 200 - 120 = 80
   assert_eq(layout.children[0].x, 80.0)
@@ -885,7 +891,7 @@ test "taffy/grid_gap" {
     column_gap: @types.Length(20.0),
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // With 20px gaps: (0,0), (60,0), (0,60), (60,60)
   assert_eq(layout.children[0].x, 0.0)
@@ -930,7 +936,7 @@ test "taffy/grid_minmax_column_fixed_width_within_range" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container: 110x120
   assert_eq(layout.width, 110.0)
@@ -973,7 +979,7 @@ test "taffy/grid_minmax_column_fixed_width_above_range" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container: 140x120
   assert_eq(layout.width, 140.0)
@@ -1016,7 +1022,7 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container: 90x120
   assert_eq(layout.width, 90.0)
@@ -1055,7 +1061,7 @@ test "grid_minmax_min_content_auto_track" {
     ],
   }
   let root = @node.Node::new("root", root_style, [block_child])
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
   assert_eq(layout.children[0].width, 100.0)
 }
 
@@ -1092,7 +1098,7 @@ test "taffy/grid_fr_span_2_proportion" {
   }
   let root = @node.Node::new("root", root_style, [node0, node1, node2])
   // Use a width that matches the content - 60px from spanned item
-  let layout = compute_grid_layout(root, 60.0, 600.0)
+  let layout = compute_grid_layout(root, 60.0, 600.0, default_dispatch())
 
   // Container: 60x80
   assert_eq(layout.width, 60.0)
@@ -1152,7 +1158,7 @@ test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
   let root = @node.Node::new("root", root_style, [
     node0, node1, node2, node3, node4,
   ])
-  let layout = compute_grid_layout(root, 120.0, 600.0)
+  let layout = compute_grid_layout(root, 120.0, 600.0, default_dispatch())
 
   // Container: 120x80
   assert_eq(layout.width, 120.0)
@@ -1210,7 +1216,7 @@ test "taffy/grid_aspect_ratio_fill_child_height" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [node0])
-  let layout = compute_grid_layout(root, 200.0, 200.0)
+  let layout = compute_grid_layout(root, 200.0, 200.0, default_dispatch())
 
   // Container: 100x100
   assert_eq(layout.width, 100.0)
@@ -1240,7 +1246,7 @@ test "taffy/grid_aspect_ratio_fill_child_width" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [node0])
-  let layout = compute_grid_layout(root, 200.0, 200.0)
+  let layout = compute_grid_layout(root, 200.0, 200.0, default_dispatch())
 
   // Container: 100x100
   assert_eq(layout.width, 100.0)
@@ -1276,7 +1282,7 @@ test "grid_repeat_count" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 200.0, 200.0)
+  let layout = compute_grid_layout(root, 200.0, 200.0, default_dispatch())
 
   // Container: 120x40
   assert_eq(layout.width, 120.0)
@@ -1316,7 +1322,7 @@ test "taffy/grid_auto_fill_fixed_size" {
     ],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 200.0, 200.0)
+  let layout = compute_grid_layout(root, 200.0, 200.0, default_dispatch())
 
   // Container: 120x120
   assert_eq(layout.width, 120.0)
@@ -1384,7 +1390,7 @@ test "grid_template_areas_basic" {
     grid_template_areas: ["header header", "sidebar main", "footer footer"],
   }
   let root = @node.Node::new("root", root_style, children)
-  let layout = compute_grid_layout(root, 200.0, 200.0)
+  let layout = compute_grid_layout(root, 200.0, 200.0, default_dispatch())
 
   // Container size
   assert_eq(layout.width, 200.0)
@@ -1446,7 +1452,7 @@ test "grid_measure_function_basic" {
     grid_template_rows: [@types.TrackSizingFunction::MaxContent],
   }
   let root = @node.Node::new("root", root_style, [child])
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container should size to max-content of the measured child
   assert_eq(layout.width, 100.0)
@@ -1476,7 +1482,7 @@ test "grid_measure_function_min_content" {
     grid_template_rows: [@types.TrackSizingFunction::MinContent],
   }
   let root = @node.Node::new("root", root_style, [child])
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Container should size to min-content of the measured child
   assert_eq(layout.width, 30.0)
@@ -1522,7 +1528,7 @@ test "grid_min_content_spanning_fr" {
   let filler = @node.Node::leaf("filler", filler_style)
   let item = @node.Node::new("item", item_style, [filler])
   let root = @node.Node::new("root", root_style, [item])
-  let layout = compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
 
   // Expected: root width = 30 (tracks) + 20 (border) = 50
   // Expected: item width = 30 (spanning 1fr + 30px, where 1fr = 0)
@@ -1566,7 +1572,7 @@ test "grid_fr_sum_less_than_one" {
     viewport_width: 400.0,
     viewport_height: 400.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Column widths: 0.25fr + 0.25fr = 0.5, but sum < 1 so use 1.0
   // Each 0.25fr = 0.25 * 200 = 50

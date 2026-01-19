@@ -868,7 +868,7 @@ pub fn render_with_external_css(
   @dispatch.setup()
 
   // Compute layout using dispatcher (handles display type switching)
-  let layout = @dispatch.compute(root, layout_ctx)
+  let layout = @dispatch.compute_layout(root, layout_ctx)
 
   // Apply root margin as position offset
   // For margin:auto, center horizontally
@@ -971,7 +971,7 @@ pub fn render_document_with_external_css(
   @dispatch.setup()
 
   // Compute layout
-  let layout = @dispatch.compute(root, layout_ctx)
+  let layout = @dispatch.compute_layout(root, layout_ctx)
 
   // Apply root margin offset to final layout
   let margin_left_is_auto = match root.style.margin.left {

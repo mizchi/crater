@@ -91,6 +91,7 @@ pub fn compute_ifc(
   available_height : Double?,
   content_offset_x : Double, // Padding + border left
   content_offset_y : Double, // Padding + border top
+  dispatch : @node.DispatchFn,
 ) -> InlineLayoutResult {
   if children.length() == 0 {
     return { layouts: [], total_height: 0.0 }
@@ -114,7 +115,7 @@ pub fn compute_ifc(
 
     // Compute child's intrinsic size
     let child_layout = compute_inline_child(
-      child, available_width, available_height,
+      child, available_width, available_height, dispatch,
     )
 
     // Calculate baseline based on font metrics
@@ -242,6 +243,7 @@ fn compute_inline_child(
   node : @node.Node,
   available_width : Double,
   available_height : Double?,
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = node.style
   let padding = @types.resolve_rect(style.padding, available_width)
@@ -398,7 +400,7 @@ fn compute_inline_child(
   if style.display == @types.InlineBlock ||
     style.display == @types.InlineFlex ||
     style.display == @types.InlineGrid {
-    // Use the global layout dispatcher to get proper block/flex/grid layout
+    // Use the dispatch function to get proper block/flex/grid layout
     let ctx : @types.LayoutContext = {
       available_width,
       available_height,
@@ -406,7 +408,8 @@ fn compute_inline_child(
       viewport_width: available_width,
       viewport_height: available_height.unwrap_or(0.0),
     } // Use MaxContent for shrink-to-fit
-    let layout = @node.dispatch_layout(node, ctx)
+    let @node.DispatchFn(dispatch_fn) = dispatch
+    let layout = dispatch_fn(node, ctx, dispatch)
     return layout
   }
 
@@ -423,7 +426,7 @@ fn compute_inline_child(
     } else if child.style.position == @types.Absolute ||
       child.style.position == @types.Fixed {
       // Absolute/fixed children need to be laid out
-      // Use dispatch_layout to get proper sizing
+      // Use dispatch to get proper sizing
       let child_ctx : @types.LayoutContext = {
         available_width,
         available_height,
@@ -431,13 +434,14 @@ fn compute_inline_child(
         viewport_width: available_width,
         viewport_height: available_height.unwrap_or(0.0),
       }
-      let child_layout = @node.dispatch_layout(child, child_ctx)
+      let @node.DispatchFn(dispatch_fn) = dispatch
+      let child_layout = dispatch_fn(child, child_ctx, dispatch)
       children.push(child_layout)
       // Absolute children don't contribute to inline element's size
     } else if is_inline_level(child.style.display) {
       // Recursively process inline children
       let child_layout = compute_inline_child(
-        child, available_width, available_height,
+        child, available_width, available_height, dispatch,
       )
       children.push(child_layout)
       // Accumulate content size from flow children

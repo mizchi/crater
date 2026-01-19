@@ -336,6 +336,7 @@ fn compute_mixed_content_layout(
   ctx : @types.LayoutContext,
   warnings : Array[@types.LayoutWarning],
   layout_map : Map[Int, @types.Layout],
+  dispatch : @node.DispatchFn,
 ) -> MixedContentResult {
   let mut current_y = 0.0
   let mut prev_margin_bottom = 0.0
@@ -360,6 +361,7 @@ fn compute_mixed_content_layout(
           available_height,
           content_offset_x,
           content_offset_y + current_y,
+          dispatch,
         )
         // Store layouts with original indices
         for j = 0; j < indices.length(); j = j + 1 {
@@ -379,14 +381,12 @@ fn compute_mixed_content_layout(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        // Use dispatch_layout for flex/grid containers, block layout for others
+        // Use dispatch for flex/grid containers, block layout for others
+        let @node.DispatchFn(dispatch_fn) = dispatch
         let child_layout = match node.style.display {
           @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-            match @node.get_layout_dispatcher() {
-              Some(_) => @node.dispatch_layout(node, child_ctx)
-              None => compute_with_collapse(node, child_ctx, warnings).layout
-            }
-          _ => compute_with_collapse(node, child_ctx, warnings).layout
+            dispatch_fn(node, child_ctx, dispatch)
+          _ => compute_with_collapse(node, child_ctx, warnings, dispatch).layout
         }
         // Calculate margin values
         let margin_top = child_layout.margin.top
@@ -441,8 +441,9 @@ fn compute_root_layout(
   node : @node.Node,
   ctx : @types.LayoutContext,
   warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
-  let result = compute_with_collapse(node, ctx, warnings)
+  let result = compute_with_collapse(node, ctx, warnings, dispatch)
   let layout = result.layout
 
   // At root level, escaped margins position children and add to height
@@ -521,17 +522,22 @@ fn compute_root_layout(
 pub fn compute_with_warnings(
   node : @node.Node,
   ctx : @types.LayoutContext,
+  dispatch : @node.DispatchFn,
 ) -> @types.LayoutResult {
   let warnings : Array[@types.LayoutWarning] = []
-  let layout = compute_root_layout(node, ctx, warnings)
+  let layout = compute_root_layout(node, ctx, warnings, dispatch)
   { layout, warnings }
 }
 
 ///|
 /// Compute block layout for a node and its children
-pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
+pub fn compute(
+  node : @node.Node,
+  ctx : @types.LayoutContext,
+  dispatch : @node.DispatchFn,
+) -> @types.Layout {
   let warnings : Array[@types.LayoutWarning] = []
-  compute_root_layout(node, ctx, warnings)
+  compute_root_layout(node, ctx, warnings, dispatch)
 }
 
 ///|
@@ -540,6 +546,7 @@ fn compute_with_collapse(
   node : @node.Node,
   ctx : @types.LayoutContext,
   warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
 ) -> LayoutWithCollapse {
   let style = node.style
 
@@ -553,7 +560,7 @@ fn compute_with_collapse(
     let mut first_child_margin_top : Double? = None
     for i = 0; i < node.children.length(); i = i + 1 {
       let child = node.children[i]
-      let child_result = compute_with_collapse(child, ctx, warnings)
+      let child_result = compute_with_collapse(child, ctx, warnings, dispatch)
       let child_layout = child_result.layout
       // Get child's margins
       let child_margin_top = child_layout.margin.top
@@ -1132,7 +1139,7 @@ fn compute_with_collapse(
                         viewport_height: ctx.viewport_height,
                       }
                       let child_result = compute_with_collapse(
-                        child, intrinsic_ctx, warnings,
+                        child, intrinsic_ctx, warnings, dispatch,
                       )
                       child_result.layout.width
                     }
@@ -1207,9 +1214,7 @@ fn compute_with_collapse(
 
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
-  // Only use IFC when the layout dispatcher is set (needed for proper InlineBlock layout)
-  let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
-    @node.get_layout_dispatcher() is Some(_)
+  let use_ifc = @inline.should_establish_ifc(flow_nodes)
   // Check for mixed inline/block content (needs anonymous block boxes)
   let has_mixed = has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
@@ -1220,6 +1225,7 @@ fn compute_with_collapse(
       child_available_height,
       padding.left + border.left,
       padding.top + border.top,
+      dispatch,
     )
 
     // Store IFC layouts with original indices
@@ -1275,7 +1281,7 @@ fn compute_with_collapse(
       let child = node.children[i]
       if child.style.position == @types.Absolute {
         let abs_layout = layout_absolute_child(
-          child, box_width, box_height, border, content_height, warnings,
+          child, box_width, box_height, border, content_height, warnings, dispatch,
         )
         layout_map[i] = abs_layout
       }
@@ -1290,6 +1296,7 @@ fn compute_with_collapse(
           ctx.viewport_width,
           ctx.viewport_height,
           warnings,
+          dispatch,
         )
         layout_map[i] = fixed_layout
       }
@@ -1318,14 +1325,14 @@ fn compute_with_collapse(
       text: node.text,
     }
     return { layout, collapsed: { top: None, bottom: None } }
-  } else if has_mixed && @node.get_layout_dispatcher() is Some(_) {
+  } else if has_mixed {
     // Mixed inline/block content - use anonymous block boxes
     let groups = group_flow_children_for_anonymous_blocks(
       flow_nodes, flow_indices,
     )
     let mixed_result = compute_mixed_content_layout(
       groups, actual_child_available_width, child_available_height, padding, border,
-      ctx, warnings, layout_map,
+      ctx, warnings, layout_map, dispatch,
     )
     // Calculate box height from mixed content
     let content_height = mixed_result.content_height
@@ -1371,7 +1378,7 @@ fn compute_with_collapse(
       let child = node.children[i]
       if child.style.position == @types.Absolute {
         let abs_layout = layout_absolute_child(
-          child, box_width, box_height, border, content_height, warnings,
+          child, box_width, box_height, border, content_height, warnings, dispatch,
         )
         layout_map[i] = abs_layout
       }
@@ -1385,6 +1392,7 @@ fn compute_with_collapse(
           ctx.viewport_width,
           ctx.viewport_height,
           warnings,
+          dispatch,
         )
         layout_map[i] = fixed_layout
       }
@@ -1450,12 +1458,9 @@ fn compute_with_collapse(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        // Use global dispatcher if available, otherwise use block layout
-        // (tests without dispatcher setup will use block layout as fallback)
-        let layout = match @node.get_layout_dispatcher() {
-          Some(_) => @node.dispatch_layout(child, child_ctx)
-          None => compute_with_collapse(child, child_ctx, warnings).layout
-        }
+        // Use dispatch for flex/grid/table containers
+        let @node.DispatchFn(dispatch_fn) = dispatch
+        let layout = dispatch_fn(child, child_ctx, dispatch)
         { layout, collapsed: { top: None, bottom: None } }
       }
       _ => {
@@ -1466,7 +1471,7 @@ fn compute_with_collapse(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        compute_with_collapse(child, child_ctx, warnings)
+        compute_with_collapse(child, child_ctx, warnings, dispatch)
       }
     }
     flow_children.push(child_result)
@@ -1524,15 +1529,12 @@ fn compute_with_collapse(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        // Use dispatch_layout for flex/grid elements, block layout for others
+        // Use dispatch for flex/grid elements, block layout for others
+        let @node.DispatchFn(dispatch_fn) = dispatch
         let intrinsic_layout = match child_style.display {
           @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-            match @node.get_layout_dispatcher() {
-              Some(_) => @node.dispatch_layout(child, intrinsic_ctx)
-              None =>
-                compute_with_collapse(child, intrinsic_ctx, warnings).layout
-            }
-          _ => compute_with_collapse(child, intrinsic_ctx, warnings).layout
+            dispatch_fn(child, intrinsic_ctx, dispatch)
+          _ => compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout
         }
         @types.min(intrinsic_layout.width, actual_child_available_width)
       }
@@ -1566,14 +1568,12 @@ fn compute_with_collapse(
       viewport_width: ctx.viewport_width,
       viewport_height: ctx.viewport_height,
     }
-    // Use dispatch_layout for flex/grid elements, block layout for others
+    // Use dispatch for flex/grid elements, block layout for others
+    let @node.DispatchFn(dispatch_fn) = dispatch
     let child_inner = match child_style.display {
       @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-        match @node.get_layout_dispatcher() {
-          Some(_) => @node.dispatch_layout(child, child_ctx)
-          None => compute_with_collapse(child, child_ctx, warnings).layout
-        }
-      _ => compute_with_collapse(child, child_ctx, warnings).layout
+        dispatch_fn(child, child_ctx, dispatch)
+      _ => compute_with_collapse(child, child_ctx, warnings, dispatch).layout
     }
 
     // Get child dimensions
@@ -2032,7 +2032,7 @@ fn compute_with_collapse(
         None => content_height // Default to end of flow content
       }
       let abs_layout = layout_absolute_child(
-        child, box_width, box_height, border, static_y, warnings,
+        child, box_width, box_height, border, static_y, warnings, dispatch,
       )
       layout_map[i] = abs_layout
     }
@@ -2047,6 +2047,7 @@ fn compute_with_collapse(
         ctx.viewport_width,
         ctx.viewport_height,
         warnings,
+        dispatch,
       )
       layout_map[i] = fixed_layout
     }
@@ -2086,6 +2087,7 @@ fn layout_absolute_child(
   parent_border : @types.Rect[Double],
   static_y : Double, // Y position where the element would be in normal flow
   warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let child_style = child.style
 
@@ -2114,11 +2116,11 @@ fn layout_absolute_child(
   let (child_width, child_height, child_inner) = match
     (initial_width, initial_height) {
     (Some(w), Some(h)) => {
-      let inner = compute_nested(child, w, Some(h), warnings)
+      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
       (w, h, inner)
     }
     (Some(w), None) => {
-      let inner = compute_nested(child, w, None, warnings)
+      let inner = compute_nested(child, w, None, warnings, dispatch)
       let h = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -2128,7 +2130,7 @@ fn layout_absolute_child(
     (None, Some(h)) => {
       // Width is auto: use shrink-to-fit approach
       // Step 1: Compute intrinsic width using MaxContent sizing
-      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings)
+      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings, dispatch)
       // Shrink-to-fit: min(max-content, available_width)
       let shrink_to_fit_width = if intrinsic.width < container_width {
         intrinsic.width
@@ -2140,13 +2142,13 @@ fn layout_absolute_child(
         _ => shrink_to_fit_width
       }
       // Step 2: Re-layout with definite width
-      let inner = compute_nested(child, w, Some(h), warnings)
+      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
       (w, h, inner)
     }
     (None, None) => {
       // Both width and height are auto: use shrink-to-fit approach
       // Step 1: Compute intrinsic size using MaxContent sizing
-      let intrinsic = compute_nested_intrinsic(child, None, warnings)
+      let intrinsic = compute_nested_intrinsic(child, None, warnings, dispatch)
       // Shrink-to-fit: min(max-content, available_width)
       let shrink_to_fit_width = if intrinsic.width < container_width {
         intrinsic.width
@@ -2158,12 +2160,12 @@ fn layout_absolute_child(
           let w = shrink_to_fit_width
           let h = w / ar
           // Re-layout with definite size
-          let inner = compute_nested(child, w, Some(h), warnings)
+          let inner = compute_nested(child, w, Some(h), warnings, dispatch)
           (w, h, inner)
         }
         _ => {
           // Re-layout with definite width
-          let inner = compute_nested(child, shrink_to_fit_width, None, warnings)
+          let inner = compute_nested(child, shrink_to_fit_width, None, warnings, dispatch)
           (shrink_to_fit_width, inner.height, inner)
         }
       }
@@ -2189,7 +2191,7 @@ fn layout_absolute_child(
       }
   }
   let intrinsic_size = if needs_intrinsic {
-    compute_nested_intrinsic(child, None, warnings)
+    compute_nested_intrinsic(child, None, warnings, dispatch)
   } else {
     child_inner
   }
@@ -2344,6 +2346,7 @@ fn layout_fixed_child(
   viewport_width : Double,
   viewport_height : Double,
   warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let child_style = child.style
 
@@ -2372,11 +2375,11 @@ fn layout_fixed_child(
   let (child_width, child_height, child_inner) = match
     (initial_width, initial_height) {
     (Some(w), Some(h)) => {
-      let inner = compute_nested(child, w, Some(h), warnings)
+      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
       (w, h, inner)
     }
     (Some(w), None) => {
-      let inner = compute_nested(child, w, None, warnings)
+      let inner = compute_nested(child, w, None, warnings, dispatch)
       let h = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -2385,7 +2388,7 @@ fn layout_fixed_child(
     }
     (None, Some(h)) => {
       // Width is auto: use shrink-to-fit approach
-      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings)
+      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings, dispatch)
       let shrink_to_fit_width = if intrinsic.width < viewport_width {
         intrinsic.width
       } else {
@@ -2395,12 +2398,12 @@ fn layout_fixed_child(
         Some(ar) if ar > 0.0 => h * ar
         _ => shrink_to_fit_width
       }
-      let inner = compute_nested(child, w, Some(h), warnings)
+      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
       (w, h, inner)
     }
     (None, None) => {
       // Both width and height are auto: use shrink-to-fit approach
-      let intrinsic = compute_nested_intrinsic(child, None, warnings)
+      let intrinsic = compute_nested_intrinsic(child, None, warnings, dispatch)
       let shrink_to_fit_width = if intrinsic.width < viewport_width {
         intrinsic.width
       } else {
@@ -2410,11 +2413,11 @@ fn layout_fixed_child(
         Some(ar) if ar > 0.0 => {
           let w = shrink_to_fit_width
           let h = w / ar
-          let inner = compute_nested(child, w, Some(h), warnings)
+          let inner = compute_nested(child, w, Some(h), warnings, dispatch)
           (w, h, inner)
         }
         _ => {
-          let inner = compute_nested(child, shrink_to_fit_width, None, warnings)
+          let inner = compute_nested(child, shrink_to_fit_width, None, warnings, dispatch)
           (shrink_to_fit_width, inner.height, inner)
         }
       }
@@ -2536,6 +2539,7 @@ fn compute_nested(
   available_width : Double,
   available_height : Double?,
   warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = node.style
   let padding = @types.resolve_rect(style.padding, available_width)
@@ -2605,14 +2609,12 @@ fn compute_nested(
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
   }
-  // Use dispatch_layout for flex/grid containers, block layout for others
+  // Use dispatch for flex/grid containers, block layout for others
+  let @node.DispatchFn(dispatch_fn) = dispatch
   match node.style.display {
     @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-      match @node.get_layout_dispatcher() {
-        Some(_) => @node.dispatch_layout(node, ctx)
-        None => compute_with_collapse(node, ctx, warnings).layout
-      }
-    _ => compute_with_collapse(node, ctx, warnings).layout
+      dispatch_fn(node, ctx, dispatch)
+    _ => compute_with_collapse(node, ctx, warnings, dispatch).layout
   }
 }
 
@@ -2623,6 +2625,7 @@ fn compute_nested_intrinsic(
   node : @node.Node,
   available_height : Double?,
   warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = node.style
   // Use 0 for percentage resolution in intrinsic sizing
@@ -2689,13 +2692,11 @@ fn compute_nested_intrinsic(
     viewport_width: 0.0,
     viewport_height: available_height.unwrap_or(0.0),
   }
-  // Use dispatch_layout for flex/grid containers, block layout for others
+  // Use dispatch for flex/grid containers, block layout for others
+  let @node.DispatchFn(dispatch_fn) = dispatch
   match node.style.display {
     @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-      match @node.get_layout_dispatcher() {
-        Some(_) => @node.dispatch_layout(node, ctx)
-        None => compute_with_collapse(node, ctx, warnings).layout
-      }
-    _ => compute_with_collapse(node, ctx, warnings).layout
+      dispatch_fn(node, ctx, dispatch)
+    _ => compute_with_collapse(node, ctx, warnings, dispatch).layout
   }
 }

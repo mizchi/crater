@@ -38,7 +38,7 @@ test "simple table layout" {
 
   // Compute layout
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Check table dimensions
   assert_true(layout.width > 0.0)
@@ -80,7 +80,7 @@ test "table with row group" {
     viewport_height: 300.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Check table has children (tbody)
   assert_eq(layout.children.length(), 1)
@@ -116,7 +116,7 @@ test "table equal column widths" {
     viewport_height: 300.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Table width should be 200
   inspect(layout.width, content="200")
@@ -175,7 +175,7 @@ test "table content-based column widths" {
     viewport_height: 300.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Table width should be 300
   inspect(layout.width, content="300")
@@ -219,7 +219,7 @@ test "table shrink-to-fit width" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Table should shrink to fit: 100 + 10 + 100 = 210px
   // Not 800px (parent width)
@@ -274,7 +274,7 @@ test "table border-collapse" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // With border-collapse, cell dimensions should be 50x50 (border included)
   let row_layout = layout.children[0]
@@ -320,7 +320,7 @@ test "table-layout fixed" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Table should be 200px wide
   inspect(layout.width, content="200")
@@ -369,7 +369,7 @@ test "table-layout fixed with explicit width" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // First cell should be 150px, second gets remaining 50px
   let row_layout = layout.children[0]
@@ -425,7 +425,7 @@ test "table rowspan" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Row 0 should have 2 cells
   let row0_layout = layout.children[0]
@@ -490,7 +490,7 @@ test "table rowspan height distribution" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Row 0 and Row 1 should have equal heights (100 / 2 = 50 each)
   // because the rowspan cell (100px) needs to fit across both rows
@@ -562,7 +562,7 @@ test "table rowspan with tbody" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(table, ctx)
+  let layout = @dispatch.compute_layout(table, ctx)
 
   // Table should have 1 child (tbody)
   assert_eq(layout.children.length(), 1)

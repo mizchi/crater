@@ -348,7 +348,7 @@ test "bench_phase_layout_only_100" (b : @bench.T) {
   }
   @dispatch.setup()
   b.bench(name="phase_layout_100", fn() {
-    b.keep(@dispatch.compute(node, layout_ctx))
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }
 

@@ -214,7 +214,7 @@ pub fn compute_node(
   // Convert to Node and compute using existing algorithm
   let immutable_node = node.to_node()
   let ctx = constraint.to_context()
-  let result = @node.dispatch_layout(immutable_node, ctx)
+  let result = @dispatch.compute_layout(immutable_node, ctx)
 
   // Cache the result
   node.cached_layout = Some({ constraint: constraint.to_key(), result })

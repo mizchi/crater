@@ -5,22 +5,33 @@
 ///|
 /// Compute layout for a node, dispatching to the appropriate layout algorithm
 /// based on the node's display property.
-pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
+pub fn compute(
+  node : @node.Node,
+  ctx : @types.LayoutContext,
+  dispatch : @node.DispatchFn,
+) -> @types.Layout {
   match node.style.display {
-    @types.Flex | @types.InlineFlex => @flex.compute(node, ctx)
-    @types.Grid | @types.InlineGrid => @grid.compute(node, ctx)
-    @types.Table | @types.InlineTable => @table.compute(node, ctx)
-    _ => @block.compute(node, ctx)
+    @types.Flex | @types.InlineFlex => @flex.compute(node, ctx, dispatch)
+    @types.Grid | @types.InlineGrid => @grid.compute(node, ctx, dispatch)
+    @types.Table | @types.InlineTable => @table.compute(node, ctx, dispatch)
+    _ => @block.compute(node, ctx, dispatch)
   }
 }
 
 ///|
-/// Initialize the global layout dispatcher
-/// Call this before performing any layout computations
-pub fn setup() -> Unit {
-  @node.set_layout_dispatcher(
-    @node.LayoutDispatchFunc(fn(node, ctx) { compute(node, ctx) }),
-  )
+/// Create the default dispatch function
+pub fn default_dispatch() -> @node.DispatchFn {
+  @node.DispatchFn(fn(node, ctx, dispatch) { compute(node, ctx, dispatch) })
+}
+
+///|
+/// Compute layout with the default dispatcher (convenience function)
+pub fn compute_layout(
+  node : @node.Node,
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
+  let dispatch = default_dispatch()
+  compute(node, ctx, dispatch)
 }
 
 ///|
@@ -36,4 +47,12 @@ pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
 pub fn reset_intrinsic_cache() -> Unit {
   @flex.reset_intrinsic_cache()
   @flex.reset_resolved_cache()
+}
+
+///|
+/// @deprecated Use compute_layout or pass dispatch explicitly
+/// Initialize the global layout dispatcher (kept for backward compatibility)
+pub fn setup() -> Unit {
+  // No-op: global dispatcher removed, use compute_layout instead
+  ()
 }

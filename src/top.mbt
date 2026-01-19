@@ -3,6 +3,12 @@
 // =============================================================================
 
 ///|
+/// Default dispatch for top module
+fn default_dispatch() -> @node.DispatchFn {
+  @node.DispatchFn(fn(node, ctx, dispatch) { @dispatch.compute(node, ctx, dispatch) })
+}
+
+///|
 /// Compute layout for a node tree with given viewport
 /// Dispatches to the appropriate layout algorithm based on display type
 pub fn compute_layout(
@@ -41,17 +47,19 @@ fn dispatch_compute(
   node : @node.Node,
   ctx : @types.LayoutContext,
 ) -> @types.Layout {
+  let dispatch = default_dispatch()
   match node.style.display {
-    @types.Flex | @types.InlineFlex => @flex.compute(node, ctx)
+    @types.Flex | @types.InlineFlex => @flex.compute(node, ctx, dispatch)
     @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
-      @block.compute(node, ctx)
+      @block.compute(node, ctx, dispatch)
     @types.Grid | @types.InlineGrid =>
       @grid.compute_grid_layout(
         node,
         ctx.available_width,
         ctx.available_height.unwrap_or(0.0),
+        dispatch,
       )
-    @types.Table | @types.InlineTable => @table.compute(node, ctx)
+    @types.Table | @types.InlineTable => @table.compute(node, ctx, dispatch)
     @types.Display::None | @types.Contents =>
       {
         // display: none/contents - return zero-sized layout
@@ -76,7 +84,7 @@ fn dispatch_compute(
     | @types.TableHeaderGroup
     | @types.TableFooterGroup
     | @types.TableColumn
-    | @types.TableColumnGroup => @block.compute(node, ctx)
+    | @types.TableColumnGroup => @block.compute(node, ctx, dispatch)
   }
 }
 
@@ -86,20 +94,22 @@ fn dispatch_compute_with_warnings(
   node : @node.Node,
   ctx : @types.LayoutContext,
 ) -> @types.LayoutResult {
+  let dispatch = default_dispatch()
   match node.style.display {
-    @types.Flex | @types.InlineFlex => @flex.compute_with_warnings(node, ctx)
+    @types.Flex | @types.InlineFlex => @flex.compute_with_warnings(node, ctx, dispatch)
     @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
-      @block.compute_with_warnings(node, ctx)
+      @block.compute_with_warnings(node, ctx, dispatch)
     @types.Grid | @types.InlineGrid => {
       let layout = @grid.compute_grid_layout(
         node,
         ctx.available_width,
         ctx.available_height.unwrap_or(0.0),
+        dispatch,
       )
       { layout, warnings: [] }
     }
     @types.Table | @types.InlineTable => {
-      let layout = @table.compute(node, ctx)
+      let layout = @table.compute(node, ctx, dispatch)
       { layout, warnings: [] }
     }
     @types.Display::None | @types.Contents =>
@@ -128,7 +138,7 @@ fn dispatch_compute_with_warnings(
     | @types.TableHeaderGroup
     | @types.TableFooterGroup
     | @types.TableColumn
-    | @types.TableColumnGroup => @block.compute_with_warnings(node, ctx)
+    | @types.TableColumnGroup => @block.compute_with_warnings(node, ctx, dispatch)
   }
 }
 
@@ -138,7 +148,7 @@ pub fn compute_block_layout(
   node : @node.Node,
   ctx : @types.LayoutContext,
 ) -> @types.Layout {
-  @block.compute(node, ctx)
+  @block.compute(node, ctx, default_dispatch())
 }
 
 ///|
@@ -147,7 +157,7 @@ pub fn compute_flex_layout(
   node : @node.Node,
   ctx : @types.LayoutContext,
 ) -> @types.Layout {
-  @flex.compute(node, ctx)
+  @flex.compute(node, ctx, default_dispatch())
 }
 
 ///|

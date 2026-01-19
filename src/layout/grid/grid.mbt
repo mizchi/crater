@@ -303,7 +303,11 @@ fn calculate_total_track_size(
 
 ///|
 /// Compute grid layout with LayoutContext interface (matches flex/block signature)
-pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
+pub fn compute(
+  node : @node.Node,
+  ctx : @types.LayoutContext,
+  dispatch : @node.DispatchFn,
+) -> @types.Layout {
   let available_height = ctx.available_height.unwrap_or(ctx.available_width)
   let is_block_level = node.style.display == @types.Grid
   compute_grid_layout_internal(
@@ -316,10 +320,12 @@ pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
     is_block_level,
     ctx.viewport_width,
     ctx.viewport_height,
+    dispatch,
   )
 }
 
 ///|
+/// @deprecated Use @dispatch.compute_layout instead
 /// Compute layout for any node type, delegating to the appropriate module
 /// based on the node's display type (Grid, Flex, or Block)
 pub fn compute_layout(
@@ -327,17 +333,14 @@ pub fn compute_layout(
   available_width : Double,
   available_height : Double,
 ) -> @types.Layout {
-  // Setup global layout dispatcher for cross-layout type dispatch
-  // This enables Flex to call Grid layout and vice versa
-  @node.set_layout_dispatcher(
-    @node.LayoutDispatchFunc(fn(n, c) {
-      match n.style.display {
-        @types.Flex | @types.InlineFlex => @flex.compute(n, c)
-        @types.Grid | @types.InlineGrid => compute(n, c)
-        _ => @block.compute(n, c)
-      }
-    }),
-  )
+  // Create dispatch function for cross-layout type dispatch
+  let dispatch = @node.DispatchFn(fn(n, c, d) {
+    match n.style.display {
+      @types.Flex | @types.InlineFlex => @flex.compute(n, c, d)
+      @types.Grid | @types.InlineGrid => compute(n, c, d)
+      _ => @block.compute(n, c, d)
+    }
+  })
   let ctx : @types.LayoutContext = {
     available_width,
     available_height: Some(available_height),
@@ -346,9 +349,9 @@ pub fn compute_layout(
     viewport_height: available_height,
   }
   match node.style.display {
-    @types.Flex | @types.InlineFlex => @flex.compute_root(node, ctx)
+    @types.Flex | @types.InlineFlex => @flex.compute_root(node, ctx, dispatch)
     @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
-      @block.compute(node, ctx)
+      @block.compute(node, ctx, dispatch)
     @types.Grid =>
       compute_grid_layout_internal(
         node,
@@ -360,6 +363,7 @@ pub fn compute_layout(
         false, // Root node uses content-based sizing (taffy behavior)
         ctx.viewport_width,
         ctx.viewport_height,
+        dispatch,
       )
     @types.InlineGrid =>
       compute_grid_layout_internal(
@@ -372,6 +376,7 @@ pub fn compute_layout(
         false,
         ctx.viewport_width,
         ctx.viewport_height,
+        dispatch,
       )
     @types.Display::None | @types.Contents =>
       @absolute.create_zero_layout(node.id)
@@ -385,7 +390,7 @@ pub fn compute_layout(
     | @types.TableHeaderGroup
     | @types.TableFooterGroup
     | @types.TableColumn
-    | @types.TableColumnGroup => @block.compute(node, ctx)
+    | @types.TableColumnGroup => @block.compute(node, ctx, dispatch)
   }
 }
 
@@ -395,6 +400,7 @@ pub fn compute_grid_layout(
   node : @node.Node,
   available_width : Double,
   available_height : Double,
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   // Call internal function with size_is_definite = false by default
   // (public API assumes caller doesn't know about definiteness)
@@ -409,6 +415,7 @@ pub fn compute_grid_layout(
     false,
     available_width, // Use available_width as viewport fallback
     available_height, // Use available_height as viewport fallback
+    dispatch,
   )
 }
 
@@ -424,6 +431,7 @@ fn compute_grid_layout_internal(
   is_block_level : Bool,
   viewport_width : Double,
   viewport_height : Double,
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = node.style
   let original_children = node.children
@@ -514,6 +522,7 @@ fn compute_grid_layout_internal(
     style.grid_auto_columns,
     col_offset,
     intrinsic_cache,
+    dispatch,
   )
   let (row_min_content, row_max_content) = calculate_track_intrinsic_sizes(
     children,
@@ -525,6 +534,7 @@ fn compute_grid_layout_internal(
     style.grid_auto_rows,
     row_offset,
     intrinsic_cache,
+    dispatch,
   )
 
   // Determine if container has auto/intrinsic sizing (needs content-based width/height)
@@ -679,7 +689,7 @@ fn compute_grid_layout_internal(
       )
 
       // Compute child layout for baseline info
-      let child_inner = compute_child_layout(child, item_width, item_height)
+      let child_inner = compute_child_layout(child, item_width, item_height, dispatch)
       let baseline = calculate_baseline(child, child_inner)
       let descent = child_inner.height - baseline
 
@@ -1096,7 +1106,7 @@ fn compute_grid_layout_internal(
         padding_left, // content_box_offset_x = content_box_left - padding_box_left
          padding_top, // content_box_offset_y = content_box_top - padding_box_top
          column_tracks, row_tracks, col_offset, row_offset, explicit_column_count,
-        explicit_row_count,
+        explicit_row_count, dispatch,
       )
       preliminary_layouts.push(abs_layout)
       baseline_infos.push({
@@ -1112,7 +1122,7 @@ fn compute_grid_layout_internal(
     // Handle fixed positioned children (relative to viewport)
     if child.style.position == @types.Fixed {
       let fixed_layout = layout_fixed_child(
-        child, viewport_width, viewport_height,
+        child, viewport_width, viewport_height, dispatch,
       )
       preliminary_layouts.push(fixed_layout)
       baseline_infos.push({
@@ -1138,7 +1148,7 @@ fn compute_grid_layout_internal(
     let (item_y, item_height) = get_span_bounds(row_tracks, row_start, row_end)
 
     // Compute child's inner layout
-    let child_inner = compute_child_layout(child, item_width, item_height)
+    let child_inner = compute_child_layout(child, item_width, item_height, dispatch)
 
     // Apply alignment (without baseline adjustment yet)
     let (final_x, final_y, final_width, final_height) = apply_alignment(
@@ -1426,6 +1436,7 @@ fn calculate_track_intrinsic_sizes(
   auto_templates : Array[@types.TrackSizingFunction], // Auto track templates
   explicit_offset : Int, // Offset for explicit tracks
   cache : GridIntrinsicCache, // Cache for intrinsic size calculations
+  dispatch : @node.DispatchFn,
 ) -> (Array[Double], Array[Double]) {
   // (min_content_sizes, max_content_sizes)
   let min_sizes : Array[Double] = []
@@ -1482,7 +1493,7 @@ fn calculate_track_intrinsic_sizes(
       max_span = span
     }
     let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-      child, is_column, container_width, cache,
+      child, is_column, container_width, cache, dispatch,
     )
     let min_content_contribution = min_content + margin_start + margin_end
     let max_contribution = max_content + margin_start + margin_end
@@ -1751,6 +1762,7 @@ fn calculate_item_intrinsic_sizes(
   is_column : Bool,
   container_width : Double,
   cache : GridIntrinsicCache,
+  dispatch : @node.DispatchFn,
 ) -> (Double, Double, Double, Double) {
   // Returns (min_content, max_content, margin_start, margin_end)
   if is_column {
@@ -1773,9 +1785,9 @@ fn calculate_item_intrinsic_sizes(
           match child.style.display {
             @types.Grid => {
               // Compute grid layout for min-content (with 0 available width)
-              let min_layout = compute_grid_layout(child, 0.0, 1.0e10)
+              let min_layout = compute_grid_layout(child, 0.0, 1.0e10, dispatch)
               // Compute grid layout for max-content (with large available width)
-              let max_layout = compute_grid_layout(child, 1.0e10, 1.0e10)
+              let max_layout = compute_grid_layout(child, 1.0e10, 1.0e10, dispatch)
               (min_layout.width, max_layout.width)
             }
             @types.Flex => {
@@ -1883,7 +1895,7 @@ fn calculate_item_intrinsic_sizes(
                 viewport_width: container_width,
                 viewport_height: 0.0,
               }
-              let min_layout = @block.compute(child, min_ctx)
+              let min_layout = @block.compute(child, min_ctx, dispatch)
               let max_ctx : @types.LayoutContext = {
                 available_width: container_width,
                 available_height: None,
@@ -1891,7 +1903,7 @@ fn calculate_item_intrinsic_sizes(
                 viewport_width: container_width,
                 viewport_height: 0.0,
               }
-              let max_layout = @block.compute(child, max_ctx)
+              let max_layout = @block.compute(child, max_ctx, dispatch)
               (min_layout.width, max_layout.width)
             }
             @types.Table | @types.InlineTable => {
@@ -1995,10 +2007,10 @@ fn calculate_item_intrinsic_sizes(
             @types.Grid => {
               // Compute grid layout for min-content (with 0 available height)
               // Use container_width for width to correctly resolve percent padding
-              let min_layout = compute_grid_layout(child, container_width, 0.0)
+              let min_layout = compute_grid_layout(child, container_width, 0.0, dispatch)
               // Compute grid layout for max-content (with large available height)
               let max_layout = compute_grid_layout(
-                child, container_width, 1.0e10,
+                child, container_width, 1.0e10, dispatch,
               )
               (min_layout.height, max_layout.height)
             }
@@ -2022,7 +2034,7 @@ fn calculate_item_intrinsic_sizes(
                     viewport_width: container_width,
                     viewport_height: 0.0,
                   }
-                  let min_layout = @flex.compute(child, min_ctx)
+                  let min_layout = @flex.compute(child, min_ctx, dispatch)
                   cache.set(child.uid, true, false, min_layout.height)
                   min_layout.height
                 }
@@ -2038,7 +2050,7 @@ fn calculate_item_intrinsic_sizes(
                     viewport_width: container_width,
                     viewport_height: 0.0,
                   }
-                  let max_layout = @flex.compute(child, max_ctx)
+                  let max_layout = @flex.compute(child, max_ctx, dispatch)
                   cache.set(child.uid, true, true, max_layout.height)
                   max_layout.height
                 }
@@ -2054,7 +2066,7 @@ fn calculate_item_intrinsic_sizes(
                 viewport_width: container_width,
                 viewport_height: 0.0,
               }
-              let min_layout = @block.compute(child, min_ctx)
+              let min_layout = @block.compute(child, min_ctx, dispatch)
               let max_ctx : @types.LayoutContext = {
                 available_width: container_width,
                 available_height: Some(1.0e10),
@@ -2062,7 +2074,7 @@ fn calculate_item_intrinsic_sizes(
                 viewport_width: container_width,
                 viewport_height: 0.0,
               }
-              let max_layout = @block.compute(child, max_ctx)
+              let max_layout = @block.compute(child, max_ctx, dispatch)
               (min_layout.height, max_layout.height)
             }
             @types.Table | @types.InlineTable => {
@@ -3222,6 +3234,7 @@ fn compute_child_layout(
   child : @node.Node,
   available_width : Double,
   available_height : Double,
+  dispatch : @node.DispatchFn,
   _viewport_width? : Double = 0.0,
   _viewport_height? : Double = 0.0,
 ) -> @types.Layout {
@@ -3441,6 +3454,7 @@ fn compute_child_layout(
       nested_is_block_level,
       available_width, // Use available_width as viewport fallback
       available_height, // Use available_height as viewport fallback
+      dispatch,
     )
     // The nested layout's children need to be added
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
@@ -3463,11 +3477,9 @@ fn compute_child_layout(
       viewport_width: available_width,
       viewport_height: available_height,
     }
-    // Use global dispatcher if available for cache support
-    let nested_layout = match @node.get_layout_dispatcher() {
-      Some(_) => @node.dispatch_layout(child, ctx)
-      None => @flex.compute(child, ctx)
-    }
+    // Use dispatcher for cache support
+    let @node.DispatchFn(dispatch_fn) = dispatch
+    let nested_layout = dispatch_fn(child, ctx, dispatch)
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }
@@ -3496,7 +3508,7 @@ fn compute_child_layout(
       viewport_width: available_width,
       viewport_height: available_height,
     }
-    let nested_layout = @table.compute(child, ctx)
+    let nested_layout = @table.compute(child, ctx, dispatch)
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }
@@ -3519,7 +3531,7 @@ fn compute_child_layout(
     // For non-container children, still need to recursively compute layouts
     for i = 0; i < child.children.length(); i = i + 1 {
       let grandchild = child.children[i]
-      let grandchild_layout = compute_child_layout(grandchild, width, height)
+      let grandchild_layout = compute_child_layout(grandchild, width, height, dispatch)
       child_layouts.push(grandchild_layout)
     }
   }
@@ -3951,6 +3963,7 @@ fn layout_absolute_child(
   row_offset : Int,
   explicit_column_count : Int,
   explicit_row_count : Int,
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = child.style
 
@@ -4002,11 +4015,11 @@ fn layout_absolute_child(
   // Compute intrinsic size if needed
   let (child_width, child_height, child_inner) = match (width, height) {
     (Some(w), Some(h)) => {
-      let inner = compute_child_layout(child, w, h)
+      let inner = compute_child_layout(child, w, h, dispatch)
       (w, h, inner)
     }
     (Some(w), None) => {
-      let inner = compute_child_layout(child, w, 1.0e10)
+      let inner = compute_child_layout(child, w, 1.0e10, dispatch)
       let h = match style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -4014,7 +4027,7 @@ fn layout_absolute_child(
       (w, h, inner)
     }
     (None, Some(h)) => {
-      let inner = compute_child_layout(child, 1.0e10, h)
+      let inner = compute_child_layout(child, 1.0e10, h, dispatch)
       let w = match style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
         _ => inner.width
@@ -4022,7 +4035,7 @@ fn layout_absolute_child(
       (w, h, inner)
     }
     (None, None) => {
-      let inner = compute_child_layout(child, 1.0e10, 1.0e10)
+      let inner = compute_child_layout(child, 1.0e10, 1.0e10, dispatch)
       match style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
           let w = inner.width
@@ -4052,7 +4065,7 @@ fn layout_absolute_child(
       }
   }
   let intrinsic_size = if needs_intrinsic {
-    compute_child_layout(child, 1.0e10, 1.0e10)
+    compute_child_layout(child, 1.0e10, 1.0e10, dispatch)
   } else {
     child_inner
   }
@@ -4136,6 +4149,7 @@ fn layout_fixed_child(
   child : @node.Node,
   viewport_width : Double,
   viewport_height : Double,
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = child.style
 
@@ -4163,11 +4177,11 @@ fn layout_fixed_child(
   // Compute intrinsic size if needed
   let (child_width, child_height, child_inner) = match (width, height) {
     (Some(w), Some(h)) => {
-      let inner = compute_child_layout(child, w, h)
+      let inner = compute_child_layout(child, w, h, dispatch)
       (w, h, inner)
     }
     (Some(w), None) => {
-      let inner = compute_child_layout(child, w, 1.0e10)
+      let inner = compute_child_layout(child, w, 1.0e10, dispatch)
       let h = match style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -4175,7 +4189,7 @@ fn layout_fixed_child(
       (w, h, inner)
     }
     (None, Some(h)) => {
-      let inner = compute_child_layout(child, 1.0e10, h)
+      let inner = compute_child_layout(child, 1.0e10, h, dispatch)
       let w = match style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
         _ => inner.width
@@ -4183,7 +4197,7 @@ fn layout_fixed_child(
       (w, h, inner)
     }
     (None, None) => {
-      let inner = compute_child_layout(child, 1.0e10, 1.0e10)
+      let inner = compute_child_layout(child, 1.0e10, 1.0e10, dispatch)
       match style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
           let w = inner.width
@@ -4213,7 +4227,7 @@ fn layout_fixed_child(
       }
   }
   let intrinsic_size = if needs_intrinsic {
-    compute_child_layout(child, 1.0e10, 1.0e10)
+    compute_child_layout(child, 1.0e10, 1.0e10, dispatch)
   } else {
     child_inner
   }

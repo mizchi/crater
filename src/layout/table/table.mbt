@@ -657,6 +657,7 @@ fn layout_cell(
   cell_width : Double,
   ctx : @types.LayoutContext,
   border_collapse : Bool,
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = cell.style
   let parent_width = ctx.available_width
@@ -695,7 +696,8 @@ fn layout_cell(
       child_layouts.push(create_zero_layout(child))
       continue
     }
-    let child_layout = @node.dispatch_layout(child, child_ctx)
+    let @node.DispatchFn(dispatch_fn) = dispatch
+    let child_layout = dispatch_fn(child, child_ctx, dispatch)
     let positioned_layout = {
       ..child_layout,
       x: padding.left + border.left + child_layout.margin.left,
@@ -761,6 +763,7 @@ fn layout_row(
   ctx : @types.LayoutContext,
   border_collapse : Bool,
   grid : Map[String, CellOccupancy],
+  dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = row.style
   let parent_width = ctx.available_width
@@ -863,7 +866,7 @@ fn layout_row(
         collapsed_border_width = collapsed_border_width + cell_border.left
       }
     }
-    let cell_layout = layout_cell(child, cell_width, cell_ctx, border_collapse)
+    let cell_layout = layout_cell(child, cell_width, cell_ctx, border_collapse, dispatch)
     // Apply position: relative offset for cells
     let (rel_x, rel_y) = calculate_relative_offset(
       child.style,
@@ -1280,7 +1283,11 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
 
 ///|
 /// Main table layout computation
-pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
+pub fn compute(
+  node : @node.Node,
+  ctx : @types.LayoutContext,
+  dispatch : @node.DispatchFn,
+) -> @types.Layout {
   let style = node.style
 
   // Handle display:none
@@ -1467,13 +1474,14 @@ pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
   let mut y_offset = padding.top + border.top
 
   // First: layout top captions
+  let @node.DispatchFn(dispatch_fn) = dispatch
   for entry in top_captions {
     let (child, idx) = entry
     if child.style.display == @types.Display::None {
       layout_map[idx] = create_zero_layout(child)
       continue
     }
-    let caption_layout = @node.dispatch_layout(child, base_child_ctx)
+    let caption_layout = dispatch_fn(child, base_child_ctx, dispatch)
     let positioned_caption = {
       ..caption_layout,
       x: padding.left + border.left,
@@ -1512,7 +1520,7 @@ pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
       }
       let row_layout = layout_row(
         child, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
-        grid,
+        grid, dispatch,
       )
       // Apply position: relative offset for rows
       let (rel_x, rel_y) = calculate_relative_offset(
@@ -1555,7 +1563,7 @@ pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
           }
           let row_layout = layout_row(
             row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
-            grid,
+            grid, dispatch,
           )
           // Apply position: relative offset for rows inside groups
           let (rel_x, rel_y) = calculate_relative_offset(
@@ -1701,7 +1709,7 @@ pub fn compute(node : @node.Node, ctx : @types.LayoutContext) -> @types.Layout {
       layout_map[idx] = create_zero_layout(child)
       continue
     }
-    let caption_layout = @node.dispatch_layout(child, base_child_ctx)
+    let caption_layout = dispatch_fn(child, base_child_ctx, dispatch)
     let positioned_caption = {
       ..caption_layout,
       x: padding.left + border.left,

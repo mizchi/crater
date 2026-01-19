@@ -1,4 +1,10 @@
 ///|
+/// Default dispatch for tests
+fn default_dispatch() -> @node.DispatchFn {
+  @node.DispatchFn(fn(node, ctx, dispatch) { compute(node, ctx, dispatch) })
+}
+
+///|
 test "block_basic" {
   let default_style = @style.Style::default()
   let child1_style = { ..default_style, height: @types.Length(10.0) }
@@ -14,7 +20,7 @@ test "block_basic" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="20")
   inspect(layout.children[0].x, content="0")
@@ -53,7 +59,7 @@ test "block_border_fixed_size" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="8")
@@ -91,7 +97,7 @@ test "block_margin_x_fixed_size_positive" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="20")
   inspect(layout.children[0].x, content="10")
@@ -130,7 +136,7 @@ test "block_padding_fixed_size" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="8")
@@ -176,7 +182,7 @@ test "block_nested" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="10")
@@ -211,7 +217,7 @@ test "block_percentage_width" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="50")
   inspect(layout.children[0].height, content="20")
 }
@@ -238,7 +244,7 @@ test "block_percentage_height" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="20")
   inspect(layout.children[0].height, content="50")
 }
@@ -271,7 +277,7 @@ test "block_max_width" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="100")
   inspect(layout.children[1].width, content="200")
 }
@@ -299,7 +305,7 @@ test "block_min_width" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="100")
 }
 
@@ -326,7 +332,7 @@ test "block_max_height" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].height, content="80")
 }
 
@@ -353,7 +359,7 @@ test "block_min_height" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].height, content="60")
 }
 
@@ -391,7 +397,7 @@ test "block_margin_collapse_siblings" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.height, content="70")
   inspect(layout.children[0].y, content="0")
   inspect(layout.children[0].height, content="20")
@@ -423,7 +429,7 @@ test "block_percentage_padding" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].padding.left, content="20")
   inspect(layout.children[0].padding.right, content="20")
   inspect(layout.children[0].padding.top, content="20")
@@ -456,7 +462,7 @@ test "block_percentage_margin_vertical" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].margin.top, content="20")
   inspect(layout.children[0].margin.bottom, content="10")
   inspect(layout.children[0].y, content="20")
@@ -483,7 +489,7 @@ test "block_float_supported" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let result = compute_with_warnings(root, ctx)
+  let result = compute_with_warnings(root, ctx, default_dispatch())
 
   // Float is laid out correctly
   inspect(result.layout.children[0].width, content="50")
@@ -522,7 +528,7 @@ test "block_absolute_positioning_works" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let result = compute_with_warnings(root, ctx)
+  let result = compute_with_warnings(root, ctx, default_dispatch())
 
   // No warnings for absolute positioning now
   inspect(result.warnings.length(), content="0")
@@ -559,7 +565,7 @@ test "block_display_none" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Root height should be 20px (10 + 10), not 30px
   // display:none child should not contribute to layout
@@ -599,7 +605,7 @@ test "block_auto_width_fills_parent" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Child with auto width should fill parent width
   inspect(layout.children[0].width, content="200")
@@ -622,7 +628,7 @@ test "block_multiple_children_stacking" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Total height should be 100px (5 * 20)
   inspect(layout.height, content="100")
@@ -657,7 +663,7 @@ test "block_percentage_nested" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Child = 200 * 0.5 = 100
   inspect(layout.children[0].width, content="100")
@@ -694,7 +700,7 @@ test "block_border_and_padding_combined" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Child x = border.left + padding.left = 2 + 5 = 7
   // Child y = border.top + padding.top = 3 + 10 = 13
@@ -763,7 +769,7 @@ test "block_margin_collapse_blocked_by_padding" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // child1: y=0, height=10
   // margin collapse: max(10, 10) = 10
@@ -801,7 +807,7 @@ test "block_min_width_percentage" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Child min-width = 200 * 0.6 = 120 > 50
   inspect(layout.children[0].width, content="120")
@@ -832,7 +838,7 @@ test "block_max_width_percentage" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Child max-width = 200 * 0.3 = 60
   // width: auto would be 200, but capped at 60
@@ -865,7 +871,7 @@ test "block_percentage_height_nested" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Child height = 200 * 0.5 = 100
   inspect(layout.children[0].height, content="100")
@@ -904,7 +910,7 @@ test "block_multiple_display_none" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Only visible children contribute to height: 20 + 30 = 50
   inspect(layout.height, content="50")
@@ -975,7 +981,7 @@ test "block_deeply_nested" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Total height = 10 + (10 + (5 + (3 + (2 + 10 + 2) + 3) + 5) + 10)
   // = 10 + 10 + 5 + 3 + 2 + 10 + 2 + 3 + 5 + 10 + 10 = 50
@@ -1031,7 +1037,7 @@ test "inline_block_shrink_to_fit" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // The inline-block should shrink to fit its content
   // Width should be: child width (50) + padding (10+10) = 70
@@ -1081,7 +1087,7 @@ test "anonymous_block_basic" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   // Check root dimensions
   inspect(layout.width, content="200")
   // Children should be stacked vertically:
@@ -1148,7 +1154,7 @@ test "anonymous_block_multiple_inline_in_group" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
   // All three inline elements should be on the same line (y=0)
   // They fit within 200px: 30 + 40 + 20 = 90
   inspect(layout.children[0].y, content="0")
@@ -1203,7 +1209,7 @@ test "float_flex_wrap_reverse_align_start" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Get flex container layout
   let flex_layout = layout.children[0]
@@ -1270,7 +1276,7 @@ test "nonfloat_flex_wrap_reverse_align_start" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute(root, ctx, default_dispatch())
 
   // Get flex container layout
   let flex_layout = layout.children[0]
@@ -1308,7 +1314,7 @@ test "max-width max-content with explicit width" {
     viewport_height: 600.0,
   }
   @dispatch.setup()
-  let layout = @dispatch.compute(parent, ctx)
+  let layout = @dispatch.compute_layout(parent, ctx)
 
   // Should be clamped to child's max-content width (100px)
   inspect(layout.width, content="100")
@@ -1355,7 +1361,7 @@ test "replaced element aspect ratio with percent height" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = @block.compute(body, ctx)
+  let layout = @block.compute(body, ctx, default_dispatch())
   let float_layout = layout.children[0]
   let canvas_layout = float_layout.children[0]
 

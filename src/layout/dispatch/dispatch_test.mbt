@@ -25,7 +25,7 @@ test "dispatch_ifc_horizontal_layout" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute_layout(root, ctx)
   // Two inline-block children should be laid out horizontally
   inspect(layout.children.length(), content="2")
   // First child at x=0
@@ -66,7 +66,7 @@ test "dispatch_ifc_line_wrap" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute_layout(root, ctx)
   // First child at (0, 0)
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="0")
@@ -112,7 +112,7 @@ test "dispatch_ifc_with_padding" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute_layout(root, ctx)
   // Child should be offset by padding
   inspect(layout.children[0].x, content="10")
   inspect(layout.children[0].y, content="20")
@@ -153,7 +153,7 @@ test "dispatch_inline_block_shrink_to_fit" {
     viewport_width: 400.0,
     viewport_height: 300.0,
   }
-  let layout = compute(root, ctx)
+  let layout = compute_layout(root, ctx)
 
   // The inline-block should shrink to fit its content
   // Width should be: child width (50) + padding (10+10) = 70

@@ -279,7 +279,7 @@ test "bench_layout_only_flex_d5" (b : @bench.T) {
   }
   @dispatch.setup()
   b.bench(name="layout_only_flex_d5", fn() {
-    b.keep(@dispatch.compute(node, layout_ctx))
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }
 
@@ -297,7 +297,7 @@ test "bench_layout_only_grid_10x10" (b : @bench.T) {
   }
   @dispatch.setup()
   b.bench(name="layout_only_grid", fn() {
-    b.keep(@dispatch.compute(node, layout_ctx))
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }
 
@@ -315,7 +315,7 @@ test "bench_layout_only_dashboard" (b : @bench.T) {
   }
   @dispatch.setup()
   b.bench(name="layout_only_dash", fn() {
-    b.keep(@dispatch.compute(node, layout_ctx))
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }
 
@@ -333,6 +333,6 @@ test "bench_layout_only_large_2k5" (b : @bench.T) {
   }
   @dispatch.setup()
   b.bench(name="layout_only_large", fn() {
-    b.keep(@dispatch.compute(node, layout_ctx))
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }

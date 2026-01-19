@@ -35,7 +35,7 @@ test "intrinsic_percent_replaced_wpt_style" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = @dispatch.compute(root, layout_ctx)
+  let layout = @dispatch.compute_layout(root, layout_ctx)
   let float_layout = layout.children[0]
   let canvas_layout = float_layout.children[0]
 
@@ -71,7 +71,7 @@ test "renderer_grid_column" {
     viewport_width: 800.0,
     viewport_height: 600.0,
   }
-  let layout = @dispatch.compute(root, layout_ctx)
+  let layout = @dispatch.compute_layout(root, layout_ctx)
 
   // body -> mygrid -> item
   let mygrid_layout = layout.children[0]

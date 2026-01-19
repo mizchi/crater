@@ -90,70 +90,62 @@ pub fn Node::text(
 }
 
 ///|
-/// Layout dispatch function type
-/// Used to delegate layout computation to the appropriate algorithm based on display type
+/// Dispatch function type - passed through layout computation to enable
+/// cross-layout-type dispatch without global state.
+/// The function takes (node, context, dispatch) and returns Layout.
+pub(all) struct DispatchFn((Node, @types.LayoutContext, DispatchFn) -> @types.Layout)
+
+///|
+/// @deprecated Use DispatchFn instead
+/// Layout dispatch function type (kept for backward compatibility)
 pub(all) struct LayoutDispatchFunc(
   (Node, @types.LayoutContext) -> @types.Layout
 )
 
 ///|
-/// Global layout dispatch function
-/// Set this before layout computation to enable cross-layout-type dispatch
-let layout_dispatcher : Ref[LayoutDispatchFunc?] = { val: None }
-
-///|
-/// Set the global layout dispatcher
-pub fn set_layout_dispatcher(f : LayoutDispatchFunc) -> Unit {
-  layout_dispatcher.val = Some(f)
+/// @deprecated Global dispatcher removed - use dispatch parameter instead
+pub fn set_layout_dispatcher(_f : LayoutDispatchFunc) -> Unit {
+  // No-op: global dispatcher removed
+  ()
 }
 
 ///|
-/// Get the global layout dispatcher (for checking if it's set)
+/// @deprecated Global dispatcher removed - always returns None
 pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
-  layout_dispatcher.val
+  None
 }
 
 ///|
-/// Compute layout for a node using the global dispatcher
-/// Falls back to returning a minimal layout if no dispatcher is set
-pub fn dispatch_layout(
-  node : Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
-  match layout_dispatcher.val {
-    Some(LayoutDispatchFunc(f)) => f(node, ctx)
-    None => {
-      // Fallback: create minimal layout from node dimensions
-      let width = match node.style.width {
-        @types.Dimension::Length(w) => w
-        @types.Dimension::Percent(p) => ctx.available_width * p
-        @types.Dimension::Auto => ctx.available_width
-        @types.Dimension::MinContent => 0.0 // Fallback: use minimal size
-        @types.Dimension::MaxContent => ctx.available_width
-        @types.Dimension::FitContent(_) => ctx.available_width
-      }
-      let height = match node.style.height {
-        @types.Dimension::Length(h) => h
-        @types.Dimension::Percent(p) => ctx.available_height.unwrap_or(0.0) * p
-        @types.Dimension::Auto => 0.0
-        @types.Dimension::MinContent => 0.0
-        @types.Dimension::MaxContent => 0.0
-        @types.Dimension::FitContent(_) => 0.0
-      }
-      {
-        id: node.id,
-        x: 0.0,
-        y: 0.0,
-        width,
-        height,
-        margin: @types.Rect::zero(),
-        padding: @types.Rect::zero(),
-        border: @types.Rect::zero(),
-        overflow_x: @types.Visible,
-        overflow_y: @types.Visible,
-        children: [],
-        text: node.text,
-      }
-    }
+/// Create a minimal fallback layout for a node (used when dispatch is unavailable)
+pub fn fallback_layout(node : Node, ctx : @types.LayoutContext) -> @types.Layout {
+  let width = match node.style.width {
+    @types.Dimension::Length(w) => w
+    @types.Dimension::Percent(p) => ctx.available_width * p
+    @types.Dimension::Auto => ctx.available_width
+    @types.Dimension::MinContent => 0.0
+    @types.Dimension::MaxContent => ctx.available_width
+    @types.Dimension::FitContent(_) => ctx.available_width
+  }
+  let height = match node.style.height {
+    @types.Dimension::Length(h) => h
+    @types.Dimension::Percent(p) => ctx.available_height.unwrap_or(0.0) * p
+    @types.Dimension::Auto => 0.0
+    @types.Dimension::MinContent => 0.0
+    @types.Dimension::MaxContent => 0.0
+    @types.Dimension::FitContent(_) => 0.0
+  }
+  {
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width,
+    height,
+    margin: @types.Rect::zero(),
+    padding: @types.Rect::zero(),
+    border: @types.Rect::zero(),
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    children: [],
+    text: node.text,
   }
 }
