@@ -3,7 +3,6 @@ target/
 .mooncakes/
 .moonagent/
 taffy
-blitz
 target
 
 # Dependencies

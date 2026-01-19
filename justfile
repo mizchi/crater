@@ -9,10 +9,11 @@ default: check
 setup:
     git submodule update --init --recursive
     moon update
+    pnpm install
 
 # === Testing ===
 
-# Run all tests (ignores test failures for CI)
+# Run all tests
 test:
     moon test
 
@@ -20,13 +21,9 @@ test:
 test-native:
     moon test --target native
 
-# Run tests for specific package
+# Run tests for specific package (e.g., just test-pkg compute/block)
 test-pkg pkg:
     moon test -p {{pkg}}
-
-# Run quick tests (block only)
-test-quick:
-    moon test -p block
 
 # Update test snapshots
 test-update:
@@ -60,23 +57,40 @@ coverage:
 
 # Fetch WPT tests for a module (e.g., css-flexbox)
 wpt-fetch module:
-    npm run wpt:fetch -- {{module}}
+    pnpm wpt:fetch -- {{module}}
 
 # Fetch all available WPT tests
 wpt-fetch-all:
-    npm run wpt:fetch -- --all
+    pnpm wpt:fetch -- --all
 
 # List available WPT modules
 wpt-list:
-    npm run wpt:fetch -- --list
+    pnpm wpt:fetch -- --list
 
 # Run WPT comparison test
 wpt file:
-    npm run wpt -- {{file}}
+    pnpm wpt -- {{file}}
 
 # Run all WPT flexbox tests
 wpt-flexbox:
-    npm run wpt -- "wpt-tests/css-flexbox/*.html"
+    pnpm wpt -- "wpt-tests/css-flexbox/*.html"
+
+# === WASM ===
+
+# Build WASM component
+build-wasm:
+    pnpm build:wasm-component
+
+# Transpile WASM with jco
+transpile-wasm:
+    pnpm jco:transpile
+
+# Test WASM component
+test-wasm:
+    pnpm test:wasm-component
+
+# Full WASM build pipeline
+wasm: build-wasm transpile-wasm test-wasm
 
 # === Utilities ===
 
@@ -86,7 +100,7 @@ clean:
 
 # Download a website for testing
 download url:
-    npm run download -- {{url}}
+    pnpm download -- {{url}}
 
 # Show test summary
 status:
