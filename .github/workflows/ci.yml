@@ -33,6 +33,9 @@ jobs:
       - name: Check browser code
         run: moon check --directory browser
 
+      - name: Check js code
+        run: moon check --directory js
+
       - name: Run tests
         run: moon test
         continue-on-error: true

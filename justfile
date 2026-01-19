@@ -35,10 +35,11 @@ test-js:
 
 # === Code Quality ===
 
-# Check compilation (main + browser)
+# Check compilation (main + browser + js)
 check:
     moon check
     moon check --directory browser
+    moon check --directory js
 
 # Format code
 fmt:
@@ -119,6 +120,16 @@ test-wasm:
 
 # Full WASM build pipeline
 wasm: build-wasm transpile-wasm test-wasm
+
+# === JS ===
+
+# Build JS module
+build-js:
+    moon build --directory js --target js
+
+# Build JS module for WASM-GC
+build-js-wasm:
+    moon build --directory js --target wasm-gc
 
 # === Utilities ===
 
