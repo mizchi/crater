@@ -589,12 +589,12 @@ test "tui/layout_tree_find_node" {
   let tree = @layout.LayoutTree::new(root_with_children, 80.0, 24.0)
 
   // Find existing nodes
-  assert_true(tree.find_node_by_id("root").is_some())
-  assert_true(tree.find_node_by_id("header").is_some())
-  assert_true(tree.find_node_by_id("content").is_some())
+  assert_true(tree.find_node_by_id("root") is Some(_))
+  assert_true(tree.find_node_by_id("header") is Some(_))
+  assert_true(tree.find_node_by_id("content") is Some(_))
 
   // Non-existent node
-  assert_true(tree.find_node_by_id("nonexistent").is_none())
+  assert_true(tree.find_node_by_id("nonexistent") is None)
 }
 
 ///|
