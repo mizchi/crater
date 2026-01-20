@@ -1534,7 +1534,8 @@ fn compute_with_collapse(
         let intrinsic_layout = match child_style.display {
           @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
             dispatch_fn(child, intrinsic_ctx, dispatch)
-          _ => compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout
+          _ =>
+            compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout
         }
         @types.min(intrinsic_layout.width, actual_child_available_width)
       }
@@ -2130,7 +2131,12 @@ fn layout_absolute_child(
     (None, Some(h)) => {
       // Width is auto: use shrink-to-fit approach
       // Step 1: Compute intrinsic width using MaxContent sizing
-      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings, dispatch)
+      let intrinsic = compute_nested_intrinsic(
+        child,
+        Some(h),
+        warnings,
+        dispatch,
+      )
       // Shrink-to-fit: min(max-content, available_width)
       let shrink_to_fit_width = if intrinsic.width < container_width {
         intrinsic.width
@@ -2165,7 +2171,13 @@ fn layout_absolute_child(
         }
         _ => {
           // Re-layout with definite width
-          let inner = compute_nested(child, shrink_to_fit_width, None, warnings, dispatch)
+          let inner = compute_nested(
+            child,
+            shrink_to_fit_width,
+            None,
+            warnings,
+            dispatch,
+          )
           (shrink_to_fit_width, inner.height, inner)
         }
       }
@@ -2388,7 +2400,12 @@ fn layout_fixed_child(
     }
     (None, Some(h)) => {
       // Width is auto: use shrink-to-fit approach
-      let intrinsic = compute_nested_intrinsic(child, Some(h), warnings, dispatch)
+      let intrinsic = compute_nested_intrinsic(
+        child,
+        Some(h),
+        warnings,
+        dispatch,
+      )
       let shrink_to_fit_width = if intrinsic.width < viewport_width {
         intrinsic.width
       } else {
@@ -2417,7 +2434,13 @@ fn layout_fixed_child(
           (w, h, inner)
         }
         _ => {
-          let inner = compute_nested(child, shrink_to_fit_width, None, warnings, dispatch)
+          let inner = compute_nested(
+            child,
+            shrink_to_fit_width,
+            None,
+            warnings,
+            dispatch,
+          )
           (shrink_to_fit_width, inner.height, inner)
         }
       }

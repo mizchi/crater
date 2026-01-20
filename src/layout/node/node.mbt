@@ -93,7 +93,9 @@ pub fn Node::text(
 /// Dispatch function type - passed through layout computation to enable
 /// cross-layout-type dispatch without global state.
 /// The function takes (node, context, dispatch) and returns Layout.
-pub(all) struct DispatchFn((Node, @types.LayoutContext, DispatchFn) -> @types.Layout)
+pub(all) struct DispatchFn(
+  (Node, @types.LayoutContext, DispatchFn) -> @types.Layout
+)
 
 ///|
 /// @deprecated Use DispatchFn instead
@@ -120,7 +122,10 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
 
 ///|
 /// Create a minimal fallback layout for a node (used when dispatch is unavailable)
-pub fn fallback_layout(node : Node, ctx : @types.LayoutContext) -> @types.Layout {
+pub fn fallback_layout(
+  node : Node,
+  ctx : @types.LayoutContext,
+) -> @types.Layout {
   let width = match node.style.width {
     @types.Dimension::Length(w) => w
     @types.Dimension::Percent(p) => ctx.available_width * p

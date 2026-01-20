@@ -440,11 +440,17 @@ fn compute_intrinsic_main_size(
     // For containers, compute based on display type and children
     match style.display {
       @types.Flex =>
-        compute_intrinsic_flex_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_intrinsic_flex_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
       @types.Block =>
-        compute_intrinsic_block_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_intrinsic_block_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
       @types.Grid | @types.InlineGrid =>
-        compute_intrinsic_grid_main_size(node, is_row, available_cross, dispatch)
+        compute_intrinsic_grid_main_size(
+          node, is_row, available_cross, dispatch,
+        )
       @types.Table | @types.InlineTable =>
         @table.compute_intrinsic_size(node, is_row)
       _ => 0.0
@@ -511,14 +517,18 @@ fn compute_min_content_main_size(
     // which gives us a conservative (larger) minimum
     match style.display {
       @types.Flex =>
-        compute_min_content_flex_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_min_content_flex_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
       @types.Block =>
         compute_min_content_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
       _ =>
         // Fall back to max-content for other display types
-        compute_intrinsic_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_intrinsic_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
     }
   }
 }
@@ -834,7 +844,8 @@ fn compute_intrinsic_flex_main_size(
         let base_width = match child_style.width {
           @types.Length(w) => w
           @types.Percent(p) => child_available_width * p
-          @types.Auto => compute_intrinsic_main_size(child, true, None, cache, dispatch)
+          @types.Auto =>
+            compute_intrinsic_main_size(child, true, None, cache, dispatch)
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch)
         }
@@ -1453,7 +1464,13 @@ fn compute_internal(
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           // For intrinsic sizing keywords, compute intrinsic width
           if node.children.length() > 0 {
-            compute_intrinsic_main_size(node, true, ctx.available_height, cache, dispatch)
+            compute_intrinsic_main_size(
+              node,
+              true,
+              ctx.available_height,
+              cache,
+              dispatch,
+            )
           } else {
             padding.horizontal_sum() + border.horizontal_sum()
           }
@@ -1833,7 +1850,9 @@ fn compute_internal(
                 }
               }
             @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-              compute_intrinsic_main_size(child, true, content_height, cache, dispatch)
+              compute_intrinsic_main_size(
+                child, true, content_height, cache, dispatch,
+              )
           }
         } else {
           match child_style.height {
@@ -1893,7 +1912,9 @@ fn compute_internal(
         }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         if is_row {
-          compute_intrinsic_main_size(child, true, content_height, cache, dispatch)
+          compute_intrinsic_main_size(
+            child, true, content_height, cache, dispatch,
+          )
         } else {
           let available_cross_for_child = content_width -
             child_margin.left -
@@ -2043,7 +2064,9 @@ fn compute_internal(
           }
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           (
-            compute_intrinsic_main_size(child, true, content_height, cache, dispatch),
+            compute_intrinsic_main_size(
+              child, true, content_height, cache, dispatch,
+            ),
             false,
           )
       }
@@ -2647,7 +2670,13 @@ fn compute_internal(
       item.cross_is_auto &&
       (child.children.length() > 0 || child.measure is Some(_))
     let recalc_cross = fn() -> Double {
-      compute_intrinsic_main_size(child, false, Some(item.final_main), cache, dispatch)
+      compute_intrinsic_main_size(
+        child,
+        false,
+        Some(item.final_main),
+        cache,
+        dispatch,
+      )
     }
     let final_cross = match effective_align {
       @types.Stretch =>
@@ -3402,7 +3431,9 @@ fn compute_internal(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
         }
-        let nested_layout = compute_nested(child, child_ctx, warnings, cache, dispatch)
+        let nested_layout = compute_nested(
+          child, child_ctx, warnings, cache, dispatch,
+        )
         {
           id: child.id,
           x: child_x,

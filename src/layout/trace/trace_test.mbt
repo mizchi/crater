@@ -5,7 +5,9 @@
 ///|
 /// Default dispatch for tests
 fn default_dispatch() -> @node.DispatchFn {
-  @node.DispatchFn(fn(node, ctx, dispatch) { @flex.compute(node, ctx, dispatch) })
+  @node.DispatchFn(fn(node, ctx, dispatch) {
+    @flex.compute(node, ctx, dispatch)
+  })
 }
 
 ///|

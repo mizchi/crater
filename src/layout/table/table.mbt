@@ -866,7 +866,9 @@ fn layout_row(
         collapsed_border_width = collapsed_border_width + cell_border.left
       }
     }
-    let cell_layout = layout_cell(child, cell_width, cell_ctx, border_collapse, dispatch)
+    let cell_layout = layout_cell(
+      child, cell_width, cell_ctx, border_collapse, dispatch,
+    )
     // Apply position: relative offset for cells
     let (rel_x, rel_y) = calculate_relative_offset(
       child.style,

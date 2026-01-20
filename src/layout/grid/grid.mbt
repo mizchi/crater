@@ -689,7 +689,9 @@ fn compute_grid_layout_internal(
       )
 
       // Compute child layout for baseline info
-      let child_inner = compute_child_layout(child, item_width, item_height, dispatch)
+      let child_inner = compute_child_layout(
+        child, item_width, item_height, dispatch,
+      )
       let baseline = calculate_baseline(child, child_inner)
       let descent = child_inner.height - baseline
 
@@ -1148,7 +1150,9 @@ fn compute_grid_layout_internal(
     let (item_y, item_height) = get_span_bounds(row_tracks, row_start, row_end)
 
     // Compute child's inner layout
-    let child_inner = compute_child_layout(child, item_width, item_height, dispatch)
+    let child_inner = compute_child_layout(
+      child, item_width, item_height, dispatch,
+    )
 
     // Apply alignment (without baseline adjustment yet)
     let (final_x, final_y, final_width, final_height) = apply_alignment(
@@ -1787,7 +1791,9 @@ fn calculate_item_intrinsic_sizes(
               // Compute grid layout for min-content (with 0 available width)
               let min_layout = compute_grid_layout(child, 0.0, 1.0e10, dispatch)
               // Compute grid layout for max-content (with large available width)
-              let max_layout = compute_grid_layout(child, 1.0e10, 1.0e10, dispatch)
+              let max_layout = compute_grid_layout(
+                child, 1.0e10, 1.0e10, dispatch,
+              )
               (min_layout.width, max_layout.width)
             }
             @types.Flex => {
@@ -2007,7 +2013,9 @@ fn calculate_item_intrinsic_sizes(
             @types.Grid => {
               // Compute grid layout for min-content (with 0 available height)
               // Use container_width for width to correctly resolve percent padding
-              let min_layout = compute_grid_layout(child, container_width, 0.0, dispatch)
+              let min_layout = compute_grid_layout(
+                child, container_width, 0.0, dispatch,
+              )
               // Compute grid layout for max-content (with large available height)
               let max_layout = compute_grid_layout(
                 child, container_width, 1.0e10, dispatch,
@@ -3531,7 +3539,9 @@ fn compute_child_layout(
     // For non-container children, still need to recursively compute layouts
     for i = 0; i < child.children.length(); i = i + 1 {
       let grandchild = child.children[i]
-      let grandchild_layout = compute_child_layout(grandchild, width, height, dispatch)
+      let grandchild_layout = compute_child_layout(
+        grandchild, width, height, dispatch,
+      )
       child_layouts.push(grandchild_layout)
     }
   }
