@@ -17,8 +17,8 @@ pub struct LayoutTree {
 }
 
 ///|
-/// Build parent and node maps recursively
-fn build_maps(
+/// Build parent and node maps recursively (without setting callbacks)
+fn build_maps_internal(
   node : LayoutNode,
   parent_uid : Int?,
   parent_map : Map[Int, Int],
@@ -30,7 +30,7 @@ fn build_maps(
     None => ()
   }
   for child in node.children {
-    build_maps(child, Some(node.uid), parent_map, node_map)
+    build_maps_internal(child, Some(node.uid), parent_map, node_map)
   }
 }
 
@@ -42,8 +42,8 @@ pub fn LayoutTree::new(
 ) -> LayoutTree {
   let parent_map : Map[Int, Int] = {}
   let node_map : Map[Int, LayoutNode] = {}
-  build_maps(root, None, parent_map, node_map)
-  {
+  build_maps_internal(root, None, parent_map, node_map)
+  let tree : LayoutTree = {
     root,
     parent_map,
     node_map,
@@ -51,6 +51,17 @@ pub fn LayoutTree::new(
     viewport_height,
     resources: ResourceRegistry::new(),
   }
+  // Set dirty callback on all nodes for proper parent propagation
+  tree.setup_dirty_callbacks()
+  tree
+}
+
+///|
+/// Set up dirty callbacks on all nodes to propagate children_dirty to parents
+fn LayoutTree::setup_dirty_callbacks(self : LayoutTree) -> Unit {
+  self.node_map.each(fn(_uid, node) {
+    node.on_dirty = Some(fn(uid) { self.propagate_children_dirty(uid) })
+  })
 }
 
 ///|

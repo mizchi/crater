@@ -139,6 +139,7 @@ pub struct LayoutNode {
   mut computed_height : Double
   mut has_new_layout : Bool
   mut intrinsic_state : IntrinsicState?
+  mut on_dirty : ((Int) -> Unit)?
 }
 pub fn LayoutNode::add_child(Self, Self) -> Self
 pub fn LayoutNode::apply_css_values(Self, @cascade.CascadedValues) -> Bool
