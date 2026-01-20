@@ -1,3 +1,9 @@
-import { "mizchi/crater/types", "mizchi/crater/style", "mizchi/crater/layout/node" }
+import {
+  "mizchi/crater/types",
+  "mizchi/crater/style",
+  "mizchi/crater/layout/node",
+}
 
-import "test" { "mizchi/crater/layout/dispatch" }
+import "test" {
+  "mizchi/crater/layout/dispatch",
+}

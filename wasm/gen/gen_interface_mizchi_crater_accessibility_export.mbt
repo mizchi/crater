@@ -38,3 +38,29 @@ pub fn wasmExportGetAccessibilityTree(p0 : Int, p1 : Int) -> Int {
 pub fn wasmExportGetAccessibilityTreePostReturn(p0 : Int) -> Unit {
       @ffi.free(@ffi.load32((p0) + 0))
 }
+
+pub fn wasmExportExtractMainContent(p0 : Int, p1 : Int) -> Int {
+      let result = @ffi.utf8_ptr2str(p0, p1)
+      let result0 = @accessibility.extract_main_content(result)
+      let (ptr, len) = @ffi.str2utf8(result0)
+      @ffi.store32((return_area) + 0, ptr)
+      @ffi.store32((return_area) + 4, len)
+      return return_area
+}
+
+pub fn wasmExportExtractMainContentPostReturn(p0 : Int) -> Unit {
+      @ffi.free(@ffi.load32((p0) + 0))
+}
+
+pub fn wasmExportExtractMainContentWithLayout(p0 : Int, p1 : Int, p2 : Int, p3 : Int) -> Int {
+      let result = @ffi.utf8_ptr2str(p0, p1)
+      let result0 = @accessibility.extract_main_content_with_layout(result, p2, p3)
+      let (ptr, len) = @ffi.str2utf8(result0)
+      @ffi.store32((return_area) + 0, ptr)
+      @ffi.store32((return_area) + 4, len)
+      return return_area
+}
+
+pub fn wasmExportExtractMainContentWithLayoutPostReturn(p0 : Int) -> Unit {
+      @ffi.free(@ffi.load32((p0) + 0))
+}

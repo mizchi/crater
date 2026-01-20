@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
   "deps": {},
   "source": "src",
@@ -10,5 +10,17 @@
   "keywords": [
     "css",
     "browser"
+  ],
+  "exclude": [
+    "wpt",
+    "_build",
+    "node_modules",
+    "browser",
+    "js",
+    "wasm",
+    "tests",
+    "wpt-tests",
+    "scripts",
+    "docs"
   ]
 }

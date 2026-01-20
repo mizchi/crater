@@ -31,3 +31,4 @@ browser/dist/
 
 # MoonBit build output
 _build/
+.claude/settings.local.json

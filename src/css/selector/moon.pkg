@@ -1,1 +1,3 @@
-import { "mizchi/crater/css/token" }
+import {
+  "mizchi/crater/css/token",
+}

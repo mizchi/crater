@@ -231,6 +231,14 @@ interface accessibility {
 
     /// Get full accessibility tree as JSON
     get-accessibility-tree: func(html: string) -> string;
+
+    /// Extract main content using Arc90 algorithm
+    /// Returns JSON with extracted text and metadata
+    extract-main-content: func(html: string) -> string;
+
+    /// Extract main content with layout calculation for better accuracy
+    /// Uses visual position and size information for scoring
+    extract-main-content-with-layout: func(html: string, width: u32, height: u32) -> string;
 }
 
 // =============================================================================
