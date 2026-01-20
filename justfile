@@ -68,13 +68,9 @@ status:
 
 # === Test Generation ===
 
-# Generate test from HTML file
-gentest file:
-    npx tsx scripts/gentest.ts {{file}}
-
-# Generate MoonBit tests from fixtures
-gen-moonbit-tests input output *args:
-    npx tsx scripts/gen-moonbit-tests.ts {{input}} {{output}} {{args}}
+# Generate MoonBit tests from taffy fixtures
+gen-taffy-tests input output *args:
+    npx tsx scripts/gen-taffy-tests.ts {{input}} {{output}} {{args}}
 
 # Generate html5lib tests
 gen-html5lib-tests *args:
