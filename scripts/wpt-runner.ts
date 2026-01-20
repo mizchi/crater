@@ -2,16 +2,25 @@
  * WPT (Web Platform Tests) Runner for Crater
  *
  * Compares CSS layout between browser (Puppeteer) and Crater
+ * Uses wpt/ submodule directly
  *
  * Usage:
- *   npx tsx tools/wpt-runner.ts <test-html>
- *   npx tsx tools/wpt-runner.ts --batch css-flexbox
+ *   npx tsx scripts/wpt-runner.ts css-flexbox
+ *   npx tsx scripts/wpt-runner.ts wpt/css/css-flexbox/flex-001.html
+ *   npx tsx scripts/wpt-runner.ts --all
  */
 
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import { renderer } from '../wasm/dist/crater.js';
+
+// Load config from wpt.json
+const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
+const CSS_MODULES: string[] = wptConfig.modules;
+const INCLUDE_PREFIXES: string[] = wptConfig.includePrefixes;
+
+const WPT_DIR = 'wpt/css';
 
 // Types
 interface Rect {
@@ -49,10 +58,9 @@ interface Mismatch {
 }
 
 // Configuration
-const TOLERANCE = 15; // pixels - relaxed for margin differences
+const TOLERANCE = 15;
 const VIEWPORT = { width: 800, height: 600 };
 
-// CSS Reset to normalize browser defaults (only body margin)
 const CSS_RESET = `
 <style>
   body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
@@ -60,42 +68,53 @@ const CSS_RESET = `
 `;
 
 /**
+ * Check if a file is a layout test
+ */
+function isLayoutTest(filename: string): boolean {
+  if (!filename.endsWith('.html')) return false;
+  if (filename.endsWith('-ref.html')) return false;
+  if (filename.includes('support')) return false;
+  if (filename.startsWith('reference')) return false;
+  return INCLUDE_PREFIXES.some(prefix => filename.startsWith(prefix));
+}
+
+/**
+ * Get test files for a module
+ */
+function getTestFiles(moduleName: string): string[] {
+  const moduleDir = path.join(WPT_DIR, moduleName);
+  if (!fs.existsSync(moduleDir)) {
+    return [];
+  }
+  return fs.readdirSync(moduleDir)
+    .filter(isLayoutTest)
+    .map(f => path.join(moduleDir, f));
+}
+
+/**
  * Inline external CSS files into HTML
- * Converts <link rel="stylesheet" href="..."> to <style>...</style>
  */
 function inlineExternalCSS(html: string, htmlPath: string): string {
   const htmlDir = path.dirname(htmlPath);
-
-  // Match <link rel="stylesheet" href="...">
   const linkRegex = /<link\s+[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi;
 
   return html.replace(linkRegex, (match) => {
-    // Extract href
     const hrefMatch = match.match(/href\s*=\s*["']([^"']+)["']/i);
     if (!hrefMatch) return match;
 
     const href = hrefMatch[1];
-
-    // Skip external URLs
     if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
       return match;
     }
 
-    // Resolve path relative to HTML file
     const cssPath = path.resolve(htmlDir, href);
-
     try {
       if (fs.existsSync(cssPath)) {
         const cssContent = fs.readFileSync(cssPath, 'utf-8');
         return `<style>/* Inlined from ${href} */\n${cssContent}</style>`;
-      } else {
-        console.warn(`  Warning: CSS file not found: ${cssPath}`);
-        return `<!-- CSS not found: ${href} -->`;
       }
-    } catch (error) {
-      console.warn(`  Warning: Failed to read CSS: ${cssPath}`);
-      return match;
-    }
+    } catch {}
+    return `<!-- CSS not found: ${href} -->`;
   });
 }
 
@@ -105,18 +124,12 @@ function inlineExternalCSS(html: string, htmlPath: string): string {
 async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): Promise<LayoutNode> {
   const page = await browser.newPage();
   await page.setViewport(VIEWPORT);
-  page.on('pageerror', (error) => {
-    console.warn(`  Page error: ${error}`);
-  });
-
-  // Set timeout for page operations
+  page.on('pageerror', () => {});
   page.setDefaultTimeout(5000);
 
-  // Load HTML file with CSS inlining and reset
   const htmlContent = prepareHtmlContent(htmlPath);
   await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 5000 });
 
-  // Extract layout from all elements
   const layout = await page.evaluate(`(() => {
     function getComputedRect(el, prop) {
       const style = getComputedStyle(el);
@@ -213,19 +226,11 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
   return layout as LayoutNode;
 }
 
-/**
- * Prepare HTML content for testing (inline CSS, add reset)
- */
 function prepareHtmlContent(htmlPath: string): string {
   let htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-
-  // Inline external CSS files
   htmlContent = inlineExternalCSS(htmlContent, htmlPath);
-
-  // Remove scripts (WPT harness/tests) to avoid runtime errors
   htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
-  // Inject CSS reset at the beginning of head or body
   if (htmlContent.includes('<head>')) {
     htmlContent = htmlContent.replace('<head>', '<head>' + CSS_RESET);
   } else if (htmlContent.includes('<body>')) {
@@ -233,72 +238,42 @@ function prepareHtmlContent(htmlPath: string): string {
   } else {
     htmlContent = CSS_RESET + htmlContent;
   }
-
   return htmlContent;
 }
 
-/**
- * Get layout from Crater
- */
 function getCraterLayout(htmlPath: string): LayoutNode {
-  // Helper to normalize root position to (0,0) for comparison
   function normalizeRoot(node: LayoutNode): LayoutNode {
     return { ...node, x: 0, y: 0 };
   }
 
-  try {
-    // Prepare HTML with inlined CSS
-    const htmlContent = prepareHtmlContent(htmlPath);
+  const htmlContent = prepareHtmlContent(htmlPath);
+  const result = renderer.renderHtmlToJson(htmlContent, 800, 600);
+  let layout = JSON.parse(result) as LayoutNode;
 
-    // Use Crater WASM module directly
-    const result = renderer.renderHtmlToJson(htmlContent, 800, 600);
-    let layout = JSON.parse(result) as LayoutNode;
-
-    // Handle nested body structure from Crater
-    if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
-      layout = layout.children[0];
-    }
-
-    // Find #test or #container element if it exists (WPT tests)
-    const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
-      findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
-    if (testElement) {
-      return normalizeRoot(testElement);
-    }
-
-    const gridElement = findNodeByClass(layout, 'grid');
-    if (gridElement) {
-      return normalizeRoot(gridElement);
-    }
-
-    // If root (body) has a single meaningful child, use that child
-    // to match browser behavior
-    const meaningfulChildren = layout.children.filter(
-      c => !c.id.startsWith('#text') && c.id !== 'p' && c.id !== 'div#log'
-    );
-    if (meaningfulChildren.length === 1) {
-      return normalizeRoot(meaningfulChildren[0]);
-    }
-
-    // Try to find a container div (first one, excluding #log)
-    const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div') && c.id !== 'div#log');
-    if (divChildren.length >= 1) {
-      return normalizeRoot(divChildren[0]);
-    }
-
-    return normalizeRoot(layout);
-  } catch (error) {
-    throw new Error(`Crater failed to render: ${error}`);
+  if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
+    layout = layout.children[0];
   }
+
+  const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
+    findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
+  if (testElement) return normalizeRoot(testElement);
+
+  const gridElement = findNodeByClass(layout, 'grid');
+  if (gridElement) return normalizeRoot(gridElement);
+
+  const meaningfulChildren = layout.children.filter(
+    c => !c.id.startsWith('#text') && c.id !== 'p' && c.id !== 'div#log'
+  );
+  if (meaningfulChildren.length === 1) return normalizeRoot(meaningfulChildren[0]);
+
+  const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div') && c.id !== 'div#log');
+  if (divChildren.length >= 1) return normalizeRoot(divChildren[0]);
+
+  return normalizeRoot(layout);
 }
 
-/**
- * Find a node by ID in the layout tree
- */
 function findNodeById(node: LayoutNode, id: string): LayoutNode | null {
-  if (node.id === id || node.id.endsWith('#' + id.replace('#', ''))) {
-    return node;
-  }
+  if (node.id === id || node.id.endsWith('#' + id.replace('#', ''))) return node;
   for (const child of node.children) {
     const found = findNodeById(child, id);
     if (found) return found;
@@ -306,13 +281,8 @@ function findNodeById(node: LayoutNode, id: string): LayoutNode | null {
   return null;
 }
 
-/**
- * Find a node by class name in the layout tree
- */
 function findNodeByClass(node: LayoutNode, className: string): LayoutNode | null {
-  if (node.id.endsWith('.' + className)) {
-    return node;
-  }
+  if (node.id.endsWith('.' + className)) return node;
   for (const child of node.children) {
     const found = findNodeByClass(child, className);
     if (found) return found;
@@ -320,45 +290,23 @@ function findNodeByClass(node: LayoutNode, className: string): LayoutNode | null
   return null;
 }
 
-/**
- * Filter out text nodes from layout children
- */
-function filterTextNodes(node: LayoutNode): LayoutNode {
-  return {
-    ...node,
-    children: node.children
-      .filter(c => !c.id.startsWith('#text'))
-      .map(filterTextNodes),
-  };
-}
-
-/**
- * Normalize crater layout to use content-box relative positions for children
- * Crater outputs positions relative to border-box, but browser uses content-box
- */
 function normalizeCraterPositions(node: LayoutNode): LayoutNode {
-  // Calculate content-box offset (padding + border)
   const contentOffsetX = node.padding.left + node.border.left;
   const contentOffsetY = node.padding.top + node.border.top;
 
   return {
     ...node,
     children: node.children.map(child => {
-      // Adjust child position to be relative to parent's content-box
       const adjustedChild = {
         ...child,
         x: child.x - contentOffsetX,
         y: child.y - contentOffsetY,
       };
-      // Recursively normalize child's children
       return normalizeCraterPositions(adjustedChild);
     }),
   };
 }
 
-/**
- * Compare two layout trees
- */
 function compareLayouts(
   browser: LayoutNode,
   crater: LayoutNode,
@@ -367,62 +315,39 @@ function compareLayouts(
 ): Mismatch[] {
   const mismatches: Mismatch[] = [];
 
-  // Compare position and size
   const props: (keyof LayoutNode)[] = ['x', 'y', 'width', 'height'];
   for (const prop of props) {
     const bVal = browser[prop] as number;
     const cVal = crater[prop] as number;
     const diff = Math.abs(bVal - cVal);
     if (diff > TOLERANCE) {
-      mismatches.push({
-        path,
-        property: prop,
-        browser: bVal,
-        crater: cVal,
-        diff,
-      });
+      mismatches.push({ path, property: prop, browser: bVal, crater: cVal, diff });
     }
   }
 
-  // Compare box model (optional)
   if (!options.ignoreBoxModel) {
     const boxProps: (keyof LayoutNode)[] = ['margin', 'padding', 'border'];
     for (const boxProp of boxProps) {
       const bRect = browser[boxProp] as Rect;
       const cRect = crater[boxProp] as Rect;
       for (const side of ['top', 'right', 'bottom', 'left'] as const) {
-        const bVal = bRect[side];
-        const cVal = cRect[side];
-        const diff = Math.abs(bVal - cVal);
+        const diff = Math.abs(bRect[side] - cRect[side]);
         if (diff > TOLERANCE) {
-          mismatches.push({
-            path,
-            property: `${boxProp}.${side}`,
-            browser: bVal,
-            crater: cVal,
-            diff,
-          });
+          mismatches.push({ path, property: `${boxProp}.${side}`, browser: bRect[side], crater: cRect[side], diff });
         }
       }
     }
   }
 
-  // Get children for comparison (optionally filter text nodes)
-  const bChildren = options.ignoreTextNodes
-    ? browser.children.filter(c => !c.id.startsWith('#text'))
-    : browser.children;
-  const cChildren = options.ignoreTextNodes
-    ? crater.children.filter(c => !c.id.startsWith('#text'))
-    : crater.children;
+  const bChildren = options.ignoreTextNodes ? browser.children.filter(c => !c.id.startsWith('#text')) : browser.children;
+  const cChildren = options.ignoreTextNodes ? crater.children.filter(c => !c.id.startsWith('#text')) : crater.children;
 
-  // Compare children (by index for now)
   const minChildren = Math.min(bChildren.length, cChildren.length);
   for (let i = 0; i < minChildren; i++) {
     const childPath = `${path}/${bChildren[i].id}[${i}]`;
     mismatches.push(...compareLayouts(bChildren[i], cChildren[i], childPath, options));
   }
 
-  // Report missing/extra children
   if (bChildren.length !== cChildren.length) {
     mismatches.push({
       path,
@@ -436,73 +361,34 @@ function compareLayouts(
   return mismatches;
 }
 
-/**
- * Count total nodes in tree
- */
 function countNodes(node: LayoutNode): number {
   return 1 + node.children.reduce((sum, child) => sum + countNodes(child), 0);
 }
 
-/**
- * Run a single test
- */
-async function runTest(
-  browser: puppeteer.Browser,
-  htmlPath: string
-): Promise<TestResult> {
+async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<TestResult> {
   const name = path.basename(htmlPath);
 
   try {
-    // Get layouts from both sources
-    let browserLayout: LayoutNode;
-    try {
-      browserLayout = await getBrowserLayout(browser, htmlPath);
-    } catch (error) {
-      throw new Error(`browser layout failed: ${error}`);
-    }
-    let craterLayout: LayoutNode;
-    try {
-      craterLayout = getCraterLayout(htmlPath);
-    } catch (error) {
-      throw new Error(`crater layout failed: ${error}`);
-    }
-
-    // Normalize crater positions to content-box relative (browser already uses content-box)
+    const browserLayout = await getBrowserLayout(browser, htmlPath);
+    const craterLayout = getCraterLayout(htmlPath);
     const normalizedCraterLayout = normalizeCraterPositions(craterLayout);
 
-    // Compare (ignore text nodes and box model for now)
     const mismatches = compareLayouts(browserLayout, normalizedCraterLayout, 'root', {
       ignoreTextNodes: true,
-      ignoreBoxModel: true, // TODO: Fix Crater to populate padding/border in Layout
+      ignoreBoxModel: true,
     });
-    const totalNodes = countNodes(browserLayout);
 
-    return {
-      name,
-      passed: mismatches.length === 0,
-      mismatches,
-      totalNodes,
-    };
+    return { name, passed: mismatches.length === 0, mismatches, totalNodes: countNodes(browserLayout) };
   } catch (error) {
-    console.error(`  Error in ${name}: ${error}`);
     return {
       name,
       passed: false,
-      mismatches: [{
-        path: 'error',
-        property: 'execution',
-        browser: 0,
-        crater: 0,
-        diff: 0,
-      }],
+      mismatches: [{ path: 'error', property: 'execution', browser: 0, crater: 0, diff: 0 }],
       totalNodes: 0,
     };
   }
 }
 
-/**
- * Print test result
- */
 function printResult(result: TestResult): void {
   const icon = result.passed ? '✓' : '✗';
   console.log(`${icon} ${result.name}`);
@@ -517,100 +403,132 @@ function printResult(result: TestResult): void {
   }
 }
 
-/**
- * Main entry point
- */
+const CONCURRENCY = 6;
+
+async function runTestsParallel(htmlFiles: string[]): Promise<{ passed: number; failed: number; results: TestResult[] }> {
+  const results: TestResult[] = [];
+  let passed = 0;
+  let failed = 0;
+  let nextIndex = 0;
+
+  async function worker(browser: puppeteer.Browser): Promise<void> {
+    let localCount = 0;
+    const RESTART_INTERVAL = 30;
+
+    while (true) {
+      const index = nextIndex++;
+      if (index >= htmlFiles.length) break;
+
+      const htmlFile = htmlFiles[index];
+
+      if (localCount > 0 && localCount % RESTART_INTERVAL === 0) {
+        try { await browser.close(); } catch {}
+        browser = await puppeteer.launch({ headless: true });
+      }
+
+      let result = await runTest(browser, htmlFile);
+      if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
+        try { await browser.close(); } catch {}
+        browser = await puppeteer.launch({ headless: true });
+        result = await runTest(browser, htmlFile);
+      }
+
+      results[index] = result;
+      if (result.passed) passed++;
+      else failed++;
+      localCount++;
+
+      const icon = result.passed ? '✓' : '✗';
+      process.stdout.write(`\r[${results.filter(Boolean).length}/${htmlFiles.length}] ${icon} ${result.name.padEnd(50)}`);
+    }
+
+    try { await browser.close(); } catch {}
+  }
+
+  const browsers = await Promise.all(
+    Array.from({ length: CONCURRENCY }, () => puppeteer.launch({ headless: true }))
+  );
+
+  await Promise.all(browsers.map(browser => worker(browser)));
+
+  console.log('\n');
+
+  return { passed, failed, results };
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log('WPT Runner for Crater');
-    console.log('');
+    console.log('WPT Runner for Crater\n');
     console.log('Usage:');
-    console.log('  npx tsx tools/wpt-runner.ts <test.html>');
-    console.log('  npx tsx tools/wpt-runner.ts fixtures/*.html');
+    console.log('  npx tsx scripts/wpt-runner.ts <module-name>     # Run tests for a CSS module');
+    console.log('  npx tsx scripts/wpt-runner.ts <path/to/test.html>');
+    console.log('  npx tsx scripts/wpt-runner.ts --all             # Run all modules');
+    console.log('  npx tsx scripts/wpt-runner.ts --list            # List available modules');
+    console.log('\nModules:', CSS_MODULES.join(', '));
     return;
   }
 
-  // Expand glob patterns
-  const htmlFiles = args.flatMap(arg => {
-    if (arg.includes('*')) {
-      // Simple glob expansion for *.html
-      const dir = path.dirname(arg);
-      const pattern = path.basename(arg).replace('*', '');
-      if (fs.existsSync(dir)) {
-        return fs.readdirSync(dir)
-          .filter(f => f.endsWith('.html'))
-          .map(f => path.join(dir, f));
-      }
-      return [];
+  if (args[0] === '--list') {
+    console.log('Available CSS modules:\n');
+    for (const mod of CSS_MODULES) {
+      const files = getTestFiles(mod);
+      console.log(`  ${mod}: ${files.length} tests`);
     }
-    return [arg];
-  });
+    return;
+  }
+
+  // Collect test files
+  let htmlFiles: string[] = [];
+
+  if (args[0] === '--all') {
+    for (const mod of CSS_MODULES) {
+      htmlFiles.push(...getTestFiles(mod));
+    }
+  } else {
+    for (const arg of args) {
+      if (CSS_MODULES.includes(arg)) {
+        // Module name
+        htmlFiles.push(...getTestFiles(arg));
+      } else if (arg.includes('*')) {
+        // Glob pattern
+        const dir = path.dirname(arg);
+        if (fs.existsSync(dir)) {
+          const files = fs.readdirSync(dir)
+            .filter(f => f.endsWith('.html'))
+            .map(f => path.join(dir, f));
+          htmlFiles.push(...files);
+        }
+      } else if (fs.existsSync(arg)) {
+        // Direct file path
+        htmlFiles.push(arg);
+      }
+    }
+  }
 
   if (htmlFiles.length === 0) {
-    console.error('No HTML files found');
+    console.error('No test files found');
     process.exit(1);
   }
 
-  console.log(`Running ${htmlFiles.length} test(s)...\n`);
+  console.log(`Running ${htmlFiles.length} test(s) with ${CONCURRENCY} workers...\n`);
 
-  // Browser restart interval to prevent connection issues
-  const BROWSER_RESTART_INTERVAL = 50;
-  let browser = await puppeteer.launch({ headless: true });
+  const { passed, failed, results } = await runTestsParallel(htmlFiles);
 
-  let passed = 0;
-  let failed = 0;
-  let testCount = 0;
-
-  for (const htmlFile of htmlFiles) {
-    if (!fs.existsSync(htmlFile)) {
-      console.log(`✗ ${htmlFile} (file not found)`);
-      failed++;
-      continue;
+  // Print failed tests details
+  const failedResults = results.filter(r => r && !r.passed);
+  if (failedResults.length > 0) {
+    console.log('Failed tests:\n');
+    for (const result of failedResults.slice(0, 20)) {
+      printResult(result);
     }
-
-    // Restart browser periodically to prevent connection issues
-    if (testCount > 0 && testCount % BROWSER_RESTART_INTERVAL === 0) {
-      try {
-        await browser.close();
-      } catch (e) {
-        // Ignore close errors
-      }
-      browser = await puppeteer.launch({ headless: true });
+    if (failedResults.length > 20) {
+      console.log(`... and ${failedResults.length - 20} more failed tests\n`);
     }
-
-    // Retry on connection errors
-    let result = await runTest(browser, htmlFile);
-    if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
-      // Restart browser and retry once
-      try {
-        await browser.close();
-      } catch (e) {
-        // Ignore close errors
-      }
-      browser = await puppeteer.launch({ headless: true });
-      result = await runTest(browser, htmlFile);
-    }
-    printResult(result);
-
-    if (result.passed) {
-      passed++;
-    } else {
-      failed++;
-    }
-    testCount++;
   }
 
-  try {
-    await browser.close();
-  } catch (e) {
-    // Ignore close errors
-  }
-
-  console.log('');
   console.log(`Summary: ${passed} passed, ${failed} failed`);
-
   process.exit(failed > 0 ? 1 : 0);
 }
 
