@@ -3854,3 +3854,77 @@ test "flex_margin_no_collapse" {
   inspect(layout.children[0].y, content="50")
   inspect(layout.children[1].y, content="250")
 }
+
+///|
+/// Test that min_width works correctly with justify-content: center
+/// When min_width > content width, the extra space should be distributed for centering
+test "min_width_with_justify_content_center" {
+  let default_style = @style.Style::default()
+  // Child with small intrinsic size (20px)
+  let child_style = {
+    ..default_style,
+    width: @types.Length(20.0),
+    height: @types.Length(10.0),
+  }
+  let child = @node.Node::new("child", child_style, [])
+  // Container with min_width: 100px and justify-content: center
+  // Content width (20px) < min_width (100px), so container should be 100px
+  // Child should be centered: x = (100 - 20) / 2 = 40
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    min_width: @types.Length(100.0),
+    justify_content: @types.Center,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(100.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  // Container width should be min_width (100px)
+  inspect(layout.width, content="100")
+  // Child should be centered: x = (100 - 20) / 2 = 40
+  inspect(layout.children[0].x, content="40")
+  inspect(layout.children[0].width, content="20")
+}
+
+///|
+/// Test that min_height works correctly with align-content: center in column direction
+test "min_height_with_align_content_center_column" {
+  let default_style = @style.Style::default()
+  // Child with small intrinsic size
+  let child_style = {
+    ..default_style,
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+  }
+  let child = @node.Node::new("child", child_style, [])
+  // Container with min_height: 100px and justify-content: center (main axis in column)
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    width: @types.Length(100.0),
+    min_height: @types.Length(100.0),
+    justify_content: @types.Center,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  // Container height should be min_height (100px)
+  inspect(layout.height, content="100")
+  // Child should be centered: y = (100 - 20) / 2 = 40
+  inspect(layout.children[0].y, content="40")
+  inspect(layout.children[0].height, content="20")
+}

@@ -1610,8 +1610,29 @@ fn compute_internal(
     }
   }
 
-  // Get min_height for Column flex auto height adjustment
-  let min_main_for_grow : Double? = if not(is_row) && content_height == None {
+  // Get min_main for flex grow/justify-content adjustment
+  // For Row flex: use min_width when width is auto
+  // For Column flex: use min_height when height is auto
+  let min_main_for_grow : Double? = if is_row {
+    // Row flex: check min_width when width is auto
+    if width_is_auto {
+      match style.min_width {
+        @types.Length(min_w) =>
+          Some(min_w - padding.horizontal_sum() - border.horizontal_sum())
+        @types.Percent(p) =>
+          Some(
+            parent_width * p -
+            padding.horizontal_sum() -
+            border.horizontal_sum(),
+          )
+        @types.Auto => None
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
+      }
+    } else {
+      None
+    }
+    // Column flex: check min_height when height is auto
+  } else if content_height == None {
     match style.min_height {
       @types.Length(min_h) =>
         Some(min_h - padding.vertical_sum() - border.vertical_sum())
