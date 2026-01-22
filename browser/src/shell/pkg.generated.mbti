@@ -1,12 +1,14 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser/shell"
 
-import(
-  "mizchi/crater-browser/http"
-  "mizchi/crater-browser/tui"
-  "mizchi/crater/aom"
-  "mizchi/crater/html"
-)
+import {
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/tui",
+  "mizchi/crater/aom",
+  "mizchi/crater/html",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/layout/tree",
+}
 
 // Values
 
@@ -34,6 +36,11 @@ pub struct Browser {
   mut a11y_tree : @aom.AccessibilityTree?
   mut selection_mode : Bool
   mut dark_mode : Bool
+  mut render_node : @node.Node?
+  mut layout_tree : @tree.LayoutTree?
+  mut prev_buffer : @tui.CharBuffer?
+  mut last_render_key : String
+  mut last_color_scheme_dark : Bool
 }
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit

@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser/tui"
 
-import(
-  "mizchi/crater/layout/node"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn ansi_bg_256(Int) -> String
@@ -27,6 +27,8 @@ pub fn ansi_underline() -> String
 
 pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
 
+pub fn buffer_diff_to_ansi_rects(CharBuffer, CharBuffer, Array[DirtyRect]) -> String
+
 pub fn buffer_to_ansi(CharBuffer) -> String
 
 pub fn char_display_width(Char) -> Int
@@ -36,6 +38,8 @@ pub fn cleanup_stdin() -> Unit
 pub fn clear_screen() -> String
 
 pub fn color_to_256(@types.Color) -> Int
+
+pub fn dirty_rects_to_cells(Array[@types.BoundingRect], Int, Int, Int, Int) -> Array[DirtyRect]
 
 pub fn disable_mouse() -> String
 
@@ -87,9 +91,9 @@ pub fn px_to_col(Double) -> Int
 
 pub fn px_to_row(Double) -> Int
 
-pub fn read_key() -> String
+pub async fn read_key() -> String
 
-pub fn read_line(String) -> String
+pub async fn read_line(String) -> String
 
 pub fn render_to_ansi(@node.Node, @types.Layout, Int, Int, Int, focused_element_name? : String?) -> RenderResult
 
@@ -97,11 +101,17 @@ pub fn render_to_ansi_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array
 
 pub fn render_to_ansi_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> RenderResult
 
+pub fn render_to_buffer(@node.Node, @types.Layout, Int, Int, Int, focused_element_name? : String?) -> BufferRenderResult
+
+pub fn render_to_buffer_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> BufferRenderResult
+
+pub fn render_to_buffer_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> BufferRenderResult
+
 pub fn rgb_to_256(Int, Int, Int) -> Int
 
 pub fn show_cursor() -> String
 
-pub fn wait_for_enter() -> Unit
+pub async fn wait_for_enter() -> Unit
 
 // Errors
 
@@ -134,6 +144,11 @@ pub enum BrowserAction {
   ToggleDarkMode
 }
 
+pub(all) struct BufferRenderResult {
+  buffer : CharBuffer
+  link_regions : Array[LinkRegion]
+}
+
 pub struct CharBuffer {
   width : Int
   height : Int
@@ -160,6 +175,13 @@ pub fn CharCell::default() -> Self
 pub fn CharCell::from_char(Char) -> Self
 pub fn CharCell::styled(Char, @types.Color, @types.Color) -> Self
 pub impl Eq for CharCell
+
+pub(all) struct DirtyRect {
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+}
 
 pub(all) struct HintData {
   label : String

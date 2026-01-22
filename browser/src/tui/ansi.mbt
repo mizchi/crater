@@ -230,6 +230,116 @@ pub fn buffer_diff_to_ansi(current : CharBuffer, prev : CharBuffer) -> String {
 }
 
 ///|
+/// Dirty rectangle for partial diff updates
+pub(all) struct DirtyRect {
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+}
+
+///|
+/// Optimized ANSI output with diff limited to dirty rectangles
+pub fn buffer_diff_to_ansi_rects(
+  current : CharBuffer,
+  prev : CharBuffer,
+  rects : Array[DirtyRect],
+) -> String {
+  if rects.length() == 0 {
+    return ""
+  }
+  let sb = StringBuilder::new()
+  let mut last_row = -1
+  let mut last_col = -1
+  let mut last_fg = -1
+  let mut last_bg = -1
+  let mut last_bold = false
+  let mut last_underline = false
+  let visited : Array[Bool] = Array::make(current.width * current.height, false)
+  for rect in rects {
+    let mut x0 = rect.col
+    let mut y0 = rect.row
+    let mut x1 = rect.col + rect.width
+    let mut y1 = rect.row + rect.height
+    if x1 <= 0 || y1 <= 0 || x0 >= current.width || y0 >= current.height {
+      continue
+    }
+    if x0 < 0 {
+      x0 = 0
+    }
+    if y0 < 0 {
+      y0 = 0
+    }
+    if x1 > current.width {
+      x1 = current.width
+    }
+    if y1 > current.height {
+      y1 = current.height
+    }
+    for row = y0; row < y1; row = row + 1 {
+      for col = x0; col < x1; col = col + 1 {
+        let idx = row * current.width + col
+        if visited[idx] {
+          continue
+        }
+        visited[idx] = true
+        let cell = current.get_cell(col, row)
+        let prev_cell = prev.get_cell(col, row)
+        if cell == prev_cell {
+          continue
+        }
+        if cell.char == '\u0000' {
+          continue
+        }
+        if row != last_row || col != last_col + 1 {
+          sb.write_string(ansi_move_to(row + 1, col + 1))
+        }
+        let fg_idx = if cell.fg.is_transparent() {
+          7
+        } else {
+          color_to_256(cell.fg)
+        }
+        let bg_idx = if cell.bg.is_transparent() {
+          -1
+        } else {
+          color_to_256(cell.bg)
+        }
+        let need_reset = (last_bold && not(cell.bold)) ||
+          (last_underline && not(cell.underline))
+        if need_reset {
+          sb.write_string(ansi_reset())
+          last_fg = -1
+          last_bg = -1
+          last_bold = false
+          last_underline = false
+        }
+        if cell.bold && not(last_bold) {
+          sb.write_string(ansi_bold())
+          last_bold = true
+        }
+        if cell.underline && not(last_underline) {
+          sb.write_string(ansi_underline())
+          last_underline = true
+        }
+        if fg_idx != last_fg {
+          sb.write_string(ansi_fg_256(fg_idx))
+          last_fg = fg_idx
+        }
+        if bg_idx >= 0 && bg_idx != last_bg {
+          sb.write_string(ansi_bg_256(bg_idx))
+          last_bg = bg_idx
+        }
+        sb.write_char(cell.char)
+        last_row = row
+        last_col = col
+      }
+    }
+  }
+  sb.write_string(ansi_reset())
+  sb.to_string()
+}
+
+///|
 /// Enable mouse tracking (SGR mode for better coordinates)
 pub fn enable_mouse() -> String {
   "\u001b[?1000h\u001b[?1006h"
