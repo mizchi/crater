@@ -1,0 +1,168 @@
+{
+  "hash": "20b2b64916b00b25203c9f1bf14248922f4d522f18328e9f876cce116df0083e",
+  "url": "http://www.remember8090.it/black-friday-per-nostalgici-le-occasioni-da-non-perdere/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header#masthead, div.header-main.rmb-container.clearfix, div.header-access-button, nav#main-navigation",
+      "rect": {
+        "x": 8,
+        "y": 32,
+        "width": 1264,
+        "height": 496
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "unknown",
+      "selector": "div#main-navigation-wrap, ul#menu-menu-1, li#menu-item-34, li#menu-item-95, li#menu-item-96, li#menu-item-222, li#menu-item-221, li#menu-item-539, li#menu-item-540, li#menu-item-541, li#menu-item-542, li#menu-item-543, li#menu-item-160, li#menu-item-544",
+      "rect": {
+        "x": 8,
+        "y": 240,
+        "width": 1264,
+        "height": 288
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-13",
+      "type": "secondary_nav",
+      "selector": "ul.sub-menu",
+      "rect": {
+        "x": 48,
+        "y": 384,
+        "width": 1224,
+        "height": 144
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-20",
+      "type": "primary_nav",
+      "selector": "header.entry-header",
+      "rect": {
+        "x": 8,
+        "y": 546.71875,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-21",
+      "type": "unknown",
+      "selector": "div.entry-content-comments, div.ssba-classic-2.ssba.ssbp-wrap.left.ssbp--theme-1, div, div.meta-category",
+      "rect": {
+        "x": 8,
+        "y": 641.4375,
+        "width": 1264,
+        "height": 78
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-22",
+      "type": "social_nav",
+      "selector": "div.shareButtons",
+      "rect": {
+        "x": 8,
+        "y": 665.4375,
+        "width": 1264,
+        "height": 30
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-26",
+      "type": "unknown",
+      "selector": "p",
+      "rect": {
+        "x": 8,
+        "y": 3121.4375,
+        "width": 1264,
+        "height": 264
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-27",
+      "type": "footer_nav",
+      "selector": "footer.entry-footer",
+      "rect": {
+        "x": 8,
+        "y": 8382.4375,
+        "width": 1264,
+        "height": 88
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-28",
+      "type": "unknown",
+      "selector": "div.entryTags, div.entry-tags.clearfix",
+      "rect": {
+        "x": 8,
+        "y": 8382.4375,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-30",
+      "type": "secondary_nav",
+      "selector": "section#secondary",
+      "rect": {
+        "x": 8,
+        "y": 8575.875,
+        "width": 1264,
+        "height": 1072.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-31",
+      "type": "sidebar_nav",
+      "selector": "aside#search-2",
+      "rect": {
+        "x": 8,
+        "y": 8575.875,
+        "width": 1264,
+        "height": 24.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-32",
+      "type": "sidebar_nav",
+      "selector": "aside#adrotate_widgets-2",
+      "rect": {
+        "x": 8,
+        "y": 8616.375,
+        "width": 1264,
+        "height": 850
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-33",
+      "type": "unknown",
+      "selector": "div#cookie-notice",
+      "rect": {
+        "x": 8,
+        "y": 9696.375,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

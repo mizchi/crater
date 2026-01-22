@@ -69,6 +69,7 @@ const NAV_PATTERNS = [
   'menu',
   'navbar',
   'topbar',
+  'toplinks',
   'footer',
   'header',
   'sidebar',
@@ -165,6 +166,24 @@ function isListTag(tag?: string) {
   return t === 'ul' || t === 'ol' || t === 'menu';
 }
 
+// Widget patterns that indicate nav-like content when combined with links
+const WIDGET_PATTERNS = [
+  'widget',
+  'textwidget',
+  'page_item',
+  'page-item',
+  'cat-item',
+  'syndication',
+  'blogroll',
+  'rsswidget',
+  // Column-based navigation patterns (e.g., li.col1-10, li.col2-10)
+  'col1',
+  'col2',
+  'col3',
+  'col4',
+  'col5',
+];
+
 function isNavNode(node: AomNode): boolean {
   const role = node.role?.toLowerCase() || '';
   const tag = node.tag?.toLowerCase() || '';
@@ -175,6 +194,12 @@ function isNavNode(node: AomNode): boolean {
   if (containsPattern(name, NAV_PATTERNS)) return true;
   if (containsPattern(selector, NAV_PATTERNS)) return true;
   return false;
+}
+
+function isWidgetNav(node: AomNode, linkCount: number): boolean {
+  if (linkCount < 1) return false;
+  const selector = node.selector?.toLowerCase() || '';
+  return containsPattern(selector, WIDGET_PATTERNS);
 }
 
 function collectNavSelectors(
@@ -203,9 +228,10 @@ function collectNavSelectors(
     totalCount += childStats.totalCount;
   }
   const navByHint = isNavNode(node);
+  const navByWidget = isWidgetNav(node, linkCount);
   const linkRatio = totalCount > 0 ? linkCount / totalCount : 0;
   const navByStructure = linkCount >= 3 && linkRatio >= 0.3;
-  if (navByHint || navByStructure) {
+  if (navByHint || navByStructure || navByWidget) {
     if (selector) {
       out.add(selector);
       infoMap.set(selector, {
@@ -224,7 +250,9 @@ function collectNavSelectors(
       stats.noSelector += 1;
     }
   }
-  if (selector && navAncestor && (isListTag(tag) || role === 'list' || role === 'listitem')) {
+  // Collect list elements and widget elements for hierarchical nav detection
+  const isListElement = isListTag(tag) || role === 'list' || role === 'listitem';
+  if (selector && (navAncestor && isListElement) || navByWidget) {
     listOut.add(selector);
     if (!infoMap.has(selector)) {
       infoMap.set(selector, {
@@ -235,7 +263,7 @@ function collectNavSelectors(
         totalCount,
         linkRatio,
         navByHint: false,
-        navByStructure,
+        navByStructure: navByStructure || navByWidget,
         navContainer,
         navAncestor,
       });
@@ -317,9 +345,10 @@ function refinePredictedNav(
     const linkCount = info?.linkCount ?? 0;
     const menuByLinks = linkDensity >= 0.25 && textLen <= 2000;
     const listByLinks = isListTag(layoutTag) || isListTag(aomTag) || aomRole === 'list';
+    const widgetNav = containsPattern(selector, WIDGET_PATTERNS) && linkCount >= 1;
     const navByStructure =
       info?.navByStructure ?? (linkCount >= 2 && linkRatio >= (listByLinks ? 0.15 : 0.2));
-    const strongNav = layoutHint || aomHint || menuByLinks || navByStructure || (listByLinks && linkRatio >= 0.2);
+    const strongNav = layoutHint || aomHint || menuByLinks || navByStructure || (listByLinks && linkRatio >= 0.2) || widgetNav;
 
     if (!strongNav) {
       continue;

@@ -1,0 +1,24 @@
+{
+  "hash": "c81e134ed49902bcf69b551426b4a346c5a77ae993cac8bda68b5541a664ef4c",
+  "url": "https://www.floridatoday.com/story/sports/high-school/2019/11/20/hs-roundup-viera-defeats-rockledge-remain-undefeated/4246736002/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "footer_nav",
+      "selector": "footer",
+      "rect": {
+        "x": 190,
+        "y": 2155.328125,
+        "width": 900,
+        "height": 123
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

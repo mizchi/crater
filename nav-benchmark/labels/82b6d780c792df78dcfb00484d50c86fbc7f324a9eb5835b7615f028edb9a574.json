@@ -1,0 +1,144 @@
+{
+  "hash": "82b6d780c792df78dcfb00484d50c86fbc7f324a9eb5835b7615f028edb9a574",
+  "url": "https://hosted.ap.org/berkshireeagle/article/6486944b076b4df99a583a3a7c85574d/unpredictable-sondland-faces-questions-about-trump-ukraine",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "skip_link",
+      "selector": "div#skip-link",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "primary_nav",
+      "selector": "header.l-header.contain-to-grid.fixed, nav.top-bar",
+      "rect": {
+        "x": 8,
+        "y": 51.9140625,
+        "width": 1264,
+        "height": 287.9140625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "unknown",
+      "selector": "div.row, div.large-12.columns, ul.title-area, li.toggle-topbar.menu-icon, div.top-bar-section, div#wl-basic-menu, div.item-list, ul, li.parent-menu-item.first, li.parent-menu-item, li.parent-menu-item, li.parent-menu-item, li.parent-menu-item, li.parent-menu-item, li.parent-menu-item, li.parent-menu-item.last",
+      "rect": {
+        "x": 8,
+        "y": 51.9140625,
+        "width": 1264,
+        "height": 287.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-20",
+      "type": "unknown",
+      "selector": "div.ap-story-media-blk-wrap, div.ap-story-media-blk",
+      "rect": {
+        "x": 8,
+        "y": 703.65625,
+        "width": 1264,
+        "height": 104
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-22",
+      "type": "sidebar_nav",
+      "selector": "section.block.block-ap-hosted-rightsidebar-widget.blk-bottom-boder.block-ap-hosted-rightsidebar-widget-block-below-content-topics",
+      "rect": {
+        "x": 8,
+        "y": 2162.375,
+        "width": 1264,
+        "height": 795.03125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-23",
+      "type": "unknown",
+      "selector": "ul.ap-story-tags, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 2209.09375,
+        "width": 1264,
+        "height": 360
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-32",
+      "type": "unknown",
+      "selector": "ul.ap-story-tags-people, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 2634.53125,
+        "width": 1264,
+        "height": 72
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-36",
+      "type": "unknown",
+      "selector": "ul.ap-story-tags-companies, li, li",
+      "rect": {
+        "x": 8,
+        "y": 2771.96875,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-39",
+      "type": "unknown",
+      "selector": "li, li, li",
+      "rect": {
+        "x": 48,
+        "y": 2885.40625,
+        "width": 1224,
+        "height": 72
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-42",
+      "type": "unknown",
+      "selector": "section.block.block-hosted-article.block-hosted-article-hosted-trending-articles, div.trending, ol.rounded-list, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 2976.125,
+        "width": 1264,
+        "height": 118.71875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-48",
+      "type": "footer_nav",
+      "selector": "footer.l-footer, div.footer",
+      "rect": {
+        "x": 8,
+        "y": 3113.5625,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

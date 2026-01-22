@@ -1,0 +1,564 @@
+{
+  "hash": "c7e39ac49fa1235f5d50f83bf2444248bd3aa4e6df044377916c812dd109ba23",
+  "url": "https://www.bbc.com/news/world-europe-50473792",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header#orb-banner, div#orb-header, nav.orb-nav",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 676.328125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-3",
+      "type": "unknown",
+      "selector": "div.orb-nav-pri-container.b-r.b-g-p, div.orb-nav-section.orb-nav-blocks, section, ul, li, li, div#mybbc-wrapper, div#idcta-statusbar, div#orb-nav-links, ul, li.orb-nav-home, li.orb-nav-news, li.orb-nav-sport, li.orb-nav-weather, li.orb-nav-iplayer, li.orb-nav-sounds, li.orb-nav-cbbc, li.orb-nav-cbeebies, li.orb-nav-food, li.orb-nav-bitesize, li.orb-nav-arts, li.orb-nav-taster, li.orb-nav-local, li.orb-nav-tv, li.orb-nav-radio, li.orb-nav-three, li#orb-nav-more, div.orb-nav-section.orb-nav-search",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 676.328125
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-6",
+      "type": "skip_link",
+      "selector": "div.orb-skip-links",
+      "rect": {
+        "x": 8,
+        "y": 51.9140625,
+        "width": 1264,
+        "height": 103.9140625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-33",
+      "type": "unknown",
+      "selector": "div.site-brand.site-brand--height, div.navigation.navigation--primary, h2.navigation__heading.off-screen, div.nav-buttons, div.navigation__section--icon, div.navigation.navigation--wide, ul.navigation-wide-list, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 700.328125,
+        "width": 1264,
+        "height": 807.828125
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-57",
+      "type": "secondary_nav",
+      "selector": "div.secondary-navigation.secondary-navigation--wide",
+      "rect": {
+        "x": 8,
+        "y": 1300.15625,
+        "width": 1264,
+        "height": 208
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-58",
+      "type": "primary_nav",
+      "selector": "nav.navigation-wide-list.navigation-wide-list--secondary",
+      "rect": {
+        "x": 8,
+        "y": 1300.15625,
+        "width": 1264,
+        "height": 208
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-65",
+      "type": "unknown",
+      "selector": "li.twite__channel-out.twite__channel-out--desktop.twite__channel-out--facebook.twite__channel-click-extracted--facebook.twite__list-elements, li.twite__channel-out.twite__channel-out--desktop.twite__channel-out--messengerdesktop.twite__channel-click-extracted--messengerdesktop.twite__list-elements, li.twite__channel-out.twite__channel-out--desktop.twite__channel-out--twitter.twite__channel-click-extracted--twitter.twite__list-elements, li.twite__channel-out.twite__channel-out--desktop.twite__channel-out--email.twite__channel-click-extracted--email.twite__list-elements, li.twite__channel-out.twite__channel-out--mobile.twite__channel-out--facebook.twite__channel-click-extracted--facebook.twite__list-elements, li.twite__channel-out.twite__channel-out--mobile.twite__channel-out--whatsapp.twite__channel-click-extracted--whatsapp.twite__list-elements, li.twite__channel-out.twite__channel-out--mobile.twite__channel-out--messengermobile.twite__channel-click-extracted--messengermobile.twite__list-elements, li.twite__channel-out.twite__channel-out--mobile.twite__channel-out--twitter.twite__channel-click-extracted--twitter.twite__list-elements",
+      "rect": {
+        "x": 48,
+        "y": 1703.03125,
+        "width": 1224,
+        "height": 400
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-73",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--email.twite__channel-click--email",
+      "rect": {
+        "x": 88,
+        "y": 2223.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-74",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--facebook.twite__channel-click--facebook",
+      "rect": {
+        "x": 88,
+        "y": 2303.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-75",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--messengerdesktop.twite__channel-click--messengerdesktop",
+      "rect": {
+        "x": 88,
+        "y": 2383.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-76",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--messengermobile.twite__channel-click--messengermobile",
+      "rect": {
+        "x": 88,
+        "y": 2463.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-77",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--twitter.twite__channel-click--twitter",
+      "rect": {
+        "x": 88,
+        "y": 2543.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-78",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--pinterest.twite__channel-click--pinterest",
+      "rect": {
+        "x": 88,
+        "y": 2623.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-79",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--whatsapp.twite__channel-click--whatsapp",
+      "rect": {
+        "x": 88,
+        "y": 2703.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-80",
+      "type": "unknown",
+      "selector": "li.twite__channel.twite__channel--linkedin.twite__channel-click--linkedin",
+      "rect": {
+        "x": 88,
+        "y": 2783.6171875,
+        "width": 1184,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-81",
+      "type": "unknown",
+      "selector": "div.twite__copy-input",
+      "rect": {
+        "x": 48,
+        "y": 2903.6171875,
+        "width": 1224,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-82",
+      "type": "unknown",
+      "selector": "ul.story-body__unordered-list, li.story-body__list-item, li.story-body__list-item",
+      "rect": {
+        "x": 8,
+        "y": 3301.1171875,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-85",
+      "type": "unknown",
+      "selector": "p",
+      "rect": {
+        "x": 8,
+        "y": 3365.1171875,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-86",
+      "type": "unknown",
+      "selector": "p",
+      "rect": {
+        "x": 8,
+        "y": 4680.2578125,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-87",
+      "type": "unknown",
+      "selector": "ul.story-body__unordered-list, li.story-body__list-item",
+      "rect": {
+        "x": 8,
+        "y": 4760.2578125,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-89",
+      "type": "unknown",
+      "selector": "div#topic-tags, div#u015994101064279675, div.tags-container, ul.tags-list, li.tags-list__tags, li.tags-list__tags, li.tags-list__tags, li.tags-list__tags",
+      "rect": {
+        "x": 8,
+        "y": 5052.171875,
+        "width": 1264,
+        "height": 151.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-97",
+      "type": "social_nav",
+      "selector": "li.share__tool.share__tool--email, li.share__tool.share__tool--facebook, li.share__tool.share__tool--messengerdesktop, li.share__tool.share__tool--messengermobile, li.share__tool.share__tool--twitter, li.share__tool.share__tool--pinterest, li.share__tool.share__tool--whatsapp, li.share__tool.share__tool--linkedin",
+      "rect": {
+        "x": 48,
+        "y": 5279.9140625,
+        "width": 1224,
+        "height": 192
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-105",
+      "type": "unknown",
+      "selector": "div.story-more, div.group.story-alsos.more-on-this-story, div.group__header, div.group__body, ul.units-list, li.unit.unit--regular, div.unit__header, li.unit.unit--regular, div.unit__header, li.unit.unit--regular, div.unit__header, li.unit.unit--regular, div.unit__header, li.unit.unit--regular, div.unit__header",
+      "rect": {
+        "x": 8,
+        "y": 5491.828125,
+        "width": 1264,
+        "height": 295.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-120",
+      "type": "secondary_nav",
+      "selector": "div.column--secondary",
+      "rect": {
+        "x": 8,
+        "y": 5807.65625,
+        "width": 1264,
+        "height": 1177.6328125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-121",
+      "type": "unknown",
+      "selector": "div#comp-top-stories-promo",
+      "rect": {
+        "x": 8,
+        "y": 5807.65625,
+        "width": 1264,
+        "height": 255.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-122",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6139.3984375,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-123",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6186.1171875,
+        "width": 1264,
+        "height": 70.71875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-124",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6275.5546875,
+        "width": 1264,
+        "height": 70.71875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-125",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6364.9921875,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-126",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6411.7109375,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-127",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6458.4296875,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-128",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6505.1484375,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-129",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6551.8671875,
+        "width": 1264,
+        "height": 70.71875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-130",
+      "type": "unknown",
+      "selector": "div.features-and-analysis__story",
+      "rect": {
+        "x": 8,
+        "y": 6641.3046875,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-131",
+      "type": "unknown",
+      "selector": "div.page__foot, div.trust-project, div.trust-project__inner",
+      "rect": {
+        "x": 8,
+        "y": 6985.2890625,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-134",
+      "type": "unknown",
+      "selector": "div#core-navigation, h2.navigation--footer__heading, li, li, li, li, li, li, ul.navigation--bottom__toplevel, li, li, li.selected.navigation-list-item--open, div.navigation-panel.js-navigation-panel-World, div.navigation-panel__content, li, li, li, li, li, li, li, div.navigation-panel.navigation-panel--closed.js-navigation-panel-UK, div.navigation-panel__content, li, li, li, li, li, li, div.navigation-panel.navigation-panel--closed.js-navigation-panel-Business, div.navigation-panel__content, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 7029.203125,
+        "width": 1264,
+        "height": 1263.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-136",
+      "type": "secondary_nav",
+      "selector": "nav#secondary-navigation--bottom, ul.secondary-navigation--bottom__toplevel",
+      "rect": {
+        "x": 8,
+        "y": 7085.1171875,
+        "width": 1264,
+        "height": 208
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-144",
+      "type": "primary_nav",
+      "selector": "nav#navigation--bottom",
+      "rect": {
+        "x": 8,
+        "y": 7309.1171875,
+        "width": 1264,
+        "height": 984
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-151",
+      "type": "secondary_nav",
+      "selector": "ul.navigation-panel-secondary",
+      "rect": {
+        "x": 48,
+        "y": 7381.1171875,
+        "width": 1224,
+        "height": 192
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-161",
+      "type": "secondary_nav",
+      "selector": "ul.navigation-panel-secondary",
+      "rect": {
+        "x": 48,
+        "y": 7597.1171875,
+        "width": 1224,
+        "height": 144
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-170",
+      "type": "secondary_nav",
+      "selector": "ul.navigation-panel-secondary",
+      "rect": {
+        "x": 48,
+        "y": 7765.1171875,
+        "width": 1224,
+        "height": 216
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-193",
+      "type": "unknown",
+      "selector": "div#bbc-news-services, li.blue-tit__list-item, li.blue-tit__list-item, li.blue-tit__list-item, li.blue-tit__list-item",
+      "rect": {
+        "x": 8,
+        "y": 8313.03125,
+        "width": 1264,
+        "height": 151.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-198",
+      "type": "footer_nav",
+      "selector": "div#orb-footer, div.orb-footer-inner, h2.orb-footer-lead, div.orb-footer-primary-links, footer, div.orb-footer-inner, li.orb-footer-terms, li.orb-footer-about, li.orb-footer-privacy, li.orb-footer-cookies, li.orb-footer-accessibility, li.orb-footer-parental, li.orb-footer-contact, li.orb-footer-newsletter",
+      "rect": {
+        "x": 8,
+        "y": 8484.859375,
+        "width": 1264,
+        "height": 683.4140625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-199",
+      "type": "sidebar_nav",
+      "selector": "aside, div#orb-aside",
+      "rect": {
+        "x": 8,
+        "y": 8484.859375,
+        "width": 1264,
+        "height": 439.9140625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-204",
+      "type": "unknown",
+      "selector": "ul, li.orb-nav-home, li.orb-nav-news, li.orb-nav-sport, li.orb-nav-weather, li.orb-nav-iplayer, li.orb-nav-sounds, li.orb-nav-cbbc, li.orb-nav-cbeebies, li.orb-nav-food, li.orb-nav-bitesize, li.orb-nav-arts, li.orb-nav-taster, li.orb-nav-local, li.orb-nav-tv, li.orb-nav-radio, li.orb-nav-three",
+      "rect": {
+        "x": 8,
+        "y": 8540.7734375,
+        "width": 1264,
+        "height": 384
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-222",
+      "type": "unknown",
+      "selector": "div#orb-contentinfo, ul",
+      "rect": {
+        "x": 8,
+        "y": 8940.7734375,
+        "width": 1264,
+        "height": 227.5
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

@@ -1,0 +1,60 @@
+{
+  "hash": "a078b3656adc0295d0e37bd4f599342f4a0894da2451e0ef3038ac045434fef3",
+  "url": "https://www.forbes.com/sites/brucelee/2019/11/18/how-this-mans-bedding-gave-him-feather-duvet-lung/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "div.header__nav, ul.header__channels, li.header__channel.header__color--centennial-silver, li.header__channel.header__color--diamondring-blue.header__channel--is-active, li.header__channel.header__color--fortknox-gold, li.header__channel.header__color--benjamins-green, li.header__channel.header__color--capitalist-teal, li.header__channel.header__color--statuesque-bronze, li.header__channel.header__color--merlot-burgundy, li.header__channel.header__color--advisor-amethyst, li.header__channel.header__color--default-gray, li.header__channel.header__color--brandvoice-red",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 56
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-13",
+      "type": "primary_nav",
+      "selector": "div.header-content-container",
+      "rect": {
+        "x": 141.4296875,
+        "y": 186,
+        "width": 633.625,
+        "height": 104
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-14",
+      "type": "unknown",
+      "selector": "div.contrib-container",
+      "rect": {
+        "x": 141.4296875,
+        "y": 3333.8203125,
+        "width": 633.625,
+        "height": 68
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-15",
+      "type": "unknown",
+      "selector": "footer.article-footer",
+      "rect": {
+        "x": 141.4296875,
+        "y": 3563.71875,
+        "width": 633.625,
+        "height": 65.5078125
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

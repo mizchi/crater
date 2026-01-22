@@ -1,0 +1,96 @@
+{
+  "hash": "f8ff621a0b9b7646cc0d57d37416feabba2bf78ef5dd0bfc5b080f9f97bbe584",
+  "url": "https://www.barrons.com/articles/home-depot-stock-earnings-report-51574168486",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "div#webui-header, div.BarronsTheme--header-wrapper-151JJlzchFWSATroZl34L0, div.BarronsTheme--header-lOvgLpyjwdTLjNreDRjE_.BarronsTheme--fixed-3HGFoUAhMFDkUIob02elt7, div.BarronsTheme--navbar-1Gf_deCSUVPBvSjaXmm3ac, div.BarronsTheme--subscribe-ad-3zoyhlV8Q_2HdVVo1sHHAE.BarronsTheme--navbar-item-2PC1P3zScVQC35uFS3I5V5",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 44
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "unknown",
+      "selector": "div.BarronsTheme--bar-container-1GIjOCW4t2N2zVFzydR8iJ, div.BarronsTheme--logo-container-AsXvvhJ0v6bfqgemM9iru",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 44
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-8",
+      "type": "primary_nav",
+      "selector": "header.article__header",
+      "rect": {
+        "x": 10,
+        "y": 75,
+        "width": 1260,
+        "height": 159.65625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-9",
+      "type": "unknown",
+      "selector": "li, li",
+      "rect": {
+        "x": 10,
+        "y": 75,
+        "width": 195.8125,
+        "height": 20
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-11",
+      "type": "unknown",
+      "selector": "p",
+      "rect": {
+        "x": 10,
+        "y": 2441.3125,
+        "width": 1260,
+        "height": 29.15625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-12",
+      "type": "footer_nav",
+      "selector": "div#webui-footer, div.BarronsTheme--footer-wrapper-le1vShyFOpFYxnLeKrjdC.BarronsTheme--standard-1UD3we8Y8BT_EhqsOO03X-, div.BarronsTheme--footer-1siyKuIAVfovD0TEC2sf4R.BarronsTheme--standard-1UD3we8Y8BT_EhqsOO03X-.BarronsTheme--transform-diagonal-1i8b0-j-oOoBooVEygmhh",
+      "rect": {
+        "x": 0,
+        "y": 2545.46875,
+        "width": 1280,
+        "height": 185
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-13",
+      "type": "unknown",
+      "selector": "div, div.BarronsTheme--lg-2zEpPItTt4o80PYh3taal1, div.BarronsTheme--transform-diagonal-reset-2AtQ5jKt4pNH0A7WJa1ZqF, div.BarronsTheme--bar-container-gVY4ILmaMQKUhyjtLiYtE, div.BarronsTheme--policies-3X65PmfbykgQv_hTJTQ6VX",
+      "rect": {
+        "x": 0,
+        "y": 2545.46875,
+        "width": 1280,
+        "height": 185
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

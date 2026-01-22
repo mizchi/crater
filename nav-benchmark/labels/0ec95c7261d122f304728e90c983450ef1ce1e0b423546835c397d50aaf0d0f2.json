@@ -1,0 +1,36 @@
+{
+  "hash": "0ec95c7261d122f304728e90c983450ef1ce1e0b423546835c397d50aaf0d0f2",
+  "url": "http://entermedia.co.kr/news/news_view.html?idx=8576&page=1&bc=03&mc=08&find=&sch_date=",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "div#header",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 189.578125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "footer_nav",
+      "selector": "div#footer",
+      "rect": {
+        "x": 0,
+        "y": 2223.4921875,
+        "width": 1280,
+        "height": 72.5
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Cleaned up: removed rhSection/newsWrap (content sections, not nav). Non-semantic HTML site - uses div#header instead of semantic tags.",
+  "status": "reviewed"
+}

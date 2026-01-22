@@ -1,0 +1,48 @@
+{
+  "hash": "05844573ca7e1fba714d715bb11ca08c26e25328999c74a1cb3bc8a0e4399f0f",
+  "url": "https://www.ctpost.com/news/us/article/New-SUVs-and-electric-vehicles-highlight-L-A-14848164.php",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "nav#siteNav",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 160
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "sidebar_nav",
+      "selector": "div.article-sidebar",
+      "rect": {
+        "x": 8,
+        "y": 6364.8671875,
+        "width": 1264,
+        "height": 694.8203125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-3",
+      "type": "footer_nav",
+      "selector": "footer",
+      "rect": {
+        "x": 8,
+        "y": 7099.6875,
+        "width": 1264,
+        "height": 620.3125
+      },
+      "confidence": "certain"
+    }
+  ],
+  "notes": "Cleaned up: removed duplicate submenu items (these are dropdowns, part of primary nav), nav-stats (stats not nav), fb-page (social widget), comments section. Original nav-1 rect was incorrect (height=3965, spanning whole page).",
+  "status": "reviewed"
+}

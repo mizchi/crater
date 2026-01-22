@@ -33,17 +33,19 @@ AOM から抽出した nav 候補を、Puppeteer で取得したレイアウト�
 strict は記事メタ (share/author/byline 等) を除外した評価。
 
 ```
-Nav eval (AEB 181 cases, 2026-01-22)
-Base:               loose F1=60.31  strict F1=59.80  meta R=19.35  adOverlap=1106
-Refined:            loose F1=70.93  strict F1=73.28  meta R= 6.36  adOverlap=2
-Refined+meta:       loose F1=73.77  strict F1=73.85  meta R=13.88  adOverlap=2
-Refined+hier:       loose F1=73.88  strict F1=76.30  meta R= 6.36  adOverlap=2
-Refined+hier+meta:  loose F1=77.58  strict F1=76.43  meta R=19.16  adOverlap=2
+Nav eval (AEB 181 cases, 2026-01-23)
+Base:               loose F1=62.28  strict F1=61.80  meta R=20.65  adOverlap=1130
+Refined:            loose F1=73.20  strict F1=75.59  meta R= 6.36  adOverlap=2
+Refined+meta:       loose F1=75.84  strict F1=75.95  meta R=14.63  adOverlap=2
+Refined+hier:       loose F1=75.24  strict F1=77.68  meta R= 6.36  adOverlap=2
+Refined+hier+meta:  loose F1=78.75  strict F1=77.61  meta R=19.91  adOverlap=2
 ```
 
 結論:
-- **Refined+hier+meta** が strict F1 で最大 (76.43%)
+- **Refined+hier** が strict F1 で最大 (77.68%)
 - adOverlap がほぼ 0 になり、広告誤検出が大幅に減少
+- Widget パターン検出により WordPress 等のサイドバーウィジェットを検出
+- カラムパターン (col1-5) と toplinks パターンを追加
 
 ## 実装済み機能
 

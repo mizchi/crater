@@ -1,0 +1,132 @@
+{
+  "hash": "57e2e98887a1965689955921208e32f410b10e2b95c907e74e57982d3edf3cc6",
+  "url": "https://my6sense.com/2018/07/02/native-ad-platform-my6sense-names-mobile-marketing-pioneer-ivan-braiker-chief-strategy-officer/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header#header, div#header_main, nav.main_menu",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 346.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "unknown",
+      "selector": "div.avia-menu.av-main-nav-wrap, ul#avia-menu, li#menu-item-59, li#menu-item-62, li#menu-item-248, li#menu-item-142, li#menu-item-135, li#menu-item-124, li#menu-item-127, li#menu-item-93, li.av-burger-menu-main.menu-item-avia-special",
+      "rect": {
+        "x": 8,
+        "y": 125,
+        "width": 1264,
+        "height": 229.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-15",
+      "type": "unknown",
+      "selector": "div.elementor-element.elementor-element-34f9e3a.elementor-post-navigation-borders-yes.elementor-widget.elementor-widget-post-navigation, div.elementor-widget-container, div.elementor-post-navigation.elementor-grid, div.elementor-post-navigation__prev.elementor-post-navigation__link, div.elementor-post-navigation__next.elementor-post-navigation__link",
+      "rect": {
+        "x": 8,
+        "y": 1654.0625,
+        "width": 1264,
+        "height": 51
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-20",
+      "type": "unknown",
+      "selector": "div#footer, div.elementor-element.elementor-element-f5bf8ca.elementor-column.elementor-col-25.elementor-top-column, div.elementor-column-wrap.elementor-element-populated, div.elementor-widget-wrap, div.elementor-widget-container, ul#menu-1-7d1c495, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-216, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-217, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-254, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-218, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-219, div.elementor-menu-toggle, ul#menu-2-7d1c495, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-216, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-217, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-254, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-218, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-219, div.elementor-element.elementor-element-4013614.elementor-column.elementor-col-25.elementor-top-column, div.elementor-column-wrap.elementor-element-populated, div.elementor-widget-wrap, div.elementor-widget-container, ul#menu-1-0401c82, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-220, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-301, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-221, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-528, div.elementor-menu-toggle, ul#menu-2-0401c82, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-220, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-301, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-221, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-528",
+      "rect": {
+        "x": 8,
+        "y": 1725.0625,
+        "width": 1264,
+        "height": 632
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-24",
+      "type": "sidebar_nav",
+      "selector": "div.elementor-element.elementor-element-7d1c495.elementor-nav-menu--indicator-none.elementor-nav-menu--dropdown-tablet.elementor-nav-menu__text-align-aside.elementor-widget.elementor-widget-nav-menu",
+      "rect": {
+        "x": 8,
+        "y": 1725.0625,
+        "width": 1264,
+        "height": 314.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-26",
+      "type": "primary_nav",
+      "selector": "nav.elementor-nav-menu--main.elementor-nav-menu__container.elementor-nav-menu--layout-horizontal.e--pointer-none",
+      "rect": {
+        "x": 8,
+        "y": 1725.0625,
+        "width": 1264,
+        "height": 127.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-34",
+      "type": "secondary_nav",
+      "selector": "nav.elementor-nav-menu--dropdown.elementor-nav-menu__container",
+      "rect": {
+        "x": 8,
+        "y": 1912.0625,
+        "width": 1264,
+        "height": 127.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-44",
+      "type": "sidebar_nav",
+      "selector": "div.elementor-element.elementor-element-0401c82.elementor-nav-menu--indicator-none.elementor-nav-menu--dropdown-tablet.elementor-nav-menu__text-align-aside.elementor-widget.elementor-widget-nav-menu",
+      "rect": {
+        "x": 8,
+        "y": 2056.5625,
+        "width": 1264,
+        "height": 263.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-46",
+      "type": "primary_nav",
+      "selector": "nav.elementor-nav-menu--main.elementor-nav-menu__container.elementor-nav-menu--layout-horizontal.e--pointer-none",
+      "rect": {
+        "x": 8,
+        "y": 2056.5625,
+        "width": 1264,
+        "height": 102
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-53",
+      "type": "secondary_nav",
+      "selector": "nav.elementor-nav-menu--dropdown.elementor-nav-menu__container",
+      "rect": {
+        "x": 8,
+        "y": 2218.0625,
+        "width": 1264,
+        "height": 102
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

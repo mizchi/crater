@@ -1,0 +1,24 @@
+{
+  "hash": "7de5241947a5f7147fe9787c6f6fa16685bfe66e6c35510a68780f27690dc4f0",
+  "url": "https://www.detroitnews.com/story/news/nation/2019/11/19/thousands-teachers-pack-indiana-statehouse-protest/40651467/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "footer_nav",
+      "selector": "footer, div.footer-links",
+      "rect": {
+        "x": 190,
+        "y": 3362.8671875,
+        "width": 900,
+        "height": 123
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

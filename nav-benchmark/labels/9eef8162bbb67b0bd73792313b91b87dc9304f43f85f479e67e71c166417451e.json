@@ -1,0 +1,180 @@
+{
+  "hash": "9eef8162bbb67b0bd73792313b91b87dc9304f43f85f479e67e71c166417451e",
+  "url": "https://www.msn.com/en-us/health/other/the-man-whose-duvet-nearly-killed-him-how-this-medical-mystery-was-solved/ar-BBWXwNX",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header#header-common, section#header-search",
+      "rect": {
+        "x": 8,
+        "y": 9,
+        "width": 1264,
+        "height": 1554.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-3",
+      "type": "primary_nav",
+      "selector": "nav.megamenu",
+      "rect": {
+        "x": 8,
+        "y": 1575.9453125,
+        "width": 1264,
+        "height": 427.3359375
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "unknown",
+      "selector": "div.menu, ul, ul",
+      "rect": {
+        "x": 8,
+        "y": 1575.9453125,
+        "width": 1264,
+        "height": 427.3359375
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-7",
+      "type": "unknown",
+      "selector": "li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 48,
+        "y": 2038.28125,
+        "width": 1224,
+        "height": 1325
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-57",
+      "type": "unknown",
+      "selector": "header.collection-headline-flex",
+      "rect": {
+        "x": 8,
+        "y": 3373.28125,
+        "width": 1264,
+        "height": 83.3984375
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-58",
+      "type": "sidebar_nav",
+      "selector": "aside#aside, div.nativeadasideplaceholder",
+      "rect": {
+        "x": 8,
+        "y": 4466.25,
+        "width": 1264,
+        "height": 573.15625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-59",
+      "type": "unknown",
+      "selector": "div.dynamicRRv2Nav.arrows.nums",
+      "rect": {
+        "x": 8,
+        "y": 4481.25,
+        "width": 1264,
+        "height": 107
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-60",
+      "type": "unknown",
+      "selector": "div.dynamicRRv2, ul, li, li, li, div.hllist, header.heading.text, ul, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 4601.546875,
+        "width": 1264,
+        "height": 422.859375
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-72",
+      "type": "footer_nav",
+      "selector": "div#sticky-footer, div#sticky-footer-wrapper",
+      "rect": {
+        "x": 8,
+        "y": 5064.40625,
+        "width": 1264,
+        "height": 297
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-74",
+      "type": "unknown",
+      "selector": "div#sticky-items, ul#right-sticky-item",
+      "rect": {
+        "x": 8,
+        "y": 5064.40625,
+        "width": 1264,
+        "height": 70
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-76",
+      "type": "unknown",
+      "selector": "div#extra-items-wrapper, div#extra-items, ul#extra-links",
+      "rect": {
+        "x": 8,
+        "y": 5144.40625,
+        "width": 1264,
+        "height": 217
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-79",
+      "type": "unknown",
+      "selector": "div.feedbackheader.mainheader",
+      "rect": {
+        "x": 8,
+        "y": 5489.7421875,
+        "width": 1264,
+        "height": 22.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-80",
+      "type": "unknown",
+      "selector": "div.feedbackheader.thankyou",
+      "rect": {
+        "x": 8,
+        "y": 5524.6875,
+        "width": 1264,
+        "height": 22.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-81",
+      "type": "footer_nav",
+      "selector": "div.feedbackfooter",
+      "rect": {
+        "x": 8,
+        "y": 5738.6328125,
+        "width": 1264,
+        "height": 45
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

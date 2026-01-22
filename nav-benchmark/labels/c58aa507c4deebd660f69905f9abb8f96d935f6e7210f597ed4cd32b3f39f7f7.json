@@ -1,0 +1,24 @@
+{
+  "hash": "c58aa507c4deebd660f69905f9abb8f96d935f6e7210f597ed4cd32b3f39f7f7",
+  "url": "https://www.usatoday.com/story/news/politics/2019/11/19/prison-guards-arrested-alleged-failure-check-jeffrey-epstein/4082679002/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "footer_nav",
+      "selector": "footer",
+      "rect": {
+        "x": 190,
+        "y": 5420.1015625,
+        "width": 900,
+        "height": 123
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

@@ -1,0 +1,24 @@
+{
+  "hash": "1ace8c85aaee21b9d4505eca506d50c4721c29db62848b567a9703bfe0583892",
+  "url": "https://techcrunch.com/2019/11/18/new-york-state-attorney-general-reportedly-investigating-wework/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header.article__header",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 79.9140625
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}
