@@ -84,16 +84,3 @@ pub fn complex_specificity(sel : ComplexSelector) -> Specificity {
   }
   result
 }
-
-///|
-/// Calculate specificity of a selector list (returns max)
-fn selector_list_specificity(list : SelectorList) -> Specificity {
-  let mut max = Specificity::zero()
-  for sel in list.selectors {
-    let spec = complex_specificity(sel)
-    if spec.compare_to(max) > 0 {
-      max = spec
-    }
-  }
-  max
-}

@@ -346,12 +346,3 @@ pub fn matches_selector_list(element : Element, list : SelectorList) -> Bool {
   }
   false
 }
-
-///|
-/// Convenience function to check if an element matches a CSS selector string
-fn matches_selector_text(element : Element, css : String) -> Bool {
-  match parse_selector_text(css) {
-    Some(sel) => matches_complex(element, sel)
-    None => false
-  }
-}
