@@ -64,6 +64,52 @@ test "ad_detection" {
 }
 
 ///|
+test "readability_prefers_paragraph_container" {
+  let para_text = "This is a sample article paragraph, with commas and periods. " +
+    "It should be long enough to trigger readability scoring and select the correct container."
+  let paragraph = @aom.AccessibilityNode::new("p-1", @aom.Paragraph).with_name(
+    para_text,
+  )
+  let paragraph = {
+    ..paragraph,
+    tag_name: Some("p"),
+    text: Some(para_text),
+    visible: true,
+  }
+  let article = @aom.AccessibilityNode::new("article-1", @aom.Generic)
+  let article = {
+    ..article,
+    bounds: Some(@aom.Bounds::new(100.0, 100.0, 600.0, 400.0)),
+    children: [paragraph],
+    visible: true,
+  }
+  let next_link = @aom.AccessibilityNode::new("next-1", @aom.Link).with_name(
+    "Next post",
+  )
+  let next_link = {
+    ..next_link,
+    tag_name: Some("a"),
+    text: Some("Next post"),
+    visible: true,
+  }
+  let wrapper = @aom.AccessibilityNode::new("wrapper-1", @aom.Generic)
+  let wrapper = {
+    ..wrapper,
+    bounds: Some(@aom.Bounds::new(0.0, 0.0, 1280.0, 2000.0)),
+    children: [article, next_link],
+    visible: true,
+  }
+  let root = @aom.AccessibilityNode::new("root", @aom.Document)
+  let root = { ..root, children: [wrapper], visible: true }
+  let tree = @aom.AccessibilityTree::new(root)
+  let result = extract_content(tree, ExtractConfig::default())
+  match result.main_content {
+    Some(node) => inspect(node.id, content="article-1")
+    None => assert_true(false)
+  }
+}
+
+///|
 test "extraction_result_summary" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, visible: true }

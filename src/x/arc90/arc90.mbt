@@ -68,6 +68,10 @@ pub fn extract_content(
   let content_blocks : Array[ContentBlock] = []
   let detected_ads : Array[@aom.AccessibilityNode] = []
   let detected_navigation : Array[@aom.AccessibilityNode] = []
+  let readability_scores : Map[String, Double] = {}
+
+  // Readability-style paragraph scoring (parent/grandparent propagation)
+  collect_readability_scores(tree.root, None, None, readability_scores)
 
   // Collect and score all potential content blocks
   collect_content_blocks(
@@ -76,18 +80,61 @@ pub fn extract_content(
     content_blocks,
     detected_ads,
     detected_navigation,
+    readability_scores,
   )
 
   // Sort by score descending
   content_blocks.sort_by(fn(a, b) { b.score.compare(a.score) })
 
-  // Main content is the highest scoring block
-  let main_content = if content_blocks.length() > 0 {
-    Some(content_blocks[0].node)
+  // First, try to find an article or main element
+  let article_node = find_article_or_main(tree.root)
+
+  // Best readability-style candidate from content blocks
+  let best_readability_block = find_best_readability_block(
+    content_blocks, readability_scores,
+  )
+
+  // Main content selection strategy:
+  // Compare article/main with top content_block and choose the better one
+  let top_block = if content_blocks.length() > 0 {
+    Some(content_blocks[0])
   } else {
     None
   }
+  let base_main = select_base_main_content(
+    article_node, top_block, config, readability_scores,
+  )
+  let main_content = refine_main_content(
+    base_main, best_readability_block, config, readability_scores,
+  )
   { main_content, content_blocks, detected_ads, detected_navigation }
+}
+
+///|
+/// Find the first article or main element in the tree
+fn find_article_or_main(
+  node : @aom.AccessibilityNode,
+) -> @aom.AccessibilityNode? {
+  // Check by role
+  match node.role {
+    @aom.Article | @aom.Main => return Some(node)
+    _ => ()
+  }
+
+  // Check by tag name
+  match node.tag_name {
+    Some(tag) => if tag == "article" || tag == "main" { return Some(node) }
+    None => ()
+  }
+
+  // Recurse into children
+  for child in node.children {
+    match find_article_or_main(child) {
+      Some(found) => return Some(found)
+      None => ()
+    }
+  }
+  None
 }
 
 ///|
@@ -110,6 +157,7 @@ fn collect_content_blocks(
   blocks : Array[ContentBlock],
   ads : Array[@aom.AccessibilityNode],
   nav : Array[@aom.AccessibilityNode],
+  readability_scores : Map[String, Double],
 ) -> Unit {
   // Check if this is navigation
   if is_navigation(node) {
@@ -127,24 +175,38 @@ fn collect_content_blocks(
   if is_content_container(node) {
     let text_content = get_text_content(node)
     if text_content.length() >= config.min_text_length {
-      let block = score_content_block(node, text_content, config)
+      let block = score_content_block(
+        node, text_content, config, readability_scores,
+      )
       blocks.push(block)
     }
   }
 
   // Recurse into children
   for child in node.children {
-    collect_content_blocks(child, config, blocks, ads, nav)
+    collect_content_blocks(child, config, blocks, ads, nav, readability_scores)
   }
 }
 
 ///|
 fn is_navigation(node : @aom.AccessibilityNode) -> Bool {
+  // Check by role
   match node.role {
     @aom.Navigation | @aom.Banner | @aom.ContentInfo | @aom.Complementary =>
-      true
-    _ => false
+      return true
+    _ => ()
   }
+
+  // Check by tag name
+  match node.tag_name {
+    Some(tag) =>
+      match tag {
+        "header" | "footer" | "nav" | "aside" => return true
+        _ => ()
+      }
+    None => ()
+  }
+  false
 }
 
 ///|
@@ -204,13 +266,65 @@ fn score_content_block(
   node : @aom.AccessibilityNode,
   text_content : String,
   config : ExtractConfig,
+  readability_scores : Map[String, Double],
 ) -> ContentBlock {
   let text_density = calculate_text_density(node, text_content)
   let visual_score = calculate_visual_score(node, config)
   let position_penalty = calculate_position_penalty(node, config)
 
-  // Combined score: text density is most important, modified by visual/position
-  let score = text_density * visual_score * (1.0 - position_penalty)
+  // Role bonus: semantic content elements score higher
+  let role_bonus : Double = match node.role {
+    @aom.Article => 2.0
+    @aom.Main => 1.8
+    @aom.Region => 1.2
+    _ => 1.0
+  }
+
+  // Tag-based adjustment
+  let tag_multiplier : Double = match node.tag_name {
+    Some(tag) =>
+      match tag {
+        "article" => 1.5
+        "main" => 1.5
+        "section" => 1.1
+        "header" | "footer" | "nav" | "aside" => 0.1
+        _ => 1.0
+      }
+    None => 1.0
+  }
+
+  // Selector-based scoring (class/id patterns)
+  let selector_score = calculate_selector_score(node)
+
+  // Link density scoring (penalize high link density)
+  let link_density_score = calculate_link_density_score(node, text_content)
+
+  // Readability-style: paragraph count bonus
+  // More paragraphs = likely main content
+  let paragraph_bonus = calculate_paragraph_bonus(node)
+
+  // Readability-style: punctuation bonus
+  // More commas/periods = likely prose content (not navigation)
+  let punctuation_bonus = calculate_punctuation_bonus(text_content)
+
+  // Readability-style paragraph-level scoring bonus (propagated from paragraphs)
+  let readability_score = get_readability_score(readability_scores, node)
+  let readability_bonus = calculate_readability_bonus(readability_score)
+
+  // Navigation-like text penalty
+  let navigation_penalty = calculate_navigation_penalty(node, text_content)
+
+  // Combined score
+  let base_score = text_density * visual_score * (1.0 - position_penalty)
+  let score = base_score *
+    role_bonus *
+    tag_multiplier *
+    selector_score *
+    link_density_score *
+    paragraph_bonus *
+    punctuation_bonus *
+    readability_bonus *
+    navigation_penalty
   { node, score, text_density, visual_score, position_penalty }
 }
 
@@ -306,6 +420,526 @@ fn calculate_position_penalty(
   }
 }
 
+///|
+/// Selector-based scoring using class/id name patterns (Readability-style)
+fn calculate_selector_score(node : @aom.AccessibilityNode) -> Double {
+  let mut score = 1.0
+
+  // Check selector for class/id patterns
+  // Selector format: "tag#id.class1.class2"
+  match node.selector {
+    Some(selector_str) => {
+      let selector_lower = selector_str.to_lower()
+      // Positive patterns (content indicators)
+      if contains_any(selector_lower, [
+          "article", "content", "post", "text", "body", "entry", "story", "main",
+          "blog", "news",
+        ]) {
+        score = score * 1.5
+      }
+      // Negative patterns (non-content indicators)
+      if contains_any(selector_lower, [
+          "sidebar", "side-bar", "widget", "ad", "advertisement", "sponsor", "promo",
+          "social", "share", "comment", "related", "recommend", "footer", "header",
+          "nav", "menu", "breadcrumb", "pagination", "meta",
+        ]) {
+        score = score * 0.3
+      }
+    }
+    None => ()
+  }
+
+  // Check id for patterns (id is String, not Option)
+  if node.id.length() > 0 {
+    let id_lower = node.id.to_lower()
+    if contains_any(id_lower, [
+        "article", "content", "post", "main", "story", "entry",
+      ]) {
+      score = score * 1.5
+    }
+    if contains_any(id_lower, [
+        "sidebar", "widget", "ad", "sponsor", "comment", "footer", "header", "nav",
+      ]) {
+      score = score * 0.3
+    }
+  }
+  score
+}
+
+///|
+/// Check if string contains any of the patterns
+fn contains_any(s : String, patterns : FixedArray[String]) -> Bool {
+  for pattern in patterns {
+    if string_contains(s, pattern) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Simple string contains check
+fn string_contains(haystack : String, needle : String) -> Bool {
+  if needle.length() == 0 {
+    return true
+  }
+  if haystack.length() < needle.length() {
+    return false
+  }
+  let h_len = haystack.length()
+  let n_len = needle.length()
+  for i in 0..<(h_len - n_len + 1) {
+    let mut found = true
+    for j in 0..<n_len {
+      if haystack[i + j] != needle[j] {
+        found = false
+        break
+      }
+    }
+    if found {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Paragraph bonus - more paragraphs = likely main content
+fn calculate_paragraph_bonus(node : @aom.AccessibilityNode) -> Double {
+  let p_count = count_paragraph_elements(node)
+
+  // Score based on paragraph count
+  if p_count >= 5 {
+    1.5 // Many paragraphs = strong content indicator
+  } else if p_count >= 3 {
+    1.3
+  } else if p_count >= 1 {
+    1.1
+  } else {
+    1.0 // No paragraphs = neutral
+  }
+}
+
+///|
+/// Count paragraph elements (p, pre, blockquote)
+fn count_paragraph_elements(node : @aom.AccessibilityNode) -> Int {
+  let mut count = 0
+
+  // Check if this is a paragraph-like element
+  match node.tag_name {
+    Some(tag) =>
+      match tag {
+        "p" | "pre" | "blockquote" => count = count + 1
+        _ => ()
+      }
+    None => ()
+  }
+
+  // Recurse into children
+  for child in node.children {
+    count = count + count_paragraph_elements(child)
+  }
+  count
+}
+
+///|
+/// Punctuation bonus - more commas/periods = likely prose content
+fn calculate_punctuation_bonus(text_content : String) -> Double {
+  let mut comma_count = 0
+  let mut period_count = 0
+  for c in text_content {
+    match c {
+      ',' => comma_count = comma_count + 1
+      '.' => period_count = period_count + 1
+      _ => ()
+    }
+  }
+  let total_punct = comma_count + period_count
+  let text_len = text_content.length()
+
+  // Avoid division by zero
+  if text_len < 100 {
+    return 1.0
+  }
+
+  // Calculate punctuation density
+  let punct_density = total_punct.to_double() / text_len.to_double() * 100.0
+
+  // Score based on punctuation density
+  // Normal prose has ~2-4% punctuation
+  if punct_density > 2.0 && punct_density < 5.0 {
+    1.3 // Good prose density
+  } else if punct_density > 1.0 && punct_density < 6.0 {
+    1.1 // Acceptable density
+  } else if punct_density > 6.0 {
+    0.9 // Too much punctuation (might be lists/code)
+  } else {
+    1.0 // Low punctuation = neutral
+  }
+}
+
+///|
+/// Link density scoring - penalize elements with high ratio of link text
+fn calculate_link_density_score(
+  node : @aom.AccessibilityNode,
+  text_content : String,
+) -> Double {
+  let link_density = calculate_link_density(node, text_content)
+
+  // High link density = likely navigation, not content
+  if link_density > 0.5 {
+    0.2 // Heavy penalty
+  } else if link_density > 0.3 {
+    0.5
+  } else if link_density > 0.1 {
+    0.8
+  } else {
+    1.0 // Low link density = good content
+  }
+}
+
+///|
+/// Calculate link density ratio (0.0 - 1.0)
+fn calculate_link_density(
+  node : @aom.AccessibilityNode,
+  text_content : String,
+) -> Double {
+  let total_length = text_content.length()
+  if total_length == 0 {
+    return 0.0
+  }
+  let link_length = count_link_text_length(node)
+  link_length.to_double() / total_length.to_double()
+}
+
+///|
+/// Count the total length of text within link elements
+fn count_link_text_length(node : @aom.AccessibilityNode) -> Int {
+  let mut length = 0
+
+  // Check if this node is a link
+  match node.role {
+    @aom.Link => {
+      match node.name {
+        Some(name) => length = length + name.length()
+        None => ()
+      }
+      match node.text {
+        Some(text) => length = length + text.length()
+        None => ()
+      }
+    }
+    _ => ()
+  }
+
+  // Recurse into children
+  for child in node.children {
+    length = length + count_link_text_length(child)
+  }
+  length
+}
+
+// =============================================================================
+// Readability-style Paragraph Scoring
+// =============================================================================
+
+///|
+fn collect_readability_scores(
+  node : @aom.AccessibilityNode,
+  parent : @aom.AccessibilityNode?,
+  grandparent : @aom.AccessibilityNode?,
+  scores : Map[String, Double],
+) -> Unit {
+  if is_paragraph_like(node) {
+    let text_content = get_text_content(node)
+    let paragraph_score = calculate_paragraph_score(node, text_content)
+    if paragraph_score > 0.0 {
+      match parent {
+        Some(parent_node) =>
+          add_readability_score(scores, parent_node, paragraph_score)
+        None => ()
+      }
+      match grandparent {
+        Some(gp_node) =>
+          add_readability_score(scores, gp_node, paragraph_score * 0.5)
+        None => ()
+      }
+    }
+  }
+  for child in node.children {
+    collect_readability_scores(child, Some(node), parent, scores)
+  }
+}
+
+///|
+fn add_readability_score(
+  scores : Map[String, Double],
+  node : @aom.AccessibilityNode,
+  delta : Double,
+) -> Unit {
+  let current = match scores.get(node.id) {
+    Some(v) => v
+    None => 0.0
+  }
+  scores[node.id] = current + delta
+}
+
+///|
+fn get_readability_score(
+  scores : Map[String, Double],
+  node : @aom.AccessibilityNode,
+) -> Double {
+  match scores.get(node.id) {
+    Some(v) => v
+    None => 0.0
+  }
+}
+
+///|
+fn is_paragraph_like(node : @aom.AccessibilityNode) -> Bool {
+  match node.role {
+    @aom.Paragraph | @aom.Blockquote => true
+    _ =>
+      match node.tag_name {
+        Some(tag) =>
+          match tag {
+            "p" | "pre" | "blockquote" => true
+            _ => false
+          }
+        None => false
+      }
+  }
+}
+
+///|
+fn calculate_paragraph_score(
+  node : @aom.AccessibilityNode,
+  text_content : String,
+) -> Double {
+  let text_len = text_content.length()
+  if text_len < 25 {
+    return 0.0
+  }
+  let mut score = 1.0
+  score = score + text_len.to_double() / 100.0
+  let punct = count_sentence_punctuation(text_content)
+  if punct > 0 {
+    let punct_bonus = if punct > 6 { 6 } else { punct }
+    score = score + punct_bonus.to_double() * 0.5
+  }
+  let link_density = calculate_link_density(node, text_content)
+  if link_density > 0.3 {
+    score = score * 0.2
+  } else if link_density > 0.2 {
+    score = score * 0.5
+  } else if link_density > 0.1 {
+    score = score * 0.8
+  }
+  score
+}
+
+///|
+fn count_sentence_punctuation(text : String) -> Int {
+  let mut count = 0
+  for c in text {
+    match c {
+      ',' | '.' | ';' | '!' | '?' => count = count + 1
+      _ => ()
+    }
+  }
+  count
+}
+
+///|
+fn calculate_readability_bonus(readability_score : Double) -> Double {
+  if readability_score <= 0.0 {
+    1.0
+  } else {
+    let bonus = 1.0 + readability_score / 8.0
+    if bonus > 3.0 {
+      3.0
+    } else {
+      bonus
+    }
+  }
+}
+
+///|
+fn calculate_navigation_penalty(
+  node : @aom.AccessibilityNode,
+  text_content : String,
+) -> Double {
+  let text_len = text_content.length()
+  if text_len == 0 {
+    return 1.0
+  }
+  let text_lower = text_content.to_lower()
+  let patterns : FixedArray[String] = [
+    "read more", "continue reading", "next", "previous", "next post", "previous post",
+    "older", "newer", "related", "recommended", "see also", "more stories",
+  ]
+  if not(contains_any(text_lower, patterns)) {
+    return 1.0
+  }
+  let link_density = calculate_link_density(node, text_content)
+  if text_len < 200 {
+    0.3
+  } else if text_len < 400 && link_density > 0.2 {
+    0.5
+  } else if link_density > 0.5 {
+    0.6
+  } else {
+    0.9
+  }
+}
+
+// =============================================================================
+// Main Content Selection
+// =============================================================================
+
+///|
+fn find_best_readability_block(
+  blocks : Array[ContentBlock],
+  scores : Map[String, Double],
+) -> ContentBlock? {
+  let mut best : ContentBlock? = None
+  let mut best_score = 0.0
+  for block in blocks {
+    let score = get_readability_score(scores, block.node)
+    if score > best_score {
+      best_score = score
+      best = Some(block)
+    }
+  }
+  best
+}
+
+///|
+fn select_base_main_content(
+  article_node : @aom.AccessibilityNode?,
+  top_block : ContentBlock?,
+  config : ExtractConfig,
+  readability_scores : Map[String, Double],
+) -> @aom.AccessibilityNode? {
+  match article_node {
+    Some(node) => {
+      let article_text = get_text_content(node)
+      let article_len = article_text.length()
+      match top_block {
+        Some(block) => {
+          let block_text = get_text_content(block.node)
+          let block_len = block_text.length()
+          let article_readability = get_readability_score(
+            readability_scores, node,
+          )
+          let block_readability = get_readability_score(
+            readability_scores,
+            block.node,
+          )
+
+          // Prefer high-readability candidate if article/main looks weak
+          if block_readability > article_readability * 1.4 &&
+            block_len >= config.min_text_length {
+            return Some(block.node)
+          }
+
+          // Choose based on relative text lengths:
+          // - If content_block is 20x+ larger, it's likely the real content
+          // - Otherwise prefer semantic article/main
+          if block_len > article_len * 20 {
+            Some(block.node)
+          } else if article_len >= config.min_text_length {
+            Some(node)
+          } else {
+            Some(block.node)
+          }
+        }
+        None =>
+          if article_len >= config.min_text_length {
+            Some(node)
+          } else {
+            None
+          }
+      }
+    }
+    None =>
+      match top_block {
+        Some(block) => Some(block.node)
+        None => None
+      }
+  }
+}
+
+///|
+fn refine_main_content(
+  base_main : @aom.AccessibilityNode?,
+  best_readability_block : ContentBlock?,
+  config : ExtractConfig,
+  readability_scores : Map[String, Double],
+) -> @aom.AccessibilityNode? {
+  match (base_main, best_readability_block) {
+    (None, Some(block)) => Some(block.node)
+    (Some(main), Some(block)) => {
+      if main.id == block.node.id {
+        return Some(main)
+      }
+      let main_text = get_text_content(main)
+      let main_len = main_text.length()
+      let read_text = get_text_content(block.node)
+      let read_len = read_text.length()
+      let main_readability = get_readability_score(readability_scores, main)
+      let read_readability = get_readability_score(
+        readability_scores,
+        block.node,
+      )
+      let main_nav_penalty = calculate_navigation_penalty(main, main_text)
+      let read_nav_penalty = calculate_navigation_penalty(block.node, read_text)
+      if read_len >= config.min_text_length {
+        if main_len < config.min_text_length {
+          return Some(block.node)
+        }
+        if main_nav_penalty < 0.6 && read_nav_penalty >= 0.9 {
+          return Some(block.node)
+        }
+        if should_prefer_smaller_container(
+            main_len, read_len, main_readability, read_readability,
+          ) {
+          return Some(block.node)
+        }
+        if read_readability > main_readability * 1.4 {
+          return Some(block.node)
+        }
+      }
+      Some(main)
+    }
+    (Some(main), None) => Some(main)
+    (None, None) => None
+  }
+}
+
+///|
+fn should_prefer_smaller_container(
+  main_len : Int,
+  candidate_len : Int,
+  main_readability : Double,
+  candidate_readability : Double,
+) -> Bool {
+  if candidate_len == 0 {
+    return false
+  }
+  let ratio = main_len.to_double() / candidate_len.to_double()
+  if candidate_len < 600 &&
+    ratio >= 3.0 &&
+    candidate_readability >= main_readability * 0.7 {
+    true
+  } else if candidate_len < 1200 &&
+    ratio >= 5.0 &&
+    candidate_readability >= main_readability * 0.8 {
+    true
+  } else {
+    false
+  }
+}
 // =============================================================================
 // Text Extraction
 // =============================================================================

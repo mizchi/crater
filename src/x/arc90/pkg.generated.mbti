@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/x/arc90"
 
-import(
-  "mizchi/crater/aom"
-)
+import {
+  "mizchi/crater/aom",
+}
 
 // Values
 pub fn extract_content(@aom.AccessibilityTree, ExtractConfig) -> ExtractionResult
