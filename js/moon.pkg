@@ -1,6 +1,7 @@
 import {
   "mizchi/crater/renderer",
   "mizchi/crater/x/sixel",
+  "mizchi/crater/x/arc90",
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
   "mizchi/crater/types",
@@ -63,6 +64,7 @@ options(
         "getAriaSnapshot",
         "getAriaSnapshotJson",
         "getAccessibilityTree",
+        "extractMainContent",
       ],
       "format": "esm",
     },
@@ -116,6 +118,7 @@ options(
         "getAriaSnapshot",
         "getAriaSnapshotJson",
         "getAccessibilityTree",
+        "extractMainContent",
       ],
     },
   },

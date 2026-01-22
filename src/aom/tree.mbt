@@ -351,7 +351,41 @@ fn build_node(
 
   // Skip elements that don't contribute to accessibility tree
   if should_skip_element(element, role) {
-    // Return a generic container that just passes through children
+    // For script/style/template, skip entirely (don't include their text content)
+    let tag = element.tag.to_lower()
+    if tag == "script" ||
+      tag == "style" ||
+      tag == "template" ||
+      tag == "noscript" {
+      // Return empty node that will be pruned
+      return {
+        id: node_id,
+        role: Generic,
+        name: Option::None,
+        description: Option::None,
+        level: Option::None,
+        states: [],
+        properties: {},
+        bounds: Option::None,
+        children: [],
+        focusable: false,
+        tabindex: Option::None,
+        source_id: element.id,
+        href: Option::None,
+        tag_name: Some(tag),
+        selector: build_selector(element),
+        visible: false,
+        ref_id: Option::None,
+        input_type: Option::None,
+        placeholder: Option::None,
+        input_value: Option::None,
+        required: false,
+        text: Option::None,
+        options: [],
+        labelled_by: Option::None,
+      }
+    }
+    // For other skipped elements (head, meta, link), pass through children
     let children = build_children(element, ctx)
     if children.length() == 1 {
       return children[0]
@@ -1293,6 +1327,12 @@ fn lightweight_build_node(
   let role_ctx = RoleMappingContext::default()
   let role = compute_role(element, role_ctx)
   let ref_id = ctx.next_ref()
+
+  // Skip script/style/template elements entirely (no text content)
+  if tag == "script" || tag == "style" || tag == "template" || tag == "noscript" {
+    let node = AccessibilityNode::new(ref_id, Role::Generic)
+    return { ..node, tag_name: Some(tag), visible: false, children: [] }
+  }
 
   // Get accessible name (simplified - no pseudo-element content)
   let name = lightweight_get_name(element, ctx)

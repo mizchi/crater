@@ -59,7 +59,11 @@
         "wasmExportGetAriaSnapshotJson:mizchi:crater/accessibility@0.1.0#get-aria-snapshot-json",
         "wasmExportGetAriaSnapshotJsonPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#get-aria-snapshot-json",
         "wasmExportGetAccessibilityTree:mizchi:crater/accessibility@0.1.0#get-accessibility-tree",
-        "wasmExportGetAccessibilityTreePostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#get-accessibility-tree"
+        "wasmExportGetAccessibilityTreePostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#get-accessibility-tree",
+        "wasmExportExtractMainContent:mizchi:crater/accessibility@0.1.0#extract-main-content",
+        "wasmExportExtractMainContentPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#extract-main-content",
+        "wasmExportExtractMainContentWithLayout:mizchi:crater/accessibility@0.1.0#extract-main-content-with-layout",
+        "wasmExportExtractMainContentWithLayoutPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#extract-main-content-with-layout"
       ],
       "export-memory-name": "memory",
       "heap-start-address": 16

@@ -930,6 +930,18 @@ fn write_accessibility_node(
     None => ()
   }
 
+  // tag_name
+  match node.tag_name {
+    Some(tag) => {
+      buf.write_string(",\n")
+      write_json_indent(buf, indent + 1)
+      buf.write_string("\"tag_name\": \"")
+      buf.write_string(escape_json_string(tag))
+      buf.write_string("\"")
+    }
+    None => ()
+  }
+
   // focusable
   if node.focusable {
     buf.write_string(",\n")
@@ -1147,5 +1159,265 @@ pub fn calculateLayoutStructured(
       flatten_layout(layout)
     }
     None => { nodes: [], root_id: "" }
+  }
+}
+
+// =============================================================================
+// Arc90 Content Extraction API
+// =============================================================================
+
+///|
+/// Extract main content from HTML using Arc90 algorithm
+/// Returns JSON with extracted text and metadata
+pub fn extractMainContent(html : String) -> String {
+  let doc = @html.parse_document(html)
+  let tree = @aom.build_accessibility_tree(doc)
+  let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
+  extraction_result_to_json(result)
+}
+
+///|
+/// Extract main content with layout calculation for better accuracy
+/// Uses visual position and size information for scoring
+pub fn extractMainContentWithLayout(
+  html : String,
+  width : Int,
+  height : Int,
+) -> String {
+  let ctx : @renderer.RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let doc = @html.parse_document(html)
+  let layout = @renderer.render_document_with_external_css(doc, ctx, [])
+
+  // Build accessibility tree with layout bounds
+  let tree = @aom.build_accessibility_tree_with_node_layout(doc, layout)
+
+  // Configure arc90 with viewport dimensions
+  let config : @arc90.ExtractConfig = {
+    ..@arc90.ExtractConfig::default(),
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+  }
+  let result = @arc90.extract_content(tree, config)
+  extraction_result_to_json(result)
+}
+
+///|
+fn extraction_result_to_json(result : @arc90.ExtractionResult) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("{\n")
+
+  // Main content text
+  buf.write_string("  \"mainContent\": ")
+  match result.main_content {
+    Some(node) => {
+      let text = collect_all_text(node)
+      buf.write_string("\"")
+      buf.write_string(escape_json_string(text))
+      buf.write_string("\"")
+    }
+    None => buf.write_string("null")
+  }
+  buf.write_string(",\n")
+
+  // Content blocks count
+  buf.write_string("  \"contentBlocksCount\": ")
+  buf.write_string(result.content_blocks.length().to_string())
+  buf.write_string(",\n")
+
+  // Detected ads count
+  buf.write_string("  \"detectedAdsCount\": ")
+  buf.write_string(result.detected_ads.length().to_string())
+  buf.write_string(",\n")
+
+  // Detected navigation count
+  buf.write_string("  \"detectedNavigationCount\": ")
+  buf.write_string(result.detected_navigation.length().to_string())
+  buf.write_string(",\n")
+
+  // Top scores
+  buf.write_string("  \"topScores\": [")
+  let len = result.content_blocks.length()
+  let limit = if len < 3 { len } else { 3 }
+  for i in 0..<limit {
+    if i > 0 {
+      buf.write_string(", ")
+    }
+    let block = result.content_blocks[i]
+    buf.write_string((block.score * 1000.0).to_int().to_string())
+  }
+  buf.write_string("]\n")
+
+  buf.write_string("}")
+  buf.to_string()
+}
+
+///|
+fn collect_all_text(node : @aom.AccessibilityNode) -> String {
+  // If node has aggregated text, use it
+  match node.text {
+    Some(text) => return text
+    None => ()
+  }
+
+  // Check if this is an article/main node - if so, collect all text from it
+  // (article/main content is always considered main content, including its header)
+  let is_article_root = match node.role {
+    @aom.Article | @aom.Main => true
+    _ =>
+      match node.tag_name {
+        Some(t) => t == "article" || t == "main"
+        None => false
+      }
+  }
+
+  // Otherwise collect from name and children, excluding navigation elements
+  let buf = StringBuilder::new()
+  if is_article_root {
+    // For article/main, collect all text without navigation filtering
+    collect_text_simple(node, buf)
+  } else {
+    collect_text_with_context(node, buf, false)
+  }
+  buf.to_string()
+}
+
+///|
+/// Text collection for article/main content - skip footer but keep header (article title)
+fn collect_text_simple(node : @aom.AccessibilityNode, buf : StringBuilder) -> Unit {
+  // Skip invisible nodes
+  if not(node.visible) {
+    return
+  }
+
+  // Skip footer elements (related articles, comments, etc.)
+  // but keep header (article title, byline, date)
+  match node.tag_name {
+    Some(tag) =>
+      if tag == "footer" || tag == "aside" {
+        return
+      }
+    None => ()
+  }
+
+  // Also skip by role
+  match node.role {
+    @aom.ContentInfo | @aom.Complementary => return
+    _ => ()
+  }
+
+  match node.name {
+    Some(name) if not(name.is_empty()) => {
+      // Skip text that looks like JavaScript code
+      if not(looks_like_code(name)) {
+        if buf.to_string().length() > 0 {
+          buf.write_string(" ")
+        }
+        buf.write_string(name)
+      }
+    }
+    _ => ()
+  }
+  for child in node.children {
+    collect_text_simple(child, buf)
+  }
+}
+
+///|
+/// Check if a role represents navigation/boilerplate content
+fn is_navigation_role(role : @aom.Role) -> Bool {
+  match role {
+    @aom.Navigation | @aom.Banner | @aom.ContentInfo | @aom.Complementary =>
+      true
+    _ => false
+  }
+}
+
+///|
+/// Check if tag represents navigation/boilerplate content
+fn is_boilerplate_tag(tag : String?) -> Bool {
+  match tag {
+    Some(t) =>
+      match t {
+        "header" | "footer" | "nav" | "aside" => true
+        _ => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Check if text looks like JavaScript code
+fn looks_like_code(text : String) -> Bool {
+  // Check for common JS patterns
+  text.contains("function(") ||
+    text.contains("function (") ||
+    text.contains("document.") ||
+    text.contains("window.") ||
+    text.contains("var ") ||
+    text.contains("const ") ||
+    text.contains("let ") ||
+    text.contains("addEventListener") ||
+    text.contains("setTimeout") ||
+    text.contains("setInterval") ||
+    text.contains("querySelector")
+}
+
+///|
+/// Collect text with context tracking for ancestor navigation elements
+fn collect_text_with_context(
+  node : @aom.AccessibilityNode,
+  buf : StringBuilder,
+  in_navigation : Bool,
+) -> Unit {
+  // Check if we're entering a navigation/boilerplate section
+  let is_nav = is_navigation_role(node.role) || is_boilerplate_tag(node.tag_name)
+  let in_nav = in_navigation || is_nav
+
+  // Skip all text inside navigation sections
+  if in_nav {
+    // Still recurse to find any article/main sections that might be nested
+    for child in node.children {
+      // If child is article or main, reset navigation context
+      let child_is_content = match child.role {
+        @aom.Article | @aom.Main => true
+        _ => false
+      }
+      let child_tag_is_content = match child.tag_name {
+        Some(t) => t == "article" || t == "main"
+        None => false
+      }
+      if child_is_content || child_tag_is_content {
+        collect_text_with_context(child, buf, false)
+      } else {
+        collect_text_with_context(child, buf, true)
+      }
+    }
+    return
+  }
+
+  // Skip invisible nodes
+  if not(node.visible) {
+    return
+  }
+
+  match node.name {
+    Some(name) if not(name.is_empty()) => {
+      // Skip text that looks like JavaScript code
+      if not(looks_like_code(name)) {
+        if buf.to_string().length() > 0 {
+          buf.write_string(" ")
+        }
+        buf.write_string(name)
+      }
+    }
+    _ => ()
+  }
+  for child in node.children {
+    collect_text_with_context(child, buf, false)
   }
 }
