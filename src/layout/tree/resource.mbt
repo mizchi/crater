@@ -148,7 +148,7 @@ pub fn ResourceRegistry::get_all_pending(
 ///|
 /// Register a new resource and set up a node with placeholder sizing
 /// Returns the ResourceId for later resolution
-pub fn register_node_resource(
+fn register_node_resource(
   registry : ResourceRegistry,
   node : LayoutNode,
   propagate_dirty : (Int) -> Unit,
@@ -169,7 +169,7 @@ pub fn register_node_resource(
 
 ///|
 /// Resolve a resource with its actual size and update all associated nodes
-pub fn resolve_node_resource(
+fn resolve_node_resource(
   registry : ResourceRegistry,
   find_node : (Int) -> LayoutNode?,
   propagate_dirty : (Int) -> Unit,
@@ -198,7 +198,7 @@ pub fn resolve_node_resource(
 
 ///|
 /// Mark a resource as failed and update all associated nodes with error placeholder
-pub fn fail_node_resource(
+fn fail_node_resource(
   registry : ResourceRegistry,
   find_node : (Int) -> LayoutNode?,
   propagate_dirty : (Int) -> Unit,

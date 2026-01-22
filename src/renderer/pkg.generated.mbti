@@ -1,13 +1,13 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/renderer"
 
-import(
-  "mizchi/crater/css/media"
-  "mizchi/crater/html"
-  "mizchi/crater/layout/node"
-  "mizchi/crater/style"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/css/media",
+  "mizchi/crater/html",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn apply_css_property_debug(@style.Style, String, String) -> @style.Style

@@ -1,15 +1,15 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/layout/tree"
 
-import(
-  "mizchi/crater/css/cascade"
-  "mizchi/crater/dom"
-  "mizchi/crater/html"
-  "mizchi/crater/layout/node"
-  "mizchi/crater/style"
-  "mizchi/crater/types"
-  "moonbitlang/core/hashset"
-)
+import {
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/dom",
+  "mizchi/crater/html",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+  "moonbitlang/core/hashset",
+}
 
 // Values
 pub fn analyze_style_dependencies(@style.Style) -> DependencyKind
@@ -24,23 +24,9 @@ pub let default_placeholder_height : Double
 
 pub let default_placeholder_width : Double
 
-pub fn depends_on_parent_height(DependencyKind) -> Bool
-
-pub fn depends_on_parent_width(DependencyKind) -> Bool
-
-pub fn depends_on_viewport(DependencyKind) -> Bool
-
 pub let error_placeholder_height : Double
 
 pub let error_placeholder_width : Double
-
-pub fn fail_node_resource(ResourceRegistry, (Int) -> LayoutNode?, (Int) -> Unit, ResourceId) -> Unit
-
-pub fn is_static(DependencyKind) -> Bool
-
-pub fn register_node_resource(ResourceRegistry, LayoutNode, (Int) -> Unit, placeholder_width? : Double, placeholder_height? : Double) -> ResourceId
-
-pub fn resolve_node_resource(ResourceRegistry, (Int) -> LayoutNode?, (Int) -> Unit, ResourceId, Double, Double) -> Unit
 
 // Errors
 

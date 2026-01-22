@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/layout/float"
 
-import(
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/types",
+}
 
 // Values
 

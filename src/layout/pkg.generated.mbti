@@ -1,12 +1,12 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/layout"
 
-import(
-  "mizchi/crater/layout/node"
-  "mizchi/crater/layout/tree"
-  "mizchi/crater/style"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/layout/tree",
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn layout_node_create(String) -> @tree.LayoutNode

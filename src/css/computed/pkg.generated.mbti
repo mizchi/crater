@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/css/computed"
 
-import(
-  "mizchi/crater/css/cascade"
-  "mizchi/crater/style"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn apply_property_direct(@style.Style, String, String, ComputeContext) -> @style.Style

@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/layout/flex"
 
-import(
-  "mizchi/crater/layout/node"
-  "mizchi/crater/layout/trace"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/layout/trace",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn clear_intrinsic_cache_for_node(Int) -> Unit
