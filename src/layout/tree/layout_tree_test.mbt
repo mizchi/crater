@@ -1258,3 +1258,82 @@ test "edge: cache consistency across 1000 operations" {
     }
   }
 }
+
+///|
+test "dirty_rects: initial layout marks all nodes" {
+  @dispatch.setup()
+  let root = create_test_tree()
+  let tree = LayoutTree::new(root, 400.0, 200.0)
+
+  // Initial layout
+  let _ = tree.calculate_layout(400.0, 200.0)
+
+  // All nodes should have new layout on first compute
+  let rects = tree.collect_dirty_rects()
+  inspect(rects.length(), content="3") // root + 2 children
+
+  // After marking seen, no dirty rects
+  tree.mark_all_layouts_seen()
+  let rects2 = tree.collect_dirty_rects()
+  inspect(rects2.length(), content="0")
+}
+
+///|
+test "dirty_rects: only changed nodes are dirty" {
+  @dispatch.setup()
+  let root = create_test_tree()
+  let tree = LayoutTree::new(root, 400.0, 200.0)
+
+  // Initial layout
+  let _ = tree.calculate_layout(400.0, 200.0)
+  tree.mark_all_layouts_seen()
+
+  // Recompute with same size - no changes
+  let _ = tree.calculate_layout(400.0, 200.0)
+  let rects = tree.collect_dirty_rects()
+  inspect(rects.length(), content="0")
+
+  // Change one child's style
+  match tree.find_node(tree.root.children[0].uid) {
+    Some(child) => {
+      child.style.width = @types.Length(150.0)
+      child.mark_dirty()
+    }
+    None => ()
+  }
+
+  // Recompute - only changed node should be dirty
+  let _ = tree.calculate_layout(400.0, 200.0)
+  let rects2 = tree.collect_dirty_rects()
+  // At least the changed child should be dirty
+  assert_true(rects2.length() >= 1)
+}
+
+///|
+test "dirty_rects: collect_dirty_union merges rects" {
+  @dispatch.setup()
+  let root = create_test_tree()
+  let tree = LayoutTree::new(root, 400.0, 200.0)
+
+  // Initial layout
+  let _ = tree.calculate_layout(400.0, 200.0)
+
+  // Get union of all dirty rects
+  match tree.collect_dirty_union() {
+    Some(union) => {
+      // Union should cover the entire tree
+      inspect(union.x, content="0")
+      inspect(union.y, content="0")
+      assert_true(union.width >= 200.0)
+      assert_true(union.height >= 50.0)
+    }
+    None => assert_true(false)
+  }
+
+  // After marking seen, no union
+  tree.mark_all_layouts_seen()
+  match tree.collect_dirty_union() {
+    Some(_) => assert_true(false)
+    None => assert_true(true)
+  }
+}

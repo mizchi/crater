@@ -213,6 +213,8 @@ pub fn LayoutTree::add_node(Self, String, Int, LayoutNode) -> Bool
 pub fn LayoutTree::attach_resource(Self, ResourceId, Int, placeholder_width? : Double, placeholder_height? : Double) -> Unit
 pub fn LayoutTree::batch_update_styles(Self, Array[(String, @cascade.CascadedValues)]) -> Int
 pub fn LayoutTree::calculate_layout(Self, Double, Double) -> @types.Layout
+pub fn LayoutTree::collect_dirty_rects(Self) -> Array[@types.BoundingRect]
+pub fn LayoutTree::collect_dirty_union(Self) -> @types.BoundingRect?
 pub fn LayoutTree::compute_full(Self) -> @types.Layout
 pub fn LayoutTree::compute_incremental(Self) -> @types.Layout
 pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @types.Layout
@@ -225,6 +227,7 @@ pub fn LayoutTree::get_parent(Self, Int) -> LayoutNode?
 pub fn LayoutTree::get_pending_resources(Self) -> Array[ResourceId]
 pub fn LayoutTree::get_resources(Self) -> ResourceRegistry
 pub fn LayoutTree::is_resource_pending(Self, ResourceId) -> Bool
+pub fn LayoutTree::mark_all_layouts_seen(Self) -> Unit
 pub fn LayoutTree::mark_node_dirty(Self, Int) -> Unit
 pub fn LayoutTree::needs_layout(Self) -> Bool
 pub fn LayoutTree::new(LayoutNode, Double, Double) -> Self

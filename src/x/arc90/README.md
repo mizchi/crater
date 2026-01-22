@@ -6,14 +6,44 @@ Article Extraction Benchmark (AEB) でテスト。
 ## 現在のベンチマーク結果
 
 ```
-F1: 81.82%
-Precision: 73.33%
-Recall: 98.13%
+AEB (without layout, 2026-01-22)
+F1: 90.09%
+Precision: 88.08%
+Recall: 95.00%
+
+AEB (with layout, 2026-01-22)
+F1: 90.31%
+Precision: 88.49%
+Recall: 95.00%
 ```
 
-比較対象:
-- Trafilatura: F1=93.7%, Precision=97.8%, Recall=92.0%
-- Readability: F1=94.7%, Precision=91.4%, Recall=98.2%
+比較（AEB, 参考値含む）:
+
+| Method | Precision | Recall | F1 | Notes |
+|---|---:|---:|---:|---|
+| Crater Arc90 (without layout) | 88.08% | 95.00% | 90.09% | 2026-01-22, 181 cases |
+| Crater Arc90 (with layout) | 88.49% | 95.00% | 90.31% | 2026-01-22, 181 cases |
+| Readability | 91.4% | 98.2% | 94.7% | 参考値 (過去計測) |
+| Trafilatura | 97.8% | 92.0% | 93.7% | 参考値 (過去計測) |
+
+## ナビゲーション構造抽出の評価 (AEB, 弱ラベル)
+
+AOM から抽出した nav 候補を、Puppeteer で取得したレイアウト矩形の
+弱ラベル (nav/ad パターン + link density) で評価。
+strict は記事メタ (share/author/byline 等) を除外した評価。
+
+```
+Nav eval (AEB 181 cases, 2026-01-22)
+Base:               loose F1=60.31  strict F1=59.80  meta R=19.35  adOverlap=1106
+Refined:            loose F1=70.93  strict F1=73.28  meta R= 6.36  adOverlap=2
+Refined+meta:       loose F1=73.77  strict F1=73.85  meta R=13.88  adOverlap=2
+Refined+hier:       loose F1=73.88  strict F1=76.30  meta R= 6.36  adOverlap=2
+Refined+hier+meta:  loose F1=77.58  strict F1=76.43  meta R=19.16  adOverlap=2
+```
+
+結論:
+- **Refined+hier+meta** が strict F1 で最大 (76.43%)
+- adOverlap がほぼ 0 になり、広告誤検出が大幅に減少
 
 ## 実装済み機能
 
@@ -30,6 +60,10 @@ Recall: 98.13%
 7. **Link Density Score**: リンクテキスト比率が高いとペナルティ
 8. **Paragraph Bonus**: p/pre/blockquote 要素が多いほどボーナス
 9. **Punctuation Bonus**: 句読点密度が文章らしければボーナス
+10. **Navigation Detection**:
+    - nav/header/footer/aside などのコンテナ優先
+    - list + link ratio / link density で nav を補強
+    - nav 配下は content block から除外
 
 ### コンテンツ選択ロジック
 
@@ -52,6 +86,11 @@ Recall: 98.13%
 - **例**: 419 文字の記事に対して 16643 文字を抽出 (39.72 倍)
 - **対策**: より細かい粒度でのスコアリングが必要
 
+### 3. ナビ評価のラベル揺れ
+- **症状**: h2 単体などが nav として弱ラベル化されるケースがある
+- **原因**: レイアウト側の弱ラベルが粗い
+- **対策**: nav と meta を分離した二段評価を導入する
+
 ## 次のステップ (F1 > 90% 達成に向けて)
 
 ### 高優先度
@@ -71,13 +110,13 @@ Recall: 98.13%
    - 未閉じタグの自動修復
    - エラー耐性の向上
 
-4. **コメントセクション抽出**
-   - コメント領域の検出と分離
-   - ExtractionResult に comment_section フィールド追加
+4. **ナビゲーション/記事メタの分離**
+   - share/author/byline を nav と分離して抽出
+   - nav + meta の二段評価を標準化
 
-5. **ナビゲーション構造抽出**
-   - ナビゲーション要素の構造化抽出
-   - サイトマップ的な情報の生成
+5. **ナビゲーション構造抽出の精度改善**
+   - list 階層の優先度調整
+   - selector 粒度の揺れ (h2 単体など) に対する補正
 
 ## ベンチマークの実行方法
 
@@ -87,7 +126,22 @@ npx tsx scripts/aeb-runner.ts
 
 # WASM ビルド
 just wasm
+
+# ナビゲーション評価
+npx tsx scripts/aeb-nav-eval.ts
 ```
+
+## レイアウト矩形のダンプ
+
+```bash
+# AEB HTML を Puppeteer でレンダリングし、矩形情報を JSON へ出力
+npx tsx scripts/aeb-layout-dump.ts --limit 10
+npx tsx scripts/aeb-layout-dump.ts <hash>
+npx tsx scripts/aeb-layout-dump.ts <hash> --no-css --timeout 15000
+npx tsx scripts/aeb-layout-dump.ts <hash> --allow-assets --timeout 60000
+```
+
+出力先: `render-results/aeb-layout/<hash>.json`
 
 ## 参考資料
 

@@ -1173,7 +1173,13 @@ pub fn extractMainContent(html : String) -> String {
   let doc = @html.parse_document(html)
   let tree = @aom.build_accessibility_tree(doc)
   let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
-  extraction_result_to_json(result)
+  let fallback_text = if result.main_content is None &&
+      result.content_blocks.length() == 0 {
+    Some(strip_html_to_text(html))
+  } else {
+    None
+  }
+  extraction_result_to_json_with_fallback(result, fallback_text)
 }
 
 ///|
@@ -1203,24 +1209,38 @@ pub fn extractMainContentWithLayout(
     viewport_height: height.to_double(),
   }
   let result = @arc90.extract_content(tree, config)
-  extraction_result_to_json(result)
+  let fallback_text = if result.main_content is None &&
+      result.content_blocks.length() == 0 {
+    Some(strip_html_to_text(html))
+  } else {
+    None
+  }
+  extraction_result_to_json_with_fallback(result, fallback_text)
 }
 
 ///|
-fn extraction_result_to_json(result : @arc90.ExtractionResult) -> String {
+fn extraction_result_to_json_with_fallback(
+  result : @arc90.ExtractionResult,
+  fallback_text : String?,
+) -> String {
   let buf = StringBuilder::new()
   buf.write_string("{\n")
 
   // Main content text
   buf.write_string("  \"mainContent\": ")
-  match result.main_content {
-    Some(node) => {
+  match (result.main_content, fallback_text) {
+    (Some(node), _) => {
       let text = collect_all_text(node)
       buf.write_string("\"")
       buf.write_string(escape_json_string(text))
       buf.write_string("\"")
     }
-    None => buf.write_string("null")
+    (None, Some(text)) => {
+      buf.write_string("\"")
+      buf.write_string(escape_json_string(text))
+      buf.write_string("\"")
+    }
+    (None, None) => buf.write_string("null")
   }
   buf.write_string(",\n")
 
@@ -1254,6 +1274,106 @@ fn extraction_result_to_json(result : @arc90.ExtractionResult) -> String {
 
   buf.write_string("}")
   buf.to_string()
+}
+
+///|
+fn strip_html_to_text(html : String) -> String {
+  let buf = StringBuilder::new()
+  let mut i = 0
+  let len = html.length()
+  let mut in_script = false
+  let mut in_style = false
+  while i < len {
+    let c = char_at(html, i)
+    if c == '<' {
+      let tag_end = find_next_gt(html, i + 1)
+      if tag_end < 0 {
+        break
+      }
+      let tag = html.unsafe_substring(start=i + 1, end=tag_end)
+      let (tag_name, is_end) = parse_tag_name(tag)
+      if tag_name == "script" {
+        in_script = not(is_end)
+      } else if tag_name == "style" {
+        in_style = not(is_end)
+      }
+      i = tag_end
+    } else if not(in_script) && not(in_style) {
+      if is_ascii_whitespace(c) {
+        buf.write_char(' ')
+      } else {
+        buf.write_char(c)
+      }
+    }
+    i = i + 1
+  }
+  normalize_spaces(buf.to_string())
+}
+
+///|
+fn find_next_gt(html : String, start : Int) -> Int {
+  let len = html.length()
+  for i in start..<len {
+    if char_at(html, i) == '>' {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+fn parse_tag_name(tag : String) -> (String, Bool) {
+  let len = tag.length()
+  let mut i = 0
+  while i < len && is_ascii_whitespace(char_at(tag, i)) {
+    i = i + 1
+  }
+  let mut is_end = false
+  if i < len && char_at(tag, i) == '/' {
+    is_end = true
+    i = i + 1
+  }
+  while i < len && is_ascii_whitespace(char_at(tag, i)) {
+    i = i + 1
+  }
+  let name_buf = StringBuilder::new()
+  while i < len {
+    let c = char_at(tag, i)
+    if is_ascii_whitespace(c) || c == '/' {
+      break
+    }
+    name_buf.write_char(c)
+    i = i + 1
+  }
+  (name_buf.to_string().to_lower(), is_end)
+}
+
+///|
+fn normalize_spaces(text : String) -> String {
+  let buf = StringBuilder::new()
+  let mut last_space = true
+  for c in text {
+    if is_ascii_whitespace(c) {
+      if not(last_space) {
+        buf.write_char(' ')
+        last_space = true
+      }
+    } else {
+      buf.write_char(c)
+      last_space = false
+    }
+  }
+  buf.to_string().trim().to_string()
+}
+
+///|
+fn is_ascii_whitespace(c : Char) -> Bool {
+  c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\x0c'
+}
+
+///|
+fn char_at(text : String, index : Int) -> Char {
+  text[index].to_int().unsafe_to_char()
 }
 
 ///|

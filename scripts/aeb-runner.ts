@@ -44,6 +44,60 @@ interface TestResult {
   expectedLength: number;
   extractedLength: number;
   error?: string;
+  extractedText?: string;
+  expectedText?: string;
+  extraction?: ExtractionResult;
+}
+
+function dumpResult(
+  dumpDir: string,
+  hash: string,
+  expected: string,
+  extracted: string,
+  metrics: { precision: number; recall: number; f1: number },
+  useLayout: boolean,
+  extraction: ExtractionResult
+): void {
+  const dir = path.join(dumpDir, hash);
+  fs.mkdirSync(dir, { recursive: true });
+  const suffix = useLayout ? '-with-layout' : '';
+  fs.writeFileSync(path.join(dir, `expected${suffix}.txt`), expected);
+  fs.writeFileSync(path.join(dir, `extracted${suffix}.txt`), extracted);
+  const meta = {
+    hash,
+    mode: useLayout ? 'with-layout' : 'without-layout',
+    precision: metrics.precision,
+    recall: metrics.recall,
+    f1: metrics.f1,
+    expectedLength: expected.length,
+    extractedLength: extracted.length,
+    contentBlocksCount: extraction.contentBlocksCount,
+    detectedAdsCount: extraction.detectedAdsCount,
+    detectedNavigationCount: extraction.detectedNavigationCount,
+    topScores: extraction.topScores,
+  };
+  fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify(meta, null, 2));
+}
+
+function dumpError(
+  dumpDir: string,
+  hash: string,
+  expected: string,
+  error: string,
+  useLayout: boolean
+): void {
+  const dir = path.join(dumpDir, hash);
+  fs.mkdirSync(dir, { recursive: true });
+  const suffix = useLayout ? '-with-layout' : '';
+  fs.writeFileSync(path.join(dir, `expected${suffix}.txt`), expected);
+  fs.writeFileSync(path.join(dir, `error${suffix}.txt`), error);
+  const meta = {
+    hash,
+    mode: useLayout ? 'with-layout' : 'without-layout',
+    error,
+    expectedLength: expected.length,
+  };
+  fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify(meta, null, 2));
 }
 
 /**
@@ -108,7 +162,12 @@ function loadHtml(hash: string): string {
 /**
  * Run extraction test for a single document
  */
-function runTest(hash: string, expectedBody: string, useLayout: boolean = false): TestResult {
+function runTest(
+  hash: string,
+  expectedBody: string,
+  useLayout: boolean = false,
+  dumpDir: string | null = null
+): TestResult {
   try {
     const html = loadHtml(hash);
     const resultJson = useLayout
@@ -118,14 +177,29 @@ function runTest(hash: string, expectedBody: string, useLayout: boolean = false)
 
     const extracted = result.mainContent || '';
     const metrics = calculateMetrics(expectedBody, extracted);
+    if (dumpDir) {
+      dumpResult(dumpDir, hash, expectedBody, extracted, metrics, useLayout, result);
+    }
 
     return {
       hash,
       ...metrics,
       expectedLength: expectedBody.length,
       extractedLength: extracted.length,
+      ...(dumpDir
+        ? { extractedText: extracted, expectedText: expectedBody, extraction: result }
+        : {}),
     };
   } catch (error) {
+    if (dumpDir) {
+      dumpError(
+        dumpDir,
+        hash,
+        expectedBody,
+        error instanceof Error ? error.message : String(error),
+        useLayout
+      );
+    }
     return {
       hash,
       precision: 0,
@@ -134,6 +208,7 @@ function runTest(hash: string, expectedBody: string, useLayout: boolean = false)
       expectedLength: expectedBody.length,
       extractedLength: 0,
       error: error instanceof Error ? error.message : String(error),
+      ...(dumpDir ? { expectedText: expectedBody } : {}),
     };
   }
 }
@@ -148,6 +223,7 @@ async function main() {
   let limit = Infinity;
   let specificHash: string | null = null;
   let useLayout = false;
+  let dumpDir: string | null = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--limit' && args[i + 1]) {
@@ -155,12 +231,15 @@ async function main() {
       i++;
     } else if (args[i] === '--with-layout') {
       useLayout = true;
+    } else if (args[i] === '--dump') {
+      dumpDir = path.join(process.cwd(), 'render-results/aeb-dump');
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log('AEB Runner for Crater\n');
       console.log('Usage:');
       console.log('  npx tsx scripts/aeb-runner.ts                  # Run all tests');
       console.log('  npx tsx scripts/aeb-runner.ts --limit 10       # Run first 10 tests');
       console.log('  npx tsx scripts/aeb-runner.ts --with-layout    # Use layout-based extraction');
+      console.log('  npx tsx scripts/aeb-runner.ts --dump           # Dump expected/extracted texts');
       console.log('  npx tsx scripts/aeb-runner.ts <hash>           # Run specific test');
       return;
     } else if (!args[i].startsWith('-')) {
@@ -194,7 +273,7 @@ async function main() {
 
   for (const hash of testHashes) {
     const expected = groundTruth[hash].articleBody;
-    const result = runTest(hash, expected, useLayout);
+    const result = runTest(hash, expected, useLayout, dumpDir);
     results.push(result);
     completed++;
 

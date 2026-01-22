@@ -724,13 +724,20 @@ pub fn LayoutTree::calculate_layout(
 
 ///|
 /// Store computed layout results on nodes recursively
+/// Only sets has_new_layout = true if the layout actually changed
 fn store_computed_layouts(node : LayoutNode, layout : @types.Layout) -> Unit {
+  // Check if layout changed (with tolerance for floating point comparison)
+  let changed = (node.computed_x - layout.x).abs() > 0.001 ||
+    (node.computed_y - layout.y).abs() > 0.001 ||
+    (node.computed_width - layout.width).abs() > 0.001 ||
+    (node.computed_height - layout.height).abs() > 0.001
+
   // Store this node's computed layout
   node.computed_x = layout.x
   node.computed_y = layout.y
   node.computed_width = layout.width
   node.computed_height = layout.height
-  node.has_new_layout = true
+  node.has_new_layout = changed
 
   // Recurse to children
   for i, child in node.children {
