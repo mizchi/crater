@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/strconv",
   "mizchi/crater/css/token",
   "mizchi/crater/css/selector",
   "mizchi/crater/css/cascade",

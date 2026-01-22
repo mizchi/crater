@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/strconv",
   "mizchi/crater/html",
   "mizchi/crater/css/computed",
   "mizchi/crater/css/parser",

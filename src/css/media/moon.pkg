@@ -1,2 +1,6 @@
+import {
+  "moonbitlang/core/strconv",
+}
+
 import "wbtest" {
 }

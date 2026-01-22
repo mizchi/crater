@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/bench",
   "mizchi/crater",
   "mizchi/crater/types",
   "mizchi/crater/layout",
