@@ -9,4 +9,9 @@ import {
   "mizchi/crater/layout/table",
 }
 
-import "test" { "mizchi/crater/css/parser" }
+import "test" {
+  "mizchi/crater/css/parser",
+}
+
+import "wbtest" {
+}

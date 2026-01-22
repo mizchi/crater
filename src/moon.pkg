@@ -11,4 +11,7 @@ import {
   "mizchi/crater/layout/dispatch",
 }
 
-import "test" { "mizchi/crater/layout/trace", "mizchi/crater/css/parser" }
+import "test" {
+  "mizchi/crater/layout/trace",
+  "mizchi/crater/css/parser",
+}

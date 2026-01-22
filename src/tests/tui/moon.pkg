@@ -4,3 +4,6 @@ import {
   "mizchi/crater/layout",
   "mizchi/crater/layout/tree",
 }
+
+import "wbtest" {
+}

@@ -13,3 +13,6 @@ import {
   "mizchi/crater/css/parser",
   "mizchi/crater/css/selector",
 }
+
+import "wbtest" {
+}

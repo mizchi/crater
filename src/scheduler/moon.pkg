@@ -9,4 +9,6 @@ import {
   "mizchi/crater/style",
 }
 
-import "wbtest" { "mizchi/crater/layout/dispatch" }
+import "wbtest" {
+  "mizchi/crater/layout/dispatch",
+}

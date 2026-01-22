@@ -7,4 +7,9 @@ import {
   "mizchi/crater/layout/inline",
 }
 
-import "test" { "mizchi/crater/layout/dispatch" }
+import "test" {
+  "mizchi/crater/layout/dispatch",
+}
+
+import "wbtest" {
+}

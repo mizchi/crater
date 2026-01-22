@@ -1,1 +1,5 @@
-import { }
+import {
+}
+
+import "wbtest" {
+}

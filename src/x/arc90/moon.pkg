@@ -1,1 +1,6 @@
-import { "mizchi/crater/aom" }
+import {
+  "mizchi/crater/aom",
+}
+
+import "wbtest" {
+}

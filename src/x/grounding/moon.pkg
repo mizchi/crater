@@ -1,7 +1,12 @@
-import { "mizchi/crater/aom" }
+import {
+  "mizchi/crater/aom",
+}
 
 import "test" {
   "mizchi/crater/html",
   "mizchi/crater/layout/tree",
   "mizchi/crater/layout/dispatch",
+}
+
+import "wbtest" {
 }

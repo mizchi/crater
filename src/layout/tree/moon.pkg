@@ -7,3 +7,6 @@ import {
   "mizchi/crater/css/cascade",
   "mizchi/crater/dom",
 }
+
+import "wbtest" {
+}

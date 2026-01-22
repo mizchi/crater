@@ -11,3 +11,6 @@ import "test" {
   "mizchi/crater/style",
   "mizchi/crater/layout/dispatch",
 }
+
+import "wbtest" {
+}
