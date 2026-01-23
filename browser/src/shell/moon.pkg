@@ -7,8 +7,11 @@ import {
   "mizchi/crater/aom",
   "mizchi/crater/layout",
   "mizchi/crater/layout/node",
+  "mizchi/crater/dom",
+  "mizchi/crater/scheduler",
   "mizchi/crater/x/arc90",
   "mizchi/crater/x/grounding",
   "mizchi/crater-browser/http",
   "mizchi/crater-browser/tui",
+  "mizchi/crater-browser/js",
 }

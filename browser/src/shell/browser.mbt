@@ -61,6 +61,12 @@ pub struct Browser {
   mut last_render_key : String
   /// Last color scheme used to build render node
   mut last_color_scheme_dark : Bool
+  /// DOM tree for JS execution
+  mut dom_tree : @dom.DomTree?
+  /// Task scheduler
+  scheduler : @scheduler.Scheduler
+  /// Script executor for JS execution
+  mut script_executor : @js.ScriptExecutor?
 }
 
 ///|
@@ -92,6 +98,9 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     prev_buffer: None,
     last_render_key: "",
     last_color_scheme_dark: false,
+    dom_tree: None,
+    scheduler: @scheduler.Scheduler::new(),
+    script_executor: None,
   }
 }
 
@@ -366,6 +375,13 @@ async fn Browser::load_url(
   self.layout_tree = None
   self.prev_buffer = None
   self.last_render_key = ""
+  // Execute scripts including external (JS execution)
+  let script_count = self.execute_scripts_async() catch { _ => 0 }
+  if script_count > 0 {
+    println(
+      "Executed " + script_count.to_string() + " script(s) during page load",
+    )
+  }
   // Calculate content height using the pre-parsed document
   self.content_height = @renderer.get_content_height_with_document(
     doc,
@@ -1261,4 +1277,293 @@ pub fn Browser::process_hint_char(self : Browser, char : String) -> String? {
     self.exit_hint_mode()
   }
   None
+}
+
+///|
+/// Script info extracted from HTML
+pub(all) struct ScriptInfo {
+  /// Inline script source (empty if external)
+  source : String
+  /// External script URL (empty if inline)
+  src : String
+  /// Whether script is async
+  is_async : Bool
+  /// Whether script is deferred
+  is_defer : Bool
+}
+
+///|
+/// Extract script tags from HTML
+fn extract_scripts(html : String) -> Array[ScriptInfo] {
+  let scripts : Array[ScriptInfo] = []
+  let len = html.length()
+  let mut i = 0
+  while i < len {
+    // Look for <script
+    if i + 7 < len &&
+      char_at(html, i) == '<' &&
+      (char_at(html, i + 1) == 's' || char_at(html, i + 1) == 'S') &&
+      (char_at(html, i + 2) == 'c' || char_at(html, i + 2) == 'C') &&
+      (char_at(html, i + 3) == 'r' || char_at(html, i + 3) == 'R') &&
+      (char_at(html, i + 4) == 'i' || char_at(html, i + 4) == 'I') &&
+      (char_at(html, i + 5) == 'p' || char_at(html, i + 5) == 'P') &&
+      (char_at(html, i + 6) == 't' || char_at(html, i + 6) == 'T') &&
+      (
+        char_at(html, i + 7) == ' ' ||
+        char_at(html, i + 7) == '>' ||
+        char_at(html, i + 7) == '\t' ||
+        char_at(html, i + 7) == '\n'
+      ) {
+      // Parse script tag attributes
+      let mut j = i + 7
+      let mut src = ""
+      let mut is_async = false
+      let mut is_defer = false
+      // Find end of opening tag
+      while j < len && char_at(html, j) != '>' {
+        // Check for src="..."
+        if j + 5 < len &&
+          (char_at(html, j) == 's' || char_at(html, j) == 'S') &&
+          (char_at(html, j + 1) == 'r' || char_at(html, j + 1) == 'R') &&
+          (char_at(html, j + 2) == 'c' || char_at(html, j + 2) == 'C') &&
+          char_at(html, j + 3) == '=' {
+          let quote = char_at(html, j + 4)
+          if quote == '"' || quote == '\'' {
+            let mut k = j + 5
+            while k < len && char_at(html, k) != quote {
+              k = k + 1
+            }
+            src = html.unsafe_substring(start=j + 5, end=k)
+            j = k
+          }
+        }
+        // Check for async
+        if j + 5 < len &&
+          (char_at(html, j) == 'a' || char_at(html, j) == 'A') &&
+          (char_at(html, j + 1) == 's' || char_at(html, j + 1) == 'S') &&
+          (char_at(html, j + 2) == 'y' || char_at(html, j + 2) == 'Y') &&
+          (char_at(html, j + 3) == 'n' || char_at(html, j + 3) == 'N') &&
+          (char_at(html, j + 4) == 'c' || char_at(html, j + 4) == 'C') {
+          is_async = true
+        }
+        // Check for defer
+        if j + 5 < len &&
+          (char_at(html, j) == 'd' || char_at(html, j) == 'D') &&
+          (char_at(html, j + 1) == 'e' || char_at(html, j + 1) == 'E') &&
+          (char_at(html, j + 2) == 'f' || char_at(html, j + 2) == 'F') &&
+          (char_at(html, j + 3) == 'e' || char_at(html, j + 3) == 'E') &&
+          (char_at(html, j + 4) == 'r' || char_at(html, j + 4) == 'R') {
+          is_defer = true
+        }
+        j = j + 1
+      }
+      // Extract inline script content if no src
+      let mut source = ""
+      if src.length() == 0 && j < len && char_at(html, j) == '>' {
+        let content_start = j + 1
+        // Find </script>
+        let mut content_end = content_start
+        while content_end + 8 < len {
+          if char_at(html, content_end) == '<' &&
+            char_at(html, content_end + 1) == '/' &&
+            (
+              char_at(html, content_end + 2) == 's' ||
+              char_at(html, content_end + 2) == 'S'
+            ) &&
+            (
+              char_at(html, content_end + 3) == 'c' ||
+              char_at(html, content_end + 3) == 'C'
+            ) &&
+            (
+              char_at(html, content_end + 4) == 'r' ||
+              char_at(html, content_end + 4) == 'R'
+            ) &&
+            (
+              char_at(html, content_end + 5) == 'i' ||
+              char_at(html, content_end + 5) == 'I'
+            ) &&
+            (
+              char_at(html, content_end + 6) == 'p' ||
+              char_at(html, content_end + 6) == 'P'
+            ) &&
+            (
+              char_at(html, content_end + 7) == 't' ||
+              char_at(html, content_end + 7) == 'T'
+            ) {
+            break
+          }
+          content_end = content_end + 1
+        }
+        source = html
+          .unsafe_substring(start=content_start, end=content_end)
+          .trim()
+          .to_string()
+        i = content_end
+      }
+      // Add script info if we have source or src
+      if source.length() > 0 || src.length() > 0 {
+        scripts.push({ source, src, is_async, is_defer })
+      }
+    }
+    i = i + 1
+  }
+  scripts
+}
+
+///|
+/// Initialize DOM tree and script executor
+fn Browser::init_js_execution(self : Browser) -> Unit {
+  let dom = @dom.DomTree::new()
+  // Create basic DOM structure
+  let html = dom.create_element("html")
+  let head = dom.create_element("head")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, head)
+  let _ = dom.append_child(html, body)
+  self.dom_tree = Some(dom)
+  self.script_executor = Some(@js.ScriptExecutor::new(dom))
+}
+
+///|
+/// Execute scripts from the page (inline only, sync version)
+pub fn Browser::execute_scripts(self : Browser) -> Int {
+  // Ensure JS execution is initialized
+  if self.dom_tree is None {
+    self.init_js_execution()
+  }
+  // Extract scripts from HTML
+  let scripts = extract_scripts(self.html_content)
+  if scripts.length() == 0 {
+    return 0
+  }
+  println("Found " + scripts.length().to_string() + " script(s)")
+  let mut executed = 0
+  for script in scripts {
+    // Skip external scripts (use execute_scripts_async for external)
+    if script.src.length() > 0 {
+      println("  [SKIP] External script: " + script.src)
+      continue
+    }
+    // Queue script for execution
+    let blocking = not(script.is_async) && not(script.is_defer)
+    let task_id = @js.enqueue_script(self.scheduler, script.source, blocking)
+    println(
+      "  [QUEUED] Inline script (task " +
+      task_id.to_string() +
+      ", blocking=" +
+      blocking.to_string() +
+      ")",
+    )
+  }
+  // Process queued scripts
+  match self.dom_tree {
+    Some(dom) => {
+      executed = @js.process_script_tasks(self.scheduler, dom)
+      // Print JS logs
+      match self.script_executor {
+        Some(executor) => {
+          for log in executor.get_logs() {
+            println("[JS] " + log)
+          }
+          executor.clear_logs()
+        }
+        None => ()
+      }
+    }
+    None => ()
+  }
+  println("Executed " + executed.to_string() + " script(s)")
+  executed
+}
+
+///|
+/// Execute scripts from the page (including external scripts, async version)
+pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
+  // Ensure JS execution is initialized
+  if self.dom_tree is None {
+    self.init_js_execution()
+  }
+  // Extract scripts from HTML
+  let scripts = extract_scripts(self.html_content)
+  if scripts.length() == 0 {
+    return 0
+  }
+  println("Found " + scripts.length().to_string() + " script(s)")
+  let mut executed = 0
+  for script in scripts {
+    // Determine script source
+    let mut source = ""
+    let mut script_type = "Inline"
+    if script.src.length() > 0 {
+      // Fetch external script
+      let script_url = resolve_url(self.current_url, script.src)
+      if script_url.length() == 0 {
+        println("  [SKIP] Invalid script URL: " + script.src)
+        continue
+      }
+      println("  [FETCH] External script: " + script_url)
+      try {
+        let response = @http.fetch(script_url)
+        println("    -> OK (" + response.body.length().to_string() + " bytes)")
+        source = response.body
+        script_type = "External"
+      } catch {
+        err => {
+          println("    -> Error: " + err.to_string())
+          continue
+        }
+      }
+    } else {
+      source = script.source
+    }
+    // Skip empty scripts
+    if source.length() == 0 {
+      continue
+    }
+    // Queue script for execution
+    let blocking = not(script.is_async) && not(script.is_defer)
+    let task_id = @js.enqueue_script(self.scheduler, source, blocking)
+    println(
+      "  [QUEUED] " +
+      script_type +
+      " script (task " +
+      task_id.to_string() +
+      ", blocking=" +
+      blocking.to_string() +
+      ")",
+    )
+  }
+  // Process queued scripts
+  match self.dom_tree {
+    Some(dom) => {
+      executed = @js.process_script_tasks(self.scheduler, dom)
+      // Print JS logs
+      match self.script_executor {
+        Some(executor) => {
+          for log in executor.get_logs() {
+            println("[JS] " + log)
+          }
+          executor.clear_logs()
+        }
+        None => ()
+      }
+    }
+    None => ()
+  }
+  println("Executed " + executed.to_string() + " script(s)")
+  executed
+}
+
+///|
+/// Get the DOM tree for external access
+pub fn Browser::get_dom_tree(self : Browser) -> @dom.DomTree? {
+  self.dom_tree
+}
+
+///|
+/// Get the scheduler for external access
+pub fn Browser::get_scheduler(self : Browser) -> @scheduler.Scheduler {
+  self.scheduler
 }
