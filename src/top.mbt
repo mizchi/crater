@@ -23,6 +23,8 @@ pub fn compute_layout(
     sizing_mode: @types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
+    stretch_width: false,
+    stretch_height: false,
   }
   dispatch_compute(node, ctx)
 }
@@ -39,6 +41,8 @@ pub fn compute_layout_with_warnings(
     sizing_mode: @types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
+    stretch_width: false,
+    stretch_height: false,
   }
   dispatch_compute_with_warnings(node, ctx)
 }

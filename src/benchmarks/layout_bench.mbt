@@ -14,6 +14,8 @@ fn compute_layout(
     sizing_mode: @types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.compute_layout(node, ctx)
 }

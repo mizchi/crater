@@ -34,6 +34,8 @@ test "intrinsic_percent_replaced_wpt_style" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @dispatch.compute_layout(root, layout_ctx)
   let float_layout = layout.children[0]
@@ -70,6 +72,8 @@ test "renderer_grid_column" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @dispatch.compute_layout(root, layout_ctx)
 

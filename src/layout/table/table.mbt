@@ -684,6 +684,8 @@ fn layout_cell(
     sizing_mode: ctx.sizing_mode,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Layout children and calculate content height
@@ -789,6 +791,8 @@ fn layout_row(
     sizing_mode: ctx.sizing_mode,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   let cell_layouts : Array[@types.Layout] = []
   let mut x_offset = padding.left + border.left
@@ -1341,23 +1345,29 @@ pub fn compute(
     0.0
   }
 
-  // Calculate table width: shrink-to-fit for auto
+  // Calculate table width: shrink-to-fit for auto, unless in stretch context
   let table_width = match style.width {
     @types.Length(w) => w
     @types.Percent(p) => parent_width * p
-    _ => {
-      // Auto: shrink-to-fit behavior
-      // Table width = content width + padding + border
-      let min_width = intrinsic_content_width +
-        padding.horizontal_sum() +
-        border.horizontal_sum()
-      // Don't exceed available width
-      if min_width > parent_width {
+    _ =>
+      // Auto width: check if we should stretch or shrink-to-fit
+      if ctx.stretch_width {
+        // In stretch context (e.g., grid cell with stretch alignment),
+        // use full available width
         parent_width
       } else {
-        min_width
+        // Normal flow: shrink-to-fit behavior
+        // Table width = content width + padding + border
+        let min_width = intrinsic_content_width +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        // Don't exceed available width
+        if min_width > parent_width {
+          parent_width
+        } else {
+          min_width
+        }
       }
-    }
   }
 
   // Content width = table width - padding - border
@@ -1443,6 +1453,8 @@ pub fn compute(
     sizing_mode: ctx.sizing_mode,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Collect captions and other children separately for caption-side ordering

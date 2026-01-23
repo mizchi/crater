@@ -56,6 +56,8 @@ pub fn ConstraintSpace::to_context(
     sizing_mode: self.sizing_mode,
     viewport_width: self.viewport_width,
     viewport_height: self.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 }
 

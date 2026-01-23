@@ -222,6 +222,8 @@ pub fn LayoutTree::compute_full(self : LayoutTree) -> @types.Layout {
     sizing_mode: @types.Definite,
     viewport_width: self.viewport_width,
     viewport_height: self.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   let result = @dispatch.compute_layout(node, ctx)
   clear_all_dirty(self.root)

@@ -29,6 +29,8 @@ test "bench_viewport_culling_500_top" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -51,6 +53,8 @@ test "bench_viewport_culling_500_middle" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -75,6 +79,8 @@ test "bench_viewport_culling_500_bottom" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -99,6 +105,8 @@ test "bench_viewport_culling_1000_middle" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -127,6 +135,8 @@ test "bench_paint_tree_flat_100" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -146,6 +156,8 @@ test "bench_paint_tree_dashboard" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -165,6 +177,8 @@ test "bench_paint_tree_large_2k5" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -188,6 +202,8 @@ test "bench_flatten_flat_100" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -208,6 +224,8 @@ test "bench_flatten_dashboard" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -228,6 +246,8 @@ test "bench_flatten_large_2k5" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -253,6 +273,8 @@ test "bench_scroll_simulation_10_steps" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)
@@ -287,6 +309,8 @@ test "bench_scroll_simulation_100_steps" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(node, layout_ctx)

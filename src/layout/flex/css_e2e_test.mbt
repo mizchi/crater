@@ -28,6 +28,8 @@ fn make_ctx(width : Double, height : Double) -> @types.LayoutContext {
     sizing_mode: Definite,
     viewport_width: width,
     viewport_height: height,
+    stretch_width: false,
+    stretch_height: false,
   }
 }
 

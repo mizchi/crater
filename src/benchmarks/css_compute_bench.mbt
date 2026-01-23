@@ -345,6 +345,8 @@ test "bench_phase_layout_only_100" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   b.bench(name="phase_layout_100", fn() {

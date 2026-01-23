@@ -276,6 +276,8 @@ test "bench_layout_only_flex_d5" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   b.bench(name="layout_only_flex_d5", fn() {
@@ -294,6 +296,8 @@ test "bench_layout_only_grid_10x10" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   b.bench(name="layout_only_grid", fn() {
@@ -312,6 +316,8 @@ test "bench_layout_only_dashboard" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   b.bench(name="layout_only_dash", fn() {
@@ -330,6 +336,8 @@ test "bench_layout_only_large_2k5" (b : @bench.T) {
     sizing_mode: @types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   b.bench(name="layout_only_large", fn() {

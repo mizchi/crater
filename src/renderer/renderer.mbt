@@ -862,6 +862,8 @@ pub fn render_with_external_css(
     sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Initialize the layout dispatcher for cross-layout-type support
@@ -965,6 +967,8 @@ pub fn render_document_with_external_css(
     sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Initialize the layout dispatcher for cross-layout-type support

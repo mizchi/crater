@@ -380,6 +380,8 @@ fn compute_mixed_content_layout(
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
+          stretch_width: false,
+          stretch_height: false,
         }
         // Use dispatch for flex/grid containers, block layout for others
         let @node.DispatchFn(dispatch_fn) = dispatch
@@ -1137,6 +1139,8 @@ fn compute_with_collapse(
                         sizing_mode: @types.MaxContent,
                         viewport_width: ctx.viewport_width,
                         viewport_height: ctx.viewport_height,
+                        stretch_width: false,
+                        stretch_height: false,
                       }
                       let child_result = compute_with_collapse(
                         child, intrinsic_ctx, warnings, dispatch,
@@ -1457,6 +1461,8 @@ fn compute_with_collapse(
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
+          stretch_width: false,
+          stretch_height: false,
         }
         // Use dispatch for flex/grid/table containers
         let @node.DispatchFn(dispatch_fn) = dispatch
@@ -1470,6 +1476,8 @@ fn compute_with_collapse(
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
+          stretch_width: false,
+          stretch_height: false,
         }
         compute_with_collapse(child, child_ctx, warnings, dispatch)
       }
@@ -1528,6 +1536,8 @@ fn compute_with_collapse(
           sizing_mode: @types.MaxContent,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
+          stretch_width: false,
+          stretch_height: false,
         }
         // Use dispatch for flex/grid elements, block layout for others
         let @node.DispatchFn(dispatch_fn) = dispatch
@@ -1568,6 +1578,8 @@ fn compute_with_collapse(
       sizing_mode: @types.Definite,
       viewport_width: ctx.viewport_width,
       viewport_height: ctx.viewport_height,
+      stretch_width: false,
+      stretch_height: false,
     }
     // Use dispatch for flex/grid elements, block layout for others
     let @node.DispatchFn(dispatch_fn) = dispatch
@@ -2631,6 +2643,8 @@ fn compute_nested(
     sizing_mode: @types.Definite,
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
+    stretch_width: false,
+    stretch_height: false,
   }
   // Use dispatch for flex/grid containers, block layout for others
   let @node.DispatchFn(dispatch_fn) = dispatch
@@ -2714,6 +2728,8 @@ fn compute_nested_intrinsic(
     sizing_mode: @types.MaxContent,
     viewport_width: 0.0,
     viewport_height: available_height.unwrap_or(0.0),
+    stretch_width: false,
+    stretch_height: false,
   }
   // Use dispatch for flex/grid containers, block layout for others
   let @node.DispatchFn(dispatch_fn) = dispatch

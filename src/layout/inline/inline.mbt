@@ -407,6 +407,8 @@ fn compute_inline_child(
       sizing_mode: @types.MaxContent,
       viewport_width: available_width,
       viewport_height: available_height.unwrap_or(0.0),
+      stretch_width: false,
+      stretch_height: false,
     } // Use MaxContent for shrink-to-fit
     let @node.DispatchFn(dispatch_fn) = dispatch
     let layout = dispatch_fn(node, ctx, dispatch)
@@ -433,6 +435,8 @@ fn compute_inline_child(
         sizing_mode: @types.MaxContent,
         viewport_width: available_width,
         viewport_height: available_height.unwrap_or(0.0),
+        stretch_width: false,
+        stretch_height: false,
       }
       let @node.DispatchFn(dispatch_fn) = dispatch
       let child_layout = dispatch_fn(child, child_ctx, dispatch)
