@@ -345,17 +345,29 @@ let direction_is_row = match style.flex_direction {
 let is_row = if is_vertical_writing { not(direction_is_row) } else { direction_is_row }
 ```
 
+### 実装済み - Block レイアウト軸入れ替え
+
+5. **Block レイアウトの軸入れ替え** (`src/layout/block/block.mbt`)
+   - BFC パスで `is_vertical_writing` をチェック
+   - 縦書きモードではブロックが水平方向にフロー
+   - `current_pos` で位置を追跡し、width で進める（通常は height）
+   - `positioned_layout` の x/y をスワップ
+
 ### テスト結果
 
 ```bash
 # Flex + writing-mode: vertical-lr → 100% 一致
 npx tsx scripts/layout-diff.ts /tmp/writing-mode-flex-simple.html
+
+# Block + writing-mode: vertical-lr → 100% 一致
+npx tsx scripts/layout-diff.ts /tmp/writing-mode-block-simple.html
 ```
 
 ### 未実装 (今後の課題)
 
-1. **Block レイアウトの方向入れ替え**
-   - ブロックの積み重ね方向が横になる
-
-2. **Grid レイアウトの軸入れ替え**
+1. **Grid レイアウトの軸入れ替え**
    - rows/columns の意味が入れ替わる
+
+2. **vertical-rl のサポート改善**
+   - 現在は vertical-lr のみテスト済み
+   - vertical-rl では右から左へのフローが必要

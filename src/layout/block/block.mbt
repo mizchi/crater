@@ -252,6 +252,16 @@ fn get_children_total_height(children : Array[@types.Layout]) -> Double {
 }
 
 ///|
+/// Get total width of children (used for vertical writing-mode)
+fn get_children_total_width(children : Array[@types.Layout]) -> Double {
+  let mut total_width = 0.0
+  for child in children {
+    total_width = total_width + child.width
+  }
+  total_width
+}
+
+///|
 /// Check if flow_nodes contains both inline and block level elements
 /// This determines whether we need anonymous block box processing
 fn has_mixed_inline_block_content(flow_nodes : Array[@node.Node]) -> Bool {
@@ -337,11 +347,14 @@ fn compute_mixed_content_layout(
   warnings : Array[@types.LayoutWarning],
   layout_map : Map[Int, @types.Layout],
   dispatch : @node.DispatchFn,
+  writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
 ) -> MixedContentResult {
-  let mut current_y = 0.0
-  let mut prev_margin_bottom = 0.0
-  let mut escaped_top : Double? = None
-  let mut escaped_bottom : Double? = None
+  // In vertical writing-mode, blocks flow horizontally instead of vertically
+  let is_vertical = writing_mode.is_vertical()
+  let mut current_pos = 0.0 // y in horizontal, x in vertical
+  let mut prev_margin_end = 0.0
+  let mut escaped_start : Double? = None
+  let mut escaped_end : Double? = None
   let content_offset_x = padding.left + border.left
   let content_offset_y = padding.top + border.top
   for i = 0; i < groups.length(); i = i + 1 {
@@ -350,17 +363,24 @@ fn compute_mixed_content_layout(
     let _is_last = i == groups.length() - 1
     match group {
       InlineGroup(nodes~, indices~) => {
-        // Collapse previous block's bottom margin with anonymous block (no margin)
-        // Anonymous blocks have no margin, so we just add current_y
-        current_y = current_y + prev_margin_bottom
-        prev_margin_bottom = 0.0
+        // Collapse previous block's margin with anonymous block (no margin)
+        current_pos = current_pos + prev_margin_end
+        prev_margin_end = 0.0
         // Process inline group through IFC (anonymous block box)
         let ifc_result = @inline.compute_ifc(
           nodes,
           available_width,
           available_height,
-          content_offset_x,
-          content_offset_y + current_y,
+          if is_vertical {
+            content_offset_x + current_pos
+          } else {
+            content_offset_x
+          },
+          if is_vertical {
+            content_offset_y
+          } else {
+            content_offset_y + current_pos
+          },
           dispatch,
         )
         // Store layouts with original indices
@@ -370,7 +390,7 @@ fn compute_mixed_content_layout(
           }
         }
         // Anonymous blocks don't have margins, so no collapse
-        current_y = current_y + ifc_result.total_height
+        current_pos = current_pos + ifc_result.total_height
       }
       BlockChild(node~, index~) => {
         // Process block child with margin collapsing
@@ -390,27 +410,49 @@ fn compute_mixed_content_layout(
             dispatch_fn(node, child_ctx, dispatch)
           _ => compute_with_collapse(node, child_ctx, warnings, dispatch).layout
         }
-        // Calculate margin values
-        let margin_top = child_layout.margin.top
-        let margin_bottom = child_layout.margin.bottom
-        // Collapse margins
-        let collapsed = collapse_margins(prev_margin_bottom, margin_top)
+        // Calculate margin values - use appropriate axis based on writing mode
+        let margin_start = if is_vertical {
+          child_layout.margin.left
+        } else {
+          child_layout.margin.top
+        }
+        let margin_end = if is_vertical {
+          child_layout.margin.right
+        } else {
+          child_layout.margin.bottom
+        }
+        // Collapse margins (only in horizontal mode; vertical mode uses physical margins)
+        let collapsed = if is_vertical {
+          margin_start // No collapse in vertical mode for now
+        } else {
+          collapse_margins(prev_margin_end, margin_start)
+        }
         // Handle first child - check if margin escapes
-        if is_first && escaped_top is None {
-          // Check if we can collapse through (parent has no padding/border top)
-          if padding.top == 0.0 && border.top == 0.0 {
-            escaped_top = Some(margin_top)
+        let edge_padding = if is_vertical { padding.left } else { padding.top }
+        let edge_border = if is_vertical { border.left } else { border.top }
+        if is_first && escaped_start is None {
+          // Check if we can collapse through (parent has no padding/border on start edge)
+          if edge_padding == 0.0 && edge_border == 0.0 {
+            escaped_start = Some(margin_start)
           } else {
-            current_y = current_y + margin_top
+            current_pos = current_pos + margin_start
           }
         } else {
-          current_y = current_y + collapsed
+          current_pos = current_pos + collapsed
         }
-        // Position and store layout
+        // Position and store layout - swap x/y based on writing mode
         let positioned_layout : @types.Layout = {
           id: child_layout.id,
-          x: content_offset_x + child_layout.margin.left,
-          y: content_offset_y + current_y,
+          x: if is_vertical {
+            content_offset_x + current_pos
+          } else {
+            content_offset_x + child_layout.margin.left
+          },
+          y: if is_vertical {
+            content_offset_y + child_layout.margin.top
+          } else {
+            content_offset_y + current_pos
+          },
           width: child_layout.width,
           height: child_layout.height,
           margin: child_layout.margin,
@@ -422,19 +464,32 @@ fn compute_mixed_content_layout(
           text: child_layout.text,
         }
         layout_map[index] = positioned_layout
-        // Update state
-        current_y = current_y + child_layout.height
-        prev_margin_bottom = margin_bottom
-        escaped_bottom = Some(margin_bottom)
+        // Update state - advance by width in vertical mode, height in horizontal
+        let child_size = if is_vertical {
+          child_layout.width
+        } else {
+          child_layout.height
+        }
+        current_pos = current_pos + child_size
+        prev_margin_end = margin_end
+        escaped_end = Some(margin_end)
       }
     }
   }
   // Add final margin if not escaping
-  if padding.bottom > 0.0 || border.bottom > 0.0 {
-    current_y = current_y + prev_margin_bottom
-    escaped_bottom = None
+  let end_padding = if is_vertical { padding.right } else { padding.bottom }
+  let end_border = if is_vertical { border.right } else { border.bottom }
+  if end_padding > 0.0 || end_border > 0.0 {
+    current_pos = current_pos + prev_margin_end
+    escaped_end = None
   }
-  { content_height: current_y, escaped_top, escaped_bottom }
+  // content_height represents the content size in the block flow direction
+  // In vertical mode, this is actually content width, but we use the same name for simplicity
+  {
+    content_height: current_pos,
+    escaped_top: escaped_start,
+    escaped_bottom: escaped_end,
+  }
 }
 
 ///|
@@ -557,8 +612,8 @@ fn compute_with_collapse(
     // Compute children layouts using parent context
     // Position children as if they were direct children of the parent
     let children_layouts : Array[@types.Layout] = []
-    let mut current_y = 0.0
-    let mut prev_margin_bottom = 0.0
+    let mut current_pos = 0.0
+    let mut prev_margin_end = 0.0
     let mut first_child_margin_top : Double? = None
     for i = 0; i < node.children.length(); i = i + 1 {
       let child = node.children[i]
@@ -575,14 +630,14 @@ fn compute_with_collapse(
       let collapsed = if i == 0 {
         0.0
       } else {
-        collapse_margins(prev_margin_bottom, child_margin_top)
+        collapse_margins(prev_margin_end, child_margin_top)
       }
-      current_y = current_y + collapsed
+      current_pos = current_pos + collapsed
       // Position child
       let positioned_child : @types.Layout = {
         id: child_layout.id,
         x: child_layout.x,
-        y: current_y,
+        y: current_pos,
         width: child_layout.width,
         height: child_layout.height,
         margin: child_layout.margin,
@@ -594,8 +649,8 @@ fn compute_with_collapse(
         text: child_layout.text,
       }
       children_layouts.push(positioned_child)
-      current_y = current_y + child_layout.height
-      prev_margin_bottom = child_margin_bottom
+      current_pos = current_pos + child_layout.height
+      prev_margin_end = child_margin_bottom
     }
     return {
       layout: {
@@ -613,10 +668,7 @@ fn compute_with_collapse(
         text: node.text,
       },
       // Pass through the first child's margin for collapse with siblings
-      collapsed: {
-        top: first_child_margin_top,
-        bottom: Some(prev_margin_bottom),
-      },
+      collapsed: { top: first_child_margin_top, bottom: Some(prev_margin_end) },
     }
   }
 
@@ -1335,8 +1387,16 @@ fn compute_with_collapse(
       flow_nodes, flow_indices,
     )
     let mixed_result = compute_mixed_content_layout(
-      groups, actual_child_available_width, child_available_height, padding, border,
-      ctx, warnings, layout_map, dispatch,
+      groups,
+      actual_child_available_width,
+      child_available_height,
+      padding,
+      border,
+      ctx,
+      warnings,
+      layout_map,
+      dispatch,
+      writing_mode=style.writing_mode,
     )
     // Calculate box height from mixed content
     let content_height = mixed_result.content_height
@@ -1626,11 +1686,14 @@ fn compute_with_collapse(
   let mut escaped_top : Double? = None
   let mut escaped_bottom : Double? = None
 
-  // Track y positions after each flow child (for absolute static positioning)
-  // flow_y_positions[i] = y position after flow child i
+  // Check for vertical writing mode - affects block flow direction
+  let is_vertical_writing = style.writing_mode.is_vertical()
+
+  // Track positions after each flow child (for absolute static positioning)
+  // In horizontal mode: tracks y position. In vertical mode: tracks x position.
   let flow_y_positions : Array[Double] = []
-  let mut current_y = 0.0
-  let mut prev_margin_bottom = 0.0
+  let mut current_pos = 0.0 // y in horizontal, x in vertical
+  let mut prev_margin_end = 0.0
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
     let child_layout = child_result.layout
@@ -1639,13 +1702,13 @@ fn compute_with_collapse(
     let is_last = i == flow_children.length() - 1
     let child_style = flow_styles[i]
 
-    // Handle clear property - move current_y below cleared floats
+    // Handle clear property - move current_pos below cleared floats
     match child_style.clear {
       @types.Clear::Left | @types.Clear::Right | @types.Clear::Both => {
-        let clear_y = float_ctx.get_clear_y(child_style.clear, current_y)
-        if clear_y > current_y {
-          current_y = clear_y
-          prev_margin_bottom = 0.0 // Reset margin collapse after clear
+        let clear_y = float_ctx.get_clear_y(child_style.clear, current_pos)
+        if clear_y > current_pos {
+          current_pos = clear_y
+          prev_margin_end = 0.0 // Reset margin collapse after clear
         }
       }
       @types.Clear::None => ()
@@ -1695,39 +1758,39 @@ fn compute_with_collapse(
           escaped_top = Some(
             collapse_margins(effective_margin_top, effective_margin_bottom),
           )
-          prev_margin_bottom = effective_margin_bottom
+          prev_margin_end = effective_margin_bottom
         } else {
           escaped_top = Some(effective_margin_top)
-          prev_margin_bottom = effective_margin_bottom
+          prev_margin_end = effective_margin_bottom
         }
         padding.top + border.top // Child at y=0 relative to content
       } else {
         // Margin blocked by border/padding
         if collapses_through {
-          prev_margin_bottom = collapse_margins(
+          prev_margin_end = collapse_margins(
             effective_margin_top, effective_margin_bottom,
           )
         } else {
-          prev_margin_bottom = effective_margin_bottom
+          prev_margin_end = effective_margin_bottom
         }
-        current_y = effective_margin_top
+        current_pos = effective_margin_top
         effective_margin_top + padding.top + border.top
       }
       // Sibling collapse
     } else if collapses_through {
       // Collapse-through: element positioned after collapsed margin gap
       let all_collapsed = collapse_margins(
-        prev_margin_bottom,
+        prev_margin_end,
         collapse_margins(effective_margin_top, effective_margin_bottom),
       )
-      prev_margin_bottom = all_collapsed
+      prev_margin_end = all_collapsed
       // Position at the same y as where next sibling would be
-      current_y + all_collapsed + padding.top + border.top
+      current_pos + all_collapsed + padding.top + border.top
     } else {
-      let collapsed = collapse_margins(prev_margin_bottom, effective_margin_top)
-      current_y = current_y + collapsed
-      prev_margin_bottom = effective_margin_bottom
-      current_y + padding.top + border.top
+      let collapsed = collapse_margins(prev_margin_end, effective_margin_top)
+      current_pos = current_pos + collapsed
+      prev_margin_end = effective_margin_bottom
+      current_pos + padding.top + border.top
     }
 
     // Calculate x position considering margin auto
@@ -1812,10 +1875,21 @@ fn compute_with_collapse(
     }
 
     // Position child and store in map with original index
+    // In vertical writing mode, swap x/y positioning
+    let (positioned_x, positioned_y) = if is_vertical_writing {
+      // In vertical mode: blocks flow horizontally (x advances), y is fixed
+      // child_y was calculated as block position (should be x), child_x as cross position (should be y)
+      (
+        final_y - padding.top - border.top + padding.left + border.left,
+        child_layout.margin.top + padding.top + border.top,
+      )
+    } else {
+      (final_x, final_y)
+    }
     let positioned_layout : @types.Layout = {
       id: child_layout.id,
-      x: final_x,
-      y: final_y,
+      x: positioned_x,
+      y: positioned_y,
       width: child_layout.width,
       height: child_layout.height,
       margin: child_layout.margin,
@@ -1828,29 +1902,36 @@ fn compute_with_collapse(
     }
     layout_map[flow_indices[i]] = positioned_layout
 
-    // Update current_y (only if not collapsing through)
+    // Update current_pos (only if not collapsing through)
     if not(collapses_through) {
       // For display: contents, use children's total height instead of element's height (which is 0)
-      let effective_height = if child_style.display == @types.Contents {
-        get_children_total_height(child_layout.children)
+      // In vertical mode, we advance by width instead of height
+      let effective_size = if child_style.display == @types.Contents {
+        if is_vertical_writing {
+          get_children_total_width(child_layout.children)
+        } else {
+          get_children_total_height(child_layout.children)
+        }
+      } else if is_vertical_writing {
+        child_layout.width
       } else {
         child_layout.height
       }
       if is_first && can_collapse_top {
-        current_y = effective_height
+        current_pos = effective_size
       } else if is_first {
-        current_y = effective_margin_top + effective_height
+        current_pos = effective_margin_top + effective_size
       } else {
-        current_y = current_y + effective_height
+        current_pos = current_pos + effective_size
       }
     }
 
     // Record y position after this flow child (for absolute static positioning)
-    flow_y_positions.push(current_y)
+    flow_y_positions.push(current_pos)
 
     // Handle last child's bottom margin escape
     if is_last && can_collapse_bottom {
-      escaped_bottom = Some(prev_margin_bottom)
+      escaped_bottom = Some(prev_margin_end)
     }
   }
 
@@ -1865,9 +1946,9 @@ fn compute_with_collapse(
   let flow_content_height = if flow_children.length() == 0 {
     0.0
   } else if can_collapse_bottom {
-    @types.max(0.0, current_y) // Don't include escaped bottom margin
+    @types.max(0.0, current_pos) // Don't include escaped bottom margin
   } else {
-    @types.max(0.0, current_y + prev_margin_bottom)
+    @types.max(0.0, current_pos + prev_margin_end)
   }
   let content_height = @types.max(flow_content_height, float_height)
 
