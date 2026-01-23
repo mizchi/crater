@@ -1,0 +1,18 @@
+import {
+  "mizchi/crater/dom",
+  "mizchi/crater/scheduler",
+  "moonbitlang/core/strconv",
+  "moonbitlang/async/js_async",
+}
+
+options(
+  targets: {
+    "js_runtime_js.mbt": [ "js" ],
+    "js_runtime_js_test.mbt": [ "js" ],
+    "js_runtime_native.mbt": [ "native" ],
+    "js_runtime_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "scheduler_integration_js.mbt": [ "js" ],
+    "scheduler_integration_stub.mbt": [ "wasm", "wasm-gc", "native" ],
+    "scheduler_integration_test.mbt": [ "js" ],
+  },
+)
