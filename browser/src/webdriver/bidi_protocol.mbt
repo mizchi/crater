@@ -137,6 +137,7 @@ fn BidiProtocol::dispatch(
     "script" => self.dispatch_script(request, action)
     "input" => self.dispatch_input(request, action)
     "network" => self.dispatch_network(request, action)
+    "log" => self.dispatch_log(request, action)
     _ => {
       self.send_error(
         request.id,
@@ -526,15 +527,34 @@ fn BidiProtocol::dispatch_script(
         Some(_) => return Ok(())
         None => ()
       }
+      // Get context ID for log events
+      let ctx_id = match request.params {
+        Some(Object(params_map)) =>
+          match params_map.get("target") {
+            Some(Object(target)) =>
+              match target.get("context") {
+                Some(String(id)) => id
+                _ => "default"
+              }
+            _ => "default"
+          }
+        _ => "default"
+      }
       // Evaluate the expression using JS runtime
       let expr = get_string_param(request.params, "expression").unwrap()
       let eval_result_json = evaluate_js(expr)
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
-          self.send_error(request.id, "unknown error", "Failed to parse eval result")
+          self.send_error(
+            request.id,
+            "unknown error",
+            "Failed to parse eval result",
+          )
           return Ok(())
         }
       }
+      // Process console entries and emit log events BEFORE response
+      self.process_console_entries(eval_result, ctx_id)
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
@@ -613,6 +633,29 @@ fn BidiProtocol::dispatch_script(
         Some(_) => return Ok(())
         None => ()
       }
+      // Validate this parameter - must be a serialized value (object with type)
+      match self.validate_this_param(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
+      // Validate arguments parameter - must be array of serialized values
+      match self.validate_arguments_param(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
+      // Get context ID for log events
+      let ctx_id_call = match request.params {
+        Some(Object(params_map)) =>
+          match params_map.get("target") {
+            Some(Object(target)) =>
+              match target.get("context") {
+                Some(String(id)) => id
+                _ => "default"
+              }
+            _ => "default"
+          }
+        _ => "default"
+      }
       // Get arguments if provided
       let args_json = match get_param_raw(request.params, "arguments") {
         Some(Array(args)) => {
@@ -631,10 +674,16 @@ fn BidiProtocol::dispatch_script(
       let eval_result_json = evaluate_js(call_expr)
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
-          self.send_error(request.id, "unknown error", "Failed to parse eval result")
+          self.send_error(
+            request.id,
+            "unknown error",
+            "Failed to parse eval result",
+          )
           return Ok(())
         }
       }
+      // Process console entries and emit log events BEFORE response
+      self.process_console_entries(eval_result, ctx_id_call)
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
@@ -747,6 +796,77 @@ fn BidiProtocol::dispatch_network(
   }
 }
 
+///|
+/// Dispatch log domain (event-only, no commands)
+fn BidiProtocol::dispatch_log(
+  self : BidiProtocol,
+  request : BidiRequest,
+  action : String,
+) -> Result[Unit, String] {
+  // Log module has no commands - it's event-driven via log.entryAdded
+  self.send_error(
+    request.id,
+    "unknown command",
+    "Unknown log method: " + action,
+  )
+  Ok(())
+}
+
+///|
+/// Emit log.entryAdded event
+pub fn BidiProtocol::emit_log_entry(
+  self : BidiProtocol,
+  ctx_id : String,
+  level : String,
+  text : String,
+  console_method : String,
+) -> Unit {
+  if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) &&
+    not(self.is_subscribed("log")) {
+    return
+  }
+  let timestamp = 0.0 // Would be actual timestamp in real impl
+  let params = make_object({
+    "level": Json::string(level),
+    "source": make_object({
+      "realm": Json::string("realm-" + ctx_id),
+      "context": Json::string(ctx_id),
+    }),
+    "text": Json::string(text),
+    "timestamp": Json::number(timestamp),
+    "method": Json::string(console_method),
+    "args": Json::array([]),
+    "type": Json::string("console"),
+  })
+  self.outbox.push(Event({ event_method: "log.entryAdded", params }))
+}
+
+///|
+/// Process console entries from JS evaluation result and emit log events
+fn BidiProtocol::process_console_entries(
+  self : BidiProtocol,
+  eval_result : Json,
+  ctx_id : String,
+) -> Unit {
+  match get_field(eval_result, "consoleEntries") {
+    Some(Array(entries)) =>
+      for entry in entries {
+        match entry {
+          Object(_) => {
+            let level = get_string_field(entry, "level").unwrap_or("info")
+            let console_method = get_string_field(entry, "method").unwrap_or(
+              "log",
+            )
+            let text = get_string_field(entry, "text").unwrap_or("")
+            self.emit_log_entry(ctx_id, level, text, console_method)
+          }
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+}
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -837,12 +957,14 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
       }
       // Check if contexts are specified
       match map.get("contexts") {
-        Some(Array(contexts)) => {
+        Some(Array(contexts)) =>
           // Context-specific subscription
           for ctx in contexts {
             match ctx {
               String(ctx_id) => {
-                let existing = self.context_subscriptions.get(ctx_id).unwrap_or([])
+                let existing = self.context_subscriptions
+                  .get(ctx_id)
+                  .unwrap_or([])
                 for evt in events_to_sub {
                   if not(array_contains(existing, evt)) {
                     existing.push(evt)
@@ -853,15 +975,13 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
               _ => ()
             }
           }
-        }
-        _ => {
+        _ =>
           // Global subscription (no contexts specified)
           for evt in events_to_sub {
             if not(array_contains(self.global_subscriptions, evt)) {
               self.global_subscriptions.push(evt)
             }
           }
-        }
       }
     }
     _ => ()
@@ -870,7 +990,10 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
 
 ///|
 /// Handle session.unsubscribe params
-fn BidiProtocol::handle_unsubscribe(self : BidiProtocol, params : Json?) -> Unit {
+fn BidiProtocol::handle_unsubscribe(
+  self : BidiProtocol,
+  params : Json?,
+) -> Unit {
   match params {
     Some(Object(map)) => {
       // Get events to unsubscribe from
@@ -891,7 +1014,7 @@ fn BidiProtocol::handle_unsubscribe(self : BidiProtocol, params : Json?) -> Unit
       }
       // Check if contexts are specified
       match map.get("contexts") {
-        Some(Array(contexts)) => {
+        Some(Array(contexts)) =>
           // Context-specific unsubscription
           for ctx in contexts {
             match ctx {
@@ -906,14 +1029,12 @@ fn BidiProtocol::handle_unsubscribe(self : BidiProtocol, params : Json?) -> Unit
               _ => ()
             }
           }
-        }
-        _ => {
+        _ =>
           // Global unsubscription
           self.global_subscriptions = array_filter_not(
             self.global_subscriptions,
             events_to_unsub,
           )
-        }
       }
     }
     _ => ()
@@ -1233,12 +1354,14 @@ fn BidiProtocol::validate_script_target(
             )
             return Some(())
           }
-        Some(Null) | Some(True) | Some(False) | Some(Number(_)) | Some(Array(_)) |
-        Some(Object(_)) => {
+        Some(Null)
+        | Some(True)
+        | Some(False)
+        | Some(Number(_))
+        | Some(Array(_))
+        | Some(Object(_)) => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "target.context must be a string",
+            request_id, "invalid argument", "target.context must be a string",
           )
           return Some(())
         }
@@ -1248,8 +1371,7 @@ fn BidiProtocol::validate_script_target(
       match target_map.get("realm") {
         Some(String(realm_id)) =>
           // Currently we only have "default-realm"
-          if realm_id != "default-realm" &&
-            not(realm_id.has_prefix("realm-")) {
+          if realm_id != "default-realm" && not(realm_id.has_prefix("realm-")) {
             self.send_error(
               request_id,
               "no such frame",
@@ -1257,12 +1379,14 @@ fn BidiProtocol::validate_script_target(
             )
             return Some(())
           }
-        Some(Null) | Some(True) | Some(False) | Some(Number(_)) | Some(Array(_)) |
-        Some(Object(_)) => {
+        Some(Null)
+        | Some(True)
+        | Some(False)
+        | Some(Number(_))
+        | Some(Array(_))
+        | Some(Object(_)) => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "target.realm must be a string",
+            request_id, "invalid argument", "target.realm must be a string",
           )
           return Some(())
         }
@@ -1271,9 +1395,7 @@ fn BidiProtocol::validate_script_target(
       // Target must have either context or realm
       if target_map.get("context") is None && target_map.get("realm") is None {
         self.send_error(
-          request_id,
-          "invalid argument",
-          "target must have either context or realm",
+          request_id, "invalid argument", "target must have either context or realm",
         )
         return Some(())
       }
@@ -1281,11 +1403,13 @@ fn BidiProtocol::validate_script_target(
       match target_map.get("sandbox") {
         Some(String(_)) => ()
         Some(Null) => () // null is allowed
-        Some(True) | Some(False) | Some(Number(_)) | Some(Array(_)) | Some(Object(_)) => {
+        Some(True)
+        | Some(False)
+        | Some(Number(_))
+        | Some(Array(_))
+        | Some(Object(_)) => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "target.sandbox must be a string",
+            request_id, "invalid argument", "target.sandbox must be a string",
           )
           return Some(())
         }
@@ -1293,7 +1417,9 @@ fn BidiProtocol::validate_script_target(
       }
     }
     Some(_) => {
-      self.send_error(request_id, "invalid argument", "target must be an object")
+      self.send_error(
+        request_id, "invalid argument", "target must be an object",
+      )
       return Some(())
     }
   }
@@ -1312,9 +1438,7 @@ fn BidiProtocol::validate_await_promise(
     None => () // Optional, defaults to false
     Some(_) => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "awaitPromise must be a boolean",
+        request_id, "invalid argument", "awaitPromise must be a boolean",
       )
       return Some(())
     }
@@ -1333,18 +1457,14 @@ fn BidiProtocol::validate_result_ownership(
     Some(String(s)) =>
       if s != "root" && s != "none" {
         self.send_error(
-          request_id,
-          "invalid argument",
-          "resultOwnership must be 'root' or 'none'",
+          request_id, "invalid argument", "resultOwnership must be 'root' or 'none'",
         )
         return Some(())
       }
     None => () // Optional
     Some(_) => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "resultOwnership must be a string",
+        request_id, "invalid argument", "resultOwnership must be a string",
       )
       return Some(())
     }
@@ -1366,18 +1486,14 @@ fn BidiProtocol::validate_serialization_options(
         Some(Number(n, ..)) =>
           if n < 0.0 || n != n.to_int64().to_double() {
             self.send_error(
-              request_id,
-              "invalid argument",
-              "maxDomDepth must be a non-negative integer",
+              request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
             )
             return Some(())
           }
         Some(Null) => ()
         Some(_) => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "maxDomDepth must be a non-negative integer",
+            request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
           )
           return Some(())
         }
@@ -1388,18 +1504,14 @@ fn BidiProtocol::validate_serialization_options(
         Some(Number(n, ..)) =>
           if n < 0.0 || n != n.to_int64().to_double() {
             self.send_error(
-              request_id,
-              "invalid argument",
-              "maxObjectDepth must be a non-negative integer",
+              request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
             )
             return Some(())
           }
         Some(Null) => ()
         Some(_) => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "maxObjectDepth must be a non-negative integer",
+            request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
           )
           return Some(())
         }
@@ -1410,18 +1522,14 @@ fn BidiProtocol::validate_serialization_options(
         Some(String(s)) =>
           if s != "none" && s != "open" && s != "all" {
             self.send_error(
-              request_id,
-              "invalid argument",
-              "includeShadowTree must be 'none', 'open', or 'all'",
+              request_id, "invalid argument", "includeShadowTree must be 'none', 'open', or 'all'",
             )
             return Some(())
           }
         Some(Null) => ()
         Some(_) => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "includeShadowTree must be a string",
+            request_id, "invalid argument", "includeShadowTree must be a string",
           )
           return Some(())
         }
@@ -1431,9 +1539,7 @@ fn BidiProtocol::validate_serialization_options(
     None => () // Optional
     Some(_) => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "serializationOptions must be an object",
+        request_id, "invalid argument", "serializationOptions must be an object",
       )
       return Some(())
     }
@@ -1453,9 +1559,198 @@ fn BidiProtocol::validate_user_activation(
     None => () // Optional
     Some(_) => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "userActivation must be a boolean",
+        request_id, "invalid argument", "userActivation must be a boolean",
+      )
+      return Some(())
+    }
+  }
+  None
+}
+
+///|
+/// Validate this parameter for callFunction (must be a serialized value object)
+fn BidiProtocol::validate_this_param(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit? {
+  match get_param_raw(params, "this") {
+    Some(Object(_)) => () // Valid serialized value
+    None => () // Optional
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "this must be a serialized value",
+      )
+      return Some(())
+    }
+  }
+  None
+}
+
+///|
+/// Validate arguments parameter for callFunction (must be array of serialized values)
+fn BidiProtocol::validate_arguments_param(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit? {
+  match get_param_raw(params, "arguments") {
+    Some(Array(args)) =>
+      // Each argument must be a serialized value (object)
+      for arg in args {
+        match arg {
+          Object(arg_map) => {
+            // Check for channel type special validation
+            match arg_map.get("type") {
+              Some(String("channel")) =>
+                // Validate channel value
+                match arg_map.get("value") {
+                  Some(Object(channel_val)) => {
+                    // Validate channel.channel (must be string)
+                    match channel_val.get("channel") {
+                      Some(String(_)) => ()
+                      Some(_) => {
+                        self.send_error(
+                          request_id, "invalid argument", "channel.channel must be a string",
+                        )
+                        return Some(())
+                      }
+                      None => () // May be omitted
+                    }
+                    // Validate channel.ownership (must be "root" or "none")
+                    match channel_val.get("ownership") {
+                      Some(String(s)) =>
+                        if s != "root" && s != "none" {
+                          self.send_error(
+                            request_id, "invalid argument", "channel.ownership must be 'root' or 'none'",
+                          )
+                          return Some(())
+                        }
+                      Some(_) => {
+                        self.send_error(
+                          request_id, "invalid argument", "channel.ownership must be a string",
+                        )
+                        return Some(())
+                      }
+                      None => ()
+                    }
+                    // Validate channel.serializationOptions
+                    match channel_val.get("serializationOptions") {
+                      Some(Object(ser_opts)) => {
+                        // Validate maxDomDepth
+                        match ser_opts.get("maxDomDepth") {
+                          Some(Number(n, ..)) =>
+                            if n < 0.0 {
+                              self.send_error(
+                                request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
+                              )
+                              return Some(())
+                            }
+                          Some(Null) => ()
+                          Some(_) => {
+                            self.send_error(
+                              request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
+                            )
+                            return Some(())
+                          }
+                          None => ()
+                        }
+                        // Validate maxObjectDepth
+                        match ser_opts.get("maxObjectDepth") {
+                          Some(Number(n, ..)) =>
+                            if n < 0.0 {
+                              self.send_error(
+                                request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
+                              )
+                              return Some(())
+                            }
+                          Some(Null) => ()
+                          Some(_) => {
+                            self.send_error(
+                              request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
+                            )
+                            return Some(())
+                          }
+                          None => ()
+                        }
+                        // Validate includeShadowTree
+                        match ser_opts.get("includeShadowTree") {
+                          Some(String(s)) =>
+                            if s != "none" && s != "open" && s != "all" {
+                              self.send_error(
+                                request_id, "invalid argument", "includeShadowTree must be 'none', 'open', or 'all'",
+                              )
+                              return Some(())
+                            }
+                          Some(Null) => ()
+                          Some(_) => {
+                            self.send_error(
+                              request_id, "invalid argument", "includeShadowTree must be a string",
+                            )
+                            return Some(())
+                          }
+                          None => ()
+                        }
+                      }
+                      Some(_) => {
+                        self.send_error(
+                          request_id, "invalid argument", "serializationOptions must be an object",
+                        )
+                        return Some(())
+                      }
+                      None => ()
+                    }
+                  }
+                  Some(_) => {
+                    self.send_error(
+                      request_id, "invalid argument", "channel value must be an object",
+                    )
+                    return Some(())
+                  }
+                  None => {
+                    self.send_error(
+                      request_id, "invalid argument", "channel type requires value",
+                    )
+                    return Some(())
+                  }
+                }
+              _ => () // Other types don't need special validation here
+            }
+            // Validate handle if present
+            match arg_map.get("handle") {
+              Some(String(_)) => () // Will be validated during execution
+              Some(_) => {
+                self.send_error(
+                  request_id, "invalid argument", "handle must be a string",
+                )
+                return Some(())
+              }
+              None => ()
+            }
+            // Validate sharedId if present
+            match arg_map.get("sharedId") {
+              Some(String(_)) => ()
+              Some(_) => {
+                self.send_error(
+                  request_id, "invalid argument", "sharedId must be a string",
+                )
+                return Some(())
+              }
+              None => ()
+            }
+          }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "arguments entries must be serialized values",
+            )
+            return Some(())
+          }
+        }
+      }
+    None => () // Optional
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "arguments must be an array",
       )
       return Some(())
     }

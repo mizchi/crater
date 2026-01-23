@@ -65,10 +65,12 @@ fn BidiServer::handle_message(
       }
       result
     }
-    Err(e) => [
-      "{\"type\":\"error\",\"error\":\"unknown error\",\"message\":\"" + e +
-      "\"}",
-    ]
+    Err(e) =>
+      [
+        "{\"type\":\"error\",\"error\":\"unknown error\",\"message\":\"" +
+        e +
+        "\"}",
+      ]
   }
 }
 
@@ -163,12 +165,38 @@ pub fn BidiServer::stop(self : BidiServer) -> Unit {
 
 ///|
 /// FFI: Evaluate JavaScript expression and return BiDi remote value JSON
-/// Returns: { "type": "success"|"exception", "result"|"exceptionDetails": ... }
+/// Returns: { "type": "success"|"exception", "result"|"exceptionDetails": ..., "consoleEntries": [...] }
 extern "js" fn js_evaluate_expression(expression : String) -> String =
   #| (expression) => {
+  #|   const consoleEntries = [];
+  #|   const originalConsole = {
+  #|     log: console.log,
+  #|     warn: console.warn,
+  #|     error: console.error,
+  #|     info: console.info,
+  #|     debug: console.debug
+  #|   };
+  #|
+  #|   // Intercept console calls
+  #|   const makeInterceptor = (level, method) => (...args) => {
+  #|     consoleEntries.push({
+  #|       level,
+  #|       method,
+  #|       text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
+  #|       timestamp: Date.now()
+  #|     });
+  #|     originalConsole[method](...args);
+  #|   };
+  #|
+  #|   console.log = makeInterceptor('info', 'log');
+  #|   console.warn = makeInterceptor('warn', 'warn');
+  #|   console.error = makeInterceptor('error', 'error');
+  #|   console.info = makeInterceptor('info', 'info');
+  #|   console.debug = makeInterceptor('debug', 'debug');
+  #|
   #|   try {
   #|     const result = (0, eval)(expression);  // Indirect eval for global scope
-  #|     return JSON.stringify({ type: "success", result: toBidiValue(result) });
+  #|     return JSON.stringify({ type: "success", result: toBidiValue(result), consoleEntries });
   #|   } catch (e) {
   #|     return JSON.stringify({
   #|       type: "exception",
@@ -178,8 +206,16 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         text: String(e),
   #|         exception: { type: "error", value: { type: String(e.name || "Error") } },
   #|         stackTrace: { callFrames: [] }
-  #|       }
+  #|       },
+  #|       consoleEntries
   #|     });
+  #|   } finally {
+  #|     // Restore original console
+  #|     console.log = originalConsole.log;
+  #|     console.warn = originalConsole.warn;
+  #|     console.error = originalConsole.error;
+  #|     console.info = originalConsole.info;
+  #|     console.debug = originalConsole.debug;
   #|   }
   #|
   #|   function toBidiValue(value) {
@@ -313,4 +349,3 @@ fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
   }
   buf.to_string()
 }
-

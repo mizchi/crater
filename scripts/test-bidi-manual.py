@@ -302,6 +302,157 @@ async def test_event_subscription(t: BidiTester, ctx_id: str):
     })
     t.check("unsubscribe with contexts returns success", resp.get("type") == "success", f"got: {resp}")
 
+async def test_call_function_validation(t: BidiTester, ctx_id: str):
+    print("\n[callFunction validation]")
+
+    # Invalid this parameter (string instead of object)
+    resp = await t.send("script.callFunction", {
+        "functionDeclaration": "(arg) => arg",
+        "this": "invalid",
+        "target": {"context": ctx_id},
+        "awaitPromise": False
+    })
+    t.check("this string -> error", resp.get("type") == "error", f"got: {resp}")
+
+    # Invalid arguments (not an array)
+    resp = await t.send("script.callFunction", {
+        "functionDeclaration": "(arg) => arg",
+        "arguments": "invalid",
+        "target": {"context": ctx_id},
+        "awaitPromise": False
+    })
+    t.check("arguments string -> error", resp.get("type") == "error", f"got: {resp}")
+
+    # Invalid arguments entry (string instead of object)
+    resp = await t.send("script.callFunction", {
+        "functionDeclaration": "(arg) => arg",
+        "arguments": ["invalid"],
+        "target": {"context": ctx_id},
+        "awaitPromise": False
+    })
+    t.check("arguments entry string -> error", resp.get("type") == "error", f"got: {resp}")
+
+    # Invalid functionDeclaration (number)
+    resp = await t.send("script.callFunction", {
+        "functionDeclaration": 42,
+        "target": {"context": ctx_id},
+        "awaitPromise": False
+    })
+    t.check("functionDeclaration number -> error", resp.get("type") == "error", f"got: {resp}")
+
+async def test_log_module(t: BidiTester, ctx_id: str):
+    """Test log module with console interception"""
+    print("\n[log module]")
+
+    # Subscribe to log events
+    resp = await t.send("session.subscribe", {
+        "events": ["log.entryAdded"]
+    })
+    t.check("subscribe to log.entryAdded", resp.get("type") == "success", f"got: {resp}")
+
+    # Clear any existing events
+    t.event_queue.clear()
+
+    # Evaluate expression that calls console.log
+    resp = await t.send("script.evaluate", {
+        "expression": "console.log('test message')",
+        "target": {"context": ctx_id},
+        "awaitPromise": True
+    })
+    t.check("console.log returns success", resp.get("type") == "success", f"got: {resp}")
+
+    # Check for log event
+    log_event = None
+    for event in t.event_queue:
+        if event.get("method") == "log.entryAdded":
+            log_event = event
+            break
+    t.check("log.entryAdded event received", log_event is not None, f"events: {t.event_queue}")
+
+    if log_event:
+        params = log_event.get("params", {})
+        t.check("log event has text", params.get("text") == "test message", f"got: {params}")
+        t.check("log event has level info", params.get("level") == "info", f"got: {params}")
+        t.check("log event has method log", params.get("method") == "log", f"got: {params}")
+
+    # Test console.error
+    t.event_queue.clear()
+    resp = await t.send("script.evaluate", {
+        "expression": "console.error('error message')",
+        "target": {"context": ctx_id},
+        "awaitPromise": True
+    })
+    t.check("console.error returns success", resp.get("type") == "success")
+
+    log_event = None
+    for event in t.event_queue:
+        if event.get("method") == "log.entryAdded":
+            log_event = event
+            break
+    if log_event:
+        params = log_event.get("params", {})
+        t.check("error event has level error", params.get("level") == "error", f"got: {params}")
+
+    # Test console.warn
+    t.event_queue.clear()
+    resp = await t.send("script.evaluate", {
+        "expression": "console.warn('warning message')",
+        "target": {"context": ctx_id},
+        "awaitPromise": True
+    })
+    t.check("console.warn returns success", resp.get("type") == "success")
+
+    log_event = None
+    for event in t.event_queue:
+        if event.get("method") == "log.entryAdded":
+            log_event = event
+            break
+    if log_event:
+        params = log_event.get("params", {})
+        t.check("warn event has level warn", params.get("level") == "warn", f"got: {params}")
+
+async def test_input_module(t: BidiTester, ctx_id: str):
+    """Test input module (stub implementation)"""
+    print("\n[input module]")
+
+    # performActions should return success (no-op)
+    resp = await t.send("input.performActions", {
+        "context": ctx_id,
+        "actions": [
+            {
+                "type": "key",
+                "id": "keyboard1",
+                "actions": [
+                    {"type": "keyDown", "value": "a"},
+                    {"type": "keyUp", "value": "a"}
+                ]
+            }
+        ]
+    })
+    t.check("performActions returns success", resp.get("type") == "success", f"got: {resp}")
+
+    # releaseActions should return success (no-op)
+    resp = await t.send("input.releaseActions", {
+        "context": ctx_id
+    })
+    t.check("releaseActions returns success", resp.get("type") == "success", f"got: {resp}")
+
+async def test_network_module(t: BidiTester, ctx_id: str):
+    """Test network module (stub implementation)"""
+    print("\n[network module]")
+
+    # addDataCollector should return success (no-op)
+    resp = await t.send("network.addDataCollector", {
+        "context": ctx_id
+    })
+    t.check("addDataCollector returns success", resp.get("type") == "success", f"got: {resp}")
+
+    # setCacheBehavior should return success (no-op)
+    resp = await t.send("network.setCacheBehavior", {
+        "cacheBehavior": "default"
+    })
+    t.check("setCacheBehavior returns success", resp.get("type") == "success", f"got: {resp}")
+
 async def test_events_received(t: BidiTester):
     """Test that events are actually emitted after subscription"""
     print("\n[events received]")
@@ -351,7 +502,11 @@ async def main():
         await test_script_call_function(t, ctx_id)
         await test_validation_errors(t, ctx_id)
         await test_script_validation(t, ctx_id)
+        await test_call_function_validation(t, ctx_id)
         await test_event_subscription(t, ctx_id)
+        await test_log_module(t, ctx_id)
+        await test_input_module(t, ctx_id)
+        await test_network_module(t, ctx_id)
         await test_events_received(t)
 
         print(f"\n=== Results ===")
