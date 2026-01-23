@@ -108,11 +108,438 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     // DOMImplementation class
   #|     function DOMImplementation() {}
   #|
+  #|     // DOM interface classes for prototype chain
+  #|     function Node() {}
+  #|     Node.ELEMENT_NODE = 1;
+  #|     Node.ATTRIBUTE_NODE = 2;
+  #|     Node.TEXT_NODE = 3;
+  #|     Node.CDATA_SECTION_NODE = 4;
+  #|     Node.PROCESSING_INSTRUCTION_NODE = 7;
+  #|     Node.COMMENT_NODE = 8;
+  #|     Node.DOCUMENT_NODE = 9;
+  #|     Node.DOCUMENT_TYPE_NODE = 10;
+  #|     Node.DOCUMENT_FRAGMENT_NODE = 11;
+  #|     Node.DOCUMENT_POSITION_DISCONNECTED = 1;
+  #|     Node.DOCUMENT_POSITION_PRECEDING = 2;
+  #|     Node.DOCUMENT_POSITION_FOLLOWING = 4;
+  #|     Node.DOCUMENT_POSITION_CONTAINS = 8;
+  #|     Node.DOCUMENT_POSITION_CONTAINED_BY = 16;
+  #|     Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 32;
+  #|
+  #|     function CharacterData() {}
+  #|     CharacterData.prototype = Object.create(Node.prototype);
+  #|     CharacterData.prototype.constructor = CharacterData;
+  #|
+  #|     function Element() {}
+  #|     Element.prototype = Object.create(Node.prototype);
+  #|     Element.prototype.constructor = Element;
+  #|
+  #|     function HTMLElement() {}
+  #|     HTMLElement.prototype = Object.create(Element.prototype);
+  #|     HTMLElement.prototype.constructor = HTMLElement;
+  #|
+  #|     function HTMLHtmlElement() {}
+  #|     HTMLHtmlElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLHtmlElement.prototype.constructor = HTMLHtmlElement;
+  #|
+  #|     function HTMLHeadElement() {}
+  #|     HTMLHeadElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLHeadElement.prototype.constructor = HTMLHeadElement;
+  #|
+  #|     function HTMLBodyElement() {}
+  #|     HTMLBodyElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLBodyElement.prototype.constructor = HTMLBodyElement;
+  #|
+  #|     function HTMLDivElement() {}
+  #|     HTMLDivElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDivElement.prototype.constructor = HTMLDivElement;
+  #|
+  #|     function HTMLSpanElement() {}
+  #|     HTMLSpanElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLSpanElement.prototype.constructor = HTMLSpanElement;
+  #|
+  #|     function HTMLTitleElement() {}
+  #|     HTMLTitleElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTitleElement.prototype.constructor = HTMLTitleElement;
+  #|
+  #|     function HTMLAnchorElement() {}
+  #|     HTMLAnchorElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLAnchorElement.prototype.constructor = HTMLAnchorElement;
+  #|
+  #|     function HTMLAreaElement() {}
+  #|     HTMLAreaElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLAreaElement.prototype.constructor = HTMLAreaElement;
+  #|
+  #|     function HTMLAudioElement() {}
+  #|     HTMLAudioElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLAudioElement.prototype.constructor = HTMLAudioElement;
+  #|
+  #|     function HTMLBaseElement() {}
+  #|     HTMLBaseElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLBaseElement.prototype.constructor = HTMLBaseElement;
+  #|
+  #|     function HTMLBRElement() {}
+  #|     HTMLBRElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLBRElement.prototype.constructor = HTMLBRElement;
+  #|
+  #|     function HTMLButtonElement() {}
+  #|     HTMLButtonElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLButtonElement.prototype.constructor = HTMLButtonElement;
+  #|
+  #|     function HTMLCanvasElement() {}
+  #|     HTMLCanvasElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLCanvasElement.prototype.constructor = HTMLCanvasElement;
+  #|
+  #|     function HTMLDataElement() {}
+  #|     HTMLDataElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDataElement.prototype.constructor = HTMLDataElement;
+  #|
+  #|     function HTMLDataListElement() {}
+  #|     HTMLDataListElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDataListElement.prototype.constructor = HTMLDataListElement;
+  #|
+  #|     function HTMLDetailsElement() {}
+  #|     HTMLDetailsElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDetailsElement.prototype.constructor = HTMLDetailsElement;
+  #|
+  #|     function HTMLDialogElement() {}
+  #|     HTMLDialogElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDialogElement.prototype.constructor = HTMLDialogElement;
+  #|
+  #|     function HTMLDListElement() {}
+  #|     HTMLDListElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDListElement.prototype.constructor = HTMLDListElement;
+  #|
+  #|     function HTMLEmbedElement() {}
+  #|     HTMLEmbedElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLEmbedElement.prototype.constructor = HTMLEmbedElement;
+  #|
+  #|     function HTMLFieldSetElement() {}
+  #|     HTMLFieldSetElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLFieldSetElement.prototype.constructor = HTMLFieldSetElement;
+  #|
+  #|     function HTMLFormElement() {}
+  #|     HTMLFormElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLFormElement.prototype.constructor = HTMLFormElement;
+  #|
+  #|     function HTMLHRElement() {}
+  #|     HTMLHRElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLHRElement.prototype.constructor = HTMLHRElement;
+  #|
+  #|     function HTMLIFrameElement() {}
+  #|     HTMLIFrameElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLIFrameElement.prototype.constructor = HTMLIFrameElement;
+  #|
+  #|     function HTMLImageElement() {}
+  #|     HTMLImageElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLImageElement.prototype.constructor = HTMLImageElement;
+  #|
+  #|     function HTMLInputElement() {}
+  #|     HTMLInputElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLInputElement.prototype.constructor = HTMLInputElement;
+  #|
+  #|     function HTMLLabelElement() {}
+  #|     HTMLLabelElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLLabelElement.prototype.constructor = HTMLLabelElement;
+  #|
+  #|     function HTMLLegendElement() {}
+  #|     HTMLLegendElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLLegendElement.prototype.constructor = HTMLLegendElement;
+  #|
+  #|     function HTMLLIElement() {}
+  #|     HTMLLIElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLLIElement.prototype.constructor = HTMLLIElement;
+  #|
+  #|     function HTMLLinkElement() {}
+  #|     HTMLLinkElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLLinkElement.prototype.constructor = HTMLLinkElement;
+  #|
+  #|     function HTMLMapElement() {}
+  #|     HTMLMapElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLMapElement.prototype.constructor = HTMLMapElement;
+  #|
+  #|     function HTMLMenuElement() {}
+  #|     HTMLMenuElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLMenuElement.prototype.constructor = HTMLMenuElement;
+  #|
+  #|     function HTMLMetaElement() {}
+  #|     HTMLMetaElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLMetaElement.prototype.constructor = HTMLMetaElement;
+  #|
+  #|     function HTMLMeterElement() {}
+  #|     HTMLMeterElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLMeterElement.prototype.constructor = HTMLMeterElement;
+  #|
+  #|     function HTMLModElement() {}
+  #|     HTMLModElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLModElement.prototype.constructor = HTMLModElement;
+  #|
+  #|     function HTMLObjectElement() {}
+  #|     HTMLObjectElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLObjectElement.prototype.constructor = HTMLObjectElement;
+  #|
+  #|     function HTMLOListElement() {}
+  #|     HTMLOListElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLOListElement.prototype.constructor = HTMLOListElement;
+  #|
+  #|     function HTMLOptGroupElement() {}
+  #|     HTMLOptGroupElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLOptGroupElement.prototype.constructor = HTMLOptGroupElement;
+  #|
+  #|     function HTMLOptionElement() {}
+  #|     HTMLOptionElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLOptionElement.prototype.constructor = HTMLOptionElement;
+  #|
+  #|     function HTMLOutputElement() {}
+  #|     HTMLOutputElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLOutputElement.prototype.constructor = HTMLOutputElement;
+  #|
+  #|     function HTMLParagraphElement() {}
+  #|     HTMLParagraphElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLParagraphElement.prototype.constructor = HTMLParagraphElement;
+  #|
+  #|     function HTMLPictureElement() {}
+  #|     HTMLPictureElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLPictureElement.prototype.constructor = HTMLPictureElement;
+  #|
+  #|     function HTMLPreElement() {}
+  #|     HTMLPreElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLPreElement.prototype.constructor = HTMLPreElement;
+  #|
+  #|     function HTMLProgressElement() {}
+  #|     HTMLProgressElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLProgressElement.prototype.constructor = HTMLProgressElement;
+  #|
+  #|     function HTMLQuoteElement() {}
+  #|     HTMLQuoteElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLQuoteElement.prototype.constructor = HTMLQuoteElement;
+  #|
+  #|     function HTMLScriptElement() {}
+  #|     HTMLScriptElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLScriptElement.prototype.constructor = HTMLScriptElement;
+  #|
+  #|     function HTMLSelectElement() {}
+  #|     HTMLSelectElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLSelectElement.prototype.constructor = HTMLSelectElement;
+  #|
+  #|     function HTMLSlotElement() {}
+  #|     HTMLSlotElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLSlotElement.prototype.constructor = HTMLSlotElement;
+  #|
+  #|     function HTMLSourceElement() {}
+  #|     HTMLSourceElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLSourceElement.prototype.constructor = HTMLSourceElement;
+  #|
+  #|     function HTMLStyleElement() {}
+  #|     HTMLStyleElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLStyleElement.prototype.constructor = HTMLStyleElement;
+  #|
+  #|     function HTMLTableElement() {}
+  #|     HTMLTableElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTableElement.prototype.constructor = HTMLTableElement;
+  #|
+  #|     function HTMLTableCellElement() {}
+  #|     HTMLTableCellElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTableCellElement.prototype.constructor = HTMLTableCellElement;
+  #|
+  #|     function HTMLTableColElement() {}
+  #|     HTMLTableColElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTableColElement.prototype.constructor = HTMLTableColElement;
+  #|
+  #|     function HTMLTableRowElement() {}
+  #|     HTMLTableRowElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTableRowElement.prototype.constructor = HTMLTableRowElement;
+  #|
+  #|     function HTMLTableSectionElement() {}
+  #|     HTMLTableSectionElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTableSectionElement.prototype.constructor = HTMLTableSectionElement;
+  #|
+  #|     function HTMLTemplateElement() {}
+  #|     HTMLTemplateElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTemplateElement.prototype.constructor = HTMLTemplateElement;
+  #|
+  #|     function HTMLTextAreaElement() {}
+  #|     HTMLTextAreaElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTextAreaElement.prototype.constructor = HTMLTextAreaElement;
+  #|
+  #|     function HTMLTimeElement() {}
+  #|     HTMLTimeElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTimeElement.prototype.constructor = HTMLTimeElement;
+  #|
+  #|     function HTMLTrackElement() {}
+  #|     HTMLTrackElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTrackElement.prototype.constructor = HTMLTrackElement;
+  #|
+  #|     function HTMLUListElement() {}
+  #|     HTMLUListElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLUListElement.prototype.constructor = HTMLUListElement;
+  #|
+  #|     function HTMLVideoElement() {}
+  #|     HTMLVideoElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLVideoElement.prototype.constructor = HTMLVideoElement;
+  #|
+  #|     function HTMLUnknownElement() {}
+  #|     HTMLUnknownElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLUnknownElement.prototype.constructor = HTMLUnknownElement;
+  #|
+  #|     function HTMLTableCaptionElement() {}
+  #|     HTMLTableCaptionElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTableCaptionElement.prototype.constructor = HTMLTableCaptionElement;
+  #|
+  #|     function HTMLDirectoryElement() {}
+  #|     HTMLDirectoryElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLDirectoryElement.prototype.constructor = HTMLDirectoryElement;
+  #|
+  #|     function HTMLFontElement() {}
+  #|     HTMLFontElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLFontElement.prototype.constructor = HTMLFontElement;
+  #|
+  #|     function HTMLMarqueeElement() {}
+  #|     HTMLMarqueeElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLMarqueeElement.prototype.constructor = HTMLMarqueeElement;
+  #|
+  #|     function HTMLFrameElement() {}
+  #|     HTMLFrameElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLFrameElement.prototype.constructor = HTMLFrameElement;
+  #|
+  #|     function HTMLFrameSetElement() {}
+  #|     HTMLFrameSetElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLFrameSetElement.prototype.constructor = HTMLFrameSetElement;
+  #|
+  #|     function HTMLParamElement() {}
+  #|     HTMLParamElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLParamElement.prototype.constructor = HTMLParamElement;
+  #|
+  #|     function HTMLHeadingElement() {}
+  #|     HTMLHeadingElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLHeadingElement.prototype.constructor = HTMLHeadingElement;
+  #|
+  #|     // Tag to constructor mapping
+  #|     const tagToConstructor = {
+  #|       'html': HTMLHtmlElement,
+  #|       'head': HTMLHeadElement,
+  #|       'body': HTMLBodyElement,
+  #|       'div': HTMLDivElement,
+  #|       'span': HTMLSpanElement,
+  #|       'title': HTMLTitleElement,
+  #|       'a': HTMLAnchorElement,
+  #|       'area': HTMLAreaElement,
+  #|       'audio': HTMLAudioElement,
+  #|       'base': HTMLBaseElement,
+  #|       'br': HTMLBRElement,
+  #|       'button': HTMLButtonElement,
+  #|       'canvas': HTMLCanvasElement,
+  #|       'data': HTMLDataElement,
+  #|       'datalist': HTMLDataListElement,
+  #|       'details': HTMLDetailsElement,
+  #|       'dialog': HTMLDialogElement,
+  #|       'dl': HTMLDListElement,
+  #|       'embed': HTMLEmbedElement,
+  #|       'fieldset': HTMLFieldSetElement,
+  #|       'form': HTMLFormElement,
+  #|       'h1': HTMLHeadingElement,
+  #|       'h2': HTMLHeadingElement,
+  #|       'h3': HTMLHeadingElement,
+  #|       'h4': HTMLHeadingElement,
+  #|       'h5': HTMLHeadingElement,
+  #|       'h6': HTMLHeadingElement,
+  #|       'hr': HTMLHRElement,
+  #|       'iframe': HTMLIFrameElement,
+  #|       'img': HTMLImageElement,
+  #|       'input': HTMLInputElement,
+  #|       'label': HTMLLabelElement,
+  #|       'legend': HTMLLegendElement,
+  #|       'li': HTMLLIElement,
+  #|       'link': HTMLLinkElement,
+  #|       'map': HTMLMapElement,
+  #|       'menu': HTMLMenuElement,
+  #|       'meta': HTMLMetaElement,
+  #|       'meter': HTMLMeterElement,
+  #|       'del': HTMLModElement,
+  #|       'ins': HTMLModElement,
+  #|       'object': HTMLObjectElement,
+  #|       'ol': HTMLOListElement,
+  #|       'optgroup': HTMLOptGroupElement,
+  #|       'option': HTMLOptionElement,
+  #|       'output': HTMLOutputElement,
+  #|       'p': HTMLParagraphElement,
+  #|       'picture': HTMLPictureElement,
+  #|       'pre': HTMLPreElement,
+  #|       'progress': HTMLProgressElement,
+  #|       'blockquote': HTMLQuoteElement,
+  #|       'q': HTMLQuoteElement,
+  #|       'script': HTMLScriptElement,
+  #|       'select': HTMLSelectElement,
+  #|       'slot': HTMLSlotElement,
+  #|       'source': HTMLSourceElement,
+  #|       'style': HTMLStyleElement,
+  #|       'table': HTMLTableElement,
+  #|       'td': HTMLTableCellElement,
+  #|       'th': HTMLTableCellElement,
+  #|       'col': HTMLTableColElement,
+  #|       'colgroup': HTMLTableColElement,
+  #|       'tr': HTMLTableRowElement,
+  #|       'thead': HTMLTableSectionElement,
+  #|       'tbody': HTMLTableSectionElement,
+  #|       'tfoot': HTMLTableSectionElement,
+  #|       'template': HTMLTemplateElement,
+  #|       'textarea': HTMLTextAreaElement,
+  #|       'time': HTMLTimeElement,
+  #|       'track': HTMLTrackElement,
+  #|       'ul': HTMLUListElement,
+  #|       'video': HTMLVideoElement,
+  #|       'caption': HTMLTableCaptionElement,
+  #|       'dir': HTMLDirectoryElement,
+  #|       'font': HTMLFontElement,
+  #|       'marquee': HTMLMarqueeElement,
+  #|       'frame': HTMLFrameElement,
+  #|       'frameset': HTMLFrameSetElement,
+  #|       'param': HTMLParamElement
+  #|     };
+  #|
+  #|     function Document() {}
+  #|     Document.prototype = Object.create(Node.prototype);
+  #|     Document.prototype.constructor = Document;
+  #|
+  #|     function DocumentType() {}
+  #|     DocumentType.prototype = Object.create(Node.prototype);
+  #|     DocumentType.prototype.constructor = DocumentType;
+  #|
+  #|     function DocumentFragment() {}
+  #|     DocumentFragment.prototype = Object.create(Node.prototype);
+  #|     DocumentFragment.prototype.constructor = DocumentFragment;
+  #|
+  #|     // Text constructor
+  #|     function Text(data) {
+  #|       if (!(this instanceof Text)) throw new TypeError("Failed to construct 'Text': Please use the 'new' operator");
+  #|       const str = data === undefined ? '' : String(data);
+  #|       const id = nodeIdCounter++;
+  #|       domOps.push({ op: 'createTextNode', id, text: str });
+  #|       const node = createMockTextNode(str, id);
+  #|       Object.setPrototypeOf(node, Text.prototype);
+  #|       return node;
+  #|     }
+  #|     Text.prototype = Object.create(CharacterData.prototype);
+  #|     Text.prototype.constructor = Text;
+  #|
+  #|     // Comment constructor
+  #|     function Comment(data) {
+  #|       if (!(this instanceof Comment)) throw new TypeError("Failed to construct 'Comment': Please use the 'new' operator");
+  #|       const str = data === undefined ? '' : String(data);
+  #|       const id = nodeIdCounter++;
+  #|       domOps.push({ op: 'createComment', id, text: str });
+  #|       const node = createMockComment(str, id);
+  #|       Object.setPrototypeOf(node, Comment.prototype);
+  #|       return node;
+  #|     }
+  #|     Comment.prototype = Object.create(CharacterData.prototype);
+  #|     Comment.prototype.constructor = Comment;
+  #|
   #|     function createMockElement(tagName, mockId) {
   #|       const el = {
   #|         _mockId: mockId,
   #|         _tagName: tagName.toUpperCase(),
-  #|         _attrs: {},
+  #|         _attrList: [], // Array of {ns, localName, prefix, name, value}
   #|         _textContent: '',
   #|         _children: [],
   #|         _parent: null,
@@ -137,87 +564,221 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (node._parent) node = node._parent;
   #|           return node;
   #|         },
-  #|         get slot() { return this._attrs.slot || ''; },
+  #|         // Legacy _attrs getter for backwards compatibility
+  #|         get _attrs() {
+  #|           const obj = {};
+  #|           for (const attr of this._attrList) {
+  #|             obj[attr.localName] = attr.value;
+  #|           }
+  #|           return obj;
+  #|         },
+  #|         get slot() { return this.getAttribute('slot') || ''; },
   #|         set slot(v) { this.setAttribute('slot', v); },
   #|         setAttribute(name, value) {
-  #|           this._attrs[name] = String(value);
-  #|           domOps.push({ op: 'setAttribute', id: this._mockId, name, value: String(value) });
+  #|           // Validate attribute name - empty string is invalid
+  #|           if (name === '') {
+  #|             throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
+  #|           }
+  #|           // HTML elements lowercase attribute names (for qualified name matching)
+  #|           const lowerName = name.toLowerCase();
+  #|           const strValue = String(value);
+  #|           // Find first existing attr with matching qualified name (case-insensitive)
+  #|           const idx = this._attrList.findIndex(a => a.name.toLowerCase() === lowerName);
+  #|           if (idx >= 0) {
+  #|             this._attrList[idx].value = strValue;
+  #|           } else {
+  #|             this._attrList.push({ ns: null, localName: lowerName, prefix: null, name: lowerName, value: strValue });
+  #|           }
+  #|           domOps.push({ op: 'setAttribute', id: this._mockId, name: lowerName, value: strValue });
   #|         },
-  #|         getAttribute(name) { return this._attrs[name] || null; },
+  #|         getAttribute(name) {
+  #|           const lowerName = name.toLowerCase();
+  #|           // Find first attr with matching name (case-insensitive for HTML)
+  #|           const attr = this._attrList.find(a => a.name.toLowerCase() === lowerName);
+  #|           return attr ? attr.value : null;
+  #|         },
   #|         removeAttribute(name) {
-  #|           delete this._attrs[name];
-  #|           domOps.push({ op: 'removeAttribute', id: this._mockId, name });
+  #|           const lowerName = name.toLowerCase();
+  #|           // Remove first attr with matching name (case-insensitive for HTML)
+  #|           const idx = this._attrList.findIndex(a => a.name.toLowerCase() === lowerName);
+  #|           if (idx >= 0) {
+  #|             this._attrList.splice(idx, 1);
+  #|           }
+  #|           domOps.push({ op: 'removeAttribute', id: this._mockId, name: lowerName });
   #|         },
-  #|         hasAttribute(name) { return name in this._attrs; },
-  #|         hasAttributes() { return Object.keys(this._attrs).length > 0; },
-  #|         getAttributeNames() { return Object.keys(this._attrs); },
+  #|         hasAttribute(name) {
+  #|           const lowerName = name.toLowerCase();
+  #|           return this._attrList.some(a => a.name.toLowerCase() === lowerName);
+  #|         },
+  #|         hasAttributes() { return this._attrList.length > 0; },
+  #|         getAttributeNames() { return this._attrList.map(a => a.name); },
   #|         get attributes() {
   #|           const self = this;
-  #|           const items = Object.entries(this._attrs).map(function(e, i) {
-  #|             const attr = { name: e[0], value: e[1], localName: e[0], namespaceURI: null, prefix: null, ownerElement: self, specified: true, nodeType: 2, _nodeType: 2 };
+  #|           const items = this._attrList.map(function(a) {
+  #|             const attr = {
+  #|               name: a.name,
+  #|               value: a.value,
+  #|               localName: a.localName,
+  #|               nodeName: a.name,
+  #|               nodeValue: a.value,
+  #|               textContent: a.value,
+  #|               namespaceURI: a.ns,
+  #|               prefix: a.prefix,
+  #|               ownerElement: self,
+  #|               specified: true,
+  #|               nodeType: 2,
+  #|               _nodeType: 2
+  #|             };
   #|             attr.isSameNode = function(other) { return this === other; };
   #|             attr.isEqualNode = function(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value && other.namespaceURI === this.namespaceURI; };
   #|             return attr;
   #|           });
-  #|           return {
+  #|           const namedNodeMap = {
   #|             length: items.length,
   #|             item(i) { return items[i] || null; },
-  #|             getNamedItem(name) { return items.find(function(a) { return a.name === name; }) || null; },
-  #|             getNamedItemNS(ns, name) { return this.getNamedItem(name); },
+  #|             getNamedItem(name) {
+  #|               const lowerName = name.toLowerCase();
+  #|               return items.find(function(a) { return a.name.toLowerCase() === lowerName; }) || null;
+  #|             },
+  #|             getNamedItemNS(ns, localName) {
+  #|               const normalNs = (ns === '' || ns === null) ? null : ns;
+  #|               return items.find(function(a) {
+  #|                 const attrNs = (a.namespaceURI === '' || a.namespaceURI === null) ? null : a.namespaceURI;
+  #|                 return attrNs === normalNs && a.localName === localName;
+  #|               }) || null;
+  #|             },
   #|             setNamedItem(attr) { self.setAttribute(attr.name, attr.value); return attr; },
   #|             removeNamedItem(name) { const old = this.getNamedItem(name); self.removeAttribute(name); return old; },
   #|             [Symbol.iterator]() { return items[Symbol.iterator](); }
   #|           };
+  #|           // Add numeric index access
+  #|           for (let i = 0; i < items.length; i++) {
+  #|             namedNodeMap[i] = items[i];
+  #|           }
+  #|           return namedNodeMap;
   #|         },
-  #|         getAttributeNS(ns, name) { return this.getAttribute(name); },
-  #|         setAttributeNS(ns, name, value) { this.setAttribute(name, value); },
-  #|         removeAttributeNS(ns, name) { this.removeAttribute(name); },
-  #|         hasAttributeNS(ns, name) { return this.hasAttribute(name); },
+  #|         getAttributeNS(ns, localName) {
+  #|           // NS methods match by (namespace, localName) - case-sensitive
+  #|           // Treat null and "" as equivalent namespace
+  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
+  #|           const attr = this._attrList.find(a => {
+  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
+  #|             return attrNs === normalNs && a.localName === localName;
+  #|           });
+  #|           return attr ? attr.value : null;
+  #|         },
+  #|         setAttributeNS(ns, qualifiedName, value) {
+  #|           // Validate qualifiedName - empty string is invalid
+  #|           if (qualifiedName === '') {
+  #|             throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
+  #|           }
+  #|           // Normalize namespace (treat "" as null)
+  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
+  #|           // Extract localName and prefix from qualifiedName
+  #|           const colonIdx = qualifiedName.indexOf(':');
+  #|           const localName = colonIdx >= 0 ? qualifiedName.slice(colonIdx + 1) : qualifiedName;
+  #|           const prefix = colonIdx >= 0 ? qualifiedName.slice(0, colonIdx) : null;
+  #|           const strValue = String(value);
+  #|           // Find existing attr with same (namespace, localName)
+  #|           const idx = this._attrList.findIndex(a => {
+  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
+  #|             return attrNs === normalNs && a.localName === localName;
+  #|           });
+  #|           if (idx >= 0) {
+  #|             this._attrList[idx].value = strValue;
+  #|             this._attrList[idx].prefix = prefix;
+  #|             this._attrList[idx].name = qualifiedName;
+  #|           } else {
+  #|             this._attrList.push({ ns: normalNs, localName: localName, prefix: prefix, name: qualifiedName, value: strValue });
+  #|           }
+  #|           domOps.push({ op: 'setAttribute', id: this._mockId, name: qualifiedName, value: strValue });
+  #|         },
+  #|         removeAttributeNS(ns, localName) {
+  #|           // NS methods match by (namespace, localName) - case-sensitive
+  #|           // Treat null and "" as equivalent namespace
+  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
+  #|           const idx = this._attrList.findIndex(a => {
+  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
+  #|             return attrNs === normalNs && a.localName === localName;
+  #|           });
+  #|           if (idx >= 0) {
+  #|             this._attrList.splice(idx, 1);
+  #|           }
+  #|           domOps.push({ op: 'removeAttribute', id: this._mockId, name: localName });
+  #|         },
+  #|         hasAttributeNS(ns, localName) {
+  #|           // NS methods match by (namespace, localName) - case-sensitive
+  #|           // Treat null and "" as equivalent namespace
+  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
+  #|           return this._attrList.some(a => {
+  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
+  #|             return attrNs === normalNs && a.localName === localName;
+  #|           });
+  #|         },
   #|         getAttributeNode(name) { return this.attributes.getNamedItem(name); },
   #|         getAttributeNodeNS(ns, name) { return this.getAttributeNode(name); },
   #|         setAttributeNode(attr) { this.setAttribute(attr.name, attr.value); return attr; },
   #|         setAttributeNodeNS(attr) { return this.setAttributeNode(attr); },
   #|         removeAttributeNode(attr) { this.removeAttribute(attr.name); return attr; },
   #|         toggleAttribute(name, force) {
-  #|           if (force === undefined) {
-  #|             if (this.hasAttribute(name)) { this.removeAttribute(name); return false; }
-  #|             else { this.setAttribute(name, ''); return true; }
+  #|           // Validate name - empty string is invalid
+  #|           if (name === '') {
+  #|             throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
   #|           }
-  #|           if (force) { this.setAttribute(name, ''); return true; }
-  #|           else { this.removeAttribute(name); return false; }
+  #|           // HTML elements lowercase attribute names
+  #|           const lowerName = name.toLowerCase();
+  #|           if (force === undefined) {
+  #|             if (this.hasAttribute(lowerName)) { this.removeAttribute(lowerName); return false; }
+  #|             else { this.setAttribute(lowerName, ''); return true; }
+  #|           }
+  #|           if (force) { this.setAttribute(lowerName, ''); return true; }
+  #|           else { this.removeAttribute(lowerName); return false; }
   #|         },
-  #|         get id() { return this._attrs.id || ''; },
+  #|         get id() { return this.getAttribute('id') || ''; },
   #|         set id(v) { this.setAttribute('id', v); },
-  #|         get className() { return this._attrs.class || ''; },
+  #|         get className() { return this.getAttribute('class') || ''; },
   #|         set className(v) { this.setAttribute('class', v); },
   #|         get classList() {
   #|           const self = this;
   #|           return {
-  #|             _getClasses() { return (self._attrs.class || '').split(/\\s+/).filter(Boolean); },
+  #|             _getClasses() { return (self.getAttribute('class') || '').split(/\\s+/).filter(Boolean); },
   #|             add(...classes) { const c = new Set(this._getClasses()); classes.forEach(x => c.add(x)); self.className = [...c].join(' '); },
   #|             remove(...classes) { const c = new Set(this._getClasses()); classes.forEach(x => c.delete(x)); self.className = [...c].join(' '); },
   #|             toggle(cls, force) { if (force === undefined) force = !this.contains(cls); if (force) this.add(cls); else this.remove(cls); return force; },
   #|             contains(cls) { return this._getClasses().includes(cls); },
   #|             item(idx) { return this._getClasses()[idx] || null; },
   #|             get length() { return this._getClasses().length; },
-  #|             get value() { return self._attrs.class || ''; },
+  #|             get value() { return self.getAttribute('class') || ''; },
   #|             set value(v) { self.className = v; },
-  #|             toString() { return self._attrs.class || ''; },
+  #|             toString() { return self.getAttribute('class') || ''; },
   #|             [Symbol.iterator]() { return this._getClasses()[Symbol.iterator](); }
   #|           };
   #|         },
   #|         get textContent() {
-  #|           if (this._children.length === 0) return this._textContent;
-  #|           return this._children.map(c => c.textContent).join('');
+  #|           // Collect text content from Text node descendants only
+  #|           const collectText = (node) => {
+  #|             if (node._nodeType === 3) return node._textContent;
+  #|             if (!node._children) return '';
+  #|             return node._children.map(collectText).join('');
+  #|           };
+  #|           return collectText(this);
   #|         },
   #|         set textContent(v) {
-  #|           this._textContent = String(v);
+  #|           const str = (v === null || v === undefined) ? '' : String(v);
+  #|           // Remove all children
+  #|           this._children.forEach(c => { c._parent = null; });
   #|           this._children = [];
-  #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: String(v) });
+  #|           // If non-empty, add a text node
+  #|           if (str !== '') {
+  #|             const textNode = document.createTextNode(str);
+  #|             textNode._parent = this;
+  #|             this._children.push(textNode);
+  #|           }
+  #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
   #|         },
   #|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
   #|         get outerHTML() {
-  #|           const attrs = Object.entries(this._attrs).map(function(e) { return ' ' + e[0] + '="' + e[1] + '"'; }).join('');
+  #|           const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
   #|           const inner = this.innerHTML || this._textContent;
   #|           const tag = this._tagName.toLowerCase();
   #|           return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
@@ -304,9 +865,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             const id = nodeIdCounter++;
   #|             domOps.push({ op: 'createElement', id, tagName: el._tagName });
   #|             const clone = createMockElement(el._tagName, id);
-  #|             for (const [name, value] of Object.entries(el._attrs)) {
-  #|               clone._attrs[name] = value;
-  #|               domOps.push({ op: 'setAttribute', id, name, value });
+  #|             for (const attr of el._attrList) {
+  #|               clone._attrList.push({ ns: attr.ns, localName: attr.localName, prefix: attr.prefix, name: attr.name, value: attr.value });
+  #|               domOps.push({ op: 'setAttribute', id, name: attr.name, value: attr.value });
   #|             }
   #|             if (el._textContent && el._children.length === 0) {
   #|               clone._textContent = el._textContent;
@@ -410,7 +971,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           return false;
   #|         },
   #|         matches(selector) {
-  #|           if (selector.startsWith('#')) return this._attrs.id === selector.slice(1);
+  #|           if (selector.startsWith('#')) return this.getAttribute('id') === selector.slice(1);
   #|           if (selector.startsWith('.')) return this.classList.contains(selector.slice(1));
   #|           return this._tagName === selector.toUpperCase();
   #|         },
@@ -584,14 +1145,25 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         get style() {
   #|           const self = this;
   #|           return new Proxy({}, {
-  #|             get(_, prop) { return ''; },
+  #|             get(_, prop) {
+  #|               if (prop === 'cssText') return self._attrs.style || '';
+  #|               return '';
+  #|             },
   #|             set(_, prop, value) {
+  #|               if (prop === 'cssText') {
+  #|                 self.setAttribute('style', value);
+  #|                 return true;
+  #|               }
   #|               const style = self._attrs.style || '';
   #|               const propName = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
   #|               self.setAttribute('style', style + propName + ':' + value + ';');
   #|               return true;
   #|             }
   #|           });
+  #|         },
+  #|         set style(v) {
+  #|           // el.style = "string" sets the style attribute
+  #|           this.setAttribute('style', String(v));
   #|         },
   #|         // HTMLElement properties
   #|         get title() { return this._attrs.title || ''; },
@@ -1159,7 +1731,25 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         get nodeType() { return 11; },
   #|         get nodeName() { return '#document-fragment'; },
   #|         get ownerDocument() { return document; },
-  #|         get textContent() { return this._children.map(c => c.textContent).join(''); },
+  #|         get textContent() {
+  #|           // Collect text content from Text node descendants only
+  #|           const collectText = (node) => {
+  #|             if (node._nodeType === 3) return node._textContent;
+  #|             if (!node._children) return '';
+  #|             return node._children.map(collectText).join('');
+  #|           };
+  #|           return collectText(this);
+  #|         },
+  #|         set textContent(v) {
+  #|           const str = (v === null || v === undefined) ? '' : String(v);
+  #|           this._children.forEach(c => { c._parent = null; });
+  #|           this._children = [];
+  #|           if (str !== '') {
+  #|             const textNode = document.createTextNode(str);
+  #|             textNode._parent = this;
+  #|             this._children.push(textNode);
+  #|           }
+  #|         },
   #|         get firstChild() { return this._children[0] || null; },
   #|         get lastChild() { return this._children[this._children.length - 1] || null; },
   #|         get childNodes() { return [...this._children]; },
@@ -1282,6 +1872,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     htmlEl.appendChild(headEl);
   #|     htmlEl.appendChild(bodyEl);
   #|     let _title = '';
+  #|     let _doctype = null;
   #|     let _implementation = null;
   #|
   #|     const document = {
@@ -1289,6 +1880,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       _nodeType: 9,
   #|       get nodeType() { return 9; },
   #|       get nodeName() { return '#document'; },
+  #|       get nodeValue() { return null; },
+  #|       get textContent() { return null; },
+  #|       set textContent(v) { /* Document textContent is null, ignore setter */ },
   #|       get ownerDocument() { return null; },
   #|       get URL() { return 'about:blank'; },
   #|       get documentURI() { return 'about:blank'; },
@@ -1298,68 +1892,138 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       get charset() { return 'UTF-8'; },
   #|       get inputEncoding() { return 'UTF-8'; },
   #|       get contentType() { return 'text/html'; },
-  #|       get doctype() { return null; },
+  #|       get doctype() { return _doctype; },
   #|       get implementation() {
   #|         if (_implementation) return _implementation;
-  #|         const impl = {
-  #|           createDocument(namespace, qualifiedName, doctype) {
-  #|             const doc = {
-  #|               _nodeType: 9,
-  #|               nodeType: 9,
-  #|               nodeName: '#document',
-  #|               documentElement: null,
-  #|               doctype: doctype || null,
-  #|               _children: [],
-  #|               createElement(name) { return document.createElement(name); },
-  #|               createTextNode(text) { return document.createTextNode(text); },
-  #|               createComment(text) { return document.createComment(text); },
-  #|               appendChild(child) { this._children.push(child); if (child._nodeType === 1) this.documentElement = child; return child; },
-  #|               get childNodes() { return this._children; },
-  #|               get firstChild() { return this._children[0] || null; },
-  #|               getRootNode() { return this; },
-  #|               isSameNode(other) { return this === other; },
-  #|               isEqualNode(other) { return this === other; }
-  #|             };
-  #|             if (qualifiedName) {
-  #|               const el = document.createElementNS(namespace, qualifiedName);
-  #|               doc.appendChild(el);
-  #|             }
-  #|             return doc;
-  #|           },
-  #|           createDocumentType(qualifiedName, publicId, systemId) {
-  #|             return {
-  #|               _nodeType: 10,
-  #|               nodeType: 10,
-  #|               name: qualifiedName,
-  #|               publicId: publicId || '',
-  #|               systemId: systemId || '',
-  #|               nodeName: qualifiedName,
-  #|               isSameNode(other) { return this === other; },
-  #|               isEqualNode(other) { return other && other._nodeType === 10 && other.name === this.name && other.publicId === this.publicId && other.systemId === this.systemId; }
-  #|             };
-  #|           },
-  #|           createHTMLDocument(title) {
-  #|             const doc = this.createDocument(null, null, null);
-  #|             doc._children = [];
-  #|             const html = document.createElement('html');
-  #|             const head = document.createElement('head');
-  #|             const body = document.createElement('body');
-  #|             if (title !== undefined) {
-  #|               const titleEl = document.createElement('title');
-  #|               titleEl._textContent = title === null ? 'null' : String(title);
-  #|               head.appendChild(titleEl);
-  #|             }
-  #|             html.appendChild(head);
-  #|             html.appendChild(body);
-  #|             doc.appendChild(html);
-  #|             doc.documentElement = html;
-  #|             doc.head = head;
-  #|             doc.body = body;
-  #|             doc.title = title === null ? 'null' : (title === undefined ? '' : String(title));
-  #|             return doc;
-  #|           },
-  #|           hasFeature() { return true; }
+  #|         // Helper to create implementation bound to a specific document
+  #|         const createImplForDoc = function(ownerDoc) {
+  #|           return {
+  #|             _ownerDocument: ownerDoc,
+  #|             createDocument(namespace, qualifiedName, doctype) {
+  #|               // Determine content type based on namespace
+  #|               let contentType = 'application/xml';
+  #|               if (namespace === 'http://www.w3.org/1999/xhtml') {
+  #|                 contentType = 'application/xhtml+xml';
+  #|               } else if (namespace === 'http://www.w3.org/2000/svg') {
+  #|                 contentType = 'image/svg+xml';
+  #|               }
+  #|               const doc = {
+  #|                 _nodeType: 9,
+  #|                 nodeType: 9,
+  #|                 nodeName: '#document',
+  #|                 get nodeValue() { return null; },
+  #|                 set nodeValue(v) { /* ignore */ },
+  #|                 get textContent() { return null; },
+  #|                 set textContent(v) { /* ignore */ },
+  #|                 documentElement: null,
+  #|                 doctype: doctype !== undefined ? doctype : null,
+  #|                 _children: [],
+  #|                 _impl: null,
+  #|                 URL: 'about:blank',
+  #|                 documentURI: 'about:blank',
+  #|                 compatMode: 'CSS1Compat',
+  #|                 characterSet: 'UTF-8',
+  #|                 charset: 'UTF-8',
+  #|                 inputEncoding: 'UTF-8',
+  #|                 contentType: contentType,
+  #|                 location: null,
+  #|                 get implementation() {
+  #|                   if (!this._impl) this._impl = createImplForDoc(this);
+  #|                   return this._impl;
+  #|                 },
+  #|                 createElement(name) { return document.createElement(name); },
+  #|                 createTextNode(text) { return document.createTextNode(text); },
+  #|                 createComment(text) { return document.createComment(text); },
+  #|                 createDocumentFragment() { return document.createDocumentFragment(); },
+  #|                 appendChild(child) { this._children.push(child); child._parent = this; child.parentNode = this; if (child._nodeType === 1) this.documentElement = child; return child; },
+  #|                 removeChild(child) { const idx = this._children.indexOf(child); if (idx >= 0) { this._children.splice(idx, 1); child._parent = null; child.parentNode = null; } return child; },
+  #|                 get childNodes() { return this._children; },
+  #|                 get firstChild() { return this._children[0] || null; },
+  #|                 getRootNode() { return this; },
+  #|                 isSameNode(other) { return this === other; },
+  #|                 isEqualNode(other) { return this === other; },
+  #|                 adoptNode(node) {
+  #|                   if (!node) return null;
+  #|                   if (node._nodeType === 9) throw new DOMException('Cannot adopt a document node', 'NotSupportedError');
+  #|                   if (node._parent) node._parent.removeChild(node);
+  #|                   node.ownerDocument = this;
+  #|                   return node;
+  #|                 }
+  #|               };
+  #|               Object.setPrototypeOf(doc, Document.prototype);
+  #|               if (qualifiedName) {
+  #|                 const el = document.createElementNS(namespace, qualifiedName);
+  #|                 doc.appendChild(el);
+  #|               }
+  #|               return doc;
+  #|             },
+  #|             createDocumentType(qualifiedName, publicId, systemId) {
+  #|               const ownerDoc = this._ownerDocument || document;
+  #|               const doctype = {
+  #|                 _nodeType: 10,
+  #|                 nodeType: 10,
+  #|                 name: qualifiedName,
+  #|                 publicId: publicId || '',
+  #|                 systemId: systemId || '',
+  #|                 nodeName: qualifiedName,
+  #|                 get nodeValue() { return null; },
+  #|                 set nodeValue(v) { /* ignore */ },
+  #|                 get textContent() { return null; },
+  #|                 set textContent(v) { /* ignore */ },
+  #|                 ownerDocument: ownerDoc,
+  #|                 parentNode: null,
+  #|                 _parent: null,
+  #|                 firstChild: null,
+  #|                 lastChild: null,
+  #|                 previousSibling: null,
+  #|                 nextSibling: null,
+  #|                 get childNodes() { return []; },
+  #|                 hasChildNodes() { return false; },
+  #|                 isSameNode(other) { return this === other; },
+  #|                 isEqualNode(other) { return other && other._nodeType === 10 && other.name === this.name && other.publicId === this.publicId && other.systemId === this.systemId; },
+  #|                 cloneNode() {
+  #|                   return ownerDoc.implementation.createDocumentType(this.name, this.publicId, this.systemId);
+  #|                 },
+  #|                 getRootNode() {
+  #|                   let node = this;
+  #|                   while (node._parent) node = node._parent;
+  #|                   return node;
+  #|                 }
+  #|               };
+  #|               Object.setPrototypeOf(doctype, DocumentType.prototype);
+  #|               return doctype;
+  #|             },
+  #|             createHTMLDocument(title) {
+  #|               const doctype = this.createDocumentType('html', '', '');
+  #|               const doc = this.createDocument(null, null, doctype);
+  #|               doc._children = [doctype];
+  #|               doctype._parent = doc;
+  #|               doctype.parentNode = doc;
+  #|               doctype.ownerDocument = doc;
+  #|               doc.doctype = doctype;
+  #|               const html = document.createElement('html');
+  #|               const head = document.createElement('head');
+  #|               const body = document.createElement('body');
+  #|               if (title !== undefined) {
+  #|                 const titleEl = document.createElement('title');
+  #|                 const titleText = title === null ? 'null' : String(title);
+  #|                 const textNode = document.createTextNode(titleText);
+  #|                 titleEl.appendChild(textNode);
+  #|                 head.appendChild(titleEl);
+  #|               }
+  #|               html.appendChild(head);
+  #|               html.appendChild(body);
+  #|               doc.appendChild(html);
+  #|               doc.documentElement = html;
+  #|               doc.head = head;
+  #|               doc.body = body;
+  #|               doc.title = title === null ? 'null' : (title === undefined ? '' : String(title));
+  #|               return doc;
+  #|             },
+  #|             hasFeature() { return true; }
+  #|           };
   #|         };
+  #|         const impl = createImplForDoc(document);
   #|         Object.setPrototypeOf(impl, DOMImplementation.prototype);
   #|         _implementation = impl;
   #|         return impl;
@@ -1375,19 +2039,26 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       createElement(tagName) {
   #|         const id = nodeIdCounter++;
   #|         domOps.push({ op: 'createElement', id, tagName });
-  #|         return createMockElement(tagName, id);
+  #|         const el = createMockElement(tagName, id);
+  #|         const Ctor = tagToConstructor[tagName.toLowerCase()] || HTMLUnknownElement;
+  #|         Object.setPrototypeOf(el, Ctor.prototype);
+  #|         return el;
   #|       },
   #|       createTextNode(text) {
   #|         const str = String(text);
   #|         const id = nodeIdCounter++;
   #|         domOps.push({ op: 'createTextNode', id, text: str });
-  #|         return createMockTextNode(str, id);
+  #|         const node = createMockTextNode(str, id);
+  #|         Object.setPrototypeOf(node, Text.prototype);
+  #|         return node;
   #|       },
   #|       createComment(text) {
   #|         const str = String(text);
   #|         const id = nodeIdCounter++;
   #|         domOps.push({ op: 'createComment', id, text: str });
-  #|         return createMockComment(str, id);
+  #|         const node = createMockComment(str, id);
+  #|         Object.setPrototypeOf(node, Comment.prototype);
+  #|         return node;
   #|       },
   #|       createAttribute(name) {
   #|         const attr = {
@@ -1497,7 +2168,12 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       getElementsByTagNameNS(ns, tag) { return this.getElementsByTagName(tag); },
   #|       importNode(node, deep) { return node.cloneNode ? node.cloneNode(deep) : node; },
   #|       adoptNode(node) {
+  #|         if (!node) return null;
+  #|         if (node._nodeType === 9 || node.nodeType === 9) {
+  #|           throw new DOMException('Cannot adopt a document node', 'NotSupportedError');
+  #|         }
   #|         if (node._parent) node._parent.removeChild(node);
+  #|         node.ownerDocument = this;
   #|         return node;
   #|       },
   #|       createRange() {
@@ -1685,7 +2361,87 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       addEventListener(type, listener, options) {},
   #|       removeEventListener(type, listener, options) {},
   #|       dispatchEvent(event) { return true; },
-  #|       Event: Event
+  #|       Event: Event,
+  #|       Node: Node,
+  #|       CharacterData: CharacterData,
+  #|       Element: Element,
+  #|       Document: Document,
+  #|       DocumentType: DocumentType,
+  #|       DocumentFragment: DocumentFragment,
+  #|       Text: Text,
+  #|       Comment: Comment,
+  #|       DOMException: DOMException,
+  #|       DOMImplementation: DOMImplementation,
+  #|       HTMLElement: HTMLElement,
+  #|       HTMLHtmlElement: HTMLHtmlElement,
+  #|       HTMLHeadElement: HTMLHeadElement,
+  #|       HTMLBodyElement: HTMLBodyElement,
+  #|       HTMLDivElement: HTMLDivElement,
+  #|       HTMLSpanElement: HTMLSpanElement,
+  #|       HTMLTitleElement: HTMLTitleElement,
+  #|       HTMLAnchorElement: HTMLAnchorElement,
+  #|       HTMLAreaElement: HTMLAreaElement,
+  #|       HTMLAudioElement: HTMLAudioElement,
+  #|       HTMLBaseElement: HTMLBaseElement,
+  #|       HTMLBRElement: HTMLBRElement,
+  #|       HTMLButtonElement: HTMLButtonElement,
+  #|       HTMLCanvasElement: HTMLCanvasElement,
+  #|       HTMLDataElement: HTMLDataElement,
+  #|       HTMLDataListElement: HTMLDataListElement,
+  #|       HTMLDetailsElement: HTMLDetailsElement,
+  #|       HTMLDialogElement: HTMLDialogElement,
+  #|       HTMLDListElement: HTMLDListElement,
+  #|       HTMLEmbedElement: HTMLEmbedElement,
+  #|       HTMLFieldSetElement: HTMLFieldSetElement,
+  #|       HTMLFormElement: HTMLFormElement,
+  #|       HTMLHeadingElement: HTMLHeadingElement,
+  #|       HTMLHRElement: HTMLHRElement,
+  #|       HTMLIFrameElement: HTMLIFrameElement,
+  #|       HTMLImageElement: HTMLImageElement,
+  #|       HTMLInputElement: HTMLInputElement,
+  #|       HTMLLabelElement: HTMLLabelElement,
+  #|       HTMLLegendElement: HTMLLegendElement,
+  #|       HTMLLIElement: HTMLLIElement,
+  #|       HTMLLinkElement: HTMLLinkElement,
+  #|       HTMLMapElement: HTMLMapElement,
+  #|       HTMLMenuElement: HTMLMenuElement,
+  #|       HTMLMetaElement: HTMLMetaElement,
+  #|       HTMLMeterElement: HTMLMeterElement,
+  #|       HTMLModElement: HTMLModElement,
+  #|       HTMLObjectElement: HTMLObjectElement,
+  #|       HTMLOListElement: HTMLOListElement,
+  #|       HTMLOptGroupElement: HTMLOptGroupElement,
+  #|       HTMLOptionElement: HTMLOptionElement,
+  #|       HTMLOutputElement: HTMLOutputElement,
+  #|       HTMLParagraphElement: HTMLParagraphElement,
+  #|       HTMLPictureElement: HTMLPictureElement,
+  #|       HTMLPreElement: HTMLPreElement,
+  #|       HTMLProgressElement: HTMLProgressElement,
+  #|       HTMLQuoteElement: HTMLQuoteElement,
+  #|       HTMLScriptElement: HTMLScriptElement,
+  #|       HTMLSelectElement: HTMLSelectElement,
+  #|       HTMLSlotElement: HTMLSlotElement,
+  #|       HTMLSourceElement: HTMLSourceElement,
+  #|       HTMLStyleElement: HTMLStyleElement,
+  #|       HTMLTableElement: HTMLTableElement,
+  #|       HTMLTableCellElement: HTMLTableCellElement,
+  #|       HTMLTableColElement: HTMLTableColElement,
+  #|       HTMLTableRowElement: HTMLTableRowElement,
+  #|       HTMLTableSectionElement: HTMLTableSectionElement,
+  #|       HTMLTemplateElement: HTMLTemplateElement,
+  #|       HTMLTextAreaElement: HTMLTextAreaElement,
+  #|       HTMLTimeElement: HTMLTimeElement,
+  #|       HTMLTrackElement: HTMLTrackElement,
+  #|       HTMLUListElement: HTMLUListElement,
+  #|       HTMLVideoElement: HTMLVideoElement,
+  #|       HTMLUnknownElement: HTMLUnknownElement,
+  #|       HTMLTableCaptionElement: HTMLTableCaptionElement,
+  #|       HTMLDirectoryElement: HTMLDirectoryElement,
+  #|       HTMLFontElement: HTMLFontElement,
+  #|       HTMLMarqueeElement: HTMLMarqueeElement,
+  #|       HTMLFrameElement: HTMLFrameElement,
+  #|       HTMLFrameSetElement: HTMLFrameSetElement,
+  #|       HTMLParamElement: HTMLParamElement
   #|     };
   #|
   #|     // Make window globals accessible
@@ -1774,6 +2530,77 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       unobserve(target) { this._targets = this._targets.filter(function(t) { return t.target !== target; }); }
   #|       disconnect() { this._targets = []; }
   #|     }
+  #|
+  #|     // Automation helpers for CDP/BiDi compatibility
+  #|     // waitForSelector - polls until an element matching selector appears
+  #|     window.__waitForSelector = function(selector, options) {
+  #|       options = options || {};
+  #|       var timeout = options.timeout || 30000;
+  #|       var interval = options.interval || 100;
+  #|       var visible = options.visible || false;
+  #|       var hidden = options.hidden || false;
+  #|       var startTime = Date.now();
+  #|       return new Promise(function(resolve, reject) {
+  #|         function check() {
+  #|           var element = document.querySelector(selector);
+  #|           if (element) {
+  #|             if (visible) {
+  #|               // Check if element is visible (has size and not hidden)
+  #|               var rect = element.getBoundingClientRect ? element.getBoundingClientRect() : { width: 1, height: 1 };
+  #|               var isVisible = rect.width > 0 && rect.height > 0 && !element.hidden;
+  #|               if (isVisible) { resolve(element); return; }
+  #|             } else if (hidden) {
+  #|               // Wait for element to be hidden (not found or hidden)
+  #|             } else {
+  #|               resolve(element);
+  #|               return;
+  #|             }
+  #|           } else if (hidden) {
+  #|             resolve(null);
+  #|             return;
+  #|           }
+  #|           if (Date.now() - startTime >= timeout) {
+  #|             reject(new Error('Timeout waiting for selector: ' + selector));
+  #|             return;
+  #|           }
+  #|           setTimeout(check, interval);
+  #|         }
+  #|         check();
+  #|       });
+  #|     };
+  #|
+  #|     // waitForFunction - polls until a function returns truthy value
+  #|     window.__waitForFunction = function(fn, options) {
+  #|       options = options || {};
+  #|       var timeout = options.timeout || 30000;
+  #|       var interval = options.interval || 100;
+  #|       var args = options.args || [];
+  #|       var startTime = Date.now();
+  #|       return new Promise(function(resolve, reject) {
+  #|         function check() {
+  #|           try {
+  #|             var result = typeof fn === 'function' ? fn.apply(null, args) : eval('(' + fn + ')').apply(null, args);
+  #|             if (result) { resolve(result); return; }
+  #|           } catch (e) {
+  #|             // Function threw, continue polling
+  #|           }
+  #|           if (Date.now() - startTime >= timeout) {
+  #|             reject(new Error('Timeout waiting for function'));
+  #|             return;
+  #|           }
+  #|           setTimeout(check, interval);
+  #|         }
+  #|         check();
+  #|       });
+  #|     };
+  #|
+  #|     // waitFor - generic wait with condition
+  #|     window.__waitFor = function(condition, options) {
+  #|       if (typeof condition === 'string') {
+  #|         return window.__waitForSelector(condition, options);
+  #|       }
+  #|       return window.__waitForFunction(condition, options);
+  #|     };
   #|
   #|     // FormData class (using bracket notation for reserved words)
   #|     function FormData(form) { this._data = []; }
@@ -1881,6 +2708,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       toString: function() { return this.href; },
   #|       toJSON: function() { return this.href; }
   #|     };
+  #|
+  #|     // Initialize document doctype (simulating parser-created doctype)
+  #|     _doctype = document.implementation.createDocumentType('html', '', '');
+  #|     _doctype._parent = document;
+  #|     _doctype.parentNode = document;
   #|   `;
   #|
   #|   // Use QuickJS if initialized, otherwise use Node.js vm
@@ -2156,7 +2988,12 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           _ => ()
         }
       "replaceChild" =>
-        match (id_map.get(op.parent_id), id_map.get(op.child_id), id_map.get(op.ref_id)) {
+        match
+          (
+            id_map.get(op.parent_id),
+            id_map.get(op.child_id),
+            id_map.get(op.ref_id),
+          ) {
           (Some(parent), Some(new_child), Some(old_child)) => {
             // replaceChild: insert new before old, then remove old
             let _ = dom.insert_before(parent, new_child, Some(old_child))

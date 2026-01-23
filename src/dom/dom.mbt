@@ -40,6 +40,23 @@ struct DomNode {
 }
 
 ///|
+fn DomNode::new(
+  node_type : NodeType,
+  tag_name : String,
+  text_content? : String = "",
+) -> DomNode {
+  {
+    node_type,
+    tag_name,
+    text_content,
+    attributes: {},
+    parent_id: None,
+    children: [],
+    cached_rect: None,
+  }
+}
+
+///|
 /// Create a new empty DOM tree
 pub fn DomTree::new() -> DomTree {
   let tree : DomTree = {
@@ -49,17 +66,7 @@ pub fn DomTree::new() -> DomTree {
     focused_node: None,
     mutations: MutationQueue::new(),
   }
-  // Create root document node
-  let doc_node : DomNode = {
-    node_type: Document,
-    tag_name: "#document",
-    text_content: "",
-    attributes: {},
-    parent_id: None,
-    children: [],
-    cached_rect: None,
-  }
-  tree.nodes[0] = doc_node
+  tree.nodes[0] = DomNode::new(Document, "#document")
   tree.root_id = 0
   tree
 }
@@ -71,53 +78,25 @@ pub fn DomTree::new() -> DomTree {
 ///|
 /// Create an element node
 pub fn DomTree::create_element(self : DomTree, tag_name : String) -> NodeId {
-  let id = self.next_id
-  self.next_id += 1
-  let node : DomNode = {
-    node_type: Element,
-    tag_name,
-    text_content: "",
-    attributes: {},
-    parent_id: None,
-    children: [],
-    cached_rect: None,
-  }
-  self.nodes[id] = node
-  NodeId(id)
+  self.allocate_node(DomNode::new(Element, tag_name))
 }
 
 ///|
 /// Create a text node
 pub fn DomTree::create_text(self : DomTree, content : String) -> NodeId {
-  let id = self.next_id
-  self.next_id += 1
-  let node : DomNode = {
-    node_type: Text,
-    tag_name: "#text",
-    text_content: content,
-    attributes: {},
-    parent_id: None,
-    children: [],
-    cached_rect: None,
-  }
-  self.nodes[id] = node
-  NodeId(id)
+  self.allocate_node(DomNode::new(Text, "#text", text_content=content))
 }
 
 ///|
 /// Create a comment node
 pub fn DomTree::create_comment(self : DomTree, content : String) -> NodeId {
+  self.allocate_node(DomNode::new(Comment, "#comment", text_content=content))
+}
+
+///|
+fn DomTree::allocate_node(self : DomTree, node : DomNode) -> NodeId {
   let id = self.next_id
   self.next_id += 1
-  let node : DomNode = {
-    node_type: Comment,
-    tag_name: "#comment",
-    text_content: content,
-    attributes: {},
-    parent_id: None,
-    children: [],
-    cached_rect: None,
-  }
   self.nodes[id] = node
   NodeId(id)
 }
@@ -519,12 +498,7 @@ pub fn DomTree::get_first_child(
 ) -> Result[NodeId?, CoreError] {
   let id = node.to_int()
   match self.nodes.get(id) {
-    Some(n) =>
-      if n.children.length() > 0 {
-        Ok(Some(NodeId(n.children[0])))
-      } else {
-        Ok(None)
-      }
+    Some(n) => Ok(n.children.get(0).map(NodeId::from_int))
     None => Err(NodeNotFound(node_id=node))
   }
 }
@@ -555,145 +529,6 @@ pub fn DomTree::get_next_sibling(
       }
     None => Err(NodeNotFound(node_id=node))
   }
-}
-
-// =============================================================================
-// Query
-// =============================================================================
-
-///|
-/// Query selector (simple CSS selector support)
-/// Returns first matching node
-pub fn DomTree::query_selector(
-  self : DomTree,
-  root : NodeId,
-  selector : String,
-) -> Result[NodeId?, CoreError] {
-  match self.query_selector_all(root, selector) {
-    Ok(results) =>
-      if results.length() > 0 {
-        Ok(Some(results[0]))
-      } else {
-        Ok(None)
-      }
-    Err(e) => Err(e)
-  }
-}
-
-///|
-/// Query selector all
-/// Returns all matching nodes
-pub fn DomTree::query_selector_all(
-  self : DomTree,
-  root : NodeId,
-  selector : String,
-) -> Result[Array[NodeId], CoreError] {
-  let root_id = root.to_int()
-  match self.nodes.get(root_id) {
-    None => Err(NodeNotFound(node_id=root))
-    Some(_) => {
-      let results : Array[NodeId] = []
-      self.query_recursive(root_id, selector, results)
-      Ok(results)
-    }
-  }
-}
-
-///|
-/// Recursive query helper
-fn DomTree::query_recursive(
-  self : DomTree,
-  node_id : Int,
-  selector : String,
-  results : Array[NodeId],
-) -> Unit {
-  match self.nodes.get(node_id) {
-    None => ()
-    Some(node) => {
-      // Check if this node matches
-      if self.matches_selector(node, selector) {
-        results.push(NodeId(node_id))
-      }
-      // Recurse into children
-      for child_id in node.children {
-        self.query_recursive(child_id, selector, results)
-      }
-    }
-  }
-}
-
-///|
-/// Check if node matches selector (simplified)
-fn DomTree::matches_selector(
-  self : DomTree,
-  node : DomNode,
-  selector : String,
-) -> Bool {
-  // Suppress unused warning
-  let _ = self
-  // Only match elements
-  guard node.node_type == Element else { return false }
-  // Simple selector matching
-  if selector.has_prefix("#") {
-    // ID selector
-    let id = selector[1:].to_string() catch { _ => return false }
-    node.attributes.get("id") == Some(id)
-  } else if selector.has_prefix(".") {
-    // Class selector
-    let class_name = selector[1:].to_string() catch { _ => return false }
-    match node.attributes.get("class") {
-      Some(classes) => classes.contains(class_name)
-      None => false
-    }
-  } else if selector.has_prefix("[") && selector.has_suffix("]") {
-    // Attribute selector (simple: [attr] or [attr=value])
-    let inner = selector[1:selector.length() - 1].to_string() catch {
-      _ => return false
-    }
-    if inner.contains("=") {
-      let parts = split_once(inner, '=')
-      match parts {
-        Some((attr, value)) => {
-          let clean_value = value.trim().to_string()
-          let clean_value = if clean_value.has_prefix("\"") &&
-            clean_value.has_suffix("\"") {
-            clean_value[1:clean_value.length() - 1].to_string() catch {
-              _ => clean_value
-            }
-          } else {
-            clean_value
-          }
-          node.attributes.get(attr.trim().to_string()) == Some(clean_value)
-        }
-        None => false
-      }
-    } else {
-      node.attributes.contains(inner)
-    }
-  } else {
-    // Tag name selector
-    node.tag_name.to_lower() == selector.to_lower()
-  }
-}
-
-///|
-/// Split string on first occurrence of character
-fn split_once(s : String, c : Char) -> (String, String)? {
-  let chars = s.to_array()
-  for i, ch in chars {
-    if ch == c {
-      let before = StringBuilder::new()
-      let after = StringBuilder::new()
-      for j = 0; j < i; j = j + 1 {
-        before.write_char(chars[j])
-      }
-      for j = i + 1; j < chars.length(); j = j + 1 {
-        after.write_char(chars[j])
-      }
-      return Some((before.to_string(), after.to_string()))
-    }
-  }
-  None
 }
 
 // =============================================================================

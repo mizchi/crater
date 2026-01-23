@@ -139,9 +139,9 @@ wpt-webdriver-all:
 
 # === Integration Tests ===
 
-# Test Preact compatibility (placeholder)
+# Test Preact compatibility (requires BiDi server to be running)
 test-preact:
-    @echo "Preact tests not yet implemented"
+    pnpm test:preact
 
 # Test Playwright integration (requires BiDi server to be running)
 test-playwright:

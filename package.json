@@ -8,7 +8,8 @@
     "webidl:list": "tsx scripts/webidl-coverage.ts --list",
     "webidl:json": "tsx scripts/webidl-coverage.ts --json",
     "webidl:generate": "tsx scripts/webidl-coverage.ts --generate",
-    "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts"
+    "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts",
+    "test:preact": "playwright test tests/preact-compat.test.ts"
   },
   "dependencies": {
     "puppeteer": "^23.0.0"
@@ -18,6 +19,7 @@
     "@playwright/test": "^1.58.0",
     "@types/ws": "^8.18.1",
     "playwright": "^1.58.0",
+    "preact": "^10.28.2",
     "tsx": "^4.21.0",
     "vitest": "^3.0.0",
     "webidl2": "^24.5.0",

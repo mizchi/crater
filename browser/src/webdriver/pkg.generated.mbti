@@ -3,12 +3,17 @@ package "mizchi/crater-browser/webdriver"
 
 import {
   "mizchi/crater-browser/cdp",
+  "mizchi/js/core",
 }
 
 // Values
 pub fn api_error_to_rpc(RpcId, ApiError) -> RpcResponse
 
+pub fn decode_base64(String) -> String
+
 pub fn error_response(ErrorCode, String) -> WebDriverResponse
+
+pub fn evaluate_js(String) -> String
 
 pub fn handle_element_click(@cdp.CdpSession, Int) -> Result[Unit, CdpHandlerError]
 
@@ -29,6 +34,8 @@ pub fn handle_get_title(@cdp.CdpSession) -> String
 pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, CdpHandlerError]
 
 pub fn handle_rpc(CdpSessionManager, RpcRequest) -> RpcResponse
+
+pub fn parse_data_url(String) -> (String, String)?
 
 pub fn parse_json_object(String) -> Map[String, String]
 
@@ -162,9 +169,12 @@ pub struct BidiProtocol {
   mut default_context_id : String?
   mut next_navigation_id : Int
   subscriptions : Map[String, Bool]
+  context_subscriptions : Map[String, Array[String]]
+  mut global_subscriptions : Array[String]
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
 }
+pub fn BidiProtocol::emit_log_entry(Self, String, String, String, String) -> Unit
 pub fn BidiProtocol::new() -> Self
 pub fn BidiProtocol::process_message(Self, String) -> Result[Unit, String]
 pub fn BidiProtocol::take_messages(Self) -> Array[BidiOutMessage]
@@ -182,6 +192,21 @@ pub struct BidiResponse {
   error : BidiError?
 }
 pub impl Show for BidiResponse
+
+pub struct BidiServer {
+  config : BidiServerConfig
+  protocol : BidiProtocol
+  mut server : @core.Any?
+}
+pub fn BidiServer::new(config? : BidiServerConfig) -> Self
+pub fn BidiServer::start(Self) -> Unit
+pub fn BidiServer::stop(Self) -> Unit
+
+pub(all) struct BidiServerConfig {
+  host : String
+  port : Int
+}
+pub fn BidiServerConfig::default() -> Self
 
 pub(all) struct Capabilities {
   browser_name : String
@@ -211,6 +236,7 @@ pub struct CdpSessionManager {
 pub fn CdpSessionManager::close_session(Self, String) -> Bool
 pub fn CdpSessionManager::create_session(Self) -> String
 pub fn CdpSessionManager::get_session(Self, String) -> @cdp.CdpSession?
+pub fn CdpSessionManager::has_session(Self, String) -> Bool
 pub fn CdpSessionManager::list_sessions(Self) -> Array[String]
 pub fn CdpSessionManager::new() -> Self
 

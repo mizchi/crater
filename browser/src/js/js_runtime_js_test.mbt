@@ -238,7 +238,6 @@ test "cloneNode shallow clone copies element and attributes" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const original = document.createElement('div');
     #|original.setAttribute('id', 'original');
@@ -293,7 +292,6 @@ test "cloneNode deep clone copies element with children" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const original = document.createElement('div');
     #|original.setAttribute('id', 'original');
@@ -343,7 +341,6 @@ test "classList manipulation" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|div.classList.add('foo', 'bar');
@@ -367,7 +364,6 @@ test "hasAttribute and hasAttributes" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const hasNone = div.hasAttributes();
@@ -390,7 +386,6 @@ test "contains method" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const parent = document.createElement('div');
     #|const child = document.createElement('span');
@@ -419,7 +414,6 @@ test "matches and closest" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'myDiv');
@@ -449,7 +443,6 @@ test "getElementsByTagName and getElementsByClassName" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div1 = document.createElement('div');
     #|div1.className = 'item';
@@ -478,7 +471,6 @@ test "createComment" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const comment = document.createComment('This is a comment');
     #|document.body.appendChild(comment);
@@ -497,7 +489,6 @@ test "createDocumentFragment" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const frag = document.createDocumentFragment();
     #|const div1 = document.createElement('div');
@@ -521,7 +512,6 @@ test "previousSibling and lastChild" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const span1 = document.createElement('span');
@@ -553,7 +543,6 @@ test "append and prepend" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const span1 = document.createElement('span');
@@ -578,7 +567,6 @@ test "remove method" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const span = document.createElement('span');
@@ -602,7 +590,6 @@ test "nodeType constants" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const el = document.createElement('div');
     #|const text = document.createTextNode('hello');
@@ -623,7 +610,6 @@ test "isEqualNode and isSameNode" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div1 = document.createElement('div');
     #|div1.setAttribute('id', 'test');
@@ -653,7 +639,6 @@ test "normalize merges adjacent text nodes" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const t1 = document.createTextNode('Hello');
@@ -680,7 +665,6 @@ test "splitText divides text node" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const text = document.createTextNode('HelloWorld');
@@ -701,7 +685,6 @@ test "wholeText returns combined adjacent text" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const t1 = document.createTextNode('Hello');
@@ -725,7 +708,6 @@ test "attributes collection" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'myId');
@@ -749,7 +731,6 @@ test "document properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|[
     #|  document.URL,
@@ -771,7 +752,6 @@ test "getRootNode returns root" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const span = document.createElement('span');
@@ -795,7 +775,6 @@ test "namespaceURI and baseURI" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|[div.namespaceURI, div.baseURI, div.prefix === null ? 'null' : div.prefix].join('|')
@@ -813,7 +792,6 @@ test "insertAdjacentElement" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const container = document.createElement('div');
     #|const middle = document.createElement('span');
@@ -847,7 +825,6 @@ test "lookupNamespaceURI and isDefaultNamespace" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|[
@@ -869,7 +846,6 @@ test "createRange" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const range = document.createRange();
     #|const div = document.createElement('div');
@@ -889,7 +865,6 @@ test "createTreeWalker" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const div = document.createElement('div');
     #|const span = document.createElement('span');
@@ -910,7 +885,6 @@ test "importNode and adoptNode" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const original = document.createElement('div');
     #|original.setAttribute('id', 'original');
@@ -933,7 +907,6 @@ test "attachShadow" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const host = document.createElement('div');
     #|const shadow = host.attachShadow({ mode: 'open' });
@@ -958,7 +931,6 @@ test "WPT: CharacterData.appendData" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|// Test Text.appendData
@@ -988,7 +960,6 @@ test "WPT: CharacterData.deleteData" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -1012,7 +983,6 @@ test "WPT: CharacterData.insertData" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -1039,7 +1009,6 @@ test "WPT: CharacterData.replaceData" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -1063,7 +1032,6 @@ test "WPT: CharacterData.substringData" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -1085,7 +1053,6 @@ test "WPT: Document.createComment properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const c = document.createComment('test');
@@ -1102,7 +1069,10 @@ test "WPT: Document.createComment properties" {
     #|results.join(',')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="true,true,true,true,true,true,true,true,true,true")
+  inspect(
+    result.value,
+    content="true,true,true,true,true,true,true,true,true,true",
+  )
 }
 
 ///|
@@ -1114,7 +1084,6 @@ test "WPT: Document.createTextNode properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const t = document.createTextNode('test');
@@ -1139,7 +1108,6 @@ test "WPT: ChildNode.before basic" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|// before() with text
@@ -1171,7 +1139,6 @@ test "WPT: ChildNode.after basic" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -1202,7 +1169,6 @@ test "WPT: ChildNode.replaceWith" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -1228,7 +1194,6 @@ test "WPT: ParentNode.append" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -1254,7 +1219,6 @@ test "WPT: ParentNode.prepend" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -1281,7 +1245,6 @@ test "WPT: Node.cloneNode shallow" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1309,7 +1272,6 @@ test "WPT: Node.cloneNode deep" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1335,7 +1297,6 @@ test "WPT: Node.contains" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -1363,7 +1324,6 @@ test "HTMLElement: title, lang, dir properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1391,7 +1351,6 @@ test "HTMLElement: hidden, inert properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1420,7 +1379,6 @@ test "HTMLElement: draggable, spellcheck properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1445,7 +1403,6 @@ test "HTMLElement: innerText, outerText properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1469,7 +1426,6 @@ test "HTMLElement: dataset property" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1495,7 +1451,6 @@ test "HTMLElement: popover methods" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1523,7 +1478,6 @@ test "HTMLElement: tabIndex, contentEditable properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1549,7 +1503,6 @@ test "HTMLElement: attachInternals" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1573,7 +1526,6 @@ test "HTMLElement: offset properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1596,7 +1548,6 @@ test "Event: constructor and properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const evt = new Event('click', { bubbles: true, cancelable: true });
@@ -1621,7 +1572,6 @@ test "Event: preventDefault and stopPropagation" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const evt = new Event('click', { cancelable: true });
@@ -1649,7 +1599,6 @@ test "Event: initEvent" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const evt = new Event('');
@@ -1672,7 +1621,6 @@ test "Window: basic properties" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|results.push(window.window === window);
@@ -1696,7 +1644,6 @@ test "Window: location and navigator" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|results.push(window.location.href === 'about:blank');
@@ -1719,7 +1666,6 @@ test "Window: timers" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const timeoutId = setTimeout(() => {}, 100);
@@ -1747,7 +1693,6 @@ test "Window: scroll methods" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|results.push(window.scrollX === 0);
@@ -1775,7 +1720,6 @@ test "Window: getComputedStyle and matchMedia" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -1800,7 +1744,6 @@ test "Window: alert" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|alert('Hello World');
     #|'done'
@@ -1819,7 +1762,6 @@ test "Storage: localStorage basic operations" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|localStorage.setItem('key1', 'value1');
@@ -1847,7 +1789,6 @@ test "FormData: basic operations" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const fd = new FormData();
@@ -1875,7 +1816,6 @@ test "URLSearchParams: basic operations" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const params = new URLSearchParams('a=1&b=2');
@@ -1901,7 +1841,6 @@ test "URL: basic parsing" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const url = new URL('https://example.com:8080/path?query=1#hash');
@@ -1927,7 +1866,6 @@ test "MutationObserver: basic usage" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|let callbackCalled = false;
@@ -1954,7 +1892,6 @@ test "DOMRect: basic usage" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const rect = new DOMRect(10, 20, 100, 50);
@@ -1981,7 +1918,6 @@ test "IntersectionObserver: basic usage" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let ctx = JsContext::new(dom)
-
   let code =
     #|const results = [];
     #|const observer = new IntersectionObserver(function(entries) {}, { threshold: 0.5 });
