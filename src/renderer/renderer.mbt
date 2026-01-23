@@ -69,6 +69,7 @@ fn create_text_measure(
   text : String,
   font_size : Double,
   text_line_height : Double,
+  white_space : @style.WhiteSpace,
 ) -> @types.MeasureFunc {
   let trimmed = text.trim()
   let char_width = font_size * char_width_ratio
@@ -122,8 +123,16 @@ fn create_text_measure(
       available_width : Double,
       _available_height : Double,
     ) -> @types.IntrinsicSize {
+      // For white-space: nowrap, don't wrap text
+      let no_wrap = match white_space {
+        @style.WhiteSpace::Nowrap => true
+        _ => false
+      }
       // Calculate how many single-width columns fit in available width
-      let cols_available = if available_width > 0.0 {
+      // For nowrap, use a very large number to prevent wrapping
+      let cols_available = if no_wrap {
+        1000000 // Large number to prevent wrapping
+      } else if available_width > 0.0 {
         (available_width / char_width).to_int()
       } else {
         chars_per_line
@@ -441,6 +450,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     // Use parent's font_size and line_height for text measurement
     let font_size = parent_style.font_size
     let text_line_height = parent_style.line_height
+    let white_space = parent_style.white_space
     // Create text style with inherited font properties and color for rendering
     // Text nodes should be inline-level to flow with other inline content
     let text_style : @style.Style = {
@@ -448,13 +458,14 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       display: @types.Inline,
       font_size,
       line_height: text_line_height,
+      white_space,
       color: parent_style.color,
     }
     // Use Node::text to store the text content for rendering
     @node.Node::text(
       "#text",
       text_style,
-      create_text_measure(text, font_size, text_line_height),
+      create_text_measure(text, font_size, text_line_height, white_space),
       trimmed.to_string(),
     )
   }

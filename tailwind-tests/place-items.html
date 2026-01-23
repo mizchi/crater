@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Place Items</title>
+  <style>
+    .grid { display: grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .place-items-start { place-items: start; }
+    .place-items-center { place-items: center; }
+    .place-items-end { place-items: end; }
+    .place-items-stretch { place-items: stretch; }
+    .gap-2 { gap: 8px; }
+    .h-24 { height: 96px; }
+    .w-16 { width: 64px; }
+    .h-16 { height: 64px; }
+    .bg-gray { background-color: #d1d5db; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div id="test" class="grid grid-cols-2 place-items-center gap-2" style="width: 300px;">
+    <div class="h-24 bg-gray" style="width: 100%;">
+      <div class="w-16 h-16 bg-blue"></div>
+    </div>
+    <div class="h-24 bg-gray" style="width: 100%;">
+      <div class="w-16 h-16 bg-red"></div>
+    </div>
+  </div>
+</body>
+</html>

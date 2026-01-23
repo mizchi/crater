@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Min/Max Sizing</title>
+  <style>
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .gap-2 { gap: 8px; }
+    .min-w-32 { min-width: 128px; }
+    .max-w-48 { max-width: 192px; }
+    .min-h-16 { min-height: 64px; }
+    .max-h-32 { max-height: 128px; }
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+    .p-2 { padding: 8px; }
+    .bg-gray { background-color: #f3f4f6; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex flex-col gap-2 p-2 bg-gray" style="width: 300px;">
+    <!-- Should be 128px (min-width) even though parent is wider -->
+    <div class="min-w-32 max-w-48 min-h-16 bg-blue" style="width: 50px;"></div>
+    <!-- Should be 192px (max-width) even though trying to be 100% of 300px -->
+    <div class="max-w-48 min-h-16 bg-red" style="width: 100%;"></div>
+  </div>
+</body>
+</html>

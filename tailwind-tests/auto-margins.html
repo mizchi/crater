@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Auto Margins</title>
+  <style>
+    .flex { display: flex; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .ml-auto { margin-left: auto; }
+    .mr-auto { margin-right: auto; }
+    .w-32 { width: 128px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .mb-2 { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div id="test" style="width: 400px;">
+    <!-- Center with mx-auto -->
+    <div class="mx-auto w-32 h-16 bg-blue mb-2"></div>
+    <!-- Push to right with ml-auto -->
+    <div class="ml-auto w-32 h-16 bg-red mb-2"></div>
+    <!-- Push to left with mr-auto -->
+    <div class="mr-auto w-32 h-16 bg-green"></div>
+  </div>
+</body>
+</html>

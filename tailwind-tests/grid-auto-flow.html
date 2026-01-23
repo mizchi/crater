@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Grid Auto Flow</title>
+  <style>
+    .grid { display: grid; }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-rows-2 { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+    .grid-flow-row { grid-auto-flow: row; }
+    .grid-flow-col { grid-auto-flow: column; }
+    .gap-2 { gap: 8px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .bg-yellow { background-color: #eab308; }
+  </style>
+</head>
+<body>
+  <!-- Grid flow column: items fill columns first -->
+  <div id="test" class="grid grid-rows-2 grid-flow-col gap-2" style="width: 320px; height: 150px;">
+    <div class="h-16 bg-blue"></div>
+    <div class="h-16 bg-red"></div>
+    <div class="h-16 bg-green"></div>
+    <div class="h-16 bg-yellow"></div>
+  </div>
+</body>
+</html>

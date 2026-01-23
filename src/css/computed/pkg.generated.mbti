@@ -68,6 +68,8 @@ pub fn parse_overflow(String) -> @types.Overflow
 
 pub fn parse_position(String) -> @types.Position
 
+pub fn parse_white_space(String) -> @style.WhiteSpace
+
 pub fn resolve_current_color(CssColorValue, @types.Color) -> @types.Color
 
 // Errors

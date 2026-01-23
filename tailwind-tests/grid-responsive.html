@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Responsive Grid</title>
+  <style>
+    .grid { display: grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .gap-4 { gap: 16px; }
+    .p-4 { padding: 16px; }
+    .h-24 { height: 96px; }
+    .bg-blue-100 { background-color: #dbeafe; }
+    .bg-blue-200 { background-color: #bfdbfe; }
+    .bg-blue-300 { background-color: #93c5fd; }
+    .bg-blue-400 { background-color: #60a5fa; }
+    .bg-blue-500 { background-color: #3b82f6; }
+    .bg-blue-600 { background-color: #2563eb; }
+    .bg-blue-700 { background-color: #1d4ed8; }
+    .bg-blue-800 { background-color: #1e40af; }
+    .rounded { border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="test" class="grid grid-cols-4 gap-4 p-4" style="width: 500px;">
+    <div class="h-24 bg-blue-100 rounded"></div>
+    <div class="h-24 bg-blue-200 rounded"></div>
+    <div class="h-24 bg-blue-300 rounded"></div>
+    <div class="h-24 bg-blue-400 rounded"></div>
+    <div class="h-24 bg-blue-500 rounded"></div>
+    <div class="h-24 bg-blue-600 rounded"></div>
+    <div class="h-24 bg-blue-700 rounded"></div>
+    <div class="h-24 bg-blue-800 rounded"></div>
+  </div>
+</body>
+</html>

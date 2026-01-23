@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Box Sizing</title>
+  <style>
+    .box-border { box-sizing: border-box; }
+    .box-content { box-sizing: content-box; }
+    .w-32 { width: 128px; }
+    .h-16 { height: 64px; }
+    .p-4 { padding: 16px; }
+    .border-4 { border-width: 4px; border-style: solid; }
+    .border-blue { border-color: #3b82f6; }
+    .bg-gray { background-color: #d1d5db; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .gap-4 { gap: 16px; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex flex-col gap-4">
+    <!-- box-border: total width = 128px (padding and border included) -->
+    <div class="box-border w-32 h-16 p-4 border-4 border-blue bg-gray"></div>
+    <!-- box-content: total width = 128px + 32px padding + 8px border = 168px -->
+    <div class="box-content w-32 h-16 p-4 border-4 border-blue bg-gray"></div>
+  </div>
+</body>
+</html>

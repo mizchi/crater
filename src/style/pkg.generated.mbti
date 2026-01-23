@@ -82,6 +82,7 @@ pub(all) struct Style {
   mut justify_self : @types.AlignSelf
   mut font_size : Double
   mut line_height : Double
+  mut white_space : WhiteSpace
   mut vertical_align : VerticalAlign
   mut clip : @types.ClipRect
   mut visibility : Visibility
@@ -145,6 +146,16 @@ pub(all) enum Visibility {
 }
 pub impl Eq for Visibility
 pub impl Show for Visibility
+
+pub(all) enum WhiteSpace {
+  Normal
+  Nowrap
+  Pre
+  PreWrap
+  PreLine
+}
+pub impl Eq for WhiteSpace
+pub impl Show for WhiteSpace
 
 pub(all) enum ZIndex {
   Auto

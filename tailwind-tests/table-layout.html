@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Table Layout</title>
+  <style>
+    .table { display: table; }
+    .table-auto { table-layout: auto; }
+    .table-fixed { table-layout: fixed; }
+    .table-row { display: table-row; }
+    .table-cell { display: table-cell; }
+    .w-full { width: 100%; }
+    .p-2 { padding: 8px; }
+    .border { border-width: 1px; border-style: solid; }
+    .border-gray { border-color: #d1d5db; }
+    .bg-gray-50 { background-color: #f9fafb; }
+    .bg-gray-100 { background-color: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div id="test" class="table table-fixed w-full border border-gray" style="width: 300px;">
+    <div class="table-row">
+      <div class="table-cell p-2 border border-gray bg-gray-50">Cell 1</div>
+      <div class="table-cell p-2 border border-gray bg-gray-100">Cell 2</div>
+    </div>
+    <div class="table-row">
+      <div class="table-cell p-2 border border-gray bg-gray-100">Cell 3</div>
+      <div class="table-cell p-2 border border-gray bg-gray-50">Cell 4</div>
+    </div>
+  </div>
+</body>
+</html>

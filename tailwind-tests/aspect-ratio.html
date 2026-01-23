@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Aspect Ratio</title>
+  <style>
+    .aspect-square { aspect-ratio: 1 / 1; }
+    .aspect-video { aspect-ratio: 16 / 9; }
+    .w-32 { width: 128px; }
+    .w-64 { width: 256px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .flex { display: flex; }
+    .gap-4 { gap: 16px; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex gap-4">
+    <!-- 128x128 square -->
+    <div class="w-32 aspect-square bg-blue"></div>
+    <!-- 256x144 video ratio -->
+    <div class="w-64 aspect-video bg-red"></div>
+  </div>
+</body>
+</html>

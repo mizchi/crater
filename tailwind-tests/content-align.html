@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Content Alignment (align-content)</title>
+  <style>
+    .flex { display: flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .content-start { align-content: flex-start; }
+    .content-center { align-content: center; }
+    .content-end { align-content: flex-end; }
+    .content-between { align-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .w-20 { width: 80px; }
+    .h-12 { height: 48px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .bg-yellow { background-color: #eab308; }
+    .bg-gray { background-color: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex flex-wrap content-center gap-2 bg-gray" style="width: 200px; height: 200px;">
+    <div class="w-20 h-12 bg-blue"></div>
+    <div class="w-20 h-12 bg-red"></div>
+    <div class="w-20 h-12 bg-green"></div>
+    <div class="w-20 h-12 bg-yellow"></div>
+  </div>
+</body>
+</html>

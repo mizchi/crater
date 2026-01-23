@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Flex Order</title>
+  <style>
+    .flex { display: flex; }
+    .order-1 { order: 1; }
+    .order-2 { order: 2; }
+    .order-3 { order: 3; }
+    .order-first { order: -9999; }
+    .order-last { order: 9999; }
+    .order-none { order: 0; }
+    .w-16 { width: 64px; }
+    .h-16 { height: 64px; }
+    .gap-2 { gap: 8px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+  </style>
+</head>
+<body>
+  <!-- Items should appear: green (order-1), blue (order-2), red (order-3) -->
+  <div id="test" class="flex gap-2" style="width: 250px;">
+    <div class="w-16 h-16 order-2 bg-blue"></div>
+    <div class="w-16 h-16 order-3 bg-red"></div>
+    <div class="w-16 h-16 order-1 bg-green"></div>
+  </div>
+</body>
+</html>

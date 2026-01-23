@@ -1,219 +1,218 @@
 # CSS Safe Subset Report
 
-Craterで安全に使用できるCSSプロパティのリスト。WPT（Web Platform Tests）の結果に基づいて分類。
+Properties with high browser compatibility (>= 70% pass rate).
 
-## 分析概要
+## Tier 1: Safe (>= 80% pass rate)
 
-- テスト数: 1,378件
-- 分析日: 2026-01-23
-- 閾値: 70%以上の通過率を「安全」と判定
+### text-align
+Pass rate: 100.0% (9/9)
 
-## Tier 1: Safe (>= 80% 通過率)
+Safe values:
+  - `center`: 100% (9/9)
 
-これらのプロパティは高い信頼性でブラウザと同じ結果を返します。
+### order
+Pass rate: 100.0% (3/3)
 
-### align-content (96.2%)
+Safe values:
+  - `<number>`: 100% (7/7)
 
-Flexコンテナの複数行の配置。
+### row-gap
+Pass rate: 100.0% (3/3)
 
-```css
-/* 安全な値 */
-align-content: flex-start;
-align-content: flex-end;
-align-content: center;
-align-content: space-between;
-align-content: space-around;
-align-content: space-evenly;
-align-content: stretch;
-```
+Safe values:
+  - `<length>`: 100% (3/3)
 
-### flex-shrink (93.8%)
+### print-color-adjust
+Pass rate: 100.0% (3/3)
 
-Flexアイテムの縮小係数。
+Safe values:
+  - `exact`: 100% (3/3)
 
-```css
-flex-shrink: 0;
-flex-shrink: 1;
-flex-shrink: 2;
-```
+### will-change
+Pass rate: 100.0% (5/5)
 
-### z-index (85.7%)
+Safe values:
+  - `transform`: 100% (4/4)
 
-スタッキングコンテキストでの順序。
+### border-right-width
+Pass rate: 100.0% (4/4)
 
-```css
-z-index: auto;
-z-index: 1;
-z-index: 100;
-```
+Safe values:
+  - `<length>`: 100% (4/4)
 
-### justify-content (82.6%)
+### border-right-style
+Pass rate: 100.0% (4/4)
 
-Flexコンテナの主軸配置。
+Safe values:
+  - `solid`: 100% (4/4)
 
-```css
-/* 安全な値 */
-justify-content: flex-start;
-justify-content: flex-end;
-justify-content: center;
-justify-content: space-between;
-justify-content: space-around;
-```
+### box-shadow
+Pass rate: 100.0% (7/7)
 
-### margin-top (82.5%)
+Safe values:
+  - `20px 20px 5px red`: 100% (2/2)
 
-上マージン。
+### transition-property
+Pass rate: 100.0% (3/3)
 
-```css
-margin-top: 10px;
-margin-top: 1em;
-margin-top: 5%;
-margin-top: auto;
-```
+Safe values:
+  - `all`: 100% (2/2)
 
-### overflow-y (80.0%)
+### transition-duration
+Pass rate: 100.0% (3/3)
 
-縦方向のオーバーフロー制御。
+Safe values:
+  - `1s`: 100% (3/3)
 
-```css
-overflow-y: visible;
-overflow-y: hidden;
-overflow-y: scroll;
-overflow-y: auto;
-overflow-y: clip;
-```
+### align-content
+Pass rate: 96.2% (25/26)
 
-### order, row-gap, column-gap (100%)
+Safe values:
+  - `flex-start`: 100% (12/12)
+  - `flex-end`: 100% (11/11)
+  - `center`: 100% (12/12)
+  - `space-between`: 100% (12/12)
+  - `space-around`: 100% (11/11)
+  - `space-evenly`: 100% (9/9)
+  - `end`: 100% (8/8)
+  - `stretch`: 100% (3/3)
+  - `start`: 90% (9/10)
 
-Flexアイテムの順序とギャップ。
+### flex-shrink
+Pass rate: 93.8% (15/16)
 
-```css
-order: -1;
-order: 0;
-order: 1;
-row-gap: 10px;
-column-gap: 20px;
-gap: 10px 20px;
-```
+Safe values:
+  - `<number>`: 96% (27/28)
 
-## Tier 2: Caution (60-80% 通過率)
+### z-index
+Pass rate: 85.7% (78/91)
 
-基本的な使用は安全だが、エッジケースでブラウザと異なる可能性あり。
+Safe values:
+  - `<number>`: 85% (94/111)
 
-| プロパティ | 通過率 | 注意点 |
-|-----------|--------|--------|
-| overflow-x | 77.8% | clip値に注意 |
-| opacity | 75.0% | 基本的に安全 |
-| align-self | 72.4% | baseline以外は安全 |
-| flex-basis | 71.9% | content値に注意 |
-| flex-wrap | 67.3% | wrap-reverseに注意 |
-| background-color | 66.3% | 基本的に安全 |
-| flex (shorthand) | 60.8% | 個別プロパティ推奨 |
-| position | 60.3% | absolute/fixedに注意 |
+### border-color
+Pass rate: 83.3% (5/6)
 
-## Grid Layout (条件付き安全)
+Safe values:
+  - `orange`: 100% (2/2)
+  - `green`: 100% (2/2)
 
-**Taffy互換: 100%** | **WPT: 61.5%**
+### justify-content
+Pass rate: 82.6% (19/23)
 
-Grid は**単独使用では安全**ですが、特定の組み合わせで問題があります。
+Safe values:
+  - `flex-start`: 100% (7/7)
+  - `flex-end`: 100% (3/3)
 
-### ✅ 安全な Grid パターン
+### margin-top
+Pass rate: 82.5% (47/57)
 
-```css
-/* 基本グリッド */
-display: grid;
-grid-template-columns: 100px 200px 100px;
-grid-template-rows: auto;
-gap: 10px;
+Safe values:
+  - `<length>`: 88% (46/52)
 
-/* fr 単位 */
-grid-template-columns: 1fr 2fr 1fr;
+### overflow-y
+Pass rate: 80.0% (16/20)
 
-/* repeat */
-grid-template-columns: repeat(3, 1fr);
+Safe values:
+  - `scroll`: 100% (4/4)
+  - `clip`: 90% (9/10)
+  - `auto`: 80% (4/5)
 
-/* アイテム配置 */
-grid-column: 1 / 3;
-grid-row: 2;
-```
+### border-right-color
+Pass rate: 80.0% (4/5)
 
-### ❌ 避けるべき Grid パターン
+Safe values:
+  - `red`: 100% (4/4)
 
-| パターン | 問題 |
-|---------|------|
-| `flexbox` 内の `grid` | サイズ計算が不正確 |
-| `table` が grid item | table幅計算の問題 |
-| `%` 高さ（親が auto） | 解決できない |
-| `auto-fill` / `auto-fit` | トラック数計算に問題 |
-| `minmax(auto, ...)` | intrinsic sizing問題 |
+### overflow-clip-margin
+Pass rate: 80.0% (20/25)
 
-## Tier 3: Experimental (< 60% 通過率)
+Safe values:
+  - `border-box 5px`: 100% (2/2)
+  - `padding-box 5px`: 100% (2/2)
+  - `content-box 5px`: 100% (2/2)
+  - `<length>`: 91% (20/22)
 
-ブラウザと異なる結果が出やすい。プロトタイプ段階での使用は非推奨。
+## Tier 2: Caution (60-80% pass rate)
 
-| プロパティ | 通過率 | 理由 |
-|-----------|--------|------|
-| height | 57.6% | intrinsic sizingの問題 |
-| width | 56.9% | intrinsic sizingの問題 |
-| min-height | 57.3% | intrinsic sizingの問題 |
-| min-width | 57.1% | intrinsic sizingの問題 |
-| display | 46.8% | inline/table系の問題 |
-| flex-direction | 49.7% | column系に問題あり |
-| align-items | 45.0% | baseline配置の問題 |
+### overflow-x
+Pass rate: 77.8% (14/18)
 
-## プロトタイピング推奨構成
+### animation-fill-mode
+Pass rate: 77.8% (7/9)
 
-### 安全なFlexboxレイアウト
+### opacity
+Pass rate: 75.0% (9/12)
 
-```html
-<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-  <div style="flex-shrink: 0; order: 1;">Item 1</div>
-  <div style="flex-shrink: 1; order: 2;">Item 2</div>
-</div>
-```
+### border-radius
+Pass rate: 75.0% (12/16)
 
-### 安全なサイズ指定
+### align-self
+Pass rate: 70.0% (21/30)
 
-```css
-/* 推奨: 明示的なサイズ */
-.container {
-  width: 300px;      /* 固定値は安全 */
-  height: 200px;
-}
+### animation-duration
+Pass rate: 70.0% (7/10)
 
-/* 注意: autoやintrinsic */
-.item {
-  width: auto;       /* 計算結果が異なる場合あり */
-  height: min-content; /* 非推奨 */
-}
-```
+### animation-name
+Pass rate: 70.0% (7/10)
 
-### 避けるべきパターン
+### animation-play-state
+Pass rate: 70.0% (7/10)
 
-```css
-/* 非推奨: baseline配置 */
-align-items: baseline;
+### flex-basis
+Pass rate: 69.7% (23/33)
 
-/* 非推奨: 複雑なGrid */
-grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+### flex-wrap
+Pass rate: 67.3% (33/49)
 
-/* 非推奨: Table display */
-display: table;
-display: table-cell;
-```
+### background-color
+Pass rate: 66.7% (202/303)
 
-## まとめ
+### scrollbar-color
+Pass rate: 66.7% (4/6)
 
-| Tier | 件数 | 使用推奨度 |
-|------|------|-----------|
-| Safe (>= 80%) | 9 | ✅ 積極的に使用可 |
-| Caution (60-80%) | 9 | ⚠️ 基本機能は安全 |
-| Experimental (< 60%) | 15+ | ❌ 避けるか慎重に |
+### grid-template-rows
+Pass rate: 64.7% (11/17)
 
-**プロトタイピングのコツ:**
+### padding-bottom
+Pass rate: 62.5% (5/8)
 
-1. `display: flex` を基本とする
-2. サイズは固定値 (`px`) で指定
-3. `align-items: baseline` は避ける
-4. Grid の複雑な機能は後回しに
-5. Table layout は使用しない
+### flex
+Pass rate: 61.0% (75/123)
+
+### position
+Pass rate: 60.5% (228/377)
+
+### margin-bottom
+Pass rate: 60.0% (24/40)
+
+## Tier 3: Experimental (< 60% pass rate)
+
+- outline: 59.3% (16/27)
+- min-height: 58.9% (53/90)
+- min-width: 58.1% (43/74)
+- flex-grow: 57.9% (11/19)
+- height: 57.7% (496/859)
+- width: 57.0% (515/903)
+- left: 55.6% (74/133)
+- top: 55.3% (84/152)
+- bottom: 54.5% (24/44)
+- margin-left: 54.3% (25/46)
+- margin: 53.7% (115/214)
+- background: 53.0% (336/634)
+- grid-template-columns: 52.9% (9/17)
+- border-width: 52.9% (9/17)
+- flex-direction: 52.2% (84/161)
+- background-image: 50.0% (2/4)
+- filter: 50.0% (2/4)
+- display: 47.5% (369/777)
+- flex-flow: 46.5% (20/43)
+- overflow: 45.0% (91/202)
+- ... and 67 more
+
+## Summary
+
+Total properties analyzed: 200
+Tier 1 (Safe): 19 properties
+Tier 2 (Caution): 17 properties
+Tier 3 (Experimental): 87 properties

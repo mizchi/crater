@@ -7,6 +7,9 @@
  * Usage:
  *   npx tsx scripts/analyze-safe-subset.ts           # Run tests and analyze
  *   npx tsx scripts/analyze-safe-subset.ts --cached  # Use cached results
+ *   npx tsx scripts/analyze-safe-subset.ts --failed  # List failed tests from cache
+ *   npx tsx scripts/analyze-safe-subset.ts --failed --cache results.json  # Use specific cache file
+ *   npx tsx scripts/analyze-safe-subset.ts --diff <old.json> <new.json>   # Compare two results
  */
 
 import puppeteer from 'puppeteer';
@@ -636,8 +639,179 @@ function generateSchema(stats: PropertyStats[]): object {
   };
 }
 
+/**
+ * Print failed tests list
+ */
+function printFailedTests(results: TestResult[]): void {
+  const failed = results.filter(r => !r.passed);
+
+  console.log(`\n=== Failed Tests (${failed.length}/${results.length}) ===\n`);
+
+  // Group by module
+  const byModule: Record<string, string[]> = {};
+  for (const result of failed) {
+    const parts = result.file.split('/');
+    const module = parts[2] || 'unknown'; // wpt/css/<module>/...
+    if (!byModule[module]) {
+      byModule[module] = [];
+    }
+    byModule[module].push(path.basename(result.file));
+  }
+
+  // Print by module
+  for (const [module, files] of Object.entries(byModule).sort()) {
+    console.log(`[${module}] (${files.length} failures)`);
+    for (const file of files.sort()) {
+      console.log(`  - ${file}`);
+    }
+    console.log('');
+  }
+
+  console.log(`Total: ${failed.length} failed tests`);
+}
+
+/**
+ * Compare two result files and show improvements/regressions
+ */
+function compareDiffs(oldFile: string, newFile: string): void {
+  if (!fs.existsSync(oldFile)) {
+    console.error(`Old file not found: ${oldFile}`);
+    process.exit(1);
+  }
+  if (!fs.existsSync(newFile)) {
+    console.error(`New file not found: ${newFile}`);
+    process.exit(1);
+  }
+
+  const oldResults: TestResult[] = JSON.parse(fs.readFileSync(oldFile, 'utf-8'));
+  const newResults: TestResult[] = JSON.parse(fs.readFileSync(newFile, 'utf-8'));
+
+  // Create maps for quick lookup
+  const oldMap = new Map<string, boolean>();
+  for (const r of oldResults) {
+    oldMap.set(r.file, r.passed);
+  }
+  const newMap = new Map<string, boolean>();
+  for (const r of newResults) {
+    newMap.set(r.file, r.passed);
+  }
+
+  // Find improvements (was fail, now pass)
+  const improvements: string[] = [];
+  // Find regressions (was pass, now fail)
+  const regressions: string[] = [];
+  // Find new tests
+  const newTests: string[] = [];
+  // Find removed tests
+  const removedTests: string[] = [];
+
+  for (const r of newResults) {
+    const oldPassed = oldMap.get(r.file);
+    if (oldPassed === undefined) {
+      newTests.push(r.file);
+    } else if (!oldPassed && r.passed) {
+      improvements.push(r.file);
+    } else if (oldPassed && !r.passed) {
+      regressions.push(r.file);
+    }
+  }
+
+  for (const r of oldResults) {
+    if (!newMap.has(r.file)) {
+      removedTests.push(r.file);
+    }
+  }
+
+  // Stats
+  const oldPassed = oldResults.filter(r => r.passed).length;
+  const newPassed = newResults.filter(r => r.passed).length;
+
+  console.log('\n=== Diff Comparison ===\n');
+  console.log(`Old: ${oldPassed}/${oldResults.length} passed (${(oldPassed / oldResults.length * 100).toFixed(1)}%)`);
+  console.log(`New: ${newPassed}/${newResults.length} passed (${(newPassed / newResults.length * 100).toFixed(1)}%)`);
+
+  const delta = newPassed - oldPassed;
+  const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
+  console.log(`Delta: ${deltaStr} tests\n`);
+
+  if (improvements.length > 0) {
+    console.log(`✓ Improvements (${improvements.length}):`);
+    for (const file of improvements.sort()) {
+      console.log(`  + ${path.basename(file)}`);
+    }
+    console.log('');
+  }
+
+  if (regressions.length > 0) {
+    console.log(`✗ Regressions (${regressions.length}):`);
+    for (const file of regressions.sort()) {
+      console.log(`  - ${path.basename(file)}`);
+    }
+    console.log('');
+  }
+
+  if (newTests.length > 0) {
+    console.log(`? New tests (${newTests.length}):`);
+    for (const file of newTests.sort().slice(0, 10)) {
+      console.log(`  + ${path.basename(file)}`);
+    }
+    if (newTests.length > 10) {
+      console.log(`  ... and ${newTests.length - 10} more`);
+    }
+    console.log('');
+  }
+
+  if (removedTests.length > 0) {
+    console.log(`- Removed tests (${removedTests.length}):`);
+    for (const file of removedTests.sort().slice(0, 10)) {
+      console.log(`  - ${path.basename(file)}`);
+    }
+    if (removedTests.length > 10) {
+      console.log(`  ... and ${removedTests.length - 10} more`);
+    }
+    console.log('');
+  }
+
+  // Summary
+  if (regressions.length === 0 && improvements.length > 0) {
+    console.log('🎉 No regressions! Pure improvement.');
+  } else if (regressions.length > 0 && improvements.length === 0) {
+    console.log('⚠️  Regressions detected with no improvements.');
+  } else if (regressions.length === 0 && improvements.length === 0) {
+    console.log('→ No changes in test results.');
+  }
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
+
+  // Handle --diff mode
+  const diffIndex = args.indexOf('--diff');
+  if (diffIndex !== -1) {
+    const oldFile = args[diffIndex + 1];
+    const newFile = args[diffIndex + 2];
+    if (!oldFile || !newFile) {
+      console.error('Usage: --diff <old.json> <new.json>');
+      process.exit(1);
+    }
+    compareDiffs(oldFile, newFile);
+    return;
+  }
+
+  // Handle --failed mode (cache only, quick list)
+  if (args.includes('--failed')) {
+    const cacheFile = args.includes('--cache') ?
+      args[args.indexOf('--cache') + 1] : CACHE_FILE;
+    if (!fs.existsSync(cacheFile)) {
+      console.error(`Cache file not found: ${cacheFile}`);
+      console.error('Run without --failed first to generate cache.');
+      process.exit(1);
+    }
+    const results: TestResult[] = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+    printFailedTests(results);
+    return;
+  }
+
   const useCached = args.includes('--cached');
 
   let results: TestResult[];

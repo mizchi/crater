@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Flex Grow</title>
+  <style>
+    .flex { display: flex; }
+    .flex-1 { flex: 1 1 0%; }
+    .flex-none { flex: none; }
+    .h-20 { height: 80px; }
+    .w-20 { width: 80px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex" style="width: 400px;">
+    <div class="w-20 h-20 flex-none bg-blue"></div>
+    <div class="h-20 flex-1 bg-red"></div>
+    <div class="w-20 h-20 flex-none bg-green"></div>
+  </div>
+</body>
+</html>

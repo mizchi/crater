@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Whitespace</title>
+  <style>
+    .whitespace-normal { white-space: normal; }
+    .whitespace-nowrap { white-space: nowrap; }
+    .whitespace-pre { white-space: pre; }
+    .whitespace-pre-wrap { white-space: pre-wrap; }
+    .w-32 { width: 128px; }
+    .p-2 { padding: 8px; }
+    .bg-gray { background-color: #f3f4f6; }
+    .mb-2 { margin-bottom: 8px; }
+    .overflow-hidden { overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="test" style="width: 200px;">
+    <!-- whitespace-nowrap: text should not wrap -->
+    <div class="whitespace-nowrap w-32 p-2 bg-gray mb-2 overflow-hidden">This text will not wrap</div>
+    <!-- whitespace-normal: text should wrap -->
+    <div class="whitespace-normal w-32 p-2 bg-gray">This text will wrap normally</div>
+  </div>
+</body>
+</html>

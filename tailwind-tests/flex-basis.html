@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Flex Basis</title>
+  <style>
+    .flex { display: flex; }
+    .basis-0 { flex-basis: 0px; }
+    .basis-1\/4 { flex-basis: 25%; }
+    .basis-1\/2 { flex-basis: 50%; }
+    .basis-full { flex-basis: 100%; }
+    .basis-auto { flex-basis: auto; }
+    .grow { flex-grow: 1; }
+    .shrink-0 { flex-shrink: 0; }
+    .h-16 { height: 64px; }
+    .gap-2 { gap: 8px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex gap-2" style="width: 400px;">
+    <div class="basis-1\/4 shrink-0 h-16 bg-blue"></div>
+    <div class="basis-1\/2 shrink-0 h-16 bg-red"></div>
+    <div class="basis-1\/4 shrink-0 h-16 bg-green"></div>
+  </div>
+</body>
+</html>

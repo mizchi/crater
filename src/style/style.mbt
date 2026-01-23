@@ -20,6 +20,16 @@ pub(all) enum CaptionSide {
 } derive(Show, Eq)
 
 ///|
+/// CSS white-space property (for text wrapping)
+pub(all) enum WhiteSpace {
+  Normal // Default - collapse whitespace, wrap text
+  Nowrap // Collapse whitespace, no wrapping
+  Pre // Preserve whitespace, only wrap at newlines
+  PreWrap // Preserve whitespace, wrap when needed
+  PreLine // Collapse whitespace, wrap at newlines
+} derive(Show, Eq)
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)
@@ -199,6 +209,8 @@ pub(all) struct Style {
   // Font properties (for baseline calculation)
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut line_height : Double // Computed line height in pixels (default = font_size)
+  // Text wrapping
+  mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
   // Vertical alignment for inline elements
   mut vertical_align : VerticalAlign
   // Clip (legacy, deprecated but widely used for a11y)
@@ -290,6 +302,7 @@ pub fn Style::default() -> Style {
     justify_self: @types.AlignSelf::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    white_space: Normal,
     vertical_align: Baseline,
     clip: @types.ClipRect::Auto,
     visibility: Visible,

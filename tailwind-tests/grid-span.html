@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Grid Column/Row Span</title>
+  <style>
+    .grid { display: grid; }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .col-span-1 { grid-column: span 1 / span 1; }
+    .col-span-2 { grid-column: span 2 / span 2; }
+    .col-span-3 { grid-column: span 3 / span 3; }
+    .row-span-2 { grid-row: span 2 / span 2; }
+    .gap-2 { gap: 8px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .bg-yellow { background-color: #eab308; }
+  </style>
+</head>
+<body>
+  <div id="test" class="grid grid-cols-3 gap-2" style="width: 320px;">
+    <div class="col-span-2 h-16 bg-blue"></div>
+    <div class="h-16 bg-red"></div>
+    <div class="h-16 bg-green"></div>
+    <div class="col-span-2 h-16 bg-yellow"></div>
+  </div>
+</body>
+</html>

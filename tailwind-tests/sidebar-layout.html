@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Sidebar Layout</title>
+  <style>
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .flex-1 { flex: 1 1 0%; }
+    .gap-2 { gap: 8px; }
+    .gap-4 { gap: 16px; }
+    .p-4 { padding: 16px; }
+    .w-48 { width: 192px; }
+    .h-8 { height: 32px; }
+    .h-full { height: 100%; }
+    .bg-gray-800 { background-color: #1f2937; }
+    .bg-gray-700 { background-color: #374151; }
+    .bg-gray-100 { background-color: #f3f4f6; }
+    .rounded { border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex" style="width: 600px; height: 400px;">
+    <!-- Sidebar -->
+    <div class="flex flex-col gap-2 p-4 w-48 bg-gray-800">
+      <div class="h-8 bg-gray-700 rounded"></div>
+      <div class="h-8 bg-gray-700 rounded"></div>
+      <div class="h-8 bg-gray-700 rounded"></div>
+      <div class="h-8 bg-gray-700 rounded"></div>
+    </div>
+    <!-- Main content -->
+    <div class="flex-1 p-4 bg-gray-100">
+      <!-- Note: h-full inside flex-1 requires explicit height on parent -->
+      <div class="bg-gray-700 rounded" style="opacity: 0.1; height: 368px;"></div>
+    </div>
+  </div>
+</body>
+</html>

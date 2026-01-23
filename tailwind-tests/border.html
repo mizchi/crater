@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Borders</title>
+  <style>
+    .border { border-width: 1px; border-style: solid; }
+    .border-2 { border-width: 2px; border-style: solid; }
+    .border-4 { border-width: 4px; border-style: solid; }
+    .border-blue { border-color: #3b82f6; }
+    .border-red { border-color: #ef4444; }
+    .rounded { border-radius: 4px; }
+    .rounded-lg { border-radius: 8px; }
+    .rounded-full { border-radius: 9999px; }
+    .w-20 { width: 80px; }
+    .h-20 { height: 80px; }
+    .m-2 { margin: 8px; }
+    .flex { display: flex; }
+    .gap-4 { gap: 16px; }
+    .bg-gray { background-color: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex gap-4">
+    <div class="w-20 h-20 border-2 border-blue rounded bg-gray"></div>
+    <div class="w-20 h-20 border-4 border-red rounded-lg bg-gray"></div>
+  </div>
+</body>
+</html>

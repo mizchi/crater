@@ -1,148 +1,191 @@
 {
   "version": "1.0.0",
-  "generated": "2026-01-23",
-  "source": "WPT tests analysis (1378 tests)",
+  "generated": "2026-01-23T05:10:47.916Z",
   "threshold": 0.7,
-  "tiers": {
-    "safe": {
-      "description": ">= 80% pass rate - Use confidently",
-      "properties": {
-        "align-content": {
-          "passRate": 0.962,
-          "values": ["flex-start", "flex-end", "center", "space-between", "space-around", "space-evenly", "start", "end", "stretch"]
-        },
-        "flex-shrink": {
-          "passRate": 0.938,
-          "values": ["<number>"]
-        },
-        "z-index": {
-          "passRate": 0.857,
-          "values": ["<number>", "auto"]
-        },
-        "justify-content": {
-          "passRate": 0.826,
-          "values": ["flex-start", "flex-end", "center", "space-between", "space-around"]
-        },
-        "margin-top": {
-          "passRate": 0.825,
-          "values": ["<length>", "<percentage>", "auto"]
-        },
-        "overflow-y": {
-          "passRate": 0.800,
-          "values": ["visible", "hidden", "scroll", "auto", "clip"]
-        },
-        "order": {
-          "passRate": 1.0,
-          "values": ["<number>"]
-        },
-        "row-gap": {
-          "passRate": 1.0,
-          "values": ["<length>", "<percentage>"]
-        },
-        "column-gap": {
-          "passRate": 1.0,
-          "values": ["<length>", "<percentage>"]
-        }
-      }
+  "properties": {
+    "text-align": {
+      "values": [
+        "center"
+      ],
+      "passRate": 1
     },
-    "caution": {
-      "description": "60-80% pass rate - Use with caution",
-      "properties": {
-        "overflow-x": {
-          "passRate": 0.778,
-          "values": ["visible", "hidden", "scroll", "auto", "clip"]
-        },
-        "opacity": {
-          "passRate": 0.750,
-          "values": ["<number>"]
-        },
-        "align-self": {
-          "passRate": 0.724,
-          "values": ["auto", "stretch", "flex-start", "flex-end", "center", "start", "end"]
-        },
-        "flex-basis": {
-          "passRate": 0.719,
-          "values": ["<length>", "<percentage>", "auto", "content", "min-content", "max-content"]
-        },
-        "flex-wrap": {
-          "passRate": 0.673,
-          "values": ["nowrap", "wrap", "wrap-reverse"]
-        },
-        "background-color": {
-          "passRate": 0.663,
-          "values": ["<color>"]
-        },
-        "padding-bottom": {
-          "passRate": 0.625,
-          "values": ["<length>", "<percentage>"]
-        },
-        "flex": {
-          "passRate": 0.608,
-          "values": ["none", "<number>", "<number> <number>", "<number> <number> <length>"]
-        },
-        "position": {
-          "passRate": 0.603,
-          "values": ["static", "relative", "absolute", "fixed"]
-        }
-      }
+    "order": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 1
     },
-    "experimental": {
-      "description": "< 60% pass rate - May have issues",
-      "properties": {
-        "flex-grow": { "passRate": 0.579 },
-        "height": { "passRate": 0.576 },
-        "min-height": { "passRate": 0.573 },
-        "min-width": { "passRate": 0.571 },
-        "width": { "passRate": 0.569 },
-        "left": { "passRate": 0.556 },
-        "top": { "passRate": 0.553 },
-        "bottom": { "passRate": 0.545 },
-        "margin": { "passRate": 0.542 },
-        "margin-left": { "passRate": 0.533 },
-        "flex-direction": { "passRate": 0.497 },
-        "display": { "passRate": 0.468 },
-        "align-items": { "passRate": 0.450 }
-      }
+    "row-gap": {
+      "values": [
+        "<length>"
+      ],
+      "passRate": 1
     },
-    "grid": {
-      "description": "Grid layout - safe with restrictions",
-      "taffyPassRate": 1.0,
-      "wptPassRate": 0.615,
-      "safe": {
-        "properties": ["display", "grid-template-columns", "grid-template-rows", "gap", "row-gap", "column-gap", "grid-column", "grid-row", "grid-area"],
-        "values": {
-          "display": ["grid", "inline-grid"],
-          "grid-template-*": ["<length>", "fr", "repeat(n, ...)"],
-          "grid-column/row": ["<number>", "<number> / <number>", "span <number>"]
-        }
-      },
-      "avoid": {
-        "combinations": [
-          "grid inside flexbox",
-          "table as grid item",
-          "percentage heights without explicit container height"
-        ],
-        "features": ["auto-fill", "auto-fit", "minmax with auto"]
-      }
-    }
-  },
-  "recommendations": {
-    "prototyping": {
-      "description": "For rapid prototyping with high browser compatibility",
-      "display": ["flex"],
-      "flexbox": {
-        "container": ["flex-direction", "flex-wrap", "justify-content", "align-content", "gap"],
-        "item": ["flex-grow", "flex-shrink", "align-self", "order"]
-      },
-      "sizing": {
-        "safe": ["margin-top", "padding-*"],
-        "caution": ["width", "height", "min-width", "min-height", "max-width", "max-height"]
-      },
-      "notes": [
-        "Prefer flex-basis: 0 with flex-grow for flexible layouts",
-        "Use explicit dimensions when precision matters",
-        "align-content works best with flex-wrap: wrap"
-      ]
+    "print-color-adjust": {
+      "values": [
+        "exact"
+      ],
+      "passRate": 1
+    },
+    "will-change": {
+      "values": [
+        "transform"
+      ],
+      "passRate": 1
+    },
+    "border-right-width": {
+      "values": [
+        "<length>"
+      ],
+      "passRate": 1
+    },
+    "border-right-style": {
+      "values": [
+        "solid"
+      ],
+      "passRate": 1
+    },
+    "box-shadow": {
+      "values": [
+        "20px 20px 5px red"
+      ],
+      "passRate": 1
+    },
+    "transition-property": {
+      "values": [
+        "all"
+      ],
+      "passRate": 1
+    },
+    "transition-duration": {
+      "values": [
+        "1s"
+      ],
+      "passRate": 1
+    },
+    "align-content": {
+      "values": [
+        "flex-start",
+        "flex-end",
+        "center",
+        "space-between",
+        "space-around",
+        "space-evenly",
+        "start",
+        "end",
+        "stretch"
+      ],
+      "passRate": 0.9615384615384616
+    },
+    "flex-shrink": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 0.9375
+    },
+    "z-index": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 0.8571428571428571
+    },
+    "border-color": {
+      "values": [
+        "orange",
+        "green"
+      ],
+      "passRate": 0.8333333333333334
+    },
+    "justify-content": {
+      "values": [
+        "flex-start",
+        "flex-end"
+      ],
+      "passRate": 0.8260869565217391
+    },
+    "margin-top": {
+      "values": [
+        "<length>"
+      ],
+      "passRate": 0.8245614035087719
+    },
+    "overflow-y": {
+      "values": [
+        "auto",
+        "scroll",
+        "clip"
+      ],
+      "passRate": 0.8
+    },
+    "border-right-color": {
+      "values": [
+        "red"
+      ],
+      "passRate": 0.8
+    },
+    "overflow-clip-margin": {
+      "values": [
+        "<length>",
+        "border-box 5px",
+        "padding-box 5px",
+        "content-box 5px"
+      ],
+      "passRate": 0.8
+    },
+    "overflow-x": {
+      "values": [
+        "clip",
+        "scroll"
+      ],
+      "passRate": 0.7777777777777778
+    },
+    "animation-fill-mode": {
+      "values": [
+        "both"
+      ],
+      "passRate": 0.7777777777777778
+    },
+    "opacity": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 0.75
+    },
+    "border-radius": {
+      "values": [
+        "0px 15px 25px 35px",
+        "<dimension>",
+        "<length>"
+      ],
+      "passRate": 0.75
+    },
+    "align-self": {
+      "values": [
+        "stretch",
+        "flex-start",
+        "flex-end",
+        "auto",
+        "end"
+      ],
+      "passRate": 0.7
+    },
+    "animation-duration": {
+      "values": [
+        "1s"
+      ],
+      "passRate": 0.7
+    },
+    "animation-name": {
+      "values": [
+        "coloranim"
+      ],
+      "passRate": 0.7
+    },
+    "animation-play-state": {
+      "values": [
+        "paused"
+      ],
+      "passRate": 0.7
     }
   }
 }
