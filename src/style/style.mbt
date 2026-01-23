@@ -57,6 +57,22 @@ pub fn WritingMode::is_block_rtl(self : WritingMode) -> Bool {
 }
 
 ///|
+/// CSS direction property (for inline text direction)
+pub(all) enum Direction {
+  Ltr // Left-to-right (default)
+  Rtl // Right-to-left (e.g., Arabic, Hebrew)
+} derive(Show, Eq)
+
+///|
+/// Check if direction is right-to-left
+pub fn Direction::is_rtl(self : Direction) -> Bool {
+  match self {
+    Rtl => true
+    Ltr => false
+  }
+}
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)
@@ -239,6 +255,7 @@ pub(all) struct Style {
   // Text wrapping and direction
   mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
   mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
+  mut direction : Direction // direction: ltr | rtl (inline text direction)
   // Vertical alignment for inline elements
   mut vertical_align : VerticalAlign
   // Clip (legacy, deprecated but widely used for a11y)
@@ -332,6 +349,7 @@ pub fn Style::default() -> Style {
     line_height: 16.0,
     white_space: Normal,
     writing_mode: HorizontalTb,
+    direction: Ltr,
     vertical_align: Baseline,
     clip: @types.ClipRect::Auto,
     visibility: Visible,

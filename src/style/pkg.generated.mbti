@@ -38,6 +38,14 @@ pub fn Contain::strict() -> Self
 pub impl Eq for Contain
 pub impl Show for Contain
 
+pub(all) enum Direction {
+  Ltr
+  Rtl
+}
+pub fn Direction::is_rtl(Self) -> Bool
+pub impl Eq for Direction
+pub impl Show for Direction
+
 pub(all) struct Style {
   mut display : @types.Display
   mut position : @types.Position
@@ -84,6 +92,7 @@ pub(all) struct Style {
   mut line_height : Double
   mut white_space : WhiteSpace
   mut writing_mode : WritingMode
+  mut direction : Direction
   mut vertical_align : VerticalAlign
   mut clip : @types.ClipRect
   mut visibility : Visibility

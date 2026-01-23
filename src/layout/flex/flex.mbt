@@ -1588,9 +1588,19 @@ fn compute_internal(
   } else {
     direction_is_row
   }
-  let is_reverse = match style.flex_direction {
+  // Determine if flex items should be reversed
+  // For row direction with direction: rtl, the inline base direction is reversed
+  let direction_reverse = match style.flex_direction {
     @types.RowReverse | @types.ColumnReverse => true
     _ => false
+  }
+  // RTL affects only row direction (inline axis)
+  let is_rtl = style.direction.is_rtl()
+  let is_reverse = if direction_is_row && is_rtl {
+    // RTL + row = reverse, RTL + row-reverse = normal (double negative)
+    not(direction_reverse)
+  } else {
+    direction_reverse
   }
 
   // For main size, if container size is auto, we need special handling
@@ -3008,9 +3018,18 @@ fn compute_internal(
   // CSS spec: align-content positioning has no effect on single-line flex containers
   // For single-line containers (nowrap), line is always positioned at Start
   // Handle wrap-reverse: FlexStart/FlexEnd are flipped, but Start/End are not
-  let is_wrap_reverse = match style.flex_wrap {
+  let css_wrap_reverse = match style.flex_wrap {
     @types.WrapReverse => true
     _ => false
+  }
+  // RTL affects inline axis direction:
+  // - For row flex: main axis = inline, already handled by is_reverse above
+  // - For column flex: cross axis = inline, handle here
+  // Use direction_is_row (CSS row/column) not is_row (physical axis)
+  let is_wrap_reverse = if not(direction_is_row) && is_rtl {
+    not(css_wrap_reverse) // RTL inverts wrap direction for column flex
+  } else {
+    css_wrap_reverse
   }
   // For wrap-reverse with flex-relative alignment, the line positioning is handled
   // by uses_reversed_layout, so we don't need to flip here

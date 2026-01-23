@@ -141,6 +141,7 @@ priv struct StyleBuilder {
   // Text wrapping and direction
   mut white_space : @style.WhiteSpace
   mut writing_mode : @style.WritingMode
+  mut direction : @style.Direction
   // Vertical alignment for inline elements
   mut vertical_align : @style.VerticalAlign
   // Clip (legacy)
@@ -224,6 +225,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     line_height: 16.0,
     white_space: @style.WhiteSpace::Normal,
     writing_mode: @style.WritingMode::HorizontalTb,
+    direction: @style.Direction::Ltr,
     vertical_align: @style.VerticalAlign::Baseline,
     clip: @types.ClipRect::Auto,
     visibility: @style.Visibility::Visible,
@@ -301,6 +303,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     line_height: style.line_height,
     white_space: style.white_space,
     writing_mode: style.writing_mode,
+    direction: style.direction,
     vertical_align: style.vertical_align,
     clip: style.clip,
     visibility: style.visibility,
@@ -387,6 +390,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     line_height: self.line_height,
     white_space: self.white_space,
     writing_mode: self.writing_mode,
+    direction: self.direction,
     vertical_align: self.vertical_align,
     clip: self.clip,
     visibility: self.visibility,
@@ -526,6 +530,11 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.WritingMode::HorizontalTb => "horizontal-tb"
         @style.WritingMode::VerticalRl => "vertical-rl"
         @style.WritingMode::VerticalLr => "vertical-lr"
+      }
+    "direction" =>
+      match style.direction {
+        @style.Direction::Ltr => "ltr"
+        @style.Direction::Rtl => "rtl"
       }
     _ => initial_value(property)
   }
@@ -1097,6 +1106,7 @@ fn apply_property(
       builder.line_height = parse_line_height(value, builder.font_size)
     "white-space" => builder.white_space = parse_white_space(value)
     "writing-mode" => builder.writing_mode = parse_writing_mode(value)
+    "direction" => builder.direction = parse_direction(value)
     "vertical-align" => builder.vertical_align = parse_vertical_align(value)
     "font" => {
       // Parse font shorthand: [style] [variant] [weight] size[/line-height] family

@@ -395,6 +395,15 @@ pub fn parse_writing_mode(value : String) -> @style.WritingMode {
 }
 
 ///|
+/// Parse direction value (ltr/rtl)
+pub fn parse_direction(value : String) -> @style.Direction {
+  match value.trim().to_lower() {
+    "rtl" => @style.Direction::Rtl
+    "ltr" | _ => @style.Direction::Ltr
+  }
+}
+
+///|
 /// Parse grid-auto-flow value
 pub fn parse_grid_auto_flow(value : String) -> @types.GridAutoFlow {
   match value.trim().to_lower() {

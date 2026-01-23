@@ -44,6 +44,8 @@ pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue
 
 pub fn parse_dimension(String) -> @types.Dimension
 
+pub fn parse_direction(String) -> @style.Direction
+
 pub fn parse_display(String) -> @types.Display
 
 pub fn parse_flex_direction(String) -> @types.FlexDirection
