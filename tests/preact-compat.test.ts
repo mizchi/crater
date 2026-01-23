@@ -1,0 +1,657 @@
+/**
+ * Preact Compatibility Tests for Crater WebDriver BiDi
+ *
+ * Tests that Preact's core functionality works with Crater's DOM implementation.
+ * Run: pnpm test:preact (with BiDi server running)
+ */
+
+import { test, expect } from "@playwright/test";
+import WebSocket from "ws";
+
+const BIDI_URL = "ws://127.0.0.1:9222";
+
+interface BidiResponse {
+  id: number;
+  type: "success" | "error";
+  result?: unknown;
+  error?: string;
+  message?: string;
+}
+
+class BidiClient {
+  private ws: WebSocket | null = null;
+  private commandId = 0;
+  private pendingCommands = new Map<
+    number,
+    { resolve: (value: BidiResponse) => void; reject: (error: Error) => void }
+  >();
+
+  async connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.ws = new WebSocket(BIDI_URL);
+      this.ws.on("open", () => resolve());
+      this.ws.on("error", (err) => reject(err));
+      this.ws.on("message", (data) => this.handleMessage(data.toString()));
+    });
+  }
+
+  private handleMessage(data: string): void {
+    const msg = JSON.parse(data);
+    const pending = this.pendingCommands.get(msg.id);
+    if (pending) {
+      this.pendingCommands.delete(msg.id);
+      pending.resolve(msg as BidiResponse);
+    }
+  }
+
+  async send(method: string, params: unknown = {}): Promise<BidiResponse> {
+    if (!this.ws) throw new Error("Not connected");
+
+    const id = ++this.commandId;
+    const message = JSON.stringify({ id, method, params });
+
+    return new Promise((resolve, reject) => {
+      this.pendingCommands.set(id, { resolve, reject });
+      this.ws!.send(message);
+
+      setTimeout(() => {
+        if (this.pendingCommands.has(id)) {
+          this.pendingCommands.delete(id);
+          reject(new Error(`Timeout waiting for response to ${method}`));
+        }
+      }, 10000);
+    });
+  }
+
+  close(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+}
+
+// Preact-like virtual DOM implementation for testing
+// This tests that the DOM APIs needed by Preact work correctly
+const PREACT_LIKE_CODE = `
+// Minimal Preact-like implementation to test DOM compatibility
+const h = (type, props, ...children) => ({ type, props: props || {}, children: children.flat() });
+
+const render = (vnode, container) => {
+  if (typeof vnode === 'string' || typeof vnode === 'number') {
+    return container.appendChild(document.createTextNode(String(vnode)));
+  }
+
+  const el = document.createElement(vnode.type);
+
+  // Set attributes and event handlers
+  for (const [key, value] of Object.entries(vnode.props)) {
+    if (key.startsWith('on') && typeof value === 'function') {
+      const eventName = key.slice(2).toLowerCase();
+      el.addEventListener(eventName, value);
+    } else if (key === 'className') {
+      el.setAttribute('class', value);
+    } else if (key === 'style' && typeof value === 'object') {
+      // Set style properties directly instead of using Object.assign
+      for (const [prop, val] of Object.entries(value)) {
+        el.style[prop] = val;
+      }
+    } else if (key !== 'children') {
+      el.setAttribute(key, value);
+    }
+  }
+
+  // Render children
+  for (const child of vnode.children) {
+    if (child != null && child !== false) {
+      render(child, el);
+    }
+  }
+
+  container.appendChild(el);
+  return el;
+};
+
+// Make available globally
+globalThis.h = h;
+globalThis.render = render;
+`;
+
+test.describe("Preact Compatibility Tests", () => {
+  let client: BidiClient;
+  let contextId: string;
+
+  test.beforeEach(async () => {
+    client = new BidiClient();
+    await client.connect();
+
+    // Create a browsing context
+    const createResp = await client.send("browsingContext.create", {
+      type: "tab",
+    });
+    contextId = (createResp.result as { context: string }).context;
+
+    // Navigate to a blank HTML page
+    const html = `<!DOCTYPE html><html><head></head><body><div id="root"></div></body></html>`;
+    const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
+    await client.send("browsingContext.navigate", {
+      context: contextId,
+      url: dataUrl,
+      wait: "complete",
+    });
+
+    // Initialize the Preact-like runtime (use sync eval to ensure Mock DOM is setup)
+    await client.send("script.evaluate", {
+      expression: PREACT_LIKE_CODE,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    // Clear the root element for each test
+    await client.send("script.evaluate", {
+      expression: `document.getElementById('root')._children = [];`,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+  });
+
+  test.afterEach(() => {
+    client.close();
+  });
+
+  test("createElement and appendChild work", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const el = document.createElement('div');
+        el.textContent = 'Hello';
+        document.getElementById('root').appendChild(el);
+        document.getElementById('root').innerHTML;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("<div>Hello</div>");
+  });
+
+  test("render simple element", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const vnode = h('div', { id: 'test' }, 'Hello World');
+        render(vnode, document.getElementById('root'));
+        document.getElementById('root').innerHTML;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toContain("Hello World");
+    expect(result.result.value).toContain('id="test"');
+  });
+
+  test("render nested elements", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const vnode = h('div', { className: 'container' },
+          h('h1', null, 'Title'),
+          h('p', null, 'Paragraph text')
+        );
+        render(vnode, document.getElementById('root'));
+        document.getElementById('root').innerHTML;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toContain("<h1>Title</h1>");
+    expect(result.result.value).toContain("<p>Paragraph text</p>");
+    expect(result.result.value).toContain('class="container"');
+  });
+
+  test("render with style object", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const vnode = h('div', {
+          style: { color: 'red', backgroundColor: 'blue' }
+        }, 'Styled');
+        render(vnode, document.getElementById('root'));
+        const el = document.getElementById('root').firstChild;
+        [el.style.color, el.style.backgroundColor].join(',');
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("red,blue");
+  });
+
+  test("event handlers work", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let clicked = false;
+        const vnode = h('button', {
+          onClick: () => { clicked = true; }
+        }, 'Click me');
+        const btn = render(vnode, document.getElementById('root'));
+        btn.click();
+        clicked;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: boolean } };
+    expect(result.result.value).toBe(true);
+  });
+
+  test("render list of elements", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const items = ['Apple', 'Banana', 'Cherry'];
+        const vnode = h('ul', null,
+          ...items.map(item => h('li', null, item))
+        );
+        render(vnode, document.getElementById('root'));
+        document.getElementById('root').getElementsByTagName('li').length;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBe(3);
+  });
+
+  test("conditional rendering", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const show = true;
+        const vnode = h('div', null,
+          show && h('span', null, 'Visible'),
+          !show && h('span', null, 'Hidden')
+        );
+        render(vnode, document.getElementById('root'));
+        document.getElementById('root').innerHTML;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toContain("Visible");
+    expect(result.result.value).not.toContain("Hidden");
+  });
+
+  test("text node rendering", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const vnode = h('p', null,
+          'Hello, ',
+          h('strong', null, 'World'),
+          '!'
+        );
+        render(vnode, document.getElementById('root'));
+        document.getElementById('root').textContent;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("Hello, World!");
+  });
+
+  test("DOM manipulation after render", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        render(h('div', { id: 'dynamic' }, 'Initial'), document.getElementById('root'));
+        const el = document.getElementById('dynamic');
+        el.textContent = 'Updated';
+        el.textContent;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("Updated");
+  });
+
+  test("classList manipulation", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        render(h('div', { id: 'cls' }), document.getElementById('root'));
+        const el = document.getElementById('cls');
+        el.classList.add('foo', 'bar');
+        el.classList.remove('foo');
+        el.classList.toggle('baz');
+        Array.from(el.classList).sort().join(',');
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("bar,baz");
+  });
+
+  test("insertBefore works", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const container = document.getElementById('root');
+        const first = document.createElement('span');
+        first.textContent = 'First';
+        const second = document.createElement('span');
+        second.textContent = 'Second';
+        container.appendChild(second);
+        container.insertBefore(first, second);
+        container.textContent;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("FirstSecond");
+  });
+
+  test("removeChild works", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const container = document.getElementById('root');
+        render(h('div', null,
+          h('span', { id: 'keep' }, 'Keep'),
+          h('span', { id: 'remove' }, 'Remove')
+        ), container);
+        const toRemove = document.getElementById('remove');
+        toRemove.parentNode.removeChild(toRemove);
+        container.textContent;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("Keep");
+  });
+
+  test("input value handling", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        render(h('input', { type: 'text', value: 'initial' }), document.getElementById('root'));
+        const input = document.querySelector('input');
+        const initial = input.value;
+        input.value = 'changed';
+        [initial, input.value].join(',');
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("initial,changed");
+  });
+
+  test("checkbox checked state", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        render(h('input', { type: 'checkbox' }), document.getElementById('root'));
+        const cb = document.querySelector('input');
+        const initial = cb.checked;
+        cb.checked = true;
+        [initial, cb.checked].join(',');
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("false,true");
+  });
+
+  test("MutationObserver tracks childList changes with takeRecords", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const observer = new MutationObserver(() => {});
+        const root = document.getElementById('root');
+        observer.observe(root, { childList: true });
+        const div = document.createElement('div');
+        root.appendChild(div);
+        // takeRecords returns pending mutations synchronously
+        const records = observer.takeRecords();
+        observer.disconnect();
+        records.length;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBeGreaterThanOrEqual(1);
+  });
+
+  test("MutationObserver tracks attribute changes with takeRecords", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const observer = new MutationObserver(() => {});
+        const root = document.getElementById('root');
+        observer.observe(root, { attributes: true });
+        root.setAttribute('data-test', 'value');
+        const records = observer.takeRecords();
+        observer.disconnect();
+        records.length > 0 ? records[0].attributeName : 'none';
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("data-test");
+  });
+
+  test("MutationObserver with subtree tracks nested changes", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const observer = new MutationObserver(() => {});
+        const root = document.getElementById('root');
+        const parent = document.createElement('div');
+        root.appendChild(parent);
+        observer.observe(root, { childList: true, subtree: true });
+        const child = document.createElement('span');
+        parent.appendChild(child);
+        const records = observer.takeRecords();
+        observer.disconnect();
+        records.length;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBeGreaterThanOrEqual(1);
+  });
+
+  test("MutationObserver disconnect clears pending records", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const observer = new MutationObserver(() => {});
+        const root = document.getElementById('root');
+        observer.observe(root, { childList: true });
+        root.appendChild(document.createElement('div'));
+        observer.disconnect();
+        // After disconnect, takeRecords should return empty
+        const records = observer.takeRecords();
+        records.length;
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBe(0);
+  });
+
+  test("awaitPromise correctly awaits Promise resolution", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `new Promise(resolve => setTimeout(() => resolve('delayed'), 50))`,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("delayed");
+  });
+
+  test("MutationObserver callback fires with awaitPromise", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        new Promise(resolve => {
+          const mutations = [];
+          const observer = new MutationObserver(records => {
+            mutations.push(...records);
+            resolve(mutations.length);
+          });
+          const root = document.getElementById('root');
+          observer.observe(root, { childList: true });
+          root.appendChild(document.createElement('div'));
+        })
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBeGreaterThanOrEqual(1);
+  });
+
+  test("MutationObserver callback receives correct record type", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        new Promise(resolve => {
+          const observer = new MutationObserver(records => {
+            resolve(records[0].type);
+          });
+          const root = document.getElementById('root');
+          observer.observe(root, { attributes: true });
+          root.setAttribute('data-async', 'test');
+        })
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("attributes");
+  });
+
+  // WaitFor tests - CDP/BiDi automation helpers
+  test("__waitForSelector finds existing element immediately", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        // Element already exists
+        const existing = document.getElementById('root');
+        __waitForSelector('#root').then(el => el.id);
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("root");
+  });
+
+  test("__waitForSelector waits for element to appear", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        // Create element after a delay
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.id = 'delayed-element';
+          document.body.appendChild(div);
+        }, 50);
+
+        // Wait for it
+        __waitForSelector('#delayed-element', { timeout: 1000 }).then(el => el.id);
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("delayed-element");
+  });
+
+  test("__waitForFunction waits for condition", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let counter = 0;
+        setInterval(() => counter++, 10);
+
+        __waitForFunction(() => counter >= 3, { timeout: 1000 }).then(() => counter >= 3);
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: boolean } };
+    expect(result.result.value).toBe(true);
+  });
+
+  test("__waitFor works with selector string", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __waitFor('#root').then(el => el !== null);
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: boolean } };
+    expect(result.result.value).toBe(true);
+  });
+
+  test("__waitForSelector times out when element not found", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __waitForSelector('#non-existent', { timeout: 100 })
+          .then(() => 'found')
+          .catch(e => 'timeout: ' + e.message);
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toContain("timeout");
+  });
+});

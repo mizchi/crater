@@ -55,6 +55,7 @@ pub struct BidiProtocol {
   mut global_subscriptions : Array[String] // events subscribed globally
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
+  mut socket : @core.Any? // WebSocket for async responses
 }
 
 ///|
@@ -73,7 +74,20 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     global_subscriptions: [],
     user_contexts,
     context_user_context: {},
+    socket: None,
   }
+}
+
+///|
+/// Set WebSocket for async responses
+pub fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Unit {
+  self.socket = Some(socket)
+}
+
+///|
+/// Clear WebSocket reference
+pub fn BidiProtocol::clear_socket(self : BidiProtocol) -> Unit {
+  self.socket = None
 }
 
 ///|
@@ -540,8 +554,24 @@ fn BidiProtocol::dispatch_script(
           }
         _ => "default"
       }
-      // Evaluate the expression using JS runtime
+      // Check if awaitPromise is true
+      let await_promise = match get_param_raw(request.params, "awaitPromise") {
+        Some(True) => true
+        _ => false
+      }
       let expr = get_string_param(request.params, "expression").unwrap()
+      // If awaitPromise is true and we have a socket, use async evaluation
+      if await_promise {
+        match self.socket {
+          Some(socket) => {
+            // Async evaluation - response sent directly via WebSocket
+            eval_and_send_async(socket, request.id, expr, ctx_id)
+            return Ok(()) // No sync response needed
+          }
+          None => () // Fall through to sync evaluation
+        }
+      }
+      // Synchronous evaluation
       let eval_result_json = evaluate_js(expr)
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
@@ -656,6 +686,11 @@ fn BidiProtocol::dispatch_script(
           }
         _ => "default"
       }
+      // Check if awaitPromise is true
+      let await_promise_call = match get_param_raw(request.params, "awaitPromise") {
+        Some(True) => true
+        _ => false
+      }
       // Get arguments if provided
       let args_json = match get_param_raw(request.params, "arguments") {
         Some(Array(args)) => {
@@ -671,6 +706,17 @@ fn BidiProtocol::dispatch_script(
       // Wrap function declaration and call it
       let func = get_string_param(request.params, "functionDeclaration").unwrap()
       let call_expr = "(" + func + ")(" + args_json + ")"
+      // If awaitPromise is true and we have a socket, use async evaluation
+      if await_promise_call {
+        match self.socket {
+          Some(socket) => {
+            // Async evaluation - response sent directly via WebSocket
+            eval_and_send_async(socket, request.id, call_expr, ctx_id_call)
+            return Ok(()) // No sync response needed
+          }
+          None => () // Fall through to sync evaluation
+        }
+      }
       let eval_result_json = evaluate_js(call_expr)
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {

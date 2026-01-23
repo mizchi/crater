@@ -84,3 +84,55 @@ npm run wpt -- wpt-tests/css-flexbox/*.html
 - `css-flexbox` - Flexbox tests
 - `css-display`, `css-box`, `css-sizing`
 - `css-align`, `css-position`, `css-overflow`
+
+### WPT DOM Tests
+
+DOM API compatibility tests using WPT testharness.js.
+
+**Location:**
+- Test files: `wpt/dom/nodes/` (HTML format, from WPT submodule)
+- Runner: `scripts/wpt-dom-runner.ts`
+
+**Commands:**
+```bash
+# Run all WPT DOM tests
+just wpt-dom-all
+
+# Run specific test
+just wpt-dom wpt/dom/nodes/Document-createElement.html
+
+# Run tests matching pattern
+just wpt-dom "Document-*"
+```
+
+### WebDriver BiDi Tests (Planned)
+
+WebDriver BiDi protocol compliance tests for Playwright integration.
+
+**Location:**
+- Test files: `wpt/webdriver/tests/bidi/` (planned)
+- Runner: `scripts/wpt-webdriver-runner.ts` (planned)
+
+## Project Goals
+
+### Milestone 1: Preact Compatibility
+
+Ensure Preact can run on Crater's DOM implementation:
+- Complete DOM API coverage for Preact's requirements
+- Event handling (click, input, change, etc.)
+- Component lifecycle support
+- Virtual DOM reconciliation compatibility
+
+**Validation:**
+- `just test-preact` - Run Preact test suite against Crater
+
+### Milestone 2: Playwright Integration
+
+Enable browser automation via WebDriver BiDi:
+- Implement WebDriver BiDi protocol binding
+- Support core Playwright operations (navigation, clicks, inputs)
+- Pass WebDriver BiDi WPT tests
+
+**Validation:**
+- `just wpt-webdriver-all` - Run WebDriver BiDi WPT tests
+- `just test-playwright` - Run Playwright E2E tests against Crater

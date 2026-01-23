@@ -1,4 +1,6 @@
 import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater/dom",
+  "mizchi/js/core",
+  "mizchi/js/deno",
 }

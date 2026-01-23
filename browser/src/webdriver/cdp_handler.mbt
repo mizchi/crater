@@ -48,6 +48,15 @@ pub fn CdpSessionManager::get_session(
 }
 
 ///|
+/// Check if a session exists
+pub fn CdpSessionManager::has_session(
+  self : CdpSessionManager,
+  session_id : String,
+) -> Bool {
+  self.sessions.contains(session_id)
+}
+
+///|
 /// Close a session
 pub fn CdpSessionManager::close_session(
   self : CdpSessionManager,

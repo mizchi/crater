@@ -173,23 +173,106 @@ function createTestHarness() {
     Node.prototype.DOCUMENT_POSITION_CONTAINED_BY = 0x10;
     Node.prototype.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
 
-    function CharacterData() {}
-    CharacterData.prototype = Object.create(Node.prototype);
+    // CharacterData, Text, Comment are defined in mockDomCode
+    // Only define if not already defined (for backwards compatibility)
+    if (typeof CharacterData === 'undefined') {
+      function CharacterData() {}
+      CharacterData.prototype = Object.create(Node.prototype);
+    }
 
-    function Text() {}
-    Text.prototype = Object.create(CharacterData.prototype);
+    // Text and Comment constructors with proper functionality are defined in mockDomCode
+    // Do NOT override them here - just ensure prototype chain is correct
+    if (typeof Text !== 'undefined' && Text.prototype) {
+      // Ensure Text inherits from CharacterData
+      if (Object.getPrototypeOf(Text.prototype) !== CharacterData.prototype) {
+        Object.setPrototypeOf(Text.prototype, CharacterData.prototype);
+      }
+    }
 
-    function Comment() {}
-    Comment.prototype = Object.create(CharacterData.prototype);
+    if (typeof Comment !== 'undefined' && Comment.prototype) {
+      // Ensure Comment inherits from CharacterData
+      if (Object.getPrototypeOf(Comment.prototype) !== CharacterData.prototype) {
+        Object.setPrototypeOf(Comment.prototype, CharacterData.prototype);
+      }
+    }
 
     function Element() {}
     Element.prototype = Object.create(Node.prototype);
+    Element.prototype.constructor = Element;
 
-    function HTMLElement() {}
-    HTMLElement.prototype = Object.create(Element.prototype);
+    // HTMLElement and subclasses are defined in mockDomCode
+    // Just ensure prototype chain is correct
+    if (typeof HTMLElement !== 'undefined' && HTMLElement.prototype) {
+      if (Object.getPrototypeOf(HTMLElement.prototype) !== Element.prototype) {
+        Object.setPrototypeOf(HTMLElement.prototype, Element.prototype);
+      }
+    }
 
-    function Document() {}
+    function Document() {
+      // new Document() creates a Document (not XMLDocument) per spec
+      const doc = {
+        _nodeType: 9,
+        nodeType: 9,
+        nodeName: '#document',
+        documentElement: null,
+        doctype: null,
+        _children: [],
+        location: null,  // null for documents not associated with browsing context
+        URL: 'about:blank',
+        documentURI: 'about:blank',
+        compatMode: 'CSS1Compat',
+        characterSet: 'UTF-8',
+        charset: 'UTF-8',
+        inputEncoding: 'UTF-8',
+        contentType: 'application/xml',
+        get firstChild() { return this._children[0] || null; },
+        get lastChild() { return this._children[this._children.length - 1] || null; },
+        get childNodes() { return this._children; },
+        appendChild(child) { this._children.push(child); child._parent = this; child.parentNode = this; if (child._nodeType === 1) this.documentElement = child; return child; },
+        removeChild(child) { const idx = this._children.indexOf(child); if (idx >= 0) { this._children.splice(idx, 1); child._parent = null; child.parentNode = null; } return child; },
+        // For XML documents (non-HTML), createElement returns Element (not HTMLElement)
+        createElement(name) {
+          const el = document.createElement(name);
+          // XML document: use generic Element prototype, keep localName as-is
+          Object.setPrototypeOf(el, Element.prototype);
+          el.localName = name;
+          return el;
+        },
+        // createElementNS with HTML namespace returns HTML elements
+        createElementNS(ns, name) {
+          const el = document.createElementNS(ns, name);
+          if (ns === 'http://www.w3.org/1999/xhtml') {
+            // HTML element - use appropriate HTML constructor
+            const lowerName = name.toLowerCase();
+            const Ctor = tagToConstructor[lowerName] || HTMLElement;
+            Object.setPrototypeOf(el, Ctor.prototype);
+          } else {
+            // Non-HTML element
+            Object.setPrototypeOf(el, Element.prototype);
+          }
+          return el;
+        },
+        createTextNode(text) { return document.createTextNode(text); },
+        createComment(text) { return document.createComment(text); },
+        createDocumentFragment() { return document.createDocumentFragment(); },
+        getRootNode() { return this; },
+        isSameNode(other) { return this === other; },
+        isEqualNode(other) { return this === other; },
+        adoptNode(node) {
+          if (!node) return null;
+          if (node._nodeType === 9) throw new DOMException('Cannot adopt a document node', 'NotSupportedError');
+          if (node._parent) node._parent.removeChild(node);
+          node.ownerDocument = this;
+          return node;
+        }
+      };
+      Object.setPrototypeOf(doc, Document.prototype);
+      return doc;
+    }
     Document.prototype = Object.create(Node.prototype);
+
+    function XMLDocument() {}
+    XMLDocument.prototype = Object.create(Document.prototype);
 
     function DocumentFragment() {}
     DocumentFragment.prototype = Object.create(Node.prototype);
@@ -206,7 +289,9 @@ function createTestHarness() {
     const _origCreateMockElement = createMockElement;
     createMockElement = function(tagName, mockId) {
       const el = _origCreateMockElement(tagName, mockId);
-      Object.setPrototypeOf(el, HTMLElement.prototype);
+      const lowerTag = tagName.toLowerCase();
+      const Ctor = tagToConstructor[lowerTag] || HTMLElement;
+      Object.setPrototypeOf(el, Ctor.prototype);
       return el;
     };
 
@@ -246,10 +331,42 @@ function createTestHarness() {
       __tests.push(testObj);
     }
 
-    function async_test(func, name) {
-      // For simplicity, treat async tests as sync with a done callback
-      const testObj = { name: name || 'unnamed async test', func: func, async: true };
-      __tests.push(testObj);
+    function async_test(funcOrName, maybeName) {
+      // Form 1: async_test(function, name) - traditional
+      // Form 2: async_test(name) - returns test object for step/done pattern
+      if (typeof funcOrName === 'function') {
+        const testObj = { name: maybeName || 'unnamed async test', func: funcOrName, async: true };
+        __tests.push(testObj);
+        return testObj;
+      } else {
+        // Form 2: funcOrName is the test name
+        const testObj = {
+          name: funcOrName || 'unnamed async test',
+          func: null,
+          async: true,
+          steps: [],
+          step: function(f) {
+            this.steps.push(f);
+            try { f(); } catch(e) { this._error = e; }
+          },
+          step_func: function(f) {
+            const self = this;
+            return function() { self.step(function() { f.apply(this, arguments); }); };
+          },
+          step_func_done: function(f) {
+            const self = this;
+            return function() {
+              self.step(function() { f.apply(this, arguments); });
+              self._done = true;
+            };
+          },
+          done: function() { this._done = true; },
+          unreached_func: function(msg) { return function() { throw new Error(msg || 'unreached'); }; },
+          add_cleanup: function(f) { /* ignored */ }
+        };
+        __tests.push(testObj);
+        return testObj;
+      }
     }
 
     function promise_test(func, name) {
@@ -464,17 +581,28 @@ function createTestHarness() {
       for (const t of __tests) {
         try {
           if (t.async) {
-            let completed = false;
-            const testContext = {
-              step: function(f) { if (typeof f === 'function') f(); },
-              step_func: function(f) { return f; },
-              step_func_done: function(f) { return function() { f.apply(this, arguments); completed = true; }; },
-              done: function() { completed = true; },
-              unreached_func: function(msg) { return function() { throw new Error(msg || 'unreached'); }; },
-              add_cleanup: function(f) { /* ignored */ }
-            };
-            // WPT async_test passes test object as first parameter
-            t.func(testContext);
+            // Form 2: func is null, test was created with just a name
+            if (t.func === null) {
+              // Steps were already executed when step() was called
+              // Check if there was an error
+              if (t._error) {
+                throw t._error;
+              }
+              // Test passes if no error occurred
+            } else {
+              // Form 1: traditional async_test with function
+              let completed = false;
+              const testContext = {
+                step: function(f) { if (typeof f === 'function') f(); },
+                step_func: function(f) { return f; },
+                step_func_done: function(f) { return function() { f.apply(this, arguments); completed = true; }; },
+                done: function() { completed = true; },
+                unreached_func: function(msg) { return function() { throw new Error(msg || 'unreached'); }; },
+                add_cleanup: function(f) { /* ignored */ }
+              };
+              // WPT async_test passes test object as first parameter
+              t.func(testContext);
+            }
           } else if (t.promise) {
             // Skip promise tests for now
             __results.push({ name: t.name, status: 'skip', message: 'promise tests not supported' });
@@ -577,6 +705,8 @@ function runTestFile(htmlPath: string): TestFileResult {
     const testHarness = createTestHarness();
 
     // Combine all code
+    // mockDomCode must come first as it defines document, createMockElement, etc.
+    // testHarness augments these with prototype inheritance
     const fullCode = [
       mockDomCode,
       testHarness,
