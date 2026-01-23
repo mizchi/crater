@@ -79,21 +79,77 @@ gen-html5lib-tests *args:
 # === WPT (Web Platform Tests) ===
 # Uses wpt/ submodule directly
 
-# List available WPT modules
+# List available WPT CSS modules
 wpt-list:
     npx tsx scripts/wpt-runner.ts --list
 
-# Run WPT tests for a module (e.g., css-flexbox)
+# Run WPT CSS tests for a module (e.g., css-flexbox)
 wpt module:
     npx tsx scripts/wpt-runner.ts {{module}}
 
-# Run all WPT tests
+# Run all WPT CSS tests
 wpt-all:
+    npx tsx scripts/wpt-runner.ts --all
+
+# Run all WPT tests and generate report
+wpt-run-all:
     npx tsx scripts/wpt-runner.ts --all
 
 # Update WPT README
 wpt-update-readme:
     npx tsx scripts/update-wpt-readme.ts
+
+# === WPT DOM Tests ===
+
+# Run WPT DOM tests (single file or pattern)
+wpt-dom pattern:
+    npx tsx scripts/wpt-dom-runner.ts {{pattern}}
+
+# Run all WPT DOM tests
+wpt-dom-all:
+    npx tsx scripts/wpt-dom-runner.ts --all
+
+# List available WPT DOM tests
+wpt-dom-list:
+    npx tsx scripts/wpt-dom-runner.ts --list
+
+# === WebDriver BiDi Server ===
+
+# Build BiDi server
+build-bidi:
+    moon build -C browser --target js
+
+# Start BiDi server (Deno)
+start-bidi:
+    deno run -A browser/target/js/release/build/bidi_main/bidi_main.js
+
+# === WPT WebDriver BiDi Tests ===
+
+# List available WebDriver BiDi test modules
+wpt-webdriver-list:
+    npx tsx scripts/wpt-webdriver-runner.ts --list
+
+# Run WebDriver BiDi tests for a module (e.g., session/status)
+wpt-webdriver module:
+    npx tsx scripts/wpt-webdriver-runner.ts {{module}}
+
+# Run all WebDriver BiDi tests
+wpt-webdriver-all:
+    npx tsx scripts/wpt-webdriver-runner.ts --all
+
+# === Integration Tests ===
+
+# Test Preact compatibility (placeholder)
+test-preact:
+    @echo "Preact tests not yet implemented"
+
+# Test Playwright integration (requires BiDi server to be running)
+test-playwright:
+    pnpm test:bidi-e2e
+
+# Run BiDi manual tests (Python, requires BiDi server to be running)
+test-bidi-manual:
+    uv run --no-project scripts/test-bidi-manual.py
 
 # === Build ===
 
