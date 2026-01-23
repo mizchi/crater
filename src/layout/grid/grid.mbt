@@ -439,6 +439,8 @@ fn compute_grid_layout_internal(
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = node.style
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let is_block_rtl = style.writing_mode.is_block_rtl()
   let original_children = node.children
 
   // Flatten children for display: contents support
@@ -1149,10 +1151,18 @@ fn compute_grid_layout_internal(
     let row_end = placement.row_end
 
     // Calculate item bounds from track positions
-    let (item_x, item_width) = get_span_bounds(
-      column_tracks, col_start, col_end,
-    )
-    let (item_y, item_height) = get_span_bounds(row_tracks, row_start, row_end)
+    // In vertical writing mode, columns become rows and vice versa:
+    // - column_tracks (from grid-template-columns) define the block axis (y in vertical mode)
+    // - row_tracks (from grid-template-rows) define the inline axis (x in vertical mode)
+    let (item_x, item_width, item_y, item_height) = if is_vertical_writing {
+      let (y, h) = get_span_bounds(column_tracks, col_start, col_end)
+      let (x, w) = get_span_bounds(row_tracks, row_start, row_end)
+      (x, w, y, h)
+    } else {
+      let (x, w) = get_span_bounds(column_tracks, col_start, col_end)
+      let (y, h) = get_span_bounds(row_tracks, row_start, row_end)
+      (x, w, y, h)
+    }
 
     // Determine if item should stretch based on alignment
     // This is needed for table children to know whether to use shrink-to-fit or fill available
@@ -1226,9 +1236,15 @@ fn compute_grid_layout_internal(
       item_height,
       child_inner,
     )
+    // For vertical-rl: flip x position (items flow from right to left)
+    let positioned_x = if is_block_rtl {
+      container_width - final_x - final_width
+    } else {
+      final_x
+    }
     preliminary_layouts.push({
       id: child.id,
-      x: final_x,
+      x: positioned_x,
       y: final_y,
       width: final_width,
       height: final_height,

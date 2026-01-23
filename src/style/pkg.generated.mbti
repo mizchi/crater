@@ -163,6 +163,7 @@ pub(all) enum WritingMode {
   VerticalRl
   VerticalLr
 }
+pub fn WritingMode::is_block_rtl(Self) -> Bool
 pub fn WritingMode::is_vertical(Self) -> Bool
 pub impl Eq for WritingMode
 pub impl Show for WritingMode

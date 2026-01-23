@@ -1688,6 +1688,7 @@ fn compute_with_collapse(
 
   // Check for vertical writing mode - affects block flow direction
   let is_vertical_writing = style.writing_mode.is_vertical()
+  let is_block_rtl = style.writing_mode.is_block_rtl()
 
   // Track positions after each flow child (for absolute static positioning)
   // In horizontal mode: tracks y position. In vertical mode: tracks x position.
@@ -1879,10 +1880,19 @@ fn compute_with_collapse(
     let (positioned_x, positioned_y) = if is_vertical_writing {
       // In vertical mode: blocks flow horizontally (x advances), y is fixed
       // child_y was calculated as block position (should be x), child_x as cross position (should be y)
-      (
-        final_y - padding.top - border.top + padding.left + border.left,
-        child_layout.margin.top + padding.top + border.top,
-      )
+      let x_from_left = final_y -
+        padding.top -
+        border.top +
+        padding.left +
+        border.left
+      let final_x_pos = if is_block_rtl {
+        // For vertical-rl: position from right side of container
+        box_width - x_from_left - child_layout.width
+      } else {
+        // For vertical-lr: position from left side (normal)
+        x_from_left
+      }
+      (final_x_pos, child_layout.margin.top + padding.top + border.top)
     } else {
       (final_x, final_y)
     }

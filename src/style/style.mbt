@@ -47,6 +47,16 @@ pub fn WritingMode::is_vertical(self : WritingMode) -> Bool {
 }
 
 ///|
+/// Check if block direction is right-to-left (vertical-rl)
+/// In vertical-rl, blocks flow from right to left
+pub fn WritingMode::is_block_rtl(self : WritingMode) -> Bool {
+  match self {
+    VerticalRl => true
+    HorizontalTb | VerticalLr => false
+  }
+}
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)

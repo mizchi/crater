@@ -353,6 +353,33 @@ let is_row = if is_vertical_writing { not(direction_is_row) } else { direction_i
    - `current_pos` で位置を追跡し、width で進める（通常は height）
    - `positioned_layout` の x/y をスワップ
 
+### 実装済み - Grid レイアウト軸入れ替え
+
+6. **Grid レイアウトの軸入れ替え** (`src/layout/grid/grid.mbt`)
+   - 縦書きモードでは `grid-template-columns` が縦方向のトラックを定義
+   - `grid-template-rows` が横方向のトラックを定義
+   - `column_tracks` と `row_tracks` を入れ替えて item の位置・サイズを計算
+
+```moonbit
+// 縦書きモードでは column が row に、row が column になる
+let (item_x, item_width, item_y, item_height) = if is_vertical_writing {
+  let (y, h) = get_span_bounds(column_tracks, col_start, col_end)
+  let (x, w) = get_span_bounds(row_tracks, row_start, row_end)
+  (x, w, y, h)
+} else {
+  let (x, w) = get_span_bounds(column_tracks, col_start, col_end)
+  let (y, h) = get_span_bounds(row_tracks, row_start, row_end)
+  (x, w, y, h)
+}
+```
+
+### 実装済み - vertical-rl サポート
+
+7. **vertical-rl 対応** (`src/style/style.mbt`, 全レイアウトモジュール)
+   - `WritingMode::is_block_rtl()` メソッドを追加
+   - Block, Flex, Grid すべてで vertical-rl の右から左へのフローをサポート
+   - x 座標を `container_width - x - item_width` で反転
+
 ### テスト結果
 
 ```bash
@@ -361,13 +388,18 @@ npx tsx scripts/layout-diff.ts /tmp/writing-mode-flex-simple.html
 
 # Block + writing-mode: vertical-lr → 100% 一致
 npx tsx scripts/layout-diff.ts /tmp/writing-mode-block-simple.html
+
+# Grid + writing-mode: vertical-lr → 100% 一致
+npx tsx scripts/layout-diff.ts /tmp/writing-mode-grid-simple.html
+
+# 全レイアウト + writing-mode: vertical-rl → 100% 一致
+npx tsx scripts/layout-diff.ts /tmp/writing-mode-vertical-rl.html
 ```
 
-### 未実装 (今後の課題)
+### 対応状況まとめ
 
-1. **Grid レイアウトの軸入れ替え**
-   - rows/columns の意味が入れ替わる
-
-2. **vertical-rl のサポート改善**
-   - 現在は vertical-lr のみテスト済み
-   - vertical-rl では右から左へのフローが必要
+| writing-mode | Block | Flex | Grid |
+|--------------|-------|------|------|
+| horizontal-tb | ✅ | ✅ | ✅ |
+| vertical-lr | ✅ | ✅ | ✅ |
+| vertical-rl | ✅ | ✅ | ✅ |

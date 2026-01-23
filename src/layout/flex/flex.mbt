@@ -1577,6 +1577,7 @@ fn compute_internal(
   // - flex-direction: row flows vertically (like column in horizontal-tb)
   // - flex-direction: column flows horizontally (like row in horizontal-tb)
   let is_vertical_writing = style.writing_mode.is_vertical()
+  let is_block_rtl = style.writing_mode.is_block_rtl()
   let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
@@ -3448,6 +3449,12 @@ fn compute_internal(
         (item.final_main, item_cross)
       } else {
         (item_cross, item.final_main)
+      }
+      // For vertical-rl: flip x position (items flow from right to left)
+      let (child_x, child_y) = if is_block_rtl {
+        (container_width - child_x - child_width, child_y)
+      } else {
+        (child_x, child_y)
       }
       let child_layout : @types.Layout = if child.children.length() == 0 {
         let child_style = child.style
