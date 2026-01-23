@@ -1,0 +1,58 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/js"
+
+import {
+  "mizchi/crater/dom",
+  "mizchi/crater/scheduler",
+}
+
+// Values
+pub fn enqueue_script(@scheduler.Scheduler, String, Bool) -> @scheduler.TaskId
+
+pub fn enqueue_script_after(@scheduler.Scheduler, String, Array[@scheduler.TaskId], Bool) -> @scheduler.TaskId
+
+pub fn execute_script_task(@scheduler.Task, @dom.DomTree) -> @scheduler.TaskResult
+
+pub fn init_js_runtime() -> Unit
+
+pub fn process_script_tasks(@scheduler.Scheduler, @dom.DomTree) -> Int
+
+// Errors
+pub suberror JsError {
+  NotSupported
+  ExecutionError(String)
+  SyntaxError(String)
+  ReferenceError(String)
+}
+pub impl Show for JsError
+
+// Types and methods
+pub struct JsContext {
+  dom : @dom.DomTree
+  mut logs : Array[String]
+}
+pub fn JsContext::clear_logs(Self) -> Unit
+pub fn JsContext::execute(Self, String) -> JsResult raise JsError
+pub fn JsContext::get_dom(Self) -> @dom.DomTree
+pub fn JsContext::get_logs(Self) -> Array[String]
+pub fn JsContext::new(@dom.DomTree) -> Self
+
+pub struct JsResult {
+  value : String
+  logs : Array[String]
+  success : Bool
+}
+
+pub struct ScriptExecutor {
+  dom : @dom.DomTree
+  ctx : JsContext
+}
+pub fn ScriptExecutor::clear_logs(Self) -> Unit
+pub fn ScriptExecutor::execute(Self, @scheduler.Task) -> @scheduler.TaskResult
+pub fn ScriptExecutor::get_logs(Self) -> Array[String]
+pub fn ScriptExecutor::new(@dom.DomTree) -> Self
+
+// Type aliases
+
+// Traits
+

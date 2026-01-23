@@ -1,0 +1,26 @@
+{
+  "description": "Known passing WPT WebDriver BiDi tests for Crater",
+  "version": "0.3.0",
+  "tests": {
+    "session/status": {
+      "status.py": ["test_bidi_session_status"]
+    },
+    "browsing_context/get_tree": {
+      "invalid.py": [
+        "test_params_max_depth_invalid_type",
+        "test_params_max_depth_invalid_value",
+        "test_params_root_invalid_type",
+        "test_params_root_invalid_value"
+      ]
+    },
+    "script/evaluate": {
+      "invalid.py": ["*"]
+    }
+  },
+  "skip_patterns": [
+    "**/original_opener.py",
+    "**/user_activation.py",
+    "**/sandbox.py",
+    "**/realm*.py"
+  ]
+}
