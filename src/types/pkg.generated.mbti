@@ -226,6 +226,8 @@ pub(all) struct LayoutContext {
   sizing_mode : SizingMode
   viewport_width : Double
   viewport_height : Double
+  stretch_width : Bool
+  stretch_height : Bool
 }
 
 pub(all) struct LayoutResult {

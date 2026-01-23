@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/style"
 
-import(
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/types",
+}
 
 // Values
 
@@ -37,6 +37,14 @@ pub fn Contain::none() -> Self
 pub fn Contain::strict() -> Self
 pub impl Eq for Contain
 pub impl Show for Contain
+
+pub(all) enum Direction {
+  Ltr
+  Rtl
+}
+pub fn Direction::is_rtl(Self) -> Bool
+pub impl Eq for Direction
+pub impl Show for Direction
 
 pub(all) struct Style {
   mut display : @types.Display
@@ -82,6 +90,9 @@ pub(all) struct Style {
   mut justify_self : @types.AlignSelf
   mut font_size : Double
   mut line_height : Double
+  mut white_space : WhiteSpace
+  mut writing_mode : WritingMode
+  mut direction : Direction
   mut vertical_align : VerticalAlign
   mut clip : @types.ClipRect
   mut visibility : Visibility
@@ -145,6 +156,26 @@ pub(all) enum Visibility {
 }
 pub impl Eq for Visibility
 pub impl Show for Visibility
+
+pub(all) enum WhiteSpace {
+  Normal
+  Nowrap
+  Pre
+  PreWrap
+  PreLine
+}
+pub impl Eq for WhiteSpace
+pub impl Show for WhiteSpace
+
+pub(all) enum WritingMode {
+  HorizontalTb
+  VerticalRl
+  VerticalLr
+}
+pub fn WritingMode::is_block_rtl(Self) -> Bool
+pub fn WritingMode::is_vertical(Self) -> Bool
+pub impl Eq for WritingMode
+pub impl Show for WritingMode
 
 pub(all) enum ZIndex {
   Auto

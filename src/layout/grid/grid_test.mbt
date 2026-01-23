@@ -1571,6 +1571,8 @@ test "grid_fr_sum_less_than_one" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 400.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1584,4 +1586,107 @@ test "grid_fr_sum_less_than_one" {
   // 0.3fr = 0.3 * 300 = 90
   assert_eq(layout.children[0].height, 60.0) // item1 (row 1, 0.2fr)
   assert_eq(layout.children[2].height, 90.0) // item3 (row 2, 0.3fr)
+}
+
+///|
+/// Test table inside grid with stretch alignment
+/// Table with width:auto should stretch to fill the grid cell when
+/// justify-items is Stretch (default)
+test "grid_table_item_stretch" {
+  // Create a table with auto width containing cells
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+  }
+  // width: Auto (default) - should stretch to fill grid cell
+  let cell1 = @node.Node::new("cell1", cell_style, [])
+  let cell2 = @node.Node::new("cell2", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell1, cell2])
+  let table = @node.Node::new("table", table_style, [row])
+
+  // Grid with 200px column and Stretch alignment (default)
+  let grid_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Grid,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+    grid_template_columns: [@types.TrackSizingFunction::Length(200.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(100.0)],
+    // justify_items defaults to Stretch
+  }
+  let grid = @node.Node::new("grid", grid_style, [table])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(400.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 400.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(grid, ctx, default_dispatch())
+
+  // Table should stretch to fill the 200px grid cell, not shrink to 100px (50+50)
+  assert_eq(layout.children[0].width, 200.0)
+}
+
+///|
+/// Test table inside grid with Center alignment (no stretch)
+/// Table with width:auto should shrink-to-fit when alignment is not Stretch
+test "grid_table_item_center" {
+  // Create a table with auto width containing cells
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+  }
+  // width: Auto (default) - should shrink-to-fit when not stretched
+  let cell1 = @node.Node::new("cell1", cell_style, [])
+  let cell2 = @node.Node::new("cell2", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell1, cell2])
+  let table = @node.Node::new("table", table_style, [row])
+
+  // Grid with Center alignment (not Stretch)
+  let grid_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Grid,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+    grid_template_columns: [@types.TrackSizingFunction::Length(200.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(100.0)],
+    justify_items: @types.Center,
+  } // Not Stretch
+  let grid = @node.Node::new("grid", grid_style, [table])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(400.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 400.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(grid, ctx, default_dispatch())
+
+  // Table should shrink-to-fit to 100px (50+50) when not stretched
+  assert_eq(layout.children[0].width, 100.0)
 }

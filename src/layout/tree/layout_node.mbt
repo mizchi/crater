@@ -76,6 +76,8 @@ pub struct LayoutNode {
   mut has_new_layout : Bool
   // Intrinsic state for replaceable elements (images, etc.)
   mut intrinsic_state : IntrinsicState?
+  // Callback for propagating dirty to parent chain (set by LayoutTree)
+  mut on_dirty : ((Int) -> Unit)?
 }
 
 ///|
@@ -101,6 +103,7 @@ pub fn LayoutNode::new(
     computed_height: 0.0,
     has_new_layout: false,
     intrinsic_state: None,
+    on_dirty: None,
   }
 }
 
@@ -123,6 +126,7 @@ pub fn LayoutNode::leaf(id : String, style : @style.Style) -> LayoutNode {
     computed_height: 0.0,
     has_new_layout: false,
     intrinsic_state: None,
+    on_dirty: None,
   }
 }
 
@@ -149,11 +153,13 @@ pub fn LayoutNode::with_measure(
     computed_height: 0.0,
     has_new_layout: false,
     intrinsic_state: None,
+    on_dirty: None,
   }
 }
 
 ///|
 /// Mark this node as dirty and invalidate cache
+/// Also propagates children_dirty to parent chain via callback
 pub fn LayoutNode::mark_dirty(self : LayoutNode) -> Unit {
   if self.dirty {
     return // Already dirty
@@ -162,6 +168,11 @@ pub fn LayoutNode::mark_dirty(self : LayoutNode) -> Unit {
   self.cached_layout = None
   // Also clear intrinsic size cache for this node
   @dispatch.clear_intrinsic_cache_for_node(self.uid)
+  // Propagate children_dirty to parent chain
+  match self.on_dirty {
+    Some(callback) => callback(self.uid)
+    None => ()
+  }
 }
 
 ///|
@@ -222,5 +233,6 @@ pub fn LayoutNode::from_node(node : @node.Node) -> LayoutNode {
     computed_height: 0.0,
     has_new_layout: false,
     intrinsic_state: None,
+    on_dirty: None,
   }
 }

@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/x/diff"
 
-import(
-  "mizchi/crater/aom"
-)
+import {
+  "mizchi/crater/aom",
+}
 
 // Values
 pub fn diff_summary(@aom.AccessibilityTree, @aom.AccessibilityTree) -> String

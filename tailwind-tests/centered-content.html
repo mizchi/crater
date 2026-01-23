@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Centered Content</title>
+  <style>
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .min-h-screen { min-height: 100vh; }
+    .w-96 { width: 384px; }
+    .p-8 { padding: 32px; }
+    .gap-4 { gap: 16px; }
+    .flex-col { flex-direction: column; }
+    .bg-white { background-color: #ffffff; }
+    .bg-gray-50 { background-color: #f9fafb; }
+    .rounded-lg { border-radius: 8px; }
+    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .h-12 { height: 48px; }
+    .h-10 { height: 40px; }
+    .w-full { width: 100%; }
+    .bg-gray-200 { background-color: #e5e7eb; }
+    .bg-blue-500 { background-color: #3b82f6; }
+    .rounded { border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="test" class="flex items-center justify-center" style="width: 800px; height: 600px;">
+    <div class="flex flex-col gap-4 w-96 p-8 bg-white rounded-lg shadow-lg">
+      <div class="w-full h-12 bg-gray-200 rounded"></div>
+      <div class="w-full h-12 bg-gray-200 rounded"></div>
+      <div class="w-full h-10 bg-blue-500 rounded"></div>
+    </div>
+  </div>
+</body>
+</html>

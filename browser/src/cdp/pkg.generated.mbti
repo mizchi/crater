@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser/cdp"
 
-import(
-  "mizchi/crater/dom"
-  "mizchi/crater/scheduler"
-)
+import {
+  "mizchi/crater/dom",
+  "mizchi/crater/scheduler",
+}
 
 // Values
 pub fn core_to_cdp_error(@dom.CoreError) -> CdpError

@@ -3,7 +3,7 @@
 
 ///|
 /// Calculate specificity of a simple selector
-pub fn simple_specificity(sel : SimpleSelector) -> Specificity {
+fn simple_specificity(sel : SimpleSelector) -> Specificity {
   match sel {
     Type(_) => { a: 0, b: 0, c: 1 }
     Universal => Specificity::zero()
@@ -59,7 +59,7 @@ fn pseudo_class_specificity(pc : PseudoClass) -> Specificity {
 
 ///|
 /// Calculate specificity of a compound selector
-pub fn compound_specificity(sel : CompoundSelector) -> Specificity {
+fn compound_specificity(sel : CompoundSelector) -> Specificity {
   let mut result = Specificity::zero()
 
   // Add type selector specificity
@@ -83,17 +83,4 @@ pub fn complex_specificity(sel : ComplexSelector) -> Specificity {
     result = result.add(compound_specificity(step.selector))
   }
   result
-}
-
-///|
-/// Calculate specificity of a selector list (returns max)
-pub fn selector_list_specificity(list : SelectorList) -> Specificity {
-  let mut max = Specificity::zero()
-  for sel in list.selectors {
-    let spec = complex_specificity(sel)
-    if spec.compare_to(max) > 0 {
-      max = spec
-    }
-  }
-  max
 }

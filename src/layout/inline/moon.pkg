@@ -1,1 +1,9 @@
-import { "mizchi/crater/types", "mizchi/crater/style", "mizchi/crater/layout/node" }
+import {
+  "moonbitlang/core/double",
+  "mizchi/crater/types",
+  "mizchi/crater/style",
+  "mizchi/crater/layout/node",
+}
+
+import "wbtest" {
+}

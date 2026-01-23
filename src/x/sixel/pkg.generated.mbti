@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/x/sixel"
 
-import(
-  "mizchi/crater/layout/node"
-  "mizchi/crater/paint"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/paint",
+  "mizchi/crater/types",
+}
 
 // Values
 pub let font_height : Int

@@ -7,3 +7,6 @@ import {
   "mizchi/crater/layout/grid",
   "mizchi/crater/layout/table",
 }
+
+import "wbtest" {
+}

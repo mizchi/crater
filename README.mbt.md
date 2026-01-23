@@ -40,13 +40,16 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| css-flexbox | 162 | 253 | 64.0% |
-| css-grid | 21 | 39 | 53.8% |
-| css-sizing | 37 | 103 | 35.9% |
-| css-position | 42 | 117 | 35.9% |
-| css-tables | 11 | 74 | 14.9% |
-| css-display | 12 | 93 | 12.9% |
-| **Total** | **285** | **679** | **42.0%** |
+| css-flexbox | 236 | 367 | 64.3% |
+| css-grid | 26 | 39 | 66.7% |
+| css-tables | 13 | 74 | 17.6% |
+| css-display | 14 | 93 | 15.1% |
+| css-sizing | 48 | 103 | 46.6% |
+| css-position | 59 | 117 | 50.4% |
+| css-overflow | 56 | 118 | 47.5% |
+| css-contain | 125 | 315 | 39.7% |
+| css-variables | 25 | 152 | 16.4% |
+| **Total** | **602** | **1378** | **43.7%** |
 
 Run WPT tests:
 ```bash

@@ -1,0 +1,36 @@
+{
+  "hash": "65ce3a4577a0306994efa190a0d96e84014f9d4257ad54753e807ede518f02c0",
+  "url": "https://www.detroitnews.com/story/sports/college/2019/11/19/tuesdays-college-football-eastern-michigan-routs-northern-illinois-become-bowl-eligible/4244754002/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "footer_nav",
+      "selector": "div.footer-publish-date",
+      "rect": {
+        "x": 8,
+        "y": 971.59375,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "footer_nav",
+      "selector": "footer, div.footer-links",
+      "rect": {
+        "x": 8,
+        "y": 1027.59375,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

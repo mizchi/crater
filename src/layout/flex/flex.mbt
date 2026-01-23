@@ -440,11 +440,17 @@ fn compute_intrinsic_main_size(
     // For containers, compute based on display type and children
     match style.display {
       @types.Flex =>
-        compute_intrinsic_flex_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_intrinsic_flex_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
       @types.Block =>
-        compute_intrinsic_block_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_intrinsic_block_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
       @types.Grid | @types.InlineGrid =>
-        compute_intrinsic_grid_main_size(node, is_row, available_cross, dispatch)
+        compute_intrinsic_grid_main_size(
+          node, is_row, available_cross, dispatch,
+        )
       @types.Table | @types.InlineTable =>
         @table.compute_intrinsic_size(node, is_row)
       _ => 0.0
@@ -511,14 +517,18 @@ fn compute_min_content_main_size(
     // which gives us a conservative (larger) minimum
     match style.display {
       @types.Flex =>
-        compute_min_content_flex_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_min_content_flex_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
       @types.Block =>
         compute_min_content_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
       _ =>
         // Fall back to max-content for other display types
-        compute_intrinsic_main_size(node, is_row, available_cross, cache, dispatch)
+        compute_intrinsic_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
     }
   }
 }
@@ -536,9 +546,16 @@ fn compute_min_content_flex_main_size(
   let children = node.children
 
   // Check if this flex container is row or column
-  let child_is_row = match style.flex_direction {
+  // Account for writing-mode: vertical modes swap row/column
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
+  }
+  let child_is_row = if is_vertical_writing {
+    not(direction_is_row)
+  } else {
+    direction_is_row
   }
 
   // Determine if we're computing along this container's main axis or cross axis
@@ -767,9 +784,16 @@ fn compute_intrinsic_flex_main_size(
   let children = node.children
 
   // Check if this flex container is row or column
-  let child_is_row = match style.flex_direction {
+  // Account for writing-mode: vertical modes swap row/column
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
+  }
+  let child_is_row = if is_vertical_writing {
+    not(direction_is_row)
+  } else {
+    direction_is_row
   }
 
   // Determine if we're computing along this container's main axis or cross axis
@@ -834,7 +858,8 @@ fn compute_intrinsic_flex_main_size(
         let base_width = match child_style.width {
           @types.Length(w) => w
           @types.Percent(p) => child_available_width * p
-          @types.Auto => compute_intrinsic_main_size(child, true, None, cache, dispatch)
+          @types.Auto =>
+            compute_intrinsic_main_size(child, true, None, cache, dispatch)
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch)
         }
@@ -1126,6 +1151,8 @@ fn compute_intrinsic_grid_main_size(
     sizing_mode: @types.MaxContent,
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
+    stretch_width: false,
+    stretch_height: false,
   }
   let @node.DispatchFn(dispatch_fn) = dispatch
   let layout = dispatch_fn(node, ctx, dispatch)
@@ -1453,7 +1480,13 @@ fn compute_internal(
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           // For intrinsic sizing keywords, compute intrinsic width
           if node.children.length() > 0 {
-            compute_intrinsic_main_size(node, true, ctx.available_height, cache, dispatch)
+            compute_intrinsic_main_size(
+              node,
+              true,
+              ctx.available_height,
+              cache,
+              dispatch,
+            )
           } else {
             padding.horizontal_sum() + border.horizontal_sum()
           }
@@ -1540,13 +1573,34 @@ fn compute_internal(
   }
 
   // Determine main/cross axis based on flex-direction
-  let is_row = match style.flex_direction {
+  // In vertical writing mode, row and column are effectively swapped:
+  // - flex-direction: row flows vertically (like column in horizontal-tb)
+  // - flex-direction: column flows horizontally (like row in horizontal-tb)
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let is_block_rtl = style.writing_mode.is_block_rtl()
+  let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
   }
-  let is_reverse = match style.flex_direction {
+  // XOR with vertical writing mode to get effective axis
+  let is_row = if is_vertical_writing {
+    not(direction_is_row)
+  } else {
+    direction_is_row
+  }
+  // Determine if flex items should be reversed
+  // For row direction with direction: rtl, the inline base direction is reversed
+  let direction_reverse = match style.flex_direction {
     @types.RowReverse | @types.ColumnReverse => true
     _ => false
+  }
+  // RTL affects only row direction (inline axis)
+  let is_rtl = style.direction.is_rtl()
+  let is_reverse = if direction_is_row && is_rtl {
+    // RTL + row = reverse, RTL + row-reverse = normal (double negative)
+    not(direction_reverse)
+  } else {
+    direction_reverse
   }
 
   // For main size, if container size is auto, we need special handling
@@ -1593,8 +1647,29 @@ fn compute_internal(
     }
   }
 
-  // Get min_height for Column flex auto height adjustment
-  let min_main_for_grow : Double? = if not(is_row) && content_height == None {
+  // Get min_main for flex grow/justify-content adjustment
+  // For Row flex: use min_width when width is auto
+  // For Column flex: use min_height when height is auto
+  let min_main_for_grow : Double? = if is_row {
+    // Row flex: check min_width when width is auto
+    if width_is_auto {
+      match style.min_width {
+        @types.Length(min_w) =>
+          Some(min_w - padding.horizontal_sum() - border.horizontal_sum())
+        @types.Percent(p) =>
+          Some(
+            parent_width * p -
+            padding.horizontal_sum() -
+            border.horizontal_sum(),
+          )
+        @types.Auto => None
+        @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
+      }
+    } else {
+      None
+    }
+    // Column flex: check min_height when height is auto
+  } else if content_height == None {
     match style.min_height {
       @types.Length(min_h) =>
         Some(min_h - padding.vertical_sum() - border.vertical_sum())
@@ -1833,7 +1908,9 @@ fn compute_internal(
                 }
               }
             @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-              compute_intrinsic_main_size(child, true, content_height, cache, dispatch)
+              compute_intrinsic_main_size(
+                child, true, content_height, cache, dispatch,
+              )
           }
         } else {
           match child_style.height {
@@ -1893,7 +1970,9 @@ fn compute_internal(
         }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         if is_row {
-          compute_intrinsic_main_size(child, true, content_height, cache, dispatch)
+          compute_intrinsic_main_size(
+            child, true, content_height, cache, dispatch,
+          )
         } else {
           let available_cross_for_child = content_width -
             child_margin.left -
@@ -2043,7 +2122,9 @@ fn compute_internal(
           }
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           (
-            compute_intrinsic_main_size(child, true, content_height, cache, dispatch),
+            compute_intrinsic_main_size(
+              child, true, content_height, cache, dispatch,
+            ),
             false,
           )
       }
@@ -2647,7 +2728,13 @@ fn compute_internal(
       item.cross_is_auto &&
       (child.children.length() > 0 || child.measure is Some(_))
     let recalc_cross = fn() -> Double {
-      compute_intrinsic_main_size(child, false, Some(item.final_main), cache, dispatch)
+      compute_intrinsic_main_size(
+        child,
+        false,
+        Some(item.final_main),
+        cache,
+        dispatch,
+      )
     }
     let final_cross = match effective_align {
       @types.Stretch =>
@@ -2931,9 +3018,18 @@ fn compute_internal(
   // CSS spec: align-content positioning has no effect on single-line flex containers
   // For single-line containers (nowrap), line is always positioned at Start
   // Handle wrap-reverse: FlexStart/FlexEnd are flipped, but Start/End are not
-  let is_wrap_reverse = match style.flex_wrap {
+  let css_wrap_reverse = match style.flex_wrap {
     @types.WrapReverse => true
     _ => false
+  }
+  // RTL affects inline axis direction:
+  // - For row flex: main axis = inline, already handled by is_reverse above
+  // - For column flex: cross axis = inline, handle here
+  // Use direction_is_row (CSS row/column) not is_row (physical axis)
+  let is_wrap_reverse = if not(direction_is_row) && is_rtl {
+    not(css_wrap_reverse) // RTL inverts wrap direction for column flex
+  } else {
+    css_wrap_reverse
   }
   // For wrap-reverse with flex-relative alignment, the line positioning is handled
   // by uses_reversed_layout, so we don't need to flip here
@@ -3373,6 +3469,12 @@ fn compute_internal(
       } else {
         (item_cross, item.final_main)
       }
+      // For vertical-rl: flip x position (items flow from right to left)
+      let (child_x, child_y) = if is_block_rtl {
+        (container_width - child_x - child_width, child_y)
+      } else {
+        (child_x, child_y)
+      }
       let child_layout : @types.Layout = if child.children.length() == 0 {
         let child_style = child.style
         let child_padding = @types.resolve_rect(
@@ -3401,8 +3503,12 @@ fn compute_internal(
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
+          stretch_width: false,
+          stretch_height: false,
         }
-        let nested_layout = compute_nested(child, child_ctx, warnings, cache, dispatch)
+        let nested_layout = compute_nested(
+          child, child_ctx, warnings, cache, dispatch,
+        )
         {
           id: child.id,
           x: child_x,
@@ -3626,6 +3732,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -3642,6 +3750,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -3675,6 +3785,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -3708,6 +3820,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -3939,6 +4053,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -3955,6 +4071,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -3984,6 +4102,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,
@@ -4013,6 +4133,8 @@ fn compute_internal(
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
           },
           warnings,
           cache,

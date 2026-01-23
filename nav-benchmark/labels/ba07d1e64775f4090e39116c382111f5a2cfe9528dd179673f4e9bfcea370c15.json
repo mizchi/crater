@@ -1,0 +1,168 @@
+{
+  "hash": "ba07d1e64775f4090e39116c382111f5a2cfe9528dd179673f4e9bfcea370c15",
+  "url": "https://blog.comwrap.com/comwrap-auf-der-dmexco-2018",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header.header, div.header__column.header__column--dark, div.header__content",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 169
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "sidebar_nav",
+      "selector": "div.sidebar",
+      "rect": {
+        "x": 8,
+        "y": 2569.515625,
+        "width": 1264,
+        "height": 706.875
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-5",
+      "type": "unknown",
+      "selector": "footer.footer, div.footer__top, div.column.medium-4.small-6.large-auto, div.footer__headline, li, li, li, li, li, li, li, li, li, li, div.row.center-on-medium, div.column.medium-3, div.align-left",
+      "rect": {
+        "x": 8,
+        "y": 3292.390625,
+        "width": 1264,
+        "height": 842
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-9",
+      "type": "footer_nav",
+      "selector": "ul.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 3332.390625,
+        "width": 1264,
+        "height": 120
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-15",
+      "type": "footer_nav",
+      "selector": "div.footer__headline",
+      "rect": {
+        "x": 8,
+        "y": 3468.390625,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-16",
+      "type": "footer_nav",
+      "selector": "ul.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 3508.390625,
+        "width": 1264,
+        "height": 120
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-22",
+      "type": "footer_nav",
+      "selector": "div.footer__headline",
+      "rect": {
+        "x": 8,
+        "y": 3644.390625,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-23",
+      "type": "footer_nav",
+      "selector": "p.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 3684.390625,
+        "width": 1264,
+        "height": 96
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-24",
+      "type": "footer_nav",
+      "selector": "div.footer__headline",
+      "rect": {
+        "x": 8,
+        "y": 3796.390625,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-25",
+      "type": "footer_nav",
+      "selector": "p.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 3836.390625,
+        "width": 1264,
+        "height": 96
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-26",
+      "type": "footer_nav",
+      "selector": "div.footer__headline",
+      "rect": {
+        "x": 8,
+        "y": 3948.390625,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-27",
+      "type": "footer_nav",
+      "selector": "p.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 3988.390625,
+        "width": 1264,
+        "height": 72
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-28",
+      "type": "footer_nav",
+      "selector": "div.footer__bottom, div.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 4076.390625,
+        "width": 1264,
+        "height": 58
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

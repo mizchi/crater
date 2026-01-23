@@ -1,0 +1,219 @@
+{
+  "coverage": {
+    "total": "17.8",
+    "covered": 16,
+    "total_props": 90
+  },
+  "byCategory": {
+    "Layout": {
+      "covered": 3,
+      "total": 13,
+      "missing": [
+        "display",
+        "position",
+        "top",
+        "right",
+        "bottom",
+        "left",
+        "float",
+        "clear",
+        "overflow",
+        "visibility"
+      ]
+    },
+    "Flexbox": {
+      "covered": 6,
+      "total": 13,
+      "missing": [
+        "flex-direction",
+        "flex-wrap",
+        "flex-grow",
+        "flex-basis",
+        "align-items",
+        "gap",
+        "column-gap"
+      ]
+    },
+    "Grid": {
+      "covered": 0,
+      "total": 16,
+      "missing": [
+        "grid-template-columns",
+        "grid-template-rows",
+        "grid-column",
+        "grid-column-start",
+        "grid-column-end",
+        "grid-row",
+        "grid-row-start",
+        "grid-row-end",
+        "grid-auto-flow",
+        "grid-auto-columns",
+        "grid-auto-rows",
+        "justify-items",
+        "justify-self",
+        "place-content",
+        "place-items",
+        "place-self"
+      ]
+    },
+    "Sizing": {
+      "covered": 0,
+      "total": 7,
+      "missing": [
+        "width",
+        "min-width",
+        "max-width",
+        "height",
+        "min-height",
+        "max-height",
+        "aspect-ratio"
+      ]
+    },
+    "Spacing": {
+      "covered": 1,
+      "total": 10,
+      "missing": [
+        "padding",
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left",
+        "margin",
+        "margin-right",
+        "margin-bottom",
+        "margin-left"
+      ]
+    },
+    "Typography": {
+      "covered": 1,
+      "total": 14,
+      "missing": [
+        "font-family",
+        "font-size",
+        "font-weight",
+        "font-style",
+        "line-height",
+        "letter-spacing",
+        "text-decoration",
+        "text-transform",
+        "text-overflow",
+        "white-space",
+        "word-break",
+        "overflow-wrap",
+        "color"
+      ]
+    },
+    "Backgrounds": {
+      "covered": 0,
+      "total": 6,
+      "missing": [
+        "background-color",
+        "background-image",
+        "background-size",
+        "background-position",
+        "background-repeat",
+        "background-attachment"
+      ]
+    },
+    "Borders": {
+      "covered": 3,
+      "total": 8,
+      "missing": [
+        "border-width",
+        "border-style",
+        "border-top-width",
+        "border-bottom-width",
+        "border-left-width"
+      ]
+    },
+    "Effects": {
+      "covered": 2,
+      "total": 2,
+      "missing": []
+    },
+    "Box Model": {
+      "covered": 0,
+      "total": 1,
+      "missing": [
+        "box-sizing"
+      ]
+    }
+  },
+  "priorities": [
+    {
+      "property": "display",
+      "supported": false,
+      "reason": "Core layout - flex, grid, block modes"
+    },
+    {
+      "property": "flex-direction",
+      "supported": false,
+      "reason": "Flex layout direction"
+    },
+    {
+      "property": "flex-wrap",
+      "supported": false,
+      "reason": "Flex wrapping behavior"
+    },
+    {
+      "property": "width",
+      "supported": false,
+      "reason": "Element sizing"
+    },
+    {
+      "property": "height",
+      "supported": false,
+      "reason": "Element sizing"
+    },
+    {
+      "property": "padding",
+      "supported": false,
+      "reason": "Box model spacing"
+    },
+    {
+      "property": "margin",
+      "supported": false,
+      "reason": "Box model spacing"
+    },
+    {
+      "property": "gap",
+      "supported": false,
+      "reason": "Flex/Grid gap (modern spacing)"
+    },
+    {
+      "property": "position",
+      "supported": false,
+      "reason": "Positioning context"
+    },
+    {
+      "property": "background-color",
+      "supported": false,
+      "reason": "Visual styling"
+    },
+    {
+      "property": "color",
+      "supported": false,
+      "reason": "Text color"
+    },
+    {
+      "property": "font-size",
+      "supported": false,
+      "reason": "Typography"
+    },
+    {
+      "property": "font-weight",
+      "supported": false,
+      "reason": "Typography"
+    },
+    {
+      "property": "border-width",
+      "supported": false,
+      "reason": "Border styling"
+    },
+    {
+      "property": "grid-template-columns",
+      "supported": false,
+      "reason": "Grid layout definition"
+    }
+  ]
+}

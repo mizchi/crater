@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Justify Self (Grid)</title>
+  <style>
+    .grid { display: grid; }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .justify-self-start { justify-self: start; }
+    .justify-self-center { justify-self: center; }
+    .justify-self-end { justify-self: end; }
+    .justify-self-stretch { justify-self: stretch; }
+    .gap-2 { gap: 8px; }
+    .w-16 { width: 64px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+  </style>
+</head>
+<body>
+  <div id="test" class="grid grid-cols-3 gap-2" style="width: 400px;">
+    <div class="w-16 h-16 justify-self-start bg-blue"></div>
+    <div class="w-16 h-16 justify-self-center bg-red"></div>
+    <div class="w-16 h-16 justify-self-end bg-green"></div>
+  </div>
+</body>
+</html>

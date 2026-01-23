@@ -247,6 +247,10 @@ pub(all) struct LayoutContext {
   viewport_width : Double
   /// Viewport height for position: fixed elements
   viewport_height : Double
+  /// Whether the element should stretch to fill available width (e.g., grid stretch alignment)
+  stretch_width : Bool
+  /// Whether the element should stretch to fill available height (e.g., grid stretch alignment)
+  stretch_height : Bool
 }
 
 ///|

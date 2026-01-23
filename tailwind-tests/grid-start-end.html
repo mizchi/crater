@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Grid Start/End</title>
+  <style>
+    .grid { display: grid; }
+    .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .col-start-1 { grid-column-start: 1; }
+    .col-start-2 { grid-column-start: 2; }
+    .col-end-3 { grid-column-end: 3; }
+    .col-end-5 { grid-column-end: 5; }
+    .row-start-1 { grid-row-start: 1; }
+    .row-start-2 { grid-row-start: 2; }
+    .gap-2 { gap: 8px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div id="test" class="grid grid-cols-4 gap-2" style="width: 420px;">
+    <!-- Spans columns 1-2 -->
+    <div class="col-start-1 col-end-3 h-16 bg-blue"></div>
+    <!-- Spans columns 2-4 on row 2 -->
+    <div class="col-start-2 col-end-5 row-start-2 h-16 bg-red"></div>
+  </div>
+</body>
+</html>

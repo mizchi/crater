@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Inset (top/right/bottom/left)</title>
+  <style>
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+    .inset-4 { top: 16px; right: 16px; bottom: 16px; left: 16px; }
+    .inset-x-4 { left: 16px; right: 16px; }
+    .inset-y-4 { top: 16px; bottom: 16px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .opacity-50 { opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div id="test" class="relative" style="width: 200px; height: 200px;">
+    <div class="absolute inset-0 bg-blue"></div>
+    <div class="absolute inset-4 bg-red"></div>
+  </div>
+</body>
+</html>

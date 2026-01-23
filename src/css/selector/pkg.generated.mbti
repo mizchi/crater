@@ -1,36 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/css/selector"
 
-import(
-  "mizchi/crater/css/token"
-)
-
 // Values
 pub fn complex_specificity(ComplexSelector) -> Specificity
 
-pub fn compound_specificity(CompoundSelector) -> Specificity
-
 pub fn matches_complex(Element, ComplexSelector) -> Bool
 
-pub fn matches_compound(Element, CompoundSelector) -> Bool
-
 pub fn matches_selector_list(Element, SelectorList) -> Bool
-
-pub fn matches_selector_text(Element, String) -> Bool
-
-pub fn matches_simple(Element, SimpleSelector) -> Bool
-
-pub fn parse_selector(Array[@token.Token]) -> ComplexSelector?
-
-pub fn parse_selector_list(Array[@token.Token]) -> SelectorList?
 
 pub fn parse_selector_list_text(String) -> SelectorList?
 
 pub fn parse_selector_text(String) -> ComplexSelector?
-
-pub fn selector_list_specificity(SelectorList) -> Specificity
-
-pub fn simple_specificity(SimpleSelector) -> Specificity
 
 // Errors
 

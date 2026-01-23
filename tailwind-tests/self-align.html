@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Self Alignment</title>
+  <style>
+    .flex { display: flex; }
+    .items-stretch { align-items: stretch; }
+    .self-start { align-self: flex-start; }
+    .self-center { align-self: center; }
+    .self-end { align-self: flex-end; }
+    .self-stretch { align-self: stretch; }
+    .gap-2 { gap: 8px; }
+    .w-16 { width: 64px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .bg-yellow { background-color: #eab308; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex items-stretch gap-2" style="width: 350px; height: 150px;">
+    <div class="w-16 self-start bg-blue" style="height: 40px;"></div>
+    <div class="w-16 self-center bg-red" style="height: 40px;"></div>
+    <div class="w-16 self-end bg-green" style="height: 40px;"></div>
+    <div class="w-16 self-stretch bg-yellow"></div>
+  </div>
+</body>
+</html>

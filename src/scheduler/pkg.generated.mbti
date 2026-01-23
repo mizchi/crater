@@ -1,15 +1,15 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/scheduler"
 
-import(
-  "mizchi/crater/css/cascade"
-  "mizchi/crater/css/selector"
-  "mizchi/crater/html"
-  "mizchi/crater/layout/node"
-  "mizchi/crater/layout/tree"
-  "mizchi/crater/types"
-  "moonbitlang/core/hashset"
-)
+import {
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/css/selector",
+  "mizchi/crater/html",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/layout/tree",
+  "mizchi/crater/types",
+  "moonbitlang/core/hashset",
+}
 
 // Values
 pub fn compute_element_style(StyleManager, @html.Element) -> @cascade.CascadedValues

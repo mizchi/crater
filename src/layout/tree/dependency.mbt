@@ -126,39 +126,3 @@ pub fn analyze_style_dependencies(style : @style.Style) -> DependencyKind {
   }
   deps
 }
-
-///|
-/// Check if node needs re-layout when parent width changes
-pub fn depends_on_parent_width(deps : DependencyKind) -> Bool {
-  match deps {
-    ParentWidth | ParentBoth => true
-    _ => false
-  }
-}
-
-///|
-/// Check if node needs re-layout when parent height changes
-pub fn depends_on_parent_height(deps : DependencyKind) -> Bool {
-  match deps {
-    ParentHeight | ParentBoth => true
-    _ => false
-  }
-}
-
-///|
-/// Check if node needs re-layout when viewport changes
-pub fn depends_on_viewport(deps : DependencyKind) -> Bool {
-  match deps {
-    Viewport => true
-    _ => false
-  }
-}
-
-///|
-/// Check if node is completely static (never needs re-layout from ancestor changes)
-pub fn is_static(deps : DependencyKind) -> Bool {
-  match deps {
-    Static => true
-    _ => false
-  }
-}

@@ -1,0 +1,324 @@
+{
+  "hash": "076f4f33bf75059db581bedf36e76fb65e89a8f7752db3339aa3ea11c5122f32",
+  "url": "https://www.newsnation.in/fact-check/news/fact-check-is-an-oxygen-bar-in-delhi-offering-fresh-air-for-rs-300-244592.html",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "div.nation-desktop-header.hidden-xs.navbar-static",
+      "rect": {
+        "x": 8,
+        "y": 24,
+        "width": 1264,
+        "height": 71
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "unknown",
+      "selector": "div.nation-navigation, li.active, li, li.hd_bg.m510.hidden-xs, div.clearfix.nation-top-menu-links, li, li, li, li, li, li, li, li, li, li.live-ico, div.clearfix.nation-top-menu-links, li, li, li, li, li, li, div.clearfix.nation-top-menu-links, li, li, li, li, li, li, div.clearfix.nation-top-menu-links, li, li, li, li, li, li, li, li, li, li, li, div.clearfix.nation-top-menu-links, li, li, li, li, li, li, li, li, li, li.hd_bg.m510.hidden-xs, p, li, li, li, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 111,
+        "width": 1264,
+        "height": 1704.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-3",
+      "type": "primary_nav",
+      "selector": "nav.navbar.navbar-inverse, div#nationNavbar, ul.nav.navbar-nav",
+      "rect": {
+        "x": 8,
+        "y": 111,
+        "width": 1264,
+        "height": 1704.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-7",
+      "type": "secondary_nav",
+      "selector": "li.dropdown, li.dropdown",
+      "rect": {
+        "x": 48,
+        "y": 151,
+        "width": 1224,
+        "height": 48
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-11",
+      "type": "secondary_nav",
+      "selector": "ul.dropdown-menu",
+      "rect": {
+        "x": 48,
+        "y": 271,
+        "width": 1224,
+        "height": 216
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-23",
+      "type": "secondary_nav",
+      "selector": "ul.dropdown-menu",
+      "rect": {
+        "x": 48,
+        "y": 535,
+        "width": 1224,
+        "height": 144
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-31",
+      "type": "secondary_nav",
+      "selector": "ul.dropdown-menu",
+      "rect": {
+        "x": 48,
+        "y": 703,
+        "width": 1224,
+        "height": 144
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-39",
+      "type": "secondary_nav",
+      "selector": "ul.dropdown-menu",
+      "rect": {
+        "x": 48,
+        "y": 871,
+        "width": 1224,
+        "height": 264
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-52",
+      "type": "secondary_nav",
+      "selector": "ul.dropdown-menu, li.dropdown",
+      "rect": {
+        "x": 48,
+        "y": 1159,
+        "width": 1224,
+        "height": 240
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-66",
+      "type": "secondary_nav",
+      "selector": "ul.dropdown-menu.drop-navi",
+      "rect": {
+        "x": 48,
+        "y": 1551.5,
+        "width": 1224,
+        "height": 264
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-78",
+      "type": "unknown",
+      "selector": "div.brk.mb10.mt10.hidden-xs, div.ticker, ul, li.pull-left.pl10.pt10.fs20",
+      "rect": {
+        "x": 8,
+        "y": 1856,
+        "width": 1264,
+        "height": 64
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-82",
+      "type": "breadcrumb",
+      "selector": "ul.pull-left.breadcrumb.fs14",
+      "rect": {
+        "x": 8,
+        "y": 1985.4375,
+        "width": 1264,
+        "height": 72
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-83",
+      "type": "unknown",
+      "selector": "li, li",
+      "rect": {
+        "x": 48,
+        "y": 1985.4375,
+        "width": 1224,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-85",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 48,
+        "y": 4241.7734375,
+        "width": 134.8828125,
+        "height": 37
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-86",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 192.8828125,
+        "y": 4241.7734375,
+        "width": 108.6796875,
+        "height": 37
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-87",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 311.5625,
+        "y": 4241.7734375,
+        "width": 79.09375,
+        "height": 37
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-88",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 400.65625,
+        "y": 4241.7734375,
+        "width": 62.53125,
+        "height": 37
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-89",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 473.1875,
+        "y": 4241.7734375,
+        "width": 104.9921875,
+        "height": 37
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-90",
+      "type": "unknown",
+      "selector": "div.right-tab.mb20",
+      "rect": {
+        "x": 8,
+        "y": 4291.2734375,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-91",
+      "type": "unknown",
+      "selector": "h3.cat-heading.fw.brown",
+      "rect": {
+        "x": 8,
+        "y": 4357.9921875,
+        "width": 1264,
+        "height": 28
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-92",
+      "type": "unknown",
+      "selector": "li.mt20, div.pull-right.w64p, h2.fs16.lh21",
+      "rect": {
+        "x": 48,
+        "y": 4404.7109375,
+        "width": 1224,
+        "height": 79.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-95",
+      "type": "unknown",
+      "selector": "li.mt20, div.pull-right.w64p, h2.fs16.lh21",
+      "rect": {
+        "x": 48,
+        "y": 4504.5390625,
+        "width": 1224,
+        "height": 79.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-98",
+      "type": "unknown",
+      "selector": "li.mt20, div.pull-right.w64p, h2.fs16.lh21",
+      "rect": {
+        "x": 48,
+        "y": 4648.28125,
+        "width": 1224,
+        "height": 115.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-101",
+      "type": "unknown",
+      "selector": "li.mt20, div.pull-right.w64p, h2.fs16.lh21",
+      "rect": {
+        "x": 48,
+        "y": 4784.109375,
+        "width": 1224,
+        "height": 79.9140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-104",
+      "type": "footer_nav",
+      "selector": "footer",
+      "rect": {
+        "x": 8,
+        "y": 4883.9375,
+        "width": 1264,
+        "height": 232
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-105",
+      "type": "unknown",
+      "selector": "div.menu, div.container, ul, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 4883.9375,
+        "width": 1264,
+        "height": 192
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

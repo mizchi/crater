@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser/webdriver"
 
-import(
-  "mizchi/crater-browser/cdp"
-)
+import {
+  "mizchi/crater-browser/cdp",
+}
 
 // Values
 pub fn api_error_to_rpc(RpcId, ApiError) -> RpcResponse

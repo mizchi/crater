@@ -1,4 +1,6 @@
 import {
+  "moonbitlang/core/strconv",
+  "moonbitlang/core/hashset",
   "mizchi/crater/types",
   "mizchi/crater/style",
   "mizchi/crater/layout/node",
@@ -6,4 +8,7 @@ import {
   "mizchi/crater/html",
   "mizchi/crater/css/cascade",
   "mizchi/crater/dom",
+}
+
+import "wbtest" {
 }

@@ -247,6 +247,17 @@ pub fn parse_display(value : String) -> @types.Display {
     "none" => @types.Display::None
     "contents" => @types.Display::Contents
     "flow-root" => @types.Display::FlowRoot
+    // Table display types
+    "table" => @types.Display::Table
+    "inline-table" => @types.Display::InlineTable
+    "table-row" => @types.Display::TableRow
+    "table-cell" => @types.Display::TableCell
+    "table-caption" => @types.Display::TableCaption
+    "table-row-group" => @types.Display::TableRowGroup
+    "table-header-group" => @types.Display::TableHeaderGroup
+    "table-footer-group" => @types.Display::TableFooterGroup
+    "table-column" => @types.Display::TableColumn
+    "table-column-group" => @types.Display::TableColumnGroup
     _ => @types.Display::Block
   }
 }
@@ -352,6 +363,43 @@ pub fn parse_overflow(value : String) -> @types.Overflow {
     "scroll" => @types.Overflow::Scroll
     "auto" => @types.Overflow::Auto
     _ => @types.Overflow::Visible
+  }
+}
+
+///|
+/// Parse white-space value
+pub fn parse_white_space(value : String) -> @style.WhiteSpace {
+  match value.trim().to_lower() {
+    "normal" => @style.WhiteSpace::Normal
+    "nowrap" => @style.WhiteSpace::Nowrap
+    "pre" => @style.WhiteSpace::Pre
+    "pre-wrap" => @style.WhiteSpace::PreWrap
+    "pre-line" => @style.WhiteSpace::PreLine
+    _ => @style.WhiteSpace::Normal
+  }
+}
+
+///|
+/// Parse writing-mode value
+pub fn parse_writing_mode(value : String) -> @style.WritingMode {
+  match value.trim().to_lower() {
+    "horizontal-tb" => @style.WritingMode::HorizontalTb
+    "vertical-rl" => @style.WritingMode::VerticalRl
+    "vertical-lr" => @style.WritingMode::VerticalLr
+    // Legacy values
+    "lr" | "lr-tb" | "rl" | "rl-tb" => @style.WritingMode::HorizontalTb
+    "tb" | "tb-rl" => @style.WritingMode::VerticalRl
+    "tb-lr" => @style.WritingMode::VerticalLr
+    _ => @style.WritingMode::HorizontalTb
+  }
+}
+
+///|
+/// Parse direction value (ltr/rtl)
+pub fn parse_direction(value : String) -> @style.Direction {
+  match value.trim().to_lower() {
+    "rtl" => @style.Direction::Rtl
+    "ltr" | _ => @style.Direction::Ltr
   }
 }
 

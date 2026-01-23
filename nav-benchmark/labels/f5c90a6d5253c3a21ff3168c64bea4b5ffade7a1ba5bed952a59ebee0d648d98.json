@@ -1,0 +1,336 @@
+{
+  "hash": "f5c90a6d5253c3a21ff3168c64bea4b5ffade7a1ba5bed952a59ebee0d648d98",
+  "url": "https://www.nationalreview.com/2019/11/trump-impeachment-inquiry-adam-schiff-working-against-the-clock/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "div.site-header-wrap.site-header.site-header--sticky.site-header--loading, header#masthead, div.site-header__inner, nav.site-header__utility-nav, ul.site-header__utility-menu, li.site-header__utility-menu-item.site-header__utility-menu-subscribe, div.site-header__search-input",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 43
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-8",
+      "type": "unknown",
+      "selector": "div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title, div.article-browser__article.post-list-article, div.article-browser__article__text.post-list-article_text, p.article-browser__article__title.post-list-article_title",
+      "rect": {
+        "x": 16,
+        "y": 40,
+        "width": 250.59375,
+        "height": 1312.921875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-53",
+      "type": "sidebar_nav",
+      "selector": "aside.ad-unit.ad-unit--leaderboard",
+      "rect": {
+        "x": 0,
+        "y": 16,
+        "width": 1280,
+        "height": 138
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-54",
+      "type": "primary_nav",
+      "selector": "header.article-header.article-header--full, div.article-header__inner, h1.article-header__title, div.article-header__meta, div.article-header__meta-byline, div.article-header__meta-author-container",
+      "rect": {
+        "x": 76,
+        "y": 186,
+        "width": 554.5390625,
+        "height": 145
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-60",
+      "type": "social_nav",
+      "selector": "div.article-social-comment",
+      "rect": {
+        "x": 76,
+        "y": 10704.4375,
+        "width": 796,
+        "height": 50
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-61",
+      "type": "footer_nav",
+      "selector": "footer.inline-author-card",
+      "rect": {
+        "x": 76,
+        "y": 10920.828125,
+        "width": 796,
+        "height": 232
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-62",
+      "type": "sidebar_nav",
+      "selector": "aside.inline-stories.inline-stories--more",
+      "rect": {
+        "x": 76,
+        "y": 11172.0234375,
+        "width": 796,
+        "height": 213.796875
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-63",
+      "type": "unknown",
+      "selector": "h2.inline-stories__header",
+      "rect": {
+        "x": 76,
+        "y": 11188.0234375,
+        "width": 796,
+        "height": 33.796875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-64",
+      "type": "sidebar_nav",
+      "selector": "aside#newsletter-widget-email_optin-5dd529a2ba7c6",
+      "rect": {
+        "x": 904,
+        "y": 411,
+        "width": 300,
+        "height": 265.21875
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-65",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 6316.046875,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-66",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 6576.5,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-67",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 6836.953125,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-68",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 7044.953125,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-69",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 7309.9140625,
+        "width": 389.59375,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-70",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 7546.3671875,
+        "width": 389.59375,
+        "height": 72
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-71",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 76,
+        "y": 7810.828125,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-72",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 8075.7890625,
+        "width": 389.59375,
+        "height": 72
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-73",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 8360.2421875,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-74",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 490.40625,
+        "y": 8620.6953125,
+        "width": 389.59375,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-75",
+      "type": "sidebar_nav",
+      "selector": "aside.aside-module.partner-module",
+      "rect": {
+        "x": 904,
+        "y": 6286.046875,
+        "width": 300,
+        "height": 340.84375
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-76",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 910.796875,
+        "y": 6302.046875,
+        "width": 286.40625,
+        "height": 39.265625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-77",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 910.796875,
+        "y": 6391.5078125,
+        "width": 286.40625,
+        "height": 39.265625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-78",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 910.796875,
+        "y": 6480.96875,
+        "width": 286.40625,
+        "height": 39.265625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-79",
+      "type": "unknown",
+      "selector": "h4.post-list-article__title",
+      "rect": {
+        "x": 910.796875,
+        "y": 6570.4296875,
+        "width": 286.40625,
+        "height": 39.265625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-80",
+      "type": "unknown",
+      "selector": "footer.site-footer, div.site-footer-content, div.site-footer-tools, div.site-footer-tools__nav, ul#menu-footer-top, li#menu-item-536188, li#menu-item-536189, div.site-footer__menus, div.site-footer__menus--left, ul.site-footer__menu, li.menu-item-has-children, ul#menu-sections, ul.site-footer__menu, li.menu-item-has-children, ul#menu-topics, div.site-footer__menus--right, div.site-footer__menus--right-nav, ul.site-footer__menu, li.menu-item-has-children, ul#menu-magazine, ul.site-footer__menu, li.menu-item-has-children, ul#menu-about, ul.site-footer__menu, li.menu-item-has-children, ul#menu-more",
+      "rect": {
+        "x": 0,
+        "y": 8852.65625,
+        "width": 1280,
+        "height": 546.484375
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-83",
+      "type": "social_nav",
+      "selector": "div.site-footer-tools__social, ul.site-footer-tools__social-bar, li.site-footer-tools__social-bar-item",
+      "rect": {
+        "x": 76,
+        "y": 8869.65625,
+        "width": 132.7265625,
+        "height": 62
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-109",
+      "type": "footer_nav",
+      "selector": "div.site-footer__menus--right-subscribe, div.site-footer__newsletter, div.site-footer__newsletter-signup",
+      "rect": {
+        "x": 563.1953125,
+        "y": 9245.6484375,
+        "width": 640.8046875,
+        "height": 125.4921875
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

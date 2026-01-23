@@ -78,7 +78,6 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
   } else if options.text {
     // TUI text mode: character-based rendering
     let text_output = browser.render_text()
-    @tui.print_raw(@tui.clear_screen())
     @tui.print_raw(text_output)
   } else if options.debug {
     // Debug mode: print layout tree

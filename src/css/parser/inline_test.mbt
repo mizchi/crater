@@ -741,3 +741,21 @@ test "parse transform translate with percentage" {
   inspect(style.transform.translate_x, content="Percent(-0.5)")
   inspect(style.transform.translate_y, content="Percent(-0.5)")
 }
+
+///|
+test "parse justify-self center" {
+  let style = parse_inline_style("justify-self: center")
+  inspect(style.justify_self, content="Center")
+}
+
+///|
+test "parse align-self center" {
+  let style = parse_inline_style("align-self: center")
+  inspect(style.align_self, content="Center")
+}
+
+///|
+test "parse justify-items center" {
+  let style = parse_inline_style("justify-items: center")
+  inspect(style.justify_items, content="Center")
+}

@@ -270,6 +270,8 @@ pub fn LayoutTracer::collect_from_tree(
       sizing_mode: @types.Definite,
       viewport_width: ctx.viewport_width,
       viewport_height: ctx.viewport_height,
+      stretch_width: false,
+      stretch_height: false,
     }
     self.collect_from_tree(child_node, child_layout, child_ctx)
   }

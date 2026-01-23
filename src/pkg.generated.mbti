@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater"
 
-import(
-  "mizchi/crater/layout/node"
-  "mizchi/crater/types"
-  "mizchi/crater/x/webvitals"
-)
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/types",
+  "mizchi/crater/x/webvitals",
+}
 
 // Values
 pub fn compute_block_layout(@node.Node, @types.LayoutContext) -> @types.Layout

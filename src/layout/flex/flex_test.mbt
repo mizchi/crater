@@ -53,6 +53,8 @@ test "flex_item_height_recalculated_on_shrink" {
     sizing_mode: @types.Definite,
     viewport_width: 200.0,
     viewport_height: 400.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   // Inspect actual values for debugging
@@ -94,6 +96,8 @@ test "flex_row_basic" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
@@ -133,6 +137,8 @@ test "flex_column_basic" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
@@ -172,6 +178,8 @@ test "flex_grow" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -204,6 +212,8 @@ test "flex_justify_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -244,6 +254,8 @@ test "flex_justify_space_between" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -276,6 +288,8 @@ test "flex_align_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -306,6 +320,8 @@ test "flex_align_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -340,6 +356,8 @@ test "flex_row_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -380,6 +398,8 @@ test "flex_with_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -426,6 +446,8 @@ test "flex_shrink_to_zero" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -470,6 +492,8 @@ test "flex_justify_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -525,6 +549,8 @@ test "flex_justify_space_evenly" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -560,6 +586,8 @@ test "flex_align_items_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -591,6 +619,8 @@ test "flex_align_items_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -626,6 +656,8 @@ test "flex_justify_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -661,6 +693,8 @@ test "flex_column_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -717,6 +751,8 @@ test "flex_nested" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -759,6 +795,8 @@ test "flex_with_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -793,6 +831,8 @@ test "flex_stretch_respects_explicit_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -823,6 +863,8 @@ test "flex_min_width_constraint" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -853,6 +895,8 @@ test "flex_max_width_constraint" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -884,6 +928,8 @@ test "flex_display_none" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -920,6 +966,8 @@ test "flex_grow_within_constrained_min_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -966,6 +1014,8 @@ test "flex_percentage_max_width_with_grow" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1006,6 +1056,8 @@ test "flex_grow_child_distribution" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1046,6 +1098,8 @@ test "flex_shrink_child_distribution" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1079,6 +1133,8 @@ test "flex_align_items_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1122,6 +1178,8 @@ test "flex_container_with_border_and_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1162,6 +1220,8 @@ test "flex_grow_within_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1202,6 +1262,8 @@ test "flex_shrink_with_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1250,6 +1312,8 @@ test "flex_grow_less_than_factor_one" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1296,6 +1360,8 @@ test "flex_basis_behavior" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1328,6 +1394,8 @@ test "flex_column_align_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1360,6 +1428,8 @@ test "flex_single_item_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1403,6 +1473,8 @@ test "flex_shrink_all_equally" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1462,6 +1534,8 @@ test "flex_nested_mixed_directions" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1496,6 +1570,8 @@ test "align_items_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -1532,6 +1608,8 @@ test "align_items_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="10")
@@ -1573,6 +1651,8 @@ test "justify_content_space_between" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1615,6 +1695,8 @@ test "justify_content_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1661,6 +1743,8 @@ test "justify_content_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1711,6 +1795,8 @@ test "flex_shrink_middle_to_zero" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1752,6 +1838,8 @@ test "align_self_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="10")
@@ -1789,6 +1877,8 @@ test "flex_basis_flex_grow_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1832,6 +1922,8 @@ test "flex_wrap_fits_one_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1881,6 +1973,8 @@ test "nested_overflowing_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1930,6 +2024,8 @@ test "gap_column_gap_flexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -1976,6 +2072,8 @@ test "gap_column_gap_inflexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2020,6 +2118,8 @@ test "gap_row_gap_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2077,6 +2177,8 @@ test "wrap_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2141,6 +2243,8 @@ test "wrap_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2204,6 +2308,8 @@ test "margin_auto_left_and_right" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
@@ -2258,6 +2364,8 @@ test "margin_auto_left" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
@@ -2312,6 +2420,8 @@ test "margin_auto_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
@@ -2357,6 +2467,8 @@ test "aspect_ratio_flex_row_fill_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2394,6 +2506,8 @@ test "aspect_ratio_flex_row_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2434,6 +2548,8 @@ test "aspect_ratio_flex_row_stretch_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2490,6 +2606,8 @@ test "wrap_reverse_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2549,6 +2667,8 @@ test "wrap_reverse_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2603,6 +2723,8 @@ test "absolute_layout_width_height_start_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2645,6 +2767,8 @@ test "absolute_layout_start_top_end_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -2692,6 +2816,8 @@ test "absolute_does_not_affect_flex_layout" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2757,6 +2883,8 @@ test "nested_flex_explicit_sizes" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(outer, ctx, default_dispatch())
 
@@ -2824,6 +2952,8 @@ test "nested_flex_with_padding_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2888,6 +3018,8 @@ test "nested_row_in_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -2943,6 +3075,8 @@ test "nested_overflowing_child_unconstrained" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -3014,6 +3148,8 @@ test "min_height_with_nested_fixed_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -3083,6 +3219,8 @@ test "align_baseline_nested_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -3136,6 +3274,8 @@ test "align_baseline" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
@@ -3191,6 +3331,8 @@ test "debug_intrinsic_cross_sizing" {
     sizing_mode: @types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -3258,6 +3400,8 @@ test "flex_text_wrapping_in_fixed_width_container" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
 
@@ -3307,6 +3451,8 @@ test "row_column_div_with_cache_reset" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(row, ctx, default_dispatch())
   inspect(layout.height, content="16")
@@ -3338,6 +3484,8 @@ test "column_div_nested" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(column, ctx, default_dispatch())
   inspect(layout.height, content="16")
@@ -3381,6 +3529,8 @@ test "row_column_nested_flex_with_text" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(row, ctx, default_dispatch())
   // Row should have auto height based on content
@@ -3425,6 +3575,8 @@ test "flex_column_single_margin" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // Check margin-top is applied
@@ -3470,6 +3622,8 @@ test "flex_column_two_items_second_margin" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: no margin, y=0, height=100
@@ -3524,6 +3678,8 @@ test "flex_margin_no_collapse_no_shrink" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y=50
@@ -3583,6 +3739,8 @@ test "flex_margin_no_collapse_absolute_container" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y should be 50
@@ -3634,6 +3792,8 @@ test "flex_column_first_all_margins" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y=50, height=100, margin-bottom=50
@@ -3685,6 +3845,8 @@ test "flex_column_adjacent_margins" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: y=0, height=100, margin-bottom=50
@@ -3737,6 +3899,8 @@ test "flex_column_two_items_both_margin_top" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y=50
@@ -3783,6 +3947,8 @@ test "flex_column_two_items_first_margin_bottom" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // box1: y=0, height=100, margin-bottom=50
@@ -3842,6 +4008,8 @@ test "flex_margin_no_collapse" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = compute(container, ctx, default_dispatch())
   // Debug: check margin values in output
@@ -3853,4 +4021,82 @@ test "flex_margin_no_collapse" {
   // box2.y = 50 + 100 + 50 + 50 = 250
   inspect(layout.children[0].y, content="50")
   inspect(layout.children[1].y, content="250")
+}
+
+///|
+/// Test that min_width works correctly with justify-content: center
+/// When min_width > content width, the extra space should be distributed for centering
+test "min_width_with_justify_content_center" {
+  let default_style = @style.Style::default()
+  // Child with small intrinsic size (20px)
+  let child_style = {
+    ..default_style,
+    width: @types.Length(20.0),
+    height: @types.Length(10.0),
+  }
+  let child = @node.Node::new("child", child_style, [])
+  // Container with min_width: 100px and justify-content: center
+  // Content width (20px) < min_width (100px), so container should be 100px
+  // Child should be centered: x = (100 - 20) / 2 = 40
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    min_width: @types.Length(100.0),
+    justify_content: @types.Center,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(100.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  // Container width should be min_width (100px)
+  inspect(layout.width, content="100")
+  // Child should be centered: x = (100 - 20) / 2 = 40
+  inspect(layout.children[0].x, content="40")
+  inspect(layout.children[0].width, content="20")
+}
+
+///|
+/// Test that min_height works correctly with align-content: center in column direction
+test "min_height_with_align_content_center_column" {
+  let default_style = @style.Style::default()
+  // Child with small intrinsic size
+  let child_style = {
+    ..default_style,
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+  }
+  let child = @node.Node::new("child", child_style, [])
+  // Container with min_height: 100px and justify-content: center (main axis in column)
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    width: @types.Length(100.0),
+    min_height: @types.Length(100.0),
+    justify_content: @types.Center,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  // Container height should be min_height (100px)
+  inspect(layout.height, content="100")
+  // Child should be centered: y = (100 - 20) / 2 = 40
+  inspect(layout.children[0].y, content="40")
+  inspect(layout.children[0].height, content="20")
 }

@@ -4,3 +4,6 @@ import {
   "mizchi/crater/paint",
   "mizchi/crater/types",
 }
+
+import "wbtest" {
+}

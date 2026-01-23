@@ -1,0 +1,48 @@
+{
+  "hash": "5a822960e9a2cb1e664d334b6c936c5cb6e41fb5331877538c2c8339cb59d57e",
+  "url": "https://www.nbcnews.com/news/world/house-hitler-was-born-will-become-police-station-austria-says-n1086531",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header.header___ivcmX.relative.mh5.mh0-print.z-1",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 135.828125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "sidebar_nav",
+      "selector": "aside.unibrowGrid___2WHDt",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 36
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-3",
+      "type": "unknown",
+      "selector": "h2.unibrow.articleTitleSection.taxterm___3ynvJ.f2.founders-mono.ttu.ls-tight.fw4.relative.z-3",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 36
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

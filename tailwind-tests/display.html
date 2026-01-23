@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Display</title>
+  <style>
+    .block { display: block; }
+    .inline-block { display: inline-block; }
+    .inline { display: inline; }
+    .hidden { display: none; }
+    .w-16 { width: 64px; }
+    .h-16 { height: 64px; }
+    .p-2 { padding: 8px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+  </style>
+</head>
+<body>
+  <div id="test" style="width: 300px;">
+    <div class="block w-16 h-16 bg-blue"></div>
+    <span class="inline-block w-16 h-16 bg-red"></span>
+    <span class="inline-block w-16 h-16 bg-green"></span>
+  </div>
+</body>
+</html>

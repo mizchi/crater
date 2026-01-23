@@ -5,6 +5,8 @@ import {
   "mizchi/crater/css/diagnostics",
   "mizchi/crater/css/media",
   "mizchi/crater/aom",
+  "mizchi/crater/layout",
+  "mizchi/crater/layout/node",
   "mizchi/crater/x/arc90",
   "mizchi/crater/x/grounding",
   "mizchi/crater-browser/http",

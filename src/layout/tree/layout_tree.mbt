@@ -17,8 +17,8 @@ pub struct LayoutTree {
 }
 
 ///|
-/// Build parent and node maps recursively
-fn build_maps(
+/// Build parent and node maps recursively (without setting callbacks)
+fn build_maps_internal(
   node : LayoutNode,
   parent_uid : Int?,
   parent_map : Map[Int, Int],
@@ -30,7 +30,7 @@ fn build_maps(
     None => ()
   }
   for child in node.children {
-    build_maps(child, Some(node.uid), parent_map, node_map)
+    build_maps_internal(child, Some(node.uid), parent_map, node_map)
   }
 }
 
@@ -42,8 +42,8 @@ pub fn LayoutTree::new(
 ) -> LayoutTree {
   let parent_map : Map[Int, Int] = {}
   let node_map : Map[Int, LayoutNode] = {}
-  build_maps(root, None, parent_map, node_map)
-  {
+  build_maps_internal(root, None, parent_map, node_map)
+  let tree : LayoutTree = {
     root,
     parent_map,
     node_map,
@@ -51,6 +51,17 @@ pub fn LayoutTree::new(
     viewport_height,
     resources: ResourceRegistry::new(),
   }
+  // Set dirty callback on all nodes for proper parent propagation
+  tree.setup_dirty_callbacks()
+  tree
+}
+
+///|
+/// Set up dirty callbacks on all nodes to propagate children_dirty to parents
+fn LayoutTree::setup_dirty_callbacks(self : LayoutTree) -> Unit {
+  self.node_map.each(fn(_uid, node) {
+    node.on_dirty = Some(fn(uid) { self.propagate_children_dirty(uid) })
+  })
 }
 
 ///|
@@ -211,6 +222,8 @@ pub fn LayoutTree::compute_full(self : LayoutTree) -> @types.Layout {
     sizing_mode: @types.Definite,
     viewport_width: self.viewport_width,
     viewport_height: self.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
   let result = @dispatch.compute_layout(node, ctx)
   clear_all_dirty(self.root)
@@ -422,4 +435,79 @@ pub fn LayoutTree::register_pending_images_with_src(
     }
   })
   src_to_rid
+}
+
+// =============================================================================
+// Dirty Region Collection
+// =============================================================================
+
+///|
+/// Collect bounding rects of all nodes that have new layouts
+/// Returns absolute positions (relative to viewport origin)
+/// Use this after calculate_layout() to get regions that need redrawing
+pub fn LayoutTree::collect_dirty_rects(
+  self : LayoutTree,
+) -> Array[@types.BoundingRect] {
+  let rects : Array[@types.BoundingRect] = []
+  collect_dirty_rects_recursive(self.root, 0.0, 0.0, rects)
+  rects
+}
+
+///|
+/// Recursively collect dirty rects with absolute positioning
+fn collect_dirty_rects_recursive(
+  node : LayoutNode,
+  offset_x : Double,
+  offset_y : Double,
+  rects : Array[@types.BoundingRect],
+) -> Unit {
+  let abs_x = offset_x + node.computed_x
+  let abs_y = offset_y + node.computed_y
+  if node.has_new_layout {
+    rects.push(
+      @types.BoundingRect::new(
+        abs_x,
+        abs_y,
+        node.computed_width,
+        node.computed_height,
+      ),
+    )
+  }
+
+  // Recurse to children
+  for child in node.children {
+    collect_dirty_rects_recursive(child, abs_x, abs_y, rects)
+  }
+}
+
+///|
+/// Collect dirty rects and merge overlapping ones into a single union rect
+/// More efficient when many small regions change
+pub fn LayoutTree::collect_dirty_union(
+  self : LayoutTree,
+) -> @types.BoundingRect? {
+  let rects = self.collect_dirty_rects()
+  if rects.length() == 0 {
+    return None
+  }
+  let mut union = rects[0]
+  for i = 1; i < rects.length(); i = i + 1 {
+    union = union.union(rects[i])
+  }
+  Some(union)
+}
+
+///|
+/// Mark all nodes' layouts as seen (clear has_new_layout flags)
+/// Call this after processing dirty regions
+pub fn LayoutTree::mark_all_layouts_seen(self : LayoutTree) -> Unit {
+  mark_layouts_seen_recursive(self.root)
+}
+
+///|
+fn mark_layouts_seen_recursive(node : LayoutNode) -> Unit {
+  node.has_new_layout = false
+  for child in node.children {
+    mark_layouts_seen_recursive(child)
+  }
 }

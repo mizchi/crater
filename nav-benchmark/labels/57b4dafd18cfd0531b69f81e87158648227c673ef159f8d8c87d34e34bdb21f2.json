@@ -1,0 +1,84 @@
+{
+  "hash": "57b4dafd18cfd0531b69f81e87158648227c673ef159f8d8c87d34e34bdb21f2",
+  "url": "https://blog.comwrap.com/die-elektronische-patientenakte-der-lange-marsch-ins-digitale-gesundheitswesen",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header.header, div.header__column.header__column--dark, div.header__content",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 169
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "sidebar_nav",
+      "selector": "div.sidebar",
+      "rect": {
+        "x": 8,
+        "y": 9250.578125,
+        "width": 1264,
+        "height": 706.875
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-5",
+      "type": "footer_nav",
+      "selector": "footer.footer, div.footer__top, div.footer__headline, ul.footer__text, div.footer__headline, ul.footer__text, div.footer__headline, p.footer__text, div.footer__headline, p.footer__text, div.footer__headline, p.footer__text, div.footer__bottom, div.footer__text",
+      "rect": {
+        "x": 8,
+        "y": 9973.453125,
+        "width": 1264,
+        "height": 842
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-7",
+      "type": "unknown",
+      "selector": "div.column.medium-4.small-6.large-auto, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 9973.453125,
+        "width": 1264,
+        "height": 160
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-17",
+      "type": "unknown",
+      "selector": "li, li, li, li, li",
+      "rect": {
+        "x": 48,
+        "y": 10189.453125,
+        "width": 1224,
+        "height": 120
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-29",
+      "type": "unknown",
+      "selector": "div.row.center-on-medium, div.column.medium-3, div.align-left",
+      "rect": {
+        "x": 8,
+        "y": 10757.453125,
+        "width": 1264,
+        "height": 58
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

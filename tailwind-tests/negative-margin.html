@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Negative Margins</title>
+  <style>
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .-mt-4 { margin-top: -16px; }
+    .-ml-4 { margin-left: -16px; }
+    .mt-8 { margin-top: 32px; }
+    .ml-8 { margin-left: 32px; }
+    .w-24 { width: 96px; }
+    .h-24 { height: 96px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .p-4 { padding: 16px; }
+    .bg-gray { background-color: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div id="test" class="p-4 bg-gray" style="width: 200px;">
+    <div class="w-24 h-24 bg-blue"></div>
+    <!-- Overlaps the blue box due to negative margin -->
+    <div class="w-24 h-24 -mt-4 ml-8 bg-red"></div>
+  </div>
+</body>
+</html>

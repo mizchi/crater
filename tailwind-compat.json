@@ -1,0 +1,424 @@
+{
+  "generated": "2026-01-23T06:11:27.158Z",
+  "passed": 38,
+  "total": 38,
+  "passRate": 1,
+  "results": [
+    {
+      "name": "align-items",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "flex",
+        "items-start",
+        "items-end",
+        "items-center",
+        "items-baseline",
+        "items-stretch"
+      ]
+    },
+    {
+      "name": "aspect-ratio",
+      "passed": true,
+      "category": "Sizing",
+      "utilities": [
+        "aspect-square",
+        "aspect-video"
+      ]
+    },
+    {
+      "name": "auto-margins",
+      "passed": true,
+      "category": "Spacing",
+      "utilities": [
+        "mx-auto",
+        "ml-auto",
+        "mr-auto"
+      ]
+    },
+    {
+      "name": "border",
+      "passed": true,
+      "category": "Borders",
+      "utilities": [
+        "border",
+        "border-*",
+        "rounded",
+        "rounded-*"
+      ]
+    },
+    {
+      "name": "box-sizing",
+      "passed": true,
+      "category": "Layout",
+      "utilities": [
+        "box-border",
+        "box-content"
+      ]
+    },
+    {
+      "name": "card-layout",
+      "passed": true,
+      "category": "Layouts",
+      "utilities": [
+        "flex",
+        "flex-col",
+        "gap-*",
+        "p-*",
+        "rounded-*",
+        "shadow"
+      ]
+    },
+    {
+      "name": "centered-content",
+      "passed": true,
+      "category": "Layouts",
+      "utilities": [
+        "flex",
+        "items-center",
+        "justify-center",
+        "flex-col",
+        "gap-*"
+      ]
+    },
+    {
+      "name": "content-align",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "content-start",
+        "content-center",
+        "content-end",
+        "content-between"
+      ]
+    },
+    {
+      "name": "display",
+      "passed": true,
+      "category": "Layout",
+      "utilities": [
+        "block",
+        "inline-block",
+        "inline",
+        "hidden"
+      ]
+    },
+    {
+      "name": "flex-basic",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "flex",
+        "flex-row",
+        "gap-*",
+        "w-*",
+        "h-*"
+      ]
+    },
+    {
+      "name": "flex-basis",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "basis-*",
+        "basis-1/4",
+        "basis-1/2",
+        "basis-full",
+        "basis-auto"
+      ]
+    },
+    {
+      "name": "flex-col",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "flex",
+        "flex-col",
+        "gap-*"
+      ]
+    },
+    {
+      "name": "flex-grow",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "flex",
+        "flex-1",
+        "flex-none"
+      ]
+    },
+    {
+      "name": "flex-justify",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "flex",
+        "justify-center",
+        "justify-between"
+      ]
+    },
+    {
+      "name": "flex-order",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "order-*",
+        "order-first",
+        "order-last",
+        "order-none"
+      ]
+    },
+    {
+      "name": "flex-wrap",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "flex",
+        "flex-wrap",
+        "gap-*"
+      ]
+    },
+    {
+      "name": "gap-variants",
+      "passed": true,
+      "category": "Spacing",
+      "utilities": [
+        "gap-x-*",
+        "gap-y-*"
+      ]
+    },
+    {
+      "name": "grid-auto-flow",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "grid-flow-row",
+        "grid-flow-col",
+        "grid-rows-*"
+      ]
+    },
+    {
+      "name": "grid-basic",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "grid",
+        "grid-cols-*",
+        "gap-*"
+      ]
+    },
+    {
+      "name": "grid-responsive",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "grid",
+        "grid-cols-*",
+        "gap-*",
+        "p-*"
+      ]
+    },
+    {
+      "name": "grid-span",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "col-span-*",
+        "row-span-*"
+      ]
+    },
+    {
+      "name": "grid-start-end",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "col-start-*",
+        "col-end-*",
+        "row-start-*",
+        "row-end-*"
+      ]
+    },
+    {
+      "name": "inset",
+      "passed": true,
+      "category": "Position",
+      "utilities": [
+        "inset-0",
+        "inset-*",
+        "inset-x-*",
+        "inset-y-*"
+      ]
+    },
+    {
+      "name": "justify-self",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "justify-self-start",
+        "justify-self-center",
+        "justify-self-end",
+        "justify-self-stretch"
+      ]
+    },
+    {
+      "name": "min-max-size",
+      "passed": true,
+      "category": "Sizing",
+      "utilities": [
+        "min-w-*",
+        "max-w-*",
+        "min-h-*",
+        "max-h-*"
+      ]
+    },
+    {
+      "name": "nav-layout",
+      "passed": true,
+      "category": "Layouts",
+      "utilities": [
+        "flex",
+        "items-center",
+        "justify-between",
+        "px-*",
+        "py-*"
+      ]
+    },
+    {
+      "name": "negative-margin",
+      "passed": true,
+      "category": "Spacing",
+      "utilities": [
+        "-mt-*",
+        "-ml-*",
+        "-mr-*",
+        "-mb-*"
+      ]
+    },
+    {
+      "name": "overflow",
+      "passed": true,
+      "category": "Layout",
+      "utilities": [
+        "overflow-hidden",
+        "overflow-auto",
+        "overflow-scroll"
+      ]
+    },
+    {
+      "name": "place-items",
+      "passed": true,
+      "category": "Grid",
+      "utilities": [
+        "place-items-start",
+        "place-items-center",
+        "place-items-end",
+        "place-items-stretch"
+      ]
+    },
+    {
+      "name": "position",
+      "passed": true,
+      "category": "Position",
+      "utilities": [
+        "relative",
+        "absolute",
+        "top-*",
+        "right-*",
+        "inset-*"
+      ]
+    },
+    {
+      "name": "self-align",
+      "passed": true,
+      "category": "Flexbox",
+      "utilities": [
+        "self-start",
+        "self-center",
+        "self-end",
+        "self-stretch"
+      ]
+    },
+    {
+      "name": "sidebar-layout",
+      "passed": true,
+      "category": "Layouts",
+      "utilities": [
+        "flex",
+        "flex-col",
+        "flex-1",
+        "gap-*",
+        "p-*",
+        "w-*"
+      ]
+    },
+    {
+      "name": "sizing",
+      "passed": true,
+      "category": "Sizing",
+      "utilities": [
+        "w-*",
+        "w-full",
+        "w-1/2",
+        "h-*"
+      ]
+    },
+    {
+      "name": "spacing",
+      "passed": true,
+      "category": "Spacing",
+      "utilities": [
+        "p-*",
+        "m-*",
+        "px-*",
+        "py-*",
+        "mt-*",
+        "mb-*"
+      ]
+    },
+    {
+      "name": "table-layout",
+      "passed": true,
+      "category": "Tables",
+      "utilities": [
+        "table",
+        "table-auto",
+        "table-fixed",
+        "table-row",
+        "table-cell"
+      ]
+    },
+    {
+      "name": "text-basic",
+      "passed": true,
+      "category": "Typography",
+      "utilities": [
+        "text-left",
+        "text-center",
+        "text-right"
+      ]
+    },
+    {
+      "name": "whitespace",
+      "passed": true,
+      "category": "Typography",
+      "utilities": [
+        "whitespace-normal",
+        "whitespace-nowrap",
+        "whitespace-pre",
+        "whitespace-pre-wrap"
+      ]
+    },
+    {
+      "name": "z-index",
+      "passed": true,
+      "category": "Layout",
+      "utilities": [
+        "z-*",
+        "z-0",
+        "z-10",
+        "z-20",
+        "z-50"
+      ]
+    }
+  ]
+}

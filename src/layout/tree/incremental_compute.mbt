@@ -11,15 +11,6 @@ let layout_node_cache_map : Ref[Map[Int, LayoutNode]] = { val: {} }
 let global_cache_stats : Ref[CacheStats?] = { val: None }
 
 ///|
-/// Build node map recursively from LayoutNode tree
-fn build_layout_node_map(node : LayoutNode, map : Map[Int, LayoutNode]) -> Unit {
-  map[node.uid] = node
-  for child in node.children {
-    build_layout_node_map(child, map)
-  }
-}
-
-///|
 /// Extended constraint space for cache comparison
 pub struct ConstraintSpace {
   available_width : Double
@@ -65,6 +56,8 @@ pub fn ConstraintSpace::to_context(
     sizing_mode: self.sizing_mode,
     viewport_width: self.viewport_width,
     viewport_height: self.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 }
 
@@ -398,10 +391,9 @@ pub fn compute_tree_incremental(
   tree : LayoutTree,
   stats : CacheStats,
 ) -> @types.Layout {
-  // 1. Build uid -> LayoutNode map for cache lookup
-  let map : Map[Int, LayoutNode] = {}
-  build_layout_node_map(tree.root, map)
-  layout_node_cache_map.val = map
+  // 1. Use tree's node_map directly instead of rebuilding
+  // This is a major optimization: O(1) instead of O(n) tree traversal
+  layout_node_cache_map.val = tree.node_map
 
   // 2. Set up global stats reference
   global_cache_stats.val = Some(stats)

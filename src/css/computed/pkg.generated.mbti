@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/css/computed"
 
-import(
-  "mizchi/crater/css/cascade"
-  "mizchi/crater/style"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn apply_property_direct(@style.Style, String, String, ComputeContext) -> @style.Style
@@ -44,6 +44,8 @@ pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue
 
 pub fn parse_dimension(String) -> @types.Dimension
 
+pub fn parse_direction(String) -> @style.Direction
+
 pub fn parse_display(String) -> @types.Display
 
 pub fn parse_flex_direction(String) -> @types.FlexDirection
@@ -67,6 +69,10 @@ pub fn parse_number(String) -> Double
 pub fn parse_overflow(String) -> @types.Overflow
 
 pub fn parse_position(String) -> @types.Position
+
+pub fn parse_white_space(String) -> @style.WhiteSpace
+
+pub fn parse_writing_mode(String) -> @style.WritingMode
 
 pub fn resolve_current_color(CssColorValue, @types.Color) -> @types.Color
 

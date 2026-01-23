@@ -110,7 +110,7 @@ pub(all) struct RuleMatch {
 
 ///|
 /// Build declarations from matched rules
-pub fn collect_declarations(
+fn collect_declarations(
   matches : Array[RuleMatch],
   inline_style : Array[Declaration],
 ) -> Array[Declaration] {

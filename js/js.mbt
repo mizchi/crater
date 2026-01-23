@@ -930,6 +930,18 @@ fn write_accessibility_node(
     None => ()
   }
 
+  // tag_name
+  match node.tag_name {
+    Some(tag) => {
+      buf.write_string(",\n")
+      write_json_indent(buf, indent + 1)
+      buf.write_string("\"tag_name\": \"")
+      buf.write_string(escape_json_string(tag))
+      buf.write_string("\"")
+    }
+    None => ()
+  }
+
   // focusable
   if node.focusable {
     buf.write_string(",\n")
@@ -1147,5 +1159,385 @@ pub fn calculateLayoutStructured(
       flatten_layout(layout)
     }
     None => { nodes: [], root_id: "" }
+  }
+}
+
+// =============================================================================
+// Arc90 Content Extraction API
+// =============================================================================
+
+///|
+/// Extract main content from HTML using Arc90 algorithm
+/// Returns JSON with extracted text and metadata
+pub fn extractMainContent(html : String) -> String {
+  let doc = @html.parse_document(html)
+  let tree = @aom.build_accessibility_tree(doc)
+  let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
+  let fallback_text = if result.main_content is None &&
+      result.content_blocks.length() == 0 {
+    Some(strip_html_to_text(html))
+  } else {
+    None
+  }
+  extraction_result_to_json_with_fallback(result, fallback_text)
+}
+
+///|
+/// Extract main content with layout calculation for better accuracy
+/// Uses visual position and size information for scoring
+pub fn extractMainContentWithLayout(
+  html : String,
+  width : Int,
+  height : Int,
+) -> String {
+  let ctx : @renderer.RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let doc = @html.parse_document(html)
+  let layout = @renderer.render_document_with_external_css(doc, ctx, [])
+
+  // Build accessibility tree with layout bounds
+  let tree = @aom.build_accessibility_tree_with_node_layout(doc, layout)
+
+  // Configure arc90 with viewport dimensions
+  let config : @arc90.ExtractConfig = {
+    ..@arc90.ExtractConfig::default(),
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+  }
+  let result = @arc90.extract_content(tree, config)
+  let fallback_text = if result.main_content is None &&
+      result.content_blocks.length() == 0 {
+    Some(strip_html_to_text(html))
+  } else {
+    None
+  }
+  extraction_result_to_json_with_fallback(result, fallback_text)
+}
+
+///|
+fn extraction_result_to_json_with_fallback(
+  result : @arc90.ExtractionResult,
+  fallback_text : String?,
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("{\n")
+
+  // Main content text
+  buf.write_string("  \"mainContent\": ")
+  match (result.main_content, fallback_text) {
+    (Some(node), _) => {
+      let text = collect_all_text(node)
+      buf.write_string("\"")
+      buf.write_string(escape_json_string(text))
+      buf.write_string("\"")
+    }
+    (None, Some(text)) => {
+      buf.write_string("\"")
+      buf.write_string(escape_json_string(text))
+      buf.write_string("\"")
+    }
+    (None, None) => buf.write_string("null")
+  }
+  buf.write_string(",\n")
+
+  // Content blocks count
+  buf.write_string("  \"contentBlocksCount\": ")
+  buf.write_string(result.content_blocks.length().to_string())
+  buf.write_string(",\n")
+
+  // Detected ads count
+  buf.write_string("  \"detectedAdsCount\": ")
+  buf.write_string(result.detected_ads.length().to_string())
+  buf.write_string(",\n")
+
+  // Detected navigation count
+  buf.write_string("  \"detectedNavigationCount\": ")
+  buf.write_string(result.detected_navigation.length().to_string())
+  buf.write_string(",\n")
+
+  // Top scores
+  buf.write_string("  \"topScores\": [")
+  let len = result.content_blocks.length()
+  let limit = if len < 3 { len } else { 3 }
+  for i in 0..<limit {
+    if i > 0 {
+      buf.write_string(", ")
+    }
+    let block = result.content_blocks[i]
+    buf.write_string((block.score * 1000.0).to_int().to_string())
+  }
+  buf.write_string("]\n")
+
+  buf.write_string("}")
+  buf.to_string()
+}
+
+///|
+fn strip_html_to_text(html : String) -> String {
+  let buf = StringBuilder::new()
+  let mut i = 0
+  let len = html.length()
+  let mut in_script = false
+  let mut in_style = false
+  while i < len {
+    let c = char_at(html, i)
+    if c == '<' {
+      let tag_end = find_next_gt(html, i + 1)
+      if tag_end < 0 {
+        break
+      }
+      let tag = html.unsafe_substring(start=i + 1, end=tag_end)
+      let (tag_name, is_end) = parse_tag_name(tag)
+      if tag_name == "script" {
+        in_script = not(is_end)
+      } else if tag_name == "style" {
+        in_style = not(is_end)
+      }
+      i = tag_end
+    } else if not(in_script) && not(in_style) {
+      if is_ascii_whitespace(c) {
+        buf.write_char(' ')
+      } else {
+        buf.write_char(c)
+      }
+    }
+    i = i + 1
+  }
+  normalize_spaces(buf.to_string())
+}
+
+///|
+fn find_next_gt(html : String, start : Int) -> Int {
+  let len = html.length()
+  for i in start..<len {
+    if char_at(html, i) == '>' {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+fn parse_tag_name(tag : String) -> (String, Bool) {
+  let len = tag.length()
+  let mut i = 0
+  while i < len && is_ascii_whitespace(char_at(tag, i)) {
+    i = i + 1
+  }
+  let mut is_end = false
+  if i < len && char_at(tag, i) == '/' {
+    is_end = true
+    i = i + 1
+  }
+  while i < len && is_ascii_whitespace(char_at(tag, i)) {
+    i = i + 1
+  }
+  let name_buf = StringBuilder::new()
+  while i < len {
+    let c = char_at(tag, i)
+    if is_ascii_whitespace(c) || c == '/' {
+      break
+    }
+    name_buf.write_char(c)
+    i = i + 1
+  }
+  (name_buf.to_string().to_lower(), is_end)
+}
+
+///|
+fn normalize_spaces(text : String) -> String {
+  let buf = StringBuilder::new()
+  let mut last_space = true
+  for c in text {
+    if is_ascii_whitespace(c) {
+      if not(last_space) {
+        buf.write_char(' ')
+        last_space = true
+      }
+    } else {
+      buf.write_char(c)
+      last_space = false
+    }
+  }
+  buf.to_string().trim().to_string()
+}
+
+///|
+fn is_ascii_whitespace(c : Char) -> Bool {
+  c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\x0c'
+}
+
+///|
+fn char_at(text : String, index : Int) -> Char {
+  text[index].to_int().unsafe_to_char()
+}
+
+///|
+fn collect_all_text(node : @aom.AccessibilityNode) -> String {
+  // If node has aggregated text, use it
+  match node.text {
+    Some(text) => return text
+    None => ()
+  }
+
+  // Check if this is an article/main node - if so, collect all text from it
+  // (article/main content is always considered main content, including its header)
+  let is_article_root = match node.role {
+    @aom.Article | @aom.Main => true
+    _ =>
+      match node.tag_name {
+        Some(t) => t == "article" || t == "main"
+        None => false
+      }
+  }
+
+  // Otherwise collect from name and children, excluding navigation elements
+  let buf = StringBuilder::new()
+  if is_article_root {
+    // For article/main, collect all text without navigation filtering
+    collect_text_simple(node, buf)
+  } else {
+    collect_text_with_context(node, buf, false)
+  }
+  buf.to_string()
+}
+
+///|
+/// Text collection for article/main content - skip footer but keep header (article title)
+fn collect_text_simple(node : @aom.AccessibilityNode, buf : StringBuilder) -> Unit {
+  // Skip invisible nodes
+  if not(node.visible) {
+    return
+  }
+
+  // Skip footer elements (related articles, comments, etc.)
+  // but keep header (article title, byline, date)
+  match node.tag_name {
+    Some(tag) =>
+      if tag == "footer" || tag == "aside" {
+        return
+      }
+    None => ()
+  }
+
+  // Also skip by role
+  match node.role {
+    @aom.ContentInfo | @aom.Complementary => return
+    _ => ()
+  }
+
+  match node.name {
+    Some(name) if not(name.is_empty()) => {
+      // Skip text that looks like JavaScript code
+      if not(looks_like_code(name)) {
+        if buf.to_string().length() > 0 {
+          buf.write_string(" ")
+        }
+        buf.write_string(name)
+      }
+    }
+    _ => ()
+  }
+  for child in node.children {
+    collect_text_simple(child, buf)
+  }
+}
+
+///|
+/// Check if a role represents navigation/boilerplate content
+fn is_navigation_role(role : @aom.Role) -> Bool {
+  match role {
+    @aom.Navigation | @aom.Banner | @aom.ContentInfo | @aom.Complementary =>
+      true
+    _ => false
+  }
+}
+
+///|
+/// Check if tag represents navigation/boilerplate content
+fn is_boilerplate_tag(tag : String?) -> Bool {
+  match tag {
+    Some(t) =>
+      match t {
+        "header" | "footer" | "nav" | "aside" => true
+        _ => false
+      }
+    None => false
+  }
+}
+
+///|
+/// Check if text looks like JavaScript code
+fn looks_like_code(text : String) -> Bool {
+  // Check for common JS patterns
+  text.contains("function(") ||
+    text.contains("function (") ||
+    text.contains("document.") ||
+    text.contains("window.") ||
+    text.contains("var ") ||
+    text.contains("const ") ||
+    text.contains("let ") ||
+    text.contains("addEventListener") ||
+    text.contains("setTimeout") ||
+    text.contains("setInterval") ||
+    text.contains("querySelector")
+}
+
+///|
+/// Collect text with context tracking for ancestor navigation elements
+fn collect_text_with_context(
+  node : @aom.AccessibilityNode,
+  buf : StringBuilder,
+  in_navigation : Bool,
+) -> Unit {
+  // Check if we're entering a navigation/boilerplate section
+  let is_nav = is_navigation_role(node.role) || is_boilerplate_tag(node.tag_name)
+  let in_nav = in_navigation || is_nav
+
+  // Skip all text inside navigation sections
+  if in_nav {
+    // Still recurse to find any article/main sections that might be nested
+    for child in node.children {
+      // If child is article or main, reset navigation context
+      let child_is_content = match child.role {
+        @aom.Article | @aom.Main => true
+        _ => false
+      }
+      let child_tag_is_content = match child.tag_name {
+        Some(t) => t == "article" || t == "main"
+        None => false
+      }
+      if child_is_content || child_tag_is_content {
+        collect_text_with_context(child, buf, false)
+      } else {
+        collect_text_with_context(child, buf, true)
+      }
+    }
+    return
+  }
+
+  // Skip invisible nodes
+  if not(node.visible) {
+    return
+  }
+
+  match node.name {
+    Some(name) if not(name.is_empty()) => {
+      // Skip text that looks like JavaScript code
+      if not(looks_like_code(name)) {
+        if buf.to_string().length() > 0 {
+          buf.write_string(" ")
+        }
+        buf.write_string(name)
+      }
+    }
+    _ => ()
+  }
+  for child in node.children {
+    collect_text_with_context(child, buf, false)
   }
 }

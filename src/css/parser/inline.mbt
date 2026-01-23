@@ -381,6 +381,33 @@ fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
 }
 
 ///|
+/// Parse self-alignment property (align-self, justify-self)
+fn parse_self_alignment(tokens : ArrayView[@token.Token]) -> @types.AlignSelf? {
+  if tokens.length() == 0 {
+    return None
+  }
+  match tokens[0] {
+    @token.Token::Ident(s) =>
+      if s == "auto" {
+        Some(@types.AlignSelf::Auto)
+      } else if s == "flex-start" || s == "start" {
+        Some(@types.AlignSelf::Start)
+      } else if s == "flex-end" || s == "end" {
+        Some(@types.AlignSelf::End)
+      } else if s == "center" {
+        Some(@types.AlignSelf::Center)
+      } else if s == "stretch" {
+        Some(@types.AlignSelf::Stretch)
+      } else if s == "baseline" {
+        Some(@types.AlignSelf::Baseline)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
 /// Parse a numeric value
 fn parse_number(tokens : ArrayView[@token.Token]) -> Double? {
   if tokens.length() == 0 {
@@ -1461,6 +1488,27 @@ fn apply_property(
   if property == "align-content" {
     match parse_alignment(value_tokens) {
       Some(v) => return { ..style, align_content: v }
+      None => ()
+    }
+  }
+  // align-self
+  if property == "align-self" {
+    match parse_self_alignment(value_tokens) {
+      Some(v) => return { ..style, align_self: v }
+      None => ()
+    }
+  }
+  // justify-self
+  if property == "justify-self" {
+    match parse_self_alignment(value_tokens) {
+      Some(v) => return { ..style, justify_self: v }
+      None => ()
+    }
+  }
+  // justify-items
+  if property == "justify-items" {
+    match parse_alignment(value_tokens) {
+      Some(v) => return { ..style, justify_items: v }
       None => ()
     }
   }

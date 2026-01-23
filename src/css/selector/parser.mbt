@@ -55,7 +55,7 @@ fn SelectorParser::skip_whitespace(self : SelectorParser) -> Unit {
 
 ///|
 /// Parse a selector list (comma-separated)
-pub fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
+fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
   let parser = SelectorParser::new(tokens)
   parser.skip_whitespace()
   let selectors : Array[ComplexSelector] = []
@@ -86,7 +86,7 @@ pub fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
 
 ///|
 /// Parse a single selector (without commas)
-pub fn parse_selector(tokens : Array[@token.Token]) -> ComplexSelector? {
+fn parse_selector(tokens : Array[@token.Token]) -> ComplexSelector? {
   let parser = SelectorParser::new(tokens)
   parser.skip_whitespace()
   parser.parse_complex_selector()

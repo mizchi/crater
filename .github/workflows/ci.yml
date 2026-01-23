@@ -60,6 +60,48 @@ jobs:
           git diff --exit-code || (echo "Code is not formatted. Run 'moon fmt' to fix." && exit 1)
         continue-on-error: true
 
+  js-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Update MoonBit dependencies
+        run: |
+          moon update
+          moon update --directory js
+
+      - name: Build js package
+        run: pnpm run build
+        working-directory: js
+
+      - name: Run js package tests
+        run: pnpm test
+        working-directory: js
+
+      - name: Build playground
+        run: pnpm run build
+        working-directory: js/playground
+
   wasm-component:
     runs-on: ubuntu-latest
 

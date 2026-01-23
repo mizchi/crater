@@ -114,6 +114,8 @@ priv struct StyleBuilder {
   mut align_items : @types.Alignment
   mut align_content : @types.Alignment
   mut align_self : @types.AlignSelf
+  mut justify_self : @types.AlignSelf
+  mut justify_items : @types.Alignment
   mut flex_grow : Double
   mut flex_shrink : Double
   mut flex_basis : @types.Dimension
@@ -136,6 +138,10 @@ priv struct StyleBuilder {
   // Font properties
   mut font_size : Double
   mut line_height : Double
+  // Text wrapping and direction
+  mut white_space : @style.WhiteSpace
+  mut writing_mode : @style.WritingMode
+  mut direction : @style.Direction
   // Vertical alignment for inline elements
   mut vertical_align : @style.VerticalAlign
   // Clip (legacy)
@@ -195,6 +201,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     align_items: @types.Alignment::Stretch,
     align_content: @types.Alignment::Stretch,
     align_self: @types.AlignSelf::Auto,
+    justify_self: @types.AlignSelf::Auto,
+    justify_items: @types.Alignment::Stretch,
     flex_grow: 0.0,
     flex_shrink: 1.0,
     flex_basis: @types.Dimension::Auto,
@@ -215,6 +223,9 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_row_end: @types.GridPlacement::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    white_space: @style.WhiteSpace::Normal,
+    writing_mode: @style.WritingMode::HorizontalTb,
+    direction: @style.Direction::Ltr,
     vertical_align: @style.VerticalAlign::Baseline,
     clip: @types.ClipRect::Auto,
     visibility: @style.Visibility::Visible,
@@ -268,6 +279,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     align_items: style.align_items,
     align_content: style.align_content,
     align_self: style.align_self,
+    justify_self: style.justify_self,
+    justify_items: style.justify_items,
     flex_grow: style.flex_grow,
     flex_shrink: style.flex_shrink,
     flex_basis: style.flex_basis,
@@ -288,6 +301,9 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     grid_row_end: style.grid_row.end,
     font_size: style.font_size,
     line_height: style.line_height,
+    white_space: style.white_space,
+    writing_mode: style.writing_mode,
+    direction: style.direction,
     vertical_align: style.vertical_align,
     clip: style.clip,
     visibility: style.visibility,
@@ -368,10 +384,13 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     grid_row: { start: self.grid_row_start, end: self.grid_row_end },
     grid_column: { start: self.grid_column_start, end: self.grid_column_end },
     grid_area: None,
-    justify_items: @types.Alignment::Stretch,
-    justify_self: @types.AlignSelf::Auto,
+    justify_items: self.justify_items,
+    justify_self: self.justify_self,
     font_size: self.font_size,
     line_height: self.line_height,
+    white_space: self.white_space,
+    writing_mode: self.writing_mode,
+    direction: self.direction,
     vertical_align: self.vertical_align,
     clip: self.clip,
     visibility: self.visibility,
@@ -506,6 +525,17 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.BorderCollapse::Collapse => "collapse"
       }
     "border-spacing" => style.border_spacing.to_string() + "px"
+    "writing-mode" =>
+      match style.writing_mode {
+        @style.WritingMode::HorizontalTb => "horizontal-tb"
+        @style.WritingMode::VerticalRl => "vertical-rl"
+        @style.WritingMode::VerticalLr => "vertical-lr"
+      }
+    "direction" =>
+      match style.direction {
+        @style.Direction::Ltr => "ltr"
+        @style.Direction::Rtl => "rtl"
+      }
     _ => initial_value(property)
   }
 }
@@ -846,8 +876,11 @@ fn apply_property(
     "justify-content" => builder.justify_content = parse_alignment(value)
     "align-items" => builder.align_items = parse_alignment(value)
     "align-content" => builder.align_content = parse_alignment(value)
-    // Flexbox item
+    // Flexbox/Grid item alignment
     "align-self" => builder.align_self = parse_align_self(value)
+    "justify-self" => builder.justify_self = parse_align_self(value)
+    // Grid container alignment
+    "justify-items" => builder.justify_items = parse_alignment(value)
     "flex-grow" => {
       let v = parse_number(value)
       if v >= 0.0 {
@@ -1071,6 +1104,9 @@ fn apply_property(
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
       builder.line_height = parse_line_height(value, builder.font_size)
+    "white-space" => builder.white_space = parse_white_space(value)
+    "writing-mode" => builder.writing_mode = parse_writing_mode(value)
+    "direction" => builder.direction = parse_direction(value)
     "vertical-align" => builder.vertical_align = parse_vertical_align(value)
     "font" => {
       // Parse font shorthand: [style] [variant] [weight] size[/line-height] family

@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/aom"
 
-import(
-  "mizchi/crater/html"
-  "mizchi/crater/layout/tree"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/html",
+  "mizchi/crater/layout/tree",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn attach_bounds(AccessibilityTree, Map[String, Bounds]) -> AccessibilityTree

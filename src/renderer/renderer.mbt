@@ -65,10 +65,13 @@ pub fn RenderContext::default() -> RenderContext {
 /// Calculates text dimensions based on monospace character width
 /// Accounts for East Asian Wide characters (CJK) which take 2 columns
 /// Handles explicit line breaks (from <br> elements converted to \n)
+/// Supports writing-mode for vertical text layout
 fn create_text_measure(
   text : String,
   font_size : Double,
   text_line_height : Double,
+  white_space : @style.WhiteSpace,
+  writing_mode : @style.WritingMode,
 ) -> @types.MeasureFunc {
   let trimmed = text.trim()
   let char_width = font_size * char_width_ratio
@@ -111,6 +114,9 @@ fn create_text_measure(
     max_word_width = current_word_width
   }
 
+  // Check if vertical writing mode
+  let is_vertical = writing_mode.is_vertical()
+
   // max_width is the widest line (for intrinsic sizing)
   let text_max_width = max_line_width.to_double() * char_width
   // min_width is the longest word
@@ -120,11 +126,28 @@ fn create_text_measure(
   {
     func: fn(
       available_width : Double,
-      _available_height : Double,
+      available_height : Double,
     ) -> @types.IntrinsicSize {
-      // Calculate how many single-width columns fit in available width
-      let cols_available = if available_width > 0.0 {
-        (available_width / char_width).to_int()
+      // For white-space: nowrap, don't wrap text
+      let no_wrap = match white_space {
+        @style.WhiteSpace::Nowrap => true
+        _ => false
+      }
+
+      // In vertical mode, the inline axis is vertical (height constrains)
+      // In horizontal mode, the inline axis is horizontal (width constrains)
+      let (available_inline, line_size) = if is_vertical {
+        (available_height, text_line_height)
+      } else {
+        (available_width, char_width)
+      }
+
+      // Calculate how many single-width columns fit in available inline space
+      // For nowrap, use a very large number to prevent wrapping
+      let cols_available = if no_wrap {
+        1000000 // Large number to prevent wrapping
+      } else if available_inline > 0.0 {
+        (available_inline / line_size).to_int()
       } else {
         chars_per_line
       }
@@ -156,13 +179,28 @@ fn create_text_measure(
         1
       }
       total_lines = total_lines + last_line_visual
-      let height = total_lines.to_double() * text_line_height
-      let min_height = min_lines.to_double() * text_line_height
-      {
-        min_width: text_min_width,
-        max_width: text_max_width,
-        min_height,
-        max_height: height,
+
+      // In vertical mode, swap width/height concepts
+      // - Width = number of lines (block dimension)
+      // - Height = characters per line (inline dimension)
+      if is_vertical {
+        let width = total_lines.to_double() * text_line_height
+        let min_width = min_lines.to_double() * text_line_height
+        {
+          min_width,
+          max_width: width,
+          min_height: text_min_width, // word length becomes height
+          max_height: text_max_width, // line length becomes height
+        }
+      } else {
+        let height = total_lines.to_double() * text_line_height
+        let min_height = min_lines.to_double() * text_line_height
+        {
+          min_width: text_min_width,
+          max_width: text_max_width,
+          min_height,
+          max_height: height,
+        }
       }
     },
   }
@@ -441,6 +479,8 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     // Use parent's font_size and line_height for text measurement
     let font_size = parent_style.font_size
     let text_line_height = parent_style.line_height
+    let white_space = parent_style.white_space
+    let writing_mode = parent_style.writing_mode
     // Create text style with inherited font properties and color for rendering
     // Text nodes should be inline-level to flow with other inline content
     let text_style : @style.Style = {
@@ -448,13 +488,17 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       display: @types.Inline,
       font_size,
       line_height: text_line_height,
+      white_space,
+      writing_mode,
       color: parent_style.color,
     }
     // Use Node::text to store the text content for rendering
     @node.Node::text(
       "#text",
       text_style,
-      create_text_measure(text, font_size, text_line_height),
+      create_text_measure(
+        text, font_size, text_line_height, white_space, writing_mode,
+      ),
       trimmed.to_string(),
     )
   }
@@ -723,13 +767,27 @@ fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
 /// Convert HTML Element to Node tree for layout computation
 pub fn element_to_node(
   elem : @html.Element,
-  _parent_style : @style.Style?,
+  parent_style : @style.Style?,
 ) -> @node.Node {
-  // Compute style from inline style attribute
-  let ctx = @computed.ComputeContext::new()
+  // Compute style from inline style attribute with parent for inheritance
+  let ctx = match parent_style {
+    Some(ps) => @computed.ComputeContext::with_parent(ps)
+    None => @computed.ComputeContext::new()
+  }
   let style = match elem.style {
     Some(css) => @computed.compute_inline(css, ctx)
-    None => @style.Style::default()
+    None =>
+      // When no inline style, inherit from parent if available
+      match parent_style {
+        Some(ps) => {
+          let inherited = @style.Style::default()
+          // Copy inherited properties from parent
+          inherited.writing_mode = ps.writing_mode
+          inherited.color = ps.color
+          inherited
+        }
+        None => @style.Style::default()
+      }
   }
 
   // Convert children
@@ -862,6 +920,8 @@ pub fn render_with_external_css(
     sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Initialize the layout dispatcher for cross-layout-type support
@@ -965,6 +1025,8 @@ pub fn render_document_with_external_css(
     sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Initialize the layout dispatcher for cross-layout-type support
@@ -1936,6 +1998,7 @@ fn compute_element_style_indexed(
         color: ps.color,
         font_size: ps.font_size,
         line_height: ps.font_size * lh_ratio,
+        writing_mode: ps.writing_mode,
       }
     }
     None => ()

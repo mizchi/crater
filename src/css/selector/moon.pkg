@@ -1,1 +1,7 @@
-import { "mizchi/crater/css/token" }
+import {
+  "moonbitlang/core/strconv",
+  "mizchi/crater/css/token",
+}
+
+import "wbtest" {
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Navigation Layout</title>
+  <style>
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-4 { gap: 16px; }
+    .gap-8 { gap: 32px; }
+    .px-6 { padding-left: 24px; padding-right: 24px; }
+    .py-4 { padding-top: 16px; padding-bottom: 16px; }
+    .h-10 { height: 40px; }
+    .w-32 { width: 128px; }
+    .w-16 { width: 64px; }
+    .bg-white { background-color: #ffffff; }
+    .bg-blue-500 { background-color: #3b82f6; }
+    .bg-gray-200 { background-color: #e5e7eb; }
+    .rounded { border-radius: 4px; }
+    .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex items-center justify-between px-6 py-4 bg-white shadow" style="width: 600px;">
+    <!-- Logo -->
+    <div class="w-32 h-10 bg-blue-500 rounded"></div>
+    <!-- Nav items -->
+    <div class="flex gap-8">
+      <div class="w-16 h-10 bg-gray-200 rounded"></div>
+      <div class="w-16 h-10 bg-gray-200 rounded"></div>
+      <div class="w-16 h-10 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+</body>
+</html>

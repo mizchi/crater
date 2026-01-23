@@ -51,6 +51,16 @@ pub struct Browser {
   mut selection_mode : Bool
   /// Dark mode for display
   mut dark_mode : Bool
+  /// Cached render node (for TUI text mode)
+  mut render_node : @node.Node?
+  /// Cached layout tree (for incremental layout)
+  mut layout_tree : @layout.LayoutTree?
+  /// Previous TUI buffer for diff rendering
+  mut prev_buffer : @tui.CharBuffer?
+  /// Last render key (for diff invalidation)
+  mut last_render_key : String
+  /// Last color scheme used to build render node
+  mut last_color_scheme_dark : Bool
 }
 
 ///|
@@ -77,6 +87,11 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     a11y_tree: None,
     selection_mode: false,
     dark_mode: false,
+    render_node: None,
+    layout_tree: None,
+    prev_buffer: None,
+    last_render_key: "",
+    last_color_scheme_dark: false,
   }
 }
 
@@ -347,6 +362,10 @@ async fn Browser::load_url(
   // Parse HTML using regular parser (streaming parser under investigation)
   let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
   self.parsed_doc = Some(doc)
+  self.render_node = None
+  self.layout_tree = None
+  self.prev_buffer = None
+  self.last_render_key = ""
   // Calculate content height using the pre-parsed document
   self.content_height = @renderer.get_content_height_with_document(
     doc,
@@ -388,6 +407,10 @@ pub async fn Browser::load_url_lightweight(
   // Parse HTML using regular parser (streaming parser under investigation)
   let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
   self.parsed_doc = Some(doc)
+  self.render_node = None
+  self.layout_tree = None
+  self.prev_buffer = None
+  self.last_render_key = ""
   // Skip content height calculation in lightweight mode
   self.content_height = 0
   // Build lightweight accessibility tree (no CSS cascade, no layout)
@@ -460,36 +483,58 @@ pub fn Browser::render_text(self : Browser) -> String {
     root_font_size: 16.0,
     color_scheme,
   }
-  // Use cached parsed document if available to ensure consistent layout
-  // This is critical for scrolling - the same DOM must be used for content_height
-  // calculation (in load_url) and rendering (here)
-  let (node, layout) = match self.parsed_doc {
-    Some(doc) => {
-      let n = @renderer.render_to_node_with_document(
-        doc,
-        ctx,
-        self.external_css,
+  if self.last_color_scheme_dark != self.dark_mode {
+    self.render_node = None
+    self.layout_tree = None
+    self.prev_buffer = None
+    self.last_render_key = ""
+  }
+  let mut force_full = false
+  // Build or reuse cached render node + layout tree
+  let render_node = match (self.render_node, self.layout_tree) {
+    (Some(node), Some(_tree)) => node
+    _ => {
+      force_full = true
+      let n = match self.parsed_doc {
+        Some(doc) =>
+          @renderer.render_to_node_with_document(doc, ctx, self.external_css)
+        None =>
+          @renderer.render_to_node_with_external_css(
+            self.html_content,
+            ctx,
+            self.external_css,
+          )
+      }
+      let tree = @layout.LayoutTree::from_node(
+        n,
+        self.viewport_width.to_double(),
+        self.viewport_height.to_double(),
       )
-      let l = @renderer.render_document_with_external_css(
-        doc,
-        ctx,
-        self.external_css,
-      )
-      (n, l)
+      self.render_node = Some(n)
+      self.layout_tree = Some(tree)
+      n
+    }
+  }
+  let (layout, dirty_rects) = match self.layout_tree {
+    Some(tree) => {
+      let l = tree.compute_incremental()
+      let rects = tree.collect_dirty_rects()
+      tree.mark_all_layouts_seen()
+      self.layout_tree = Some(tree)
+      (l, rects)
     }
     None => {
-      // Fallback to parsing HTML (shouldn't happen in normal flow)
-      let n = @renderer.render_to_node_with_external_css(
-        self.html_content,
-        ctx,
-        self.external_css,
+      force_full = true
+      let tree = @layout.LayoutTree::from_node(
+        render_node,
+        self.viewport_width.to_double(),
+        self.viewport_height.to_double(),
       )
-      let l = @renderer.render_with_external_css(
-        self.html_content,
-        ctx,
-        self.external_css,
-      )
-      (n, l)
+      let l = tree.compute_incremental()
+      let rects = tree.collect_dirty_rects()
+      tree.mark_all_layouts_seen()
+      self.layout_tree = Some(tree)
+      (l, rects)
     }
   }
   // Convert pixel dimensions to character dimensions
@@ -500,10 +545,34 @@ pub fn Browser::render_text(self : Browser) -> String {
   let focused_element_name = self.get_focused_element_name()
   // Get focused link URL for status bar
   let focused_link_url = self.get_focused_link_url()
+  let render_key = self.current_url +
+    "|" +
+    self.scroll_y.to_string() +
+    "|" +
+    self.focused_link.to_string() +
+    "|" +
+    focused_element_name.unwrap_or("") +
+    "|" +
+    focused_link_url.unwrap_or("") +
+    "|" +
+    self.hint_mode.to_string() +
+    "|" +
+    self.hint_input +
+    "|" +
+    self.selection_mode.to_string() +
+    "|" +
+    self.dark_mode.to_string() +
+    "|" +
+    self.viewport_width.to_string() +
+    "|" +
+    self.viewport_height.to_string()
+  if render_key != self.last_render_key {
+    force_full = true
+  }
   // Use hint mode rendering if in hint mode
-  let result = if self.hint_mode {
-    @tui.render_to_ansi_with_hints(
-      node,
+  let buffer_result = if self.hint_mode {
+    @tui.render_to_buffer_with_hints(
+      render_node,
       layout,
       char_width,
       char_height,
@@ -513,8 +582,8 @@ pub fn Browser::render_text(self : Browser) -> String {
       focused_element_name~,
     )
   } else {
-    @tui.render_to_ansi_with_status(
-      node,
+    @tui.render_to_buffer_with_status(
+      render_node,
       layout,
       char_width,
       char_height,
@@ -529,8 +598,35 @@ pub fn Browser::render_text(self : Browser) -> String {
     )
   }
   // Store link regions for click hit testing
-  self.link_regions = result.link_regions
-  result.ansi
+  self.link_regions = buffer_result.link_regions
+  let ansi = match self.prev_buffer {
+    Some(prev) =>
+      if force_full {
+        @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+      } else if dirty_rects.length() > 0 {
+        let content_height = if self.hint_mode {
+          char_height - 1
+        } else {
+          char_height - 1
+        }
+        let row_offset = if self.hint_mode { 0 } else { 1 }
+        let dirty_cells = @tui.dirty_rects_to_cells(
+          dirty_rects,
+          self.scroll_y,
+          char_width,
+          content_height,
+          row_offset,
+        )
+        @tui.buffer_diff_to_ansi_rects(buffer_result.buffer, prev, dirty_cells)
+      } else {
+        ""
+      }
+    None => @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+  }
+  self.prev_buffer = Some(buffer_result.buffer)
+  self.last_render_key = render_key
+  self.last_color_scheme_dark = self.dark_mode
+  ansi
 }
 
 ///|

@@ -1,0 +1,96 @@
+{
+  "hash": "fde930b01859de8311c6a14f8aa8c72be0659b551367803deb6736cf3526cf2e",
+  "url": "https://www.businessinsider.com/10-things-in-tech-you-need-to-know-today-november-19-2019-11",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "unknown",
+      "selector": "div.masthead, div.container, div.row-fluid, div.span4, h2.vert-name, div.nav-over.transition, div.list-pipes.nav-sections, li.active, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 43.9140625,
+        "width": 1264,
+        "height": 413.4140625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-16",
+      "type": "primary_nav",
+      "selector": "div.modal-header",
+      "rect": {
+        "x": 8,
+        "y": 473.328125,
+        "width": 1264,
+        "height": 21.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-17",
+      "type": "unknown",
+      "selector": "div.list-pipes.no-pipe, ul, li.publication-author.ks-author-byline",
+      "rect": {
+        "x": 8,
+        "y": 732.921875,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-20",
+      "type": "unknown",
+      "selector": "li.facebook.ks-byline-fb, li.linkedin.ks-byline-linkedin, li.twitter.ks-byline-tweet, li.email.button-email.ks-byline-email, li.printbtn.ks-byline-print",
+      "rect": {
+        "x": 48,
+        "y": 812.921875,
+        "width": 1224,
+        "height": 120
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-25",
+      "type": "unknown",
+      "selector": "li, li, li",
+      "rect": {
+        "x": 48,
+        "y": 1398.921875,
+        "width": 1224,
+        "height": 144
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-28",
+      "type": "unknown",
+      "selector": "div.span4, div.main-rail, div#right-rail, div.sl-layout-post, div#editorial2, div, div.ed-widget, ul.media-list, li.media, div.media-body, p, div.ed-widget, ul.media-list, li.media, div.media-body, p, div.ed-widget, ul.media-list, li.media, div.media-body, p",
+      "rect": {
+        "x": 8,
+        "y": 1781.640625,
+        "width": 1264,
+        "height": 765.1875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-49",
+      "type": "unknown",
+      "selector": "div.footer, li, li, li, li.no-pipe, li, li, li, li, li, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 2562.828125,
+        "width": 1264,
+        "height": 704
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

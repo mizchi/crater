@@ -1,1 +1,4 @@
-import { "mizchi/crater/dom", "mizchi/crater/scheduler" }
+import {
+  "mizchi/crater/dom",
+  "mizchi/crater/scheduler",
+}

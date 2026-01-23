@@ -1,0 +1,132 @@
+{
+  "hash": "cc03ddb5ef7d5f1fdb8a87f5e6dfd058a2a70acedf2551655a898dc5c18eb79e",
+  "url": "http://www.autoracing.com.br/calendario-stock-car-2018/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header.container-head.header, div.facebook-header, nav.menu-topo",
+      "rect": {
+        "x": 125.5,
+        "y": 16,
+        "width": 1029,
+        "height": 859.65625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 181.875,
+        "y": 101,
+        "width": 95.375,
+        "height": 39.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-5",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 404.96875,
+        "y": 101,
+        "width": 95.046875,
+        "height": 39.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-6",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 575.3515625,
+        "y": 101,
+        "width": 85.7265625,
+        "height": 39.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-7",
+      "type": "unknown",
+      "selector": "li",
+      "rect": {
+        "x": 876.1953125,
+        "y": 101,
+        "width": 62.9296875,
+        "height": 39.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-8",
+      "type": "unknown",
+      "selector": "p",
+      "rect": {
+        "x": 148.5,
+        "y": 2209.40625,
+        "width": 684,
+        "height": 25.6015625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-9",
+      "type": "unknown",
+      "selector": "p",
+      "rect": {
+        "x": 148.5,
+        "y": 2282.0078125,
+        "width": 684,
+        "height": 25.6015625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-10",
+      "type": "sidebar_nav",
+      "selector": "aside.sidebar, div.modulo-sidebar, div.modulo-sidebar, div.modulo-sidebar, div.modulo-sidebar, div.modulo-sidebar, div.modulo-sidebar, div.modulo-sidebar",
+      "rect": {
+        "x": 855.5,
+        "y": 879.65625,
+        "width": 299,
+        "height": 11250.03125
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-18",
+      "type": "unknown",
+      "selector": "footer.container.footer-site, ul",
+      "rect": {
+        "x": 125.5,
+        "y": 2702.609375,
+        "width": 1029,
+        "height": 138.1875
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-19",
+      "type": "primary_nav",
+      "selector": "nav.footer-nav",
+      "rect": {
+        "x": 125.5,
+        "y": 2753.203125,
+        "width": 1029,
+        "height": 25.1875
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

@@ -1,0 +1,28 @@
+{
+  "modules": [
+    "css-flexbox",
+    "css-grid",
+    "css-tables",
+    "css-display",
+    "css-box",
+    "css-sizing",
+    "css-align",
+    "css-position",
+    "css-overflow",
+    "css-contain",
+    "css-variables"
+  ],
+  "includePrefixes": [
+    "align-content", "align-items", "align-self",
+    "flex-", "justify-", "order-", "gap-",
+    "table-", "border-collapse", "border-spacing", "caption-side", "empty-cells", "visibility-collapse",
+    "grid-", "subgrid-",
+    "aspect-ratio", "block-size", "inline-size", "min-content", "max-content", "fit-content", "intrinsic", "contain-intrinsic",
+    "margin-", "padding-", "border-", "box-sizing",
+    "display-", "visibility-",
+    "position-", "relative-", "sticky-", "fixed-",
+    "clip-", "overflow-",
+    "contain-",
+    "var-", "variable-", "custom-property", "registered-", "css-variable", "inherit-", "fallback-"
+  ]
+}

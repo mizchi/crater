@@ -4,7 +4,7 @@
 
 ///|
 /// Check if an element matches a simple selector
-pub fn matches_simple(element : Element, selector : SimpleSelector) -> Bool {
+fn matches_simple(element : Element, selector : SimpleSelector) -> Bool {
   match selector {
     Type(name) => element.tag_name == name
     Universal => true
@@ -234,7 +234,7 @@ fn matches_nth(index : Int, expr : NthExpr) -> Bool {
 
 ///|
 /// Check if an element matches a compound selector
-pub fn matches_compound(element : Element, selector : CompoundSelector) -> Bool {
+fn matches_compound(element : Element, selector : CompoundSelector) -> Bool {
   // Check type selector
   match selector.type_selector {
     Some(type_sel) => if not(matches_simple(element, type_sel)) { return false }
@@ -345,13 +345,4 @@ pub fn matches_selector_list(element : Element, list : SelectorList) -> Bool {
     }
   }
   false
-}
-
-///|
-/// Convenience function to check if an element matches a CSS selector string
-pub fn matches_selector_text(element : Element, css : String) -> Bool {
-  match parse_selector_text(css) {
-    Some(sel) => matches_complex(element, sel)
-    None => false
-  }
 }

@@ -34,6 +34,8 @@ test "simple table layout" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
 
   // Compute layout
@@ -78,6 +80,8 @@ test "table with row group" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -114,6 +118,8 @@ test "table equal column widths" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -173,6 +179,8 @@ test "table content-based column widths" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -217,6 +225,8 @@ test "table shrink-to-fit width" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -272,6 +282,8 @@ test "table border-collapse" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -318,6 +330,8 @@ test "table-layout fixed" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -367,6 +381,8 @@ test "table-layout fixed with explicit width" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -423,6 +439,8 @@ test "table rowspan" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -488,6 +506,8 @@ test "table rowspan height distribution" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
@@ -560,6 +580,8 @@ test "table rowspan with tbody" {
     sizing_mode: @types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)

@@ -1,0 +1,191 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-01-23T05:10:47.916Z",
+  "threshold": 0.7,
+  "properties": {
+    "text-align": {
+      "values": [
+        "center"
+      ],
+      "passRate": 1
+    },
+    "order": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 1
+    },
+    "row-gap": {
+      "values": [
+        "<length>"
+      ],
+      "passRate": 1
+    },
+    "print-color-adjust": {
+      "values": [
+        "exact"
+      ],
+      "passRate": 1
+    },
+    "will-change": {
+      "values": [
+        "transform"
+      ],
+      "passRate": 1
+    },
+    "border-right-width": {
+      "values": [
+        "<length>"
+      ],
+      "passRate": 1
+    },
+    "border-right-style": {
+      "values": [
+        "solid"
+      ],
+      "passRate": 1
+    },
+    "box-shadow": {
+      "values": [
+        "20px 20px 5px red"
+      ],
+      "passRate": 1
+    },
+    "transition-property": {
+      "values": [
+        "all"
+      ],
+      "passRate": 1
+    },
+    "transition-duration": {
+      "values": [
+        "1s"
+      ],
+      "passRate": 1
+    },
+    "align-content": {
+      "values": [
+        "flex-start",
+        "flex-end",
+        "center",
+        "space-between",
+        "space-around",
+        "space-evenly",
+        "start",
+        "end",
+        "stretch"
+      ],
+      "passRate": 0.9615384615384616
+    },
+    "flex-shrink": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 0.9375
+    },
+    "z-index": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 0.8571428571428571
+    },
+    "border-color": {
+      "values": [
+        "orange",
+        "green"
+      ],
+      "passRate": 0.8333333333333334
+    },
+    "justify-content": {
+      "values": [
+        "flex-start",
+        "flex-end"
+      ],
+      "passRate": 0.8260869565217391
+    },
+    "margin-top": {
+      "values": [
+        "<length>"
+      ],
+      "passRate": 0.8245614035087719
+    },
+    "overflow-y": {
+      "values": [
+        "auto",
+        "scroll",
+        "clip"
+      ],
+      "passRate": 0.8
+    },
+    "border-right-color": {
+      "values": [
+        "red"
+      ],
+      "passRate": 0.8
+    },
+    "overflow-clip-margin": {
+      "values": [
+        "<length>",
+        "border-box 5px",
+        "padding-box 5px",
+        "content-box 5px"
+      ],
+      "passRate": 0.8
+    },
+    "overflow-x": {
+      "values": [
+        "clip",
+        "scroll"
+      ],
+      "passRate": 0.7777777777777778
+    },
+    "animation-fill-mode": {
+      "values": [
+        "both"
+      ],
+      "passRate": 0.7777777777777778
+    },
+    "opacity": {
+      "values": [
+        "<number>"
+      ],
+      "passRate": 0.75
+    },
+    "border-radius": {
+      "values": [
+        "0px 15px 25px 35px",
+        "<dimension>",
+        "<length>"
+      ],
+      "passRate": 0.75
+    },
+    "align-self": {
+      "values": [
+        "stretch",
+        "flex-start",
+        "flex-end",
+        "auto",
+        "end"
+      ],
+      "passRate": 0.7
+    },
+    "animation-duration": {
+      "values": [
+        "1s"
+      ],
+      "passRate": 0.7
+    },
+    "animation-name": {
+      "values": [
+        "coloranim"
+      ],
+      "passRate": 0.7
+    },
+    "animation-play-state": {
+      "values": [
+        "paused"
+      ],
+      "passRate": 0.7
+    }
+  }
+}

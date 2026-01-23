@@ -20,6 +20,59 @@ pub(all) enum CaptionSide {
 } derive(Show, Eq)
 
 ///|
+/// CSS white-space property (for text wrapping)
+pub(all) enum WhiteSpace {
+  Normal // Default - collapse whitespace, wrap text
+  Nowrap // Collapse whitespace, no wrapping
+  Pre // Preserve whitespace, only wrap at newlines
+  PreWrap // Preserve whitespace, wrap when needed
+  PreLine // Collapse whitespace, wrap at newlines
+} derive(Show, Eq)
+
+///|
+/// CSS writing-mode property (for text direction and flow)
+pub(all) enum WritingMode {
+  HorizontalTb // Default - left-to-right, top-to-bottom
+  VerticalRl // Top-to-bottom, right-to-left (e.g., traditional Japanese)
+  VerticalLr // Top-to-bottom, left-to-right (e.g., Mongolian)
+} derive(Show, Eq)
+
+///|
+/// Check if writing mode is vertical
+pub fn WritingMode::is_vertical(self : WritingMode) -> Bool {
+  match self {
+    HorizontalTb => false
+    VerticalRl | VerticalLr => true
+  }
+}
+
+///|
+/// Check if block direction is right-to-left (vertical-rl)
+/// In vertical-rl, blocks flow from right to left
+pub fn WritingMode::is_block_rtl(self : WritingMode) -> Bool {
+  match self {
+    VerticalRl => true
+    HorizontalTb | VerticalLr => false
+  }
+}
+
+///|
+/// CSS direction property (for inline text direction)
+pub(all) enum Direction {
+  Ltr // Left-to-right (default)
+  Rtl // Right-to-left (e.g., Arabic, Hebrew)
+} derive(Show, Eq)
+
+///|
+/// Check if direction is right-to-left
+pub fn Direction::is_rtl(self : Direction) -> Bool {
+  match self {
+    Rtl => true
+    Ltr => false
+  }
+}
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)
@@ -199,6 +252,10 @@ pub(all) struct Style {
   // Font properties (for baseline calculation)
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut line_height : Double // Computed line height in pixels (default = font_size)
+  // Text wrapping and direction
+  mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
+  mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
+  mut direction : Direction // direction: ltr | rtl (inline text direction)
   // Vertical alignment for inline elements
   mut vertical_align : VerticalAlign
   // Clip (legacy, deprecated but widely used for a11y)
@@ -290,6 +347,9 @@ pub fn Style::default() -> Style {
     justify_self: @types.AlignSelf::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    white_space: Normal,
+    writing_mode: HorizontalTb,
+    direction: Ltr,
     vertical_align: Baseline,
     clip: @types.ClipRect::Auto,
     visibility: Visible,

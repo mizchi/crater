@@ -1,0 +1,180 @@
+{
+  "hash": "f105de6e63ca91ea482f60193f6252092557f969f2fd128ff68c0d4d6b90dd7d",
+  "url": "http://note100yen.com/en-180816.html",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "nav#nav",
+      "rect": {
+        "x": 8,
+        "y": 88,
+        "width": 1264,
+        "height": 96
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "unknown",
+      "selector": "div.menu-gloval-navi-container, ul#menu-gloval-navi, li#menu-item-3274, li#menu-item-7537, li#menu-item-7536, li#menu-item-1580",
+      "rect": {
+        "x": 8,
+        "y": 88,
+        "width": 1264,
+        "height": 96
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-8",
+      "type": "unknown",
+      "selector": "div.pagetitle, div, div, div, div",
+      "rect": {
+        "x": 8,
+        "y": 200,
+        "width": 1264,
+        "height": 120
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-9",
+      "type": "breadcrumb",
+      "selector": "div.breadcrumb",
+      "rect": {
+        "x": 8,
+        "y": 224,
+        "width": 1264,
+        "height": 96
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-14",
+      "type": "unknown",
+      "selector": "div.blog-foot",
+      "rect": {
+        "x": 8,
+        "y": 5539.3125,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-15",
+      "type": "unknown",
+      "selector": "div.similar, ul, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 5603.3125,
+        "width": 1264,
+        "height": 2002
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-24",
+      "type": "unknown",
+      "selector": "div#next, ul.block-two, li.next-left",
+      "rect": {
+        "x": 8,
+        "y": 7697.3125,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-27",
+      "type": "sidebar_nav",
+      "selector": "div.sidebar",
+      "rect": {
+        "x": 8,
+        "y": 7871.3125,
+        "width": 1264,
+        "height": 3250.09375
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-28",
+      "type": "unknown",
+      "selector": "div.sidebox-new, ul, li, li, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 8205.40625,
+        "width": 1264,
+        "height": 2042
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-37",
+      "type": "unknown",
+      "selector": "div.mt10, ul, li, li",
+      "rect": {
+        "x": 8,
+        "y": 10541.40625,
+        "width": 1264,
+        "height": 48
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-41",
+      "type": "footer_nav",
+      "selector": "footer#footer, div.footer-inner, div.footerbox, div.footer-widget-title, div.footerbox, div.footer-widget-title, div.footer-widget-title, div.footerbox, div.footer-widget-title, div.footer-widget-title",
+      "rect": {
+        "x": 8,
+        "y": 11243.40625,
+        "width": 1264,
+        "height": 1144
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-43",
+      "type": "unknown",
+      "selector": "article.third, div#jcl_widget-2, ul.jcl_widget, li.jcl_category, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category.jcl_has_child, li.jcl_category, li.jcl_category, li.jcl_category, li.jcl_category",
+      "rect": {
+        "x": 8,
+        "y": 11243.40625,
+        "width": 1264,
+        "height": 424
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-65",
+      "type": "unknown",
+      "selector": "div#arpw-widget-3, div.arpw-random-post, ul.arpw-ul, li.arpw-li.arpw-clearfix, li.arpw-li.arpw-clearfix, li.arpw-li.arpw-clearfix, li.arpw-li.arpw-clearfix, li.arpw-li.arpw-clearfix",
+      "rect": {
+        "x": 8,
+        "y": 11683.40625,
+        "width": 1264,
+        "height": 160
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-75",
+      "type": "unknown",
+      "selector": "article.third, div#custom_html-2, div.textwidget.custom-html-widget, ul, li, li, li, li, li",
+      "rect": {
+        "x": 8,
+        "y": 11907.40625,
+        "width": 1264,
+        "height": 456
+      },
+      "confidence": "uncertain"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

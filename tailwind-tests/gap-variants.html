@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Gap Variants (gap-x, gap-y)</title>
+  <style>
+    .flex { display: flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .grid { display: grid; }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .gap-4 { gap: 16px; }
+    .gap-x-4 { column-gap: 16px; }
+    .gap-y-2 { row-gap: 8px; }
+    .w-20 { width: 80px; }
+    .h-16 { height: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .bg-yellow { background-color: #eab308; }
+  </style>
+</head>
+<body>
+  <!-- Different x and y gaps -->
+  <div id="test" class="grid grid-cols-3 gap-x-4 gap-y-2" style="width: 300px;">
+    <div class="h-16 bg-blue"></div>
+    <div class="h-16 bg-red"></div>
+    <div class="h-16 bg-green"></div>
+    <div class="h-16 bg-yellow"></div>
+    <div class="h-16 bg-blue"></div>
+    <div class="h-16 bg-red"></div>
+  </div>
+</body>
+</html>

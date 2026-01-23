@@ -1,0 +1,48 @@
+{
+  "hash": "ff0f958ade714ebfaf5c0b42b1c0152a62063f4e6f72141406ccefc4a2677f21",
+  "url": "http://vse-diety.com/dieta-atkinsa.html",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "div#header",
+      "rect": {
+        "x": 130,
+        "y": 0,
+        "width": 1020,
+        "height": 80
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-2",
+      "type": "secondary_nav",
+      "selector": "div#divNav",
+      "rect": {
+        "x": 130,
+        "y": 90,
+        "width": 1020,
+        "height": 158
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-3",
+      "type": "footer_nav",
+      "selector": "div#footer",
+      "rect": {
+        "x": 130,
+        "y": 4821.3203125,
+        "width": 1020,
+        "height": 65
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Cleaned up: removed div.title entries (related articles, not nav). Non-semantic HTML site.",
+  "status": "reviewed"
+}

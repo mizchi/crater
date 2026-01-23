@@ -5,7 +5,9 @@
 ///|
 /// Default dispatch for tests
 fn default_dispatch() -> @node.DispatchFn {
-  @node.DispatchFn(fn(node, ctx, dispatch) { @flex.compute(node, ctx, dispatch) })
+  @node.DispatchFn(fn(node, ctx, dispatch) {
+    @flex.compute(node, ctx, dispatch)
+  })
 }
 
 ///|
@@ -33,6 +35,8 @@ test "trace_simple_layout" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let result = @flex.compute_with_trace(parent, ctx, default_dispatch())
   // Verify traces were collected
@@ -77,6 +81,8 @@ test "trace_dependencies_recorded" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let result = @flex.compute_with_trace(parent, ctx, default_dispatch())
   // Parent should have dependencies on children's intrinsic sizes
@@ -141,6 +147,8 @@ test "trace_needs_recompute" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let result = @flex.compute_with_trace(node, ctx1, default_dispatch())
   // Same context should not need recompute
@@ -152,6 +160,8 @@ test "trace_needs_recompute" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   assert_eq(result.tracer.needs_recompute(node.uid, ctx2), true)
   // Different height should need recompute
@@ -161,6 +171,8 @@ test "trace_needs_recompute" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   assert_eq(result.tracer.needs_recompute(node.uid, ctx3), true)
   // Unknown node should need recompute
@@ -202,6 +214,8 @@ test "trace_nested_structure" {
     sizing_mode: @types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let result = @flex.compute_with_trace(parent, ctx, default_dispatch())
   // All three nodes should have traces

@@ -17,3 +17,15 @@ pub fn get_aria_snapshot_json(html : String) -> String {
 pub fn get_accessibility_tree(html : String) -> String {
   @crater.getAccessibilityTree(html)
 }
+
+///|
+/// Extract main content using Arc90 algorithm
+pub fn extract_main_content(html : String) -> String {
+  @crater.extractMainContent(html)
+}
+
+///|
+/// Extract main content with layout calculation for better accuracy
+pub fn extract_main_content_with_layout(html : String, width : Int, height : Int) -> String {
+  @crater.extractMainContentWithLayout(html, width, height)
+}

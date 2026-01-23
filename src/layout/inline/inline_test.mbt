@@ -4,12 +4,18 @@
 ///|
 /// Default dispatch for tests
 fn default_dispatch() -> @node.DispatchFn {
-  @node.DispatchFn(fn(node, ctx, dispatch) { compute_ifc_node(node, ctx, dispatch) })
+  @node.DispatchFn(fn(node, ctx, dispatch) {
+    compute_ifc_node(node, ctx, dispatch)
+  })
 }
 
 ///|
 /// Helper to compute inline node with dispatch
-fn compute_ifc_node(node : @node.Node, _ctx : @types.LayoutContext, _dispatch : @node.DispatchFn) -> @types.Layout {
+fn compute_ifc_node(
+  node : @node.Node,
+  _ctx : @types.LayoutContext,
+  _dispatch : @node.DispatchFn,
+) -> @types.Layout {
   // Simple leaf layout
   let width = match node.style.width {
     @types.Length(w) => w
@@ -47,7 +53,14 @@ test "ifc_horizontal_layout" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc([child1, child2], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [child1, child2],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
   // Two children should be laid out
   inspect(result.layouts.length(), content="2")
   // First child at x=0
@@ -115,7 +128,14 @@ test "ifc_with_margins" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc([child1, child2], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [child1, child2],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
   // First child at x=5 (margin-left)
   inspect(result.layouts[0].x, content="5")
   // Second child at x=55 (5 + 40 + 5 + 5)
@@ -164,7 +184,14 @@ test "ifc_mixed_heights" {
   }
   let tall = @node.Node::leaf("tall", tall_style)
   let short = @node.Node::leaf("short", short_style)
-  let result = compute_ifc([tall, short], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [tall, short],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
   // Tall element at y=0
   inspect(result.layouts[0].y, content="0")
   // Short element should be aligned to bottom (y=30, so bottom=60 matches tall)
@@ -245,7 +272,14 @@ test "text_width_constrained_by_available_width" {
     },
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
-  let result = compute_ifc([text_node], 100.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [text_node],
+    100.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
 
   // Width should be constrained to available_width (100), not max_width (200)
   inspect(result.layouts[0].width, content="100")
@@ -269,7 +303,14 @@ test "text_width_unconstrained_when_smaller" {
     }, // Single line
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
-  let result = compute_ifc([text_node], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [text_node],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
 
   // Width should be text's natural width (50), not available_width (400)
   inspect(result.layouts[0].width, content="50")
@@ -310,7 +351,14 @@ test "text_min_content_width" {
     },
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
-  let result = compute_ifc([text_node], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [text_node],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
 
   // Width should be min_width (40)
   inspect(result.layouts[0].width, content="40")
@@ -335,7 +383,14 @@ test "inline_element_with_child_has_size" {
 
   // Create inline parent (like <a>) containing the text
   let link = @node.Node::new("a", inline_style, [text_child])
-  let result = compute_ifc([link], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [link],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
 
   // Link should have width and height from its child, NOT 0x0
   inspect(result.layouts[0].width, content="80")
@@ -367,7 +422,14 @@ test "inline_element_with_padding_and_child" {
 
   // Create inline parent with padding
   let link = @node.Node::new("a", inline_with_padding, [text_child])
-  let result = compute_ifc([link], 400.0, Some(600.0), 0.0, 0.0, default_dispatch())
+  let result = compute_ifc(
+    [link],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
 
   // Link width = child width (100) + padding left (5) + padding right (5) = 110
   inspect(result.layouts[0].width, content="110")

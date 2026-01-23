@@ -1,0 +1,144 @@
+{
+  "hash": "d1c57d7821e5a5b27fb468c59489601bb2a042b1c05221166e3221d2b5dc217f",
+  "url": "https://spacenews.com/nasa-adds-five-companies-to-commercial-lunar-lander-program/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "unknown",
+      "selector": "div#navs, div.row, div.topics.red, ul#menu-main-navigation-segments, li.link-home, li.menu-item.menu-item-type-taxonomy.menu-item-object-segment.current-post-ancestor.current-menu-parent.current-post-parent.menu-item-36619, li.menu-item.menu-item-type-taxonomy.menu-item-object-segment.menu-item-36620, li.menu-item.menu-item-type-custom.menu-item-object-custom.menu-item-81162, div.topics.black, ul#menu-main-navigation-sections, li.menu-item.menu-item-type-taxonomy.menu-item-object-section.menu-item-21047, li.menu-item.menu-item-type-custom.menu-item-object-custom.menu-item-85362, li.menu-item.menu-item-type-taxonomy.menu-item-object-section.current-post-ancestor.current-menu-parent.current-post-parent.menu-item-21046, li.menu-item.menu-item-type-custom.menu-item-object-custom.menu-item-85347, li.menu-item.menu-item-type-taxonomy.menu-item-object-section.menu-item-21049",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 232
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-2",
+      "type": "primary_nav",
+      "selector": "nav#nav",
+      "rect": {
+        "x": 8,
+        "y": 8,
+        "width": 1264,
+        "height": 232
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-17",
+      "type": "primary_nav",
+      "selector": "header#header, nav.left-off-canvas-menu.hide-for-print",
+      "rect": {
+        "x": 8,
+        "y": 256,
+        "width": 1264,
+        "height": 674.5
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-18",
+      "type": "unknown",
+      "selector": "div.row.hide-for-print, div.container, div#navs-mobile, div.off-canvas-wrap.mobile-toggle.show-for-small-only, ul#menu-mobile-menu, li.menu-item.menu-item-type-taxonomy.menu-item-object-segment.current-post-ancestor.current-menu-parent.current-post-parent.menu-item-36619, li.menu-item.menu-item-type-taxonomy.menu-item-object-segment.menu-item-36620, li.menu-item.menu-item-type-custom.menu-item-object-custom.menu-item-81162, li.menu-item.menu-item-type-taxonomy.menu-item-object-section.menu-item-21047, li.menu-item.menu-item-type-custom.menu-item-object-custom.menu-item-85362, li.menu-item.menu-item-type-taxonomy.menu-item-object-section.current-post-ancestor.current-menu-parent.current-post-parent.menu-item-21046, li.menu-item.menu-item-type-custom.menu-item-object-custom.menu-item-85347, li.menu-item.menu-item-type-taxonomy.menu-item-object-section.menu-item-21049, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-21051, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85971, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85968, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85969, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85970, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-privacy-policy.menu-item-77628, li.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-50884, li.menu-item-object-custom, li.menu-search",
+      "rect": {
+        "x": 8,
+        "y": 280,
+        "width": 1264,
+        "height": 650.5
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-32",
+      "type": "social_nav",
+      "selector": "li.mobile-social",
+      "rect": {
+        "x": 48,
+        "y": 536,
+        "width": 1224,
+        "height": 24
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-42",
+      "type": "unknown",
+      "selector": "div.tax-container",
+      "rect": {
+        "x": 8,
+        "y": 3655.9375,
+        "width": 1264,
+        "height": 24
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-43",
+      "type": "sidebar_nav",
+      "selector": "aside#aside, div#sidebar-search",
+      "rect": {
+        "x": 8,
+        "y": 3727.9375,
+        "width": 1264,
+        "height": 553.15625
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-45",
+      "type": "unknown",
+      "selector": "div#events, div.event-list, div.type-tribe_events.post-93305.tribe-clearfix.tribe-events-category-conferences.tribe-events-category-networking.tribe-events-venue-93306.tribe-events-organizer-49233, div.tribe-mini-calendar-event.event--1, div.list-info, h4.entry-title.summary, div.type-tribe_events.post-92628.tribe-clearfix.tribe-events-category-conferences.tribe-events-category-networking.tribe-events-venue-50988.tribe-events-organizer-50987, div.tribe-mini-calendar-event.event--1, div.list-info, h4.entry-title.summary, div.type-tribe_events.post-91619.tribe-clearfix.tribe-events-venue-47185.tribe-events-organizer-47184, div.tribe-mini-calendar-event.event--1, div.list-info, h4.entry-title.summary",
+      "rect": {
+        "x": 8,
+        "y": 3961.453125,
+        "width": 1264,
+        "height": 319.640625
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-59",
+      "type": "footer_nav",
+      "selector": "footer#footer, nav.footer-nav.show-for-medium-up.navigation.hide-for-print",
+      "rect": {
+        "x": 8,
+        "y": 4302.3671875,
+        "width": 1264,
+        "height": 360
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-60",
+      "type": "unknown",
+      "selector": "div.row, div.container, ul.Nav-menu.Nav-menu--depth0.menu, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-21051, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85971, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85968, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85969, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-85970, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-privacy-policy.menu-item-77628, li.Nav-menuItem.Nav-menuItem--depth0.menu-item.menu-item-type-post_type.menu-item-object-page.menu-item-50884, ul.menu, li#facebook, li#twitter, li#youtube, li#rss",
+      "rect": {
+        "x": 8,
+        "y": 4302.3671875,
+        "width": 1264,
+        "height": 360
+      },
+      "confidence": "uncertain"
+    },
+    {
+      "id": "nav-71",
+      "type": "social_nav",
+      "selector": "div#footer-social_icons",
+      "rect": {
+        "x": 8,
+        "y": 4566.3671875,
+        "width": 1264,
+        "height": 96
+      },
+      "confidence": "probable"
+    }
+  ],
+  "notes": "Auto-generated draft. Needs manual review.",
+  "status": "draft"
+}

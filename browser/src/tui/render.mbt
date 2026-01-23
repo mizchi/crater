@@ -36,6 +36,70 @@ pub fn px_to_row(px : Double) -> Int {
 }
 
 ///|
+/// Convert pixel height to character height (rounds up)
+fn px_to_row_height(px : Double) -> Int {
+  let result = px / font_height
+  let int_part = result.to_int()
+  if result > int_part.to_double() {
+    int_part + 1
+  } else {
+    int_part
+  }
+}
+
+///|
+fn max_double(a : Double, b : Double) -> Double {
+  if a > b {
+    a
+  } else {
+    b
+  }
+}
+
+///|
+fn min_double(a : Double, b : Double) -> Double {
+  if a < b {
+    a
+  } else {
+    b
+  }
+}
+
+///|
+/// Convert dirty rects in pixel coordinates to character grid rectangles
+pub fn dirty_rects_to_cells(
+  rects : Array[@types.BoundingRect],
+  scroll_y_px : Int,
+  viewport_cols : Int,
+  viewport_rows : Int,
+  row_offset : Int,
+) -> Array[DirtyRect] {
+  let result : Array[DirtyRect] = []
+  let view_left = 0.0
+  let view_right = viewport_cols.to_double() * font_width
+  let view_top = scroll_y_px.to_double()
+  let view_bottom = view_top + viewport_rows.to_double() * font_height
+  for rect in rects {
+    let x0 = max_double(rect.x, view_left)
+    let y0 = max_double(rect.y, view_top)
+    let x1 = min_double(rect.x + rect.width, view_right)
+    let y1 = min_double(rect.y + rect.height, view_bottom)
+    if x1 <= x0 || y1 <= y0 {
+      continue
+    }
+    let col = px_to_col(x0)
+    let row = px_to_row(y0 - view_top) + row_offset
+    let w = px_to_col_width(x1 - x0)
+    let h = px_to_row_height(y1 - y0)
+    if w <= 0 || h <= 0 {
+      continue
+    }
+    result.push({ col, row, width: w, height: h })
+  }
+  result
+}
+
+///|
 /// A clickable link region on screen
 pub(all) struct LinkRegion {
   col : Int // Start column
@@ -344,6 +408,13 @@ pub(all) struct RenderResult {
 }
 
 ///|
+/// Render result with raw buffer (for diff rendering)
+pub(all) struct BufferRenderResult {
+  buffer : CharBuffer
+  link_regions : Array[LinkRegion]
+}
+
+///|
 /// Render a Node + Layout tree to ANSI string
 pub fn render_to_ansi(
   node : @node.Node,
@@ -353,6 +424,27 @@ pub fn render_to_ansi(
   scroll_y : Int,
   focused_element_name? : String? = None,
 ) -> RenderResult {
+  let result = render_to_buffer(
+    node,
+    layout,
+    width,
+    height,
+    scroll_y,
+    focused_element_name~,
+  )
+  { ansi: buffer_to_ansi(result.buffer), link_regions: result.link_regions }
+}
+
+///|
+/// Render a Node + Layout tree to a CharBuffer
+pub fn render_to_buffer(
+  node : @node.Node,
+  layout : @types.Layout,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+  focused_element_name? : String? = None,
+) -> BufferRenderResult {
   // Create character buffer
   let buf = CharBuffer::new(width, height)
   // Clear with white background
@@ -366,7 +458,6 @@ pub fn render_to_ansi(
   }
   buf.fill_rect(0, 0, width, height, white_cell)
   // Convert to PaintNode with viewport culling
-  // Calculate viewport bounds in pixels (font_height = 16.0)
   let viewport_top = scroll_y.to_double() * font_height
   let viewport_bottom = (scroll_y + height).to_double() * font_height
   let paint_node = match
@@ -374,11 +465,9 @@ pub fn render_to_ansi(
       node, layout, viewport_top, viewport_bottom, 0.0,
     ) {
     Some(n) => n
-    None => return { ansi: buffer_to_ansi(buf), link_regions: [] }
+    None => return { buffer: buf, link_regions: [] }
   }
-  // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
-  // Create context with link regions array
   let link_regions : Array[LinkRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
@@ -388,10 +477,8 @@ pub fn render_to_ansi(
     focused_element_name,
     dark_mode: false,
   }
-  // Render (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  // Return ANSI and link regions
-  { ansi: buffer_to_ansi(buf), link_regions }
+  { buffer: buf, link_regions }
 }
 
 ///|
@@ -410,6 +497,39 @@ pub fn render_to_ansi_with_status(
   selection_mode? : Bool = false,
   dark_mode? : Bool = false,
 ) -> RenderResult {
+  let result = render_to_buffer_with_status(
+    node,
+    layout,
+    width,
+    height,
+    scroll_y,
+    url,
+    link_count,
+    focused_link,
+    focused_element_name~,
+    focused_link_url~,
+    selection_mode~,
+    dark_mode~,
+  )
+  { ansi: buffer_to_ansi(result.buffer), link_regions: result.link_regions }
+}
+
+///|
+/// Render a Node + Layout tree with status bar to a CharBuffer
+pub fn render_to_buffer_with_status(
+  node : @node.Node,
+  layout : @types.Layout,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+  url : String,
+  link_count : Int,
+  focused_link : Int,
+  focused_element_name? : String? = None,
+  focused_link_url? : String? = None,
+  selection_mode? : Bool = false,
+  dark_mode? : Bool = false,
+) -> BufferRenderResult {
   // Reserve first row for status bar at top
   let content_height = height - 1
   let content_start_row = 1 // Content starts at row 1 (after status bar)
@@ -451,17 +571,17 @@ pub fn render_to_ansi_with_status(
         selection_mode~,
         dark_mode~,
       )
-      return { ansi: buffer_to_ansi(buf), link_regions: [] }
+      return { buffer: buf, link_regions: [] }
     }
   }
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   // Create context with link regions array
-  // Note: scroll_y is adjusted for content area (row 1+), link regions need row offset
+  // Content is drawn with a 1-row offset via parent_y
   let link_regions : Array[LinkRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
-    scroll_y: scroll_y - content_start_row, // Adjust scroll for content offset
+    scroll_y,
     viewport_height: content_height,
     link_regions,
     focused_element_name,
@@ -487,7 +607,7 @@ pub fn render_to_ansi_with_status(
     dark_mode~,
   )
   // Return ANSI and link regions
-  { ansi: buffer_to_ansi(buf), link_regions }
+  { buffer: buf, link_regions }
 }
 
 ///|
@@ -577,6 +697,31 @@ pub fn render_to_ansi_with_hints(
   hint_input : String,
   focused_element_name? : String? = None,
 ) -> RenderResult {
+  let result = render_to_buffer_with_hints(
+    node,
+    layout,
+    width,
+    height,
+    scroll_y,
+    hints,
+    hint_input,
+    focused_element_name~,
+  )
+  { ansi: buffer_to_ansi(result.buffer), link_regions: result.link_regions }
+}
+
+///|
+/// Render with hints overlay to a CharBuffer
+pub fn render_to_buffer_with_hints(
+  node : @node.Node,
+  layout : @types.Layout,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+  hints : Array[HintData],
+  hint_input : String,
+  focused_element_name? : String? = None,
+) -> BufferRenderResult {
   // Reserve last row for status bar
   let content_height = height - 1
   // Create character buffer
@@ -604,7 +749,7 @@ pub fn render_to_ansi_with_hints(
       // Content is outside viewport, just draw hints and status bar
       draw_hints(buf, hints, content_height)
       draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
-      return { ansi: buffer_to_ansi(buf), link_regions: [] }
+      return { buffer: buf, link_regions: [] }
     }
   }
   // Sort by stacking order
@@ -626,7 +771,7 @@ pub fn render_to_ansi_with_hints(
   // Draw status bar with hint list
   draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
   // Return ANSI and link regions
-  { ansi: buffer_to_ansi(buf), link_regions }
+  { buffer: buf, link_regions }
 }
 
 ///|

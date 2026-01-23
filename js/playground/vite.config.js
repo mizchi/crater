@@ -5,7 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Map to MoonBit JS build output
-      '@crater': resolve(__dirname, '../../target/js/release/build/js/js.js')
+      '@crater': resolve(__dirname, '../dist/crater.js')
     }
   },
   build: {

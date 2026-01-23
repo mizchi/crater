@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/layout/baseline"
 
-import(
-  "mizchi/crater/layout/node"
-)
+import {
+  "mizchi/crater/layout/node",
+}
 
 // Values
 pub fn compute_node_baseline(@node.Node, Double) -> Double

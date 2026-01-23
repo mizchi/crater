@@ -1,0 +1,19 @@
+import {
+  "moonbitlang/core/bench",
+  "mizchi/crater/html",
+  "mizchi/crater/renderer",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+  "mizchi/crater/paint",
+  "mizchi/crater/layout/dispatch",
+  "mizchi/crater/layout/tree",
+  "mizchi/crater/css/media",
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/css/computed",
+  "mizchi/crater/css/parser",
+  "mizchi/crater/css/selector",
+}
+
+import "wbtest" {
+}

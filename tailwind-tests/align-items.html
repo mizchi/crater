@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tailwind: Align Items Variants</title>
+  <style>
+    .flex { display: flex; }
+    .items-start { align-items: flex-start; }
+    .items-end { align-items: flex-end; }
+    .items-center { align-items: center; }
+    .items-baseline { align-items: baseline; }
+    .items-stretch { align-items: stretch; }
+    .gap-4 { gap: 16px; }
+    .h-32 { height: 128px; }
+    .h-16 { height: 64px; }
+    .h-24 { height: 96px; }
+    .w-16 { width: 64px; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-red { background-color: #ef4444; }
+    .bg-green { background-color: #22c55e; }
+    .bg-gray { background-color: #d1d5db; }
+  </style>
+</head>
+<body>
+  <div id="test" class="flex items-center gap-4 bg-gray" style="width: 300px; height: 150px;">
+    <div class="w-16 h-16 bg-blue"></div>
+    <div class="w-16 h-24 bg-red"></div>
+    <div class="w-16 h-32 bg-green"></div>
+  </div>
+</body>
+</html>

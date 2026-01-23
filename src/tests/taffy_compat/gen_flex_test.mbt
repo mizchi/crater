@@ -30,6 +30,8 @@ test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -72,6 +74,8 @@ test "taffy/absolute_aspect_ratio_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -113,6 +117,8 @@ test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -161,6 +167,8 @@ test "taffy/absolute_aspect_ratio_fill_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -209,6 +217,8 @@ test "taffy/absolute_aspect_ratio_fill_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -245,6 +255,8 @@ test "taffy/absolute_aspect_ratio_fill_min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -281,6 +293,8 @@ test "taffy/absolute_aspect_ratio_fill_min_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -323,6 +337,8 @@ test "taffy/absolute_aspect_ratio_fill_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -364,6 +380,8 @@ test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -406,6 +424,8 @@ test "taffy/absolute_aspect_ratio_height_overrides_inset" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -448,6 +468,8 @@ test "taffy/absolute_aspect_ratio_width_overrides_inset" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -517,6 +539,8 @@ test "taffy/absolute_child_with_cross_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -568,6 +592,8 @@ test "taffy/absolute_child_with_main_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -622,6 +648,8 @@ test "taffy/absolute_child_with_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -681,6 +709,8 @@ test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -764,6 +794,8 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -818,6 +850,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -862,6 +896,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_bottom_po
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -906,6 +942,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_left_posi
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -950,6 +988,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_right_pos
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -994,6 +1034,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_top_posit
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1032,6 +1074,8 @@ test "taffy/absolute_layout_align_items_and_justify_content_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1069,6 +1113,8 @@ test "taffy/absolute_layout_align_items_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1106,6 +1152,8 @@ test "taffy/absolute_layout_align_items_center_on_child_only" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1158,6 +1206,8 @@ test "taffy/absolute_layout_child_order" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1204,6 +1254,8 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1244,6 +1296,8 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1282,6 +1336,8 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1322,6 +1378,8 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1359,6 +1417,8 @@ test "taffy/absolute_layout_justify_content_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1392,6 +1452,8 @@ test "taffy/absolute_layout_no_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1460,6 +1522,8 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1509,6 +1573,8 @@ test "taffy/absolute_layout_percentage_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1552,6 +1618,8 @@ test "taffy/absolute_layout_row_width_height_end_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1591,6 +1659,8 @@ test "taffy/absolute_layout_start_top_end_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1632,6 +1702,8 @@ test "taffy/absolute_layout_width_height_end_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1673,6 +1745,8 @@ test "taffy/absolute_layout_width_height_start_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1714,6 +1788,8 @@ test "taffy/absolute_layout_width_height_start_top_end_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1821,6 +1897,8 @@ test "taffy/absolute_layout_within_border" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1877,6 +1955,8 @@ test "taffy/absolute_margin_bottom_left" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1920,6 +2000,8 @@ test "taffy/absolute_minmax_bottom_right_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -1963,6 +2045,8 @@ test "taffy/absolute_minmax_bottom_right_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2008,6 +2092,8 @@ test "taffy/absolute_minmax_bottom_right_min_max_preferred" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2049,6 +2135,8 @@ test "taffy/absolute_minmax_top_left_bottom_right_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2092,6 +2180,8 @@ test "taffy/absolute_minmax_top_left_bottom_right_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2135,6 +2225,8 @@ test "taffy/absolute_padding_border_overrides_max_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2178,6 +2270,8 @@ test "taffy/absolute_padding_border_overrides_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2399,6 +2493,8 @@ test "taffy/absolute_resolved_insets" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2494,6 +2590,8 @@ test "taffy/align_baseline" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2554,6 +2652,8 @@ test "taffy/align_baseline_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2630,6 +2730,8 @@ test "taffy/align_baseline_child_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2706,6 +2808,8 @@ test "taffy/align_baseline_child_margin_percent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2788,6 +2892,8 @@ test "taffy/align_baseline_child_multiline" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2888,6 +2994,8 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -2990,6 +3098,8 @@ test "taffy/align_baseline_child_multiline_override" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3078,6 +3188,8 @@ test "taffy/align_baseline_child_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3148,6 +3260,8 @@ test "taffy/align_baseline_child_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3216,6 +3330,8 @@ test "taffy/align_baseline_child_top2" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3268,6 +3384,8 @@ test "taffy/align_baseline_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3336,6 +3454,8 @@ test "taffy/align_baseline_double_nested_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3431,6 +3551,8 @@ test "taffy/align_baseline_multiline" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3534,6 +3656,8 @@ test "taffy/align_baseline_multiline_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3645,6 +3769,8 @@ test "taffy/align_baseline_multiline_column2" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3748,6 +3874,8 @@ test "taffy/align_baseline_multiline_row_and_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3823,6 +3951,8 @@ test "taffy/align_baseline_nested_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3912,6 +4042,8 @@ test "taffy/align_baseline_nested_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -3986,6 +4118,8 @@ test "taffy/align_center_should_size_based_on_content" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4066,6 +4200,8 @@ test "taffy/align_content_center_single_line" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4143,6 +4279,8 @@ test "taffy/align_content_center_single_line_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4206,6 +4344,8 @@ test "taffy/align_content_center_single_line_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4283,6 +4423,8 @@ test "taffy/align_content_center_wrapped" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4379,6 +4521,8 @@ test "taffy/align_content_center_wrapped_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4469,6 +4613,8 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4547,6 +4693,8 @@ test "taffy/align_content_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4620,6 +4768,8 @@ test "taffy/align_content_end_single_line_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4683,6 +4833,8 @@ test "taffy/align_content_end_single_line_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4763,6 +4915,8 @@ test "taffy/align_content_end_wrapped_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4853,6 +5007,8 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -4931,6 +5087,8 @@ test "taffy/align_content_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5013,6 +5171,8 @@ test "taffy/align_content_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5102,6 +5262,8 @@ test "taffy/align_content_flex_start_with_flex" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5181,6 +5343,8 @@ test "taffy/align_content_flex_start_without_height_on_children" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5262,6 +5426,8 @@ test "taffy/align_content_not_stretch_with_align_items_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5346,6 +5512,8 @@ test "taffy/align_content_space_around_single_line" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5423,6 +5591,8 @@ test "taffy/align_content_space_around_single_line_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5486,6 +5656,8 @@ test "taffy/align_content_space_around_single_line_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5563,6 +5735,8 @@ test "taffy/align_content_space_around_wrapped" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5659,6 +5833,8 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5749,6 +5925,8 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5799,6 +5977,8 @@ test "taffy/align_content_space_around_wrapped_single" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5871,6 +6051,8 @@ test "taffy/align_content_space_between_single_line" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -5948,6 +6130,8 @@ test "taffy/align_content_space_between_single_line_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6011,6 +6195,8 @@ test "taffy/align_content_space_between_single_line_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6088,6 +6274,8 @@ test "taffy/align_content_space_between_wrapped" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6184,6 +6372,8 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6274,6 +6464,8 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6324,6 +6516,8 @@ test "taffy/align_content_space_between_wrapped_single" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6396,6 +6590,8 @@ test "taffy/align_content_space_evenly_single_line" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6473,6 +6669,8 @@ test "taffy/align_content_space_evenly_single_line_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6536,6 +6734,8 @@ test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6613,6 +6813,8 @@ test "taffy/align_content_space_evenly_wrapped" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6709,6 +6911,8 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6799,6 +7003,8 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6849,6 +7055,8 @@ test "taffy/align_content_space_evenly_wrapped_single" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6915,6 +7123,8 @@ test "taffy/align_content_spacearound" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -6997,6 +7207,8 @@ test "taffy/align_content_spacebetween" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7079,6 +7291,8 @@ test "taffy/align_content_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7152,6 +7366,8 @@ test "taffy/align_content_start_single_line_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7215,6 +7431,8 @@ test "taffy/align_content_start_single_line_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7295,6 +7513,8 @@ test "taffy/align_content_start_wrapped_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7368,6 +7588,8 @@ test "taffy/align_content_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7461,6 +7683,8 @@ test "taffy/align_content_stretch_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7531,6 +7755,8 @@ test "taffy/align_content_stretch_is_not_overriding_align_items" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7596,6 +7822,8 @@ test "taffy/align_content_stretch_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7686,6 +7914,8 @@ test "taffy/align_content_stretch_row_with_children" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7768,6 +7998,8 @@ test "taffy/align_content_stretch_row_with_fixed_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7851,6 +8083,8 @@ test "taffy/align_content_stretch_row_with_flex" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -7935,6 +8169,8 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8024,6 +8260,8 @@ test "taffy/align_content_stretch_row_with_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8102,6 +8340,8 @@ test "taffy/align_content_stretch_row_with_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8180,6 +8420,8 @@ test "taffy/align_content_stretch_row_with_min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8269,6 +8511,8 @@ test "taffy/align_content_stretch_row_with_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8328,6 +8572,8 @@ test "taffy/align_content_stretch_row_with_single_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8379,6 +8625,8 @@ test "taffy/align_content_stretch_row_wrap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8439,6 +8687,8 @@ test "taffy/align_flex_start_with_shrinking_children" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8504,6 +8754,8 @@ test "taffy/align_flex_start_with_shrinking_children_with_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8568,6 +8820,8 @@ test "taffy/align_flex_start_with_stretching_children" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8612,6 +8866,8 @@ test "taffy/align_items_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8665,6 +8921,8 @@ test "taffy/align_items_center_child_with_margin_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8716,6 +8974,8 @@ test "taffy/align_items_center_child_without_margin_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8790,6 +9050,8 @@ test "taffy/align_items_center_justify_content_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8843,6 +9105,8 @@ test "taffy/align_items_center_min_max_with_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8885,6 +9149,8 @@ test "taffy/align_items_center_with_child_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -8927,6 +9193,8 @@ test "taffy/align_items_center_with_child_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9005,6 +9273,8 @@ test "taffy/align_items_center_with_height_with_padding_border_with_wrap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9080,6 +9350,8 @@ test "taffy/align_items_center_with_max_height_percentage_with_align_content_fle
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9132,6 +9404,8 @@ test "taffy/align_items_center_with_max_height_with_align_content_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9242,6 +9516,8 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9316,6 +9592,8 @@ test "taffy/align_items_center_with_min_height_percentage_with_align_content_fle
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9368,6 +9646,8 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9503,6 +9783,8 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9649,6 +9931,8 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9705,6 +9989,8 @@ test "taffy/align_items_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9758,6 +10044,8 @@ test "taffy/align_items_flex_end_child_with_margin_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9809,6 +10097,8 @@ test "taffy/align_items_flex_end_child_without_margin_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9849,6 +10139,8 @@ test "taffy/align_items_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9887,6 +10179,8 @@ test "taffy/align_items_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9920,6 +10214,8 @@ test "taffy/align_items_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -9957,6 +10253,8 @@ test "taffy/align_items_stretch_min_cross" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10012,6 +10310,8 @@ test "taffy/align_self_baseline" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10056,6 +10356,8 @@ test "taffy/align_self_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10101,6 +10403,8 @@ test "taffy/align_self_center_undefined_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10141,6 +10445,8 @@ test "taffy/align_self_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10179,6 +10485,8 @@ test "taffy/align_self_flex_end_override_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10215,6 +10523,8 @@ test "taffy/align_self_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10271,6 +10581,8 @@ test "taffy/align_stretch_should_size_based_on_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10541,6 +10853,8 @@ test "taffy/android_news_feed" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10770,6 +11084,8 @@ test "taffy/aspect_ratio_flex_column_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10819,6 +11135,8 @@ test "taffy/aspect_ratio_flex_column_fill_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10863,6 +11181,8 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10900,6 +11220,8 @@ test "taffy/aspect_ratio_flex_column_fill_min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10937,6 +11259,8 @@ test "taffy/aspect_ratio_flex_column_fill_min_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -10974,6 +11298,8 @@ test "taffy/aspect_ratio_flex_column_fill_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11010,6 +11336,8 @@ test "taffy/aspect_ratio_flex_column_fill_width_flex" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11046,6 +11374,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11094,6 +11424,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11137,6 +11469,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11173,6 +11507,8 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11209,6 +11545,8 @@ test "taffy/aspect_ratio_flex_row_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11257,6 +11595,8 @@ test "taffy/aspect_ratio_flex_row_fill_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11300,6 +11640,8 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11336,6 +11678,8 @@ test "taffy/aspect_ratio_flex_row_fill_min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11372,6 +11716,8 @@ test "taffy/aspect_ratio_flex_row_fill_min_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11408,6 +11754,8 @@ test "taffy/aspect_ratio_flex_row_fill_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11444,6 +11792,8 @@ test "taffy/aspect_ratio_flex_row_fill_width_flex" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11479,6 +11829,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11526,6 +11878,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11568,6 +11922,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11603,6 +11959,8 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11664,6 +12022,8 @@ test "taffy/bevy_issue_10343_block" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11734,6 +12094,8 @@ test "taffy/bevy_issue_10343_flex" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11804,6 +12166,8 @@ test "taffy/bevy_issue_10343_grid" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11877,6 +12241,8 @@ test "taffy/bevy_issue_16304" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -11964,6 +12330,8 @@ test "taffy/bevy_issue_21240" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12048,6 +12416,8 @@ test "taffy/bevy_issue_7976_3_level" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12124,6 +12494,8 @@ test "taffy/bevy_issue_7976_4_level" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12166,6 +12538,8 @@ test "taffy/bevy_issue_7976_reduced" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12257,6 +12631,8 @@ test "taffy/bevy_issue_8017" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12332,6 +12708,8 @@ test "taffy/bevy_issue_8017_reduced" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12441,6 +12819,8 @@ test "taffy/bevy_issue_8082" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12531,6 +12911,8 @@ test "taffy/bevy_issue_8082_percent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12654,6 +13036,8 @@ test "taffy/bevy_issue_9530" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12723,6 +13107,8 @@ test "taffy/bevy_issue_9530_reduced" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12786,6 +13172,8 @@ test "taffy/bevy_issue_9530_reduced2" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12838,6 +13226,8 @@ test "taffy/bevy_issue_9530_reduced3" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12884,6 +13274,8 @@ test "taffy/bevy_issue_9530_reduced4" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12942,6 +13334,8 @@ test "taffy/blitz_issue_88" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -12993,6 +13387,8 @@ test "taffy/border_center_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13033,6 +13429,8 @@ test "taffy/border_container_match_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13074,6 +13472,8 @@ test "taffy/border_flex_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13104,6 +13504,8 @@ test "taffy/border_no_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13132,6 +13534,8 @@ test "taffy/border_no_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13167,6 +13571,8 @@ test "taffy/border_stretch_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13217,6 +13623,8 @@ test "taffy/child_min_max_width_flexing" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13265,6 +13673,8 @@ test "taffy/child_with_padding_align_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13295,6 +13705,8 @@ test "taffy/container_with_unsized_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13357,6 +13769,8 @@ test "taffy/content_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13404,6 +13818,8 @@ test "taffy/display_none" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13459,6 +13875,8 @@ test "taffy/display_none_absolute_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13507,6 +13925,8 @@ test "taffy/display_none_fixed_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13538,6 +13958,8 @@ test "taffy/display_none_only_node" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13600,6 +14022,8 @@ test "taffy/display_none_with_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13662,6 +14086,8 @@ test "taffy/display_none_with_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13715,6 +14141,8 @@ test "taffy/display_none_with_position" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13755,6 +14183,8 @@ test "taffy/display_none_with_position_absolute" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13810,6 +14240,8 @@ test "taffy/do_not_clamp_height_of_absolute_node_to_height_of_its_overflow_hidde
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13862,6 +14294,8 @@ test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13910,6 +14344,8 @@ test "taffy/flex_basis_flex_grow_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -13958,6 +14394,8 @@ test "taffy/flex_basis_flex_grow_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14005,6 +14443,8 @@ test "taffy/flex_basis_flex_shrink_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14052,6 +14492,8 @@ test "taffy/flex_basis_flex_shrink_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14102,6 +14544,8 @@ test "taffy/flex_basis_larger_than_content_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14152,6 +14596,8 @@ test "taffy/flex_basis_larger_than_content_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14208,6 +14654,8 @@ test "taffy/flex_basis_overrides_main_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14282,6 +14730,8 @@ test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" 
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14340,6 +14790,8 @@ test "taffy/flex_basis_smaller_than_content_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14390,6 +14842,8 @@ test "taffy/flex_basis_smaller_than_content_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14431,6 +14885,8 @@ test "taffy/flex_basis_smaller_than_main_dimen_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14468,6 +14924,8 @@ test "taffy/flex_basis_smaller_than_main_dimen_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14534,6 +14992,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14612,6 +15072,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14689,6 +15151,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14767,6 +15231,8 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14814,6 +15280,8 @@ test "taffy/flex_basis_unconstraint_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14849,6 +15317,8 @@ test "taffy/flex_basis_unconstraint_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14894,6 +15364,8 @@ test "taffy/flex_basis_zero_undefined_main_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14939,6 +15411,8 @@ test "taffy/flex_column_relative_all_sides" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -14986,6 +15460,8 @@ test "taffy/flex_direction_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15040,6 +15516,8 @@ test "taffy/flex_direction_column_no_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15095,6 +15573,8 @@ test "taffy/flex_direction_column_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15149,6 +15629,8 @@ test "taffy/flex_direction_column_reverse_no_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15202,6 +15684,8 @@ test "taffy/flex_direction_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15251,6 +15735,8 @@ test "taffy/flex_direction_row_no_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15306,6 +15792,8 @@ test "taffy/flex_direction_row_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15409,6 +15897,8 @@ test "taffy/flex_grow_0_min_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15457,6 +15947,8 @@ test "taffy/flex_grow_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15508,6 +16000,8 @@ test "taffy/flex_grow_flex_basis_percent_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15568,6 +16062,8 @@ test "taffy/flex_grow_height_maximized" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15624,6 +16120,8 @@ test "taffy/flex_grow_in_at_most_container" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15680,6 +16178,8 @@ test "taffy/flex_grow_less_than_factor_one" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15745,6 +16245,8 @@ test "taffy/flex_grow_root_minimized" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15793,6 +16295,8 @@ test "taffy/flex_grow_shrink_at_most" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15840,6 +16344,8 @@ test "taffy/flex_grow_to_min" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15886,6 +16392,8 @@ test "taffy/flex_grow_within_constrained_max_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15943,6 +16451,8 @@ test "taffy/flex_grow_within_constrained_max_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -15999,6 +16509,8 @@ test "taffy/flex_grow_within_constrained_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16044,6 +16556,8 @@ test "taffy/flex_grow_within_constrained_min_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16090,6 +16604,8 @@ test "taffy/flex_grow_within_constrained_min_max_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16136,6 +16652,8 @@ test "taffy/flex_grow_within_constrained_min_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16188,6 +16706,8 @@ test "taffy/flex_grow_within_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16236,6 +16756,8 @@ test "taffy/flex_root_ignored" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16279,6 +16801,8 @@ test "taffy/flex_row_relative_all_sides" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16321,6 +16845,8 @@ test "taffy/flex_shrink_by_outer_margin_with_max_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16367,6 +16893,8 @@ test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16416,6 +16944,8 @@ test "taffy/flex_shrink_flex_grow_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16469,6 +16999,8 @@ test "taffy/flex_shrink_to_zero" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16519,6 +17051,8 @@ test "taffy/flex_wrap_align_stretch_fits_one_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16570,6 +17104,8 @@ test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16640,6 +17176,8 @@ test "taffy/flex_wrap_wrap_to_child_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16724,6 +17262,8 @@ test "taffy/gap_column_gap_child_margins" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16780,6 +17320,8 @@ test "taffy/gap_column_gap_determines_parent_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16843,6 +17385,8 @@ test "taffy/gap_column_gap_flexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16905,6 +17449,8 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -16961,6 +17507,8 @@ test "taffy/gap_column_gap_inflexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17016,6 +17564,8 @@ test "taffy/gap_column_gap_inflexible_undefined_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17073,6 +17623,8 @@ test "taffy/gap_column_gap_justify_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17130,6 +17682,8 @@ test "taffy/gap_column_gap_justify_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17187,6 +17741,8 @@ test "taffy/gap_column_gap_justify_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17244,6 +17800,8 @@ test "taffy/gap_column_gap_justify_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17301,6 +17859,8 @@ test "taffy/gap_column_gap_justify_space_between" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17358,6 +17918,8 @@ test "taffy/gap_column_gap_justify_space_evenly" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17416,6 +17978,8 @@ test "taffy/gap_column_gap_mixed_flexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17477,6 +18041,8 @@ test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17534,6 +18100,8 @@ test "taffy/gap_column_gap_percentage_cyclic_shrinkable" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17597,6 +18165,8 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17660,6 +18230,8 @@ test "taffy/gap_column_gap_percentage_flexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17729,6 +18301,8 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17785,6 +18359,8 @@ test "taffy/gap_column_gap_percentage_inflexible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17887,6 +18463,8 @@ test "taffy/gap_column_gap_row_gap_wrapping" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -17979,6 +18557,8 @@ test "taffy/gap_column_gap_start_index" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18066,6 +18646,8 @@ test "taffy/gap_column_gap_wrap_align_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18161,6 +18743,8 @@ test "taffy/gap_column_gap_wrap_align_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18256,6 +18840,8 @@ test "taffy/gap_column_gap_wrap_align_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18351,6 +18937,8 @@ test "taffy/gap_column_gap_wrap_align_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18446,6 +19034,8 @@ test "taffy/gap_column_gap_wrap_align_space_between" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18538,6 +19128,8 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18648,6 +19240,8 @@ test "taffy/gap_column_row_gap_wrapping" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18749,6 +19343,8 @@ test "taffy/gap_row_gap_align_items_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18839,6 +19435,8 @@ test "taffy/gap_row_gap_align_items_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18931,6 +19529,8 @@ test "taffy/gap_row_gap_column_child_margins" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -18987,6 +19587,8 @@ test "taffy/gap_row_gap_determines_parent_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19089,6 +19691,8 @@ test "taffy/gap_row_gap_percentage_wrapping" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19188,6 +19792,8 @@ test "taffy/gap_row_gap_row_wrap_child_margins" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19227,6 +19833,8 @@ test "taffy/intrinsic_sizing_cross_size_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19254,6 +19862,8 @@ test "taffy/intrinsic_sizing_main_size_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19291,6 +19901,8 @@ test "taffy/intrinsic_sizing_main_size_column_nested" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19347,6 +19959,8 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19419,6 +20033,8 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 20.0)
@@ -19450,6 +20066,8 @@ test "taffy/intrinsic_sizing_main_size_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19479,6 +20097,8 @@ test "taffy/intrinsic_sizing_main_size_row_nested" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19526,6 +20146,8 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19578,6 +20200,8 @@ test "taffy/justify_content_column_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19661,6 +20285,8 @@ test "taffy/justify_content_column_center_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19750,6 +20376,8 @@ test "taffy/justify_content_column_center_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19810,6 +20438,8 @@ test "taffy/justify_content_column_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19893,6 +20523,8 @@ test "taffy/justify_content_column_end_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -19982,6 +20614,8 @@ test "taffy/justify_content_column_end_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20042,6 +20676,8 @@ test "taffy/justify_content_column_end_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20098,6 +20734,8 @@ test "taffy/justify_content_column_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20154,6 +20792,8 @@ test "taffy/justify_content_column_flex_end_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20210,6 +20850,8 @@ test "taffy/justify_content_column_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20266,6 +20908,8 @@ test "taffy/justify_content_column_flex_start_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20323,6 +20967,8 @@ test "taffy/justify_content_column_max_height_and_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20375,6 +21021,8 @@ test "taffy/justify_content_column_min_height_and_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20421,6 +21069,8 @@ test "taffy/justify_content_column_min_height_and_margin_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20463,6 +21113,8 @@ test "taffy/justify_content_column_min_height_and_margin_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20511,6 +21163,8 @@ test "taffy/justify_content_column_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20594,6 +21248,8 @@ test "taffy/justify_content_column_space_around_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20683,6 +21339,8 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20743,6 +21401,8 @@ test "taffy/justify_content_column_space_between" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20826,6 +21486,8 @@ test "taffy/justify_content_column_space_between_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20915,6 +21577,8 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -20975,6 +21639,8 @@ test "taffy/justify_content_column_space_evenly" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21058,6 +21724,8 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21147,6 +21815,8 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21207,6 +21877,8 @@ test "taffy/justify_content_column_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21290,6 +21962,8 @@ test "taffy/justify_content_column_start_negative_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21379,6 +22053,8 @@ test "taffy/justify_content_column_start_negative_space_gap" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21439,6 +22115,8 @@ test "taffy/justify_content_column_start_reverse" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21485,6 +22163,8 @@ test "taffy/justify_content_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21557,6 +22237,8 @@ test "taffy/justify_content_min_width_with_padding_child_width_greater_than_pare
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21637,6 +22319,8 @@ test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21702,6 +22386,8 @@ test "taffy/justify_content_overflow_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21758,6 +22444,8 @@ test "taffy/justify_content_row_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21814,6 +22502,8 @@ test "taffy/justify_content_row_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21870,6 +22560,8 @@ test "taffy/justify_content_row_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21921,6 +22613,8 @@ test "taffy/justify_content_row_max_width_and_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -21963,6 +22657,8 @@ test "taffy/justify_content_row_min_width_and_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22011,6 +22707,8 @@ test "taffy/justify_content_row_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22067,6 +22765,8 @@ test "taffy/justify_content_row_space_between" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22123,6 +22823,8 @@ test "taffy/justify_content_row_space_evenly" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22173,6 +22875,8 @@ test "taffy/margin_and_flex_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22215,6 +22919,8 @@ test "taffy/margin_and_flex_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22257,6 +22963,8 @@ test "taffy/margin_and_stretch_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22299,6 +23007,8 @@ test "taffy/margin_and_stretch_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22348,6 +23058,8 @@ test "taffy/margin_auto_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22401,6 +23113,8 @@ test "taffy/margin_auto_bottom_and_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22454,6 +23168,8 @@ test "taffy/margin_auto_bottom_and_top_justify_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22507,6 +23223,8 @@ test "taffy/margin_auto_left" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22558,6 +23276,8 @@ test "taffy/margin_auto_left_and_right" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22612,6 +23332,8 @@ test "taffy/margin_auto_left_and_right_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22665,6 +23387,8 @@ test "taffy/margin_auto_left_and_right_column_and_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22719,6 +23443,8 @@ test "taffy/margin_auto_left_and_right_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22765,6 +23491,8 @@ test "taffy/margin_auto_left_child_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22807,6 +23535,8 @@ test "taffy/margin_auto_left_fix_right_child_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22849,6 +23579,8 @@ test "taffy/margin_auto_left_right_child_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22899,6 +23631,8 @@ test "taffy/margin_auto_left_stretching_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -22966,6 +23700,8 @@ test "taffy/margin_auto_multiple_children_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23037,6 +23773,8 @@ test "taffy/margin_auto_multiple_children_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23094,6 +23832,8 @@ test "taffy/margin_auto_right" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23147,6 +23887,8 @@ test "taffy/margin_auto_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23201,6 +23943,8 @@ test "taffy/margin_auto_top_and_bottom_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23255,6 +23999,8 @@ test "taffy/margin_auto_top_stretching_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23301,6 +24047,8 @@ test "taffy/margin_bottom" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23343,6 +24091,8 @@ test "taffy/margin_fix_left_auto_right_child_bigger_than_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23384,6 +24134,8 @@ test "taffy/margin_left" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23426,6 +24178,8 @@ test "taffy/margin_right" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23467,6 +24221,8 @@ test "taffy/margin_should_not_be_part_of_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23508,6 +24264,8 @@ test "taffy/margin_should_not_be_part_of_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23549,6 +24307,8 @@ test "taffy/margin_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23598,6 +24358,8 @@ test "taffy/margin_with_sibling_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23651,6 +24413,8 @@ test "taffy/margin_with_sibling_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23691,6 +24455,8 @@ test "taffy/max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23721,6 +24487,8 @@ test "taffy/max_height_overrides_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23747,6 +24515,8 @@ test "taffy/max_height_overrides_height_on_root" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23779,6 +24549,8 @@ test "taffy/max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23809,6 +24581,8 @@ test "taffy/max_width_overrides_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23835,6 +24609,8 @@ test "taffy/max_width_overrides_width_on_root" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23864,6 +24640,8 @@ test "taffy/measure_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23904,6 +24682,8 @@ test "taffy/measure_child_absolute" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23946,6 +24726,8 @@ test "taffy/measure_child_constraint" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -23994,6 +24776,8 @@ test "taffy/measure_child_constraint_padding_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24038,6 +24822,8 @@ test "taffy/measure_child_with_flex_grow" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24086,6 +24872,8 @@ test "taffy/measure_child_with_flex_shrink" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24138,6 +24926,8 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24183,6 +24973,8 @@ test "taffy/measure_child_with_min_size_greater_than_available_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24220,6 +25012,8 @@ test "taffy/measure_flex_basis_overrides_measure" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24256,6 +25050,8 @@ test "taffy/measure_height_overrides_measure" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24302,6 +25098,8 @@ test "taffy/measure_remeasure_child_after_growing" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24354,6 +25152,8 @@ test "taffy/measure_remeasure_child_after_shrinking" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24395,6 +25195,8 @@ test "taffy/measure_remeasure_child_after_stretching" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24422,6 +25224,8 @@ test "taffy/measure_root" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24468,6 +25272,8 @@ test "taffy/measure_stretch_overrides_measure" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24508,6 +25314,8 @@ test "taffy/measure_width_overrides_measure" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24552,6 +25360,8 @@ test "taffy/min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24592,6 +25402,8 @@ test "taffy/min_height_larger_than_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24622,6 +25434,8 @@ test "taffy/min_height_overrides_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24648,6 +25462,8 @@ test "taffy/min_height_overrides_height_on_root" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24674,6 +25490,8 @@ test "taffy/min_height_overrides_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24735,6 +25553,8 @@ test "taffy/min_height_with_nested_fixed_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24778,6 +25598,8 @@ test "taffy/min_max_percent_different_width_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24817,6 +25639,8 @@ test "taffy/min_max_percent_no_width_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24861,6 +25685,8 @@ test "taffy/min_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24901,6 +25727,8 @@ test "taffy/min_width_larger_than_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24931,6 +25759,8 @@ test "taffy/min_width_overrides_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24961,6 +25791,8 @@ test "taffy/min_width_overrides_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -24987,6 +25819,8 @@ test "taffy/min_width_overrides_width_on_root" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25192,6 +26026,8 @@ test "taffy/multiline_column_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25350,6 +26186,8 @@ test "taffy/multiline_min_max_12" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25444,6 +26282,8 @@ test "taffy/multiline_min_max_13" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25538,6 +26378,8 @@ test "taffy/multiline_min_max_14" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25626,6 +26468,8 @@ test "taffy/multiline_min_max_5" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25720,6 +26564,8 @@ test "taffy/multiline_min_max_8" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25772,6 +26618,8 @@ test "taffy/nested_overflowing_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25820,6 +26668,8 @@ test "taffy/nested_overflowing_child_in_constraint_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25882,6 +26732,8 @@ test "taffy/only_shrinkable_item_with_flex_basis_zero" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25924,6 +26776,8 @@ test "taffy/overflow_cross_axis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -25959,6 +26813,8 @@ test "taffy/overflow_main_axis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26001,6 +26857,8 @@ test "taffy/overflow_main_axis_shrink_hidden" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26043,6 +26901,8 @@ test "taffy/overflow_main_axis_shrink_scroll" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26080,6 +26940,8 @@ test "taffy/overflow_main_axis_shrink_visible" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26117,6 +26979,8 @@ test "taffy/overflow_scroll_main_axis_justify_content_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26163,6 +27027,8 @@ test "taffy/overflow_scrollbars_overridden_by_available_space" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26203,6 +27069,8 @@ test "taffy/overflow_scrollbars_overridden_by_max_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26239,6 +27107,8 @@ test "taffy/overflow_scrollbars_overridden_by_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26275,6 +27145,8 @@ test "taffy/overflow_scrollbars_take_up_space_both_axis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26310,6 +27182,8 @@ test "taffy/overflow_scrollbars_take_up_space_cross_axis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26345,6 +27219,8 @@ test "taffy/overflow_scrollbars_take_up_space_main_axis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26388,6 +27264,8 @@ test "taffy/padding_align_end_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26430,6 +27308,8 @@ test "taffy/padding_border_overrides_max_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26472,6 +27352,8 @@ test "taffy/padding_border_overrides_min_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26514,6 +27396,8 @@ test "taffy/padding_border_overrides_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26569,6 +27453,8 @@ test "taffy/padding_border_overrides_size_flex_basis_0_growable" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26615,6 +27501,8 @@ test "taffy/padding_border_overrides_size_root" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26658,6 +27546,8 @@ test "taffy/padding_center_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26698,6 +27588,8 @@ test "taffy/padding_container_match_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26739,6 +27631,8 @@ test "taffy/padding_flex_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26769,6 +27663,8 @@ test "taffy/padding_no_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26795,6 +27691,8 @@ test "taffy/padding_no_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26830,6 +27728,8 @@ test "taffy/padding_stretch_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26873,6 +27773,8 @@ test "taffy/parent_wrap_child_size_overflowing_parent" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -26937,6 +27839,8 @@ test "taffy/percent_absolute_position" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27003,6 +27907,8 @@ test "taffy/percent_within_flex_grow" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27058,6 +27964,8 @@ test "taffy/percentage_absolute_position" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27129,6 +28037,8 @@ test "taffy/percentage_container_in_wrapping_container" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27184,6 +28094,8 @@ test "taffy/percentage_different_width_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27230,6 +28142,8 @@ test "taffy/percentage_different_width_height_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27279,6 +28193,8 @@ test "taffy/percentage_flex_basis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27328,6 +28244,8 @@ test "taffy/percentage_flex_basis_cross" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27379,6 +28297,8 @@ test "taffy/percentage_flex_basis_cross_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27430,6 +28350,8 @@ test "taffy/percentage_flex_basis_cross_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27479,6 +28401,8 @@ test "taffy/percentage_flex_basis_cross_min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27530,6 +28454,8 @@ test "taffy/percentage_flex_basis_cross_min_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27581,6 +28507,8 @@ test "taffy/percentage_flex_basis_main_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27632,6 +28560,8 @@ test "taffy/percentage_flex_basis_main_max_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27683,6 +28613,8 @@ test "taffy/percentage_flex_basis_main_min_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27742,6 +28674,8 @@ test "taffy/percentage_main_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27803,6 +28737,8 @@ test "taffy/percentage_margin_should_calculate_based_only_on_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27882,6 +28818,8 @@ test "taffy/percentage_moderate_complexity" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -27939,6 +28877,8 @@ test "taffy/percentage_moderate_complexity2" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28049,6 +28989,8 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28114,6 +29056,8 @@ test "taffy/percentage_padding_should_calculate_based_only_on_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28160,6 +29104,8 @@ test "taffy/percentage_position_bottom_right" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28202,6 +29148,8 @@ test "taffy/percentage_position_left_top" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28244,6 +29192,8 @@ test "taffy/percentage_size_based_on_parent_inner_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28289,6 +29239,8 @@ test "taffy/percentage_size_of_flex_basis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28332,6 +29284,8 @@ test "taffy/percentage_sizes_should_not_prevent_flex_shrinking" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28372,6 +29326,8 @@ test "taffy/percentage_width_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28406,6 +29362,8 @@ test "taffy/percentage_width_height_undefined_parent_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28442,6 +29400,8 @@ test "taffy/position_root_with_rtl_should_position_withoutdirection" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28495,6 +29455,8 @@ test "taffy/relative_position_should_not_nudge_siblings" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28563,6 +29525,8 @@ test "taffy/rounding_flex_basis_flex_grow_row_prime_number_width" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28629,6 +29593,8 @@ test "taffy/rounding_flex_basis_flex_grow_row_width_of_100" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28687,6 +29653,8 @@ test "taffy/rounding_flex_basis_flex_shrink_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28749,6 +29717,8 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28811,6 +29781,8 @@ test "taffy/rounding_fractial_input_1" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28873,6 +29845,8 @@ test "taffy/rounding_fractial_input_2" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28935,6 +29909,8 @@ test "taffy/rounding_fractial_input_3" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -28997,6 +29973,8 @@ test "taffy/rounding_fractial_input_4" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29048,6 +30026,8 @@ test "taffy/rounding_fractial_input_5" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29125,6 +30105,8 @@ test "taffy/rounding_fractial_input_6" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29268,6 +30250,8 @@ test "taffy/rounding_fractial_input_7" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29407,6 +30391,8 @@ test "taffy/rounding_inner_node_controversy_combined" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29495,6 +30481,8 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29571,6 +30559,8 @@ test "taffy/rounding_inner_node_controversy_vertical" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29637,6 +30627,8 @@ test "taffy/rounding_total_fractial" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29733,6 +30725,8 @@ test "taffy/rounding_total_fractial_nested" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29790,6 +30784,8 @@ test "taffy/scroll_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29874,6 +30870,8 @@ test "taffy/simple_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29946,6 +30944,8 @@ test "taffy/single_flex_child_after_absolute_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -29984,6 +30984,8 @@ test "taffy/size_defined_by_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30022,6 +31024,8 @@ test "taffy/size_defined_by_child_with_border" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30060,6 +31064,8 @@ test "taffy/size_defined_by_child_with_padding" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30096,6 +31102,8 @@ test "taffy/size_defined_by_grand_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30156,6 +31164,8 @@ test "taffy/taffy_issue_696" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30216,6 +31226,8 @@ test "taffy/taffy_issue_696_flex_basis_20" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30274,6 +31286,8 @@ test "taffy/taffy_issue_696_min_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30333,6 +31347,8 @@ test "taffy/taffy_issue_696_no_flex_basis" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30392,6 +31408,8 @@ test "taffy/taffy_issue_696_overflow_hidden" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30432,6 +31450,8 @@ test "taffy/undefined_height_with_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30467,6 +31487,8 @@ test "taffy/undefined_width_with_min_max" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30512,6 +31534,8 @@ test "taffy/undefined_width_with_min_max_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30582,6 +31606,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30660,6 +31686,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30737,6 +31765,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30815,6 +31845,8 @@ test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30861,6 +31893,8 @@ test "taffy/wrap_child" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30919,6 +31953,8 @@ test "taffy/wrap_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -30967,6 +32003,8 @@ test "taffy/wrap_grandchild" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31056,6 +32094,8 @@ test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31157,6 +32197,8 @@ test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31231,6 +32273,8 @@ test "taffy/wrap_reverse_column" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31309,6 +32353,8 @@ test "taffy/wrap_reverse_column_fixed_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31382,6 +32428,8 @@ test "taffy/wrap_reverse_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31459,6 +32507,8 @@ test "taffy/wrap_reverse_row_align_content_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31540,6 +32590,8 @@ test "taffy/wrap_reverse_row_align_content_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31621,6 +32673,8 @@ test "taffy/wrap_reverse_row_align_content_space_around" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31702,6 +32756,8 @@ test "taffy/wrap_reverse_row_align_content_stretch" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31783,6 +32839,8 @@ test "taffy/wrap_reverse_row_single_line_different_size" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31856,6 +32914,8 @@ test "taffy/wrap_row" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31926,6 +32986,8 @@ test "taffy/wrap_row_align_items_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -31996,6 +33058,8 @@ test "taffy/wrap_row_align_items_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -32069,6 +33133,8 @@ test "taffy/wrapped_column_max_height" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -32144,6 +33210,8 @@ test "taffy/wrapped_column_max_height_flex" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -32207,6 +33275,8 @@ test "taffy/wrapped_row_within_align_items_center" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -32270,6 +33340,8 @@ test "taffy/wrapped_row_within_align_items_flex_end" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)
@@ -32333,6 +33405,8 @@ test "taffy/wrapped_row_within_align_items_flex_start" {
     sizing_mode: @types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
   }
   let layout = @flex.compute(root, ctx, default_dispatch())
   assert_approx(layout.x, 0.0)

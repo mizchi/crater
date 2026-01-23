@@ -1,0 +1,60 @@
+{
+  "hash": "264dc3ae31249cb1f50c50986e0952a4708c2e705d18a2d8bf0e525da6e2b485",
+  "url": "https://www.twincities.com/2019/11/19/parise-scores-2-goals-wild-beat-sabres-4-1/",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "nav_regions": [
+    {
+      "id": "nav-1",
+      "type": "primary_nav",
+      "selector": "header.site-header",
+      "rect": {
+        "x": -10,
+        "y": 67.4921875,
+        "width": 1290,
+        "height": 126
+      },
+      "confidence": "certain"
+    },
+    {
+      "id": "nav-2",
+      "type": "breadcrumb",
+      "selector": "div.breadcrumbs",
+      "rect": {
+        "x": 10,
+        "y": 241.4921875,
+        "width": 205.34375,
+        "height": 30
+      },
+      "confidence": "certain"
+    },
+    {
+      "id": "nav-3",
+      "type": "sidebar_nav",
+      "selector": "aside.article-sidebar",
+      "rect": {
+        "x": 970.046875,
+        "y": 412.4921875,
+        "width": 299.953125,
+        "height": 1215.671875
+      },
+      "confidence": "probable"
+    },
+    {
+      "id": "nav-4",
+      "type": "footer_nav",
+      "selector": "footer.site-footer",
+      "rect": {
+        "x": 0,
+        "y": 8368.09375,
+        "width": 1280,
+        "height": 560
+      },
+      "confidence": "certain"
+    }
+  ],
+  "notes": "Cleaned up: removed li.entry-title (trending articles), social share buttons, popular-stories widget (content recommendation), article footer/author info, h5 section headers. These are content areas, not navigation.",
+  "status": "reviewed"
+}

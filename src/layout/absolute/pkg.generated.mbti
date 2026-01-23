@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/layout/absolute"
 
-import(
-  "mizchi/crater/style"
-  "mizchi/crater/types"
-)
+import {
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn apply_constraints_with_aspect_ratio(Double, Double, @style.Style, Double, Double, Double, Double) -> (Double, Double)
