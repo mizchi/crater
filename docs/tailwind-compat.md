@@ -247,3 +247,64 @@ The following Tailwind utility patterns are verified to work correctly:
 - Pseudo-classes (:hover, :focus, etc.) - no mouse interaction
 - Animations and transitions - static rendering
 - Colors are simplified to ANSI palette
+
+---
+
+## WPT (Web Platform Tests) との比較
+
+Tailwind テストとは別に、WPT の厳密なテストケースでの Chrome との一致率を測定。
+
+### 測定方法
+
+`scripts/layout-diff.ts` で Chrome と Crater のレイアウト矩形を IoU (Intersection over Union) で比較。
+
+```bash
+# 単一ファイルのテスト
+npm run layout-diff -- wpt/css/css-flexbox/align-content_center.html
+
+# HTML レポート出力
+npm run layout-diff -- path/to/test.html --html
+
+# 閾値変更 (デフォルト 5px)
+npm run layout-diff -- path/to/test.html --threshold 10
+```
+
+### WPT テスト結果
+
+| テスト種類 | 100% 一致 | 90-99% | <90% | 合計 |
+|-----------|----------|--------|------|------|
+| Flexbox   | 22 (22%) | 1      | 77   | 100  |
+| Grid      | 4 (8%)   | 0      | 46   | 50   |
+
+### 100% 一致する WPT Flexbox テスト
+
+```
+align-content-horiz-001a.html
+align-content-horiz-002.html
+align-content-vert-001a.html
+align-content-vert-001b.html
+align-content-vert-002.html
+align-content_center.html
+align-content_flex-end.html
+align-content_flex-start.html
+align-content_space-around.html
+align-content_space-between.html
+align-content_stretch.html
+align-self-001.html ~ align-self-013.html (一部)
+```
+
+### WPT で検出された課題
+
+| 機能 | 状態 | 詳細 |
+|------|------|------|
+| baseline alignment | 未サポート | `items-baseline` が効かない |
+| writing-mode | 未サポート | 縦書きレイアウト |
+| flex-wrap + 高さ計算 | 差異あり | 折り返し時の高さが異なる |
+| Grid auto-sizing | 差異あり | `auto` や `fr` の計算 |
+
+### Tailwind テスト vs WPT の違い
+
+- **Tailwind テスト (38件)**: 実用的なユースケースに特化、100% パス
+- **WPT (150件+)**: 仕様のエッジケースを含む厳密なテスト、22-8% パス
+
+実際のアプリケーションでは Tailwind の基本パターンがカバーされていれば十分な場合が多い。
