@@ -546,9 +546,16 @@ fn compute_min_content_flex_main_size(
   let children = node.children
 
   // Check if this flex container is row or column
-  let child_is_row = match style.flex_direction {
+  // Account for writing-mode: vertical modes swap row/column
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
+  }
+  let child_is_row = if is_vertical_writing {
+    not(direction_is_row)
+  } else {
+    direction_is_row
   }
 
   // Determine if we're computing along this container's main axis or cross axis
@@ -777,9 +784,16 @@ fn compute_intrinsic_flex_main_size(
   let children = node.children
 
   // Check if this flex container is row or column
-  let child_is_row = match style.flex_direction {
+  // Account for writing-mode: vertical modes swap row/column
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
+  }
+  let child_is_row = if is_vertical_writing {
+    not(direction_is_row)
+  } else {
+    direction_is_row
   }
 
   // Determine if we're computing along this container's main axis or cross axis
@@ -1559,9 +1573,19 @@ fn compute_internal(
   }
 
   // Determine main/cross axis based on flex-direction
-  let is_row = match style.flex_direction {
+  // In vertical writing mode, row and column are effectively swapped:
+  // - flex-direction: row flows vertically (like column in horizontal-tb)
+  // - flex-direction: column flows horizontally (like row in horizontal-tb)
+  let is_vertical_writing = style.writing_mode.is_vertical()
+  let direction_is_row = match style.flex_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
+  }
+  // XOR with vertical writing mode to get effective axis
+  let is_row = if is_vertical_writing {
+    not(direction_is_row)
+  } else {
+    direction_is_row
   }
   let is_reverse = match style.flex_direction {
     @types.RowReverse | @types.ColumnReverse => true

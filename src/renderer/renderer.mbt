@@ -496,7 +496,9 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     @node.Node::text(
       "#text",
       text_style,
-      create_text_measure(text, font_size, text_line_height, white_space, writing_mode),
+      create_text_measure(
+        text, font_size, text_line_height, white_space, writing_mode,
+      ),
       trimmed.to_string(),
     )
   }
@@ -765,13 +767,27 @@ fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
 /// Convert HTML Element to Node tree for layout computation
 pub fn element_to_node(
   elem : @html.Element,
-  _parent_style : @style.Style?,
+  parent_style : @style.Style?,
 ) -> @node.Node {
-  // Compute style from inline style attribute
-  let ctx = @computed.ComputeContext::new()
+  // Compute style from inline style attribute with parent for inheritance
+  let ctx = match parent_style {
+    Some(ps) => @computed.ComputeContext::with_parent(ps)
+    None => @computed.ComputeContext::new()
+  }
   let style = match elem.style {
     Some(css) => @computed.compute_inline(css, ctx)
-    None => @style.Style::default()
+    None =>
+      // When no inline style, inherit from parent if available
+      match parent_style {
+        Some(ps) => {
+          let inherited = @style.Style::default()
+          // Copy inherited properties from parent
+          inherited.writing_mode = ps.writing_mode
+          inherited.color = ps.color
+          inherited
+        }
+        None => @style.Style::default()
+      }
   }
 
   // Convert children
@@ -1982,6 +1998,7 @@ fn compute_element_style_indexed(
         color: ps.color,
         font_size: ps.font_size,
         line_height: ps.font_size * lh_ratio,
+        writing_mode: ps.writing_mode,
       }
     }
     None => ()

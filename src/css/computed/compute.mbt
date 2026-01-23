@@ -521,6 +521,12 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.BorderCollapse::Collapse => "collapse"
       }
     "border-spacing" => style.border_spacing.to_string() + "px"
+    "writing-mode" =>
+      match style.writing_mode {
+        @style.WritingMode::HorizontalTb => "horizontal-tb"
+        @style.WritingMode::VerticalRl => "vertical-rl"
+        @style.WritingMode::VerticalLr => "vertical-lr"
+      }
     _ => initial_value(property)
   }
 }

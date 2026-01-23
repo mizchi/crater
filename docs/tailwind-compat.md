@@ -328,34 +328,34 @@ align-self-001.html ~ align-self-013.html (一部)
    - 縦書きモードでは width/height を入れ替え
    - 文字の流れが垂直になる
 
-### 未実装 (今後の課題)
+### 実装済み - Flex レイアウト軸入れ替え
 
-1. **Flex レイアウトの軸入れ替え**
-   - 縦書きでは `flex-direction: row` が垂直方向になる
-   - main axis / cross axis の概念を入れ替える必要
+4. **Flex レイアウトの軸入れ替え** (`src/layout/flex/flex.mbt`)
+   - 縦書きモードでは `flex-direction: row` が垂直方向にフローする
+   - `is_vertical_writing` で writing-mode をチェックし、軸を XOR で入れ替え
+   - 継承も正しく機能（`compute_element_style_indexed` で writing_mode を継承）
 
-2. **Block レイアウトの方向入れ替え**
-   - ブロックの積み重ね方向が横になる
-
-3. **Grid レイアウトの軸入れ替え**
-   - rows/columns の意味が入れ替わる
-
-### WPT テスト結果
-
-```bash
-# 明示的なサイズ指定 → 100% 一致
-npx tsx scripts/layout-diff.ts /tmp/writing-mode-test.html
-
-# Flex + auto sizing → 59% 一致 (軸入れ替え未対応)
-npx tsx scripts/layout-diff.ts wpt/css/css-flexbox/align-content-wmvert-001.html
+```moonbit
+// 縦書きモードでは row と column が逆転
+let is_vertical_writing = style.writing_mode.is_vertical()
+let direction_is_row = match style.flex_direction {
+  @types.Row | @types.RowReverse => true
+  @types.Column | @types.ColumnReverse => false
+}
+let is_row = if is_vertical_writing { not(direction_is_row) } else { direction_is_row }
 ```
 
-### 今後の実装方針
+### テスト結果
 
-完全な writing-mode サポートには、レイアウト計算の開始時に:
-1. writing_mode をチェック
-2. 縦書きなら width/height, main/cross を入れ替え
-3. 通常通りレイアウト計算
-4. 結果を元に戻す
+```bash
+# Flex + writing-mode: vertical-lr → 100% 一致
+npx tsx scripts/layout-diff.ts /tmp/writing-mode-flex-simple.html
+```
 
-という変換レイヤーを追加する必要がある。
+### 未実装 (今後の課題)
+
+1. **Block レイアウトの方向入れ替え**
+   - ブロックの積み重ね方向が横になる
+
+2. **Grid レイアウトの軸入れ替え**
+   - rows/columns の意味が入れ替わる

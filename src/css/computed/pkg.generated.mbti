@@ -70,6 +70,8 @@ pub fn parse_position(String) -> @types.Position
 
 pub fn parse_white_space(String) -> @style.WhiteSpace
 
+pub fn parse_writing_mode(String) -> @style.WritingMode
+
 pub fn resolve_current_color(CssColorValue, @types.Color) -> @types.Color
 
 // Errors

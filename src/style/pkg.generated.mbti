@@ -83,6 +83,7 @@ pub(all) struct Style {
   mut font_size : Double
   mut line_height : Double
   mut white_space : WhiteSpace
+  mut writing_mode : WritingMode
   mut vertical_align : VerticalAlign
   mut clip : @types.ClipRect
   mut visibility : Visibility
@@ -156,6 +157,15 @@ pub(all) enum WhiteSpace {
 }
 pub impl Eq for WhiteSpace
 pub impl Show for WhiteSpace
+
+pub(all) enum WritingMode {
+  HorizontalTb
+  VerticalRl
+  VerticalLr
+}
+pub fn WritingMode::is_vertical(Self) -> Bool
+pub impl Eq for WritingMode
+pub impl Show for WritingMode
 
 pub(all) enum ZIndex {
   Auto
