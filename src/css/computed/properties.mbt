@@ -380,6 +380,21 @@ pub fn parse_white_space(value : String) -> @style.WhiteSpace {
 }
 
 ///|
+/// Parse writing-mode value
+pub fn parse_writing_mode(value : String) -> @style.WritingMode {
+  match value.trim().to_lower() {
+    "horizontal-tb" => @style.WritingMode::HorizontalTb
+    "vertical-rl" => @style.WritingMode::VerticalRl
+    "vertical-lr" => @style.WritingMode::VerticalLr
+    // Legacy values
+    "lr" | "lr-tb" | "rl" | "rl-tb" => @style.WritingMode::HorizontalTb
+    "tb" | "tb-rl" => @style.WritingMode::VerticalRl
+    "tb-lr" => @style.WritingMode::VerticalLr
+    _ => @style.WritingMode::HorizontalTb
+  }
+}
+
+///|
 /// Parse grid-auto-flow value
 pub fn parse_grid_auto_flow(value : String) -> @types.GridAutoFlow {
   match value.trim().to_lower() {

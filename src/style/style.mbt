@@ -30,6 +30,23 @@ pub(all) enum WhiteSpace {
 } derive(Show, Eq)
 
 ///|
+/// CSS writing-mode property (for text direction and flow)
+pub(all) enum WritingMode {
+  HorizontalTb // Default - left-to-right, top-to-bottom
+  VerticalRl // Top-to-bottom, right-to-left (e.g., traditional Japanese)
+  VerticalLr // Top-to-bottom, left-to-right (e.g., Mongolian)
+} derive(Show, Eq)
+
+///|
+/// Check if writing mode is vertical
+pub fn WritingMode::is_vertical(self : WritingMode) -> Bool {
+  match self {
+    HorizontalTb => false
+    VerticalRl | VerticalLr => true
+  }
+}
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)
@@ -209,8 +226,9 @@ pub(all) struct Style {
   // Font properties (for baseline calculation)
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut line_height : Double // Computed line height in pixels (default = font_size)
-  // Text wrapping
+  // Text wrapping and direction
   mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
+  mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
   // Vertical alignment for inline elements
   mut vertical_align : VerticalAlign
   // Clip (legacy, deprecated but widely used for a11y)
@@ -303,6 +321,7 @@ pub fn Style::default() -> Style {
     font_size: 16.0,
     line_height: 16.0,
     white_space: Normal,
+    writing_mode: HorizontalTb,
     vertical_align: Baseline,
     clip: @types.ClipRect::Auto,
     visibility: Visible,
