@@ -404,12 +404,11 @@ test "WPT-style: createElement and appendChild" {
         _ => assert_true(false)
       }
       match dom.query_selector(doc, "#child") {
-        Ok(Some(child)) => {
+        Ok(Some(child)) =>
           match dom.get_attribute(child, "class") {
             Ok(Some(v)) => inspect(v, content="test-class")
             _ => assert_true(false)
           }
-        }
         _ => assert_true(false)
       }
     }
