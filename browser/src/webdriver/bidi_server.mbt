@@ -888,6 +888,256 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       const elements = globalThis.document.querySelectorAll(selector);
   #|       return elements.length;
   #|     };
+  #|
+  #|     // Page loading helper - fetch URL and parse HTML into DOM
+  #|     globalThis.__loadPage = async function(url) {
+  #|       const response = await fetch(url);
+  #|       if (!response.ok) {
+  #|         throw new Error('Failed to fetch: ' + response.status + ' ' + response.statusText);
+  #|       }
+  #|       const html = await response.text();
+  #|       globalThis.__loadHTML(html);
+  #|       globalThis.__pageUrl = url;
+  #|       return { url, status: response.status };
+  #|     };
+  #|
+  #|     // Parse HTML string and load into document
+  #|     globalThis.__loadHTML = function(html) {
+  #|       // Simple HTML parser
+  #|       const parseHTML = (htmlStr) => {
+  #|         const nodes = [];
+  #|         let i = 0;
+  #|         const len = htmlStr.length;
+  #|
+  #|         const skipWhitespace = () => {
+  #|           while (i < len && /\s/.test(htmlStr[i])) i++;
+  #|         };
+  #|
+  #|         const parseTagName = () => {
+  #|           let name = '';
+  #|           while (i < len && /[a-zA-Z0-9\-]/.test(htmlStr[i])) {
+  #|             name += htmlStr[i++];
+  #|           }
+  #|           return name.toLowerCase();
+  #|         };
+  #|
+  #|         const parseAttrValue = () => {
+  #|           skipWhitespace();
+  #|           if (htmlStr[i] === '=') {
+  #|             i++; // skip =
+  #|             skipWhitespace();
+  #|             let quote = '';
+  #|             if (htmlStr[i] === '"' || htmlStr[i] === "'") {
+  #|               quote = htmlStr[i++];
+  #|               let val = '';
+  #|               while (i < len && htmlStr[i] !== quote) {
+  #|                 val += htmlStr[i++];
+  #|               }
+  #|               i++; // skip closing quote
+  #|               return val;
+  #|             } else {
+  #|               let val = '';
+  #|               while (i < len && !/[\s>]/.test(htmlStr[i])) {
+  #|                 val += htmlStr[i++];
+  #|               }
+  #|               return val;
+  #|             }
+  #|           }
+  #|           return '';
+  #|         };
+  #|
+  #|         const parseAttributes = () => {
+  #|           const attrs = {};
+  #|           while (i < len) {
+  #|             skipWhitespace();
+  #|             if (htmlStr[i] === '>' || htmlStr[i] === '/' || i >= len) break;
+  #|             const name = parseTagName();
+  #|             if (!name) { i++; continue; }
+  #|             const value = parseAttrValue();
+  #|             attrs[name] = value || name; // boolean attrs
+  #|           }
+  #|           return attrs;
+  #|         };
+  #|
+  #|         const voidElements = new Set([
+  #|           'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  #|           'link', 'meta', 'param', 'source', 'track', 'wbr'
+  #|         ]);
+  #|
+  #|         const parseElement = () => {
+  #|           if (htmlStr[i] !== '<') return null;
+  #|           i++; // skip <
+  #|
+  #|           // Comment
+  #|           if (htmlStr.slice(i, i + 3) === '!--') {
+  #|             const endIdx = htmlStr.indexOf('-->', i);
+  #|             i = endIdx >= 0 ? endIdx + 3 : len;
+  #|             return null;
+  #|           }
+  #|
+  #|           // DOCTYPE
+  #|           if (htmlStr.slice(i, i + 8).toLowerCase() === '!doctype') {
+  #|             while (i < len && htmlStr[i] !== '>') i++;
+  #|             i++; // skip >
+  #|             return null;
+  #|           }
+  #|
+  #|           // Closing tag
+  #|           if (htmlStr[i] === '/') {
+  #|             i++; // skip /
+  #|             const tagName = parseTagName();
+  #|             while (i < len && htmlStr[i] !== '>') i++;
+  #|             i++; // skip >
+  #|             return { type: 'close', tagName };
+  #|           }
+  #|
+  #|           const tagName = parseTagName();
+  #|           if (!tagName) return null;
+  #|
+  #|           const attrs = parseAttributes();
+  #|
+  #|           // Self-closing or void
+  #|           const selfClosing = htmlStr[i] === '/';
+  #|           if (selfClosing) i++;
+  #|           if (htmlStr[i] === '>') i++;
+  #|
+  #|           const el = globalThis.document.createElement(tagName);
+  #|           for (const [k, v] of Object.entries(attrs)) {
+  #|             el.setAttribute(k, v);
+  #|           }
+  #|
+  #|           if (selfClosing || voidElements.has(tagName)) {
+  #|             return el;
+  #|           }
+  #|
+  #|           // Parse children for script/style (raw text)
+  #|           if (tagName === 'script' || tagName === 'style') {
+  #|             const endTag = '</' + tagName;
+  #|             const endIdx = htmlStr.toLowerCase().indexOf(endTag, i);
+  #|             if (endIdx >= 0) {
+  #|               const content = htmlStr.slice(i, endIdx);
+  #|               if (content.trim()) {
+  #|                 el.appendChild(globalThis.document.createTextNode(content));
+  #|               }
+  #|               i = endIdx + endTag.length;
+  #|               while (i < len && htmlStr[i] !== '>') i++;
+  #|               i++; // skip >
+  #|             }
+  #|             return el;
+  #|           }
+  #|
+  #|           // Parse children
+  #|           while (i < len) {
+  #|             skipWhitespace();
+  #|             if (i >= len) break;
+  #|
+  #|             // Check for closing tag
+  #|             if (htmlStr[i] === '<' && htmlStr[i + 1] === '/') {
+  #|               const saved = i;
+  #|               i += 2;
+  #|               const closeName = parseTagName();
+  #|               if (closeName === tagName) {
+  #|                 while (i < len && htmlStr[i] !== '>') i++;
+  #|                 i++; // skip >
+  #|                 break;
+  #|               } else {
+  #|                 i = saved; // restore and break (mismatched tag)
+  #|                 break;
+  #|               }
+  #|             }
+  #|
+  #|             if (htmlStr[i] === '<') {
+  #|               const child = parseElement();
+  #|               if (child && child.nodeType) {
+  #|                 el.appendChild(child);
+  #|               }
+  #|             } else {
+  #|               // Text node
+  #|               let text = '';
+  #|               while (i < len && htmlStr[i] !== '<') {
+  #|                 text += htmlStr[i++];
+  #|               }
+  #|               if (text.trim()) {
+  #|                 el.appendChild(globalThis.document.createTextNode(text));
+  #|               }
+  #|             }
+  #|           }
+  #|
+  #|           return el;
+  #|         };
+  #|
+  #|         // Parse all top-level elements
+  #|         while (i < len) {
+  #|           skipWhitespace();
+  #|           if (i >= len) break;
+  #|
+  #|           if (htmlStr[i] === '<') {
+  #|             const el = parseElement();
+  #|             if (el && el.nodeType) {
+  #|               nodes.push(el);
+  #|             }
+  #|           } else {
+  #|             // Skip text at top level
+  #|             while (i < len && htmlStr[i] !== '<') i++;
+  #|           }
+  #|         }
+  #|
+  #|         return nodes;
+  #|       };
+  #|
+  #|       // Clear current document
+  #|       const body = globalThis.document.body;
+  #|       const head = globalThis.document.head;
+  #|       while (body.firstChild) body.removeChild(body.firstChild);
+  #|       while (head.firstChild) head.removeChild(head.firstChild);
+  #|
+  #|       // Parse and build DOM
+  #|       const parsed = parseHTML(html);
+  #|
+  #|       // Find html, head, body elements
+  #|       let htmlEl = null, headEl = null, bodyEl = null;
+  #|       for (const node of parsed) {
+  #|         if (node.tagName === 'HTML') htmlEl = node;
+  #|         else if (node.tagName === 'HEAD') headEl = node;
+  #|         else if (node.tagName === 'BODY') bodyEl = node;
+  #|       }
+  #|
+  #|       // If we have an html element, extract head and body from it
+  #|       if (htmlEl) {
+  #|         for (const child of Array.from(htmlEl.childNodes)) {
+  #|           if (child.tagName === 'HEAD') headEl = child;
+  #|           else if (child.tagName === 'BODY') bodyEl = child;
+  #|         }
+  #|       }
+  #|
+  #|       // Move head children to document.head
+  #|       if (headEl) {
+  #|         for (const child of Array.from(headEl.childNodes)) {
+  #|           head.appendChild(child);
+  #|         }
+  #|       }
+  #|
+  #|       // Move body children to document.body
+  #|       if (bodyEl) {
+  #|         for (const child of Array.from(bodyEl.childNodes)) {
+  #|           body.appendChild(child);
+  #|         }
+  #|       } else {
+  #|         // No body found, append all parsed nodes
+  #|         for (const node of parsed) {
+  #|           if (node.tagName !== 'HTML' && node.tagName !== 'HEAD') {
+  #|             body.appendChild(node);
+  #|           }
+  #|         }
+  #|       }
+  #|
+  #|       return true;
+  #|     };
+  #|
+  #|     // Get current page URL
+  #|     globalThis.__getPageUrl = function() {
+  #|       return globalThis.__pageUrl || 'about:blank';
+  #|     };
   #|   }
   #|
   #|   // Store toBidiValue in global scope for async use
