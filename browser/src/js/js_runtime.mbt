@@ -6,10 +6,14 @@
 
 ///|
 /// Error types for JS execution
+/// Note: Some variants are reserved for future use
 pub suberror JsError {
+  // Reserved for future use when unsupported operations are detected
   NotSupported
   ExecutionError(String)
+  // Reserved for future use when parsing JS syntax fails
   SyntaxError(String)
+  // Reserved for future use when undefined references are detected
   ReferenceError(String)
 }
 

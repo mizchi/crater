@@ -377,6 +377,52 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         set checked(v) { this._attrs.checked = v; },
   #|         get type() { return this._attrs.type || ''; },
   #|         set type(v) { this._attrs.type = v; },
+  #|         get hidden() { return 'hidden' in this._attrs; },
+  #|         set hidden(v) { if (v) this._attrs.hidden = ''; else delete this._attrs.hidden; },
+  #|         get dataset() {
+  #|           const self = this;
+  #|           // Convert data-foo-bar to fooBar
+  #|           const toCamelCase = (name) => name.replace(/^data-/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  #|           // Convert fooBar to data-foo-bar
+  #|           const toDataAttr = (name) => 'data-' + name.replace(/([A-Z])/g, '-$1').toLowerCase();
+  #|           return new Proxy({}, {
+  #|             get(_, prop) {
+  #|               if (typeof prop !== 'string') return undefined;
+  #|               const attrName = toDataAttr(prop);
+  #|               return self._attrs[attrName];
+  #|             },
+  #|             set(_, prop, value) {
+  #|               if (typeof prop !== 'string') return false;
+  #|               const attrName = toDataAttr(prop);
+  #|               self._attrs[attrName] = String(value);
+  #|               return true;
+  #|             },
+  #|             has(_, prop) {
+  #|               if (typeof prop !== 'string') return false;
+  #|               const attrName = toDataAttr(prop);
+  #|               return attrName in self._attrs;
+  #|             },
+  #|             deleteProperty(_, prop) {
+  #|               if (typeof prop !== 'string') return false;
+  #|               const attrName = toDataAttr(prop);
+  #|               delete self._attrs[attrName];
+  #|               return true;
+  #|             },
+  #|             ownKeys(_) {
+  #|               return Object.keys(self._attrs)
+  #|                 .filter(k => k.startsWith('data-'))
+  #|                 .map(k => toCamelCase(k));
+  #|             },
+  #|             getOwnPropertyDescriptor(_, prop) {
+  #|               if (typeof prop !== 'string') return undefined;
+  #|               const attrName = toDataAttr(prop);
+  #|               if (attrName in self._attrs) {
+  #|                 return { value: self._attrs[attrName], writable: true, enumerable: true, configurable: true };
+  #|               }
+  #|               return undefined;
+  #|             }
+  #|           });
+  #|         },
   #|         setAttribute(name, value) {
   #|           const oldValue = this._attrs[name];
   #|           this._attrs[name] = String(value);

@@ -310,7 +310,7 @@ fn BidiProtocol::dispatch_browsing_context(
     "getTree" => {
       // Validate maxDepth parameter type and value
       match get_param_raw(request.params, "maxDepth") {
-        Some(Number(n)) => {
+        Some(Number(n, ..)) => {
           // Check for valid non-negative integer
           // JSON numbers > 2^53 or floats or negative are invalid
           if n < 0.0 {
