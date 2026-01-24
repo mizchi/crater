@@ -606,6 +606,85 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|     root.ownerDocument = globalThis.document;
   #|     body.appendChild(root);
   #|
+  #|     // Browser globals
+  #|     globalThis.window = globalThis;
+  #|     globalThis.self = globalThis;
+  #|     globalThis.parent = globalThis;
+  #|     globalThis.top = globalThis;
+  #|     globalThis.location = {
+  #|       href: 'about:blank',
+  #|       origin: '',
+  #|       protocol: 'about:',
+  #|       host: '',
+  #|       hostname: '',
+  #|       port: '',
+  #|       pathname: 'blank',
+  #|       search: '',
+  #|       hash: '',
+  #|       assign: function(url) { globalThis.__pageUrl = url; this.href = url; },
+  #|       replace: function(url) { globalThis.__pageUrl = url; this.href = url; },
+  #|       reload: function() {}
+  #|     };
+  #|     globalThis.navigator = {
+  #|       userAgent: 'Crater/1.0 (MoonBit; BiDi)',
+  #|       platform: 'Crater',
+  #|       language: 'en-US',
+  #|       languages: ['en-US', 'en'],
+  #|       onLine: true,
+  #|       cookieEnabled: false
+  #|     };
+  #|     globalThis.history = {
+  #|       length: 1,
+  #|       state: null,
+  #|       pushState: function(state, title, url) { this.state = state; this.length++; },
+  #|       replaceState: function(state, title, url) { this.state = state; },
+  #|       go: function(delta) {},
+  #|       back: function() {},
+  #|       forward: function() {}
+  #|     };
+  #|     globalThis.localStorage = {
+  #|       _data: {},
+  #|       getItem: function(key) { return this._data[key] || null; },
+  #|       setItem: function(key, value) { this._data[key] = String(value); },
+  #|       removeItem: function(key) { delete this._data[key]; },
+  #|       clear: function() { this._data = {}; },
+  #|       get length() { return Object.keys(this._data).length; },
+  #|       key: function(n) { return Object.keys(this._data)[n] || null; }
+  #|     };
+  #|     globalThis.sessionStorage = {
+  #|       _data: {},
+  #|       getItem: function(key) { return this._data[key] || null; },
+  #|       setItem: function(key, value) { this._data[key] = String(value); },
+  #|       removeItem: function(key) { delete this._data[key]; },
+  #|       clear: function() { this._data = {}; },
+  #|       get length() { return Object.keys(this._data).length; },
+  #|       key: function(n) { return Object.keys(this._data)[n] || null; }
+  #|     };
+  #|     globalThis.requestAnimationFrame = function(cb) { return setTimeout(cb, 16); };
+  #|     globalThis.cancelAnimationFrame = function(id) { clearTimeout(id); };
+  #|     globalThis.getComputedStyle = function(el) {
+  #|       return {
+  #|         getPropertyValue: function(prop) { return el._style?.[prop] || ''; }
+  #|       };
+  #|     };
+  #|     globalThis.matchMedia = function(query) {
+  #|       return {
+  #|         matches: false,
+  #|         media: query,
+  #|         addEventListener: function() {},
+  #|         removeEventListener: function() {}
+  #|       };
+  #|     };
+  #|     globalThis.innerWidth = 1024;
+  #|     globalThis.innerHeight = 768;
+  #|     globalThis.outerWidth = 1024;
+  #|     globalThis.outerHeight = 768;
+  #|     globalThis.devicePixelRatio = 1;
+  #|     globalThis.scrollX = 0;
+  #|     globalThis.scrollY = 0;
+  #|     globalThis.pageXOffset = 0;
+  #|     globalThis.pageYOffset = 0;
+  #|
   #|     // Automation helpers for CDP/BiDi compatibility
   #|     globalThis.__waitForSelector = function(selector, options) {
   #|       options = options || {};
@@ -1137,6 +1216,82 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|     // Get current page URL
   #|     globalThis.__getPageUrl = function() {
   #|       return globalThis.__pageUrl || 'about:blank';
+  #|     };
+  #|
+  #|     // Execute all script tags in the document
+  #|     globalThis.__executeScripts = async function(options) {
+  #|       options = options || {};
+  #|       const baseUrl = options.baseUrl || globalThis.__pageUrl || '';
+  #|       const scripts = Array.from(globalThis.document.querySelectorAll('script'));
+  #|       const results = [];
+  #|
+  #|       for (const script of scripts) {
+  #|         const src = script.getAttribute('src');
+  #|         const type = script.getAttribute('type') || 'text/javascript';
+  #|
+  #|         // Skip non-JavaScript types (like application/json, module, etc.)
+  #|         if (type && !type.includes('javascript') && type !== 'module') {
+  #|           results.push({ skipped: true, type, reason: 'non-js type' });
+  #|           continue;
+  #|         }
+  #|
+  #|         // Skip module scripts for now (would need import support)
+  #|         if (type === 'module') {
+  #|           results.push({ skipped: true, type, reason: 'module not supported' });
+  #|           continue;
+  #|         }
+  #|
+  #|         try {
+  #|           if (src) {
+  #|             // External script - fetch and execute
+  #|             let fullUrl = src;
+  #|             if (src.startsWith('//')) {
+  #|               fullUrl = 'https:' + src;
+  #|             } else if (src.startsWith('/')) {
+  #|               // Absolute path - need base URL
+  #|               const urlObj = new URL(baseUrl);
+  #|               fullUrl = urlObj.origin + src;
+  #|             } else if (!src.startsWith('http')) {
+  #|               // Relative path
+  #|               fullUrl = new URL(src, baseUrl).href;
+  #|             }
+  #|
+  #|             const response = await fetch(fullUrl);
+  #|             if (response.ok) {
+  #|               const code = await response.text();
+  #|               (0, eval)(code);
+  #|               results.push({ executed: true, src: fullUrl });
+  #|             } else {
+  #|               results.push({ error: true, src: fullUrl, status: response.status });
+  #|             }
+  #|           } else {
+  #|             // Inline script
+  #|             const code = script.textContent;
+  #|             if (code && code.trim()) {
+  #|               (0, eval)(code);
+  #|               results.push({ executed: true, inline: true, length: code.length });
+  #|             }
+  #|           }
+  #|         } catch (e) {
+  #|           results.push({ error: true, message: String(e), src: src || 'inline' });
+  #|         }
+  #|       }
+  #|
+  #|       return results;
+  #|     };
+  #|
+  #|     // Load page and execute scripts
+  #|     globalThis.__loadPageWithScripts = async function(url, options) {
+  #|       options = options || {};
+  #|       const loadResult = await globalThis.__loadPage(url);
+  #|
+  #|       // Execute scripts if requested (default: true)
+  #|       if (options.executeScripts !== false) {
+  #|         const scriptResults = await globalThis.__executeScripts({ baseUrl: url });
+  #|         loadResult.scripts = scriptResults;
+  #|       }
+  #|
+  #|       return loadResult;
   #|     };
   #|   }
   #|
