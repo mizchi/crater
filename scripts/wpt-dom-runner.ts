@@ -538,6 +538,11 @@ function createTestHarness() {
     }
 
     function assert_throws_dom(name, func, description) {
+      // Support overload: assert_throws_dom(name, constructor, func, description)
+      if (typeof description === 'function') {
+        func = description;
+        description = arguments[3];
+      }
       // Map between legacy constant names and new names
       const legacyToName = {
         'INDEX_SIZE_ERR': 'IndexSizeError',
@@ -785,11 +790,19 @@ function buildFixtureCode(htmlPath: string): string {
   const htmlAttrs: Record<string, string> = {};
   const headAttrs: Record<string, string> = {};
   const stack: FixtureNode[] = [root];
+  let skipTag: string | null = null;
   const tokenRegex = /<!--[\s\S]*?-->|<\/?[^>]+>|[^<]+/g;
 
   for (const match of withoutScripts.matchAll(tokenRegex)) {
     const token = match[0];
     if (!token) continue;
+    if (skipTag) {
+      if (token.startsWith('</')) {
+        const tag = token.slice(2, -1).trim().toLowerCase();
+        if (tag === skipTag) skipTag = null;
+      }
+      continue;
+    }
     if (token.startsWith('<!--')) {
       const text = decodeEntities(token.slice(4, -3));
       stack[stack.length - 1].children.push({ type: 'comment', text });
@@ -812,7 +825,12 @@ function buildFixtureCode(htmlPath: string): string {
       const tag = tagMatch[1];
       const attrsRaw = tagMatch[2] || '';
       const lowerTag = tag.toLowerCase();
-      if (lowerTag === 'script' || lowerTag === 'meta' || lowerTag === 'link' || lowerTag === 'title') continue;
+      if (lowerTag === '!doctype') continue;
+      if (lowerTag === 'title') {
+        skipTag = 'title';
+        continue;
+      }
+      if (lowerTag === 'script' || lowerTag === 'meta' || lowerTag === 'link') continue;
 
       const attrs: Record<string, string> = {};
       const attrRegex = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
@@ -866,14 +884,32 @@ function buildFixtureCode(htmlPath: string): string {
     '  __applyAttrs(document.documentElement, __htmlAttrs);',
     '  __applyAttrs(document.head, __headAttrs);',
     '  __applyAttrs(document.body, __bodyAttrs);',
-    '  const __build = (node, parent) => {',
+    '  const __SVG_NS = "http://www.w3.org/2000/svg";',
+    '  const __XLINK_NS = "http://www.w3.org/1999/xlink";',
+    '  const __XMLNS_NS = "http://www.w3.org/2000/xmlns/";',
+    '  const __build = (node, parent, parentNs) => {',
     '    if (!node) return;',
     '    if (node.type === "text") { parent.appendChild(document.createTextNode(node.text)); return; }',
     '    if (node.type === "comment") { parent.appendChild(document.createComment(node.text)); return; }',
-    '    const el = document.createElement(node.tag);',
+    '    const isSvg = parentNs === __SVG_NS || node.tag.toLowerCase() === "svg";',
+    '    const ns = isSvg ? __SVG_NS : null;',
+    '    const el = ns ? document.createElementNS(ns, node.tag) : document.createElement(node.tag);',
     '    for (const [name, value] of Object.entries(node.attrs || {})) {',
-    '      if (name === "id") { el.id = value; }',
-    '      else { try { el.setAttribute(name, value); } catch {} }',
+    '      if (name === "id") { el.id = value; continue; }',
+    '      try {',
+    '        if (ns === __SVG_NS) {',
+    '          const lower = name.toLowerCase();',
+    '          if (lower === "xmlns" || lower.startsWith("xmlns:")) {',
+    '            el.setAttributeNS(__XMLNS_NS, name, value);',
+    '          } else if (lower.startsWith("xlink:")) {',
+    '            el.setAttributeNS(__XLINK_NS, name, value);',
+    '          } else {',
+    '            el.setAttribute(name, value);',
+    '          }',
+    '        } else {',
+    '          el.setAttribute(name, value);',
+    '        }',
+    '      } catch {}',
     '    }',
     '    if (node.tag.toLowerCase() === "iframe" && !("contentDocument" in el)) {',
     '      el.contentDocument = document;',
@@ -883,10 +919,10 @@ function buildFixtureCode(htmlPath: string): string {
     '      globalThis[el.id] = el;',
     '    }',
     '    if (Array.isArray(node.children)) {',
-    '      for (const child of node.children) __build(child, el);',
+    '      for (const child of node.children) __build(child, el, ns);',
     '    }',
     '  };',
-    '  for (const child of __tree) __build(child, document.body);',
+    '  for (const child of __tree) __build(child, document.body, null);',
     '})();',
   ].join('\n');
 }
