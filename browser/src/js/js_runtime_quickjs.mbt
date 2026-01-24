@@ -52,17 +52,6 @@ extern "js" fn quickjs_init() -> Bool =
   #| }
 
 ///|
-/// FFI: Async initialization of QuickJS (call this from JS before using runtime)
-extern "js" fn quickjs_init_async() -> Unit =
-  #| async () => {
-  #|   if (globalThis.__quickjs_initialized) return;
-  #|   const { getQuickJS } = require('quickjs-emscripten');
-  #|   globalThis.__quickjs = await getQuickJS();
-  #|   globalThis.__quickjs_initialized = true;
-  #|   globalThis.__use_nodejs_vm = false;
-  #| }
-
-///|
 /// FFI: Execute JavaScript code with DOM mock
 /// Uses QuickJS if initialized, otherwise falls back to Node.js vm
 /// Returns JSON: { success, value, logs, domOps, error? }
