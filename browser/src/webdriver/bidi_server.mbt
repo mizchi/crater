@@ -672,6 +672,222 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       }
   #|       return globalThis.__waitForFunction(condition, options);
   #|     };
+  #|
+  #|     // Simple timeout helper
+  #|     globalThis.__waitForTimeout = function(ms) {
+  #|       return new Promise(function(resolve) {
+  #|         setTimeout(resolve, ms);
+  #|       });
+  #|     };
+  #|
+  #|     // Element interaction helpers
+  #|     globalThis.__click = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       const event = new Event('click', { bubbles: true, cancelable: true });
+  #|       element.dispatchEvent(event);
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__type = function(selector, text, options) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       options = options || {};
+  #|       const delay = options.delay || 0;
+  #|       if (delay > 0) {
+  #|         return new Promise(function(resolve) {
+  #|           let i = 0;
+  #|           function typeNext() {
+  #|             if (i < text.length) {
+  #|               const char = text[i];
+  #|               element.value = (element.value || '') + char;
+  #|               const inputEvent = new Event('input', { bubbles: true });
+  #|               element.dispatchEvent(inputEvent);
+  #|               i++;
+  #|               setTimeout(typeNext, delay);
+  #|             } else {
+  #|               resolve(true);
+  #|             }
+  #|           }
+  #|           typeNext();
+  #|         });
+  #|       } else {
+  #|         element.value = (element.value || '') + text;
+  #|         const inputEvent = new Event('input', { bubbles: true });
+  #|         element.dispatchEvent(inputEvent);
+  #|         return true;
+  #|       }
+  #|     };
+  #|
+  #|     globalThis.__fill = function(selector, value) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       element.value = value;
+  #|       const inputEvent = new Event('input', { bubbles: true });
+  #|       element.dispatchEvent(inputEvent);
+  #|       const changeEvent = new Event('change', { bubbles: true });
+  #|       element.dispatchEvent(changeEvent);
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__clear = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       element.value = '';
+  #|       const inputEvent = new Event('input', { bubbles: true });
+  #|       element.dispatchEvent(inputEvent);
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__focus = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       if (element.focus) element.focus();
+  #|       const focusEvent = new Event('focus', { bubbles: false });
+  #|       element.dispatchEvent(focusEvent);
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__blur = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       if (element.blur) element.blur();
+  #|       const blurEvent = new Event('blur', { bubbles: false });
+  #|       element.dispatchEvent(blurEvent);
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__hover = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       const mouseEnter = new Event('mouseenter', { bubbles: false });
+  #|       const mouseOver = new Event('mouseover', { bubbles: true });
+  #|       element.dispatchEvent(mouseEnter);
+  #|       element.dispatchEvent(mouseOver);
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__check = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       if (!element.checked) {
+  #|         element.checked = true;
+  #|         const changeEvent = new Event('change', { bubbles: true });
+  #|         element.dispatchEvent(changeEvent);
+  #|       }
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__uncheck = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       if (element.checked) {
+  #|         element.checked = false;
+  #|         const changeEvent = new Event('change', { bubbles: true });
+  #|         element.dispatchEvent(changeEvent);
+  #|       }
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__select = function(selector, value) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       element.value = value;
+  #|       const changeEvent = new Event('change', { bubbles: true });
+  #|       element.dispatchEvent(changeEvent);
+  #|       return true;
+  #|     };
+  #|
+  #|     // Element property getters
+  #|     globalThis.__getText = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return null;
+  #|       return element.textContent || '';
+  #|     };
+  #|
+  #|     globalThis.__getHTML = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return null;
+  #|       return element.innerHTML || '';
+  #|     };
+  #|
+  #|     globalThis.__getAttribute = function(selector, name) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return null;
+  #|       return element.getAttribute ? element.getAttribute(name) : (element._attrs && element._attrs[name]);
+  #|     };
+  #|
+  #|     globalThis.__getValue = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return null;
+  #|       return element.value;
+  #|     };
+  #|
+  #|     globalThis.__isVisible = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return false;
+  #|       if (element.hidden) return false;
+  #|       const style = element.style || {};
+  #|       if (style.display === 'none') return false;
+  #|       if (style.visibility === 'hidden') return false;
+  #|       if (style.opacity === '0') return false;
+  #|       return true;
+  #|     };
+  #|
+  #|     globalThis.__isEnabled = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return false;
+  #|       return !element.disabled;
+  #|     };
+  #|
+  #|     globalThis.__isChecked = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return false;
+  #|       return !!element.checked;
+  #|     };
+  #|
+  #|     // Event dispatch helper
+  #|     globalThis.__dispatchEvent = function(selector, eventType, options) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) throw new Error('Element not found: ' + selector);
+  #|       options = options || {};
+  #|       const event = new Event(eventType, {
+  #|         bubbles: options.bubbles !== false,
+  #|         cancelable: options.cancelable !== false
+  #|       });
+  #|       Object.assign(event, options.detail || {});
+  #|       element.dispatchEvent(event);
+  #|       return true;
+  #|     };
+  #|
+  #|     // Query helpers (return serializable results)
+  #|     globalThis.__$ = function(selector) {
+  #|       const element = globalThis.document.querySelector(selector);
+  #|       if (!element) return null;
+  #|       return {
+  #|         tagName: element.tagName,
+  #|         id: element.id || (element._attrs && element._attrs.id),
+  #|         className: element.className || (element._attrs && element._attrs.class),
+  #|         textContent: element.textContent
+  #|       };
+  #|     };
+  #|
+  #|     globalThis.__$$ = function(selector) {
+  #|       const elements = globalThis.document.querySelectorAll(selector);
+  #|       return Array.from(elements).map(function(element) {
+  #|         return {
+  #|           tagName: element.tagName,
+  #|           id: element.id || (element._attrs && element._attrs.id),
+  #|           className: element.className || (element._attrs && element._attrs.class),
+  #|           textContent: element.textContent
+  #|         };
+  #|       });
+  #|     };
+  #|
+  #|     globalThis.__count = function(selector) {
+  #|       const elements = globalThis.document.querySelectorAll(selector);
+  #|       return elements.length;
+  #|     };
   #|   }
   #|
   #|   // Store toBidiValue in global scope for async use
