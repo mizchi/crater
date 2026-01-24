@@ -532,11 +532,84 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       cloneNode() { return createMockTextNode(this._textContent); }
   #|     });
   #|
-  #|     // Simple querySelector implementation
+  #|     // Selector parsing cache for performance
+  #|     const selectorCache = new Map();
+  #|
+  #|     // Parse selector once and cache the result
+  #|     const parseSelector = (sel) => {
+  #|       if (selectorCache.has(sel)) return selectorCache.get(sel);
+  #|       let parsed;
+  #|       const c0 = sel.charCodeAt(0);
+  #|       if (sel === '*') {
+  #|         parsed = { type: 0 };
+  #|       } else if (c0 === 35) { // #
+  #|         parsed = { type: 1, id: sel.slice(1) };
+  #|       } else if (c0 === 46 && sel.indexOf('[') === -1) { // .
+  #|         parsed = { type: 2, classes: sel.slice(1).split('.') };
+  #|       } else if (c0 === 91) { // [
+  #|         const m = sel.match(/^\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
+  #|         if (m) parsed = { type: 3, attr: m[1], contains: !!m[2], value: m[3] };
+  #|       }
+  #|       if (!parsed) {
+  #|         const compoundAttrMatch = sel.match(/^([a-zA-Z]+)?\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
+  #|         if (compoundAttrMatch) {
+  #|           parsed = { type: 4, tag: compoundAttrMatch[1] ? compoundAttrMatch[1].toUpperCase() : null,
+  #|             attr: compoundAttrMatch[2], contains: !!compoundAttrMatch[3], value: compoundAttrMatch[4] };
+  #|         } else if (sel.indexOf('.') !== -1 && sel.indexOf('[') === -1) {
+  #|           const parts = sel.split('.');
+  #|           parsed = { type: 5, tag: parts[0] ? parts[0].toUpperCase() : null, classes: parts.slice(1) };
+  #|         } else {
+  #|           parsed = { type: 6, tag: sel.toUpperCase() };
+  #|         }
+  #|       }
+  #|       selectorCache.set(sel, parsed);
+  #|       return parsed;
+  #|     };
+  #|
+  #|     // Optimized selector matching using cached parsed selector
+  #|     const matchesSelector = (el, sel) => {
+  #|       const p = parseSelector(sel);
+  #|       const attrs = el._attrs;
+  #|       switch (p.type) {
+  #|         case 0: return true;
+  #|         case 1: return attrs.id === p.id;
+  #|         case 2: {
+  #|           const cl = el.classList;
+  #|           for (let i = 0; i < p.classes.length; i++) if (!cl.contains(p.classes[i])) return false;
+  #|           return true;
+  #|         }
+  #|         case 3: {
+  #|           const v = attrs[p.attr];
+  #|           if (p.value === undefined) return v !== undefined;
+  #|           if (p.contains) return v && v.indexOf(p.value) !== -1;
+  #|           return v === p.value;
+  #|         }
+  #|         case 4: {
+  #|           if (p.tag && el.tagName !== p.tag) return false;
+  #|           const v = attrs[p.attr];
+  #|           if (p.value === undefined) return v !== undefined;
+  #|           if (p.contains) return v && v.indexOf(p.value) !== -1;
+  #|           return v === p.value;
+  #|         }
+  #|         case 5: {
+  #|           if (p.tag && el.tagName !== p.tag) return false;
+  #|           const cl = el.classList;
+  #|           for (let i = 0; i < p.classes.length; i++) if (!cl.contains(p.classes[i])) return false;
+  #|           return true;
+  #|         }
+  #|         case 6: return el.tagName === p.tag;
+  #|       }
+  #|       return false;
+  #|     };
+  #|
+  #|     // querySelector with recursive DFS (document order) + selector caching
   #|     const querySelect = (root, sel, all) => {
   #|       const results = [];
   #|       const search = (node) => {
-  #|         for (const child of node._children || []) {
+  #|         const children = node._children;
+  #|         if (!children) return;
+  #|         for (let i = 0, len = children.length; i < len; i++) {
+  #|           const child = children[i];
   #|           if (child.nodeType === 1) {
   #|             if (matchesSelector(child, sel)) {
   #|               results.push(child);
@@ -549,47 +622,6 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       };
   #|       search(root);
   #|       return all ? results : results[0] || null;
-  #|     };
-  #|
-  #|     const matchesSelector = (el, sel) => {
-  #|       // Universal selector
-  #|       if (sel === '*') return true;
-  #|       // ID selector
-  #|       if (sel.startsWith('#')) return el._attrs.id === sel.slice(1);
-  #|       // Class selector (simple, no tag prefix)
-  #|       if (sel.startsWith('.') && !sel.includes('[')) {
-  #|         const classes = sel.slice(1).split('.');
-  #|         return classes.every(c => el.classList.contains(c));
-  #|       }
-  #|       // Attribute selector: [attr], [attr="value"], [attr*="value"]
-  #|       const attrMatch = sel.match(/^\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
-  #|       if (attrMatch) {
-  #|         const [, attrName, isContains, attrValue] = attrMatch;
-  #|         const elValue = el._attrs[attrName];
-  #|         if (attrValue === undefined) return elValue !== undefined;
-  #|         if (isContains) return elValue && elValue.includes(attrValue);
-  #|         return elValue === attrValue;
-  #|       }
-  #|       // Compound selector: tag[attr="value"]
-  #|       const compoundAttrMatch = sel.match(/^([a-zA-Z]+)?\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
-  #|       if (compoundAttrMatch) {
-  #|         const [, tag, attrName, isContains, attrValue] = compoundAttrMatch;
-  #|         if (tag && el.tagName !== tag.toUpperCase()) return false;
-  #|         const elValue = el._attrs[attrName];
-  #|         if (attrValue === undefined) return elValue !== undefined;
-  #|         if (isContains) return elValue && elValue.includes(attrValue);
-  #|         return elValue === attrValue;
-  #|       }
-  #|       // Compound selector: tag.class
-  #|       if (sel.includes('.') && !sel.includes('[')) {
-  #|         const parts = sel.split('.');
-  #|         const tag = parts[0];
-  #|         const classes = parts.slice(1);
-  #|         if (tag && el.tagName !== tag.toUpperCase()) return false;
-  #|         return classes.every(c => el.classList.contains(c));
-  #|       }
-  #|       // Tag selector
-  #|       return el.tagName === sel.toUpperCase();
   #|     };
   #|
   #|     // Event class

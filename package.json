@@ -10,7 +10,8 @@
     "webidl:generate": "tsx scripts/webidl-coverage.ts --generate",
     "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts",
     "test:preact": "playwright test tests/preact-compat.test.ts",
-    "test:playwright": "playwright test tests/playwright-adapter.test.ts"
+    "test:playwright": "playwright test tests/playwright-adapter.test.ts",
+    "bench:playwright": "playwright test tests/playwright-benchmark.test.ts"
   },
   "dependencies": {
     "puppeteer": "^23.0.0"
