@@ -1060,4 +1060,138 @@ test.describe("Preact Compatibility Tests", () => {
     expect(obj.status).toBe(200);
     expect(obj.h1).toContain("Example Domain");
   });
+
+  // ES Modules support tests
+  test("__executeScripts handles inline module scripts", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadHTML(\`
+          <html>
+          <head></head>
+          <body>
+            <div id="target">initial</div>
+            <script type="module">
+              const target = document.getElementById('target');
+              if (target) target.textContent = 'module executed';
+            </script>
+          </body>
+          </html>
+        \`);
+        __executeScripts().then(results => {
+          return {
+            scriptCount: results.length,
+            targetText: document.getElementById('target').textContent
+          };
+        });
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
+    const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
+    expect(obj.scriptCount).toBe(1);
+    expect(obj.targetText).toBe("module executed");
+  });
+
+  test("__executeScripts handles external ESM src attribute", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadHTML(\`
+          <html>
+          <head></head>
+          <body>
+            <script type="module" src="https://esm.sh/lodash-es@4.17.21/add"></script>
+          </body>
+          </html>
+        \`);
+        __executeScripts().then(results => {
+          return {
+            executed: results.length > 0,
+            hasModule: results.some(r => r.module === true),
+            noError: results.every(r => !r.error)
+          };
+        });
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
+    const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
+    expect(obj.executed).toBe(true);
+    expect(obj.hasModule).toBe(true);
+    expect(obj.noError).toBe(true);
+  });
+
+  test("__executeScripts handles dynamic import in inline module", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadHTML(\`
+          <html>
+          <head></head>
+          <body>
+            <script type="module">
+              // Use dynamic import which works from data URLs
+              const lodashAdd = await import('https://esm.sh/lodash-es@4.17.21/add');
+              globalThis.__esmResult = lodashAdd.default(2, 3);
+            </script>
+          </body>
+          </html>
+        \`);
+        __executeScripts().then(results => {
+          return {
+            executed: results.length > 0,
+            result: globalThis.__esmResult
+          };
+        });
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
+    const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
+    expect(obj.executed).toBe(true);
+    expect(obj.result).toBe(5);
+  });
+
+  test("__executeScripts handles mixed classic and module scripts", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadHTML(\`
+          <html>
+          <head></head>
+          <body>
+            <script>
+              globalThis.__classicResult = 'classic';
+            </script>
+            <script type="module">
+              globalThis.__moduleResult = 'module';
+            </script>
+          </body>
+          </html>
+        \`);
+        __executeScripts().then(results => {
+          return {
+            count: results.length,
+            classic: globalThis.__classicResult,
+            module: globalThis.__moduleResult
+          };
+        });
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
+    const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
+    expect(obj.count).toBe(2);
+    expect(obj.classic).toBe("classic");
+    expect(obj.module).toBe("module");
+  });
 });

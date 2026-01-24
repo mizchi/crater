@@ -1218,6 +1218,19 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       return globalThis.__pageUrl || 'about:blank';
   #|     };
   #|
+  #|     // Helper to resolve URL
+  #|     const resolveUrl = (src, baseUrl) => {
+  #|       if (src.startsWith('//')) {
+  #|         return 'https:' + src;
+  #|       } else if (src.startsWith('/')) {
+  #|         const urlObj = new URL(baseUrl);
+  #|         return urlObj.origin + src;
+  #|       } else if (!src.startsWith('http')) {
+  #|         return new URL(src, baseUrl).href;
+  #|       }
+  #|       return src;
+  #|     };
+  #|
   #|     // Execute all script tags in the document
   #|     globalThis.__executeScripts = async function(options) {
   #|       options = options || {};
@@ -1229,33 +1242,41 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         const src = script.getAttribute('src');
   #|         const type = script.getAttribute('type') || 'text/javascript';
   #|
-  #|         // Skip non-JavaScript types (like application/json, module, etc.)
+  #|         // Skip non-JavaScript types (like application/json)
   #|         if (type && !type.includes('javascript') && type !== 'module') {
   #|           results.push({ skipped: true, type, reason: 'non-js type' });
   #|           continue;
   #|         }
   #|
-  #|         // Skip module scripts for now (would need import support)
-  #|         if (type === 'module') {
-  #|           results.push({ skipped: true, type, reason: 'module not supported' });
-  #|           continue;
-  #|         }
-  #|
   #|         try {
-  #|           if (src) {
-  #|             // External script - fetch and execute
-  #|             let fullUrl = src;
-  #|             if (src.startsWith('//')) {
-  #|               fullUrl = 'https:' + src;
-  #|             } else if (src.startsWith('/')) {
-  #|               // Absolute path - need base URL
-  #|               const urlObj = new URL(baseUrl);
-  #|               fullUrl = urlObj.origin + src;
-  #|             } else if (!src.startsWith('http')) {
-  #|               // Relative path
-  #|               fullUrl = new URL(src, baseUrl).href;
+  #|           if (type === 'module') {
+  #|             // ES Module handling
+  #|             if (src) {
+  #|               // External module - use dynamic import
+  #|               const fullUrl = resolveUrl(src, baseUrl);
+  #|               try {
+  #|                 await import(fullUrl);
+  #|                 results.push({ executed: true, module: true, src: fullUrl });
+  #|               } catch (e) {
+  #|                 results.push({ error: true, module: true, src: fullUrl, message: String(e) });
+  #|               }
+  #|             } else {
+  #|               // Inline module - convert to data URL and import
+  #|               const code = script.textContent;
+  #|               if (code && code.trim()) {
+  #|                 try {
+  #|                   // Create a data URL for the module
+  #|                   const dataUrl = 'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(code)));
+  #|                   await import(dataUrl);
+  #|                   results.push({ executed: true, module: true, inline: true, length: code.length });
+  #|                 } catch (e) {
+  #|                   results.push({ error: true, module: true, inline: true, message: String(e) });
+  #|                 }
+  #|               }
   #|             }
-  #|
+  #|           } else if (src) {
+  #|             // External classic script - fetch and execute
+  #|             const fullUrl = resolveUrl(src, baseUrl);
   #|             const response = await fetch(fullUrl);
   #|             if (response.ok) {
   #|               const code = await response.text();
@@ -1265,7 +1286,7 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|               results.push({ error: true, src: fullUrl, status: response.status });
   #|             }
   #|           } else {
-  #|             // Inline script
+  #|             // Inline classic script
   #|             const code = script.textContent;
   #|             if (code && code.trim()) {
   #|               (0, eval)(code);
