@@ -132,46 +132,99 @@ function createTestHarness() {
     DOMException.DataCloneError = 25;
 
     // DOM interface constructors for instanceof checks
-    function Node() {}
+    var Node = (typeof globalThis !== 'undefined' && globalThis.Node) ? globalThis.Node : function Node() {};
+    if (typeof globalThis !== 'undefined') globalThis.Node = Node;
     // Node type constants
-    Node.ELEMENT_NODE = 1;
-    Node.ATTRIBUTE_NODE = 2;
-    Node.TEXT_NODE = 3;
-    Node.CDATA_SECTION_NODE = 4;
-    Node.ENTITY_REFERENCE_NODE = 5;
-    Node.ENTITY_NODE = 6;
-    Node.PROCESSING_INSTRUCTION_NODE = 7;
-    Node.COMMENT_NODE = 8;
-    Node.DOCUMENT_NODE = 9;
-    Node.DOCUMENT_TYPE_NODE = 10;
-    Node.DOCUMENT_FRAGMENT_NODE = 11;
-    Node.NOTATION_NODE = 12;
+    if (Node.ELEMENT_NODE === undefined) Node.ELEMENT_NODE = 1;
+    if (Node.ATTRIBUTE_NODE === undefined) Node.ATTRIBUTE_NODE = 2;
+    if (Node.TEXT_NODE === undefined) Node.TEXT_NODE = 3;
+    if (Node.CDATA_SECTION_NODE === undefined) Node.CDATA_SECTION_NODE = 4;
+    if (Node.ENTITY_REFERENCE_NODE === undefined) Node.ENTITY_REFERENCE_NODE = 5;
+    if (Node.ENTITY_NODE === undefined) Node.ENTITY_NODE = 6;
+    if (Node.PROCESSING_INSTRUCTION_NODE === undefined) Node.PROCESSING_INSTRUCTION_NODE = 7;
+    if (Node.COMMENT_NODE === undefined) Node.COMMENT_NODE = 8;
+    if (Node.DOCUMENT_NODE === undefined) Node.DOCUMENT_NODE = 9;
+    if (Node.DOCUMENT_TYPE_NODE === undefined) Node.DOCUMENT_TYPE_NODE = 10;
+    if (Node.DOCUMENT_FRAGMENT_NODE === undefined) Node.DOCUMENT_FRAGMENT_NODE = 11;
+    if (Node.NOTATION_NODE === undefined) Node.NOTATION_NODE = 12;
     // Document position constants
-    Node.DOCUMENT_POSITION_DISCONNECTED = 0x01;
-    Node.DOCUMENT_POSITION_PRECEDING = 0x02;
-    Node.DOCUMENT_POSITION_FOLLOWING = 0x04;
-    Node.DOCUMENT_POSITION_CONTAINS = 0x08;
-    Node.DOCUMENT_POSITION_CONTAINED_BY = 0x10;
-    Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
+    if (Node.DOCUMENT_POSITION_DISCONNECTED === undefined) Node.DOCUMENT_POSITION_DISCONNECTED = 0x01;
+    if (Node.DOCUMENT_POSITION_PRECEDING === undefined) Node.DOCUMENT_POSITION_PRECEDING = 0x02;
+    if (Node.DOCUMENT_POSITION_FOLLOWING === undefined) Node.DOCUMENT_POSITION_FOLLOWING = 0x04;
+    if (Node.DOCUMENT_POSITION_CONTAINS === undefined) Node.DOCUMENT_POSITION_CONTAINS = 0x08;
+    if (Node.DOCUMENT_POSITION_CONTAINED_BY === undefined) Node.DOCUMENT_POSITION_CONTAINED_BY = 0x10;
+    if (Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC === undefined) Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
     // Copy constants to prototype
-    Node.prototype.ELEMENT_NODE = 1;
-    Node.prototype.ATTRIBUTE_NODE = 2;
-    Node.prototype.TEXT_NODE = 3;
-    Node.prototype.CDATA_SECTION_NODE = 4;
-    Node.prototype.ENTITY_REFERENCE_NODE = 5;
-    Node.prototype.ENTITY_NODE = 6;
-    Node.prototype.PROCESSING_INSTRUCTION_NODE = 7;
-    Node.prototype.COMMENT_NODE = 8;
-    Node.prototype.DOCUMENT_NODE = 9;
-    Node.prototype.DOCUMENT_TYPE_NODE = 10;
-    Node.prototype.DOCUMENT_FRAGMENT_NODE = 11;
-    Node.prototype.NOTATION_NODE = 12;
-    Node.prototype.DOCUMENT_POSITION_DISCONNECTED = 0x01;
-    Node.prototype.DOCUMENT_POSITION_PRECEDING = 0x02;
-    Node.prototype.DOCUMENT_POSITION_FOLLOWING = 0x04;
-    Node.prototype.DOCUMENT_POSITION_CONTAINS = 0x08;
-    Node.prototype.DOCUMENT_POSITION_CONTAINED_BY = 0x10;
-    Node.prototype.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
+    if (Node.prototype.ELEMENT_NODE === undefined) Node.prototype.ELEMENT_NODE = 1;
+    if (Node.prototype.ATTRIBUTE_NODE === undefined) Node.prototype.ATTRIBUTE_NODE = 2;
+    if (Node.prototype.TEXT_NODE === undefined) Node.prototype.TEXT_NODE = 3;
+    if (Node.prototype.CDATA_SECTION_NODE === undefined) Node.prototype.CDATA_SECTION_NODE = 4;
+    if (Node.prototype.ENTITY_REFERENCE_NODE === undefined) Node.prototype.ENTITY_REFERENCE_NODE = 5;
+    if (Node.prototype.ENTITY_NODE === undefined) Node.prototype.ENTITY_NODE = 6;
+    if (Node.prototype.PROCESSING_INSTRUCTION_NODE === undefined) Node.prototype.PROCESSING_INSTRUCTION_NODE = 7;
+    if (Node.prototype.COMMENT_NODE === undefined) Node.prototype.COMMENT_NODE = 8;
+    if (Node.prototype.DOCUMENT_NODE === undefined) Node.prototype.DOCUMENT_NODE = 9;
+    if (Node.prototype.DOCUMENT_TYPE_NODE === undefined) Node.prototype.DOCUMENT_TYPE_NODE = 10;
+    if (Node.prototype.DOCUMENT_FRAGMENT_NODE === undefined) Node.prototype.DOCUMENT_FRAGMENT_NODE = 11;
+    if (Node.prototype.NOTATION_NODE === undefined) Node.prototype.NOTATION_NODE = 12;
+    if (Node.prototype.DOCUMENT_POSITION_DISCONNECTED === undefined) Node.prototype.DOCUMENT_POSITION_DISCONNECTED = 0x01;
+    if (Node.prototype.DOCUMENT_POSITION_PRECEDING === undefined) Node.prototype.DOCUMENT_POSITION_PRECEDING = 0x02;
+    if (Node.prototype.DOCUMENT_POSITION_FOLLOWING === undefined) Node.prototype.DOCUMENT_POSITION_FOLLOWING = 0x04;
+    if (Node.prototype.DOCUMENT_POSITION_CONTAINS === undefined) Node.prototype.DOCUMENT_POSITION_CONTAINS = 0x08;
+    if (Node.prototype.DOCUMENT_POSITION_CONTAINED_BY === undefined) Node.prototype.DOCUMENT_POSITION_CONTAINED_BY = 0x10;
+    if (Node.prototype.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC === undefined) Node.prototype.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
+
+    // Provide Node.prototype methods if missing (delegate to instance methods when present)
+    if (typeof Node.prototype.appendChild !== 'function') {
+      Node.prototype.appendChild = function(child) {
+        if (typeof this.appendChild === 'function' && this.appendChild !== Node.prototype.appendChild) {
+          return this.appendChild(child);
+        }
+        if (!isNodeLike(child)) {
+          throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
+        }
+        throw new DOMException('Cannot append child to this node type', 'HierarchyRequestError');
+      };
+    }
+    if (typeof Node.prototype.insertBefore !== 'function') {
+      Node.prototype.insertBefore = function(newChild, refChild) {
+        if (typeof this.insertBefore === 'function' && this.insertBefore !== Node.prototype.insertBefore) {
+          return this.insertBefore(newChild, refChild);
+        }
+        if (arguments.length < 2) {
+          throw new TypeError('Failed to execute insertBefore: 2 arguments required');
+        }
+        if (!isNodeLike(newChild)) {
+          throw new TypeError('Failed to execute insertBefore: parameter 1 is not of type Node');
+        }
+        if (refChild !== null && refChild !== undefined && !isNodeLike(refChild)) {
+          throw new TypeError('Failed to execute insertBefore: parameter 2 is not of type Node');
+        }
+        throw new DOMException('Cannot insert child into this node type', 'HierarchyRequestError');
+      };
+    }
+    if (typeof Node.prototype.removeChild !== 'function') {
+      Node.prototype.removeChild = function(child) {
+        if (typeof this.removeChild === 'function' && this.removeChild !== Node.prototype.removeChild) {
+          return this.removeChild(child);
+        }
+        if (!isNodeLike(child)) {
+          throw new TypeError('Failed to execute removeChild: parameter 1 is not of type Node');
+        }
+        throw new DOMException('The node to be removed is not a child of this node', 'NotFoundError');
+      };
+    }
+    if (typeof Node.prototype.replaceChild !== 'function') {
+      Node.prototype.replaceChild = function(newChild, oldChild) {
+        if (typeof this.replaceChild === 'function' && this.replaceChild !== Node.prototype.replaceChild) {
+          return this.replaceChild(newChild, oldChild);
+        }
+        if (!isNodeLike(newChild) || !isNodeLike(oldChild)) {
+          throw new TypeError('Failed to execute replaceChild: parameters are not of type Node');
+        }
+        throw new DOMException('Cannot replace child on this node type', 'HierarchyRequestError');
+      };
+    }
 
     // CharacterData, Text, Comment are defined in mockDomCode
     // Only define if not already defined (for backwards compatibility)
@@ -210,72 +263,28 @@ function createTestHarness() {
 
     function Document() {
       // new Document() creates a Document (not XMLDocument) per spec
-      const doc = {
-        _nodeType: 9,
-        nodeType: 9,
-        nodeName: '#document',
-        documentElement: null,
-        doctype: null,
-        _children: [],
-        location: null,  // null for documents not associated with browsing context
-        URL: 'about:blank',
-        documentURI: 'about:blank',
-        compatMode: 'CSS1Compat',
-        characterSet: 'UTF-8',
-        charset: 'UTF-8',
-        inputEncoding: 'UTF-8',
-        contentType: 'application/xml',
-        get firstChild() { return this._children[0] || null; },
-        get lastChild() { return this._children[this._children.length - 1] || null; },
-        get childNodes() { return this._children; },
-        appendChild(child) { this._children.push(child); child._parent = this; child.parentNode = this; if (child._nodeType === 1) this.documentElement = child; return child; },
-        removeChild(child) { const idx = this._children.indexOf(child); if (idx >= 0) { this._children.splice(idx, 1); child._parent = null; child.parentNode = null; } return child; },
-        // For XML documents (non-HTML), createElement returns Element (not HTMLElement)
-        createElement(name) {
-          const el = document.createElement(name);
-          // XML document: use generic Element prototype, keep localName as-is
-          Object.setPrototypeOf(el, Element.prototype);
-          el.localName = name;
-          return el;
-        },
-        // createElementNS with HTML namespace returns HTML elements
-        createElementNS(ns, name) {
-          const el = document.createElementNS(ns, name);
-          if (ns === 'http://www.w3.org/1999/xhtml') {
-            // HTML element - use appropriate HTML constructor
-            const lowerName = name.toLowerCase();
-            const Ctor = tagToConstructor[lowerName] || HTMLElement;
-            Object.setPrototypeOf(el, Ctor.prototype);
-          } else {
-            // Non-HTML element
-            Object.setPrototypeOf(el, Element.prototype);
-          }
-          return el;
-        },
-        createTextNode(text) { return document.createTextNode(text); },
-        createComment(text) { return document.createComment(text); },
-        createDocumentFragment() { return document.createDocumentFragment(); },
-        getRootNode() { return this; },
-        isSameNode(other) { return this === other; },
-        isEqualNode(other) { return this === other; },
-        adoptNode(node) {
-          if (!node) return null;
-          if (node._nodeType === 9) throw new DOMException('Cannot adopt a document node', 'NotSupportedError');
-          if (node._parent) node._parent.removeChild(node);
-          node.ownerDocument = this;
-          return node;
-        }
-      };
+      const doc = document.implementation.createDocument(null, null, null);
       Object.setPrototypeOf(doc, Document.prototype);
       return doc;
     }
     Document.prototype = Object.create(Node.prototype);
+    Document.prototype.constructor = Document;
+    if (typeof XMLDocument !== 'undefined') {
+      XMLDocument.prototype = Object.create(Document.prototype);
+      XMLDocument.prototype.constructor = XMLDocument;
+    }
+    if (typeof HTMLDocument !== 'undefined') {
+      HTMLDocument.prototype = Object.create(Document.prototype);
+      HTMLDocument.prototype.constructor = HTMLDocument;
+    }
 
-    function XMLDocument() {}
-    XMLDocument.prototype = Object.create(Document.prototype);
-
-    function DocumentFragment() {}
-    DocumentFragment.prototype = Object.create(Node.prototype);
+    if (typeof DocumentFragment === 'undefined') {
+      function DocumentFragment() {}
+      DocumentFragment.prototype = Object.create(Node.prototype);
+      DocumentFragment.prototype.constructor = DocumentFragment;
+    } else if (DocumentFragment.prototype && Object.getPrototypeOf(DocumentFragment.prototype) !== Node.prototype) {
+      Object.setPrototypeOf(DocumentFragment.prototype, Node.prototype);
+    }
 
     function DocumentType() {}
     DocumentType.prototype = Object.create(Node.prototype);
@@ -323,12 +332,51 @@ function createTestHarness() {
       return node;
     };
 
-    // Set document prototype
-    Object.setPrototypeOf(document, Document.prototype);
+    // Set document prototype (prefer HTMLDocument when available)
+    Object.setPrototypeOf(
+      document,
+      (typeof HTMLDocument !== 'undefined' ? HTMLDocument.prototype : Document.prototype),
+    );
+
+    function run_cleanups(cleanups) {
+      if (!cleanups) return null;
+      for (const f of cleanups) {
+        try { f(); } catch (e) { return e; }
+      }
+      return null;
+    }
 
     function test(func, name) {
-      const testObj = { name: name || 'unnamed test', func: func };
+      const testName = name || 'unnamed test';
+      const testObj = { name: testName, func: func, executed: true };
       __tests.push(testObj);
+      const cleanups = [];
+      const testContext = {
+        step: function(f) { if (typeof f === 'function') f.call(this); },
+        step_func: function(f) { return f; },
+        step_func_done: function(f) { return function() { f.apply(this, arguments); }; },
+        done: function() {},
+        unreached_func: function(msg) { return function() { throw new Error(msg || 'unreached'); }; },
+        add_cleanup: function(f) { if (typeof f === 'function') cleanups.push(f); }
+      };
+      let status = 'pass';
+      let message = null;
+      try {
+        func.call(testContext);
+      } catch (e) {
+        status = 'fail';
+        message = e.message || String(e);
+      }
+      const cleanupError = run_cleanups(cleanups);
+      if (!message && cleanupError) {
+        status = 'fail';
+        message = cleanupError.message || String(cleanupError);
+      }
+      if (message) {
+        __results.push({ name: testName, status, message });
+      } else {
+        __results.push({ name: testName, status });
+      }
     }
 
     function async_test(funcOrName, maybeName) {
@@ -347,7 +395,7 @@ function createTestHarness() {
           steps: [],
           step: function(f) {
             this.steps.push(f);
-            try { f(); } catch(e) { this._error = e; }
+            try { f.call(this); } catch(e) { this._error = e; }
           },
           step_func: function(f) {
             const self = this;
@@ -362,7 +410,8 @@ function createTestHarness() {
           },
           done: function() { this._done = true; },
           unreached_func: function(msg) { return function() { throw new Error(msg || 'unreached'); }; },
-          add_cleanup: function(f) { /* ignored */ }
+          cleanups: [],
+          add_cleanup: function(f) { if (typeof f === 'function') this.cleanups.push(f); }
         };
         __tests.push(testObj);
         return testObj;
@@ -424,6 +473,18 @@ function createTestHarness() {
       }
     }
 
+    function assert_implements(condition, description) {
+      if (!condition) {
+        throw new Error((description ? description + ': ' : '') + 'required feature not implemented');
+      }
+    }
+
+    function assert_implements_optional(condition, description) {
+      if (!condition) {
+        throw new Error((description ? description + ': ' : '') + 'optional feature not implemented');
+      }
+    }
+
     function assert_in_array(actual, expected, description) {
       if (!expected.includes(actual)) {
         throw new Error((description ? description + ': ' : '') +
@@ -432,7 +493,8 @@ function createTestHarness() {
     }
 
     function assert_array_equals(actual, expected, description) {
-      if (!Array.isArray(actual) || !Array.isArray(expected)) {
+      const isArrayLike = (value) => typeof value === 'object' && value !== null && 'length' in value;
+      if (!isArrayLike(actual) || !isArrayLike(expected)) {
         throw new Error((description ? description + ': ' : '') + 'not arrays');
       }
       if (actual.length !== expected.length) {
@@ -509,8 +571,9 @@ function createTestHarness() {
       const expectedLegacy = nameToLegacy[name] || name;
       if (error.name !== expectedName && error.name !== expectedLegacy &&
           error.name !== name && error.code !== name) {
+        const detail = error && error.message ? ': ' + error.message : '';
         throw new Error((description ? description + ': ' : '') +
-          'expected DOMException ' + name + ' but got ' + (error.name || error.code || error));
+          'expected DOMException ' + name + ' but got ' + (error.name || error.code || error) + detail);
       }
     }
 
@@ -579,6 +642,7 @@ function createTestHarness() {
     // Run all tests and collect results
     function __runTests() {
       for (const t of __tests) {
+        if (t.executed) continue;
         try {
           if (t.async) {
             // Form 2: func is null, test was created with just a name
@@ -592,16 +656,21 @@ function createTestHarness() {
             } else {
               // Form 1: traditional async_test with function
               let completed = false;
+              const cleanups = [];
               const testContext = {
                 step: function(f) { if (typeof f === 'function') f(); },
                 step_func: function(f) { return f; },
                 step_func_done: function(f) { return function() { f.apply(this, arguments); completed = true; }; },
                 done: function() { completed = true; },
                 unreached_func: function(msg) { return function() { throw new Error(msg || 'unreached'); }; },
-                add_cleanup: function(f) { /* ignored */ }
+                add_cleanup: function(f) { if (typeof f === 'function') cleanups.push(f); }
               };
-              // WPT async_test passes test object as first parameter
-              t.func(testContext);
+              // WPT async_test passes test object as first parameter and binds this
+              t.func.call(testContext, testContext);
+              const cleanupError = run_cleanups(cleanups);
+              if (cleanupError) {
+                throw cleanupError;
+              }
             }
           } else if (t.promise) {
             // Skip promise tests for now
@@ -609,6 +678,10 @@ function createTestHarness() {
             continue;
           } else {
             t.func();
+          }
+          if (t.cleanups) {
+            const cleanupError = run_cleanups(t.cleanups);
+            if (cleanupError) throw cleanupError;
           }
           __results.push({ name: t.name, status: 'pass' });
         } catch (e) {
@@ -621,23 +694,24 @@ function createTestHarness() {
 }
 
 // Extract test scripts from HTML file
-function extractTestScripts(htmlPath: string): { inline: string[]; external: string[] } {
+function extractTestScripts(htmlPath: string): string[] {
   const content = fs.readFileSync(htmlPath, 'utf-8');
   const htmlDir = path.dirname(htmlPath);
 
-  const inline: string[] = [];
-  const external: string[] = [];
+  const scripts: string[] = [];
 
   // Extract inline scripts (excluding testharness.js and testharnessreport.js)
-  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  const scriptRegex = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
   let match;
 
   while ((match = scriptRegex.exec(content)) !== null) {
-    const tag = match[0];
-    const scriptContent = match[1];
+    const tagAttrs = match[1];
+    const scriptContent = match[2];
 
     // Check for src attribute
-    const srcMatch = tag.match(/src\s*=\s*["']([^"']+)["']/i);
+    const srcMatch =
+      tagAttrs.match(/src\s*=\s*["']([^"']+)["']/i) ||
+      tagAttrs.match(/src\s*=\s*([^\s>]+)/i);
     if (srcMatch) {
       const src = srcMatch[1];
       // Skip testharness files
@@ -653,14 +727,196 @@ function extractTestScripts(htmlPath: string): { inline: string[]; external: str
       }
 
       if (fs.existsSync(scriptPath)) {
-        external.push(fs.readFileSync(scriptPath, 'utf-8'));
+        scripts.push(fs.readFileSync(scriptPath, 'utf-8'));
       }
     } else if (scriptContent.trim()) {
-      inline.push(scriptContent);
+      scripts.push(scriptContent);
     }
   }
 
-  return { inline, external };
+  return scripts;
+}
+
+function buildFixtureCode(htmlPath: string): string {
+  const content = fs.readFileSync(htmlPath, 'utf-8');
+  const withoutScripts = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  const voidTags = new Set([
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr',
+  ]);
+  const decodeEntities = (value: string): string => {
+    const named: Record<string, string> = {
+      amp: '&',
+      lt: '<',
+      gt: '>',
+      quot: '"',
+      apos: "'",
+    };
+    return value
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        const code = parseInt(hex, 16);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : _;
+      })
+      .replace(/&#([0-9]+);/g, (_, num) => {
+        const code = parseInt(num, 10);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : _;
+      })
+      .replace(/&([a-zA-Z]+);/g, (_, name) => (name in named ? named[name] : _));
+  };
+  type FixtureNode =
+    | { type: 'element'; tag: string; attrs: Record<string, string>; children: FixtureNode[] }
+    | { type: 'text'; text: string }
+    | { type: 'comment'; text: string };
+
+  const root: FixtureNode = { type: 'element', tag: '__root__', attrs: {}, children: [] };
+  const bodyAttrs: Record<string, string> = {};
+  const htmlAttrs: Record<string, string> = {};
+  const headAttrs: Record<string, string> = {};
+  const stack: FixtureNode[] = [root];
+  const tokenRegex = /<!--[\s\S]*?-->|<\/?[^>]+>|[^<]+/g;
+
+  for (const match of withoutScripts.matchAll(tokenRegex)) {
+    const token = match[0];
+    if (!token) continue;
+    if (token.startsWith('<!--')) {
+      const text = decodeEntities(token.slice(4, -3));
+      stack[stack.length - 1].children.push({ type: 'comment', text });
+      continue;
+    }
+    if (token.startsWith('</')) {
+      const tag = token.slice(2, -1).trim().toLowerCase();
+      for (let i = stack.length - 1; i > 0; i--) {
+        const node = stack[i];
+        if (node.type === 'element' && node.tag.toLowerCase() === tag) {
+          stack.length = i;
+          break;
+        }
+      }
+      continue;
+    }
+    if (token.startsWith('<')) {
+      const tagMatch = token.match(/^<([^\s>/]+)([^>]*)>$/);
+      if (!tagMatch) continue;
+      const tag = tagMatch[1];
+      const attrsRaw = tagMatch[2] || '';
+      const lowerTag = tag.toLowerCase();
+      if (lowerTag === 'script' || lowerTag === 'meta' || lowerTag === 'link' || lowerTag === 'title') continue;
+
+      const attrs: Record<string, string> = {};
+      const attrRegex = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+      for (const attrMatch of attrsRaw.matchAll(attrRegex)) {
+        const name = attrMatch[1];
+        const rawValue = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '';
+        attrs[name] = decodeEntities(rawValue);
+      }
+      if (lowerTag === 'html') {
+        Object.assign(htmlAttrs, attrs);
+        continue;
+      }
+      if (lowerTag === 'head') {
+        Object.assign(headAttrs, attrs);
+        continue;
+      }
+      if (lowerTag === 'body') {
+        Object.assign(bodyAttrs, attrs);
+        continue;
+      }
+
+      const node: FixtureNode = { type: 'element', tag, attrs, children: [] };
+      stack[stack.length - 1].children.push(node);
+      const selfClosing = token.endsWith('/>') || voidTags.has(lowerTag);
+      if (!selfClosing) {
+        stack.push(node);
+      }
+      continue;
+    }
+
+    const text = decodeEntities(token);
+    if (text.trim() === '') continue;
+    stack[stack.length - 1].children.push({ type: 'text', text });
+  }
+
+  if (root.children.length === 0) return '';
+  return [
+    '(() => {',
+    `  const __tree = ${JSON.stringify(root.children)};`,
+    `  const __bodyAttrs = ${JSON.stringify(bodyAttrs)};`,
+    `  const __htmlAttrs = ${JSON.stringify(htmlAttrs)};`,
+    `  const __headAttrs = ${JSON.stringify(headAttrs)};`,
+    '  if (typeof document === "undefined" || !document.body) return;',
+    '  const __applyAttrs = (el, attrs) => {',
+    '    if (!el || !attrs) return;',
+    '    for (const [name, value] of Object.entries(attrs)) {',
+    '      if (name === "id") { el.id = value; }',
+    '      else { try { el.setAttribute(name, value); } catch {} }',
+    '    }',
+    '  };',
+    '  __applyAttrs(document.documentElement, __htmlAttrs);',
+    '  __applyAttrs(document.head, __headAttrs);',
+    '  __applyAttrs(document.body, __bodyAttrs);',
+    '  const __build = (node, parent) => {',
+    '    if (!node) return;',
+    '    if (node.type === "text") { parent.appendChild(document.createTextNode(node.text)); return; }',
+    '    if (node.type === "comment") { parent.appendChild(document.createComment(node.text)); return; }',
+    '    const el = document.createElement(node.tag);',
+    '    for (const [name, value] of Object.entries(node.attrs || {})) {',
+    '      if (name === "id") { el.id = value; }',
+    '      else { try { el.setAttribute(name, value); } catch {} }',
+    '    }',
+    '    if (node.tag.toLowerCase() === "iframe" && !("contentDocument" in el)) {',
+    '      el.contentDocument = document;',
+    '    }',
+    '    parent.appendChild(el);',
+    '    if (el.id && !(el.id in globalThis)) {',
+    '      globalThis[el.id] = el;',
+    '    }',
+    '    if (Array.isArray(node.children)) {',
+    '      for (const child of node.children) __build(child, el);',
+    '    }',
+    '  };',
+    '  for (const child of __tree) __build(child, document.body);',
+    '})();',
+  ].join('\n');
+}
+
+function buildDoctypeCode(htmlPath: string): string {
+  const content = fs.readFileSync(htmlPath, 'utf-8');
+  const match = content.match(/<!doctype\s+([^>\s]+)(?:\s+public\s+"([^"]*)"\s+"([^"]*)")?/i);
+  if (!match) return '';
+  const name = match[1];
+  const publicId = match[2] ?? '';
+  const systemId = match[3] ?? '';
+  const doctypeIndex = match.index ?? 0;
+  const commentIndex = content.indexOf('<!--');
+  const hasLeadingComment = commentIndex !== -1 && commentIndex < doctypeIndex;
+  return [
+    '(() => {',
+    '  if (!document._preNodes) document._preNodes = [];',
+    hasLeadingComment
+      ? '  document._preNodes.push(document.createComment(""));'
+      : '',
+    `  const __doctype = document.implementation.createDocumentType(${JSON.stringify(name)}, ${JSON.stringify(publicId)}, ${JSON.stringify(systemId)});`,
+    '  __doctype._parent = document;',
+    '  __doctype.parentNode = document;',
+    '  if (typeof document._setDoctype === "function") {',
+    '    document._setDoctype(__doctype);',
+    '  } else {',
+    '    document.doctype = __doctype;',
+    '  }',
+    '})();',
+  ].join('\n');
 }
 
 // Build mock DOM code from the MBT file
@@ -703,6 +959,8 @@ function runTestFile(htmlPath: string): TestFileResult {
     const scripts = extractTestScripts(htmlPath);
     const mockDomCode = buildMockDomCode();
     const testHarness = createTestHarness();
+    const fixtureCode = buildFixtureCode(htmlPath);
+    const doctypeCode = buildDoctypeCode(htmlPath);
 
     // Combine all code
     // mockDomCode must come first as it defines document, createMockElement, etc.
@@ -710,8 +968,9 @@ function runTestFile(htmlPath: string): TestFileResult {
     const fullCode = [
       mockDomCode,
       testHarness,
-      ...scripts.external,
-      ...scripts.inline,
+      doctypeCode,
+      fixtureCode,
+      ...scripts,
       '__runTests();',
     ].join('\n');
 

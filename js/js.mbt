@@ -1174,7 +1174,7 @@ pub fn extractMainContent(html : String) -> String {
   let tree = @aom.build_accessibility_tree(doc)
   let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
   let fallback_text = if result.main_content is None &&
-      result.content_blocks.length() == 0 {
+    result.content_blocks.length() == 0 {
     Some(strip_html_to_text(html))
   } else {
     None
@@ -1210,7 +1210,7 @@ pub fn extractMainContentWithLayout(
   }
   let result = @arc90.extract_content(tree, config)
   let fallback_text = if result.main_content is None &&
-      result.content_blocks.length() == 0 {
+    result.content_blocks.length() == 0 {
     Some(strip_html_to_text(html))
   } else {
     None
@@ -1271,7 +1271,6 @@ fn extraction_result_to_json_with_fallback(
     buf.write_string((block.score * 1000.0).to_int().to_string())
   }
   buf.write_string("]\n")
-
   buf.write_string("}")
   buf.to_string()
 }
@@ -1408,7 +1407,10 @@ fn collect_all_text(node : @aom.AccessibilityNode) -> String {
 
 ///|
 /// Text collection for article/main content - skip footer but keep header (article title)
-fn collect_text_simple(node : @aom.AccessibilityNode, buf : StringBuilder) -> Unit {
+fn collect_text_simple(
+  node : @aom.AccessibilityNode,
+  buf : StringBuilder,
+) -> Unit {
   // Skip invisible nodes
   if not(node.visible) {
     return
@@ -1417,10 +1419,7 @@ fn collect_text_simple(node : @aom.AccessibilityNode, buf : StringBuilder) -> Un
   // Skip footer elements (related articles, comments, etc.)
   // but keep header (article title, byline, date)
   match node.tag_name {
-    Some(tag) =>
-      if tag == "footer" || tag == "aside" {
-        return
-      }
+    Some(tag) => if tag == "footer" || tag == "aside" { return }
     None => ()
   }
 
@@ -1429,9 +1428,8 @@ fn collect_text_simple(node : @aom.AccessibilityNode, buf : StringBuilder) -> Un
     @aom.ContentInfo | @aom.Complementary => return
     _ => ()
   }
-
   match node.name {
-    Some(name) if not(name.is_empty()) => {
+    Some(name) if not(name.is_empty()) =>
       // Skip text that looks like JavaScript code
       if not(looks_like_code(name)) {
         if buf.to_string().length() > 0 {
@@ -1439,7 +1437,6 @@ fn collect_text_simple(node : @aom.AccessibilityNode, buf : StringBuilder) -> Un
         }
         buf.write_string(name)
       }
-    }
     _ => ()
   }
   for child in node.children {
@@ -1475,16 +1472,16 @@ fn is_boilerplate_tag(tag : String?) -> Bool {
 fn looks_like_code(text : String) -> Bool {
   // Check for common JS patterns
   text.contains("function(") ||
-    text.contains("function (") ||
-    text.contains("document.") ||
-    text.contains("window.") ||
-    text.contains("var ") ||
-    text.contains("const ") ||
-    text.contains("let ") ||
-    text.contains("addEventListener") ||
-    text.contains("setTimeout") ||
-    text.contains("setInterval") ||
-    text.contains("querySelector")
+  text.contains("function (") ||
+  text.contains("document.") ||
+  text.contains("window.") ||
+  text.contains("var ") ||
+  text.contains("const ") ||
+  text.contains("let ") ||
+  text.contains("addEventListener") ||
+  text.contains("setTimeout") ||
+  text.contains("setInterval") ||
+  text.contains("querySelector")
 }
 
 ///|
@@ -1495,7 +1492,8 @@ fn collect_text_with_context(
   in_navigation : Bool,
 ) -> Unit {
   // Check if we're entering a navigation/boilerplate section
-  let is_nav = is_navigation_role(node.role) || is_boilerplate_tag(node.tag_name)
+  let is_nav = is_navigation_role(node.role) ||
+    is_boilerplate_tag(node.tag_name)
   let in_nav = in_navigation || is_nav
 
   // Skip all text inside navigation sections
@@ -1524,9 +1522,8 @@ fn collect_text_with_context(
   if not(node.visible) {
     return
   }
-
   match node.name {
-    Some(name) if not(name.is_empty()) => {
+    Some(name) if not(name.is_empty()) =>
       // Skip text that looks like JavaScript code
       if not(looks_like_code(name)) {
         if buf.to_string().length() > 0 {
@@ -1534,7 +1531,6 @@ fn collect_text_with_context(
         }
         buf.write_string(name)
       }
-    }
     _ => ()
   }
   for child in node.children {
