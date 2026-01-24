@@ -654,4 +654,344 @@ test.describe("Preact Compatibility Tests", () => {
     const result = evalResp.result as { result: { type: string; value: string } };
     expect(result.result.value).toContain("timeout");
   });
+
+  // Element interaction helper tests
+  test("__click dispatches click event", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let clicked = false;
+        const btn = document.createElement('button');
+        btn.id = 'click-test';
+        btn.addEventListener('click', () => { clicked = true; });
+        document.body.appendChild(btn);
+        __click('#click-test');
+        clicked;
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: boolean } };
+    expect(result.result.value).toBe(true);
+  });
+
+  test("__fill sets input value and dispatches events", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let inputFired = false;
+        let changeFired = false;
+        const input = document.createElement('input');
+        input.id = 'fill-test';
+        input.addEventListener('input', () => { inputFired = true; });
+        input.addEventListener('change', () => { changeFired = true; });
+        document.body.appendChild(input);
+        __fill('#fill-test', 'hello world');
+        [input.value, inputFired, changeFired];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [value, inputFired, changeFired] = result.result.value.map((v) => v.value);
+    expect(value).toBe("hello world");
+    expect(inputFired).toBe(true);
+    expect(changeFired).toBe(true);
+  });
+
+  test("__type appends text character by character", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const input = document.createElement('input');
+        input.id = 'type-test';
+        input.value = 'pre-';
+        document.body.appendChild(input);
+        __type('#type-test', 'abc');
+        input.value;
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("pre-abc");
+  });
+
+  test("__clear empties input value", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const input = document.createElement('input');
+        input.id = 'clear-test';
+        input.value = 'to be cleared';
+        document.body.appendChild(input);
+        __clear('#clear-test');
+        input.value;
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("");
+  });
+
+  test("__focus and __blur dispatch focus events", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let focused = false;
+        let blurred = false;
+        const input = document.createElement('input');
+        input.id = 'focus-test';
+        input.addEventListener('focus', () => { focused = true; });
+        input.addEventListener('blur', () => { blurred = true; });
+        document.body.appendChild(input);
+        __focus('#focus-test');
+        const afterFocus = focused;
+        __blur('#focus-test');
+        [afterFocus, blurred];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [focused, blurred] = result.result.value.map((v) => v.value);
+    expect(focused).toBe(true);
+    expect(blurred).toBe(true);
+  });
+
+  test("__check and __uncheck toggle checkbox state", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = 'checkbox-test';
+        document.body.appendChild(cb);
+
+        const before = cb.checked;
+        __check('#checkbox-test');
+        const afterCheck = cb.checked;
+        __uncheck('#checkbox-test');
+        const afterUncheck = cb.checked;
+        [before, afterCheck, afterUncheck];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [before, afterCheck, afterUncheck] = result.result.value.map((v) => v.value);
+    expect(before).toBe(false);
+    expect(afterCheck).toBe(true);
+    expect(afterUncheck).toBe(false);
+  });
+
+  test("__hover dispatches mouse events", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let mouseEntered = false;
+        let mouseOvered = false;
+        const div = document.createElement('div');
+        div.id = 'hover-test';
+        div.addEventListener('mouseenter', () => { mouseEntered = true; });
+        div.addEventListener('mouseover', () => { mouseOvered = true; });
+        document.body.appendChild(div);
+        __hover('#hover-test');
+        [mouseEntered, mouseOvered];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [mouseEntered, mouseOvered] = result.result.value.map((v) => v.value);
+    expect(mouseEntered).toBe(true);
+    expect(mouseOvered).toBe(true);
+  });
+
+  // Element property getter tests
+  test("__getText returns textContent", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const div = document.createElement('div');
+        div.id = 'text-test';
+        div.textContent = 'Hello World';
+        document.body.appendChild(div);
+        __getText('#text-test');
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("Hello World");
+  });
+
+  test("__getValue returns input value", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const input = document.createElement('input');
+        input.id = 'value-test';
+        input.value = 'test value';
+        document.body.appendChild(input);
+        __getValue('#value-test');
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("test value");
+  });
+
+  test("__isVisible returns visibility state", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const visible = document.createElement('div');
+        visible.id = 'visible-div';
+        document.body.appendChild(visible);
+
+        const hidden = document.createElement('div');
+        hidden.id = 'hidden-div';
+        hidden.hidden = true;
+        document.body.appendChild(hidden);
+
+        [__isVisible('#visible-div'), __isVisible('#hidden-div')];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [visible, hidden] = result.result.value.map((v) => v.value);
+    expect(visible).toBe(true);
+    expect(hidden).toBe(false);
+  });
+
+  test("__isChecked returns checkbox state", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = 'check-state-test';
+        cb.checked = true;
+        document.body.appendChild(cb);
+        __isChecked('#check-state-test');
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: boolean } };
+    expect(result.result.value).toBe(true);
+  });
+
+  // Query helper tests
+  test("__$ returns element info", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const div = document.createElement('div');
+        div.id = 'query-test';
+        div.className = 'test-class';
+        div.textContent = 'Query Test';
+        document.body.appendChild(div);
+        const info = __$('#query-test');
+        [info.tagName, info.id, info.textContent];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [tagName, id, textContent] = result.result.value.map((v) => v.value);
+    expect(tagName).toBe("DIV");
+    expect(id).toBe("query-test");
+    expect(textContent).toBe("Query Test");
+  });
+
+  test("__$$ returns multiple elements", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        for (let i = 0; i < 3; i++) {
+          const div = document.createElement('div');
+          div.className = 'multi-test';
+          div.textContent = 'Item ' + i;
+          document.body.appendChild(div);
+        }
+        __$$('.multi-test').length;
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBe(3);
+  });
+
+  test("__count returns element count", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        for (let i = 0; i < 5; i++) {
+          const span = document.createElement('span');
+          span.className = 'count-test';
+          document.body.appendChild(span);
+        }
+        __count('.count-test');
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBe(5);
+  });
+
+  test("__waitForTimeout delays execution", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        const start = Date.now();
+        __waitForTimeout(50).then(() => Date.now() - start);
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: number } };
+    expect(result.result.value).toBeGreaterThanOrEqual(45);
+  });
+
+  test("__dispatchEvent dispatches custom events", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        let eventReceived = null;
+        const div = document.createElement('div');
+        div.id = 'event-test';
+        div.addEventListener('custom-event', (e) => { eventReceived = e.type; });
+        document.body.appendChild(div);
+        __dispatchEvent('#event-test', 'custom-event');
+        eventReceived;
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: string } };
+    expect(result.result.value).toBe("custom-event");
+  });
 });
