@@ -133,7 +133,14 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       globalThis.Node = Node;
   #|     }
   #|
-#|     Node.prototype.appendChild = function(child) {
+  #|     function Attr() {}
+  #|     Attr.prototype = Object.create(Node.prototype);
+  #|     Attr.prototype.constructor = Attr;
+  #|     if (typeof globalThis !== 'undefined') {
+  #|       globalThis.Attr = Attr;
+  #|     }
+  #|
+  #|     Node.prototype.appendChild = function(child) {
 #|       if (typeof this.appendChild === 'function' && this.appendChild !== Node.prototype.appendChild) {
 #|         return this.appendChild(child);
   #|       }
@@ -175,12 +182,70 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
 #|       }
 #|       throw new DOMException('Cannot replace child on this node type', 'HierarchyRequestError');
 #|     };
+#|     Object.defineProperty(Node.prototype, 'parentNode', {
+#|       get() { return this._parent === undefined ? null : this._parent; },
+#|       set(v) { this._parent = v; },
+#|       configurable: true
+#|     });
+#|     Object.defineProperty(Node.prototype, 'parentElement', {
+#|       get() {
+#|         const p = this.parentNode;
+#|         return p && getNodeType(p) === 1 ? p : null;
+#|       },
+#|       configurable: true
+#|     });
+#|     Object.defineProperty(Node.prototype, 'nextSibling', {
+#|       get() {
+#|         const parent = getParentNode(this);
+#|         if (!parent) return null;
+#|         const siblings = getSiblingArray(this);
+#|         const idx = siblings.indexOf(this);
+#|         return idx >= 0 ? (siblings[idx + 1] || null) : null;
+#|       },
+#|       configurable: true
+#|     });
+#|     Object.defineProperty(Node.prototype, 'previousSibling', {
+#|       get() {
+#|         const parent = getParentNode(this);
+#|         if (!parent) return null;
+#|         const siblings = getSiblingArray(this);
+#|         const idx = siblings.indexOf(this);
+#|         return idx > 0 ? siblings[idx - 1] : null;
+#|       },
+#|       configurable: true
+#|     });
+#|     Node.prototype.hasChildNodes = function() {
+#|       const nodes = getChildNodesArray(this);
+#|       return nodes && nodes.length > 0;
+#|     };
+#|     Node.prototype.normalize = function() {
+#|       if (typeof this.normalize === 'function' && this.normalize !== Node.prototype.normalize) {
+#|         return this.normalize();
+#|       }
+#|       if (!this._children) return;
+#|       normalizeChildArray(this._children);
+#|     };
 #|     Node.prototype.contains = function(other) {
 #|       return nodeContains(this, other);
 #|     };
 #|     Node.prototype.compareDocumentPosition = function(other) {
 #|       return compareDocumentPositionImpl(this, other);
 #|     };
+#|     Node.prototype.lookupNamespaceURI = function(prefix) {
+#|       return lookupNamespaceURIImpl(this, prefix);
+#|     };
+#|     Node.prototype.isDefaultNamespace = function(namespace) {
+#|       const ns = namespace === undefined || namespace === null || namespace === '' ? null : String(namespace);
+#|       const nodeType = getNodeType(this);
+#|       if ((nodeType === 10 || nodeType === 11) && !getParentNode(this)) {
+#|         return ns === null;
+#|       }
+#|       const current = lookupNamespaceURIImpl(this, null);
+#|       return current === ns;
+#|     };
+#|     Node.prototype.addEventListener = function(type, listener, options) {};
+#|     Node.prototype.removeEventListener = function(type, listener, options) {};
+#|     Node.prototype.dispatchEvent = function(event) { return true; };
   #|
   #|     function CharacterData() {}
   #|     CharacterData.prototype = Object.create(Node.prototype);
@@ -197,6 +262,13 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       const items = this._itemsFn ? this._itemsFn() : this;
   #|       return items[i] || null;
   #|     };
+  #|     Object.defineProperty(NodeList.prototype, 'length', {
+  #|       get() {
+  #|         const items = this._itemsFn ? this._itemsFn() : (this._items || this);
+  #|         return (items && typeof items.length === 'number') ? items.length : 0;
+  #|       },
+  #|       configurable: true
+  #|     });
   #|
   #|     function HTMLCollection() {}
   #|     HTMLCollection.prototype = Object.create(Array.prototype);
@@ -251,9 +323,6 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         get(obj, prop) {
   #|           if (prop === '_itemsFn') return obj._itemsFn;
   #|           if (prop === 'length') return getItems().length;
-  #|           if (prop === Symbol.iterator) {
-  #|             return function() { return getItems()[Symbol.iterator](); };
-  #|           }
   #|           if (prop in obj) return obj[prop];
   #|           if (isIndexProp(prop)) {
   #|             const items = getItems();
@@ -313,8 +382,12 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     }
   #|     function makeNodeList(items) {
   #|       if (typeof items === 'function') return makeLiveList(NodeList, items, false);
-  #|       const list = items.slice();
+  #|       const list = {};
   #|       Object.setPrototypeOf(list, NodeList.prototype);
+  #|       Object.defineProperty(list, '_items', { value: items.slice(), writable: false, enumerable: false, configurable: true });
+  #|       for (let i = 0; i < items.length; i++) {
+  #|         Object.defineProperty(list, i, { value: items[i], writable: false, enumerable: true, configurable: true });
+  #|       }
   #|       return list;
   #|     }
   #|     function makeHTMLCollection(items) {
@@ -340,6 +413,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
 #|       }
 #|       return [];
 #|     }
+#|     function getSiblingArray(node) {
+#|       if (!node || !node._parent) return [];
+#|       if (node._parent._children) return node._parent._children;
+#|       return getChildNodesArray(node._parent);
+#|     }
 #|     function traverseTree(root, visit) {
 #|       if (!root) return false;
 #|       if (visit(root) === false) return false;
@@ -349,6 +427,77 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
 #|         }
 #|       }
 #|       return true;
+#|     }
+#|     function normalizeChildArray(children) {
+#|       let i = 0;
+#|       while (i < children.length) {
+#|         const child = children[i];
+#|         if (child && child._nodeType === 3) {
+#|           if (child._textContent === '') {
+#|             children.splice(i, 1);
+#|             child._parent = null;
+#|             if ('parentNode' in child) child.parentNode = null;
+#|             continue;
+#|           }
+#|           while (i + 1 < children.length && children[i + 1] && children[i + 1]._nodeType === 3) {
+#|             const next = children[i + 1];
+#|             if (next._textContent !== '') {
+#|               child._textContent += next._textContent;
+#|             }
+#|             children.splice(i + 1, 1);
+#|             next._parent = null;
+#|             if ('parentNode' in next) next.parentNode = null;
+#|           }
+#|           i += 1;
+#|           continue;
+#|         }
+#|         if (child && typeof child.normalize === 'function') {
+#|           child.normalize();
+#|         }
+#|         i += 1;
+#|       }
+#|     }
+#|     function lookupNamespaceURIImpl(node, prefix) {
+#|       if (!node) return null;
+#|       const pref = prefix === undefined || prefix === null || prefix === '' ? null : String(prefix);
+#|       const nodeType = getNodeType(node);
+#|       if (nodeType === 10) {
+#|         return null;
+#|       }
+#|       if (nodeType === 1) {
+#|         const ns = node._namespaceURI || node.namespaceURI || null;
+#|         const pfx = node._prefix !== undefined ? node._prefix : (node.prefix || null);
+#|         if (pref === 'xml') return 'http://www.w3.org/XML/1998/namespace';
+#|         if (pref === 'xmlns') return 'http://www.w3.org/2000/xmlns/';
+#|         if (ns && pfx === pref) return ns;
+#|         if (ns && pref === null && (pfx === null || pfx === undefined)) return ns;
+#|         if (node._attrList) {
+#|           for (const attr of node._attrList) {
+#|             const attrNs = attr.ns === undefined ? null : attr.ns;
+#|             const attrPrefix = attr.prefix === undefined ? null : attr.prefix;
+#|             const attrLocal = attr.localName;
+#|             if (attrNs === 'http://www.w3.org/2000/xmlns/') {
+#|               if (attrPrefix === 'xmlns' && attrLocal === pref) return attr.value || null;
+#|               if ((attrLocal === 'xmlns' || attr.name === 'xmlns') && pref === null) return attr.value || null;
+#|             }
+#|             if (attrPrefix === 'xmlns' && attrLocal === pref) return attr.value || null;
+#|             if ((attrLocal === 'xmlns' || attr.name === 'xmlns') && pref === null) return attr.value || null;
+#|           }
+#|         }
+#|         const parent = getParentNode(node);
+#|         if (parent && getNodeType(parent) === 9) return null;
+#|         return parent ? lookupNamespaceURIImpl(parent, pref) : null;
+#|       }
+#|       if (nodeType === 9) {
+#|         const root = node.documentElement || (node._children ? node._children.find(n => n._nodeType === 1) : null);
+#|         return root ? lookupNamespaceURIImpl(root, pref) : null;
+#|       }
+#|       if (nodeType === 2) {
+#|         return node.ownerElement ? lookupNamespaceURIImpl(node.ownerElement, pref) : null;
+#|       }
+#|       const parent = getParentNode(node);
+#|       if (parent && getNodeType(parent) === 9) return null;
+#|       return parent ? lookupNamespaceURIImpl(parent, pref) : null;
 #|     }
   #|     function isNodeLike(node) {
   #|       return !!(node && typeof node === 'object' && (node._nodeType !== undefined || typeof node.nodeType === 'number'));
@@ -419,7 +568,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function documentDoctype(doc, exclude) {
   #|       return (doc._children || []).find(n => n._nodeType === 10 && n !== exclude) || null;
   #|     }
-  #|     function validateDocumentInsert(doc, node, refChild) {
+  #|     function validateDocumentInsert(doc, node, refChild, excludeChild) {
+  #|       const exclude = (excludeChild === undefined) ? null : excludeChild;
+  #|       const excludeType = exclude ? getNodeType(exclude) : null;
+  #|       const excludeElement = excludeType === 1 ? exclude : null;
+  #|       const excludeDoctype = excludeType === 10 ? exclude : null;
   #|       const nodeType = getNodeType(node);
   #|       if (nodeType === 9 || nodeType === 2) {
   #|         throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
@@ -428,8 +581,19 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         throw new DOMException('Cannot insert a text node into document', 'HierarchyRequestError');
   #|       }
   #|       if (nodeType === 10) {
-  #|         if (documentHasDoctype(doc, node)) throw new DOMException('Document already has a doctype', 'HierarchyRequestError');
-  #|         if (documentHasElement(doc, node)) throw new DOMException('Document already has an element', 'HierarchyRequestError');
+  #|         if (documentHasDoctype(doc, excludeDoctype)) throw new DOMException('Document already has a doctype', 'HierarchyRequestError');
+  #|         const element = (doc._children || []).find(n => n._nodeType === 1 && n !== excludeElement) || null;
+  #|         if (element) {
+  #|           if (refChild) {
+  #|             const elemIdx = doc._children.indexOf(element);
+  #|             const refIdx = doc._children.indexOf(refChild);
+  #|             if (refIdx > elemIdx) {
+  #|               throw new DOMException('Cannot insert doctype after element', 'HierarchyRequestError');
+  #|             }
+  #|           } else {
+  #|             throw new DOMException('Cannot insert doctype after element', 'HierarchyRequestError');
+  #|           }
+  #|         }
   #|         return;
   #|       }
   #|       if (nodeType === 11) {
@@ -447,10 +611,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           throw new DOMException('Invalid DocumentFragment for document', 'HierarchyRequestError');
   #|         }
   #|         if (elementCount === 1) {
-  #|           if (documentHasElement(doc)) {
+  #|           if (documentHasElement(doc, excludeElement)) {
   #|             throw new DOMException('Document already has an element', 'HierarchyRequestError');
   #|           }
-  #|           const doctype = documentDoctype(doc);
+  #|           const doctype = documentDoctype(doc, excludeDoctype);
   #|           if (doctype && refChild) {
   #|             const doctypeIdx = doc._children.indexOf(doctype);
   #|             const refIdx = doc._children.indexOf(refChild);
@@ -462,10 +626,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         return;
   #|       }
   #|       if (nodeType === 1) {
-  #|         if (documentHasElement(doc, node)) {
+  #|         if (documentHasElement(doc, excludeElement)) {
   #|           throw new DOMException('Document already has an element', 'HierarchyRequestError');
   #|         }
-  #|         const doctype = documentDoctype(doc);
+  #|         const doctype = documentDoctype(doc, excludeDoctype);
   #|         if (doctype && refChild) {
   #|           const doctypeIdx = doc._children.indexOf(doctype);
   #|           const refIdx = doc._children.indexOf(refChild);
@@ -558,9 +722,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function isAsciiWhitespaceChar(ch) {
   #|       return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\f' || ch === '\r';
   #|     }
-  #|     function splitAsciiWhitespace(str) {
-  #|       const tokens = [];
-  #|       let current = '';
+#|     function splitAsciiWhitespace(str) {
+#|       const tokens = [];
+#|       let current = '';
   #|       for (let i = 0; i < str.length; i++) {
   #|         const ch = str[i];
   #|         if (isAsciiWhitespaceChar(ch)) {
@@ -572,16 +736,105 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       if (current !== '') tokens.push(current);
   #|       return tokens;
   #|     }
-  #|     function containsAsciiWhitespace(str) {
-  #|       for (let i = 0; i < str.length; i++) {
-  #|         if (isAsciiWhitespaceChar(str[i])) return true;
-  #|       }
-  #|       return false;
-  #|     }
-  #|     function parseClassTokens(input) {
-  #|       const str = String(input);
-  #|       return splitAsciiWhitespace(str);
-  #|     }
+#|     function containsAsciiWhitespace(str) {
+#|       for (let i = 0; i < str.length; i++) {
+#|         if (isAsciiWhitespaceChar(str[i])) return true;
+#|       }
+#|       return false;
+#|     }
+#|     function isHexDigit(ch) {
+#|       return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+#|     }
+#|     function isCssIdentDelimiter(ch) {
+#|       return isAsciiWhitespaceChar(ch) || ch === '.' || ch === '#' || ch === '[' || ch === ']' || ch === ':' ||
+#|         ch === '>' || ch === '+' || ch === '~' || ch === ',' || ch === ')';
+#|     }
+#|     function consumeCssEscape(str, index) {
+#|       if (index + 1 >= str.length) {
+#|         return { char: '\uFFFD', nextIndex: str.length };
+#|       }
+#|       const next = str[index + 1];
+#|       if (next === '\n' || next === '\f') {
+#|         return { char: '', nextIndex: index + 2 };
+#|       }
+#|       if (next === '\r') {
+#|         let nextIndex = index + 2;
+#|         if (str[nextIndex] === '\n') nextIndex += 1;
+#|         return { char: '', nextIndex };
+#|       }
+#|       if (isHexDigit(next)) {
+#|         let hex = '';
+#|         let j = index + 1;
+#|         for (let count = 0; count < 6 && j < str.length && isHexDigit(str[j]); count++, j++) {
+#|           hex += str[j];
+#|         }
+#|         let code = parseInt(hex, 16);
+#|         if (j < str.length && isAsciiWhitespaceChar(str[j])) {
+#|           if (str[j] === '\r' && str[j + 1] === '\n') {
+#|             j += 2;
+#|           } else {
+#|             j += 1;
+#|           }
+#|         }
+#|         if (!code || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF)) {
+#|           code = 0xFFFD;
+#|         }
+#|         return { char: String.fromCodePoint(code), nextIndex: j };
+#|       }
+#|       return { char: next, nextIndex: index + 2 };
+#|     }
+#|     function readCssIdentifier(str, start) {
+#|       let value = '';
+#|       let i = start;
+#|       while (i < str.length) {
+#|         const ch = str[i];
+#|         if (ch === '\u0000') {
+#|           value += '\uFFFD';
+#|           i += 1;
+#|           continue;
+#|         }
+#|         if (ch === '\\') {
+#|           const esc = consumeCssEscape(str, i);
+#|           value += esc.char;
+#|           i = esc.nextIndex;
+#|           continue;
+#|         }
+#|         if (isCssIdentDelimiter(ch)) break;
+#|         value += ch;
+#|         i += 1;
+#|       }
+#|       return { value, end: i };
+#|     }
+#|     function bufEndsWithHexEscape(buf) {
+#|       let i = buf.length - 1;
+#|       let count = 0;
+#|       while (i >= 0 && count < 6 && isHexDigit(buf[i])) {
+#|         i -= 1;
+#|         count += 1;
+#|       }
+#|       if (count === 0) return false;
+#|       return i >= 0 && buf[i] === '\\';
+#|     }
+#|     function isWhitespaceAfterHexEscape(str, index) {
+#|       let i = index - 1;
+#|       let count = 0;
+#|       while (i >= 0 && count < 6 && isHexDigit(str[i])) {
+#|         i -= 1;
+#|         count += 1;
+#|       }
+#|       if (count === 0) return false;
+#|       return i >= 0 && str[i] === '\\';
+#|     }
+#|     function normalizeSelectorEscapes(selector) {
+#|       let str = String(selector);
+#|       // Consume a single whitespace after hex escapes, per CSS syntax.
+#|       str = str.replace(/\\\\([0-9a-fA-F]{1,6})(\r\n|[\\t\\n\\r\\f ])/g, '\\\\$1');
+#|       return str;
+#|     }
+#|     function parseClassTokens(input) {
+#|       const str = String(input);
+#|       return splitAsciiWhitespace(str);
+#|     }
   #|     function matchesClassTokens(node, tokens) {
   #|       if (tokens.length === 0) return false;
   #|       for (const token of tokens) {
@@ -616,9 +869,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       return el._attrList.find(a => a.name === rawName) || null;
   #|     }
-  #|     function parseAttributeSelector(segment) {
-  #|       const inner = segment.slice(1, -1).trim();
-  #|       if (!inner) return null;
+#|     function parseAttributeSelector(segment) {
+#|       const inner = segment.slice(1, -1).trim();
+#|       if (!inner) return null;
   #|       let name = '';
   #|       let operator = null;
   #|       let value = null;
@@ -668,10 +921,97 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           flag = ch.toLowerCase();
   #|         }
   #|       }
-  #|       return { name, operator, value, flag };
-  #|     }
+#|       return { name, operator, value, flag };
+#|     }
+#|     function decodeHtmlEntities(value) {
+#|       const named = {
+#|         'lt': '<',
+#|         'gt': '>',
+#|         'amp': '&',
+#|         'quot': '"',
+#|         'apos': "'",
+#|         'nbsp': '\u00A0'
+#|       };
+#|       return String(value).replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, function(_, inner) {
+#|         if (!inner) return '&' + inner + ';';
+#|         if (inner[0] === '#') {
+#|           const hex = inner[1] === 'x' || inner[1] === 'X';
+#|           const num = hex ? parseInt(inner.slice(2), 16) : parseInt(inner.slice(1), 10);
+#|           if (!num || num > 0x10FFFF || (num >= 0xD800 && num <= 0xDFFF)) return '\uFFFD';
+#|           return String.fromCodePoint(num);
+#|         }
+#|         return named[inner] || ('&' + inner + ';');
+#|       });
+#|     }
+#|     function parseHtmlAttributes(text) {
+#|       const attrs = [];
+#|       const re = /([^\s=\/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+#|       let m;
+#|       while ((m = re.exec(text)) !== null) {
+#|         const name = m[1];
+#|         const value = m[2] !== undefined ? m[2] : (m[3] !== undefined ? m[3] : (m[4] !== undefined ? m[4] : ''));
+#|         attrs.push({ name, value: decodeHtmlEntities(value) });
+#|       }
+#|       return attrs;
+#|     }
+#|     function parseHtmlFragment(html, ownerDoc) {
+#|       const doc = ownerDoc || document;
+#|       const frag = doc.createDocumentFragment();
+#|       const voidTags = {
+#|         area: true, base: true, br: true, col: true, embed: true, hr: true,
+#|         img: true, input: true, link: true, meta: true, param: true, source: true,
+#|         track: true, wbr: true
+#|       };
+#|       const stack = [frag];
+#|       const tokenRe = /<!--[\s\S]*?-->|<\/?[A-Za-z0-9:_-]+[^>]*>|[^<]+/g;
+#|       let match;
+#|       while ((match = tokenRe.exec(String(html))) !== null) {
+#|         const token = match[0];
+#|         const current = stack[stack.length - 1];
+#|         if (token.startsWith('<!--')) {
+#|           const text = token.slice(4, -3);
+#|           current.appendChild(doc.createComment(text));
+#|           continue;
+#|         }
+#|         if (token.startsWith('</')) {
+#|           const endName = asciiLowercase(token.slice(2, -1).trim());
+#|           for (let i = stack.length - 1; i > 0; i--) {
+#|             const el = stack[i];
+#|             if (el && el._tagName && asciiLowercase(el._tagName) === endName) {
+#|               stack.length = i;
+#|               break;
+#|             }
+#|           }
+#|           continue;
+#|         }
+#|         if (token.startsWith('<')) {
+#|           const selfClosing = token.endsWith('/>');
+#|           const inner = token.slice(1, token.length - (selfClosing ? 2 : 1)).trim();
+#|           if (!inner) continue;
+#|           const parts = inner.split(/\s+/, 1);
+#|           const tagName = parts[0];
+#|           const attrText = inner.slice(tagName.length);
+#|           const el = doc.createElement(tagName);
+#|           const attrs = parseHtmlAttributes(attrText);
+#|           for (const attr of attrs) {
+#|             try { el.setAttribute(attr.name, attr.value); } catch (e) {}
+#|           }
+#|           current.appendChild(el);
+#|           const lower = asciiLowercase(tagName);
+#|           if (!selfClosing && !voidTags[lower]) {
+#|             stack.push(el);
+#|           }
+#|           continue;
+#|         }
+#|         const text = decodeHtmlEntities(token);
+#|         if (text !== '') {
+#|           current.appendChild(doc.createTextNode(text));
+#|         }
+#|       }
+#|       return frag._children ? frag._children.slice() : [];
+#|     }
   #|     function matchesSimpleSelector(el, selector, scopeRoot) {
-  #|       const sel = selector.trim();
+#|       const sel = trimAsciiWhitespace(selector);
   #|       if (!sel) return false;
   #|       if (sel === '*') return true;
   #|       let rest = sel;
@@ -696,20 +1036,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       let i = 0;
   #|       while (i < rest.length) {
   #|         const ch = rest[i];
-  #|         if (ch === '#') {
-  #|           const m = rest.slice(i + 1).match(/^[A-Za-z0-9_-]+/);
-  #|           if (!m) return false;
-  #|           idMatches.push(m[0]);
-  #|           i += 1 + m[0].length;
-  #|           continue;
-  #|         }
-  #|         if (ch === '.') {
-  #|           const m = rest.slice(i + 1).match(/^[A-Za-z0-9_-]+/);
-  #|           if (!m) return false;
-  #|           classMatches.push(m[0]);
-  #|           i += 1 + m[0].length;
-  #|           continue;
-  #|         }
+#|         if (ch === '#') {
+#|           const res = readCssIdentifier(rest, i + 1);
+#|           if (res.value === '') return false;
+#|           idMatches.push(res.value);
+#|           i = res.end;
+#|           continue;
+#|         }
+#|         if (ch === '.') {
+#|           const res = readCssIdentifier(rest, i + 1);
+#|           if (res.value === '') return false;
+#|           classMatches.push(res.value);
+#|           i = res.end;
+#|           continue;
+#|         }
   #|         if (ch === '[') {
   #|           const end = rest.indexOf(']', i + 1);
   #|           if (end < 0) return false;
@@ -889,26 +1229,88 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       return true;
   #|     }
-  #|     function tokenizeSelector(selector) {
-  #|       const tokens = [];
-  #|       let buf = '';
-  #|       let combinator = null;
-  #|       let inAttr = false;
-  #|       let depth = 0;
-  #|       let quote = null;
-  #|       const pushToken = () => {
-  #|         const text = buf.trim();
-  #|         if (text) {
-  #|           tokens.push({ selector: text, combinator });
-  #|           combinator = null;
-  #|         }
-  #|         buf = '';
-  #|       };
-  #|       for (let i = 0; i < selector.length; i++) {
-  #|         const ch = selector[i];
-  #|         if (quote) {
-  #|           buf += ch;
-  #|           if (ch === quote) quote = null;
+#|     function tokenizeSelector(selector) {
+#|       const tokens = [];
+#|       let buf = '';
+#|       let combinator = null;
+#|       let inAttr = false;
+#|       let depth = 0;
+#|       let quote = null;
+#|       const rawSelector = String(selector);
+#|       let normalized = '';
+#|       for (let i = 0; i < rawSelector.length; i++) {
+#|         const ch = rawSelector[i];
+#|         if (ch !== '\\') {
+#|           normalized += ch;
+#|           continue;
+#|         }
+#|         normalized += ch;
+#|         if (i + 1 >= rawSelector.length) continue;
+#|         let j = i + 1;
+#|         if (isHexDigit(rawSelector[j])) {
+#|           let count = 0;
+#|           while (count < 6 && j < rawSelector.length && isHexDigit(rawSelector[j])) {
+#|             normalized += rawSelector[j];
+#|             j += 1;
+#|             count += 1;
+#|           }
+#|           if (j < rawSelector.length && isAsciiWhitespaceChar(rawSelector[j])) {
+#|             if (rawSelector[j] === '\r' && rawSelector[j + 1] === '\n') {
+#|               normalized += rawSelector[j];
+#|               normalized += rawSelector[j + 1];
+#|               j += 1;
+#|             } else {
+#|               normalized += rawSelector[j];
+#|             }
+#|             j += 1;
+#|           }
+#|           i = j - 1;
+#|           continue;
+#|         }
+#|         normalized += rawSelector[j];
+#|         i = j;
+#|       }
+#|       const pushToken = () => {
+#|         const text = buf.trim();
+#|         if (text) {
+#|           tokens.push({ selector: text, combinator });
+#|           combinator = null;
+#|         }
+#|         buf = '';
+#|       };
+#|       for (let i = 0; i < normalized.length; i++) {
+#|         const ch = normalized[i];
+#|         if (ch === '\\') {
+#|           buf += ch;
+#|           if (i + 1 < normalized.length) {
+#|             let j = i + 1;
+#|             if (isHexDigit(normalized[j])) {
+#|               let count = 0;
+#|               while (count < 6 && j < normalized.length && isHexDigit(normalized[j])) {
+#|                 buf += normalized[j];
+#|                 j += 1;
+#|                 count += 1;
+#|               }
+#|               if (j < normalized.length && isAsciiWhitespaceChar(normalized[j])) {
+#|                 buf += normalized[j];
+#|                 if (normalized[j] === '\r' && normalized[j + 1] === '\n') {
+#|                   buf += normalized[j + 1];
+#|                   j += 1;
+#|                 }
+#|                 j += 1;
+#|               }
+#|               i = j - 1;
+#|               continue;
+#|             }
+#|             buf += normalized[j];
+#|             i = j;
+#|             continue;
+#|           }
+#|           continue;
+#|         }
+#|         if (quote) {
+#|           buf += ch;
+#|           if (ch === quote) quote = null;
   #|           continue;
   #|         }
   #|         if (ch === '"' || ch === "'") {
@@ -928,22 +1330,85 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             combinator = ch;
   #|             continue;
   #|           }
-  #|           if (ch === ' ') {
-  #|             pushToken();
-  #|             if (!combinator) combinator = ' ';
-  #|             while (i + 1 < selector.length && selector[i + 1] === ' ') i++;
-  #|             continue;
-  #|           }
-  #|         }
-  #|         buf += ch;
-  #|       }
+#|           if (ch === ' ') {
+#|             if (bufEndsWithHexEscape(buf) || isWhitespaceAfterHexEscape(normalized, i)) {
+#|               buf += ch;
+#|               continue;
+#|             }
+#|             pushToken();
+#|             if (!combinator) combinator = ' ';
+#|             while (i + 1 < normalized.length && normalized[i + 1] === ' ') i++;
+#|             continue;
+#|           }
+#|         }
+#|         buf += ch;
+#|       }
   #|       pushToken();
-  #|       return tokens;
-  #|     }
-  #|     function matchesSelectorGroup(el, selector, scopeRoot) {
-  #|       const tokens = tokenizeSelector(selector);
-  #|       if (tokens.length === 0) return false;
-  #|       let current = el;
+#|       return tokens;
+#|     }
+#|     function trimAsciiWhitespace(str) {
+#|       const s = String(str);
+#|       let start = 0;
+#|       let end = s.length;
+#|       while (start < end && isAsciiWhitespaceChar(s[start])) start += 1;
+#|       while (end > start && isAsciiWhitespaceChar(s[end - 1])) end -= 1;
+#|       return s.slice(start, end);
+#|     }
+#|     function hasUnescapedCombinator(selector) {
+#|       const str = String(selector);
+#|       let inAttr = false;
+#|       let depth = 0;
+#|       let quote = null;
+#|       for (let i = 0; i < str.length; i++) {
+#|         const ch = str[i];
+#|         if (ch === '\\') {
+#|           if (i + 1 < str.length && isHexDigit(str[i + 1])) {
+#|             let j = i + 1;
+#|             let count = 0;
+#|             while (count < 6 && j < str.length && isHexDigit(str[j])) {
+#|               j += 1;
+#|               count += 1;
+#|             }
+#|             if (j < str.length && isAsciiWhitespaceChar(str[j])) {
+#|               if (str[j] === '\r' && str[j + 1] === '\n') j += 1;
+#|               j += 1;
+#|             }
+#|             i = j - 1;
+#|             continue;
+#|           }
+#|           if (i + 1 < str.length) {
+#|             i += 1;
+#|             continue;
+#|           }
+#|         }
+#|         if (quote) {
+#|           if (ch === quote) quote = null;
+#|           continue;
+#|         }
+#|         if (ch === '"' || ch === "'") {
+#|           quote = ch;
+#|           continue;
+#|         }
+#|         if (ch === '[') inAttr = true;
+#|         if (ch === ']') inAttr = false;
+#|         if (!inAttr) {
+#|           if (ch === '(') depth++;
+#|           if (ch === ')') depth = Math.max(0, depth - 1);
+#|         }
+#|         if (!inAttr && depth === 0) {
+#|           if (ch === '>' || ch === '+' || ch === '~' || ch === ',' || ch === ' ') return true;
+#|         }
+#|       }
+#|       return false;
+#|     }
+#|     function matchesSelectorGroup(el, selector, scopeRoot) {
+#|       const trimmed = trimAsciiWhitespace(selector);
+#|       if (!hasUnescapedCombinator(trimmed)) {
+#|         return matchesSimpleSelector(el, trimmed, scopeRoot);
+#|       }
+#|       const tokens = tokenizeSelector(trimmed);
+#|       if (tokens.length === 0) return false;
+#|       let current = el;
   #|       for (let i = tokens.length - 1; i >= 0; i--) {
   #|         const token = tokens[i];
   #|         if (!current || current._nodeType !== 1) return false;
@@ -991,12 +1456,77 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         }
   #|       }
   #|       return true;
-  #|     }
-  #|     function matchesSelector(el, selector, scopeRoot) {
-  #|       const groups = String(selector).split(',').map(s => s.trim()).filter(Boolean);
-  #|       if (groups.length === 0) return false;
-  #|       for (const group of groups) {
-  #|         if (matchesSelectorGroup(el, group, scopeRoot)) return true;
+#|     }
+#|     function splitSelectorGroups(selector) {
+#|       const str = String(selector);
+#|       const groups = [];
+#|       let buf = '';
+#|       let inAttr = false;
+#|       let depth = 0;
+#|       let quote = null;
+#|       for (let i = 0; i < str.length; i++) {
+#|         const ch = str[i];
+#|         if (ch === '\\') {
+#|           buf += ch;
+#|           if (i + 1 < str.length) {
+#|             let j = i + 1;
+#|             if (isHexDigit(str[j])) {
+#|               let count = 0;
+#|               while (count < 6 && j < str.length && isHexDigit(str[j])) {
+#|                 buf += str[j];
+#|                 j += 1;
+#|                 count += 1;
+#|               }
+#|               if (j < str.length && isAsciiWhitespaceChar(str[j])) {
+#|                 if (str[j] === '\r' && str[j + 1] === '\n') {
+#|                   buf += str[j];
+#|                   buf += str[j + 1];
+#|                   j += 1;
+#|                 } else {
+#|                   buf += str[j];
+#|                 }
+#|                 j += 1;
+#|               }
+#|               i = j - 1;
+#|               continue;
+#|             }
+#|             buf += str[j];
+#|             i = j;
+#|             continue;
+#|           }
+#|           continue;
+#|         }
+#|         if (quote) {
+#|           buf += ch;
+#|           if (ch === quote) quote = null;
+#|           continue;
+#|         }
+#|         if (ch === '"' || ch === "'") {
+#|           quote = ch;
+#|           buf += ch;
+#|           continue;
+#|         }
+#|         if (ch === '[') inAttr = true;
+#|         if (ch === ']') inAttr = false;
+#|         if (!inAttr) {
+#|           if (ch === '(') depth++;
+#|           if (ch === ')') depth = Math.max(0, depth - 1);
+#|         }
+#|         if (!inAttr && depth === 0 && ch === ',') {
+#|           groups.push(buf);
+#|           buf = '';
+#|           continue;
+#|         }
+#|         buf += ch;
+#|       }
+#|       if (buf !== '') groups.push(buf);
+#|       return groups;
+#|     }
+#|     function matchesSelector(el, selector, scopeRoot) {
+#|       const groups = splitSelectorGroups(selector).map(s => trimAsciiWhitespace(s)).filter(Boolean);
+#|       if (groups.length === 0) return false;
+#|       for (const group of groups) {
+#|         if (matchesSelectorGroup(el, group, scopeRoot)) return true;
   #|       }
   #|       return false;
   #|     }
@@ -1381,6 +1911,27 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     }
   #|     Document.prototype = Object.create(Node.prototype);
   #|     Document.prototype.constructor = Document;
+  #|     Document.prototype.cloneNode = function(deep) {
+  #|       const impl = this.implementation || (typeof document !== 'undefined' ? document.implementation : null);
+  #|       if (this instanceof HTMLDocument) {
+  #|         const cloned = impl && impl.createHTMLDocument ? impl.createHTMLDocument('') : document.implementation.createHTMLDocument('');
+  #|         return cloned;
+  #|       }
+  #|       const ns = this.documentElement ? this.documentElement.namespaceURI : null;
+  #|       const cloned = impl && impl.createDocument ? impl.createDocument(ns, null, null) : document.implementation.createDocument(ns, null, null);
+  #|       if (this.contentType) cloned.contentType = this.contentType;
+  #|       if (this.URL) cloned.URL = this.URL;
+  #|       if (this.compatMode) cloned.compatMode = this.compatMode;
+  #|       if (this.charset) cloned.charset = this.charset;
+  #|       if (this.characterSet) cloned.characterSet = this.characterSet;
+  #|       if (this.inputEncoding) cloned.inputEncoding = this.inputEncoding;
+  #|       if (deep && this._children) {
+  #|         for (const child of this._children) {
+  #|           cloned.appendChild(child.cloneNode(true));
+  #|         }
+  #|       }
+  #|       return cloned;
+  #|     };
   #|
   #|     function XMLDocument() {}
   #|     XMLDocument.prototype = Object.create(Document.prototype);
@@ -1467,13 +2018,18 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         get namespaceURI() { return this._namespaceURI; },
   #|         get prefix() { return this._prefix; },
-  #|         get baseURI() { return 'about:blank'; },
+  #|         get baseURI() {
+  #|           const doc = this.ownerDocument || getGlobalDocument();
+  #|           if (doc && doc.baseURI) return doc.baseURI;
+  #|           if (doc && doc.URL) return doc.URL;
+  #|           return 'about:blank';
+  #|         },
   #|         get ownerDocument() { return this._ownerDocument || getGlobalDocument(); },
   #|         set ownerDocument(v) { this._ownerDocument = v; },
   #|         get isConnected() {
   #|           let node = this;
   #|           while (node._parent) node = node._parent;
-  #|           return node._tagName === 'HTML';
+  #|           return node && node._nodeType === 9;
   #|         },
   #|         getRootNode() {
   #|           let node = this;
@@ -1541,25 +2097,55 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         getAttributeNames() { return this._attrList.map(a => a.name); },
   #|         get attributes() {
   #|           const self = this;
-  #|           const items = this._attrList.map(function(a) {
-  #|             const attr = {
-  #|               name: a.name,
-  #|               value: a.value,
-  #|               localName: a.localName,
-  #|               nodeName: a.name,
-  #|               nodeValue: a.value,
-  #|               textContent: a.value,
-  #|               namespaceURI: a.ns,
-  #|               prefix: a.prefix,
-  #|               ownerElement: self,
-  #|               specified: true,
-  #|               nodeType: 2,
-  #|               _nodeType: 2
-  #|             };
-  #|             attr.isSameNode = function(other) { return this === other; };
-  #|             attr.isEqualNode = function(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value && other.namespaceURI === this.namespaceURI; };
-  #|             return attr;
-  #|           });
+#|           const items = this._attrList.map(function(a) {
+#|             const attrName = a.name;
+#|             const attr = {
+#|               name: a.name,
+#|               localName: a.localName,
+#|               nodeName: a.name,
+#|               namespaceURI: a.ns,
+#|               prefix: a.prefix,
+#|               ownerElement: self,
+#|               ownerDocument: self.ownerDocument || getGlobalDocument(),
+#|               specified: true,
+#|               nodeType: 2,
+#|               _nodeType: 2
+#|             };
+#|             Object.defineProperty(attr, 'value', {
+#|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
+#|               set(v) { self.setAttribute(attrName, v); }
+#|             });
+#|             Object.defineProperty(attr, 'nodeValue', {
+#|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
+#|               set(v) { self.setAttribute(attrName, v); }
+#|             });
+#|             Object.defineProperty(attr, 'textContent', {
+#|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
+#|               set(v) { self.setAttribute(attrName, v); }
+#|             });
+#|             Object.defineProperty(attr, 'baseURI', {
+#|               get() {
+#|                 if (self && self.baseURI) return self.baseURI;
+#|                 const doc = self && self.ownerDocument ? self.ownerDocument : getGlobalDocument();
+#|                 return doc && doc.baseURI ? doc.baseURI : 'about:blank';
+#|               }
+#|             });
+#|             attr.cloneNode = function() {
+#|               const doc = this.ownerDocument || getGlobalDocument();
+#|               let cloned;
+#|               if (this.namespaceURI) {
+#|                 cloned = doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
+#|               } else {
+#|                 cloned = doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name);
+#|               }
+#|               cloned.value = this.value;
+#|               return cloned;
+#|             };
+#|             attr.isSameNode = function(other) { return this === other; };
+#|             attr.isEqualNode = function(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value && other.namespaceURI === this.namespaceURI; };
+#|             Object.setPrototypeOf(attr, Attr.prototype);
+#|             return attr;
+#|           });
   #|           const namedNodeMap = {
   #|             length: items.length,
   #|             item(i) { return items[i] || null; },
@@ -1648,9 +2234,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         getAttributeNode(name) { return this.attributes.getNamedItem(name); },
   #|         getAttributeNodeNS(ns, name) { return this.getAttributeNode(name); },
-  #|         setAttributeNode(attr) { this.setAttribute(attr.name, attr.value); return attr; },
+  #|         setAttributeNode(attr) {
+  #|           this.setAttribute(attr.name, attr.value);
+  #|           if (attr) {
+  #|             attr.ownerElement = this;
+  #|             attr.ownerDocument = this.ownerDocument || getGlobalDocument();
+  #|           }
+  #|           return attr;
+  #|         },
   #|         setAttributeNodeNS(attr) { return this.setAttributeNode(attr); },
-  #|         removeAttributeNode(attr) { this.removeAttribute(attr.name); return attr; },
+  #|         removeAttributeNode(attr) {
+  #|           this.removeAttribute(attr.name);
+  #|           if (attr) attr.ownerElement = null;
+  #|           return attr;
+  #|         },
   #|         toggleAttribute(name, force) {
   #|           // Validate name - empty string is invalid
   #|           if (name === '') {
@@ -1709,7 +2306,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         get textContent() {
   #|           // Collect text content from Text node descendants only
   #|           const collectText = (node) => {
-  #|             if (node._nodeType === 3) return node._textContent;
+  #|             if (node._nodeType === 3 || node._nodeType === 4) return node._textContent;
   #|             if (!node._children) return '';
   #|             return node._children.map(collectText).join('');
   #|           };
@@ -1728,13 +2325,41 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
   #|         },
-  #|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
-  #|         get outerHTML() {
-  #|           const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
-  #|           const inner = this.innerHTML || this._textContent;
-  #|           const tag = this._tagName.toLowerCase();
-  #|           return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
-  #|         },
+#|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
+#|         set innerHTML(v) {
+#|           const html = (v === null || v === undefined) ? '' : String(v);
+#|           if (this._children && this._children.length > 0) {
+#|             for (const child of this._children) {
+#|               if (child && child._parent === this) child._parent = null;
+#|               if (child && 'parentNode' in child) child.parentNode = null;
+#|             }
+#|           }
+#|           this._children = [];
+#|           if (html === '') return;
+#|           const owner = getOwnerDocument(this) || document;
+#|           const nodes = parseHtmlFragment(html, owner);
+#|           for (const node of nodes) {
+#|             this.appendChild(node);
+#|           }
+#|         },
+#|         get outerHTML() {
+#|           const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
+#|           const inner = this.innerHTML || this._textContent;
+#|           const tag = this._tagName.toLowerCase();
+#|           return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
+#|         },
+#|         set outerHTML(v) {
+#|           const html = (v === null || v === undefined) ? '' : String(v);
+#|           const parent = this._parent;
+#|           if (!parent || typeof parent.insertBefore !== 'function' || typeof parent.removeChild !== 'function') return;
+#|           const owner = getOwnerDocument(parent) || document;
+#|           const nodes = parseHtmlFragment(html, owner);
+#|           const ref = this.nextSibling;
+#|           for (const node of nodes) {
+#|             parent.insertBefore(node, ref);
+#|           }
+#|           parent.removeChild(this);
+#|         },
   #|         appendChild(child) {
   #|           if (!isNodeLike(child)) {
   #|             throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
@@ -1840,6 +2465,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (idx < 0) {
   #|             throw new DOMException('The node to be replaced is not a child of this node', 'NotFoundError');
   #|           }
+  #|           if (newChild === oldChild) return oldChild;
   #|           const newType = getNodeType(newChild);
 #|           if (newType === 9 || newType === 10) {
 #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
@@ -1893,6 +2519,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             const id = nodeIdCounter++;
   #|             domOps.push({ op: 'createElement', id, tagName: el._tagName });
   #|             const clone = createMockElement(el._tagName, id);
+  #|             clone._tagName = el._tagName;
+  #|             clone._localName = el._localName;
+  #|             clone._namespaceURI = el._namespaceURI;
+  #|             clone._prefix = el._prefix;
+  #|             clone._ownerDocument = getOwnerDocument(el);
+  #|             if (clone._namespaceURI === 'http://www.w3.org/1999/xhtml') {
+  #|               const local = clone._localName !== null && clone._localName !== undefined
+  #|                 ? clone._localName
+  #|                 : asciiLowercase(clone._tagName);
+  #|               const ctor = tagToConstructor[asciiLowercase(local)] || HTMLUnknownElement;
+  #|               Object.setPrototypeOf(clone, ctor.prototype);
+  #|             } else {
+  #|               Object.setPrototypeOf(clone, Element.prototype);
+  #|             }
   #|             for (const attr of el._attrList) {
   #|               clone._attrList.push({ ns: attr.ns, localName: attr.localName, prefix: attr.prefix, name: attr.name, value: attr.value });
   #|               domOps.push({ op: 'setAttribute', id, name: attr.name, value: attr.value });
@@ -1916,12 +2556,19 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         isEqualNode(other) {
   #|           if (!other) return false;
   #|           if (this._nodeType !== other._nodeType) return false;
-  #|           if (this._tagName !== other._tagName) return false;
-  #|           const attrs1 = Object.keys(this._attrs).sort();
-  #|           const attrs2 = Object.keys(other._attrs || {}).sort();
+  #|           if (this.namespaceURI !== other.namespaceURI) return false;
+  #|           if (this.prefix !== other.prefix) return false;
+  #|           if (this.localName !== other.localName) return false;
+  #|           const attrs1 = this._attrList || [];
+  #|           const attrs2 = other._attrList || [];
   #|           if (attrs1.length !== attrs2.length) return false;
-  #|           for (let i = 0; i < attrs1.length; i++) {
-  #|             if (attrs1[i] !== attrs2[i] || this._attrs[attrs1[i]] !== other._attrs[attrs2[i]]) return false;
+  #|           for (const a1 of attrs1) {
+  #|             const ns1 = (a1.ns === '' || a1.ns === undefined) ? null : a1.ns;
+  #|             const match = attrs2.find(a2 => {
+  #|               const ns2 = (a2.ns === '' || a2.ns === undefined) ? null : a2.ns;
+  #|               return ns1 === ns2 && a1.localName === a2.localName;
+  #|             });
+  #|             if (!match || match.value !== a1.value) return false;
   #|           }
   #|           if (this._children.length !== (other._children || []).length) return false;
   #|           for (let i = 0; i < this._children.length; i++) {
@@ -1931,17 +2578,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         isSameNode(other) { return this === other; },
   #|         normalize() {
-  #|           for (let i = this._children.length - 1; i >= 0; i--) {
-  #|             const child = this._children[i];
-  #|             if (child._nodeType === 3 && child._textContent === '') {
-  #|               this._children.splice(i, 1);
-  #|             } else if (child._nodeType === 3 && i > 0 && this._children[i-1]._nodeType === 3) {
-  #|               this._children[i-1]._textContent += child._textContent;
-  #|               this._children.splice(i, 1);
-  #|             } else if (child.normalize) {
-  #|               child.normalize();
-  #|             }
-  #|           }
+  #|           normalizeChildArray(this._children);
   #|         },
   #|         compareDocumentPosition(other) {
   #|           return compareDocumentPositionImpl(this, other);
@@ -1951,11 +2588,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           return null;
   #|         },
   #|         lookupNamespaceURI(prefix) {
-  #|           if (prefix === null || prefix === '') return 'http://www.w3.org/1999/xhtml';
-  #|           return null;
+  #|           return lookupNamespaceURIImpl(this, prefix);
   #|         },
   #|         isDefaultNamespace(ns) {
-  #|           return ns === 'http://www.w3.org/1999/xhtml';
+  #|           return Node.prototype.isDefaultNamespace.call(this, ns);
   #|         },
   #|         get parentNode() { return this._parent; },
   #|         get parentElement() { return this._parent && this._parent._nodeType === 1 ? this._parent : null; },
@@ -1979,13 +2615,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         hasChildNodes() { return this._children.length > 0; },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return this._parent._children[idx + 1] || null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx >= 0 ? (siblings[idx + 1] || null) : null;
   #|         },
   #|         get previousSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return idx > 0 ? this._parent._children[idx - 1] : null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx > 0 ? siblings[idx - 1] : null;
   #|         },
   #|         get nextElementSibling() {
   #|           let sib = this.nextSibling;
@@ -2051,13 +2689,29 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           temp._textContent = html;
   #|           this.insertAdjacentElement(position, temp);
   #|         },
-  #|         get shadowRoot() { return this._shadowRoot || null; },
-  #|         attachShadow(init) {
-  #|           if (this._shadowRoot) throw new Error('Already has shadow root');
-  #|           const shadow = { mode: init.mode, host: this, _children: [], appendChild(c) { this._children.push(c); return c; } };
-  #|           this._shadowRoot = shadow;
-  #|           return shadow;
-  #|         },
+#|         get shadowRoot() { return this._shadowRoot || null; },
+#|         attachShadow(init) {
+#|           if (this._shadowRoot) throw new Error('Already has shadow root');
+#|           const shadow = {
+#|             mode: init.mode,
+#|             host: this,
+#|             _children: [],
+#|             _parent: this,
+#|             appendChild(c) {
+#|               if (c && c._parent) {
+#|                 detachNode(c);
+#|               }
+#|               this._children.push(c);
+#|               if (c) {
+#|                 c._parent = this;
+#|                 if ('parentNode' in c) c.parentNode = this;
+#|               }
+#|               return c;
+#|             }
+#|           };
+#|           this._shadowRoot = shadow;
+#|           return shadow;
+#|         },
   #|         focus() {},
   #|         blur() {},
   #|         click() {},
@@ -2330,13 +2984,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return this._parent._children[idx + 1] || null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx >= 0 ? (siblings[idx + 1] || null) : null;
   #|         },
   #|         get previousSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return idx > 0 ? this._parent._children[idx - 1] : null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx > 0 ? siblings[idx - 1] : null;
   #|         },
   #|         cloneNode() {
   #|           const id = nodeIdCounter++;
@@ -2510,13 +3166,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return this._parent._children[idx + 1] || null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx >= 0 ? (siblings[idx + 1] || null) : null;
   #|         },
   #|         get previousSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return idx > 0 ? this._parent._children[idx - 1] : null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx > 0 ? siblings[idx - 1] : null;
   #|         },
   #|         substringData(offset, count) {
   #|           if (arguments.length < 2) throw new TypeError("Failed to execute 'substringData': 2 arguments required");
@@ -2641,13 +3299,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         hasChildNodes() { return false; },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return this._parent._children[idx + 1] || null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx >= 0 ? (siblings[idx + 1] || null) : null;
   #|         },
   #|         get previousSibling() {
   #|           if (!this._parent) return null;
-  #|           const idx = this._parent._children.indexOf(this);
-  #|           return idx > 0 ? this._parent._children[idx - 1] : null;
+  #|           const siblings = getSiblingArray(this);
+  #|           const idx = siblings.indexOf(this);
+  #|           return idx > 0 ? siblings[idx - 1] : null;
   #|         },
   #|         appendChild(child) {
   #|           if (child === null) throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
@@ -2757,11 +3417,14 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         _ownerDocument: null,
   #|         get nodeType() { return 11; },
   #|         get nodeName() { return '#document-fragment'; },
-  #|         get ownerDocument() { return getGlobalDocument(); },
+  #|         get nodeValue() { return null; },
+  #|         set nodeValue(v) { /* ignore */ },
+  #|         get ownerDocument() { return this._ownerDocument || getGlobalDocument(); },
+  #|         set ownerDocument(v) { this._ownerDocument = v; },
   #|         get textContent() {
   #|           // Collect text content from Text node descendants only
   #|           const collectText = (node) => {
-  #|             if (node._nodeType === 3) return node._textContent;
+  #|             if (node._nodeType === 3 || node._nodeType === 4) return node._textContent;
   #|             if (!node._children) return '';
   #|             return node._children.map(collectText).join('');
   #|           };
@@ -2867,10 +3530,14 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (!isNodeLike(newChild) || !isNodeLike(oldChild)) {
   #|             throw new TypeError('Failed to execute replaceChild: parameters are not of type Node');
   #|           }
+  #|           if (newChild === this || (newChild.contains && newChild.contains(this))) {
+  #|             throw new DOMException('The new child is an ancestor of the parent', 'HierarchyRequestError');
+  #|           }
   #|           const idx = this._children.indexOf(oldChild);
   #|           if (idx < 0) {
   #|             throw new DOMException('The node to be replaced is not a child of this node', 'NotFoundError');
   #|           }
+  #|           if (newChild === oldChild) return oldChild;
 #|           const newType = getNodeType(newChild);
 #|           if (newType === 9 || newType === 10) {
 #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
@@ -2972,16 +3639,31 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const document = {
   #|       _mockElements: mockElements,
   #|       _preNodes: [],
+  #|       _postNodes: [],
   #|       _nodeType: 9,
+  #|       _parent: null,
   #|       get nodeType() { return 9; },
   #|       get nodeName() { return '#document'; },
   #|       get nodeValue() { return null; },
   #|       get textContent() { return null; },
   #|       set textContent(v) { /* Document textContent is null, ignore setter */ },
   #|       get ownerDocument() { return null; },
-  #|       get URL() { return 'about:blank'; },
-  #|       get documentURI() { return 'about:blank'; },
-  #|       get baseURI() { return 'about:blank'; },
+  #|       get parentNode() { return null; },
+  #|       get parentElement() { return null; },
+  #|       get nextSibling() { return null; },
+  #|       get previousSibling() { return null; },
+  #|       get URL() {
+  #|         if (typeof location !== 'undefined') return String(location);
+  #|         return 'about:blank';
+  #|       },
+  #|       get documentURI() {
+  #|         if (typeof location !== 'undefined') return String(location);
+  #|         return 'about:blank';
+  #|       },
+  #|       get baseURI() {
+  #|         if (typeof location !== 'undefined') return String(location);
+  #|         return 'about:blank';
+  #|       },
   #|       get compatMode() { return 'CSS1Compat'; },
   #|       get characterSet() { return 'UTF-8'; },
   #|       get charset() { return 'UTF-8'; },
@@ -3096,7 +3778,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
   #|                 }
   #|                 const finalName = lowercase ? rawName.toLowerCase() : rawName;
-  #|                 return {
+  #|                 const attr = {
   #|                   _nodeType: 2,
   #|                   nodeType: 2,
   #|                   name: finalName,
@@ -3107,18 +3789,37 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   set nodeValue(v) { this.value = v === null ? '' : String(v); },
   #|                   get textContent() { return this.value; },
   #|                   set textContent(v) { this.value = v === null ? '' : String(v); },
+  #|                   get baseURI() {
+  #|                     const d = this.ownerDocument || getGlobalDocument();
+  #|                     return d && d.baseURI ? d.baseURI : 'about:blank';
+  #|                   },
   #|                   namespaceURI: null,
   #|                   prefix: null,
+  #|                   ownerDocument: doc,
   #|                   ownerElement: null,
   #|                   specified: true,
   #|                   isSameNode(other) { return this === other; },
-  #|                   isEqualNode(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value; }
+  #|                   isEqualNode(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value; },
+  #|                   cloneNode() {
+  #|                     const docRef = this.ownerDocument || document;
+  #|                     let cloned;
+  #|                     if (this.namespaceURI) {
+  #|                       cloned = docRef.createAttributeNS ? docRef.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
+  #|                     } else {
+  #|                       cloned = docRef.createAttribute ? docRef.createAttribute(this.name) : document.createAttribute(this.name);
+  #|                     }
+  #|                     cloned.value = this.value;
+  #|                     return cloned;
+  #|                   }
   #|                 };
+  #|                 Object.setPrototypeOf(attr, Attr.prototype);
+  #|                 return attr;
   #|               };
   #|               doc = {
   #|                 _nodeType: 9,
   #|                 nodeType: 9,
   #|                 nodeName: '#document',
+  #|                 ownerDocument: null,
   #|                 get nodeValue() { return null; },
   #|                 set nodeValue(v) { /* ignore */ },
   #|                 get textContent() { return null; },
@@ -3214,16 +3915,17 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   if (refChild !== null && refChild !== undefined && refChild._parent !== this) {
   #|                     throw new DOMException('The node before which the new node is to be inserted is not a child of this node', 'NotFoundError');
   #|                   }
+  #|                   const exclude = arguments.length > 2 ? arguments[2] : null;
   #|                   let actualRef = refChild === undefined ? null : refChild;
   #|                   if (actualRef === newChild) {
   #|                     actualRef = newChild.nextSibling;
   #|                   }
-  #|                   validateDocumentInsert(this, newChild, actualRef);
+  #|                   validateDocumentInsert(this, newChild, actualRef, exclude);
   #|                   const newType = getNodeType(newChild);
   #|                   if (newType === 11) {
   #|                     const nodes = newChild._children ? newChild._children.slice() : [];
   #|                     for (const node of nodes) {
-  #|                       this.insertBefore(node, actualRef);
+  #|                       this.insertBefore(node, actualRef, exclude);
   #|                     }
   #|                     if (newChild._children) newChild._children = [];
   #|                     return newChild;
@@ -3250,12 +3952,12 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   if (!isNodeLike(newChild) || !isNodeLike(oldChild)) {
   #|                     throw new TypeError('Failed to execute replaceChild: parameters are not of type Node');
   #|                   }
-  #|                   if (newChild === oldChild) return oldChild;
   #|                   const idx = this._children.indexOf(oldChild);
   #|                   if (idx < 0) {
   #|                     throw new DOMException('The node to be replaced is not a child of this node', 'NotFoundError');
   #|                   }
-  #|                   this.insertBefore(newChild, oldChild);
+  #|                   if (newChild === oldChild) return oldChild;
+  #|                   this.insertBefore(newChild, oldChild, oldChild);
   #|                   this.removeChild(oldChild);
   #|                   return oldChild;
   #|                 },
@@ -3304,7 +4006,39 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                 get lastChild() { return this._children[this._children.length - 1] || null; },
   #|                 getRootNode() { return this; },
   #|                 isSameNode(other) { return this === other; },
-  #|                 isEqualNode(other) { return this === other; },
+  #|                 isEqualNode(other) {
+  #|                   if (!other || other._nodeType !== 9) return false;
+  #|                   const kids1 = this._children || [];
+  #|                   const kids2 = other._children || [];
+  #|                   if (kids1.length !== kids2.length) return false;
+  #|                   for (let i = 0; i < kids1.length; i++) {
+  #|                     if (!kids1[i].isEqualNode || !kids1[i].isEqualNode(kids2[i])) return false;
+  #|                   }
+  #|                   return true;
+  #|                 },
+  #|                 cloneNode(deep) {
+  #|                   const impl = this.implementation || document.implementation;
+  #|                   const isHtml = this.contentType === 'text/html' || this.contentType === 'application/xhtml+xml'
+  #|                     || (this.documentElement && this.documentElement._tagName === 'HTML');
+  #|                   if (isHtml) {
+  #|                     const cloned = impl && impl.createHTMLDocument ? impl.createHTMLDocument('') : document.implementation.createHTMLDocument('');
+  #|                     return cloned;
+  #|                   }
+  #|                   const ns = this.documentElement ? this.documentElement.namespaceURI : null;
+  #|                   const cloned = impl && impl.createDocument ? impl.createDocument(ns, null, null) : document.implementation.createDocument(ns, null, null);
+  #|                   if (this.contentType) cloned.contentType = this.contentType;
+  #|                   if (this.URL) cloned.URL = this.URL;
+  #|                   if (this.compatMode) cloned.compatMode = this.compatMode;
+  #|                   if (this.charset) cloned.charset = this.charset;
+  #|                   if (this.characterSet) cloned.characterSet = this.characterSet;
+  #|                   if (this.inputEncoding) cloned.inputEncoding = this.inputEncoding;
+  #|                   if (deep && this._children) {
+  #|                     for (const child of this._children) {
+  #|                       cloned.appendChild(child.cloneNode(true));
+  #|                     }
+  #|                   }
+  #|                   return cloned;
+  #|                 },
   #|                 adoptNode(node) {
   #|                   if (!node) return null;
   #|                   if (node._nodeType === 9) throw new DOMException('Cannot adopt a document node', 'NotSupportedError');
@@ -3329,6 +4063,23 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   updateOwner(node);
   #|                   return node;
   #|                 }
+  #|               };
+  #|               doc.cloneNode = function(deep) {
+  #|                 const impl = this.implementation || document.implementation;
+  #|                 const ns = this.documentElement ? this.documentElement.namespaceURI : null;
+  #|                 const cloned = impl && impl.createDocument ? impl.createDocument(ns, null, null) : document.implementation.createDocument(ns, null, null);
+  #|                 cloned.contentType = this.contentType;
+  #|                 cloned.URL = this.URL;
+  #|                 cloned.compatMode = this.compatMode;
+  #|                 cloned.charset = this.charset;
+  #|                 cloned.characterSet = this.characterSet;
+  #|                 cloned.inputEncoding = this.inputEncoding;
+  #|                 if (deep && this._children) {
+  #|                   for (const child of this._children) {
+  #|                     cloned.appendChild(child.cloneNode(true));
+  #|                   }
+  #|                 }
+  #|                 return cloned;
   #|               };
   #|               Object.setPrototypeOf(doc, XMLDocument.prototype);
   #|               if (doctype !== undefined && doctype !== null) {
@@ -3365,10 +4116,18 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                 ownerDocument: ownerDoc,
   #|                 parentNode: null,
   #|                 _parent: null,
-  #|                 firstChild: null,
-  #|                 lastChild: null,
-  #|                 previousSibling: null,
-  #|                 nextSibling: null,
+  #|                 get firstChild() { return null; },
+  #|                 get lastChild() { return null; },
+  #|                 get previousSibling() {
+  #|                   const siblings = getSiblingArray(this);
+  #|                   const idx = siblings.indexOf(this);
+  #|                   return idx > 0 ? siblings[idx - 1] : null;
+  #|                 },
+  #|                 get nextSibling() {
+  #|                   const siblings = getSiblingArray(this);
+  #|                   const idx = siblings.indexOf(this);
+  #|                   return idx >= 0 ? (siblings[idx + 1] || null) : null;
+  #|                 },
   #|                 get childNodes() { return emptyNodeList; },
   #|                 hasChildNodes() { return false; },
   #|                 appendChild(child) {
@@ -3414,6 +4173,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             createHTMLDocument(title) {
   #|               const doctype = this.createDocumentType('html', '', '');
   #|               const doc = this.createDocument(null, null, doctype);
+  #|               doc.cloneNode = function(deep) {
+  #|                 const impl = this.implementation || document.implementation;
+  #|                 const cloned = impl && impl.createHTMLDocument ? impl.createHTMLDocument('') : document.implementation.createHTMLDocument('');
+  #|                 return cloned;
+  #|               };
   #|               Object.setPrototypeOf(doc, HTMLDocument.prototype);
   #|               doc._children = [doctype];
   #|               doctype._parent = doc;
@@ -3540,13 +4304,30 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           set nodeValue(v) { this.value = v === null ? '' : String(v); },
   #|           get textContent() { return this.value; },
   #|           set textContent(v) { this.value = v === null ? '' : String(v); },
+  #|           get baseURI() {
+  #|             const doc = this.ownerDocument || getGlobalDocument();
+  #|             return doc && doc.baseURI ? doc.baseURI : 'about:blank';
+  #|           },
   #|           namespaceURI: null,
   #|           prefix: null,
+  #|           ownerDocument: getGlobalDocument(),
   #|           ownerElement: null,
   #|           specified: true,
   #|           isSameNode(other) { return this === other; },
-  #|           isEqualNode(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value; }
+  #|           isEqualNode(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value; },
+  #|           cloneNode() {
+  #|             const doc = this.ownerDocument || getGlobalDocument();
+  #|             let cloned;
+  #|             if (this.namespaceURI) {
+  #|               cloned = doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
+  #|             } else {
+  #|               cloned = doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name);
+  #|             }
+  #|             cloned.value = this.value;
+  #|             return cloned;
+  #|           }
   #|         };
+  #|         Object.setPrototypeOf(attr, Attr.prototype);
   #|         return attr;
   #|       },
   #|       createAttributeNS(ns, name) {
@@ -3564,6 +4345,46 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         domOps.push({ op: 'createDocumentFragment', id });
   #|         return createMockDocumentFragment(id);
   #|       },
+  #|       cloneNode(deep) {
+  #|         const impl = this.implementation || document.implementation;
+  #|         const cloned = impl && impl.createHTMLDocument ? impl.createHTMLDocument('') : document.implementation.createHTMLDocument('');
+  #|         if (deep) {
+  #|           const kids = getChildNodesArray(this);
+  #|           for (const child of kids) {
+  #|             cloned.appendChild(child.cloneNode(true));
+  #|           }
+  #|         }
+  #|         return cloned;
+  #|       },
+  #|       appendChild(child) {
+  #|         if (!isNodeLike(child)) {
+  #|           throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
+  #|         }
+  #|         const type = getNodeType(child);
+  #|         if (type === 9 || type === 2) {
+  #|           throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|         }
+  #|         if (type === 3) {
+  #|           throw new DOMException('Cannot insert a text node into document', 'HierarchyRequestError');
+  #|         }
+  #|         if (type === 1 || type === 10) {
+  #|           throw new DOMException('Document already has an element', 'HierarchyRequestError');
+  #|         }
+  #|         if (type === 11) {
+  #|           const nodes = child._children ? child._children.slice() : [];
+  #|           for (const node of nodes) {
+  #|             this.appendChild(node);
+  #|           }
+  #|           if (child._children) child._children = [];
+  #|           return child;
+  #|         }
+  #|         detachNode(child);
+  #|         adoptSubtree(child, this);
+  #|         this._postNodes.push(child);
+  #|         child._parent = this;
+  #|         child.parentNode = this;
+  #|         return child;
+  #|       },
   #|       get body() { return bodyEl; },
   #|       get head() { return headEl; },
   #|       get documentElement() { return htmlEl; },
@@ -3576,11 +4397,13 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             if (this._preNodes && this._preNodes.length > 0) nodes.push(...this._preNodes);
   #|             if (_doctype) nodes.push(_doctype);
   #|             nodes.push(htmlEl);
+  #|             if (this._postNodes && this._postNodes.length > 0) nodes.push(...this._postNodes);
   #|             return nodes;
   #|           });
   #|         }
   #|         return this._childNodesList;
   #|       },
+  #|       hasChildNodes() { return this.childNodes.length > 0; },
   #|       get children() {
   #|         if (!this._childrenCollection) {
   #|           this._childrenCollection = makeHTMLCollection(() => [htmlEl]);
@@ -3783,7 +4606,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         }
   #|         for (let i = 0; i < t.length; i++) {
   #|           const ch = t[i];
-  #|           if (ch === '\u00D7' || ch === '\\\\' || ch === '\f') {
+  #|           if (ch === '\u00D7' || ch === '\\' || ch === '\f') {
   #|             throw new DOMException('Invalid character in target', 'InvalidCharacterError');
   #|           }
   #|           if (i > 0 && ch === '\u00B7') continue;
@@ -3822,6 +4645,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         this.append(...nodes);
   #|       }
   #|     };
+  #|     document.normalize = function() {
+  #|       const nodes = document.childNodes;
+  #|       for (let i = 0; i < nodes.length; i++) {
+  #|         const child = nodes[i];
+  #|         if (child && typeof child.normalize === 'function') child.normalize();
+  #|       }
+  #|     };
+  #|     htmlEl._parent = document;
+  #|     htmlEl.parentNode = document;
   #|     if (typeof globalThis !== 'undefined') {
   #|       globalThis.document = document;
   #|     }
@@ -4053,6 +4885,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       dispatchEvent(event) { return true; },
   #|       Event: Event,
   #|       Node: Node,
+  #|       Attr: Attr,
   #|       CharacterData: CharacterData,
   #|       Element: Element,
   #|       Document: Document,
@@ -4139,6 +4972,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     if (typeof globalThis !== 'undefined') {
   #|       globalThis.window = window;
   #|       globalThis.self = window;
+  #|       globalThis.location = window.location;
   #|     }
   #|     const frames = [ { document: document.implementation.createHTMLDocument('') } ];
   #|     window.frames = frames;
@@ -4543,16 +5377,17 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function DOMParser() {}
   #|     DOMParser.prototype.parseFromString = function(str, mime) {
   #|       const type = String(mime || 'application/xml');
+  #|       const text = str === undefined || str === null ? '' : String(str);
+  #|       const tagMatch = text.match(/<\s*([A-Za-z_][A-Za-z0-9:._-]*)/);
   #|       let doc;
   #|       if (type === 'text/html') {
   #|         doc = document.implementation.createHTMLDocument('');
   #|         doc.contentType = 'text/html';
   #|       } else {
-  #|         doc = document.implementation.createDocument(null, null, null);
+  #|         const ns = type === 'application/xhtml+xml' ? 'http://www.w3.org/1999/xhtml' : null;
+  #|         const qname = tagMatch ? tagMatch[1] : null;
+  #|         doc = document.implementation.createDocument(ns, qname, null);
   #|         doc.contentType = type;
-  #|         if (type === 'application/xhtml+xml') {
-  #|           doc.contentType = 'application/xhtml+xml';
-  #|         }
   #|       }
   #|       return doc;
   #|     };
