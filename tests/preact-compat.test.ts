@@ -994,4 +994,70 @@ test.describe("Preact Compatibility Tests", () => {
     const result = evalResp.result as { result: { type: string; value: string } };
     expect(result.result.value).toBe("custom-event");
   });
+
+  // Page loading tests
+  test("__loadHTML parses HTML and builds DOM", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadHTML('<div id="test-div"><span class="child">Hello</span></div>');
+        const div = document.getElementById('test-div');
+        const span = div.querySelector('.child');
+        [div.tagName, span.textContent];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [tagName, textContent] = result.result.value.map((v) => v.value);
+    expect(tagName).toBe("DIV");
+    expect(textContent).toBe("Hello");
+  });
+
+  test("__loadHTML handles full HTML document structure", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadHTML('<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Title</h1><p>Content</p></body></html>');
+        [
+          document.querySelector('h1').textContent,
+          document.querySelector('p').textContent
+        ];
+      `,
+      target: { context: contextId },
+      awaitPromise: false,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<{ type: string; value: unknown }> } };
+    const [h1Text, pText] = result.result.value.map((v) => v.value);
+    expect(h1Text).toBe("Title");
+    expect(pText).toBe("Content");
+  });
+
+  test("__loadPage fetches and parses remote page", async () => {
+    const evalResp = await client.send("script.evaluate", {
+      expression: `
+        __loadPage('https://example.com').then(result => {
+          const title = document.querySelector('title');
+          const h1 = document.querySelector('h1');
+          return {
+            url: result.url,
+            status: result.status,
+            title: title ? title.textContent : null,
+            h1: h1 ? h1.textContent : null
+          };
+        });
+      `,
+      target: { context: contextId },
+      awaitPromise: true,
+    });
+
+    expect(evalResp.type).toBe("success");
+    const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
+    const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
+    expect(obj.url).toBe("https://example.com");
+    expect(obj.status).toBe(200);
+    expect(obj.h1).toContain("Example Domain");
+  });
 });
