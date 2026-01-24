@@ -4,6 +4,7 @@ target/
 .moonagent/
 taffy
 target
+.claude/settings.local.json
 
 # Dependencies
 node_modules/
@@ -19,6 +20,7 @@ fixtures/
 
 # WPT support files (CSS/fonts, regenerated during fetch)
 wpt-tests/**/support/
+.wpt-safe-subset-cache.json
 
 # Real-world site downloads (regenerate with npm run download)
 real-world/
@@ -31,4 +33,3 @@ browser/dist/
 
 # MoonBit build output
 _build/
-.claude/settings.local.json.wpt-safe-subset-cache.json
