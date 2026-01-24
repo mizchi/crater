@@ -147,6 +147,21 @@ test-preact:
 test-playwright:
     pnpm test:bidi-e2e
 
+# Test Playwright adapter with locator APIs
+test-playwright-adapter:
+    pnpm test:playwright
+
+# Test website loading scenarios
+test-website:
+    pnpm test:website
+
+# Run Playwright benchmark
+bench-playwright:
+    pnpm bench:playwright
+
+# Run all Playwright-based tests
+test-playwright-all: test-playwright-adapter test-website
+
 # Run BiDi manual tests (Python, requires BiDi server to be running)
 test-bidi-manual:
     uv run --no-project scripts/test-bidi-manual.py

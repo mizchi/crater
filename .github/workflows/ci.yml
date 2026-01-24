@@ -278,3 +278,50 @@ jobs:
       - name: Run WebDriver BiDi session tests
         run: just wpt-webdriver session/status
         continue-on-error: true
+
+  playwright-bidi-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Update MoonBit dependencies
+        run: |
+          moon update
+          moon update --directory browser
+
+      - name: Build BiDi server
+        run: just build-bidi
+
+      - name: Run Playwright adapter tests
+        run: just test-playwright-adapter
+
+      - name: Run website loading tests
+        run: just test-website
