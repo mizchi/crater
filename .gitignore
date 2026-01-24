@@ -8,6 +8,16 @@ target
 # Dependencies
 node_modules/
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+uv.lock
+
+# WPT test temp directories
+.wpt-temp/
+.wpt-crater-conftest/
+
 # MoonBit generated files (tracked for publishing)
 # *.generated.mbti
 

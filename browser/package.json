@@ -44,5 +44,8 @@
     "vitest": "^4.0.16",
     "webdriver": "^9.23.0",
     "ws": "^8.18.0"
+  },
+  "dependencies": {
+    "quickjs-emscripten": "^0.31.0"
   }
 }

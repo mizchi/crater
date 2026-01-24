@@ -3,13 +3,30 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "webidl": "tsx scripts/webidl-coverage.ts",
+    "webidl:list": "tsx scripts/webidl-coverage.ts --list",
+    "webidl:json": "tsx scripts/webidl-coverage.ts --json",
+    "webidl:generate": "tsx scripts/webidl-coverage.ts --generate",
+    "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts",
+    "test:preact": "playwright test tests/preact-compat.test.ts",
+    "test:playwright": "playwright test tests/playwright-adapter.test.ts",
+    "bench:playwright": "playwright test tests/playwright-benchmark.test.ts",
+    "test:website": "playwright test tests/website-loading.test.ts"
+  },
   "dependencies": {
     "puppeteer": "^23.0.0"
   },
   "devDependencies": {
     "@bytecodealliance/jco": "^1.15.4",
+    "@playwright/test": "^1.58.0",
+    "@types/ws": "^8.18.1",
+    "playwright": "^1.58.0",
+    "preact": "^10.28.2",
     "tsx": "^4.21.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "webidl2": "^24.5.0",
+    "ws": "^8.19.0"
   },
   "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
 }

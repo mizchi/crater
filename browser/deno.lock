@@ -1,0 +1,20 @@
+{
+  "version": "5",
+  "remote": {
+    "https://esm.sh/lodash-es@4.17.21/add": "6900004064687c041b437c021263436878cb99a82e1bd3500d92651cdf8967d9",
+    "https://esm.sh/lodash-es@4.17.21/denonext/add.mjs": "8466c75c2773cd062a2e1533734623a3dfbada27e53e85065f43af44837cb8e3"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:puppeteer-core@^24.8.0",
+        "npm:quickjs-emscripten@0.31",
+        "npm:rolldown@^1.0.0-beta.58",
+        "npm:tsx@^4.19.0",
+        "npm:vitest@^4.0.16",
+        "npm:webdriver@^9.23.0",
+        "npm:ws@^8.18.0"
+      ]
+    }
+  }
+}

@@ -3,12 +3,23 @@ package "mizchi/crater-browser/webdriver"
 
 import {
   "mizchi/crater-browser/cdp",
+  "mizchi/js/core",
 }
 
 // Values
 pub fn api_error_to_rpc(RpcId, ApiError) -> RpcResponse
 
+pub fn await_promise(@core.Any) -> String
+
+pub fn decode_base64(String) -> String
+
 pub fn error_response(ErrorCode, String) -> WebDriverResponse
+
+pub fn eval_and_send_async(@core.Any, Int, String, String) -> Unit
+
+pub fn evaluate_js(String) -> String
+
+pub fn evaluate_js_async(String) -> @core.Any
 
 pub fn handle_element_click(@cdp.CdpSession, Int) -> Result[Unit, CdpHandlerError]
 
@@ -30,11 +41,31 @@ pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, CdpHandlerError]
 
 pub fn handle_rpc(CdpSessionManager, RpcRequest) -> RpcResponse
 
+pub fn init_quickjs() -> @core.Any
+
+pub fn is_quickjs_initialized() -> Bool
+
+pub fn mark_quickjs_initialized() -> Unit
+
+pub fn parse_data_url(String) -> (String, String)?
+
 pub fn parse_json_object(String) -> Map[String, String]
 
 pub fn parse_method(String) -> ApiMethod?
 
 pub fn parse_request(String, String, String) -> WebDriverRequest
+
+pub fn quickjs_eval_async(String, Bool) -> @core.Any
+
+pub fn quickjs_eval_module(String) -> @core.Any
+
+pub fn quickjs_eval_sync(String) -> String
+
+pub fn quickjs_eval_ws(@core.Any, Int, String, String) -> Unit
+
+pub fn quickjs_fetch(String) -> @core.Any
+
+pub fn quickjs_load(String) -> @core.Any
 
 pub fn rpc_error(RpcId, RpcErrorCode, String) -> RpcResponse
 
@@ -162,11 +193,21 @@ pub struct BidiProtocol {
   mut default_context_id : String?
   mut next_navigation_id : Int
   subscriptions : Map[String, Bool]
+  context_subscriptions : Map[String, Array[String]]
+  mut global_subscriptions : Array[String]
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
+  mut socket : @core.Any?
+  mut use_quickjs : Bool
 }
+pub fn BidiProtocol::clear_socket(Self) -> Unit
+pub fn BidiProtocol::disable_quickjs(Self) -> Unit
+pub fn BidiProtocol::emit_log_entry(Self, String, String, String, String) -> Unit
+pub fn BidiProtocol::enable_quickjs(Self) -> Unit
+pub fn BidiProtocol::is_quickjs_enabled(Self) -> Bool
 pub fn BidiProtocol::new() -> Self
 pub fn BidiProtocol::process_message(Self, String) -> Result[Unit, String]
+pub fn BidiProtocol::set_socket(Self, @core.Any) -> Unit
 pub fn BidiProtocol::take_messages(Self) -> Array[BidiOutMessage]
 
 pub struct BidiRequest {
@@ -182,6 +223,21 @@ pub struct BidiResponse {
   error : BidiError?
 }
 pub impl Show for BidiResponse
+
+pub struct BidiServer {
+  config : BidiServerConfig
+  protocol : BidiProtocol
+  mut server : @core.Any?
+}
+pub fn BidiServer::new(config? : BidiServerConfig) -> Self
+pub fn BidiServer::start(Self) -> Unit
+pub fn BidiServer::stop(Self) -> Unit
+
+pub(all) struct BidiServerConfig {
+  host : String
+  port : Int
+}
+pub fn BidiServerConfig::default() -> Self
 
 pub(all) struct Capabilities {
   browser_name : String
@@ -211,6 +267,7 @@ pub struct CdpSessionManager {
 pub fn CdpSessionManager::close_session(Self, String) -> Bool
 pub fn CdpSessionManager::create_session(Self) -> String
 pub fn CdpSessionManager::get_session(Self, String) -> @cdp.CdpSession?
+pub fn CdpSessionManager::has_session(Self, String) -> Bool
 pub fn CdpSessionManager::list_sessions(Self) -> Array[String]
 pub fn CdpSessionManager::new() -> Self
 
