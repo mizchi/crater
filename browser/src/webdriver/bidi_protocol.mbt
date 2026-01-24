@@ -56,6 +56,7 @@ pub struct BidiProtocol {
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
   mut socket : @core.Any? // WebSocket for async responses
+  mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
 }
 
 ///|
@@ -75,12 +76,34 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     user_contexts,
     context_user_context: {},
     socket: None,
+    use_quickjs: false,
   }
 }
 
 ///|
+/// Enable QuickJS sandboxed runtime for script execution
+pub fn BidiProtocol::enable_quickjs(self : BidiProtocol) -> Unit {
+  self.use_quickjs = true
+}
+
+///|
+/// Disable QuickJS (use Deno eval)
+pub fn BidiProtocol::disable_quickjs(self : BidiProtocol) -> Unit {
+  self.use_quickjs = false
+}
+
+///|
+/// Check if QuickJS is enabled
+pub fn BidiProtocol::is_quickjs_enabled(self : BidiProtocol) -> Bool {
+  self.use_quickjs
+}
+
+///|
 /// Set WebSocket for async responses
-pub fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Unit {
+pub fn BidiProtocol::set_socket(
+  self : BidiProtocol,
+  socket : @core.Any,
+) -> Unit {
   self.socket = Some(socket)
 }
 
@@ -560,6 +583,25 @@ fn BidiProtocol::dispatch_script(
         _ => false
       }
       let expr = get_string_param(request.params, "expression").unwrap()
+      // Use QuickJS for sandboxed execution if enabled
+      if self.use_quickjs && is_quickjs_initialized() {
+        match self.socket {
+          Some(socket) => {
+            // QuickJS always needs async (due to ASYNCIFY)
+            quickjs_eval_ws(socket, request.id, expr, ctx_id)
+            return Ok(())
+          }
+          None => {
+            // No socket - can't do sync evaluation with QuickJS ASYNCIFY
+            self.send_error(
+              request.id,
+              "unknown error",
+              "QuickJS requires WebSocket for async evaluation",
+            )
+            return Ok(())
+          }
+        }
+      }
       // If awaitPromise is true and we have a socket, use async evaluation
       if await_promise {
         match self.socket {
@@ -571,7 +613,7 @@ fn BidiProtocol::dispatch_script(
           None => () // Fall through to sync evaluation
         }
       }
-      // Synchronous evaluation
+      // Synchronous evaluation (Deno eval)
       let eval_result_json = evaluate_js(expr)
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
@@ -687,7 +729,8 @@ fn BidiProtocol::dispatch_script(
         _ => "default"
       }
       // Check if awaitPromise is true
-      let await_promise_call = match get_param_raw(request.params, "awaitPromise") {
+      let await_promise_call = match
+        get_param_raw(request.params, "awaitPromise") {
         Some(True) => true
         _ => false
       }
@@ -706,6 +749,24 @@ fn BidiProtocol::dispatch_script(
       // Wrap function declaration and call it
       let func = get_string_param(request.params, "functionDeclaration").unwrap()
       let call_expr = "(" + func + ")(" + args_json + ")"
+      // Use QuickJS for sandboxed execution if enabled
+      if self.use_quickjs && is_quickjs_initialized() {
+        match self.socket {
+          Some(socket) => {
+            // QuickJS always needs async (due to ASYNCIFY)
+            quickjs_eval_ws(socket, request.id, call_expr, ctx_id_call)
+            return Ok(())
+          }
+          None => {
+            self.send_error(
+              request.id,
+              "unknown error",
+              "QuickJS requires WebSocket for async evaluation",
+            )
+            return Ok(())
+          }
+        }
+      }
       // If awaitPromise is true and we have a socket, use async evaluation
       if await_promise_call {
         match self.socket {

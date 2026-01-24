@@ -380,6 +380,19 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         setAttribute(name, value) {
   #|           const oldValue = this._attrs[name];
   #|           this._attrs[name] = String(value);
+  #|           // Parse style attribute into _style object
+  #|           if (name === 'style') {
+  #|             this._style = {};
+  #|             String(value).split(';').forEach(part => {
+  #|               const [prop, val] = part.split(':').map(s => s.trim());
+  #|               if (prop && val) {
+  #|                 // Convert kebab-case to camelCase
+  #|                 const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  #|                 this._style[camelProp] = val;
+  #|                 this._style[prop] = val; // Also store original kebab-case
+  #|               }
+  #|             });
+  #|           }
   #|           notifyMutation(createMutationRecord('attributes', this, { attributeName: name, oldValue }));
   #|         },
   #|         getAttribute(name) { return this._attrs[name] ?? null; },
@@ -539,8 +552,43 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|     };
   #|
   #|     const matchesSelector = (el, sel) => {
+  #|       // Universal selector
+  #|       if (sel === '*') return true;
+  #|       // ID selector
   #|       if (sel.startsWith('#')) return el._attrs.id === sel.slice(1);
-  #|       if (sel.startsWith('.')) return el.classList.contains(sel.slice(1));
+  #|       // Class selector (simple, no tag prefix)
+  #|       if (sel.startsWith('.') && !sel.includes('[')) {
+  #|         const classes = sel.slice(1).split('.');
+  #|         return classes.every(c => el.classList.contains(c));
+  #|       }
+  #|       // Attribute selector: [attr], [attr="value"], [attr*="value"]
+  #|       const attrMatch = sel.match(/^\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
+  #|       if (attrMatch) {
+  #|         const [, attrName, isContains, attrValue] = attrMatch;
+  #|         const elValue = el._attrs[attrName];
+  #|         if (attrValue === undefined) return elValue !== undefined;
+  #|         if (isContains) return elValue && elValue.includes(attrValue);
+  #|         return elValue === attrValue;
+  #|       }
+  #|       // Compound selector: tag[attr="value"]
+  #|       const compoundAttrMatch = sel.match(/^([a-zA-Z]+)?\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
+  #|       if (compoundAttrMatch) {
+  #|         const [, tag, attrName, isContains, attrValue] = compoundAttrMatch;
+  #|         if (tag && el.tagName !== tag.toUpperCase()) return false;
+  #|         const elValue = el._attrs[attrName];
+  #|         if (attrValue === undefined) return elValue !== undefined;
+  #|         if (isContains) return elValue && elValue.includes(attrValue);
+  #|         return elValue === attrValue;
+  #|       }
+  #|       // Compound selector: tag.class
+  #|       if (sel.includes('.') && !sel.includes('[')) {
+  #|         const parts = sel.split('.');
+  #|         const tag = parts[0];
+  #|         const classes = parts.slice(1);
+  #|         if (tag && el.tagName !== tag.toUpperCase()) return false;
+  #|         return classes.every(c => el.classList.contains(c));
+  #|       }
+  #|       // Tag selector
   #|       return el.tagName === sel.toUpperCase();
   #|     };
   #|
@@ -663,9 +711,21 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|     globalThis.requestAnimationFrame = function(cb) { return setTimeout(cb, 16); };
   #|     globalThis.cancelAnimationFrame = function(id) { clearTimeout(id); };
   #|     globalThis.getComputedStyle = function(el) {
-  #|       return {
-  #|         getPropertyValue: function(prop) { return el._style?.[prop] || ''; }
-  #|       };
+  #|       // Return a CSSStyleDeclaration-like object with direct property access
+  #|       const style = el._style || {};
+  #|       return new Proxy(style, {
+  #|         get(target, prop) {
+  #|           if (prop === 'getPropertyValue') {
+  #|             return function(p) {
+  #|               // Convert camelCase to kebab-case for getPropertyValue
+  #|               const kebab = p.replace(/([A-Z])/g, '-$1').toLowerCase();
+  #|               return target[p] || target[kebab] || '';
+  #|             };
+  #|           }
+  #|           // Direct property access (e.g., style.display)
+  #|           return target[prop] || '';
+  #|         }
+  #|       });
   #|     };
   #|     globalThis.matchMedia = function(query) {
   #|       return {
@@ -757,6 +817,153 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       return new Promise(function(resolve) {
   #|         setTimeout(resolve, ms);
   #|       });
+  #|     };
+  #|
+  #|     // Network request tracking for networkidle detection
+  #|     globalThis.__activeNetworkRequests = 0;
+  #|     globalThis.__networkIdleCallbacks = [];
+  #|     globalThis.__lastNetworkActivity = Date.now();
+  #|
+  #|     const notifyNetworkChange = () => {
+  #|       globalThis.__lastNetworkActivity = Date.now();
+  #|       // Check if any idle callbacks should be triggered
+  #|       globalThis.__networkIdleCallbacks = globalThis.__networkIdleCallbacks.filter(cb => {
+  #|         if (cb.check()) {
+  #|           cb.resolve();
+  #|           return false;
+  #|         }
+  #|         return true;
+  #|       });
+  #|     };
+  #|
+  #|     // Wrap fetch to track network requests
+  #|     const originalFetch = globalThis.fetch;
+  #|     if (originalFetch) {
+  #|       globalThis.fetch = function(url, options) {
+  #|         globalThis.__activeNetworkRequests++;
+  #|         notifyNetworkChange();
+  #|         return originalFetch(url, options)
+  #|           .then(response => {
+  #|             globalThis.__activeNetworkRequests--;
+  #|             notifyNetworkChange();
+  #|             return response;
+  #|           })
+  #|           .catch(error => {
+  #|             globalThis.__activeNetworkRequests--;
+  #|             notifyNetworkChange();
+  #|             throw error;
+  #|           });
+  #|       };
+  #|     }
+  #|
+  #|     // XMLHttpRequest wrapper for network tracking
+  #|     const OriginalXHR = globalThis.XMLHttpRequest;
+  #|     if (OriginalXHR) {
+  #|       globalThis.XMLHttpRequest = function() {
+  #|         const xhr = new OriginalXHR();
+  #|         const originalOpen = xhr.open.bind(xhr);
+  #|         const originalSend = xhr.send.bind(xhr);
+  #|
+  #|         xhr.open = function() {
+  #|           return originalOpen.apply(this, arguments);
+  #|         };
+  #|
+  #|         xhr.send = function() {
+  #|           globalThis.__activeNetworkRequests++;
+  #|           notifyNetworkChange();
+  #|
+  #|           const onComplete = () => {
+  #|             globalThis.__activeNetworkRequests--;
+  #|             notifyNetworkChange();
+  #|           };
+  #|
+  #|           xhr.addEventListener('load', onComplete);
+  #|           xhr.addEventListener('error', onComplete);
+  #|           xhr.addEventListener('abort', onComplete);
+  #|
+  #|           return originalSend.apply(this, arguments);
+  #|         };
+  #|
+  #|         return xhr;
+  #|       };
+  #|     }
+  #|
+  #|     // Wait for network idle
+  #|     // networkidle0: 0 requests for idleTime ms
+  #|     // networkidle2: <= 2 requests for idleTime ms
+  #|     globalThis.__waitForNetworkIdle = function(options) {
+  #|       options = options || {};
+  #|       const timeout = options.timeout || 30000;
+  #|       const idleTime = options.idleTime || 500;
+  #|       const maxInflight = options.maxInflight !== undefined ? options.maxInflight : 0; // 0 for networkidle0, 2 for networkidle2
+  #|       const startTime = Date.now();
+  #|
+  #|       return new Promise(function(resolve, reject) {
+  #|         let idleStartTime = null;
+  #|
+  #|         const checkIdle = () => {
+  #|           const now = Date.now();
+  #|
+  #|           // Timeout check
+  #|           if (now - startTime >= timeout) {
+  #|             const idx = globalThis.__networkIdleCallbacks.findIndex(cb => cb.resolve === resolve);
+  #|             if (idx !== -1) globalThis.__networkIdleCallbacks.splice(idx, 1);
+  #|             reject(new Error('Timeout waiting for network idle'));
+  #|             return true;
+  #|           }
+  #|
+  #|           // Check if we're idle enough
+  #|           if (globalThis.__activeNetworkRequests <= maxInflight) {
+  #|             if (idleStartTime === null) {
+  #|               idleStartTime = now;
+  #|             }
+  #|             // Check if we've been idle long enough
+  #|             if (now - idleStartTime >= idleTime) {
+  #|               return true; // Signal completion
+  #|             }
+  #|           } else {
+  #|             idleStartTime = null; // Reset idle timer
+  #|           }
+  #|
+  #|           return false;
+  #|         };
+  #|
+  #|         // Initial check
+  #|         if (checkIdle()) {
+  #|           resolve();
+  #|           return;
+  #|         }
+  #|
+  #|         // Register callback for network changes
+  #|         globalThis.__networkIdleCallbacks.push({
+  #|           check: checkIdle,
+  #|           resolve: resolve
+  #|         });
+  #|
+  #|         // Also poll periodically in case no network activity occurs
+  #|         const pollInterval = setInterval(() => {
+  #|           if (checkIdle()) {
+  #|             clearInterval(pollInterval);
+  #|             const idx = globalThis.__networkIdleCallbacks.findIndex(cb => cb.resolve === resolve);
+  #|             if (idx !== -1) globalThis.__networkIdleCallbacks.splice(idx, 1);
+  #|             resolve();
+  #|           }
+  #|         }, 100);
+  #|
+  #|         // Cleanup on timeout
+  #|         setTimeout(() => {
+  #|           clearInterval(pollInterval);
+  #|         }, timeout + 100);
+  #|       });
+  #|     };
+  #|
+  #|     // Convenience functions
+  #|     globalThis.__waitForNetworkIdle0 = function(options) {
+  #|       return globalThis.__waitForNetworkIdle({ ...options, maxInflight: 0 });
+  #|     };
+  #|
+  #|     globalThis.__waitForNetworkIdle2 = function(options) {
+  #|       return globalThis.__waitForNetworkIdle({ ...options, maxInflight: 2 });
   #|     };
   #|
   #|     // Element interaction helpers
