@@ -170,33 +170,39 @@ pub fn BidiServer::stop(self : BidiServer) -> Unit {
 ///|
 /// FFI: Evaluate JavaScript expression and return BiDi remote value JSON
 /// Returns: { "type": "success"|"exception", "result"|"exceptionDetails": ..., "consoleEntries": [...] }
-extern "js" fn js_evaluate_expression(expression : String) -> String =
-  #| (expression) => {
+extern "js" fn js_evaluate_expression(
+  expression : String,
+  capture_console : Bool,
+) -> String =
+  #| (expression, captureConsole) => {
   #|   const consoleEntries = [];
-  #|   const originalConsole = {
-  #|     log: console.log,
-  #|     warn: console.warn,
-  #|     error: console.error,
-  #|     info: console.info,
-  #|     debug: console.debug
-  #|   };
+  #|   let originalConsole = null;
+  #|   if (captureConsole) {
+  #|     originalConsole = {
+  #|       log: console.log,
+  #|       warn: console.warn,
+  #|       error: console.error,
+  #|       info: console.info,
+  #|       debug: console.debug
+  #|     };
   #|
-  #|   // Intercept console calls
-  #|   const makeInterceptor = (level, method) => (...args) => {
-  #|     consoleEntries.push({
-  #|       level,
-  #|       method,
-  #|       text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
-  #|       timestamp: Date.now()
-  #|     });
-  #|     originalConsole[method](...args);
-  #|   };
+  #|     // Intercept console calls
+  #|     const makeInterceptor = (level, method) => (...args) => {
+  #|       consoleEntries.push({
+  #|         level,
+  #|         method,
+  #|         text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
+  #|         timestamp: Date.now()
+  #|       });
+  #|       originalConsole[method](...args);
+  #|     };
   #|
-  #|   console.log = makeInterceptor('info', 'log');
-  #|   console.warn = makeInterceptor('warn', 'warn');
-  #|   console.error = makeInterceptor('error', 'error');
-  #|   console.info = makeInterceptor('info', 'info');
-  #|   console.debug = makeInterceptor('debug', 'debug');
+  #|     console.log = makeInterceptor('info', 'log');
+  #|     console.warn = makeInterceptor('warn', 'warn');
+  #|     console.error = makeInterceptor('error', 'error');
+  #|     console.info = makeInterceptor('info', 'info');
+  #|     console.debug = makeInterceptor('debug', 'debug');
+  #|   }
   #|
   #|   // Setup Mock DOM if not already present
   #|   if (!globalThis.document) {
@@ -902,6 +908,39 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|     globalThis.__networkIdleCallbacks = [];
   #|     globalThis.__lastNetworkActivity = Date.now();
   #|
+  #|     // Request sandbox configuration
+  #|     globalThis.__requestSandbox = {
+  #|       mode: 'open', // open | same-origin | allowlist
+  #|       allowlist: []
+  #|     };
+  #|     globalThis.__setRequestSandbox = function(options) {
+  #|       options = options || {};
+  #|       const mode = options.mode || globalThis.__requestSandbox.mode;
+  #|       const allowlist = Array.isArray(options.allowlist) ? options.allowlist : globalThis.__requestSandbox.allowlist;
+  #|       globalThis.__requestSandbox = { mode, allowlist };
+  #|       return globalThis.__requestSandbox;
+  #|     };
+  #|
+  #|     const getOrigin = (url) => {
+  #|       try { return new URL(url).origin; } catch { return ''; }
+  #|     };
+  #|     globalThis.__resolveUrl = function(url, baseUrl) {
+  #|       const base = baseUrl || globalThis.__pageUrl || 'about:blank';
+  #|       try { return new URL(url, base).href; } catch { return String(url); }
+  #|     };
+  #|     const sandboxAllows = (targetOrigin, sourceOrigin) => {
+  #|       const sandbox = globalThis.__requestSandbox || { mode: 'open', allowlist: [] };
+  #|       if (sandbox.mode === 'open') return true;
+  #|       if (!targetOrigin) return true;
+  #|       if (sandbox.mode === 'same-origin') {
+  #|         return !sourceOrigin || targetOrigin === sourceOrigin;
+  #|       }
+  #|       if (sandbox.mode === 'allowlist') {
+  #|         return targetOrigin === sourceOrigin || (sandbox.allowlist || []).includes(targetOrigin);
+  #|       }
+  #|       return true;
+  #|     };
+  #|
   #|     const notifyNetworkChange = () => {
   #|       globalThis.__lastNetworkActivity = Date.now();
   #|       // Check if any idle callbacks should be triggered
@@ -914,23 +953,65 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|       });
   #|     };
   #|
-  #|     // Wrap fetch to track network requests
+  #|     // Wrap fetch to track network requests + sandbox/CORS
   #|     const originalFetch = globalThis.fetch;
   #|     if (originalFetch) {
-  #|       globalThis.fetch = function(url, options) {
+  #|       globalThis.__rawFetch = originalFetch;
+  #|       const fetchWithPolicy = (url, options, enforceCors) => {
+  #|         const resolvedUrl = globalThis.__resolveUrl(url, globalThis.__pageUrl);
+  #|         const sourceOrigin = getOrigin(globalThis.__pageUrl || '');
+  #|         const targetOrigin = getOrigin(resolvedUrl);
+  #|         const mode = (options && options.mode) || 'cors';
+  #|         if (!sandboxAllows(targetOrigin, sourceOrigin)) {
+  #|           return Promise.reject(new TypeError('Blocked by request sandbox'));
+  #|         }
+  #|         if (mode === 'same-origin' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|           return Promise.reject(new TypeError('Blocked by same-origin policy'));
+  #|         }
+  #|         let reqOptions = options || {};
+  #|         if (enforceCors && (mode === 'cors' || mode === 'same-origin') && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|           const headers = new Headers(reqOptions.headers || {});
+  #|           if (!headers.has('Origin')) headers.set('Origin', sourceOrigin);
+  #|           reqOptions = { ...reqOptions, headers };
+  #|         }
+  #|         let done = false;
+  #|         const finish = () => {
+  #|           if (done) return;
+  #|           done = true;
+  #|           globalThis.__activeNetworkRequests--;
+  #|           notifyNetworkChange();
+  #|         };
   #|         globalThis.__activeNetworkRequests++;
   #|         notifyNetworkChange();
-  #|         return originalFetch(url, options)
+  #|         return originalFetch(resolvedUrl, reqOptions)
   #|           .then(response => {
-  #|             globalThis.__activeNetworkRequests--;
-  #|             notifyNetworkChange();
+  #|             if (enforceCors && mode === 'cors' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|               const allowOrigin = response.headers.get('access-control-allow-origin');
+  #|               if (!allowOrigin || (allowOrigin !== '*' && allowOrigin !== sourceOrigin)) {
+  #|                 finish();
+  #|                 throw new TypeError('CORS error: origin not allowed');
+  #|               }
+  #|               if (reqOptions.credentials === 'include') {
+  #|                 const allowCreds = response.headers.get('access-control-allow-credentials');
+  #|                 if (allowOrigin === '*' || allowCreds !== 'true') {
+  #|                   finish();
+  #|                   throw new TypeError('CORS error: credentials not allowed');
+  #|                 }
+  #|               }
+  #|             }
+  #|             finish();
   #|             return response;
   #|           })
   #|           .catch(error => {
-  #|             globalThis.__activeNetworkRequests--;
-  #|             notifyNetworkChange();
+  #|             finish();
   #|             throw error;
   #|           });
+  #|       };
+  #|       globalThis.__fetchInternal = function(url, options) {
+  #|         return fetchWithPolicy(url, options, false);
+  #|       };
+  #|       globalThis.fetch = function(url, options) {
+  #|         return fetchWithPolicy(url, options, true);
   #|       };
   #|     }
   #|
@@ -943,10 +1024,45 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         const originalSend = xhr.send.bind(xhr);
   #|
   #|         xhr.open = function() {
+  #|           try {
+  #|             const url = arguments[1];
+  #|             const resolved = globalThis.__resolveUrl ? globalThis.__resolveUrl(url, globalThis.__pageUrl) : String(url);
+  #|             this.__requestUrl = resolved;
+  #|             this.__sourceOrigin = getOrigin(globalThis.__pageUrl || '');
+  #|             this.__targetOrigin = getOrigin(resolved);
+  #|           } catch {
+  #|             // Ignore URL resolution errors
+  #|           }
   #|           return originalOpen.apply(this, arguments);
   #|         };
   #|
   #|         xhr.send = function() {
+  #|           const sourceOrigin = this.__sourceOrigin || getOrigin(globalThis.__pageUrl || '');
+  #|           const targetOrigin = this.__targetOrigin || getOrigin(this.__requestUrl || '');
+  #|           if (!sandboxAllows(targetOrigin, sourceOrigin)) {
+  #|             const err = new TypeError('Blocked by request sandbox');
+  #|             if (typeof this.onerror === 'function') {
+  #|               try { this.onerror(err); } catch {}
+  #|             }
+  #|             throw err;
+  #|           }
+  #|           if (sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|             const corsCheck = () => {
+  #|               if (!this.getResponseHeader) return true;
+  #|               const allowOrigin = this.getResponseHeader('access-control-allow-origin');
+  #|               if (!allowOrigin || (allowOrigin !== '*' && allowOrigin !== sourceOrigin)) return true;
+  #|               if (this.withCredentials) {
+  #|                 const allowCreds = this.getResponseHeader('access-control-allow-credentials');
+  #|                 if (allowOrigin === '*' || allowCreds !== 'true') return true;
+  #|               }
+  #|               return false;
+  #|             };
+  #|             this.addEventListener('load', () => {
+  #|               if (corsCheck() && typeof this.onerror === 'function') {
+  #|                 try { this.onerror(new TypeError('CORS error: origin not allowed')); } catch {}
+  #|               }
+  #|             });
+  #|           }
   #|           globalThis.__activeNetworkRequests++;
   #|           notifyNetworkChange();
   #|
@@ -1255,7 +1371,8 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|
   #|     // Page loading helper - fetch URL and parse HTML into DOM
   #|     globalThis.__loadPage = async function(url) {
-  #|       const response = await fetch(url);
+  #|       const fetchFn = globalThis.__fetchInternal || globalThis.fetch;
+  #|       const response = await fetchFn(url, { mode: 'navigate' });
   #|       if (!response.ok) {
   #|         throw new Error('Failed to fetch: ' + response.status + ' ' + response.statusText);
   #|       }
@@ -1267,22 +1384,109 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|
   #|     // Parse HTML string and load into document
   #|     globalThis.__loadHTML = function(html) {
+  #|       html = html === undefined || html === null ? '' : String(html);
+  #|       const body = globalThis.document.body;
+  #|       const head = globalThis.document.head;
+  #|       const resetContainer = (node) => {
+  #|         if (node && Array.isArray(node._children)) {
+  #|           for (const child of node._children) child._parent = null;
+  #|           node._children = [];
+  #|           return;
+  #|         }
+  #|         while (node.firstChild) node.removeChild(node.firstChild);
+  #|       };
+  #|       const cloneNodeFast = (node) => {
+  #|         if (!node) return null;
+  #|         if (node.nodeType === 3) {
+  #|           const text = createMockTextNode(node._textContent || node.textContent || '');
+  #|           text.ownerDocument = globalThis.document;
+  #|           return text;
+  #|         }
+  #|         if (node.nodeType === 1) {
+  #|           const tag = node.tagName ? node.tagName.toLowerCase() : (node._tagName ? node._tagName.toLowerCase() : 'div');
+  #|           const el = globalThis.document.createElement(tag);
+  #|           el._attrs = node._attrs ? { ...node._attrs } : {};
+  #|           if (node.id && !el._attrs.id) el._attrs.id = node.id;
+  #|           if (node.className && !el._attrs.class) el._attrs.class = node.className;
+  #|           el._style = node._style ? { ...node._style } : {};
+  #|           el._children = [];
+  #|           const children = node._children || node.childNodes || [];
+  #|           for (const child of children) {
+  #|             const cloned = cloneNodeFast(child);
+  #|             if (!cloned) continue;
+  #|             cloned._parent = el;
+  #|             cloned.ownerDocument = el.ownerDocument || globalThis.document;
+  #|             el._children.push(cloned);
+  #|           }
+  #|           return el;
+  #|         }
+  #|         return node.cloneNode ? node.cloneNode(true) : null;
+  #|       };
+  #|       const attachChildren = (target, nodes) => {
+  #|         const owner = target.ownerDocument || globalThis.document;
+  #|         for (const node of nodes) {
+  #|           if (!node) continue;
+  #|           node._parent = target;
+  #|           node.ownerDocument = owner;
+  #|         }
+  #|         target._children = nodes;
+  #|       };
+  #|       const assignClonedChildren = (target, nodes) => {
+  #|         const clones = [];
+  #|         for (const node of nodes) {
+  #|           const cloned = cloneNodeFast(node);
+  #|           if (cloned) clones.push(cloned);
+  #|         }
+  #|         attachChildren(target, clones);
+  #|       };
+  #|       const cached = globalThis.__lastParsed;
+  #|       if (globalThis.__lastHTML === html && cached) {
+  #|         resetContainer(body);
+  #|         resetContainer(head);
+  #|         assignClonedChildren(head, cached.headNodes || []);
+  #|         assignClonedChildren(body, cached.bodyNodes || []);
+  #|         return true;
+  #|       }
+  #|       // Clear current document
+  #|       resetContainer(body);
+  #|       resetContainer(head);
+  #|       if (html.length === 0) {
+  #|         globalThis.__lastHTML = html;
+  #|         globalThis.__lastParsed = { headNodes: [], bodyNodes: [] };
+  #|         return true;
+  #|       }
+  #|       if (html.indexOf('<') === -1) {
+  #|         body.textContent = html;
+  #|         const textNode = body.firstChild ? [body.firstChild.cloneNode(true)] : [];
+  #|         globalThis.__lastHTML = html;
+  #|         globalThis.__lastParsed = { headNodes: [], bodyNodes: textNode };
+  #|         return true;
+  #|       }
   #|       // Simple HTML parser
   #|       const parseHTML = (htmlStr) => {
   #|         const nodes = [];
   #|         let i = 0;
   #|         const len = htmlStr.length;
+  #|         let lowerHtml = null;
+  #|
+  #|         const isWhitespaceCode = (code) => code === 32 || code === 9 || code === 10 || code === 12 || code === 13;
+  #|         const isNameCode = (code) =>
+  #|           (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 45;
+  #|
+  #|         const getLowerHtml = () => {
+  #|           if (!lowerHtml) lowerHtml = htmlStr.toLowerCase();
+  #|           return lowerHtml;
+  #|         };
   #|
   #|         const skipWhitespace = () => {
-  #|           while (i < len && /\s/.test(htmlStr[i])) i++;
+  #|           while (i < len && isWhitespaceCode(htmlStr.charCodeAt(i))) i++;
   #|         };
   #|
   #|         const parseTagName = () => {
-  #|           let name = '';
-  #|           while (i < len && /[a-zA-Z0-9\-]/.test(htmlStr[i])) {
-  #|             name += htmlStr[i++];
-  #|           }
-  #|           return name.toLowerCase();
+  #|           const start = i;
+  #|           while (i < len && isNameCode(htmlStr.charCodeAt(i))) i++;
+  #|           if (i == start) return '';
+  #|           return htmlStr.slice(start, i).toLowerCase();
   #|         };
   #|
   #|         const parseAttrValue = () => {
@@ -1290,21 +1494,25 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|           if (htmlStr[i] === '=') {
   #|             i++; // skip =
   #|             skipWhitespace();
-  #|             let quote = '';
-  #|             if (htmlStr[i] === '"' || htmlStr[i] === "'") {
-  #|               quote = htmlStr[i++];
-  #|               let val = '';
-  #|               while (i < len && htmlStr[i] !== quote) {
-  #|                 val += htmlStr[i++];
+  #|             const quote = htmlStr[i];
+  #|             if (quote === '"' || quote === "'") {
+  #|               i++;
+  #|               const start = i;
+  #|               const end = htmlStr.indexOf(quote, i);
+  #|               if (end < 0) {
+  #|                 i = len;
+  #|                 return htmlStr.slice(start);
   #|               }
-  #|               i++; // skip closing quote
-  #|               return val;
+  #|               i = end + 1;
+  #|               return htmlStr.slice(start, end);
   #|             } else {
-  #|               let val = '';
-  #|               while (i < len && !/[\s>]/.test(htmlStr[i])) {
-  #|                 val += htmlStr[i++];
+  #|               const start = i;
+  #|               while (i < len) {
+  #|                 const code = htmlStr.charCodeAt(i);
+  #|                 if (isWhitespaceCode(code) || htmlStr[i] === '>') break;
+  #|                 i++;
   #|               }
-  #|               return val;
+  #|               return htmlStr.slice(start, i);
   #|             }
   #|           }
   #|           return '';
@@ -1340,7 +1548,7 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|           }
   #|
   #|           // DOCTYPE
-  #|           if (htmlStr.slice(i, i + 8).toLowerCase() === '!doctype') {
+  #|           if (htmlStr[i] === '!' && getLowerHtml().slice(i, i + 8) === '!doctype') {
   #|             while (i < len && htmlStr[i] !== '>') i++;
   #|             i++; // skip >
   #|             return null;
@@ -1377,7 +1585,7 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|           // Parse children for script/style (raw text)
   #|           if (tagName === 'script' || tagName === 'style') {
   #|             const endTag = '</' + tagName;
-  #|             const endIdx = htmlStr.toLowerCase().indexOf(endTag, i);
+  #|             const endIdx = getLowerHtml().indexOf(endTag, i);
   #|             if (endIdx >= 0) {
   #|               const content = htmlStr.slice(i, endIdx);
   #|               if (content.trim()) {
@@ -1449,12 +1657,6 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         return nodes;
   #|       };
   #|
-  #|       // Clear current document
-  #|       const body = globalThis.document.body;
-  #|       const head = globalThis.document.head;
-  #|       while (body.firstChild) body.removeChild(body.firstChild);
-  #|       while (head.firstChild) head.removeChild(head.firstChild);
-  #|
   #|       // Parse and build DOM
   #|       const parsed = parseHTML(html);
   #|
@@ -1474,26 +1676,40 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|         }
   #|       }
   #|
+  #|       const headCache = [];
+  #|       const bodyCache = [];
   #|       // Move head children to document.head
   #|       if (headEl) {
-  #|         for (const child of Array.from(headEl.childNodes)) {
-  #|           head.appendChild(child);
+  #|         const headChildren = Array.from(headEl.childNodes);
+  #|         for (const child of headChildren) {
+  #|           const cloned = cloneNodeFast(child);
+  #|           if (cloned) headCache.push(cloned);
   #|         }
+  #|         attachChildren(head, headChildren);
   #|       }
   #|
   #|       // Move body children to document.body
   #|       if (bodyEl) {
-  #|         for (const child of Array.from(bodyEl.childNodes)) {
-  #|           body.appendChild(child);
+  #|         const bodyChildren = Array.from(bodyEl.childNodes);
+  #|         for (const child of bodyChildren) {
+  #|           const cloned = cloneNodeFast(child);
+  #|           if (cloned) bodyCache.push(cloned);
   #|         }
+  #|         attachChildren(body, bodyChildren);
   #|       } else {
   #|         // No body found, append all parsed nodes
+  #|         const bodyChildren = [];
   #|         for (const node of parsed) {
   #|           if (node.tagName !== 'HTML' && node.tagName !== 'HEAD') {
-  #|             body.appendChild(node);
+  #|             bodyChildren.push(node);
+  #|             const cloned = cloneNodeFast(node);
+  #|             if (cloned) bodyCache.push(cloned);
   #|           }
   #|         }
+  #|         attachChildren(body, bodyChildren);
   #|       }
+  #|       globalThis.__lastHTML = html;
+  #|       globalThis.__lastParsed = { headNodes: headCache, bodyNodes: bodyCache };
   #|
   #|       return true;
   #|     };
@@ -1505,15 +1721,7 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|
   #|     // Helper to resolve URL
   #|     const resolveUrl = (src, baseUrl) => {
-  #|       if (src.startsWith('//')) {
-  #|         return 'https:' + src;
-  #|       } else if (src.startsWith('/')) {
-  #|         const urlObj = new URL(baseUrl);
-  #|         return urlObj.origin + src;
-  #|       } else if (!src.startsWith('http')) {
-  #|         return new URL(src, baseUrl).href;
-  #|       }
-  #|       return src;
+  #|       return globalThis.__resolveUrl ? globalThis.__resolveUrl(src, baseUrl) : src;
   #|     };
   #|
   #|     // Execute all script tags in the document
@@ -1540,6 +1748,14 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|               // External module - use dynamic import
   #|               const fullUrl = resolveUrl(src, baseUrl);
   #|               try {
+  #|                 const sourceOrigin = getOrigin(baseUrl || globalThis.__pageUrl || '');
+  #|                 const targetOrigin = getOrigin(fullUrl);
+  #|                 if (!sandboxAllows(targetOrigin, sourceOrigin)) {
+  #|                   throw new Error('Blocked by request sandbox');
+  #|                 }
+  #|                 if (sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|                   await globalThis.fetch(fullUrl, { mode: 'cors' });
+  #|                 }
   #|                 await import(fullUrl);
   #|                 results.push({ executed: true, module: true, src: fullUrl });
   #|               } catch (e) {
@@ -1562,7 +1778,8 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|           } else if (src) {
   #|             // External classic script - fetch and execute
   #|             const fullUrl = resolveUrl(src, baseUrl);
-  #|             const response = await fetch(fullUrl);
+  #|             const fetchFn = globalThis.__fetchInternal || globalThis.fetch;
+  #|             const response = await fetchFn(fullUrl, { mode: 'no-cors' });
   #|             if (response.ok) {
   #|               const code = await response.text();
   #|               (0, eval)(code);
@@ -1622,11 +1839,13 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|           consoleEntries
   #|         })
   #|       ).finally(() => {
-  #|         console.log = originalConsole.log;
-  #|         console.warn = originalConsole.warn;
-  #|         console.error = originalConsole.error;
-  #|         console.info = originalConsole.info;
-  #|         console.debug = originalConsole.debug;
+  #|         if (captureConsole && originalConsole) {
+  #|           console.log = originalConsole.log;
+  #|           console.warn = originalConsole.warn;
+  #|           console.error = originalConsole.error;
+  #|           console.info = originalConsole.info;
+  #|           console.debug = originalConsole.debug;
+  #|         }
   #|       });
   #|     }
   #|     return JSON.stringify({ type: "success", result: toBidiValueFn(result), consoleEntries });
@@ -1645,6 +1864,13 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
   #|   } finally {
   #|     // Restore original console (for sync path)
   #|     // Note: For async path, cleanup is in .finally()
+  #|     if (captureConsole && originalConsole) {
+  #|       console.log = originalConsole.log;
+  #|       console.warn = originalConsole.warn;
+  #|       console.error = originalConsole.error;
+  #|       console.info = originalConsole.info;
+  #|       console.debug = originalConsole.debug;
+  #|     }
   #|   }
   #|
   #|   function toBidiValue(value) {
@@ -1710,8 +1936,17 @@ extern "js" fn js_evaluate_expression(expression : String) -> String =
 
 ///|
 /// Evaluate JavaScript expression and return result as JSON (sync)
+fn evaluate_js_with_console(
+  expression : String,
+  capture_console : Bool,
+) -> String {
+  js_evaluate_expression(expression, capture_console)
+}
+
+///|
+/// Evaluate JavaScript expression and return result as JSON (sync)
 pub fn evaluate_js(expression : String) -> String {
-  js_evaluate_expression(expression)
+  evaluate_js_with_console(expression, true)
 }
 
 ///|
@@ -1720,6 +1955,7 @@ pub fn evaluate_js(expression : String) -> String {
 extern "js" fn js_evaluate_expression_async(expression : String) -> @core.Any =
   #| async (expression) => {
   #|   const consoleEntries = [];
+  #|   const captureConsole = true;
   #|   const originalConsole = {
   #|     log: console.log,
   #|     warn: console.warn,
@@ -1801,11 +2037,13 @@ extern "js" fn js_evaluate_expression_async(expression : String) -> @core.Any =
   #|       consoleEntries
   #|     });
   #|   } finally {
-  #|     console.log = originalConsole.log;
-  #|     console.warn = originalConsole.warn;
-  #|     console.error = originalConsole.error;
-  #|     console.info = originalConsole.info;
-  #|     console.debug = originalConsole.debug;
+  #|     if (captureConsole && originalConsole) {
+  #|       console.log = originalConsole.log;
+  #|       console.warn = originalConsole.warn;
+  #|       console.error = originalConsole.error;
+  #|       console.info = originalConsole.info;
+  #|       console.debug = originalConsole.debug;
+  #|     }
   #|   }
   #| }
 
@@ -1829,28 +2067,32 @@ extern "js" fn js_eval_and_send_async(
   request_id : Int,
   expression : String,
   ctx_id : String,
+  capture_console : Bool,
 ) -> Unit =
-  #| async (socket, requestId, expression, ctxId) => {
+  #| async (socket, requestId, expression, ctxId, captureConsole) => {
   #|   const consoleEntries = [];
-  #|   const originalConsole = {
-  #|     log: console.log, warn: console.warn, error: console.error,
-  #|     info: console.info, debug: console.debug
-  #|   };
+  #|   let originalConsole = null;
+  #|   if (captureConsole) {
+  #|     originalConsole = {
+  #|       log: console.log, warn: console.warn, error: console.error,
+  #|       info: console.info, debug: console.debug
+  #|     };
   #|
-  #|   const makeInterceptor = (level, method) => (...args) => {
-  #|     consoleEntries.push({
-  #|       level, method,
-  #|       text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
-  #|       timestamp: Date.now()
-  #|     });
-  #|     originalConsole[method](...args);
-  #|   };
+  #|     const makeInterceptor = (level, method) => (...args) => {
+  #|       consoleEntries.push({
+  #|         level, method,
+  #|         text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
+  #|         timestamp: Date.now()
+  #|       });
+  #|       originalConsole[method](...args);
+  #|     };
   #|
-  #|   console.log = makeInterceptor('info', 'log');
-  #|   console.warn = makeInterceptor('warn', 'warn');
-  #|   console.error = makeInterceptor('error', 'error');
-  #|   console.info = makeInterceptor('info', 'info');
-  #|   console.debug = makeInterceptor('debug', 'debug');
+  #|     console.log = makeInterceptor('info', 'log');
+  #|     console.warn = makeInterceptor('warn', 'warn');
+  #|     console.error = makeInterceptor('error', 'error');
+  #|     console.info = makeInterceptor('info', 'info');
+  #|     console.debug = makeInterceptor('debug', 'debug');
+  #|   }
   #|
   #|   function toBidiValue(value) {
   #|     if (value === undefined) return { type: "undefined" };
@@ -1920,11 +2162,13 @@ extern "js" fn js_eval_and_send_async(
   #|       }
   #|     };
   #|   } finally {
-  #|     console.log = originalConsole.log;
-  #|     console.warn = originalConsole.warn;
-  #|     console.error = originalConsole.error;
-  #|     console.info = originalConsole.info;
-  #|     console.debug = originalConsole.debug;
+  #|     if (captureConsole && originalConsole) {
+  #|       console.log = originalConsole.log;
+  #|       console.warn = originalConsole.warn;
+  #|       console.error = originalConsole.error;
+  #|       console.info = originalConsole.info;
+  #|       console.debug = originalConsole.debug;
+  #|     }
   #|   }
   #|
   #|   // Send console log events before response
@@ -1950,13 +2194,27 @@ extern "js" fn js_eval_and_send_async(
 
 ///|
 /// Evaluate expression asynchronously and send result via WebSocket
+fn eval_and_send_async_with_console(
+  socket : @core.Any,
+  request_id : Int,
+  expression : String,
+  ctx_id : String,
+  capture_console : Bool,
+) -> Unit {
+  js_eval_and_send_async(
+    socket, request_id, expression, ctx_id, capture_console,
+  )
+}
+
+///|
+/// Evaluate expression asynchronously and send result via WebSocket
 pub fn eval_and_send_async(
   socket : @core.Any,
   request_id : Int,
   expression : String,
   ctx_id : String,
 ) -> Unit {
-  js_eval_and_send_async(socket, request_id, expression, ctx_id)
+  eval_and_send_async_with_console(socket, request_id, expression, ctx_id, true)
 }
 
 ///|

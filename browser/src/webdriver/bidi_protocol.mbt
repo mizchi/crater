@@ -389,10 +389,10 @@ fn BidiProtocol::dispatch_browsing_context(
       )
       let ctx_id = self.create_context(user_ctx)
       let result = make_object({ "context": Json::string(ctx_id) })
-      // Send response BEFORE events (BiDi protocol requirement)
-      self.send_success(request.id, Some(result))
+      // Emit events before response for immediate listener availability.
       self.emit_context_created(ctx_id, "tab", "about:blank")
       self.emit_default_realm(ctx_id)
+      self.send_success(request.id, Some(result))
       Ok(())
     }
     "navigate" =>
@@ -583,6 +583,10 @@ fn BidiProtocol::dispatch_script(
         _ => false
       }
       let expr = get_string_param(request.params, "expression").unwrap()
+      let capture_console = self.is_subscribed_for_context(
+          "log.entryAdded", ctx_id,
+        ) ||
+        self.is_subscribed("log")
       // Use QuickJS for sandboxed execution if enabled
       if self.use_quickjs && is_quickjs_initialized() {
         match self.socket {
@@ -607,14 +611,20 @@ fn BidiProtocol::dispatch_script(
         match self.socket {
           Some(socket) => {
             // Async evaluation - response sent directly via WebSocket
-            eval_and_send_async(socket, request.id, expr, ctx_id)
+            eval_and_send_async_with_console(
+              socket,
+              request.id,
+              expr,
+              ctx_id,
+              capture_console,
+            )
             return Ok(()) // No sync response needed
           }
           None => () // Fall through to sync evaluation
         }
       }
       // Synchronous evaluation (Deno eval)
-      let eval_result_json = evaluate_js(expr)
+      let eval_result_json = evaluate_js_with_console(expr, capture_console)
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
           self.send_error(
@@ -626,7 +636,9 @@ fn BidiProtocol::dispatch_script(
         }
       }
       // Process console entries and emit log events BEFORE response
-      self.process_console_entries(eval_result, ctx_id)
+      if capture_console {
+        self.process_console_entries(eval_result, ctx_id)
+      }
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
@@ -728,6 +740,10 @@ fn BidiProtocol::dispatch_script(
           }
         _ => "default"
       }
+      let capture_console_call = self.is_subscribed_for_context(
+          "log.entryAdded", ctx_id_call,
+        ) ||
+        self.is_subscribed("log")
       // Check if awaitPromise is true
       let await_promise_call = match
         get_param_raw(request.params, "awaitPromise") {
@@ -772,13 +788,21 @@ fn BidiProtocol::dispatch_script(
         match self.socket {
           Some(socket) => {
             // Async evaluation - response sent directly via WebSocket
-            eval_and_send_async(socket, request.id, call_expr, ctx_id_call)
+            eval_and_send_async_with_console(
+              socket,
+              request.id,
+              call_expr,
+              ctx_id_call,
+              capture_console_call,
+            )
             return Ok(()) // No sync response needed
           }
           None => () // Fall through to sync evaluation
         }
       }
-      let eval_result_json = evaluate_js(call_expr)
+      let eval_result_json = evaluate_js_with_console(
+        call_expr, capture_console_call,
+      )
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
           self.send_error(
@@ -790,7 +814,9 @@ fn BidiProtocol::dispatch_script(
         }
       }
       // Process console entries and emit log events BEFORE response
-      self.process_console_entries(eval_result, ctx_id_call)
+      if capture_console_call {
+        self.process_console_entries(eval_result, ctx_id_call)
+      }
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
