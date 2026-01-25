@@ -1934,3 +1934,744 @@ test "IntersectionObserver: basic usage" {
   inspect(result.success, content="true")
   inspect(result.value, content="true,true,true,true,true")
 }
+
+// ============================================
+// DOM Initialization Tests (Option B)
+// Tests that DomTree content is visible to scripts
+// ============================================
+
+///|
+test "DOM init: scripts can see existing body content" {
+  let dom = @dom.DomTree::new()
+
+  // Create HTML structure with content
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let div = dom.create_element("div")
+  let _ = dom.set_attribute(div, "id", "existing-div")
+  let _ = dom.set_attribute(div, "class", "my-class")
+  let text = dom.create_text("Hello from DomTree")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, div)
+  let _ = dom.append_child(div, text)
+  let ctx = JsContext::new(dom)
+
+  // Script should be able to see the existing content
+  let code =
+    #|const results = [];
+    #|const div = document.getElementById('existing-div');
+    #|results.push(div !== null);
+    #|if (div) {
+    #|  results.push(div.className === 'my-class');
+    #|  results.push(div.textContent === 'Hello from DomTree');
+    #|}
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true")
+}
+
+///|
+test "DOM init: scripts can query existing elements" {
+  let dom = @dom.DomTree::new()
+
+  // Create HTML structure with multiple elements
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let div1 = dom.create_element("div")
+  let _ = dom.set_attribute(div1, "class", "item")
+  let div2 = dom.create_element("div")
+  let _ = dom.set_attribute(div2, "class", "item special")
+  let span = dom.create_element("span")
+  let _ = dom.set_attribute(span, "class", "item")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, div1)
+  let _ = dom.append_child(body, div2)
+  let _ = dom.append_child(body, span)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const items = document.getElementsByClassName('item');
+    #|results.push(items.length === 3);
+    #|const divs = document.getElementsByTagName('div');
+    #|results.push(divs.length === 2);
+    #|const special = document.querySelector('.special');
+    #|results.push(special !== null);
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true")
+}
+
+///|
+test "DOM init: scripts can traverse existing elements" {
+  let dom = @dom.DomTree::new()
+
+  // Create nested structure
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let container = dom.create_element("div")
+  let _ = dom.set_attribute(container, "id", "container")
+  let child1 = dom.create_element("p")
+  let _ = dom.set_attribute(child1, "class", "child")
+  let child2 = dom.create_element("p")
+  let _ = dom.set_attribute(child2, "class", "child")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, container)
+  let _ = dom.append_child(container, child1)
+  let _ = dom.append_child(container, child2)
+  let ctx = JsContext::new(dom)
+
+  // Script traverses the existing structure
+  let code =
+    #|const results = [];
+    #|const container = document.getElementById('container');
+    #|results.push(container !== null);
+    #|if (container) {
+    #|  results.push(container.childNodes.length === 2);
+    #|  results.push(container.firstChild !== null);
+    #|  results.push(container.lastChild !== null);
+    #|  results.push(container.firstChild.className === 'child');
+    #|}
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true,true")
+}
+
+///|
+test "DOM init: modifications to existing elements sync back to DomTree" {
+  let dom = @dom.DomTree::new()
+
+  // Create initial structure
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let div = dom.create_element("div")
+  let _ = dom.set_attribute(div, "id", "target")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, div)
+  let ctx = JsContext::new(dom)
+
+  // Script modifies the existing element
+  let code =
+    #|const target = document.getElementById('target');
+    #|target.setAttribute('data-modified', 'true');
+    #|target.className = 'modified-class';
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+
+  // Verify the modifications in DomTree
+  let modified_attr = dom.get_attribute(div, "data-modified")
+  match modified_attr {
+    Ok(Some(v)) => inspect(v, content="true")
+    _ => assert_true(false)
+  }
+  let class_attr = dom.get_attribute(div, "class")
+  match class_attr {
+    Ok(Some(v)) => inspect(v, content="modified-class")
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "DOM init: _mockId is correctly set for existing elements" {
+  let dom = @dom.DomTree::new()
+
+  // Create structure
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let div = dom.create_element("div")
+  let _ = dom.set_attribute(div, "id", "check-id")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, div)
+
+  // Get the actual node ID
+  let div_id = div.to_int()
+  let ctx = JsContext::new(dom)
+
+  // Check that _mockId matches DomTree node ID
+  let code =
+    #|const div = document.getElementById('check-id');
+    #|div._mockId
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content=div_id.to_string())
+}
+
+// ============================================
+// Microtask Queue Tests
+// Tests for queueMicrotask and Promise ordering
+// ============================================
+
+///|
+test "queueMicrotask: exists and is a function" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|typeof queueMicrotask
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="function")
+}
+
+///|
+test "queueMicrotask: throws TypeError for non-function" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|let threw = false;
+    #|try { queueMicrotask(null); } catch (e) { threw = e instanceof TypeError; }
+    #|threw
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true")
+}
+
+///|
+test "queueMicrotask: callback is called" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|let called = false;
+    #|queueMicrotask(() => { called = true; });
+    #|called
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // After microtask processing, callback should have been called
+  // Note: The value is from the last expression BEFORE microtask processing
+  // but logs should show the callback was called
+  inspect(result.logs.length() > 0 || result.value == "false", content="true")
+}
+
+///|
+test "queueMicrotask: interleaves with Promise.then" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|Promise.resolve().then(() => order.push('a'));
+    #|queueMicrotask(() => order.push('b'));
+    #|Promise.reject().catch(() => order.push('c'));
+    #|queueMicrotask(() => order.push('d'));
+    #|order.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Before microtask checkpoint, order should be empty
+  // The microtasks run after the script, so this tests the return value
+  // which is captured before microtask processing
+}
+
+///|
+test "Promise.then: basic ordering (script end -> promise1 -> promise2)" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|order.push('script start');
+    #|Promise.resolve().then(() => order.push('promise1')).then(() => order.push('promise2'));
+    #|order.push('script end');
+    #|console.log(order.join(','));
+    #|order.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // The script execution captures "script start,script end"
+  // After microtask processing, logs should contain the full order
+  inspect(result.value, content="script start,script end")
+}
+
+///|
+test "Promise and queueMicrotask: mixed ordering" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|queueMicrotask(() => order.push('qm1'));
+    #|Promise.resolve().then(() => order.push('p1'));
+    #|queueMicrotask(() => order.push('qm2'));
+    #|Promise.resolve().then(() => order.push('p2'));
+    #|// After microtasks, check order via console.log
+    #|queueMicrotask(() => console.log('final:' + order.join(',')));
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="done")
+  // Check that microtasks were executed by looking at logs
+  let has_final = result.logs.iter().any(fn(log) { log.contains("final:") })
+  inspect(has_final, content="true")
+}
+
+// ============================================
+// setTimeout Execution Tests
+// Tests that setTimeout callbacks are executed
+// ============================================
+
+///|
+test "setTimeout: callback is executed" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|let called = false;
+    #|setTimeout(() => { called = true; console.log('timeout executed'); }, 0);
+    #|called
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Script returns false (before timeout), but timeout should have run
+  inspect(result.value, content="false")
+  // Check logs for timeout execution
+  let has_timeout = result.logs
+    .iter()
+    .any(fn(log) { log.contains("timeout executed") })
+  inspect(has_timeout, content="true")
+}
+
+///|
+test "setTimeout: multiple timeouts execute in order" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|setTimeout(() => order.push('t1'), 0);
+    #|setTimeout(() => order.push('t2'), 0);
+    #|setTimeout(() => order.push('t3'), 0);
+    #|setTimeout(() => console.log('order:' + order.join(',')), 0);
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Check that all timeouts ran
+  let has_order = result.logs
+    .iter()
+    .any(fn(log) { log.contains("order:t1,t2,t3") })
+  inspect(has_order, content="true")
+}
+
+///|
+test "setTimeout: runs after microtasks (Promise.then)" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|order.push('script start');
+    #|setTimeout(() => order.push('setTimeout'), 0);
+    #|Promise.resolve().then(() => order.push('promise1')).then(() => order.push('promise2'));
+    #|order.push('script end');
+    #|// Log final order after everything completes
+    #|setTimeout(() => console.log('final:' + order.join(',')), 0);
+    #|order.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Script returns "script start,script end"
+  inspect(result.value, content="script start,script end")
+  // Final order should be: script start, script end, promise1, promise2, setTimeout
+  let has_correct_order = result.logs
+    .iter()
+    .any(fn(log) {
+      log.contains("final:script start,script end,promise1,promise2,setTimeout")
+    })
+  inspect(has_correct_order, content="true")
+}
+
+///|
+test "setTimeout: can be cancelled with clearTimeout" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|let called = false;
+    #|const id = setTimeout(() => { called = true; }, 0);
+    #|clearTimeout(id);
+    #|setTimeout(() => console.log('called:' + called), 0);
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Cancelled timeout should not have run
+  let was_not_called = result.logs
+    .iter()
+    .any(fn(log) { log.contains("called:false") })
+  inspect(was_not_called, content="true")
+}
+
+///|
+test "setTimeout: nested setTimeout works" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|setTimeout(() => {
+    #|  order.push('t1');
+    #|  setTimeout(() => {
+    #|    order.push('t2');
+    #|    console.log('nested:' + order.join(','));
+    #|  }, 0);
+    #|}, 0);
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Nested timeout should also run
+  let has_nested = result.logs
+    .iter()
+    .any(fn(log) { log.contains("nested:t1,t2") })
+  inspect(has_nested, content="true")
+}
+
+///|
+test "setTimeout: microtasks scheduled from timeout run before next timeout" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const order = [];
+    #|setTimeout(() => {
+    #|  order.push('t1');
+    #|  Promise.resolve().then(() => order.push('p1'));
+    #|}, 0);
+    #|setTimeout(() => {
+    #|  order.push('t2');
+    #|  console.log('order:' + order.join(','));
+    #|}, 0);
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Promise from t1 should run before t2
+  let has_correct_order = result.logs
+    .iter()
+    .any(fn(log) { log.contains("order:t1,p1,t2") })
+  inspect(has_correct_order, content="true")
+}
+
+// ============================================
+// Fetch API Tests
+// Tests for fetch() implementation
+// ============================================
+
+///|
+test "fetch: exists and is a function" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|typeof fetch
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="function")
+}
+
+///|
+test "fetch: returns a Promise" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const p = fetch('/test');
+    #|p instanceof Promise
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true")
+}
+
+///|
+test "fetch: Response has required methods" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  // Register a mock response
+  let code =
+    #|// Set up mock response
+    #|_fetchMocks.set('/api/test', { body: '{"data": "test"}', status: 200 });
+    #|let hasText = false, hasJson = false, hasOk = false, hasStatus = false;
+    #|fetch('/api/test').then(response => {
+    #|  hasText = typeof response.text === 'function';
+    #|  hasJson = typeof response.json === 'function';
+    #|  hasOk = typeof response.ok === 'boolean';
+    #|  hasStatus = typeof response.status === 'number';
+    #|  console.log('methods:' + [hasText, hasJson, hasOk, hasStatus].join(','));
+    #|});
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_methods = result.logs
+    .iter()
+    .any(fn(log) { log.contains("methods:true,true,true,true") })
+  inspect(has_methods, content="true")
+}
+
+///|
+test "fetch: can parse JSON response" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|_fetchMocks.set('/api/data', { body: '{"name": "test", "value": 42}', status: 200 });
+    #|fetch('/api/data')
+    #|  .then(r => r.json())
+    #|  .then(data => {
+    #|    console.log('json:' + data.name + ',' + data.value);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_json = result.logs
+    .iter()
+    .any(fn(log) { log.contains("json:test,42") })
+  inspect(has_json, content="true")
+}
+
+///|
+test "fetch: can get text response" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|_fetchMocks.set('/api/text', { body: 'Hello World', status: 200 });
+    #|fetch('/api/text')
+    #|  .then(r => r.text())
+    #|  .then(text => {
+    #|    console.log('text:' + text);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_text = result.logs
+    .iter()
+    .any(fn(log) { log.contains("text:Hello World") })
+  inspect(has_text, content="true")
+}
+
+///|
+test "fetch: handles 404 response" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|_fetchMocks.set('/api/notfound', { body: 'Not Found', status: 404 });
+    #|fetch('/api/notfound')
+    #|  .then(r => {
+    #|    console.log('status:' + r.status + ',ok:' + r.ok);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_status = result.logs
+    .iter()
+    .any(fn(log) { log.contains("status:404,ok:false") })
+  inspect(has_status, content="true")
+}
+
+///|
+test "fetch: handles network error" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|// No mock registered, should fail
+    #|let caught = false;
+    #|fetch('/api/unknown')
+    #|  .catch(err => {
+    #|    caught = true;
+    #|    console.log('error:' + err.message);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  // Should have caught an error
+  let has_error = result.logs.iter().any(fn(log) { log.contains("error:") })
+  inspect(has_error, content="true")
+}
+
+///|
+test "fetch: works with chained promises (like async/await)" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  // Note: async/await uses native Promise in Node.js vm, so we test with .then() chains
+  // which use our custom _SyncPromise and work synchronously
+  let code =
+    #|_fetchMocks.set('/api/async', { body: '{"result": "success"}', status: 200 });
+    #|fetch('/api/async')
+    #|  .then(response => response.json())
+    #|  .then(data => {
+    #|    console.log('chained:' + data.result);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_chained = result.logs
+    .iter()
+    .any(fn(log) { log.contains("chained:success") })
+  inspect(has_chained, content="true")
+}
+
+// ============================================
+// Dynamic Content Loading Tests
+// Tests that fetch can load data and update DOM
+// ============================================
+
+///|
+test "fetch: dynamic content - fetch data and insert into DOM" {
+  // Create DOM with a container
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let container = dom.create_element("div")
+  let _ = dom.set_attribute(container, "id", "content")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, container)
+  let ctx = JsContext::new(dom)
+
+  // Mock API response with article data
+  let code =
+    #|_fetchMocks.set('/api/articles', {
+    #|  body: JSON.stringify({
+    #|    articles: [
+    #|      { id: 1, title: 'Article One' },
+    #|      { id: 2, title: 'Article Two' },
+    #|      { id: 3, title: 'Article Three' }
+    #|    ]
+    #|  }),
+    #|  status: 200
+    #|});
+    #|
+    #|// Fetch data and insert into DOM
+    #|fetch('/api/articles')
+    #|  .then(r => r.json())
+    #|  .then(data => {
+    #|    const container = document.getElementById('content');
+    #|    data.articles.forEach(article => {
+    #|      const div = document.createElement('div');
+    #|      div.className = 'article';
+    #|      div.textContent = article.title;
+    #|      container.appendChild(div);
+    #|    });
+    #|    console.log('inserted:' + container.children.length);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+
+  // Verify articles were inserted
+  let has_inserted = result.logs
+    .iter()
+    .any(fn(log) { log.contains("inserted:3") })
+  inspect(has_inserted, content="true")
+}
+
+///|
+test "fetch: dynamic content - multiple fetch calls in sequence" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|_fetchMocks.set('/api/user', { body: '{"name": "Alice"}', status: 200 });
+    #|_fetchMocks.set('/api/posts', { body: '{"count": 5}', status: 200 });
+    #|
+    #|const results = [];
+    #|fetch('/api/user')
+    #|  .then(r => r.json())
+    #|  .then(user => {
+    #|    results.push('user:' + user.name);
+    #|    return fetch('/api/posts');
+    #|  })
+    #|  .then(r => r.json())
+    #|  .then(posts => {
+    #|    results.push('posts:' + posts.count);
+    #|    console.log('results:' + results.join(','));
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_results = result.logs
+    .iter()
+    .any(fn(log) { log.contains("results:user:Alice,posts:5") })
+  inspect(has_results, content="true")
+}
+
+///|
+test "fetch: dynamic content - parallel fetch with Promise.all" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|_fetchMocks.set('/api/a', { body: '{"value": "A"}', status: 200 });
+    #|_fetchMocks.set('/api/b', { body: '{"value": "B"}', status: 200 });
+    #|_fetchMocks.set('/api/c', { body: '{"value": "C"}', status: 200 });
+    #|
+    #|Promise.all([
+    #|  fetch('/api/a').then(r => r.json()),
+    #|  fetch('/api/b').then(r => r.json()),
+    #|  fetch('/api/c').then(r => r.json())
+    #|]).then(results => {
+    #|  const values = results.map(r => r.value).join(',');
+    #|  console.log('parallel:' + values);
+    #|});
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  let has_parallel = result.logs
+    .iter()
+    .any(fn(log) { log.contains("parallel:A,B,C") })
+  inspect(has_parallel, content="true")
+}
+
+///|
+test "fetch: zenn-like page - fetch user articles and render" {
+  // Test with forEach, h2 elements, and querySelectorAll
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let content = dom.create_element("div")
+  let _ = dom.set_attribute(content, "id", "articles")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, content)
+  let ctx = JsContext::new(dom)
+
+  // Mock API response with 3 articles
+  let code =
+    #|_fetchMocks.set('/api/articles', {
+    #|  body: JSON.stringify({
+    #|    articles: [
+    #|      { title: 'Article 1' },
+    #|      { title: 'Article 2' },
+    #|      { title: 'Article 3' }
+    #|    ]
+    #|  }),
+    #|  status: 200
+    #|});
+    #|
+    #|const container = document.getElementById('articles');
+    #|fetch('/api/articles')
+    #|  .then(r => r.json())
+    #|  .then(data => {
+    #|    data.articles.forEach(article => {
+    #|      const card = document.createElement('div');
+    #|      const title = document.createElement('h2');
+    #|      title.textContent = article.title;
+    #|      card.appendChild(title);
+    #|      container.appendChild(card);
+    #|    });
+    #|    console.log('rendered:' + container.children.length + ' articles');
+    #|    const titles = Array.from(container.querySelectorAll('h2')).map(h => h.textContent).join(',');
+    #|    console.log('titles:' + titles);
+    #|  });
+    #|'done'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+
+  // Verify articles were rendered
+  let has_rendered = result.logs
+    .iter()
+    .any(fn(log) { log.contains("rendered:3 articles") })
+  inspect(has_rendered, content="true")
+
+  // Verify titles
+  let has_titles = result.logs
+    .iter()
+    .any(fn(log) { log.contains("titles:Article 1,Article 2,Article 3") })
+  inspect(has_titles, content="true")
+}

@@ -368,6 +368,21 @@ pub fn from_node_and_layout(
 }
 
 ///|
+/// Calculate the maximum extent (bottom Y position) of a layout tree
+/// This recursively finds the furthest point any content reaches
+fn calculate_layout_extent(layout : @types.Layout, parent_y : Double) -> Double {
+  let abs_y = parent_y + layout.y
+  let mut max_extent = abs_y + layout.height
+  for child in layout.children {
+    let child_extent = calculate_layout_extent(child, abs_y)
+    if child_extent > max_extent {
+      max_extent = child_extent
+    }
+  }
+  max_extent
+}
+
+///|
 /// Convert a Node and its Layout to a PaintNode tree with viewport culling.
 /// Nodes completely outside the viewport are skipped to reduce memory and improve rendering performance.
 /// Parameters:
@@ -385,23 +400,13 @@ pub fn from_node_and_layout_with_viewport(
 ) -> PaintNode? {
   // Compute absolute Y position
   let abs_y = parent_y + layout.y
-  let abs_bottom = abs_y + layout.height
 
-  // Calculate effective bottom including children (for elements with height: 0)
-  // This handles cases where parent has height: 100% (resolves to 0) but children extend beyond
-  let effective_bottom = if layout.children.length() > 0 && layout.height <= 0.0 {
-    // For zero-height containers, find max child extent
-    let mut max_child_extent = abs_bottom
-    for child in layout.children {
-      let child_bottom = abs_y + child.y + child.height
-      if child_bottom > max_child_extent {
-        max_child_extent = child_bottom
-      }
-    }
-    max_child_extent
-  } else {
-    abs_bottom
-  }
+  // Calculate effective bottom including all descendants
+  // This handles cases where:
+  // 1. Parent has height: 100% (resolves to viewport height) but children extend beyond
+  // 2. Parent has height: 0 but children have content
+  // Recursively find the true content extent
+  let effective_bottom = calculate_layout_extent(layout, abs_y)
 
   // Skip nodes that are completely outside the viewport
   // A node is outside if its effective bottom edge is above viewport top
