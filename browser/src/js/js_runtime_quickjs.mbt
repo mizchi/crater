@@ -5685,6 +5685,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       globalThis.window = window;
   #|       globalThis.self = window;
   #|       globalThis.location = window.location;
+  #|       globalThis.navigator = window.navigator;
   #|     }
   #|     const frames = [ { document: document.implementation.createHTMLDocument('') } ];
   #|     window.frames = frames;
@@ -5700,6 +5701,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const requestAnimationFrame = window.requestAnimationFrame.bind(window);
   #|     const cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
   #|     const alert = window.alert.bind(window);
+  #|     const navigator = window.navigator;
   #|
   #|     // DOMTokenList class
   #|     function DOMTokenList(getter, setter) { this._getter = getter; this._setter = setter; }

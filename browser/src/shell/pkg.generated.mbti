@@ -98,6 +98,7 @@ pub(all) struct ScriptInfo {
   src : String
   is_async : Bool
   is_defer : Bool
+  script_type : String
 }
 
 // Type aliases

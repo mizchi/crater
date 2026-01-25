@@ -529,6 +529,8 @@ pub fn render_to_buffer_with_status(
   focused_link_url? : String? = None,
   selection_mode? : Bool = false,
   dark_mode? : Bool = false,
+  total_content_height? : Int = 0,
+  show_scrollbar? : Bool = false,
 ) -> BufferRenderResult {
   // Reserve first row for status bar at top
   let content_height = height - 1
@@ -606,6 +608,19 @@ pub fn render_to_buffer_with_status(
     selection_mode~,
     dark_mode~,
   )
+  // Draw scrollbar if enabled and content overflows
+  if show_scrollbar && total_content_height > content_height * 16 {
+    let content_height_chars = total_content_height / 16 // Convert px to char rows
+    draw_scrollbar(
+      buf,
+      width - 1, // x: right edge
+      content_start_row, // y: start row
+      content_height, // height of track
+      scroll_y, // scroll position
+      content_height_chars, // total content height in chars
+      content_height, // visible height in chars
+    )
+  }
   // Return ANSI and link regions
   { buffer: buf, link_regions }
 }

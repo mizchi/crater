@@ -259,20 +259,183 @@ test "viewport_culling_returns_content" {
 }
 
 ///|
-/// Test text display width calculation
-test "calculate_text_display_width" {
-  // ASCII text
-  inspect(calculate_text_display_width("GitHub"), content="6")
-  inspect(calculate_text_display_width("LinkedIn"), content="8")
-  inspect(calculate_text_display_width("Newsletter"), content="10")
-  inspect(calculate_text_display_width("Home"), content="4")
-
-  // Empty string
-  inspect(calculate_text_display_width(""), content="0")
-
-  // With newline (should stop at newline)
-  inspect(calculate_text_display_width("Hello\nWorld"), content="5")
+/// Test paint_node None issue at different scroll positions
+test "paint_node_none_debug" {
+  // Create very tall content (50 paragraphs)
+  let sb = StringBuilder::new()
+  sb.write_string(
+    (
+      #|<!DOCTYPE html>
+      #|<html>
+      #|<body style="margin:0">
+    ),
+  )
+  for i = 0; i < 50; i = i + 1 {
+    sb.write_string("<p style=\"margin:20px 0\">Paragraph ")
+    sb.write_string(i.to_string())
+    sb.write_string(
+      ": Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>\n",
+    )
+  }
+  sb.write_string("</body></html>")
+  let html = sb.to_string()
+  let viewport_width = 640.0
+  let viewport_height = 384.0
+  let ctx : @renderer.RenderContext = {
+    viewport_width,
+    viewport_height,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let node = @renderer.render_to_node(html, ctx)
+  let layout = @renderer.render(html, ctx)
+  println("=== Paint Node Debug ===")
+  println("Layout height: " + layout.height.to_string() + "px")
+  println("Viewport height: " + viewport_height.to_string() + "px")
+  let font_height = 16.0
+  // Test at various scroll positions (in pixels)
+  let scroll_positions_px = [0, 100, 500, 1000, 2000, 3000, 5000]
+  for scroll_px in scroll_positions_px {
+    let viewport_top = scroll_px.to_double()
+    let viewport_bottom = viewport_top + viewport_height
+    let paint_result = @paint.from_node_and_layout_with_viewport(
+      node, layout, viewport_top, viewport_bottom, 0.0,
+    )
+    let has_paint = match paint_result {
+      Some(_) => "Some"
+      None => "None"
+    }
+    println(
+      "Scroll " +
+      scroll_px.to_string() +
+      "px (viewport " +
+      viewport_top.to_string() +
+      "-" +
+      viewport_bottom.to_string() +
+      "): paint_node = " +
+      has_paint,
+    )
+    // Should always have content until we scroll past the layout height
+    if scroll_px.to_double() + viewport_height < layout.height {
+      inspect(paint_result is Some(_), content="true")
+    }
+  }
 }
+
+///|
+/// Test scroll issue reproduction with tall real-world-like content
+/// Simulates the addyosmani.com scroll blank issue
+test "scroll_issue_tall_content" {
+  // Create HTML similar to addyosmani.com structure
+  let html =
+    #|<!DOCTYPE html>
+    #|<html>
+    #|<head>
+    #|<style>
+    #|body { margin: 0; font-size: 16px; }
+    #|nav { background: #eee; padding: 10px; }
+    #|article { padding: 20px; }
+    #|h1 { font-size: 32px; margin-bottom: 20px; }
+    #|h2 { font-size: 24px; margin-top: 30px; }
+    #|p { margin: 16px 0; line-height: 1.6; }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|<nav>
+    #|  <a href="/">Home</a>
+    #|  <a href="/blog">Blog</a>
+    #|</nav>
+    #|<article>
+    #|  <h1>21 Lessons From 14 Years at Google</h1>
+    #|  <p>When I joined Google ~14 years ago, I thought the job was about writing great code.</p>
+    #|  <p>These lessons are what I wish I'd known earlier.</p>
+    #|  <p>I'm sharing them because I've benefited enormously from engineers who did the same for me.</p>
+    #|  <h2>1. The best engineers are obsessed with solving user problems.</h2>
+    #|  <p>It's seductive to fall in love with a technology and go looking for places to apply it.</p>
+    #|  <p>User obsession means spending time in support tickets, talking to users.</p>
+    #|  <p>The engineer who starts with a solution tends to build complexity in search of a justification.</p>
+    #|  <h2>2. Being right is cheap. Getting to right together is the real work.</h2>
+    #|  <p>You can win every technical argument and lose the project.</p>
+    #|  <p>The skill isn't being right. It's entering discussions to align on the problem.</p>
+    #|  <h2>3. Bias towards action. Ship.</h2>
+    #|  <p>The quest for perfection is paralyzing.</p>
+    #|  <p>First do it, then do it right, then do it better.</p>
+    #|  <h2>4. Clarity is seniority. Cleverness is overhead.</h2>
+    #|  <p>The instinct to write clever code is almost universal among engineers.</p>
+    #|  <p>Your code is a strategy memo to strangers who will maintain it at 2am during an outage.</p>
+    #|  <h2>5. Novelty is a loan you repay in outages.</h2>
+    #|  <p>Treat your technology choices like an organization with a small innovation budget.</p>
+    #|  <p>The best tool for the job is often the least-worst tool across many jobs.</p>
+    #|  <h2>6. Your code doesn't advocate for you. People do.</h2>
+    #|  <p>Early in my career, I believed great work would speak for itself. I was wrong.</p>
+    #|  <p>In large organizations, decisions get made in meetings you're not invited to.</p>
+    #|  <h2>7. The best code is the code you never had to write.</h2>
+    #|  <p>We celebrate creation in engineering culture.</p>
+    #|  <p>Before you build, exhaust the question: What would happen if we just didn't?</p>
+    #|</article>
+    #|</body>
+    #|</html>
+  // Viewport similar to terminal (80x24 characters, but in pixels)
+  let viewport_width = 640.0 // 80 chars * 8px
+  let viewport_height = 384.0 // 24 chars * 16px
+  let ctx : @renderer.RenderContext = {
+    viewport_width,
+    viewport_height,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  // Get node and layout
+  let node = @renderer.render_to_node(html, ctx)
+  let layout = @renderer.render(html, ctx)
+  println("=== Scroll Issue Test ===")
+  println("Layout height: " + layout.height.to_string())
+  println("Viewport height: " + viewport_height.to_string())
+  // Content should be significantly taller than viewport
+  let content_height = layout.height
+  inspect(content_height > viewport_height, content="true")
+  // Calculate dimensions
+  let char_height = (viewport_height / 16.0).to_int() // 24 chars
+  let char_width = (viewport_width / 8.0).to_int() // 80 chars
+  let content_height_chars = (content_height / 16.0).to_int()
+  let max_scroll_chars = (content_height_chars - char_height).max(0)
+  println("Char height: " + char_height.to_string())
+  println("Content height (chars): " + content_height_chars.to_string())
+  println("Max scroll (chars): " + max_scroll_chars.to_string())
+  // Test rendering at various scroll positions
+  // These should all produce non-empty output
+  let scroll_positions = [0, 5, 10, 15, 20, 30, 40, 50]
+  for scroll_y in scroll_positions {
+    if scroll_y > max_scroll_chars {
+      continue
+    }
+    let result = render_to_buffer_with_status(
+      node, layout, char_width, char_height, scroll_y, "https://example.com", 0,
+      0,
+    )
+    // Count non-empty cells in the buffer
+    let mut non_empty = 0
+    for row = 0; row < char_height; row = row + 1 {
+      for col = 0; col < char_width; col = col + 1 {
+        let cell = result.buffer.get_cell(col, row)
+        if cell.char != ' ' {
+          non_empty = non_empty + 1
+        }
+      }
+    }
+    println(
+      "Scroll " +
+      scroll_y.to_string() +
+      ": non-empty cells = " +
+      non_empty.to_string(),
+    )
+    // Each scroll position should have some visible content
+    // (at least status bar + some content)
+    inspect(non_empty > 20, content="true")
+  }
+}
+
+// Note: calculate_text_display_width test moved to whitebox test
+// because it tests a private function
 
 ///|
 /// Test that text width calculation is used for rendering

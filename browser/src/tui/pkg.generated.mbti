@@ -105,7 +105,7 @@ pub fn render_to_buffer(@node.Node, @types.Layout, Int, Int, Int, focused_elemen
 
 pub fn render_to_buffer_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> BufferRenderResult
 
-pub fn render_to_buffer_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> BufferRenderResult
+pub fn render_to_buffer_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool, total_content_height? : Int, show_scrollbar? : Bool) -> BufferRenderResult
 
 pub fn rgb_to_256(Int, Int, Int) -> Int
 
