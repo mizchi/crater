@@ -11,14 +11,28 @@ pub suberror HttpError {
   NetworkError(String)
   InvalidUrl(String)
   TimeoutError
+  CorsError(String)
+  SandboxError(String)
 }
 pub impl Show for HttpError
 
 // Types and methods
+pub(all) enum CredentialsMode {
+  Omit
+  SameOrigin
+  Include
+}
+pub impl Eq for CredentialsMode
+pub impl Show for CredentialsMode
+
 pub(all) struct FetchOptions {
   http_method : String
   headers : Map[String, String]
   timeout_ms : Int
+  mode : RequestMode
+  credentials : CredentialsMode
+  origin : String
+  sandbox : RequestSandbox
 }
 pub fn FetchOptions::default() -> Self
 
@@ -27,6 +41,22 @@ pub(all) struct HttpResponse {
   headers : Map[String, String]
   body : String
 }
+
+pub(all) enum RequestMode {
+  Navigate
+  SameOrigin
+  NoCors
+  Cors
+}
+pub impl Eq for RequestMode
+pub impl Show for RequestMode
+
+pub(all) enum RequestSandbox {
+  Open
+  SameOrigin
+  Allowlist(Array[String])
+}
+pub impl Show for RequestSandbox
 
 // Type aliases
 

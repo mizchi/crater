@@ -2,6 +2,8 @@ import {
   "moonbitlang/async/http" as @async_http,
   "moonbitlang/async/js_async",
   "moonbitlang/async/io" as @async_io,
+  "moonbitlang/core/json",
+  "moonbitlang/core/strconv",
 }
 
 options(

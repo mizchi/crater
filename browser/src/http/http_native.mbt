@@ -64,16 +64,17 @@ pub async fn fetch(
   url : String,
   options? : FetchOptions = FetchOptions::default(),
 ) -> HttpResponse raise HttpError {
+  let prepared = prepare_fetch_options(url, options)
   // Extract host URL (without path) and path separately
   let host_url = extract_host_url(url)
   let path = extract_path_from_url(url)
   // Create HTTP client with just the host
-  let client = @async_http.Client::new(host_url, headers=options.headers) catch {
+  let client = @async_http.Client::new(host_url, headers=prepared.headers) catch {
     _ => raise InvalidUrl(url)
   }
   // Perform request based on method
   let response = try {
-    match options.http_method {
+    match prepared.http_method {
       "GET" => client.get(path)
       "POST" => client.post(path, "")
       "PUT" => client.put(path, "")
@@ -97,7 +98,8 @@ pub async fn fetch(
   // Convert headers
   let headers : Map[String, String] = {}
   for k, v in response.headers {
-    headers[k] = v
+    headers[k.to_lower()] = v
   }
-  { status: response.code, headers, body }
+  let result = { status: response.code, headers, body }
+  enforce_cors_response(url, prepared, result)
 }

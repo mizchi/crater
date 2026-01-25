@@ -37,9 +37,33 @@ fn parse_response_json(json : String) -> HttpResponse raise HttpError {
   // Format: {"status":200,"headers":{"key":"value"},"body":"..."}
   let status = extract_json_int(json, "status")
   let body = extract_json_string(json, "body")
-  let headers : Map[String, String] = {}
-  // For simplicity, we skip header parsing in MVP
+  let headers = parse_headers_json(json)
   { status, headers, body }
+}
+
+///|
+/// Parse headers object from JSON response
+fn parse_headers_json(json_str : String) -> Map[String, String] {
+  let headers : Map[String, String] = {}
+  if json_str.length() == 0 || json_str == "{}" {
+    return headers
+  }
+  let json = @json.parse(json_str) catch { _ => return headers }
+  match json {
+    Object(map) =>
+      match map.get("headers") {
+        Some(Object(hmap)) =>
+          hmap.each(fn(k, v) {
+            match v {
+              String(s) => headers[k.to_lower()] = s
+              _ => ()
+            }
+          })
+        _ => ()
+      }
+    _ => ()
+  }
+  headers
 }
 
 ///|
@@ -122,13 +146,14 @@ pub async fn fetch(
   url : String,
   options? : FetchOptions = FetchOptions::default(),
 ) -> HttpResponse raise HttpError {
-  let headers_json = headers_to_json(options.headers)
+  let prepared = prepare_fetch_options(url, options)
+  let headers_json = headers_to_json(prepared.headers)
   let controller = @js_async.AbortController::new()
   let promise = js_fetch_internal(
     url,
-    options.http_method,
+    prepared.http_method,
     headers_json,
-    options.timeout_ms,
+    prepared.timeout_ms,
   )
   let result_json = @js_async.Promise::wait(
     promise,
@@ -142,5 +167,6 @@ pub async fn fetch(
       raise NetworkError(msg)
     }
   }
-  parse_response_json(result_json)
+  let response = parse_response_json(result_json)
+  enforce_cors_response(url, prepared, response)
 }

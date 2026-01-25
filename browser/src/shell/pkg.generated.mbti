@@ -20,6 +20,7 @@ import {
 // Types and methods
 pub struct Browser {
   mut current_url : String
+  mut request_sandbox : @http.RequestSandbox
   viewport_width : Int
   viewport_height : Int
   mut html_content : String
@@ -61,6 +62,7 @@ pub fn Browser::get_focused_element_id(Self) -> String?
 pub fn Browser::get_focused_element_name(Self) -> String?
 pub fn Browser::get_focused_link_url(Self) -> String?
 pub fn Browser::get_link_at(Self, Int, Int) -> String?
+pub fn Browser::get_request_sandbox(Self) -> @http.RequestSandbox
 pub fn Browser::get_scheduler(Self) -> @scheduler.Scheduler
 pub fn Browser::get_visible_focus_index(Self) -> Int
 pub fn Browser::get_visible_focusable_count(Self) -> Int
@@ -82,6 +84,7 @@ pub fn Browser::render_text(Self) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
+pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool
 

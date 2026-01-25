@@ -13,6 +13,8 @@ pub(all) struct Link {
 pub struct Browser {
   /// Current URL
   mut current_url : String
+  /// Request sandbox policy
+  mut request_sandbox : @http.RequestSandbox
   /// Viewport width in pixels
   viewport_width : Int
   /// Viewport height in pixels
@@ -74,6 +76,7 @@ pub struct Browser {
 pub fn Browser::new(width : Int, height : Int) -> Browser {
   {
     current_url: "",
+    request_sandbox: @http.RequestSandbox::Open,
     viewport_width: width,
     viewport_height: height,
     html_content: "",
@@ -102,6 +105,21 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     scheduler: @scheduler.Scheduler::new(),
     script_executor: None,
   }
+}
+
+///|
+/// Configure request sandbox policy
+pub fn Browser::set_request_sandbox(
+  self : Browser,
+  sandbox : @http.RequestSandbox,
+) -> Unit {
+  self.request_sandbox = sandbox
+}
+
+///|
+/// Get current request sandbox policy
+pub fn Browser::get_request_sandbox(self : Browser) -> @http.RequestSandbox {
+  self.request_sandbox
 }
 
 ///|
@@ -161,7 +179,11 @@ fn resolve_url(base_url : String, href : String) -> String {
 
 ///|
 /// Fetch external stylesheets and return CSS array
-async fn fetch_external_css(html : String, base_url : String) -> Array[String] {
+async fn fetch_external_css(
+  html : String,
+  base_url : String,
+  sandbox : @http.RequestSandbox,
+) -> Array[String] {
   // Use lightweight extraction instead of full DOM parsing
   let stylesheet_links = @html.extract_stylesheet_links(html)
   let link_count = stylesheet_links.length()
@@ -176,7 +198,13 @@ async fn fetch_external_css(html : String, base_url : String) -> Array[String] {
     println("Fetching CSS: " + css_url)
     // Try to fetch CSS, ignore errors
     try {
-      let response = @http.fetch(css_url)
+      let options = {
+        ..@http.FetchOptions::default(),
+        mode: @http.RequestMode::NoCors,
+        origin: base_url,
+        sandbox,
+      }
+      let response = @http.fetch(css_url, options~)
       css_contents.push(response.body)
       println("  -> OK (" + response.body.length().to_string() + " bytes)")
     } catch {
@@ -358,10 +386,20 @@ async fn Browser::load_url(
 ) -> String raise @http.HttpError {
   self.current_url = url
   // Fetch the page
-  let response = @http.fetch(url)
+  let page_options = {
+    ..@http.FetchOptions::default(),
+    mode: @http.RequestMode::Navigate,
+    origin: url,
+    sandbox: self.request_sandbox,
+  }
+  let response = @http.fetch(url, options=page_options)
   self.html_content = response.body
   // Fetch external CSS using lightweight extraction (no full parsing)
-  self.external_css = fetch_external_css(self.html_content, url) catch {
+  self.external_css = fetch_external_css(
+    self.html_content,
+    url,
+    self.request_sandbox,
+  ) catch {
     _ => [] // Fallback to no external CSS on error
   }
   // Extract links from HTML (lightweight, no full parsing)
@@ -412,7 +450,13 @@ pub async fn Browser::load_url_lightweight(
 ) -> String raise @http.HttpError {
   self.current_url = url
   // Fetch the page
-  let response = @http.fetch(url)
+  let page_options = {
+    ..@http.FetchOptions::default(),
+    mode: @http.RequestMode::Navigate,
+    origin: url,
+    sandbox: self.request_sandbox,
+  }
+  let response = @http.fetch(url, options=page_options)
   self.html_content = response.body
   // Skip external CSS fetching in lightweight mode
   self.external_css = []
@@ -1505,7 +1549,13 @@ pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
       }
       println("  [FETCH] External script: " + script_url)
       try {
-        let response = @http.fetch(script_url)
+        let script_options = {
+          ..@http.FetchOptions::default(),
+          mode: @http.RequestMode::NoCors,
+          origin: self.current_url,
+          sandbox: self.request_sandbox,
+        }
+        let response = @http.fetch(script_url, options=script_options)
         println("    -> OK (" + response.body.length().to_string() + " bytes)")
         source = response.body
         script_type = "External"
