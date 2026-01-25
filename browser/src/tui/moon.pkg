@@ -4,6 +4,7 @@ import {
   "mizchi/crater/paint",
   "moonbitlang/x/sys",
   "moonbitlang/async/js_async",
+  "moonbitlang/core/strconv",
 }
 
 import "test" {

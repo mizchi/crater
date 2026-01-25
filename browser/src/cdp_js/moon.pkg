@@ -1,6 +1,7 @@
 import {
   "mizchi/crater-browser/cdp" as @cdp,
   "mizchi/crater/scheduler" as @scheduler,
+  "moonbitlang/core/json",
 }
 
 options(

@@ -1,4 +1,5 @@
 import {
   "mizchi/crater/dom",
   "mizchi/crater/scheduler",
+  "moonbitlang/core/json",
 }
