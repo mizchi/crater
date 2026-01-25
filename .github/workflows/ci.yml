@@ -320,6 +320,11 @@ jobs:
       - name: Build BiDi server
         run: just build-bidi
 
+      - name: Start BiDi server
+        run: |
+          just start-bidi &
+          sleep 3
+
       - name: Run Playwright adapter tests
         run: just test-playwright-adapter
 
