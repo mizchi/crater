@@ -141,17 +141,17 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     }
   #|
   #|     Node.prototype.appendChild = function(child) {
-#|       if (typeof this.appendChild === 'function' && this.appendChild !== Node.prototype.appendChild) {
-#|         return this.appendChild(child);
+  #|       if (typeof this.appendChild === 'function' && this.appendChild !== Node.prototype.appendChild) {
+  #|         return this.appendChild(child);
   #|       }
   #|       if (!isNodeLike(child)) {
   #|         throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
   #|       }
   #|       throw new DOMException('Cannot append child to this node type', 'HierarchyRequestError');
   #|     };
-#|     Node.prototype.insertBefore = function(newChild, refChild) {
-#|       if (typeof this.insertBefore === 'function' && this.insertBefore !== Node.prototype.insertBefore) {
-#|         return this.insertBefore(newChild, refChild);
+  #|     Node.prototype.insertBefore = function(newChild, refChild) {
+  #|       if (typeof this.insertBefore === 'function' && this.insertBefore !== Node.prototype.insertBefore) {
+  #|         return this.insertBefore(newChild, refChild);
   #|       }
   #|       if (arguments.length < 2) {
   #|         throw new TypeError('Failed to execute insertBefore: 2 arguments required');
@@ -164,88 +164,88 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       throw new DOMException('Cannot insert child into this node type', 'HierarchyRequestError');
   #|     };
-#|     Node.prototype.removeChild = function(child) {
-#|       if (typeof this.removeChild === 'function' && this.removeChild !== Node.prototype.removeChild) {
-#|         return this.removeChild(child);
+  #|     Node.prototype.removeChild = function(child) {
+  #|       if (typeof this.removeChild === 'function' && this.removeChild !== Node.prototype.removeChild) {
+  #|         return this.removeChild(child);
   #|       }
   #|       if (!isNodeLike(child)) {
   #|         throw new TypeError('Failed to execute removeChild: parameter 1 is not of type Node');
   #|       }
   #|       throw new DOMException('The node to be removed is not a child of this node', 'NotFoundError');
   #|     };
-#|     Node.prototype.replaceChild = function(newChild, oldChild) {
-#|       if (typeof this.replaceChild === 'function' && this.replaceChild !== Node.prototype.replaceChild) {
-#|         return this.replaceChild(newChild, oldChild);
-#|       }
-#|       if (!isNodeLike(newChild) || !isNodeLike(oldChild)) {
-#|         throw new TypeError('Failed to execute replaceChild: parameters are not of type Node');
-#|       }
-#|       throw new DOMException('Cannot replace child on this node type', 'HierarchyRequestError');
-#|     };
-#|     Object.defineProperty(Node.prototype, 'parentNode', {
-#|       get() { return this._parent === undefined ? null : this._parent; },
-#|       set(v) { this._parent = v; },
-#|       configurable: true
-#|     });
-#|     Object.defineProperty(Node.prototype, 'parentElement', {
-#|       get() {
-#|         const p = this.parentNode;
-#|         return p && getNodeType(p) === 1 ? p : null;
-#|       },
-#|       configurable: true
-#|     });
-#|     Object.defineProperty(Node.prototype, 'nextSibling', {
-#|       get() {
-#|         const parent = getParentNode(this);
-#|         if (!parent) return null;
-#|         const siblings = getSiblingArray(this);
-#|         const idx = siblings.indexOf(this);
-#|         return idx >= 0 ? (siblings[idx + 1] || null) : null;
-#|       },
-#|       configurable: true
-#|     });
-#|     Object.defineProperty(Node.prototype, 'previousSibling', {
-#|       get() {
-#|         const parent = getParentNode(this);
-#|         if (!parent) return null;
-#|         const siblings = getSiblingArray(this);
-#|         const idx = siblings.indexOf(this);
-#|         return idx > 0 ? siblings[idx - 1] : null;
-#|       },
-#|       configurable: true
-#|     });
-#|     Node.prototype.hasChildNodes = function() {
-#|       const nodes = getChildNodesArray(this);
-#|       return nodes && nodes.length > 0;
-#|     };
-#|     Node.prototype.normalize = function() {
-#|       if (typeof this.normalize === 'function' && this.normalize !== Node.prototype.normalize) {
-#|         return this.normalize();
-#|       }
-#|       if (!this._children) return;
-#|       normalizeChildArray(this._children);
-#|     };
-#|     Node.prototype.contains = function(other) {
-#|       return nodeContains(this, other);
-#|     };
-#|     Node.prototype.compareDocumentPosition = function(other) {
-#|       return compareDocumentPositionImpl(this, other);
-#|     };
-#|     Node.prototype.lookupNamespaceURI = function(prefix) {
-#|       return lookupNamespaceURIImpl(this, prefix);
-#|     };
-#|     Node.prototype.isDefaultNamespace = function(namespace) {
-#|       const ns = namespace === undefined || namespace === null || namespace === '' ? null : String(namespace);
-#|       const nodeType = getNodeType(this);
-#|       if ((nodeType === 10 || nodeType === 11) && !getParentNode(this)) {
-#|         return ns === null;
-#|       }
-#|       const current = lookupNamespaceURIImpl(this, null);
-#|       return current === ns;
-#|     };
-#|     Node.prototype.addEventListener = function(type, listener, options) {};
-#|     Node.prototype.removeEventListener = function(type, listener, options) {};
-#|     Node.prototype.dispatchEvent = function(event) { return true; };
+  #|     Node.prototype.replaceChild = function(newChild, oldChild) {
+  #|       if (typeof this.replaceChild === 'function' && this.replaceChild !== Node.prototype.replaceChild) {
+  #|         return this.replaceChild(newChild, oldChild);
+  #|       }
+  #|       if (!isNodeLike(newChild) || !isNodeLike(oldChild)) {
+  #|         throw new TypeError('Failed to execute replaceChild: parameters are not of type Node');
+  #|       }
+  #|       throw new DOMException('Cannot replace child on this node type', 'HierarchyRequestError');
+  #|     };
+  #|     Object.defineProperty(Node.prototype, 'parentNode', {
+  #|       get() { return this._parent === undefined ? null : this._parent; },
+  #|       set(v) { this._parent = v; },
+  #|       configurable: true
+  #|     });
+  #|     Object.defineProperty(Node.prototype, 'parentElement', {
+  #|       get() {
+  #|         const p = this.parentNode;
+  #|         return p && getNodeType(p) === 1 ? p : null;
+  #|       },
+  #|       configurable: true
+  #|     });
+  #|     Object.defineProperty(Node.prototype, 'nextSibling', {
+  #|       get() {
+  #|         const parent = getParentNode(this);
+  #|         if (!parent) return null;
+  #|         const siblings = getSiblingArray(this);
+  #|         const idx = siblings.indexOf(this);
+  #|         return idx >= 0 ? (siblings[idx + 1] || null) : null;
+  #|       },
+  #|       configurable: true
+  #|     });
+  #|     Object.defineProperty(Node.prototype, 'previousSibling', {
+  #|       get() {
+  #|         const parent = getParentNode(this);
+  #|         if (!parent) return null;
+  #|         const siblings = getSiblingArray(this);
+  #|         const idx = siblings.indexOf(this);
+  #|         return idx > 0 ? siblings[idx - 1] : null;
+  #|       },
+  #|       configurable: true
+  #|     });
+  #|     Node.prototype.hasChildNodes = function() {
+  #|       const nodes = getChildNodesArray(this);
+  #|       return nodes && nodes.length > 0;
+  #|     };
+  #|     Node.prototype.normalize = function() {
+  #|       if (typeof this.normalize === 'function' && this.normalize !== Node.prototype.normalize) {
+  #|         return this.normalize();
+  #|       }
+  #|       if (!this._children) return;
+  #|       normalizeChildArray(this._children);
+  #|     };
+  #|     Node.prototype.contains = function(other) {
+  #|       return nodeContains(this, other);
+  #|     };
+  #|     Node.prototype.compareDocumentPosition = function(other) {
+  #|       return compareDocumentPositionImpl(this, other);
+  #|     };
+  #|     Node.prototype.lookupNamespaceURI = function(prefix) {
+  #|       return lookupNamespaceURIImpl(this, prefix);
+  #|     };
+  #|     Node.prototype.isDefaultNamespace = function(namespace) {
+  #|       const ns = namespace === undefined || namespace === null || namespace === '' ? null : String(namespace);
+  #|       const nodeType = getNodeType(this);
+  #|       if ((nodeType === 10 || nodeType === 11) && !getParentNode(this)) {
+  #|         return ns === null;
+  #|       }
+  #|       const current = lookupNamespaceURIImpl(this, null);
+  #|       return current === ns;
+  #|     };
+  #|     Node.prototype.addEventListener = function(type, listener, options) {};
+  #|     Node.prototype.removeEventListener = function(type, listener, options) {};
+  #|     Node.prototype.dispatchEvent = function(event) { return true; };
   #|
   #|     function CharacterData() {}
   #|     CharacterData.prototype = Object.create(Node.prototype);
@@ -399,170 +399,178 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|
   #|     const emptyNodeList = makeNodeList([]);
   #|
-#|     function getParentNode(node) {
-#|       if (!node) return null;
-#|       if ('parentNode' in node) return node.parentNode;
-#|       if ('_parent' in node) return node._parent;
-#|       return null;
-#|     }
-#|     function getChildNodesArray(node) {
-#|       if (!node) return [];
-#|       if (node._children) return node._children;
-#|       if ('childNodes' in node && node.childNodes) {
-#|         try { return Array.from(node.childNodes); } catch (e) { return []; }
-#|       }
-#|       return [];
-#|     }
-#|     function getSiblingArray(node) {
-#|       if (!node || !node._parent) return [];
-#|       if (node._parent._children) return node._parent._children;
-#|       return getChildNodesArray(node._parent);
-#|     }
-#|     function traverseTree(root, visit) {
-#|       if (!root) return false;
-#|       if (visit(root) === false) return false;
-#|       if (root._children) {
-#|         for (const child of root._children) {
-#|           if (traverseTree(child, visit) === false) return false;
-#|         }
-#|       }
-#|       return true;
-#|     }
-#|     function normalizeChildArray(children) {
-#|       let i = 0;
-#|       while (i < children.length) {
-#|         const child = children[i];
-#|         if (child && child._nodeType === 3) {
-#|           if (child._textContent === '') {
-#|             children.splice(i, 1);
-#|             child._parent = null;
-#|             if ('parentNode' in child) child.parentNode = null;
-#|             continue;
-#|           }
-#|           while (i + 1 < children.length && children[i + 1] && children[i + 1]._nodeType === 3) {
-#|             const next = children[i + 1];
-#|             if (next._textContent !== '') {
-#|               child._textContent += next._textContent;
-#|             }
-#|             children.splice(i + 1, 1);
-#|             next._parent = null;
-#|             if ('parentNode' in next) next.parentNode = null;
-#|           }
-#|           i += 1;
-#|           continue;
-#|         }
-#|         if (child && typeof child.normalize === 'function') {
-#|           child.normalize();
-#|         }
-#|         i += 1;
-#|       }
-#|     }
-#|     function lookupNamespaceURIImpl(node, prefix) {
-#|       if (!node) return null;
-#|       const pref = prefix === undefined || prefix === null || prefix === '' ? null : String(prefix);
-#|       const nodeType = getNodeType(node);
-#|       if (nodeType === 10) {
-#|         return null;
-#|       }
-#|       if (nodeType === 1) {
-#|         const ns = node._namespaceURI || node.namespaceURI || null;
-#|         const pfx = node._prefix !== undefined ? node._prefix : (node.prefix || null);
-#|         if (pref === 'xml') return 'http://www.w3.org/XML/1998/namespace';
-#|         if (pref === 'xmlns') return 'http://www.w3.org/2000/xmlns/';
-#|         if (ns && pfx === pref) return ns;
-#|         if (ns && pref === null && (pfx === null || pfx === undefined)) return ns;
-#|         if (node._attrList) {
-#|           for (const attr of node._attrList) {
-#|             const attrNs = attr.ns === undefined ? null : attr.ns;
-#|             const attrPrefix = attr.prefix === undefined ? null : attr.prefix;
-#|             const attrLocal = attr.localName;
-#|             if (attrNs === 'http://www.w3.org/2000/xmlns/') {
-#|               if (attrPrefix === 'xmlns' && attrLocal === pref) return attr.value || null;
-#|               if ((attrLocal === 'xmlns' || attr.name === 'xmlns') && pref === null) return attr.value || null;
-#|             }
-#|             if (attrPrefix === 'xmlns' && attrLocal === pref) return attr.value || null;
-#|             if ((attrLocal === 'xmlns' || attr.name === 'xmlns') && pref === null) return attr.value || null;
-#|           }
-#|         }
-#|         const parent = getParentNode(node);
-#|         if (parent && getNodeType(parent) === 9) return null;
-#|         return parent ? lookupNamespaceURIImpl(parent, pref) : null;
-#|       }
-#|       if (nodeType === 9) {
-#|         const root = node.documentElement || (node._children ? node._children.find(n => n._nodeType === 1) : null);
-#|         return root ? lookupNamespaceURIImpl(root, pref) : null;
-#|       }
-#|       if (nodeType === 2) {
-#|         return node.ownerElement ? lookupNamespaceURIImpl(node.ownerElement, pref) : null;
-#|       }
-#|       const parent = getParentNode(node);
-#|       if (parent && getNodeType(parent) === 9) return null;
-#|       return parent ? lookupNamespaceURIImpl(parent, pref) : null;
-#|     }
+  #|     function getParentNode(node) {
+  #|       if (!node) return null;
+  #|       if ('parentNode' in node) return node.parentNode;
+  #|       if ('_parent' in node) return node._parent;
+  #|       return null;
+  #|     }
+  #|     function getChildNodesArray(node) {
+  #|       if (!node) return [];
+  #|       if (node._children) return node._children;
+  #|       if ('childNodes' in node && node.childNodes) {
+  #|         try { return Array.from(node.childNodes); } catch (e) { return []; }
+  #|       }
+  #|       return [];
+  #|     }
+  #|     function getSiblingArray(node) {
+  #|       if (!node || !node._parent) return [];
+  #|       if (node._parent._children) return node._parent._children;
+  #|       return getChildNodesArray(node._parent);
+  #|     }
+  #|     function traverseTree(root, visit) {
+  #|       if (!root) return false;
+  #|       if (visit(root) === false) return false;
+  #|       if (root._children) {
+  #|         for (const child of root._children) {
+  #|           if (traverseTree(child, visit) === false) return false;
+  #|         }
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function normalizeChildArray(children) {
+  #|       let i = 0;
+  #|       while (i < children.length) {
+  #|         const child = children[i];
+  #|         if (child && child._nodeType === 3) {
+  #|           if (child._textContent === '') {
+  #|             children.splice(i, 1);
+  #|             child._parent = null;
+  #|             if ('parentNode' in child) child.parentNode = null;
+  #|             continue;
+  #|           }
+  #|           while (i + 1 < children.length && children[i + 1] && children[i + 1]._nodeType === 3) {
+  #|             const next = children[i + 1];
+  #|             if (next._textContent !== '') {
+  #|               child._textContent += next._textContent;
+  #|             }
+  #|             children.splice(i + 1, 1);
+  #|             next._parent = null;
+  #|             if ('parentNode' in next) next.parentNode = null;
+  #|           }
+  #|           i += 1;
+  #|           continue;
+  #|         }
+  #|         if (child && typeof child.normalize === 'function') {
+  #|           child.normalize();
+  #|         }
+  #|         i += 1;
+  #|       }
+  #|     }
+  #|     function lookupNamespaceURIImpl(node, prefix) {
+  #|       if (!node) return null;
+  #|       const pref = prefix === undefined || prefix === null || prefix === '' ? null : String(prefix);
+  #|       const nodeType = getNodeType(node);
+  #|       if (nodeType === 10) {
+  #|         return null;
+  #|       }
+  #|       if (nodeType === 1) {
+  #|         const ns = node._namespaceURI || node.namespaceURI || null;
+  #|         const pfx = node._prefix !== undefined ? node._prefix : (node.prefix || null);
+  #|         if (pref === 'xml') return 'http://www.w3.org/XML/1998/namespace';
+  #|         if (pref === 'xmlns') return 'http://www.w3.org/2000/xmlns/';
+  #|         if (ns && pfx === pref) return ns;
+  #|         if (ns && pref === null && (pfx === null || pfx === undefined)) return ns;
+  #|         if (node._attrList) {
+  #|           for (const attr of node._attrList) {
+  #|             const attrNs = attr.ns === undefined ? null : attr.ns;
+  #|             const attrPrefix = attr.prefix === undefined ? null : attr.prefix;
+  #|             const attrLocal = attr.localName;
+  #|             if (attrNs === 'http://www.w3.org/2000/xmlns/') {
+  #|               if (attrPrefix === 'xmlns' && attrLocal === pref) return attr.value || null;
+  #|               if ((attrLocal === 'xmlns' || attr.name === 'xmlns') && pref === null) return attr.value || null;
+  #|             }
+  #|             if (attrPrefix === 'xmlns' && attrLocal === pref) return attr.value || null;
+  #|             if ((attrLocal === 'xmlns' || attr.name === 'xmlns') && pref === null) return attr.value || null;
+  #|           }
+  #|         }
+  #|         const parent = getParentNode(node);
+  #|         if (parent && getNodeType(parent) === 9) return null;
+  #|         return parent ? lookupNamespaceURIImpl(parent, pref) : null;
+  #|       }
+  #|       if (nodeType === 9) {
+  #|         const root = node.documentElement || (node._children ? node._children.find(n => n._nodeType === 1) : null);
+  #|         return root ? lookupNamespaceURIImpl(root, pref) : null;
+  #|       }
+  #|       if (nodeType === 2) {
+  #|         return node.ownerElement ? lookupNamespaceURIImpl(node.ownerElement, pref) : null;
+  #|       }
+  #|       const parent = getParentNode(node);
+  #|       if (parent && getNodeType(parent) === 9) return null;
+  #|       return parent ? lookupNamespaceURIImpl(parent, pref) : null;
+  #|     }
   #|     function isNodeLike(node) {
   #|       return !!(node && typeof node === 'object' && (node._nodeType !== undefined || typeof node.nodeType === 'number'));
   #|     }
-#|     function isAllowedChildNodeTypeForElement(nodeType) {
-#|       return nodeType === 1 || nodeType === 3 || nodeType === 4 || nodeType === 7 || nodeType === 8 || nodeType === 11;
-#|     }
-#|     function nodeContains(reference, other) {
-#|       if (!other) return false;
-#|       let node = other;
-#|       while (node) {
-#|         if (node === reference) return true;
-#|         node = getParentNode(node);
-#|       }
-#|       return false;
-#|     }
-#|     function getRootNodeInternal(node) {
-#|       let n = node;
-#|       let parent = getParentNode(n);
-#|       while (parent) {
-#|         n = parent;
-#|         parent = getParentNode(n);
-#|       }
-#|       return n;
-#|     }
-#|     function isConnectedToDocument(node) {
-#|       const root = getRootNodeInternal(node);
-#|       return root && getNodeType(root) === 9;
-#|     }
-#|     function compareDocumentPositionImpl(reference, other) {
-#|       if (!isNodeLike(other)) {
-#|         throw new TypeError('Failed to execute compareDocumentPosition: parameter 1 is not of type Node');
-#|       }
-#|       if (reference === other) return 0;
-#|       const refRoot = getRootNodeInternal(reference);
-#|       const otherRoot = getRootNodeInternal(other);
-#|       if (refRoot !== otherRoot) {
-#|         return Node.DOCUMENT_POSITION_DISCONNECTED |
-#|           Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC |
-#|           Node.DOCUMENT_POSITION_PRECEDING;
-#|       }
-#|       if (nodeContains(other, reference)) {
-#|         return Node.DOCUMENT_POSITION_CONTAINS | Node.DOCUMENT_POSITION_PRECEDING;
-#|       }
-#|       if (nodeContains(reference, other)) {
-#|         return Node.DOCUMENT_POSITION_CONTAINED_BY | Node.DOCUMENT_POSITION_FOLLOWING;
-#|       }
-#|       const order = [];
-#|       const walk = (node) => {
-#|         order.push(node);
-#|         const children = getChildNodesArray(node);
-#|         for (const child of children) walk(child);
-#|       };
-#|       walk(refRoot);
-#|       const refIndex = order.indexOf(reference);
-#|       const otherIndex = order.indexOf(other);
-#|       if (refIndex === -1 || otherIndex === -1) {
-#|         return Node.DOCUMENT_POSITION_DISCONNECTED |
-#|           Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC |
-#|           Node.DOCUMENT_POSITION_PRECEDING;
-#|       }
-#|       return otherIndex < refIndex
-#|         ? Node.DOCUMENT_POSITION_PRECEDING
-#|         : Node.DOCUMENT_POSITION_FOLLOWING;
-#|     }
+  #|     function isAllowedChildNodeTypeForElement(nodeType) {
+  #|       return nodeType === 1 || nodeType === 3 || nodeType === 4 || nodeType === 7 || nodeType === 8 || nodeType === 11;
+  #|     }
+  #|     function nodeContains(reference, other) {
+  #|       if (!other) return false;
+  #|       let node = other;
+  #|       while (node) {
+  #|         if (node === reference) return true;
+  #|         node = getParentNode(node);
+  #|       }
+  #|       return false;
+  #|     }
+  #|     function getRootNodeInternal(node) {
+  #|       let n = node;
+  #|       let parent = getParentNode(n);
+  #|       while (parent) {
+  #|         n = parent;
+  #|         parent = getParentNode(n);
+  #|       }
+  #|       return n;
+  #|     }
+  #|     function getRootNodePublic(node) {
+  #|       const root = getRootNodeInternal(node);
+  #|       if (root && getNodeType(root) === 9) {
+  #|         const docEl = root.documentElement || (root._children ? root._children.find(n => n && n._nodeType === 1) : null);
+  #|         return docEl || root;
+  #|       }
+  #|       return root;
+  #|     }
+  #|     function isConnectedToDocument(node) {
+  #|       const root = getRootNodeInternal(node);
+  #|       return root && getNodeType(root) === 9;
+  #|     }
+  #|     function compareDocumentPositionImpl(reference, other) {
+  #|       if (!isNodeLike(other)) {
+  #|         throw new TypeError('Failed to execute compareDocumentPosition: parameter 1 is not of type Node');
+  #|       }
+  #|       if (reference === other) return 0;
+  #|       const refRoot = getRootNodeInternal(reference);
+  #|       const otherRoot = getRootNodeInternal(other);
+  #|       if (refRoot !== otherRoot) {
+  #|         return Node.DOCUMENT_POSITION_DISCONNECTED |
+  #|           Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC |
+  #|           Node.DOCUMENT_POSITION_PRECEDING;
+  #|       }
+  #|       if (nodeContains(other, reference)) {
+  #|         return Node.DOCUMENT_POSITION_CONTAINS | Node.DOCUMENT_POSITION_PRECEDING;
+  #|       }
+  #|       if (nodeContains(reference, other)) {
+  #|         return Node.DOCUMENT_POSITION_CONTAINED_BY | Node.DOCUMENT_POSITION_FOLLOWING;
+  #|       }
+  #|       const order = [];
+  #|       const walk = (node) => {
+  #|         order.push(node);
+  #|         const children = getChildNodesArray(node);
+  #|         for (const child of children) walk(child);
+  #|       };
+  #|       walk(refRoot);
+  #|       const refIndex = order.indexOf(reference);
+  #|       const otherIndex = order.indexOf(other);
+  #|       if (refIndex === -1 || otherIndex === -1) {
+  #|         return Node.DOCUMENT_POSITION_DISCONNECTED |
+  #|           Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC |
+  #|           Node.DOCUMENT_POSITION_PRECEDING;
+  #|       }
+  #|       return otherIndex < refIndex
+  #|         ? Node.DOCUMENT_POSITION_PRECEDING
+  #|         : Node.DOCUMENT_POSITION_FOLLOWING;
+  #|     }
   #|     function documentHasElement(doc, exclude) {
   #|       return (doc._children || []).some(n => n._nodeType === 1 && n !== exclude);
   #|     }
@@ -674,211 +682,211 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         }
   #|       }
   #|     }
-#|     function detachNode(node) {
-#|       if (!node) return;
-#|       const doc = getOwnerDocument(node);
-#|       if (doc && isConnectedToDocument(node)) unindexSubtree(node, doc);
-#|       if (!node._parent) return;
-#|       if (typeof node._parent.removeChild === 'function') {
-#|         node._parent.removeChild(node);
-#|       } else if (Array.isArray(node._parent._children)) {
-#|         const idx = node._parent._children.indexOf(node);
-#|         if (idx >= 0) node._parent._children.splice(idx, 1);
-#|       }
-#|       node._parent = null;
-#|       if ('parentNode' in node) node.parentNode = null;
-#|     }
-#|     function collectElements(root, includeRoot, predicate) {
-#|       const results = [];
-#|       if (!root) return results;
-#|       traverseTree(root, (node) => {
-#|         if (node._nodeType !== 1) return;
-#|         if (!includeRoot && node === root) return;
-#|         if (predicate(node)) results.push(node);
-#|       });
-#|       return results;
-#|     }
-#|     function ensureDocumentIndexes(doc) {
-#|       if (!doc) return null;
-#|       if (!doc._classIndex) doc._classIndex = new Map();
-#|       if (!doc._tagIndex) doc._tagIndex = new Map();
-#|       if (doc._elementCount === undefined) doc._elementCount = 0;
-#|       return doc;
-#|     }
-#|     function tagKeyForElement(el) {
-#|       if (!el) return '';
-#|       if (el._namespaceURI === 'http://www.w3.org/1999/xhtml') {
-#|         return asciiLowercase(el._tagName || '');
-#|       }
-#|       return el._tagName || '';
-#|     }
-#|     function getClassTokensFromValue(value) {
-#|       if (value === null || value === undefined) return [];
-#|       const str = String(value);
-#|       return splitAsciiWhitespace(str);
-#|     }
-#|     function indexElement(el, doc) {
-#|       if (!el || el._nodeType !== 1) return;
-#|       const targetDoc = ensureDocumentIndexes(doc);
-#|       if (!targetDoc) return;
-#|       if (el._indexed) return;
-#|       el._indexed = true;
-#|       targetDoc._elementCount = (targetDoc._elementCount || 0) + 1;
-#|       const tagKey = tagKeyForElement(el);
-#|       if (tagKey) {
-#|         let set = targetDoc._tagIndex.get(tagKey);
-#|         if (!set) { set = new Set(); targetDoc._tagIndex.set(tagKey, set); }
-#|         set.add(el);
-#|       }
-#|       const classAttr = el.getAttribute ? el.getAttribute('class') : null;
-#|       const tokens = getClassTokensFromValue(classAttr);
-#|       for (const token of tokens) {
-#|         let set = targetDoc._classIndex.get(token);
-#|         if (!set) { set = new Set(); targetDoc._classIndex.set(token, set); }
-#|         set.add(el);
-#|       }
-#|     }
-#|     function unindexElement(el, doc) {
-#|       if (!el || el._nodeType !== 1 || !doc) return;
-#|       if (!el._indexed) return;
-#|       el._indexed = false;
-#|       doc._elementCount = Math.max(0, (doc._elementCount || 0) - 1);
-#|       const classIndex = doc._classIndex;
-#|       const tagIndex = doc._tagIndex;
-#|       if (tagIndex) {
-#|         const tagKey = tagKeyForElement(el);
-#|         const set = tagIndex.get(tagKey);
-#|         if (set) {
-#|           set.delete(el);
-#|           if (set.size === 0) tagIndex.delete(tagKey);
-#|         }
-#|       }
-#|       if (classIndex) {
-#|         const classAttr = el.getAttribute ? el.getAttribute('class') : null;
-#|         const tokens = getClassTokensFromValue(classAttr);
-#|         for (const token of tokens) {
-#|           const set = classIndex.get(token);
-#|           if (!set) continue;
-#|           set.delete(el);
-#|           if (set.size === 0) classIndex.delete(token);
-#|         }
-#|       }
-#|     }
-#|     function indexSubtree(node, doc) {
-#|       if (!node) return;
-#|       const targetDoc = ensureDocumentIndexes(doc);
-#|       if (!targetDoc) return;
-#|       traverseTree(node, (n) => {
-#|         if (n._nodeType === 1) indexElement(n, targetDoc);
-#|       });
-#|     }
-#|     function unindexSubtree(node, doc) {
-#|       if (!node || !doc) return;
-#|       traverseTree(node, (n) => {
-#|         if (n._nodeType === 1) unindexElement(n, doc);
-#|       });
-#|     }
-#|     function updateClassIndex(el, oldValue, newValue) {
-#|       if (!el || el._nodeType !== 1) return;
-#|       if (!isConnectedToDocument(el)) return;
-#|       const doc = ensureDocumentIndexes(getOwnerDocument(el));
-#|       if (!doc) return;
-#|       const oldTokens = new Set(getClassTokensFromValue(oldValue));
-#|       const newTokens = new Set(getClassTokensFromValue(newValue));
-#|       for (const token of oldTokens) {
-#|         if (!newTokens.has(token)) {
-#|           const set = doc._classIndex.get(token);
-#|           if (set) {
-#|             set.delete(el);
-#|             if (set.size === 0) doc._classIndex.delete(token);
-#|           }
-#|         }
-#|       }
-#|       for (const token of newTokens) {
-#|         if (!oldTokens.has(token)) {
-#|           let set = doc._classIndex.get(token);
-#|           if (!set) { set = new Set(); doc._classIndex.set(token, set); }
-#|           set.add(el);
-#|         }
-#|       }
-#|     }
-#|     function getCandidatesByFilter(root, includeRoot, filter, allowLarge) {
-#|       if (!filter) return null;
-#|       if (!isConnectedToDocument(root) && getNodeType(root) !== 9) return null;
-#|       const doc = ensureDocumentIndexes(getOwnerDocument(root));
-#|       if (!doc) return null;
-#|       let candidates = null;
-#|       if (filter.kind === 'class') {
-#|         const tokens = filter.tokens || [];
-#|         if (tokens.length === 1) {
-#|           const set = doc._classIndex.get(tokens[0]);
-#|           if (!set) return [];
-#|           candidates = set;
-#|         } else {
-#|           for (const token of tokens) {
-#|             const set = doc._classIndex.get(token);
-#|             if (!set) return [];
-#|             if (candidates === null) {
-#|               candidates = new Set(set);
-#|             } else {
-#|               for (const el of Array.from(candidates)) {
-#|                 if (!set.has(el)) candidates.delete(el);
-#|               }
-#|             }
-#|             if (candidates.size === 0) return [];
-#|           }
-#|         }
-#|       } else if (filter.kind === 'tag') {
-#|         const name = String(filter.name);
-#|         if (name === '*') return null;
-#|         const lower = asciiLowercase(name);
-#|         const set1 = doc._tagIndex.get(name);
-#|         const set2 = lower === name ? null : doc._tagIndex.get(lower);
-#|         if (!set1 && !set2) return [];
-#|         if (set1 && !set2) {
-#|           candidates = set1;
-#|         } else if (!set1 && set2) {
-#|           candidates = set2;
-#|         } else {
-#|           candidates = new Set();
-#|           if (set1) for (const el of set1) candidates.add(el);
-#|           if (set2) for (const el of set2) candidates.add(el);
-#|         }
-#|       } else if (filter.kind === 'id') {
-#|         const el = doc.getElementById ? doc.getElementById(filter.id) : null;
-#|         candidates = new Set(el ? [el] : []);
-#|       }
-#|       if (!candidates) return null;
-#|       if (!allowLarge && filter.kind !== 'id') {
-#|         const total = doc._elementCount || 0;
-#|         if (total > 0 && candidates.size > total * 0.7) return null;
-#|       }
-#|       const list = [];
-#|       if (candidates.size > 64) {
-#|         traverseTree(root, (node) => {
-#|           if (node._nodeType !== 1) return;
-#|           if (!includeRoot && node === root) return;
-#|           if (!candidates.has(node)) return;
-#|           if (!applySimpleFilter(node, filter)) return;
-#|           list.push(node);
-#|         });
-#|         return list;
-#|       }
-#|       for (const el of candidates) {
-#|         if (!includeRoot && el === root) continue;
-#|         if (!nodeContains(root, el)) continue;
-#|         if (!applySimpleFilter(el, filter)) continue;
-#|         list.push(el);
-#|       }
-#|       if (list.length > 1) {
-#|         list.sort((a, b) => {
-#|           if (a === b) return 0;
-#|           const pos = compareDocumentPositionImpl(a, b);
-#|           return (pos & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
-#|         });
-#|       }
-#|       return list;
-#|     }
+  #|     function detachNode(node) {
+  #|       if (!node) return;
+  #|       const doc = getOwnerDocument(node);
+  #|       if (doc && isConnectedToDocument(node)) unindexSubtree(node, doc);
+  #|       if (!node._parent) return;
+  #|       if (typeof node._parent.removeChild === 'function') {
+  #|         node._parent.removeChild(node);
+  #|       } else if (Array.isArray(node._parent._children)) {
+  #|         const idx = node._parent._children.indexOf(node);
+  #|         if (idx >= 0) node._parent._children.splice(idx, 1);
+  #|       }
+  #|       node._parent = null;
+  #|       if ('parentNode' in node) node.parentNode = null;
+  #|     }
+  #|     function collectElements(root, includeRoot, predicate) {
+  #|       const results = [];
+  #|       if (!root) return results;
+  #|       traverseTree(root, (node) => {
+  #|         if (node._nodeType !== 1) return;
+  #|         if (!includeRoot && node === root) return;
+  #|         if (predicate(node)) results.push(node);
+  #|       });
+  #|       return results;
+  #|     }
+  #|     function ensureDocumentIndexes(doc) {
+  #|       if (!doc) return null;
+  #|       if (!doc._classIndex) doc._classIndex = new Map();
+  #|       if (!doc._tagIndex) doc._tagIndex = new Map();
+  #|       if (doc._elementCount === undefined) doc._elementCount = 0;
+  #|       return doc;
+  #|     }
+  #|     function tagKeyForElement(el) {
+  #|       if (!el) return '';
+  #|       if (el._namespaceURI === 'http://www.w3.org/1999/xhtml') {
+  #|         return asciiLowercase(el._tagName || '');
+  #|       }
+  #|       return el._tagName || '';
+  #|     }
+  #|     function getClassTokensFromValue(value) {
+  #|       if (value === null || value === undefined) return [];
+  #|       const str = String(value);
+  #|       return splitAsciiWhitespace(str);
+  #|     }
+  #|     function indexElement(el, doc) {
+  #|       if (!el || el._nodeType !== 1) return;
+  #|       const targetDoc = ensureDocumentIndexes(doc);
+  #|       if (!targetDoc) return;
+  #|       if (el._indexed) return;
+  #|       el._indexed = true;
+  #|       targetDoc._elementCount = (targetDoc._elementCount || 0) + 1;
+  #|       const tagKey = tagKeyForElement(el);
+  #|       if (tagKey) {
+  #|         let set = targetDoc._tagIndex.get(tagKey);
+  #|         if (!set) { set = new Set(); targetDoc._tagIndex.set(tagKey, set); }
+  #|         set.add(el);
+  #|       }
+  #|       const classAttr = el.getAttribute ? el.getAttribute('class') : null;
+  #|       const tokens = getClassTokensFromValue(classAttr);
+  #|       for (const token of tokens) {
+  #|         let set = targetDoc._classIndex.get(token);
+  #|         if (!set) { set = new Set(); targetDoc._classIndex.set(token, set); }
+  #|         set.add(el);
+  #|       }
+  #|     }
+  #|     function unindexElement(el, doc) {
+  #|       if (!el || el._nodeType !== 1 || !doc) return;
+  #|       if (!el._indexed) return;
+  #|       el._indexed = false;
+  #|       doc._elementCount = Math.max(0, (doc._elementCount || 0) - 1);
+  #|       const classIndex = doc._classIndex;
+  #|       const tagIndex = doc._tagIndex;
+  #|       if (tagIndex) {
+  #|         const tagKey = tagKeyForElement(el);
+  #|         const set = tagIndex.get(tagKey);
+  #|         if (set) {
+  #|           set.delete(el);
+  #|           if (set.size === 0) tagIndex.delete(tagKey);
+  #|         }
+  #|       }
+  #|       if (classIndex) {
+  #|         const classAttr = el.getAttribute ? el.getAttribute('class') : null;
+  #|         const tokens = getClassTokensFromValue(classAttr);
+  #|         for (const token of tokens) {
+  #|           const set = classIndex.get(token);
+  #|           if (!set) continue;
+  #|           set.delete(el);
+  #|           if (set.size === 0) classIndex.delete(token);
+  #|         }
+  #|       }
+  #|     }
+  #|     function indexSubtree(node, doc) {
+  #|       if (!node) return;
+  #|       const targetDoc = ensureDocumentIndexes(doc);
+  #|       if (!targetDoc) return;
+  #|       traverseTree(node, (n) => {
+  #|         if (n._nodeType === 1) indexElement(n, targetDoc);
+  #|       });
+  #|     }
+  #|     function unindexSubtree(node, doc) {
+  #|       if (!node || !doc) return;
+  #|       traverseTree(node, (n) => {
+  #|         if (n._nodeType === 1) unindexElement(n, doc);
+  #|       });
+  #|     }
+  #|     function updateClassIndex(el, oldValue, newValue) {
+  #|       if (!el || el._nodeType !== 1) return;
+  #|       if (!isConnectedToDocument(el)) return;
+  #|       const doc = ensureDocumentIndexes(getOwnerDocument(el));
+  #|       if (!doc) return;
+  #|       const oldTokens = new Set(getClassTokensFromValue(oldValue));
+  #|       const newTokens = new Set(getClassTokensFromValue(newValue));
+  #|       for (const token of oldTokens) {
+  #|         if (!newTokens.has(token)) {
+  #|           const set = doc._classIndex.get(token);
+  #|           if (set) {
+  #|             set.delete(el);
+  #|             if (set.size === 0) doc._classIndex.delete(token);
+  #|           }
+  #|         }
+  #|       }
+  #|       for (const token of newTokens) {
+  #|         if (!oldTokens.has(token)) {
+  #|           let set = doc._classIndex.get(token);
+  #|           if (!set) { set = new Set(); doc._classIndex.set(token, set); }
+  #|           set.add(el);
+  #|         }
+  #|       }
+  #|     }
+  #|     function getCandidatesByFilter(root, includeRoot, filter, allowLarge) {
+  #|       if (!filter) return null;
+  #|       if (!isConnectedToDocument(root) && getNodeType(root) !== 9) return null;
+  #|       const doc = ensureDocumentIndexes(getOwnerDocument(root));
+  #|       if (!doc) return null;
+  #|       let candidates = null;
+  #|       if (filter.kind === 'class') {
+  #|         const tokens = filter.tokens || [];
+  #|         if (tokens.length === 1) {
+  #|           const set = doc._classIndex.get(tokens[0]);
+  #|           if (!set) return [];
+  #|           candidates = set;
+  #|         } else {
+  #|           for (const token of tokens) {
+  #|             const set = doc._classIndex.get(token);
+  #|             if (!set) return [];
+  #|             if (candidates === null) {
+  #|               candidates = new Set(set);
+  #|             } else {
+  #|               for (const el of Array.from(candidates)) {
+  #|                 if (!set.has(el)) candidates.delete(el);
+  #|               }
+  #|             }
+  #|             if (candidates.size === 0) return [];
+  #|           }
+  #|         }
+  #|       } else if (filter.kind === 'tag') {
+  #|         const name = String(filter.name);
+  #|         if (name === '*') return null;
+  #|         const lower = asciiLowercase(name);
+  #|         const set1 = doc._tagIndex.get(name);
+  #|         const set2 = lower === name ? null : doc._tagIndex.get(lower);
+  #|         if (!set1 && !set2) return [];
+  #|         if (set1 && !set2) {
+  #|           candidates = set1;
+  #|         } else if (!set1 && set2) {
+  #|           candidates = set2;
+  #|         } else {
+  #|           candidates = new Set();
+  #|           if (set1) for (const el of set1) candidates.add(el);
+  #|           if (set2) for (const el of set2) candidates.add(el);
+  #|         }
+  #|       } else if (filter.kind === 'id') {
+  #|         const el = doc.getElementById ? doc.getElementById(filter.id) : null;
+  #|         candidates = new Set(el ? [el] : []);
+  #|       }
+  #|       if (!candidates) return null;
+  #|       if (!allowLarge && filter.kind !== 'id') {
+  #|         const total = doc._elementCount || 0;
+  #|         if (total > 0 && candidates.size > total * 0.7) return null;
+  #|       }
+  #|       const list = [];
+  #|       if (candidates.size > 64) {
+  #|         traverseTree(root, (node) => {
+  #|           if (node._nodeType !== 1) return;
+  #|           if (!includeRoot && node === root) return;
+  #|           if (!candidates.has(node)) return;
+  #|           if (!applySimpleFilter(node, filter)) return;
+  #|           list.push(node);
+  #|         });
+  #|         return list;
+  #|       }
+  #|       for (const el of candidates) {
+  #|         if (!includeRoot && el === root) continue;
+  #|         if (!nodeContains(root, el)) continue;
+  #|         if (!applySimpleFilter(el, filter)) continue;
+  #|         list.push(el);
+  #|       }
+  #|       if (list.length > 1) {
+  #|         list.sort((a, b) => {
+  #|           if (a === b) return 0;
+  #|           const pos = compareDocumentPositionImpl(a, b);
+  #|           return (pos & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+  #|         });
+  #|       }
+  #|       return list;
+  #|     }
   #|     function normalizeNamespace(ns) {
   #|       if (ns === undefined || ns === null || ns === '') return null;
   #|       return ns;
@@ -908,11 +916,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       return node.localName === name;
   #|     }
   #|     function isAsciiWhitespaceChar(ch) {
-  #|       return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\f' || ch === '\r';
+  #|       return ch === ' ' || ch === '\\t' || ch === '\\n' || ch === '\\f' || ch === '\\r';
   #|     }
-#|     function splitAsciiWhitespace(str) {
-#|       const tokens = [];
-#|       let current = '';
+  #|     function splitAsciiWhitespace(str) {
+  #|       const tokens = [];
+  #|       let current = '';
   #|       for (let i = 0; i < str.length; i++) {
   #|         const ch = str[i];
   #|         if (isAsciiWhitespaceChar(ch)) {
@@ -924,105 +932,105 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       if (current !== '') tokens.push(current);
   #|       return tokens;
   #|     }
-#|     function containsAsciiWhitespace(str) {
-#|       for (let i = 0; i < str.length; i++) {
-#|         if (isAsciiWhitespaceChar(str[i])) return true;
-#|       }
-#|       return false;
-#|     }
-#|     function isHexDigit(ch) {
-#|       return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
-#|     }
-#|     function isCssIdentDelimiter(ch) {
-#|       return isAsciiWhitespaceChar(ch) || ch === '.' || ch === '#' || ch === '[' || ch === ']' || ch === ':' ||
-#|         ch === '>' || ch === '+' || ch === '~' || ch === ',' || ch === ')';
-#|     }
-#|     function consumeCssEscape(str, index) {
-#|       if (index + 1 >= str.length) {
-#|         return { char: '\uFFFD', nextIndex: str.length };
-#|       }
-#|       const next = str[index + 1];
-#|       if (next === '\n' || next === '\f') {
-#|         return { char: '', nextIndex: index + 2 };
-#|       }
-#|       if (next === '\r') {
-#|         let nextIndex = index + 2;
-#|         if (str[nextIndex] === '\n') nextIndex += 1;
-#|         return { char: '', nextIndex };
-#|       }
-#|       if (isHexDigit(next)) {
-#|         let hex = '';
-#|         let j = index + 1;
-#|         for (let count = 0; count < 6 && j < str.length && isHexDigit(str[j]); count++, j++) {
-#|           hex += str[j];
-#|         }
-#|         let code = parseInt(hex, 16);
-#|         if (j < str.length && isAsciiWhitespaceChar(str[j])) {
-#|           if (str[j] === '\r' && str[j + 1] === '\n') {
-#|             j += 2;
-#|           } else {
-#|             j += 1;
-#|           }
-#|         }
-#|         if (!code || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF)) {
-#|           code = 0xFFFD;
-#|         }
-#|         return { char: String.fromCodePoint(code), nextIndex: j };
-#|       }
-#|       return { char: next, nextIndex: index + 2 };
-#|     }
-#|     function readCssIdentifier(str, start) {
-#|       let value = '';
-#|       let i = start;
-#|       while (i < str.length) {
-#|         const ch = str[i];
-#|         if (ch === '\u0000') {
-#|           value += '\uFFFD';
-#|           i += 1;
-#|           continue;
-#|         }
-#|         if (ch === '\\') {
-#|           const esc = consumeCssEscape(str, i);
-#|           value += esc.char;
-#|           i = esc.nextIndex;
-#|           continue;
-#|         }
-#|         if (isCssIdentDelimiter(ch)) break;
-#|         value += ch;
-#|         i += 1;
-#|       }
-#|       return { value, end: i };
-#|     }
-#|     function bufEndsWithHexEscape(buf) {
-#|       let i = buf.length - 1;
-#|       let count = 0;
-#|       while (i >= 0 && count < 6 && isHexDigit(buf[i])) {
-#|         i -= 1;
-#|         count += 1;
-#|       }
-#|       if (count === 0) return false;
-#|       return i >= 0 && buf[i] === '\\';
-#|     }
-#|     function isWhitespaceAfterHexEscape(str, index) {
-#|       let i = index - 1;
-#|       let count = 0;
-#|       while (i >= 0 && count < 6 && isHexDigit(str[i])) {
-#|         i -= 1;
-#|         count += 1;
-#|       }
-#|       if (count === 0) return false;
-#|       return i >= 0 && str[i] === '\\';
-#|     }
-#|     function normalizeSelectorEscapes(selector) {
-#|       let str = String(selector);
-#|       // Consume a single whitespace after hex escapes, per CSS syntax.
-#|       str = str.replace(/\\\\([0-9a-fA-F]{1,6})(\r\n|[\\t\\n\\r\\f ])/g, '\\\\$1');
-#|       return str;
-#|     }
-#|     function parseClassTokens(input) {
-#|       const str = String(input);
-#|       return splitAsciiWhitespace(str);
-#|     }
+  #|     function containsAsciiWhitespace(str) {
+  #|       for (let i = 0; i < str.length; i++) {
+  #|         if (isAsciiWhitespaceChar(str[i])) return true;
+  #|       }
+  #|       return false;
+  #|     }
+  #|     function isHexDigit(ch) {
+  #|       return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+  #|     }
+  #|     function isCssIdentDelimiter(ch) {
+  #|       return isAsciiWhitespaceChar(ch) || ch === '.' || ch === '#' || ch === '[' || ch === ']' || ch === ':' ||
+  #|         ch === '>' || ch === '+' || ch === '~' || ch === ',' || ch === ')';
+  #|     }
+  #|     function consumeCssEscape(str, index) {
+  #|       if (index + 1 >= str.length) {
+  #|         return { char: '\\uFFFD', nextIndex: str.length };
+  #|       }
+  #|       const next = str[index + 1];
+  #|       if (next === '\\n' || next === '\\f') {
+  #|         return { char: '', nextIndex: index + 2 };
+  #|       }
+  #|       if (next === '\\r') {
+  #|         let nextIndex = index + 2;
+  #|         if (str[nextIndex] === '\\n') nextIndex += 1;
+  #|         return { char: '', nextIndex };
+  #|       }
+  #|       if (isHexDigit(next)) {
+  #|         let hex = '';
+  #|         let j = index + 1;
+  #|         for (let count = 0; count < 6 && j < str.length && isHexDigit(str[j]); count++, j++) {
+  #|           hex += str[j];
+  #|         }
+  #|         let code = parseInt(hex, 16);
+  #|         if (j < str.length && isAsciiWhitespaceChar(str[j])) {
+  #|           if (str[j] === '\\r' && str[j + 1] === '\\n') {
+  #|             j += 2;
+  #|           } else {
+  #|             j += 1;
+  #|           }
+  #|         }
+  #|         if (!code || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF)) {
+  #|           code = 0xFFFD;
+  #|         }
+  #|         return { char: String.fromCodePoint(code), nextIndex: j };
+  #|       }
+  #|       return { char: next, nextIndex: index + 2 };
+  #|     }
+  #|     function readCssIdentifier(str, start) {
+  #|       let value = '';
+  #|       let i = start;
+  #|       while (i < str.length) {
+  #|         const ch = str[i];
+  #|         if (ch === '\\u0000') {
+  #|           value += '\\uFFFD';
+  #|           i += 1;
+  #|           continue;
+  #|         }
+  #|         if (ch === '\\\\') {
+  #|           const esc = consumeCssEscape(str, i);
+  #|           value += esc.char;
+  #|           i = esc.nextIndex;
+  #|           continue;
+  #|         }
+  #|         if (isCssIdentDelimiter(ch)) break;
+  #|         value += ch;
+  #|         i += 1;
+  #|       }
+  #|       return { value, end: i };
+  #|     }
+  #|     function bufEndsWithHexEscape(buf) {
+  #|       let i = buf.length - 1;
+  #|       let count = 0;
+  #|       while (i >= 0 && count < 6 && isHexDigit(buf[i])) {
+  #|         i -= 1;
+  #|         count += 1;
+  #|       }
+  #|       if (count === 0) return false;
+  #|       return i >= 0 && buf[i] === '\\\\';
+  #|     }
+  #|     function isWhitespaceAfterHexEscape(str, index) {
+  #|       let i = index - 1;
+  #|       let count = 0;
+  #|       while (i >= 0 && count < 6 && isHexDigit(str[i])) {
+  #|         i -= 1;
+  #|         count += 1;
+  #|       }
+  #|       if (count === 0) return false;
+  #|       return i >= 0 && str[i] === '\\\\';
+  #|     }
+  #|     function normalizeSelectorEscapes(selector) {
+  #|       let str = String(selector);
+  #|       // Consume a single whitespace after hex escapes, per CSS syntax.
+  #|       str = str.replace(/\\\\([0-9a-fA-F]{1,6})(\\r\\n|[\\t\\n\\r\\f ])/g, '\\\\$1');
+  #|       return str;
+  #|     }
+  #|     function parseClassTokens(input) {
+  #|       const str = String(input);
+  #|       return splitAsciiWhitespace(str);
+  #|     }
   #|     function matchesClassTokens(node, tokens) {
   #|       if (tokens.length === 0) return false;
   #|       for (const token of tokens) {
@@ -1057,9 +1065,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       return el._attrList.find(a => a.name === rawName) || null;
   #|     }
-#|     function parseAttributeSelector(segment) {
-#|       const inner = segment.slice(1, -1).trim();
-#|       if (!inner) return null;
+  #|     function parseAttributeSelector(segment) {
+  #|       const inner = segment.slice(1, -1).trim();
+  #|       if (!inner) return null;
   #|       let name = '';
   #|       let operator = null;
   #|       let value = null;
@@ -1109,97 +1117,97 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           flag = ch.toLowerCase();
   #|         }
   #|       }
-#|       return { name, operator, value, flag };
-#|     }
-#|     function decodeHtmlEntities(value) {
-#|       const named = {
-#|         'lt': '<',
-#|         'gt': '>',
-#|         'amp': '&',
-#|         'quot': '"',
-#|         'apos': "'",
-#|         'nbsp': '\u00A0'
-#|       };
-#|       return String(value).replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, function(_, inner) {
-#|         if (!inner) return '&' + inner + ';';
-#|         if (inner[0] === '#') {
-#|           const hex = inner[1] === 'x' || inner[1] === 'X';
-#|           const num = hex ? parseInt(inner.slice(2), 16) : parseInt(inner.slice(1), 10);
-#|           if (!num || num > 0x10FFFF || (num >= 0xD800 && num <= 0xDFFF)) return '\uFFFD';
-#|           return String.fromCodePoint(num);
-#|         }
-#|         return named[inner] || ('&' + inner + ';');
-#|       });
-#|     }
-#|     function parseHtmlAttributes(text) {
-#|       const attrs = [];
-#|       const re = /([^\s=\/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
-#|       let m;
-#|       while ((m = re.exec(text)) !== null) {
-#|         const name = m[1];
-#|         const value = m[2] !== undefined ? m[2] : (m[3] !== undefined ? m[3] : (m[4] !== undefined ? m[4] : ''));
-#|         attrs.push({ name, value: decodeHtmlEntities(value) });
-#|       }
-#|       return attrs;
-#|     }
-#|     function parseHtmlFragment(html, ownerDoc) {
-#|       const doc = ownerDoc || document;
-#|       const frag = doc.createDocumentFragment();
-#|       const voidTags = {
-#|         area: true, base: true, br: true, col: true, embed: true, hr: true,
-#|         img: true, input: true, link: true, meta: true, param: true, source: true,
-#|         track: true, wbr: true
-#|       };
-#|       const stack = [frag];
-#|       const tokenRe = /<!--[\s\S]*?-->|<\/?[A-Za-z0-9:_-]+[^>]*>|[^<]+/g;
-#|       let match;
-#|       while ((match = tokenRe.exec(String(html))) !== null) {
-#|         const token = match[0];
-#|         const current = stack[stack.length - 1];
-#|         if (token.startsWith('<!--')) {
-#|           const text = token.slice(4, -3);
-#|           current.appendChild(doc.createComment(text));
-#|           continue;
-#|         }
-#|         if (token.startsWith('</')) {
-#|           const endName = asciiLowercase(token.slice(2, -1).trim());
-#|           for (let i = stack.length - 1; i > 0; i--) {
-#|             const el = stack[i];
-#|             if (el && el._tagName && asciiLowercase(el._tagName) === endName) {
-#|               stack.length = i;
-#|               break;
-#|             }
-#|           }
-#|           continue;
-#|         }
-#|         if (token.startsWith('<')) {
-#|           const selfClosing = token.endsWith('/>');
-#|           const inner = token.slice(1, token.length - (selfClosing ? 2 : 1)).trim();
-#|           if (!inner) continue;
-#|           const parts = inner.split(/\s+/, 1);
-#|           const tagName = parts[0];
-#|           const attrText = inner.slice(tagName.length);
-#|           const el = doc.createElement(tagName);
-#|           const attrs = parseHtmlAttributes(attrText);
-#|           for (const attr of attrs) {
-#|             try { el.setAttribute(attr.name, attr.value); } catch (e) {}
-#|           }
-#|           current.appendChild(el);
-#|           const lower = asciiLowercase(tagName);
-#|           if (!selfClosing && !voidTags[lower]) {
-#|             stack.push(el);
-#|           }
-#|           continue;
-#|         }
-#|         const text = decodeHtmlEntities(token);
-#|         if (text !== '') {
-#|           current.appendChild(doc.createTextNode(text));
-#|         }
-#|       }
-#|       return frag._children ? frag._children.slice() : [];
-#|     }
+  #|       return { name, operator, value, flag };
+  #|     }
+  #|     function decodeHtmlEntities(value) {
+  #|       const named = {
+  #|         'lt': '<',
+  #|         'gt': '>',
+  #|         'amp': '&',
+  #|         'quot': '"',
+  #|         'apos': "'",
+  #|         'nbsp': '\\u00A0'
+  #|       };
+  #|       return String(value).replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, function(_, inner) {
+  #|         if (!inner) return '&' + inner + ';';
+  #|         if (inner[0] === '#') {
+  #|           const hex = inner[1] === 'x' || inner[1] === 'X';
+  #|           const num = hex ? parseInt(inner.slice(2), 16) : parseInt(inner.slice(1), 10);
+  #|           if (!num || num > 0x10FFFF || (num >= 0xD800 && num <= 0xDFFF)) return '\\uFFFD';
+  #|           return String.fromCodePoint(num);
+  #|         }
+  #|         return named[inner] || ('&' + inner + ';');
+  #|       });
+  #|     }
+  #|     function parseHtmlAttributes(text) {
+  #|       const attrs = [];
+  #|       const re = /([^\\s=\\/>]+)(?:\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+)))?/g;
+  #|       let m;
+  #|       while ((m = re.exec(text)) !== null) {
+  #|         const name = m[1];
+  #|         const value = m[2] !== undefined ? m[2] : (m[3] !== undefined ? m[3] : (m[4] !== undefined ? m[4] : ''));
+  #|         attrs.push({ name, value: decodeHtmlEntities(value) });
+  #|       }
+  #|       return attrs;
+  #|     }
+  #|     function parseHtmlFragment(html, ownerDoc) {
+  #|       const doc = ownerDoc || document;
+  #|       const frag = doc.createDocumentFragment();
+  #|       const voidTags = {
+  #|         area: true, base: true, br: true, col: true, embed: true, hr: true,
+  #|         img: true, input: true, link: true, meta: true, param: true, source: true,
+  #|         track: true, wbr: true
+  #|       };
+  #|       const stack = [frag];
+  #|       const tokenRe = /<!--[\\s\\S]*?-->|<\\/?[A-Za-z0-9:_-]+[^>]*>|[^<]+/g;
+  #|       let match;
+  #|       while ((match = tokenRe.exec(String(html))) !== null) {
+  #|         const token = match[0];
+  #|         const current = stack[stack.length - 1];
+  #|         if (token.startsWith('<!--')) {
+  #|           const text = token.slice(4, -3);
+  #|           current.appendChild(doc.createComment(text));
+  #|           continue;
+  #|         }
+  #|         if (token.startsWith('</')) {
+  #|           const endName = asciiLowercase(token.slice(2, -1).trim());
+  #|           for (let i = stack.length - 1; i > 0; i--) {
+  #|             const el = stack[i];
+  #|             if (el && el._tagName && asciiLowercase(el._tagName) === endName) {
+  #|               stack.length = i;
+  #|               break;
+  #|             }
+  #|           }
+  #|           continue;
+  #|         }
+  #|         if (token.startsWith('<')) {
+  #|           const selfClosing = token.endsWith('/>');
+  #|           const inner = token.slice(1, token.length - (selfClosing ? 2 : 1)).trim();
+  #|           if (!inner) continue;
+  #|           const parts = inner.split(/\\s+/, 1);
+  #|           const tagName = parts[0];
+  #|           const attrText = inner.slice(tagName.length);
+  #|           const el = doc.createElement(tagName);
+  #|           const attrs = parseHtmlAttributes(attrText);
+  #|           for (const attr of attrs) {
+  #|             try { el.setAttribute(attr.name, attr.value); } catch (e) {}
+  #|           }
+  #|           current.appendChild(el);
+  #|           const lower = asciiLowercase(tagName);
+  #|           if (!selfClosing && !voidTags[lower]) {
+  #|             stack.push(el);
+  #|           }
+  #|           continue;
+  #|         }
+  #|         const text = decodeHtmlEntities(token);
+  #|         if (text !== '') {
+  #|           current.appendChild(doc.createTextNode(text));
+  #|         }
+  #|       }
+  #|       return frag._children ? frag._children.slice() : [];
+  #|     }
   #|     function matchesSimpleSelector(el, selector, scopeRoot) {
-#|       const sel = trimAsciiWhitespace(selector);
+  #|       const sel = trimAsciiWhitespace(selector);
   #|       if (!sel) return false;
   #|       if (sel === '*') return true;
   #|       let rest = sel;
@@ -1224,20 +1232,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       let i = 0;
   #|       while (i < rest.length) {
   #|         const ch = rest[i];
-#|         if (ch === '#') {
-#|           const res = readCssIdentifier(rest, i + 1);
-#|           if (res.value === '') return false;
-#|           idMatches.push(res.value);
-#|           i = res.end;
-#|           continue;
-#|         }
-#|         if (ch === '.') {
-#|           const res = readCssIdentifier(rest, i + 1);
-#|           if (res.value === '') return false;
-#|           classMatches.push(res.value);
-#|           i = res.end;
-#|           continue;
-#|         }
+  #|         if (ch === '#') {
+  #|           const res = readCssIdentifier(rest, i + 1);
+  #|           if (res.value === '') return false;
+  #|           idMatches.push(res.value);
+  #|           i = res.end;
+  #|           continue;
+  #|         }
+  #|         if (ch === '.') {
+  #|           const res = readCssIdentifier(rest, i + 1);
+  #|           if (res.value === '') return false;
+  #|           classMatches.push(res.value);
+  #|           i = res.end;
+  #|           continue;
+  #|         }
   #|         if (ch === '[') {
   #|           const end = rest.indexOf(']', i + 1);
   #|           if (end < 0) return false;
@@ -1417,135 +1425,135 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       return true;
   #|     }
-#|     function parseSimpleClassSelector(selector) {
-#|       const sel = trimAsciiWhitespace(selector);
-#|       if (!sel || sel[0] !== '.') return null;
-#|       const classes = [];
-#|       let i = 0;
-#|       while (i < sel.length) {
-#|         if (sel[i] !== '.') return null;
-#|         const res = readCssIdentifier(sel, i + 1);
-#|         if (!res.value) return null;
-#|         classes.push(res.value);
-#|         i = res.end;
-#|       }
-#|       return classes;
-#|     }
-#|     function parseSimpleTagSelector(selector) {
-#|       const sel = trimAsciiWhitespace(selector);
-#|       if (!sel) return null;
-#|       if (sel === '*') return '*';
-#|       if (sel[0] === '.' || sel[0] === '#' || sel[0] === '[' || sel[0] === ':') return null;
-#|       const res = readCssIdentifier(sel, 0);
-#|       if (!res.value) return null;
-#|       if (res.end !== sel.length) return null;
-#|       return res.value;
-#|     }
-#|     function parseSimpleIdSelector(selector) {
-#|       const sel = trimAsciiWhitespace(selector);
-#|       if (!sel || sel[0] !== '#') return null;
-#|       const res = readCssIdentifier(sel, 1);
-#|       if (!res.value) return null;
-#|       if (res.end !== sel.length) return null;
-#|       return res.value;
-#|     }
-#|     function applySimpleFilter(el, filter) {
-#|       if (!filter) return true;
-#|       if (!el || el._nodeType !== 1) return false;
-#|       if (filter.kind === 'class') {
-#|         return matchesClassTokens(el, filter.tokens);
-#|       }
-#|       if (filter.kind === 'tag') {
-#|         return matchesTagName(el, filter.name);
-#|       }
-#|       if (filter.kind === 'id') {
-#|         const id = el.getAttribute ? el.getAttribute('id') : null;
-#|         return id === filter.id;
-#|       }
-#|       return true;
-#|     }
-#|     function tokenizeSelector(selector) {
-#|       const tokens = [];
-#|       let buf = '';
-#|       let combinator = null;
-#|       let inAttr = false;
-#|       let depth = 0;
-#|       let quote = null;
-#|       const rawSelector = String(selector);
-#|       let normalized = '';
-#|       for (let i = 0; i < rawSelector.length; i++) {
-#|         const ch = rawSelector[i];
-#|         if (ch !== '\\') {
-#|           normalized += ch;
-#|           continue;
-#|         }
-#|         normalized += ch;
-#|         if (i + 1 >= rawSelector.length) continue;
-#|         let j = i + 1;
-#|         if (isHexDigit(rawSelector[j])) {
-#|           let count = 0;
-#|           while (count < 6 && j < rawSelector.length && isHexDigit(rawSelector[j])) {
-#|             normalized += rawSelector[j];
-#|             j += 1;
-#|             count += 1;
-#|           }
-#|           if (j < rawSelector.length && isAsciiWhitespaceChar(rawSelector[j])) {
-#|             if (rawSelector[j] === '\r' && rawSelector[j + 1] === '\n') {
-#|               normalized += rawSelector[j];
-#|               normalized += rawSelector[j + 1];
-#|               j += 1;
-#|             } else {
-#|               normalized += rawSelector[j];
-#|             }
-#|             j += 1;
-#|           }
-#|           i = j - 1;
-#|           continue;
-#|         }
-#|         normalized += rawSelector[j];
-#|         i = j;
-#|       }
-#|       const pushToken = () => {
-#|         const text = buf.trim();
-#|         if (text) {
-#|           tokens.push({ selector: text, combinator });
-#|           combinator = null;
-#|         }
-#|         buf = '';
-#|       };
-#|       for (let i = 0; i < normalized.length; i++) {
-#|         const ch = normalized[i];
-#|         if (ch === '\\') {
-#|           buf += ch;
-#|           if (i + 1 < normalized.length) {
-#|             let j = i + 1;
-#|             if (isHexDigit(normalized[j])) {
-#|               let count = 0;
-#|               while (count < 6 && j < normalized.length && isHexDigit(normalized[j])) {
-#|                 buf += normalized[j];
-#|                 j += 1;
-#|                 count += 1;
-#|               }
-#|               if (j < normalized.length && isAsciiWhitespaceChar(normalized[j])) {
-#|                 buf += normalized[j];
-#|                 if (normalized[j] === '\r' && normalized[j + 1] === '\n') {
-#|                   buf += normalized[j + 1];
-#|                   j += 1;
-#|                 }
-#|                 j += 1;
-#|               }
-#|               i = j - 1;
-#|               continue;
-#|             }
-#|             buf += normalized[j];
-#|             i = j;
-#|             continue;
-#|           }
-#|           continue;
-#|         }
-#|         if (quote) {
-#|           buf += ch;
-#|           if (ch === quote) quote = null;
+  #|     function parseSimpleClassSelector(selector) {
+  #|       const sel = trimAsciiWhitespace(selector);
+  #|       if (!sel || sel[0] !== '.') return null;
+  #|       const classes = [];
+  #|       let i = 0;
+  #|       while (i < sel.length) {
+  #|         if (sel[i] !== '.') return null;
+  #|         const res = readCssIdentifier(sel, i + 1);
+  #|         if (!res.value) return null;
+  #|         classes.push(res.value);
+  #|         i = res.end;
+  #|       }
+  #|       return classes;
+  #|     }
+  #|     function parseSimpleTagSelector(selector) {
+  #|       const sel = trimAsciiWhitespace(selector);
+  #|       if (!sel) return null;
+  #|       if (sel === '*') return '*';
+  #|       if (sel[0] === '.' || sel[0] === '#' || sel[0] === '[' || sel[0] === ':') return null;
+  #|       const res = readCssIdentifier(sel, 0);
+  #|       if (!res.value) return null;
+  #|       if (res.end !== sel.length) return null;
+  #|       return res.value;
+  #|     }
+  #|     function parseSimpleIdSelector(selector) {
+  #|       const sel = trimAsciiWhitespace(selector);
+  #|       if (!sel || sel[0] !== '#') return null;
+  #|       const res = readCssIdentifier(sel, 1);
+  #|       if (!res.value) return null;
+  #|       if (res.end !== sel.length) return null;
+  #|       return res.value;
+  #|     }
+  #|     function applySimpleFilter(el, filter) {
+  #|       if (!filter) return true;
+  #|       if (!el || el._nodeType !== 1) return false;
+  #|       if (filter.kind === 'class') {
+  #|         return matchesClassTokens(el, filter.tokens);
+  #|       }
+  #|       if (filter.kind === 'tag') {
+  #|         return matchesTagName(el, filter.name);
+  #|       }
+  #|       if (filter.kind === 'id') {
+  #|         const id = el.getAttribute ? el.getAttribute('id') : null;
+  #|         return id === filter.id;
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function tokenizeSelector(selector) {
+  #|       const tokens = [];
+  #|       let buf = '';
+  #|       let combinator = null;
+  #|       let inAttr = false;
+  #|       let depth = 0;
+  #|       let quote = null;
+  #|       const rawSelector = String(selector);
+  #|       let normalized = '';
+  #|       for (let i = 0; i < rawSelector.length; i++) {
+  #|         const ch = rawSelector[i];
+  #|         if (ch !== '\\\\') {
+  #|           normalized += ch;
+  #|           continue;
+  #|         }
+  #|         normalized += ch;
+  #|         if (i + 1 >= rawSelector.length) continue;
+  #|         let j = i + 1;
+  #|         if (isHexDigit(rawSelector[j])) {
+  #|           let count = 0;
+  #|           while (count < 6 && j < rawSelector.length && isHexDigit(rawSelector[j])) {
+  #|             normalized += rawSelector[j];
+  #|             j += 1;
+  #|             count += 1;
+  #|           }
+  #|           if (j < rawSelector.length && isAsciiWhitespaceChar(rawSelector[j])) {
+  #|             if (rawSelector[j] === '\\r' && rawSelector[j + 1] === '\\n') {
+  #|               normalized += rawSelector[j];
+  #|               normalized += rawSelector[j + 1];
+  #|               j += 1;
+  #|             } else {
+  #|               normalized += rawSelector[j];
+  #|             }
+  #|             j += 1;
+  #|           }
+  #|           i = j - 1;
+  #|           continue;
+  #|         }
+  #|         normalized += rawSelector[j];
+  #|         i = j;
+  #|       }
+  #|       const pushToken = () => {
+  #|         const text = buf.trim();
+  #|         if (text) {
+  #|           tokens.push({ selector: text, combinator });
+  #|           combinator = null;
+  #|         }
+  #|         buf = '';
+  #|       };
+  #|       for (let i = 0; i < normalized.length; i++) {
+  #|         const ch = normalized[i];
+  #|         if (ch === '\\\\') {
+  #|           buf += ch;
+  #|           if (i + 1 < normalized.length) {
+  #|             let j = i + 1;
+  #|             if (isHexDigit(normalized[j])) {
+  #|               let count = 0;
+  #|               while (count < 6 && j < normalized.length && isHexDigit(normalized[j])) {
+  #|                 buf += normalized[j];
+  #|                 j += 1;
+  #|                 count += 1;
+  #|               }
+  #|               if (j < normalized.length && isAsciiWhitespaceChar(normalized[j])) {
+  #|                 buf += normalized[j];
+  #|                 if (normalized[j] === '\\r' && normalized[j + 1] === '\\n') {
+  #|                   buf += normalized[j + 1];
+  #|                   j += 1;
+  #|                 }
+  #|                 j += 1;
+  #|               }
+  #|               i = j - 1;
+  #|               continue;
+  #|             }
+  #|             buf += normalized[j];
+  #|             i = j;
+  #|             continue;
+  #|           }
+  #|           continue;
+  #|         }
+  #|         if (quote) {
+  #|           buf += ch;
+  #|           if (ch === quote) quote = null;
   #|           continue;
   #|         }
   #|         if (ch === '"' || ch === "'") {
@@ -1565,257 +1573,257 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             combinator = ch;
   #|             continue;
   #|           }
-#|           if (ch === ' ') {
-#|             if (bufEndsWithHexEscape(buf) || isWhitespaceAfterHexEscape(normalized, i)) {
-#|               buf += ch;
-#|               continue;
-#|             }
-#|             pushToken();
-#|             if (!combinator) combinator = ' ';
-#|             while (i + 1 < normalized.length && normalized[i + 1] === ' ') i++;
-#|             continue;
-#|           }
-#|         }
-#|         buf += ch;
-#|       }
+  #|           if (ch === ' ') {
+  #|             if (bufEndsWithHexEscape(buf) || isWhitespaceAfterHexEscape(normalized, i)) {
+  #|               buf += ch;
+  #|               continue;
+  #|             }
+  #|             pushToken();
+  #|             if (!combinator) combinator = ' ';
+  #|             while (i + 1 < normalized.length && normalized[i + 1] === ' ') i++;
+  #|             continue;
+  #|           }
+  #|         }
+  #|         buf += ch;
+  #|       }
   #|       pushToken();
-#|       return tokens;
-#|     }
-#|     function trimAsciiWhitespace(str) {
-#|       const s = String(str);
-#|       let start = 0;
-#|       let end = s.length;
-#|       while (start < end && isAsciiWhitespaceChar(s[start])) start += 1;
-#|       while (end > start && isAsciiWhitespaceChar(s[end - 1])) end -= 1;
-#|       return s.slice(start, end);
-#|     }
-#|     function hasUnescapedCombinator(selector) {
-#|       const str = String(selector);
-#|       let inAttr = false;
-#|       let depth = 0;
-#|       let quote = null;
-#|       for (let i = 0; i < str.length; i++) {
-#|         const ch = str[i];
-#|         if (ch === '\\') {
-#|           if (i + 1 < str.length && isHexDigit(str[i + 1])) {
-#|             let j = i + 1;
-#|             let count = 0;
-#|             while (count < 6 && j < str.length && isHexDigit(str[j])) {
-#|               j += 1;
-#|               count += 1;
-#|             }
-#|             if (j < str.length && isAsciiWhitespaceChar(str[j])) {
-#|               if (str[j] === '\r' && str[j + 1] === '\n') j += 1;
-#|               j += 1;
-#|             }
-#|             i = j - 1;
-#|             continue;
-#|           }
-#|           if (i + 1 < str.length) {
-#|             i += 1;
-#|             continue;
-#|           }
-#|         }
-#|         if (quote) {
-#|           if (ch === quote) quote = null;
-#|           continue;
-#|         }
-#|         if (ch === '"' || ch === "'") {
-#|           quote = ch;
-#|           continue;
-#|         }
-#|         if (ch === '[') inAttr = true;
-#|         if (ch === ']') inAttr = false;
-#|         if (!inAttr) {
-#|           if (ch === '(') depth++;
-#|           if (ch === ')') depth = Math.max(0, depth - 1);
-#|         }
-#|         if (!inAttr && depth === 0) {
-#|           if (ch === '>' || ch === '+' || ch === '~' || ch === ',' || ch === ' ') return true;
-#|         }
-#|       }
-#|       return false;
-#|     }
-#|     const selectorGroupCache = new Map();
-#|     const selectorCache = new Map();
-#|     const MAX_SELECTOR_CACHE = 200;
-#|     function cacheSet(map, key, value) {
-#|       if (map.size > MAX_SELECTOR_CACHE) map.clear();
-#|       map.set(key, value);
-#|       return value;
-#|     }
-#|     function compileSelectorGroup(selector) {
-#|       const key = String(selector);
-#|       const cached = selectorGroupCache.get(key);
-#|       if (cached) return cached;
-#|       const trimmed = trimAsciiWhitespace(key);
-#|       if (!trimmed) return cacheSet(selectorGroupCache, key, { simple: '', tokens: null, filter: null });
-#|       if (!hasUnescapedCombinator(trimmed)) {
-#|         const classTokens = parseSimpleClassSelector(trimmed);
-#|         const tagName = parseSimpleTagSelector(trimmed);
-#|         const idName = parseSimpleIdSelector(trimmed);
-#|         const filter = classTokens
-#|           ? { kind: 'class', tokens: classTokens }
-#|           : (tagName ? { kind: 'tag', name: tagName } : (idName ? { kind: 'id', id: idName } : null));
-#|         return cacheSet(selectorGroupCache, key, { simple: trimmed, tokens: null, filter });
-#|       }
-#|       const tokens = tokenizeSelector(trimmed);
-#|       let filter = null;
-#|       if (tokens.length > 0) {
-#|         const rightmost = tokens[tokens.length - 1].selector;
-#|         const classTokens = parseSimpleClassSelector(rightmost);
-#|         const tagName = parseSimpleTagSelector(rightmost);
-#|         const idName = parseSimpleIdSelector(rightmost);
-#|         filter = classTokens
-#|           ? { kind: 'class', tokens: classTokens }
-#|           : (tagName ? { kind: 'tag', name: tagName } : (idName ? { kind: 'id', id: idName } : null));
-#|       }
-#|       return cacheSet(selectorGroupCache, key, { simple: null, tokens, filter });
-#|     }
-#|     function matchesSelectorGroupCompiled(el, compiled, scopeRoot, skipFilter) {
-#|       if (!compiled) return false;
-#|       if (!skipFilter && compiled.filter && !applySimpleFilter(el, compiled.filter)) return false;
-#|       if (compiled.simple !== null && compiled.simple !== undefined) {
-#|         if (!compiled.simple) return false;
-#|         return matchesSimpleSelector(el, compiled.simple, scopeRoot);
-#|       }
-#|       const tokens = compiled.tokens;
-#|       if (!tokens || tokens.length === 0) return false;
-#|       let current = el;
-#|       for (let i = tokens.length - 1; i >= 0; i--) {
-#|         const token = tokens[i];
-#|         if (!current || current._nodeType !== 1) return false;
-#|         if (!matchesSimpleSelector(current, token.selector, scopeRoot)) return false;
-#|         if (i === 0) return true;
-#|         const comb = token.combinator || ' ';
-#|         const prevToken = tokens[i - 1];
-#|         if (comb === ' ') {
-#|           let ancestor = current._parent;
-#|           let found = null;
-#|           while (ancestor) {
-#|             if (ancestor._nodeType === 1 && matchesSimpleSelector(ancestor, prevToken.selector, scopeRoot)) { found = ancestor; break; }
-#|             ancestor = ancestor._parent;
-#|           }
-#|           if (!found) return false;
-#|           current = found;
-#|           i -= 1;
-#|           continue;
-#|         }
-#|         if (comb === '>') {
-#|           const parent = current._parent;
-#|           if (!parent || parent._nodeType !== 1 || !matchesSimpleSelector(parent, prevToken.selector, scopeRoot)) return false;
-#|           current = parent;
-#|           i -= 1;
-#|           continue;
-#|         }
-#|         if (comb === '+') {
-#|           let prev = current.previousElementSibling;
-#|           if (!prev || !matchesSimpleSelector(prev, prevToken.selector, scopeRoot)) return false;
-#|           current = prev;
-#|           i -= 1;
-#|           continue;
-#|         }
-#|         if (comb === '~') {
-#|           let sib = current.previousElementSibling;
-#|           let found = null;
-#|           while (sib) {
-#|             if (matchesSimpleSelector(sib, prevToken.selector, scopeRoot)) { found = sib; break; }
-#|             sib = sib.previousElementSibling;
-#|           }
-#|           if (!found) return false;
-#|           current = found;
-#|           i -= 1;
-#|           continue;
-#|         }
-#|       }
-#|       return true;
-#|     }
-#|     function compileSelector(selector) {
-#|       const key = String(selector);
-#|       const cached = selectorCache.get(key);
-#|       if (cached) return cached;
-#|       const groups = splitSelectorGroups(key).map(s => trimAsciiWhitespace(s)).filter(Boolean);
-#|       const compiledGroups = groups.map(g => compileSelectorGroup(g));
-#|       return cacheSet(selectorCache, key, { groups: compiledGroups });
-#|     }
-#|     function matchesSelectorGroup(el, selector, scopeRoot) {
-#|       const compiled = compileSelectorGroup(selector);
-#|       return matchesSelectorGroupCompiled(el, compiled, scopeRoot, false);
-#|     }
-#|     function splitSelectorGroups(selector) {
-#|       const str = String(selector);
-#|       const groups = [];
-#|       let buf = '';
-#|       let inAttr = false;
-#|       let depth = 0;
-#|       let quote = null;
-#|       for (let i = 0; i < str.length; i++) {
-#|         const ch = str[i];
-#|         if (ch === '\\') {
-#|           buf += ch;
-#|           if (i + 1 < str.length) {
-#|             let j = i + 1;
-#|             if (isHexDigit(str[j])) {
-#|               let count = 0;
-#|               while (count < 6 && j < str.length && isHexDigit(str[j])) {
-#|                 buf += str[j];
-#|                 j += 1;
-#|                 count += 1;
-#|               }
-#|               if (j < str.length && isAsciiWhitespaceChar(str[j])) {
-#|                 if (str[j] === '\r' && str[j + 1] === '\n') {
-#|                   buf += str[j];
-#|                   buf += str[j + 1];
-#|                   j += 1;
-#|                 } else {
-#|                   buf += str[j];
-#|                 }
-#|                 j += 1;
-#|               }
-#|               i = j - 1;
-#|               continue;
-#|             }
-#|             buf += str[j];
-#|             i = j;
-#|             continue;
-#|           }
-#|           continue;
-#|         }
-#|         if (quote) {
-#|           buf += ch;
-#|           if (ch === quote) quote = null;
-#|           continue;
-#|         }
-#|         if (ch === '"' || ch === "'") {
-#|           quote = ch;
-#|           buf += ch;
-#|           continue;
-#|         }
-#|         if (ch === '[') inAttr = true;
-#|         if (ch === ']') inAttr = false;
-#|         if (!inAttr) {
-#|           if (ch === '(') depth++;
-#|           if (ch === ')') depth = Math.max(0, depth - 1);
-#|         }
-#|         if (!inAttr && depth === 0 && ch === ',') {
-#|           groups.push(buf);
-#|           buf = '';
-#|           continue;
-#|         }
-#|         buf += ch;
-#|       }
-#|       if (buf !== '') groups.push(buf);
-#|       return groups;
-#|     }
-#|     function matchesSelector(el, selector, scopeRoot) {
-#|       const compiled = compileSelector(selector);
-#|       const groups = compiled.groups || [];
-#|       if (groups.length === 0) return false;
-#|       for (const group of groups) {
-#|         if (matchesSelectorGroupCompiled(el, group, scopeRoot, false)) return true;
-#|       }
-#|       return false;
-#|     }
+  #|       return tokens;
+  #|     }
+  #|     function trimAsciiWhitespace(str) {
+  #|       const s = String(str);
+  #|       let start = 0;
+  #|       let end = s.length;
+  #|       while (start < end && isAsciiWhitespaceChar(s[start])) start += 1;
+  #|       while (end > start && isAsciiWhitespaceChar(s[end - 1])) end -= 1;
+  #|       return s.slice(start, end);
+  #|     }
+  #|     function hasUnescapedCombinator(selector) {
+  #|       const str = String(selector);
+  #|       let inAttr = false;
+  #|       let depth = 0;
+  #|       let quote = null;
+  #|       for (let i = 0; i < str.length; i++) {
+  #|         const ch = str[i];
+  #|         if (ch === '\\\\') {
+  #|           if (i + 1 < str.length && isHexDigit(str[i + 1])) {
+  #|             let j = i + 1;
+  #|             let count = 0;
+  #|             while (count < 6 && j < str.length && isHexDigit(str[j])) {
+  #|               j += 1;
+  #|               count += 1;
+  #|             }
+  #|             if (j < str.length && isAsciiWhitespaceChar(str[j])) {
+  #|               if (str[j] === '\\r' && str[j + 1] === '\\n') j += 1;
+  #|               j += 1;
+  #|             }
+  #|             i = j - 1;
+  #|             continue;
+  #|           }
+  #|           if (i + 1 < str.length) {
+  #|             i += 1;
+  #|             continue;
+  #|           }
+  #|         }
+  #|         if (quote) {
+  #|           if (ch === quote) quote = null;
+  #|           continue;
+  #|         }
+  #|         if (ch === '"' || ch === "'") {
+  #|           quote = ch;
+  #|           continue;
+  #|         }
+  #|         if (ch === '[') inAttr = true;
+  #|         if (ch === ']') inAttr = false;
+  #|         if (!inAttr) {
+  #|           if (ch === '(') depth++;
+  #|           if (ch === ')') depth = Math.max(0, depth - 1);
+  #|         }
+  #|         if (!inAttr && depth === 0) {
+  #|           if (ch === '>' || ch === '+' || ch === '~' || ch === ',' || ch === ' ') return true;
+  #|         }
+  #|       }
+  #|       return false;
+  #|     }
+  #|     const selectorGroupCache = new Map();
+  #|     const selectorCache = new Map();
+  #|     const MAX_SELECTOR_CACHE = 200;
+  #|     function cacheSet(map, key, value) {
+  #|       if (map.size > MAX_SELECTOR_CACHE) map.clear();
+  #|       map.set(key, value);
+  #|       return value;
+  #|     }
+  #|     function compileSelectorGroup(selector) {
+  #|       const key = String(selector);
+  #|       const cached = selectorGroupCache.get(key);
+  #|       if (cached) return cached;
+  #|       const trimmed = trimAsciiWhitespace(key);
+  #|       if (!trimmed) return cacheSet(selectorGroupCache, key, { simple: '', tokens: null, filter: null });
+  #|       if (!hasUnescapedCombinator(trimmed)) {
+  #|         const classTokens = parseSimpleClassSelector(trimmed);
+  #|         const tagName = parseSimpleTagSelector(trimmed);
+  #|         const idName = parseSimpleIdSelector(trimmed);
+  #|         const filter = classTokens
+  #|           ? { kind: 'class', tokens: classTokens }
+  #|           : (tagName ? { kind: 'tag', name: tagName } : (idName ? { kind: 'id', id: idName } : null));
+  #|         return cacheSet(selectorGroupCache, key, { simple: trimmed, tokens: null, filter });
+  #|       }
+  #|       const tokens = tokenizeSelector(trimmed);
+  #|       let filter = null;
+  #|       if (tokens.length > 0) {
+  #|         const rightmost = tokens[tokens.length - 1].selector;
+  #|         const classTokens = parseSimpleClassSelector(rightmost);
+  #|         const tagName = parseSimpleTagSelector(rightmost);
+  #|         const idName = parseSimpleIdSelector(rightmost);
+  #|         filter = classTokens
+  #|           ? { kind: 'class', tokens: classTokens }
+  #|           : (tagName ? { kind: 'tag', name: tagName } : (idName ? { kind: 'id', id: idName } : null));
+  #|       }
+  #|       return cacheSet(selectorGroupCache, key, { simple: null, tokens, filter });
+  #|     }
+  #|     function matchesSelectorGroupCompiled(el, compiled, scopeRoot, skipFilter) {
+  #|       if (!compiled) return false;
+  #|       if (!skipFilter && compiled.filter && !applySimpleFilter(el, compiled.filter)) return false;
+  #|       if (compiled.simple !== null && compiled.simple !== undefined) {
+  #|         if (!compiled.simple) return false;
+  #|         return matchesSimpleSelector(el, compiled.simple, scopeRoot);
+  #|       }
+  #|       const tokens = compiled.tokens;
+  #|       if (!tokens || tokens.length === 0) return false;
+  #|       let current = el;
+  #|       for (let i = tokens.length - 1; i >= 0; i--) {
+  #|         const token = tokens[i];
+  #|         if (!current || current._nodeType !== 1) return false;
+  #|         if (!matchesSimpleSelector(current, token.selector, scopeRoot)) return false;
+  #|         if (i === 0) return true;
+  #|         const comb = token.combinator || ' ';
+  #|         const prevToken = tokens[i - 1];
+  #|         if (comb === ' ') {
+  #|           let ancestor = current._parent;
+  #|           let found = null;
+  #|           while (ancestor) {
+  #|             if (ancestor._nodeType === 1 && matchesSimpleSelector(ancestor, prevToken.selector, scopeRoot)) { found = ancestor; break; }
+  #|             ancestor = ancestor._parent;
+  #|           }
+  #|           if (!found) return false;
+  #|           current = found;
+  #|           i -= 1;
+  #|           continue;
+  #|         }
+  #|         if (comb === '>') {
+  #|           const parent = current._parent;
+  #|           if (!parent || parent._nodeType !== 1 || !matchesSimpleSelector(parent, prevToken.selector, scopeRoot)) return false;
+  #|           current = parent;
+  #|           i -= 1;
+  #|           continue;
+  #|         }
+  #|         if (comb === '+') {
+  #|           let prev = current.previousElementSibling;
+  #|           if (!prev || !matchesSimpleSelector(prev, prevToken.selector, scopeRoot)) return false;
+  #|           current = prev;
+  #|           i -= 1;
+  #|           continue;
+  #|         }
+  #|         if (comb === '~') {
+  #|           let sib = current.previousElementSibling;
+  #|           let found = null;
+  #|           while (sib) {
+  #|             if (matchesSimpleSelector(sib, prevToken.selector, scopeRoot)) { found = sib; break; }
+  #|             sib = sib.previousElementSibling;
+  #|           }
+  #|           if (!found) return false;
+  #|           current = found;
+  #|           i -= 1;
+  #|           continue;
+  #|         }
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function compileSelector(selector) {
+  #|       const key = String(selector);
+  #|       const cached = selectorCache.get(key);
+  #|       if (cached) return cached;
+  #|       const groups = splitSelectorGroups(key).map(s => trimAsciiWhitespace(s)).filter(Boolean);
+  #|       const compiledGroups = groups.map(g => compileSelectorGroup(g));
+  #|       return cacheSet(selectorCache, key, { groups: compiledGroups });
+  #|     }
+  #|     function matchesSelectorGroup(el, selector, scopeRoot) {
+  #|       const compiled = compileSelectorGroup(selector);
+  #|       return matchesSelectorGroupCompiled(el, compiled, scopeRoot, false);
+  #|     }
+  #|     function splitSelectorGroups(selector) {
+  #|       const str = String(selector);
+  #|       const groups = [];
+  #|       let buf = '';
+  #|       let inAttr = false;
+  #|       let depth = 0;
+  #|       let quote = null;
+  #|       for (let i = 0; i < str.length; i++) {
+  #|         const ch = str[i];
+  #|         if (ch === '\\\\') {
+  #|           buf += ch;
+  #|           if (i + 1 < str.length) {
+  #|             let j = i + 1;
+  #|             if (isHexDigit(str[j])) {
+  #|               let count = 0;
+  #|               while (count < 6 && j < str.length && isHexDigit(str[j])) {
+  #|                 buf += str[j];
+  #|                 j += 1;
+  #|                 count += 1;
+  #|               }
+  #|               if (j < str.length && isAsciiWhitespaceChar(str[j])) {
+  #|                 if (str[j] === '\\r' && str[j + 1] === '\\n') {
+  #|                   buf += str[j];
+  #|                   buf += str[j + 1];
+  #|                   j += 1;
+  #|                 } else {
+  #|                   buf += str[j];
+  #|                 }
+  #|                 j += 1;
+  #|               }
+  #|               i = j - 1;
+  #|               continue;
+  #|             }
+  #|             buf += str[j];
+  #|             i = j;
+  #|             continue;
+  #|           }
+  #|           continue;
+  #|         }
+  #|         if (quote) {
+  #|           buf += ch;
+  #|           if (ch === quote) quote = null;
+  #|           continue;
+  #|         }
+  #|         if (ch === '"' || ch === "'") {
+  #|           quote = ch;
+  #|           buf += ch;
+  #|           continue;
+  #|         }
+  #|         if (ch === '[') inAttr = true;
+  #|         if (ch === ']') inAttr = false;
+  #|         if (!inAttr) {
+  #|           if (ch === '(') depth++;
+  #|           if (ch === ')') depth = Math.max(0, depth - 1);
+  #|         }
+  #|         if (!inAttr && depth === 0 && ch === ',') {
+  #|           groups.push(buf);
+  #|           buf = '';
+  #|           continue;
+  #|         }
+  #|         buf += ch;
+  #|       }
+  #|       if (buf !== '') groups.push(buf);
+  #|       return groups;
+  #|     }
+  #|     function matchesSelector(el, selector, scopeRoot) {
+  #|       const compiled = compileSelector(selector);
+  #|       const groups = compiled.groups || [];
+  #|       if (groups.length === 0) return false;
+  #|       for (const group of groups) {
+  #|         if (matchesSelectorGroupCompiled(el, group, scopeRoot, false)) return true;
+  #|       }
+  #|       return false;
+  #|     }
   #|
   #|     function HTMLElement() {}
   #|     HTMLElement.prototype = Object.create(Element.prototype);
@@ -2037,19 +2045,19 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     HTMLTableSectionElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLTableSectionElement.prototype.constructor = HTMLTableSectionElement;
   #|
-#|     function HTMLTemplateElement() {}
-#|     HTMLTemplateElement.prototype = Object.create(HTMLElement.prototype);
-#|     HTMLTemplateElement.prototype.constructor = HTMLTemplateElement;
-#|     Object.defineProperty(HTMLTemplateElement.prototype, 'content', {
-#|       get() {
-#|         if (!this._templateContent) {
-#|           const frag = document.createDocumentFragment();
-#|           frag._children = this._children || [];
-#|           this._templateContent = frag;
-#|         }
-#|         return this._templateContent;
-#|       }
-#|     });
+  #|     function HTMLTemplateElement() {}
+  #|     HTMLTemplateElement.prototype = Object.create(HTMLElement.prototype);
+  #|     HTMLTemplateElement.prototype.constructor = HTMLTemplateElement;
+  #|     Object.defineProperty(HTMLTemplateElement.prototype, 'content', {
+  #|       get() {
+  #|         if (!this._templateContent) {
+  #|           const frag = document.createDocumentFragment();
+  #|           frag._children = this._children || [];
+  #|           this._templateContent = frag;
+  #|         }
+  #|         return this._templateContent;
+  #|       }
+  #|     });
   #|
   #|     function HTMLTextAreaElement() {}
   #|     HTMLTextAreaElement.prototype = Object.create(HTMLElement.prototype);
@@ -2240,18 +2248,18 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       Object.setPrototypeOf(frag, DocumentFragment.prototype);
   #|       return frag;
   #|     }
-#|     DocumentFragment.prototype = Object.create(Node.prototype);
-#|     DocumentFragment.prototype.constructor = DocumentFragment;
-#|     DocumentFragment.prototype.getElementById = function(id) {
-#|       const target = String(id);
-#|       if (target === '') return null;
-#|       let found = null;
-#|       traverseTree(this, (node) => {
-#|         if (node._nodeType !== 1) return;
-#|         if (node.id === target) { found = node; return false; }
-#|       });
-#|       return found;
-#|     };
+  #|     DocumentFragment.prototype = Object.create(Node.prototype);
+  #|     DocumentFragment.prototype.constructor = DocumentFragment;
+  #|     DocumentFragment.prototype.getElementById = function(id) {
+  #|       const target = String(id);
+  #|       if (target === '') return null;
+  #|       let found = null;
+  #|       traverseTree(this, (node) => {
+  #|         if (node._nodeType !== 1) return;
+  #|         if (node.id === target) { found = node; return false; }
+  #|       });
+  #|       return found;
+  #|     };
   #|
   #|     // Text constructor
   #|     function Text(data) {
@@ -2317,11 +2325,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (node._parent) node = node._parent;
   #|           return node && node._nodeType === 9;
   #|         },
-  #|         getRootNode() {
-  #|           let node = this;
-  #|           while (node._parent) node = node._parent;
-  #|           return node;
-  #|         },
+  #|         getRootNode() { return getRootNodePublic(this); },
   #|         // Legacy _attrs getter for backwards compatibility
   #|         get _attrs() {
   #|           const obj = {};
@@ -2391,55 +2395,55 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         getAttributeNames() { return this._attrList.map(a => a.name); },
   #|         get attributes() {
   #|           const self = this;
-#|           const items = this._attrList.map(function(a) {
-#|             const attrName = a.name;
-#|             const attr = {
-#|               name: a.name,
-#|               localName: a.localName,
-#|               nodeName: a.name,
-#|               namespaceURI: a.ns,
-#|               prefix: a.prefix,
-#|               ownerElement: self,
-#|               ownerDocument: self.ownerDocument || getGlobalDocument(),
-#|               specified: true,
-#|               nodeType: 2,
-#|               _nodeType: 2
-#|             };
-#|             Object.defineProperty(attr, 'value', {
-#|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
-#|               set(v) { self.setAttribute(attrName, v); }
-#|             });
-#|             Object.defineProperty(attr, 'nodeValue', {
-#|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
-#|               set(v) { self.setAttribute(attrName, v); }
-#|             });
-#|             Object.defineProperty(attr, 'textContent', {
-#|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
-#|               set(v) { self.setAttribute(attrName, v); }
-#|             });
-#|             Object.defineProperty(attr, 'baseURI', {
-#|               get() {
-#|                 if (self && self.baseURI) return self.baseURI;
-#|                 const doc = self && self.ownerDocument ? self.ownerDocument : getGlobalDocument();
-#|                 return doc && doc.baseURI ? doc.baseURI : 'about:blank';
-#|               }
-#|             });
-#|             attr.cloneNode = function() {
-#|               const doc = this.ownerDocument || getGlobalDocument();
-#|               let cloned;
-#|               if (this.namespaceURI) {
-#|                 cloned = doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
-#|               } else {
-#|                 cloned = doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name);
-#|               }
-#|               cloned.value = this.value;
-#|               return cloned;
-#|             };
-#|             attr.isSameNode = function(other) { return this === other; };
-#|             attr.isEqualNode = function(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value && other.namespaceURI === this.namespaceURI; };
-#|             Object.setPrototypeOf(attr, Attr.prototype);
-#|             return attr;
-#|           });
+  #|           const items = this._attrList.map(function(a) {
+  #|             const attrName = a.name;
+  #|             const attr = {
+  #|               name: a.name,
+  #|               localName: a.localName,
+  #|               nodeName: a.name,
+  #|               namespaceURI: a.ns,
+  #|               prefix: a.prefix,
+  #|               ownerElement: self,
+  #|               ownerDocument: self.ownerDocument || getGlobalDocument(),
+  #|               specified: true,
+  #|               nodeType: 2,
+  #|               _nodeType: 2
+  #|             };
+  #|             Object.defineProperty(attr, 'value', {
+  #|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
+  #|               set(v) { self.setAttribute(attrName, v); }
+  #|             });
+  #|             Object.defineProperty(attr, 'nodeValue', {
+  #|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
+  #|               set(v) { self.setAttribute(attrName, v); }
+  #|             });
+  #|             Object.defineProperty(attr, 'textContent', {
+  #|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
+  #|               set(v) { self.setAttribute(attrName, v); }
+  #|             });
+  #|             Object.defineProperty(attr, 'baseURI', {
+  #|               get() {
+  #|                 if (self && self.baseURI) return self.baseURI;
+  #|                 const doc = self && self.ownerDocument ? self.ownerDocument : getGlobalDocument();
+  #|                 return doc && doc.baseURI ? doc.baseURI : 'about:blank';
+  #|               }
+  #|             });
+  #|             attr.cloneNode = function() {
+  #|               const doc = this.ownerDocument || getGlobalDocument();
+  #|               let cloned;
+  #|               if (this.namespaceURI) {
+  #|                 cloned = doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
+  #|               } else {
+  #|                 cloned = doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name);
+  #|               }
+  #|               cloned.value = this.value;
+  #|               return cloned;
+  #|             };
+  #|             attr.isSameNode = function(other) { return this === other; };
+  #|             attr.isEqualNode = function(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value && other.namespaceURI === this.namespaceURI; };
+  #|             Object.setPrototypeOf(attr, Attr.prototype);
+  #|             return attr;
+  #|           });
   #|           const namedNodeMap = {
   #|             length: items.length,
   #|             item(i) { return items[i] || null; },
@@ -2635,57 +2639,57 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
   #|         },
-#|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
-#|         set innerHTML(v) {
-#|           const html = (v === null || v === undefined) ? '' : String(v);
-#|           if (isConnectedToDocument(this)) {
-#|             const doc = getOwnerDocument(this);
-#|             if (doc) {
-#|               for (const child of this._children) {
-#|                 unindexSubtree(child, doc);
-#|               }
-#|             }
-#|           }
-#|           if (this._children && this._children.length > 0) {
-#|             for (const child of this._children) {
-#|               if (child && child._parent === this) child._parent = null;
-#|               if (child && 'parentNode' in child) child.parentNode = null;
-#|             }
-#|           }
-#|           this._children = [];
-#|           if (html === '') return;
-#|           const owner = getOwnerDocument(this) || document;
-#|           const nodes = parseHtmlFragment(html, owner);
-#|           for (const node of nodes) {
-#|             this.appendChild(node);
-#|           }
-#|         },
-#|         get outerHTML() {
-#|           const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
-#|           const inner = this.innerHTML || this._textContent;
-#|           const tag = this._tagName.toLowerCase();
-#|           return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
-#|         },
-#|         set outerHTML(v) {
-#|           const html = (v === null || v === undefined) ? '' : String(v);
-#|           const parent = this._parent;
-#|           if (!parent || typeof parent.insertBefore !== 'function' || typeof parent.removeChild !== 'function') return;
-#|           const owner = getOwnerDocument(parent) || document;
-#|           const nodes = parseHtmlFragment(html, owner);
-#|           const ref = this.nextSibling;
-#|           for (const node of nodes) {
-#|             parent.insertBefore(node, ref);
-#|           }
-#|           parent.removeChild(this);
-#|         },
+  #|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
+  #|         set innerHTML(v) {
+  #|           const html = (v === null || v === undefined) ? '' : String(v);
+  #|           if (isConnectedToDocument(this)) {
+  #|             const doc = getOwnerDocument(this);
+  #|             if (doc) {
+  #|               for (const child of this._children) {
+  #|                 unindexSubtree(child, doc);
+  #|               }
+  #|             }
+  #|           }
+  #|           if (this._children && this._children.length > 0) {
+  #|             for (const child of this._children) {
+  #|               if (child && child._parent === this) child._parent = null;
+  #|               if (child && 'parentNode' in child) child.parentNode = null;
+  #|             }
+  #|           }
+  #|           this._children = [];
+  #|           if (html === '') return;
+  #|           const owner = getOwnerDocument(this) || document;
+  #|           const nodes = parseHtmlFragment(html, owner);
+  #|           for (const node of nodes) {
+  #|             this.appendChild(node);
+  #|           }
+  #|         },
+  #|         get outerHTML() {
+  #|           const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
+  #|           const inner = this.innerHTML || this._textContent;
+  #|           const tag = this._tagName.toLowerCase();
+  #|           return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
+  #|         },
+  #|         set outerHTML(v) {
+  #|           const html = (v === null || v === undefined) ? '' : String(v);
+  #|           const parent = this._parent;
+  #|           if (!parent || typeof parent.insertBefore !== 'function' || typeof parent.removeChild !== 'function') return;
+  #|           const owner = getOwnerDocument(parent) || document;
+  #|           const nodes = parseHtmlFragment(html, owner);
+  #|           const ref = this.nextSibling;
+  #|           for (const node of nodes) {
+  #|             parent.insertBefore(node, ref);
+  #|           }
+  #|           parent.removeChild(this);
+  #|         },
   #|         appendChild(child) {
   #|           if (!isNodeLike(child)) {
   #|             throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
   #|           }
   #|           const childType = getNodeType(child);
-#|           if (childType === 9 || childType === 10) {
-#|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
-#|           }
+  #|           if (childType === 9 || childType === 10) {
+  #|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
+  #|           }
   #|           if (!isAllowedChildNodeTypeForElement(childType)) {
   #|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
   #|           }
@@ -2729,9 +2733,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             throw new DOMException('The node before which the new node is to be inserted is not a child of this node', 'NotFoundError');
   #|           }
   #|           const newType = getNodeType(newChild);
-#|           if (newType === 9 || newType === 10) {
-#|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
-#|           }
+  #|           if (newType === 9 || newType === 10) {
+  #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|           }
   #|           if (!isAllowedChildNodeTypeForElement(newType)) {
   #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|           }
@@ -2797,9 +2801,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|           if (newChild === oldChild) return oldChild;
   #|           const newType = getNodeType(newChild);
-#|           if (newType === 9 || newType === 10) {
-#|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
-#|           }
+  #|           if (newType === 9 || newType === 10) {
+  #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|           }
   #|           if (!isAllowedChildNodeTypeForElement(newType)) {
   #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|           }
@@ -3037,29 +3041,29 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           temp._textContent = html;
   #|           this.insertAdjacentElement(position, temp);
   #|         },
-#|         get shadowRoot() { return this._shadowRoot || null; },
-#|         attachShadow(init) {
-#|           if (this._shadowRoot) throw new Error('Already has shadow root');
-#|           const shadow = {
-#|             mode: init.mode,
-#|             host: this,
-#|             _children: [],
-#|             _parent: this,
-#|             appendChild(c) {
-#|               if (c && c._parent) {
-#|                 detachNode(c);
-#|               }
-#|               this._children.push(c);
-#|               if (c) {
-#|                 c._parent = this;
-#|                 if ('parentNode' in c) c.parentNode = this;
-#|               }
-#|               return c;
-#|             }
-#|           };
-#|           this._shadowRoot = shadow;
-#|           return shadow;
-#|         },
+  #|         get shadowRoot() { return this._shadowRoot || null; },
+  #|         attachShadow(init) {
+  #|           if (this._shadowRoot) throw new Error('Already has shadow root');
+  #|           const shadow = {
+  #|             mode: init.mode,
+  #|             host: this,
+  #|             _children: [],
+  #|             _parent: this,
+  #|             appendChild(c) {
+  #|               if (c && c._parent) {
+  #|                 detachNode(c);
+  #|               }
+  #|               this._children.push(c);
+  #|               if (c) {
+  #|                 c._parent = this;
+  #|                 if ('parentNode' in c) c.parentNode = this;
+  #|               }
+  #|               return c;
+  #|             }
+  #|           };
+  #|           this._shadowRoot = shadow;
+  #|           return shadow;
+  #|         },
   #|         focus() {},
   #|         blur() {},
   #|         click() {},
@@ -3397,11 +3401,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (n._parent) n = n._parent;
   #|           return n._tagName === 'HTML';
   #|         },
-  #|         getRootNode(options) {
-  #|           let n = this;
-  #|           while (n._parent) n = n._parent;
-  #|           return n;
-  #|         },
+  #|         getRootNode(options) { return getRootNodePublic(this); },
   #|         get textContent() { return this._textContent; },
   #|         set textContent(v) {
   #|           this._textContent = String(v);
@@ -3615,11 +3615,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (n._parent) n = n._parent;
   #|           return n._tagName === 'HTML';
   #|         },
-  #|         getRootNode() {
-  #|           let n = this;
-  #|           while (n._parent) n = n._parent;
-  #|           return n;
-  #|         },
+  #|         getRootNode() { return getRootNodePublic(this); },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
   #|           const siblings = getSiblingArray(this);
@@ -3744,11 +3740,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (n._parent) n = n._parent;
   #|           return n._tagName === 'HTML';
   #|         },
-  #|         getRootNode(options) {
-  #|           let n = this;
-  #|           while (n._parent) n = n._parent;
-  #|           return n;
-  #|         },
+  #|         getRootNode(options) { return getRootNodePublic(this); },
   #|         get firstChild() { return null; },
   #|         get lastChild() { return null; },
   #|         get childNodes() { return emptyNodeList; },
@@ -3888,14 +3880,14 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         set textContent(v) {
   #|           const str = (v === null || v === undefined) ? '' : String(v);
-#|           if (isConnectedToDocument(this)) {
-#|             const doc = getOwnerDocument(this);
-#|             if (doc) {
-#|               for (const child of this._children) {
-#|                 unindexSubtree(child, doc);
-#|               }
-#|             }
-#|           }
+  #|           if (isConnectedToDocument(this)) {
+  #|             const doc = getOwnerDocument(this);
+  #|             if (doc) {
+  #|               for (const child of this._children) {
+  #|                 unindexSubtree(child, doc);
+  #|               }
+  #|             }
+  #|           }
   #|           this._children.forEach(c => { c._parent = null; });
   #|           this._children = [];
   #|           if (str !== '') {
@@ -3924,10 +3916,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (!isNodeLike(child)) {
   #|             throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
   #|           }
-#|           const childType = getNodeType(child);
-#|           if (childType === 9 || childType === 10) {
-#|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
-#|           }
+  #|           const childType = getNodeType(child);
+  #|           if (childType === 9 || childType === 10) {
+  #|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
+  #|           }
   #|           if (childType === 11) {
   #|             const nodes = child._children ? child._children.slice() : [];
   #|             for (const node of nodes) this.appendChild(node);
@@ -3954,20 +3946,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (refChild !== null && refChild !== undefined && !isNodeLike(refChild)) {
   #|             throw new TypeError('Failed to execute insertBefore: parameter 2 is not of type Node');
   #|           }
-#|           if (refChild !== null && refChild !== undefined && refChild._parent !== this) {
-#|             throw new DOMException('The node before which the new node is to be inserted is not a child of this node', 'NotFoundError');
-#|           }
-#|           const newType = getNodeType(newChild);
-#|           if (newType === 9 || newType === 10) {
-#|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
-#|           }
-#|           if (refChild === null || refChild === undefined) return this.appendChild(newChild);
-#|           if (newType === 11) {
-#|             const nodes = newChild._children ? newChild._children.slice() : [];
-#|             for (const node of nodes) this.insertBefore(node, refChild);
-#|             if (newChild._children) newChild._children = [];
-#|             return newChild;
-#|           }
+  #|           if (refChild !== null && refChild !== undefined && refChild._parent !== this) {
+  #|             throw new DOMException('The node before which the new node is to be inserted is not a child of this node', 'NotFoundError');
+  #|           }
+  #|           const newType = getNodeType(newChild);
+  #|           if (newType === 9 || newType === 10) {
+  #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|           }
+  #|           if (refChild === null || refChild === undefined) return this.appendChild(newChild);
+  #|           if (newType === 11) {
+  #|             const nodes = newChild._children ? newChild._children.slice() : [];
+  #|             for (const node of nodes) this.insertBefore(node, refChild);
+  #|             if (newChild._children) newChild._children = [];
+  #|             return newChild;
+  #|           }
   #|           let actualRef = refChild;
   #|           if (refChild === newChild) {
   #|             actualRef = newChild.nextSibling;
@@ -4017,10 +4009,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             throw new DOMException('The node to be replaced is not a child of this node', 'NotFoundError');
   #|           }
   #|           if (newChild === oldChild) return oldChild;
-#|           const newType = getNodeType(newChild);
-#|           if (newType === 9 || newType === 10) {
-#|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
-#|           }
+  #|           const newType = getNodeType(newChild);
+  #|           if (newType === 9 || newType === 10) {
+  #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|           }
   #|           if (newType === 11) {
   #|             const ref = oldChild.nextSibling;
   #|             const nodes = newChild._children ? newChild._children.slice() : [];
@@ -4243,15 +4235,24 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       get nextSibling() { return null; },
   #|       get previousSibling() { return null; },
   #|       get URL() {
-  #|         if (typeof location !== 'undefined') return String(location);
+  #|         if (typeof location !== 'undefined') {
+  #|           if (location && typeof location.href === 'string') return location.href;
+  #|           return String(location);
+  #|         }
   #|         return 'about:blank';
   #|       },
   #|       get documentURI() {
-  #|         if (typeof location !== 'undefined') return String(location);
+  #|         if (typeof location !== 'undefined') {
+  #|           if (location && typeof location.href === 'string') return location.href;
+  #|           return String(location);
+  #|         }
   #|         return 'about:blank';
   #|       },
   #|       get baseURI() {
-  #|         if (typeof location !== 'undefined') return String(location);
+  #|         if (typeof location !== 'undefined') {
+  #|           if (location && typeof location.href === 'string') return location.href;
+  #|           return String(location);
+  #|         }
   #|         return 'about:blank';
   #|       },
   #|       get compatMode() { return 'CSS1Compat'; },
@@ -4278,7 +4279,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                 if (name.indexOf('>') >= 0) {
   #|                   throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
   #|                 }
-  #|                 if (/\s/.test(name)) {
+  #|                 if (/\\s/.test(name)) {
   #|                   throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
   #|                 }
   #|                 if (name.indexOf('::') >= 0) {
@@ -4306,7 +4307,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   }
   #|                   for (let i = 0; i < localName.length; i++) {
   #|                     const ch = localName[i];
-  #|                     if (ch >= '\u0080') continue;
+  #|                     if (ch >= '\\u0080') continue;
   #|                     if (!/[A-Za-z0-9._-]/.test(ch)) {
   #|                       throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
   #|                     }
@@ -5207,7 +5208,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         ev._isTrusted = false;
   #|         return ev;
   #|       },
-#|       contains(node) { return nodeContains(this, node); },
+  #|       contains(node) { return nodeContains(this, node); },
   #|       createElementNS(ns, qualifiedName) {
   #|         const normalizedNs = ns === undefined || ns === '' ? null : ns;
   #|         const name = String(qualifiedName);
@@ -5315,10 +5316,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         }
   #|         for (let i = 0; i < t.length; i++) {
   #|           const ch = t[i];
-  #|           if (ch === '\u00D7' || ch === '\\' || ch === '\f') {
+  #|           if (ch === '\\u00D7' || ch === '\\\\' || ch === '\\f') {
   #|             throw new DOMException('Invalid character in target', 'InvalidCharacterError');
   #|           }
-  #|           if (i > 0 && ch === '\u00B7') continue;
+  #|           if (i > 0 && ch === '\\u00B7') continue;
   #|           if (!/[A-Za-z0-9._:-]/.test(ch)) {
   #|             throw new DOMException('Invalid character in target', 'InvalidCharacterError');
   #|           }
@@ -6089,7 +6090,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     DOMParser.prototype.parseFromString = function(str, mime) {
   #|       const type = String(mime || 'application/xml');
   #|       const text = str === undefined || str === null ? '' : String(str);
-  #|       const tagMatch = text.match(/<\s*([A-Za-z_][A-Za-z0-9:._-]*)/);
+  #|       const tagMatch = text.match(/<\\s*([A-Za-z_][A-Za-z0-9:._-]*)/);
   #|       let doc;
   #|       if (type === 'text/html') {
   #|         doc = document.implementation.createHTMLDocument('');
@@ -6109,6 +6110,16 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     _doctype.parentNode = document;
   #|   `;
   #|
+  #|   const sanitizeErrorText = (value) => String(value).replace(/"/g, "'");
+  #|   const buildErrorMessage = (err) => {
+  #|     const msg = err && err.message ? err.message : String(err);
+  #|     const stack = err && err.stack ? err.stack : '';
+  #|     const head = String(code).slice(0, 400).replace(/"/g, "'");
+  #|     const tail = String(code).slice(-200).replace(/"/g, "'");
+  #|     return sanitizeErrorText(msg) + (stack ? ("\n" + sanitizeErrorText(stack)) : '') +
+  #|       "\n[code head]\n" + head + "\n[code tail]\n" + tail;
+  #|   };
+  #|
   #|   // Use QuickJS if initialized, otherwise use Node.js vm
   #|   if (globalThis.__quickjs_initialized && globalThis.__quickjs && !globalThis.__use_nodejs_vm) {
   #|     // QuickJS execution
@@ -6123,7 +6134,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         vm.dispose();
   #|         return JSON.stringify({
   #|           success: false, value: '', logs: [], domOps: [],
-  #|           error: String(errorStr)
+  #|           error: sanitizeErrorText(errorStr)
   #|         });
   #|       }
   #|       const resultStr = vm.dump(result.value);
@@ -6138,7 +6149,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       try { vm.dispose(); } catch {}
   #|       return JSON.stringify({
   #|         success: false, value: '', logs: [], domOps: [],
-  #|         error: e.message || String(e)
+  #|         error: buildErrorMessage(e)
   #|       });
   #|     }
   #|   } else {
@@ -6168,7 +6179,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       return JSON.stringify({
   #|         success: false, value: '',
   #|         logs, domOps,
-  #|         error: e.message || String(e)
+  #|         error: buildErrorMessage(e)
   #|       });
   #|     }
   #|   }
