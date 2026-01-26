@@ -463,11 +463,11 @@ fn compute_grid_layout_internal(
   }
 
   // Expand repeat() in templates early (needed for correct column/row counts)
-  let expanded_columns = expand_track_templates(
+  let (expanded_columns, auto_fit_columns) = expand_track_templates(
     style.grid_template_columns,
     container_width_for_expansion,
   )
-  let expanded_rows = expand_track_templates(
+  let (expanded_rows, auto_fit_rows) = expand_track_templates(
     style.grid_template_rows,
     container_height_for_expansion,
   )
@@ -523,6 +523,13 @@ fn compute_grid_layout_internal(
   let total_row_count = max_int(
     explicit_row_count + row_offset,
     row_max_idx + row_offset,
+  )
+  let collapse_columns = compute_auto_fit_collapse(
+    children, adjusted_placements, auto_fit_columns, col_offset, total_column_count,
+    true,
+  )
+  let collapse_rows = compute_auto_fit_collapse(
+    children, adjusted_placements, auto_fit_rows, row_offset, total_row_count, false,
   )
 
   // Resolve container size (preliminary for percentage calculations)
@@ -731,6 +738,27 @@ fn compute_grid_layout_internal(
     intrinsic_cache,
     dispatch,
   )
+  let inline_is_min_content = if expanded_columns.length() > 0 {
+    let mut all_min = true
+    for t in expanded_columns {
+      match t {
+        @types.TrackSizingFunction::MinContent => ()
+        _ => all_min = false
+      }
+    }
+    all_min
+  } else {
+    false
+  }
+  let row_max_content_for_tracks = if inline_is_min_content {
+    let adjusted : Array[Double] = []
+    for v in row_min_content {
+      adjusted.push(v)
+    }
+    adjusted
+  } else {
+    row_max_content
+  }
 
   // Determine if container has auto/intrinsic sizing (needs content-based width/height)
   let width_is_auto = match style.width {
@@ -791,12 +819,23 @@ fn compute_grid_layout_internal(
     preliminary_content_height,
     row_gap,
     row_min_content,
-    row_max_content,
+    row_max_content_for_tracks,
     row_offset,
     total_row_count,
     height_is_definite, // Distribute remaining space if height is definite
     height_is_min_content, // Use min-content sizing (fr tracks = 0)
   )
+  if is_vertical_writing {
+    adjust_block_tracks_for_measured_items(
+      children, adjusted_placements, row_tracks, column_tracks, column_gap, true,
+    )
+  } else {
+    adjust_block_tracks_for_measured_items(
+      children, adjusted_placements, column_tracks, row_tracks, row_gap, false,
+    )
+  }
+  collapse_auto_fit_tracks(column_tracks, collapse_columns, column_gap)
+  collapse_auto_fit_tracks(row_tracks, collapse_rows, row_gap)
 
   // Check if we need baseline alignment
   let needs_baseline = style.align_items == @types.Baseline
@@ -1381,11 +1420,8 @@ fn compute_grid_layout_internal(
       @types.Auto => true
       _ => false
     }
-    let has_horizontal_auto_margin = margin_left_auto || margin_right_auto
     let has_vertical_auto_margin = margin_top_auto || margin_bottom_auto
-    let should_stretch_width = width_is_auto &&
-      justify == @types.Stretch &&
-      not(has_horizontal_auto_margin)
+    let should_stretch_width = width_is_auto && justify == @types.Stretch
     let should_stretch_height = height_is_auto &&
       align == @types.Stretch &&
       not(has_vertical_auto_margin)
@@ -1599,6 +1635,13 @@ fn apply_content_alignment(
   let total_track_size = last_track.position + last_track.size
   let free_space = container_size - total_track_size
   let track_count = tracks.length()
+  let effective_indices : Array[Int] = []
+  for i = 0; i < track_count; i = i + 1 {
+    if tracks[i].size > 0.0 {
+      effective_indices.push(i)
+    }
+  }
+  let effective_count = effective_indices.length()
   match alignment {
     @types.Start | @types.FlexStart | @types.Baseline =>
       // Start/FlexStart: tracks at start, no adjustment
@@ -1661,29 +1704,31 @@ fn apply_content_alignment(
       }
     }
     @types.SpaceBetween => {
-      if track_count <= 1 || free_space <= 0.0 {
+      if effective_count <= 1 || free_space <= 0.0 {
         return
       }
       // Distribute free_space between tracks
-      let gap_addition = free_space / (track_count - 1).to_double()
-      for i = 1; i < track_count; i = i + 1 {
+      let gap_addition = free_space / (effective_count - 1).to_double()
+      for j = 0; j < effective_count; j = j + 1 {
+        let i = effective_indices[j]
         let track = tracks[i]
         tracks[i] = {
-          position: track.position + gap_addition * i.to_double(),
+          position: track.position + gap_addition * j.to_double(),
           size: track.size,
           stretchable: track.stretchable,
         }
       }
     }
     @types.SpaceAround => {
-      if free_space <= 0.0 {
+      if free_space <= 0.0 || effective_count == 0 {
         return
       }
       // Each track gets equal space on both sides
-      let space_per_track = free_space / track_count.to_double()
-      for i = 0; i < track_count; i = i + 1 {
+      let space_per_track = free_space / effective_count.to_double()
+      for j = 0; j < effective_count; j = j + 1 {
+        let i = effective_indices[j]
         let track = tracks[i]
-        let offset = space_per_track * (i.to_double() + 0.5)
+        let offset = space_per_track * (j.to_double() + 0.5)
         tracks[i] = {
           position: track.position + offset,
           size: track.size,
@@ -1692,15 +1737,16 @@ fn apply_content_alignment(
       }
     }
     @types.SpaceEvenly => {
-      if free_space <= 0.0 {
+      if free_space <= 0.0 || effective_count == 0 {
         return
       }
       // Equal space between and around all tracks
-      let gap_count = track_count + 1
+      let gap_count = effective_count + 1
       let space_per_gap = free_space / gap_count.to_double()
-      for i = 0; i < track_count; i = i + 1 {
+      for j = 0; j < effective_count; j = j + 1 {
+        let i = effective_indices[j]
         let track = tracks[i]
-        let offset = space_per_gap * (i + 1).to_double()
+        let offset = space_per_gap * (j + 1).to_double()
         tracks[i] = {
           position: track.position + offset,
           size: track.size,
@@ -1872,15 +1918,14 @@ fn calculate_track_intrinsic_sizes(
       for t = start; t < end; t = t + 1 {
         min_sum = min_sum + min_sizes[t]
       }
+      let min_extra = min_content_span - min_sum
 
       // Distribute to min_sizes based on track type
-      // min-content tracks: need min_content_contrib
-      // auto/max-content/fit-content tracks: need minimum_contrib (respects overflow)
-      // Fr tracks: distribute proportionally
-      if all_fr && total_fr_value > 0.0 {
-        // All Fr tracks: distribute min_content proportionally
-        let min_extra = min_content_span - min_sum
-        if min_extra > 0.0 {
+      // min-content tracks: fixed at min-content unless no other tracks can grow
+      // auto/max-content/fit-content/fr tracks: receive extra space
+      if min_extra > 0.0 {
+        if all_fr && total_fr_value > 0.0 {
+          // All Fr tracks: distribute min_content proportionally
           for t = start; t < end; t = t + 1 {
             match track_types[t] {
               @types.TrackSizingFunction::Fr(fr) => {
@@ -1890,45 +1935,58 @@ fn calculate_track_intrinsic_sizes(
               _ => ()
             }
           }
-        }
-      } else {
-        // Mixed tracks: distribute based on what each track type needs
-        // When overflow:hidden, min-content tracks get min_content_contrib, auto tracks get 0
-        // When not overflow:hidden (minimum_contrib == min_content_contrib), distribute evenly
-        let has_overflow_hidden = minimum_contrib < min_content_contrib
-        if has_overflow_hidden {
-          // With overflow:hidden: only min-content tracks get contribution
-          // auto/max-content/fit-content tracks get 0 (their minimum is 0 due to overflow)
-          if min_content_track_count > 0 {
-            let per_min_content_track = min_content_span /
-              min_content_track_count.to_double()
-            for t = start; t < end; t = t + 1 {
-              let track_contrib = match track_types[t] {
-                @types.TrackSizingFunction::MinContent => per_min_content_track
-                _ => 0.0
-              }
-              if track_contrib > min_sizes[t] {
-                min_sizes[t] = track_contrib
-              }
-            }
-          }
-          // If no min-content tracks, min_sizes stay at 0 (or their previous values)
         } else {
-          // Without overflow:hidden: distribute evenly
-          let intrinsic_track_count = min_content_track_count + auto_track_count
-          let per_track = if intrinsic_track_count > 0 {
-            min_content_span / intrinsic_track_count.to_double()
-          } else {
-            0.0
-          }
-          for t = start; t < end; t = t + 1 {
-            let track_contrib = match track_types[t] {
-              @types.TrackSizingFunction::Length(_)
-              | @types.TrackSizingFunction::Percent(_) => 0.0
-              _ => per_track
+          // Mixed tracks: distribute based on what each track type needs
+          let has_overflow_hidden = minimum_contrib < min_content_contrib
+          if has_overflow_hidden {
+            // With overflow:hidden: only min-content tracks get contribution
+            if min_content_track_count > 0 {
+              let per_min_content_track = min_extra /
+                min_content_track_count.to_double()
+              for t = start; t < end; t = t + 1 {
+                match track_types[t] {
+                  @types.TrackSizingFunction::MinContent =>
+                    min_sizes[t] = min_sizes[t] + per_min_content_track
+                  _ => ()
+                }
+              }
             }
-            if track_contrib > min_sizes[t] {
-              min_sizes[t] = track_contrib
+          } else {
+            // Without overflow:hidden: distribute to non-min-content intrinsic tracks
+            let mut growable_weight = 0.0
+            for t = start; t < end; t = t + 1 {
+              match track_types[t] {
+                @types.TrackSizingFunction::Length(_)
+                | @types.TrackSizingFunction::Percent(_) => ()
+                @types.TrackSizingFunction::MinContent => ()
+                @types.TrackSizingFunction::Fr(fr) =>
+                  growable_weight = growable_weight + fr
+                _ => growable_weight = growable_weight + 1.0
+              }
+            }
+            if growable_weight > 0.0 {
+              for t = start; t < end; t = t + 1 {
+                match track_types[t] {
+                  @types.TrackSizingFunction::Length(_)
+                  | @types.TrackSizingFunction::Percent(_) => ()
+                  @types.TrackSizingFunction::MinContent => ()
+                  @types.TrackSizingFunction::Fr(fr) =>
+                    min_sizes[t] = min_sizes[t] +
+                      min_extra * fr / growable_weight
+                  _ => min_sizes[t] = min_sizes[t] + min_extra / growable_weight
+                }
+              }
+            } else if min_content_track_count > 0 {
+              // Fallback: distribute to min-content tracks if nothing else can grow
+              let per_min_content_track = min_extra /
+                min_content_track_count.to_double()
+              for t = start; t < end; t = t + 1 {
+                match track_types[t] {
+                  @types.TrackSizingFunction::MinContent =>
+                    min_sizes[t] = min_sizes[t] + per_min_content_track
+                  _ => ()
+                }
+              }
             }
           }
         }
@@ -2084,8 +2142,19 @@ fn calculate_item_intrinsic_sizes(
           match child.style.display {
             @types.Grid => {
               add_box = false
-              // Compute grid layout for min-content (with 0 available width)
-              let min_layout = compute_grid_layout(child, 0.0, 1.0e10, dispatch)
+              // Compute grid layout for min-content with definite width (shrink to min)
+              let min_layout = compute_grid_layout_internal(
+                child,
+                0.0,
+                1.0e10,
+                true,
+                false,
+                @types.MaxContent,
+                false,
+                0.0,
+                1.0e10,
+                dispatch,
+              )
               // Compute grid layout for max-content (with large available width)
               let max_layout = compute_grid_layout(
                 child, 1.0e10, 1.0e10, dispatch,
@@ -2331,35 +2400,58 @@ fn calculate_item_intrinsic_sizes(
           match child.style.display {
             @types.Grid => {
               add_box = false
-              // Compute grid layout for min-content (with 0 available height)
-              // Use container_width for width to correctly resolve percent padding
-              // For auto/intrinsic widths, subtract fixed margins to avoid inflating
-              // the intrinsic height with margin space.
-              let width_for_intrinsic = match child.style.width {
+              // Determine intrinsic widths first, then compute heights at those widths
+              let (min_width, max_width) = match child.style.width {
+                @types.Length(w) => (w, w)
+                @types.Percent(p) => {
+                  let w = p * container_width
+                  (w, w)
+                }
                 @types.Auto
                 | @types.MinContent
                 | @types.MaxContent
                 | @types.FitContent(_) => {
-                  let ml = match child.style.margin.left {
-                    @types.Length(v) => v
-                    @types.Percent(p) => p * margin_percent_base
-                    _ => 0.0
-                  }
-                  let mr = match child.style.margin.right {
-                    @types.Length(v) => v
-                    @types.Percent(p) => p * margin_percent_base
-                    _ => 0.0
-                  }
-                  max(0.0, container_width - ml - mr)
+                  let min_layout = compute_grid_layout_internal(
+                    child,
+                    0.0,
+                    1.0e10,
+                    true,
+                    false,
+                    @types.MaxContent,
+                    false,
+                    0.0,
+                    1.0e10,
+                    dispatch,
+                  )
+                  let max_layout = compute_grid_layout(
+                    child, 1.0e10, 1.0e10, dispatch,
+                  )
+                  (min_layout.width, max_layout.width)
                 }
-                _ => container_width
               }
-              let min_layout = compute_grid_layout(
-                child, width_for_intrinsic, 0.0, dispatch,
+              let min_layout = compute_grid_layout_internal(
+                child,
+                min_width,
+                0.0,
+                true,
+                false,
+                @types.MaxContent,
+                false,
+                min_width,
+                0.0,
+                dispatch,
               )
-              // Compute grid layout for max-content (with large available height)
-              let max_layout = compute_grid_layout(
-                child, width_for_intrinsic, 1.0e10, dispatch,
+              let max_layout = compute_grid_layout_internal(
+                child,
+                max_width,
+                1.0e10,
+                true,
+                false,
+                @types.MaxContent,
+                false,
+                max_width,
+                1.0e10,
+                dispatch,
               )
               (min_layout.height, max_layout.height)
             }
@@ -2559,7 +2651,7 @@ fn single_to_track(
 fn expand_track_templates(
   templates : Array[@types.TrackSizingFunction],
   available_size : Double,
-) -> Array[@types.TrackSizingFunction] {
+) -> (Array[@types.TrackSizingFunction], Array[Bool]) {
   // First, calculate fixed track sizes (non-repeat tracks)
   let mut fixed_size = 0.0
   for i = 0; i < templates.length(); i = i + 1 {
@@ -2573,6 +2665,7 @@ fn expand_track_templates(
   }
   let remaining_size = available_size - fixed_size
   let result : Array[@types.TrackSizingFunction] = []
+  let auto_fit_mask : Array[Bool] = []
   for i = 0; i < templates.length(); i = i + 1 {
     match templates[i] {
       @types.Repeat(repeat_count, tracks) => {
@@ -2607,17 +2700,25 @@ fn expand_track_templates(
             }
           }
         }
+        let is_auto_fit = match repeat_count {
+          @types.AutoFit => true
+          _ => false
+        }
         // Expand the tracks
         for r = 0; r < repetitions; r = r + 1 {
           for t = 0; t < tracks.length(); t = t + 1 {
             result.push(single_to_track(tracks[t]))
+            auto_fit_mask.push(is_auto_fit)
           }
         }
       }
-      other => result.push(other)
+      other => {
+        result.push(other)
+        auto_fit_mask.push(false)
+      }
     }
   }
-  result
+  (result, auto_fit_mask)
 }
 
 ///|
@@ -3019,21 +3120,39 @@ fn resolve_tracks_with_implicit(
     //           2) MinMax tracks shrink second (to their min)
     let mut remaining_overflow = total_size - available_size
 
-    // Step 1: Shrink Auto tracks to min-content
-    for i = 0; i < track_count; i = i + 1 {
-      if remaining_overflow <= 0.0 {
-        break
+    // Step 1: Shrink Auto tracks to min-content proportionally
+    if remaining_overflow > 0.0 {
+      let mut total_shrinkable = 0.0
+      for i = 0; i < track_count; i = i + 1 {
+        match all_templates[i] {
+          @types.TrackSizingFunction::Auto => {
+            let shrinkable = base_sizes[i] - min_sizes[i]
+            if shrinkable > 0.0 {
+              total_shrinkable = total_shrinkable + shrinkable
+            }
+          }
+          _ => ()
+        }
       }
-      match all_templates[i] {
-        @types.TrackSizingFunction::Auto => {
-          let shrinkable = base_sizes[i] - min_sizes[i]
-          if shrinkable > 0.0 {
-            let shrink = min_double(shrinkable, remaining_overflow)
-            base_sizes[i] = base_sizes[i] - shrink
-            remaining_overflow = remaining_overflow - shrink
+      if total_shrinkable > 0.0 {
+        let shrink_ratio = min_double(
+          1.0,
+          remaining_overflow / total_shrinkable,
+        )
+        for i = 0; i < track_count; i = i + 1 {
+          match all_templates[i] {
+            @types.TrackSizingFunction::Auto => {
+              let shrinkable = base_sizes[i] - min_sizes[i]
+              if shrinkable > 0.0 {
+                let shrink = shrinkable * shrink_ratio
+                base_sizes[i] = base_sizes[i] - shrink
+              }
+            }
+            _ => ()
           }
         }
-        _ => ()
+        remaining_overflow = remaining_overflow -
+          total_shrinkable * shrink_ratio
       }
     }
 
@@ -3606,6 +3725,194 @@ fn get_span_bounds(
 }
 
 ///|
+/// Ensure block-axis tracks can accommodate measured items with constrained inline size
+fn adjust_block_tracks_for_measured_items(
+  children : Array[@node.Node],
+  placements : Array[GridItemPlacement],
+  inline_tracks : Array[GridTrack],
+  block_tracks : Array[GridTrack],
+  block_gap : Double,
+  is_vertical_writing : Bool,
+) -> Unit {
+  if block_tracks.length() == 0 {
+    return
+  }
+  let required_sizes : Array[Double] = []
+  for t in block_tracks {
+    required_sizes.push(t.size)
+  }
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.children.length() != 0 {
+      continue
+    }
+    match child.measure {
+      None => continue
+      Some(_) => ()
+    }
+    let placement = placements[i]
+    let block_start = if is_vertical_writing {
+      placement.column_start
+    } else {
+      placement.row_start
+    }
+    let block_end = if is_vertical_writing {
+      placement.column_end
+    } else {
+      placement.row_end
+    }
+    if block_end - block_start != 1 {
+      continue
+    }
+    let inline_start = if is_vertical_writing {
+      placement.row_start
+    } else {
+      placement.column_start
+    }
+    let inline_end = if is_vertical_writing {
+      placement.row_end
+    } else {
+      placement.column_end
+    }
+    let (_, inline_size) = get_span_bounds(
+      inline_tracks, inline_start, inline_end,
+    )
+    if inline_size <= 0.0 {
+      continue
+    }
+    let intrinsic = get_intrinsic_from_measure(child, 0.0, 0.0)
+    if intrinsic.max_width <= 0.0 || intrinsic.max_height <= 0.0 {
+      continue
+    }
+    let scaled_height = if inline_size < intrinsic.max_width {
+      let area = intrinsic.max_width * intrinsic.max_height
+      let scaled = area / inline_size
+      if scaled < intrinsic.min_height {
+        intrinsic.min_height
+      } else {
+        scaled
+      }
+    } else {
+      intrinsic.max_height
+    }
+    let (margin_start, margin_end) = if is_vertical_writing {
+      (
+        resolve_dimension(child.style.margin.left, inline_size, 0.0),
+        resolve_dimension(child.style.margin.right, inline_size, 0.0),
+      )
+    } else {
+      (
+        resolve_dimension(child.style.margin.top, inline_size, 0.0),
+        resolve_dimension(child.style.margin.bottom, inline_size, 0.0),
+      )
+    }
+    let required = scaled_height + margin_start + margin_end
+    if required > required_sizes[block_start] {
+      required_sizes[block_start] = required
+    }
+  }
+  let mut pos = 0.0
+  for i = 0; i < block_tracks.length(); i = i + 1 {
+    let size = required_sizes[i]
+    block_tracks[i] = {
+      position: pos,
+      size,
+      stretchable: block_tracks[i].stretchable,
+    }
+    pos = pos + size + block_gap
+  }
+}
+
+///|
+/// Mark empty auto-fit tracks for collapse
+fn compute_auto_fit_collapse(
+  children : Array[@node.Node],
+  placements : Array[GridItemPlacement],
+  auto_fit_mask : Array[Bool],
+  offset : Int,
+  total_count : Int,
+  is_column : Bool,
+) -> Array[Bool] {
+  let collapse : Array[Bool] = []
+  for _i = 0; _i < total_count; _i = _i + 1 {
+    collapse.push(false)
+  }
+  let mut has_auto_fit = false
+  for v in auto_fit_mask {
+    if v {
+      has_auto_fit = true
+      break
+    }
+  }
+  if not(has_auto_fit) {
+    return collapse
+  }
+  let has_item : Array[Bool] = []
+  for _i = 0; _i < total_count; _i = _i + 1 {
+    has_item.push(false)
+  }
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    let placement = placements[i]
+    let (start, end) = if is_column {
+      (placement.column_start, placement.column_end)
+    } else {
+      (placement.row_start, placement.row_end)
+    }
+    for t = start; t < end; t = t + 1 {
+      if t >= 0 && t < total_count {
+        has_item[t] = true
+      }
+    }
+  }
+  for i = 0; i < auto_fit_mask.length(); i = i + 1 {
+    if auto_fit_mask[i] {
+      let idx = offset + i
+      if idx >= 0 && idx < total_count && not(has_item[idx]) {
+        collapse[idx] = true
+      }
+    }
+  }
+  collapse
+}
+
+///|
+/// Collapse auto-fit tracks by zeroing size and removing gaps around them
+fn collapse_auto_fit_tracks(
+  tracks : Array[GridTrack],
+  collapse : Array[Bool],
+  gap : Double,
+) -> Unit {
+  if tracks.length() == 0 {
+    return
+  }
+  let mut pos = 0.0
+  for i = 0; i < tracks.length(); i = i + 1 {
+    let should_collapse = if i < collapse.length() {
+      collapse[i]
+    } else {
+      false
+    }
+    let size = if should_collapse { 0.0 } else { tracks[i].size }
+    let stretchable = if should_collapse {
+      false
+    } else {
+      tracks[i].stretchable
+    }
+    tracks[i] = { position: pos, size, stretchable }
+    if not(should_collapse) {
+      pos = pos + size + gap
+    }
+  }
+}
+
+///|
 /// Compute layout for a child element
 fn compute_child_layout(
   child : @node.Node,
@@ -4035,8 +4342,6 @@ fn apply_alignment(
     _ => true
   }
 
-  // CSS spec: auto margins override stretch alignment
-  let has_horizontal_auto_margin = margin_left_is_auto || margin_right_is_auto
   // Calculate item size - don't clamp to cell size, allow overflow
   // If aspect_ratio derived a dimension, don't stretch that dimension
   // Also respect max constraints - if max is set and smaller than available, use computed size
@@ -4050,9 +4355,8 @@ fn apply_alignment(
         child_layout.width < available_width {
         // aspect_ratio with max_width constraint, width was derived from height
         child_layout.width
-      } else if justify == @types.Alignment::Stretch &&
-        not(has_horizontal_auto_margin) {
-        // Stretch only if no auto margins
+      } else if justify == @types.Alignment::Stretch {
+        // Stretch to fill available width
         available_width
       } else {
         child_layout.width

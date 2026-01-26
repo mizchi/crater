@@ -1512,7 +1512,17 @@ fn compute_with_collapse(
         // the available space. Flex items are different - they get their final height
         // from their flex parent, which passes it as available_height.
         let child_height_for_ctx : Double? = match child.style.height {
-          @types.Auto => None
+          @types.Auto =>
+            if (
+                child.style.display == @types.Flex ||
+                child.style.display == @types.InlineFlex
+              ) &&
+              child.style.flex_grow > 0.0 {
+              // Taffy compat: allow flex containers with grow to fill available height.
+              child_available_height
+            } else {
+              None
+            }
           _ => child_available_height
         }
         let child_ctx : @types.LayoutContext = {
