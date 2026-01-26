@@ -1935,6 +1935,106 @@ extern "js" fn js_evaluate_expression(
   #| }
 
 ///|
+/// FFI: Evaluate expression and return a fully serialized BiDi response (fast path)
+extern "js" fn js_evaluate_expression_fast(
+  id : Int,
+  expression : String,
+) -> String =
+  #| (id, expression) => {
+  #|   function toBidiValue(value) {
+  #|     if (value === undefined) return { type: "undefined" };
+  #|     if (value === null) return { type: "null" };
+  #|     const type = typeof value;
+  #|     if (type === "boolean") return { type: "boolean", value };
+  #|     if (type === "number") {
+  #|       if (Number.isNaN(value)) return { type: "number", value: "NaN" };
+  #|       if (!Number.isFinite(value)) return { type: "number", value: value > 0 ? "Infinity" : "-Infinity" };
+  #|       if (Object.is(value, -0)) return { type: "number", value: "-0" };
+  #|       return { type: "number", value };
+  #|     }
+  #|     if (type === "string") return { type: "string", value };
+  #|     if (type === "bigint") return { type: "bigint", value: String(value) };
+  #|     if (type === "symbol") return { type: "symbol" };
+  #|     if (type === "function") return { type: "function" };
+  #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
+  #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
+  #|     if (value instanceof Error) return { type: "error" };
+  #|     if (value instanceof Promise) return { type: "promise" };
+  #|     if (value instanceof Map) {
+  #|       const entries = [];
+  #|       for (const [k, v] of value) {
+  #|         entries.push([typeof k === "string" ? k : toBidiValue(k), toBidiValue(v)]);
+  #|       }
+  #|       return { type: "map", value: entries };
+  #|     }
+  #|     if (value instanceof Set) return { type: "set", value: Array.from(value).map(toBidiValue) };
+  #|     if (value instanceof WeakMap) return { type: "weakmap" };
+  #|     if (value instanceof WeakSet) return { type: "weakset" };
+  #|     if (ArrayBuffer.isView(value)) return { type: "typedarray" };
+  #|     if (value instanceof ArrayBuffer) return { type: "arraybuffer" };
+  #|     if (Array.isArray(value)) return { type: "array", value: value.map(toBidiValue) };
+  #|     if (value && value.constructor === Object) {
+  #|       const entries = Object.entries(value).map(([k, v]) => [k, toBidiValue(v)]);
+  #|       return { type: "object", value: entries };
+  #|     }
+  #|     return { type: "object" };
+  #|   }
+  #|
+  #|   const realm = "default-realm";
+  #|   const wrapResult = (valueJson) =>
+  #|     `{"id":${id},"type":"success","result":{"realm":${JSON.stringify(realm)},"result":${valueJson}}}`;
+  #|   try {
+  #|     const result = (0, eval)(expression);
+  #|     if (result === undefined) return wrapResult('{"type":"undefined"}');
+  #|     if (result === null) return wrapResult('{"type":"null"}');
+  #|     const type = typeof result;
+  #|     if (type === "boolean") {
+  #|       return wrapResult(`{"type":"boolean","value":${result}}`);
+  #|     }
+  #|     if (type === "number") {
+  #|       if (Number.isNaN(result)) {
+  #|         return wrapResult('{"type":"number","value":"NaN"}');
+  #|       }
+  #|       if (!Number.isFinite(result)) {
+  #|         return wrapResult(
+  #|           `{"type":"number","value":"${result > 0 ? "Infinity" : "-Infinity"}"}`
+  #|         );
+  #|       }
+  #|       if (Object.is(result, -0)) {
+  #|         return wrapResult('{"type":"number","value":"-0"}');
+  #|       }
+  #|       return wrapResult(`{"type":"number","value":${result}}`);
+  #|     }
+  #|     if (type === "string") {
+  #|       return wrapResult(
+  #|         `{"type":"string","value":${JSON.stringify(result)}}`
+  #|       );
+  #|     }
+  #|     if (type === "bigint") {
+  #|       return wrapResult(
+  #|         `{"type":"bigint","value":${JSON.stringify(String(result))}}`
+  #|       );
+  #|     }
+  #|     if (type === "symbol") return wrapResult('{"type":"symbol"}');
+  #|     if (type === "function") return wrapResult('{"type":"function"}');
+  #|     const payload = { realm, result: toBidiValue(result) };
+  #|     return JSON.stringify({ id, type: "success", result: payload });
+  #|   } catch (e) {
+  #|     const payload = {
+  #|       realm,
+  #|       exceptionDetails: {
+  #|         columnNumber: 0,
+  #|         lineNumber: 0,
+  #|         text: String(e),
+  #|         exception: { type: "error", value: { type: String(e.name || "Error") } },
+  #|         stackTrace: { callFrames: [] }
+  #|       }
+  #|     };
+  #|     return JSON.stringify({ id, type: "success", result: payload });
+  #|   }
+  #| }
+
+///|
 /// Evaluate JavaScript expression and return result as JSON (sync)
 fn evaluate_js_with_console(
   expression : String,
