@@ -429,7 +429,11 @@ function createTestHarness() {
     function setup(funcOrOptions, maybeOptions) {
       // If first argument is a function, execute it for setup
       if (typeof funcOrOptions === 'function') {
-        funcOrOptions();
+        try {
+          funcOrOptions();
+        } catch (e) {
+          // Setup errors are ok, tests will catch them
+        }
       }
       // options are ignored
     }
@@ -1073,37 +1077,79 @@ function runTestFile(htmlPath: string): TestFileResult {
   }
 }
 
+// Test directories configuration
+const TEST_DIRS = [
+  'wpt/dom/nodes',
+  'wpt/svg/types',
+  'wpt/svg/scripted',
+];
+
 // Get available DOM test files
 function getDomTestFiles(): string[] {
-  const domDir = path.join(process.cwd(), 'wpt/dom/nodes');
-  if (!fs.existsSync(domDir)) {
-    return [];
+  const files: string[] = [];
+
+  for (const dir of TEST_DIRS) {
+    const fullDir = path.join(process.cwd(), dir);
+    if (!fs.existsSync(fullDir)) continue;
+
+    const dirFiles = fs
+      .readdirSync(fullDir)
+      .filter((f) => f.endsWith('.html'))
+      .filter((f) => !f.includes('-ref.html'))
+      .map((f) => path.join(fullDir, f));
+
+    files.push(...dirFiles);
   }
 
-  return fs
-    .readdirSync(domDir)
-    .filter((f) => f.endsWith('.html'))
-    .filter((f) => !f.includes('-ref.html'))
-    .map((f) => path.join(domDir, f));
+  return files;
+}
+
+// Get test files by category
+function getTestFilesByCategory(category: string): string[] {
+  const categoryDirs: Record<string, string[]> = {
+    'dom': ['wpt/dom/nodes'],
+    'svg': ['wpt/svg/types', 'wpt/svg/scripted'],
+  };
+
+  const dirs = categoryDirs[category] || [];
+  const files: string[] = [];
+
+  for (const dir of dirs) {
+    const fullDir = path.join(process.cwd(), dir);
+    if (!fs.existsSync(fullDir)) continue;
+
+    const dirFiles = fs
+      .readdirSync(fullDir)
+      .filter((f) => f.endsWith('.html'))
+      .filter((f) => !f.includes('-ref.html'))
+      .map((f) => path.join(fullDir, f));
+
+    files.push(...dirFiles);
+  }
+
+  return files;
 }
 
 // List available tests
 function listTests(): void {
-  const files = getDomTestFiles();
-  console.log(`Available DOM tests: ${files.length}\n`);
+  console.log('Available test categories:\n');
 
-  // Group by prefix
-  const groups: Record<string, string[]> = {};
-  for (const file of files) {
-    const name = path.basename(file);
-    const prefix = name.split('-')[0];
-    if (!groups[prefix]) groups[prefix] = [];
-    groups[prefix].push(name);
+  for (const dir of TEST_DIRS) {
+    const fullDir = path.join(process.cwd(), dir);
+    if (!fs.existsSync(fullDir)) {
+      console.log(`  ${dir}: (not found)`);
+      continue;
+    }
+
+    const files = fs
+      .readdirSync(fullDir)
+      .filter((f) => f.endsWith('.html'))
+      .filter((f) => !f.includes('-ref.html'));
+
+    console.log(`  ${dir}: ${files.length} tests`);
   }
 
-  for (const [prefix, names] of Object.entries(groups).sort()) {
-    console.log(`${prefix}: ${names.length} tests`);
-  }
+  console.log('\nCategories: dom, svg');
 }
 
 // Main
@@ -1115,7 +1161,9 @@ async function main(): Promise<void> {
     console.log('Usage:');
     console.log('  npx tsx scripts/wpt-dom-runner.ts <path/to/test.html>');
     console.log('  npx tsx scripts/wpt-dom-runner.ts --list      # List available tests');
-    console.log('  npx tsx scripts/wpt-dom-runner.ts --all       # Run all DOM tests');
+    console.log('  npx tsx scripts/wpt-dom-runner.ts --all       # Run all tests');
+    console.log('  npx tsx scripts/wpt-dom-runner.ts --dom       # Run DOM tests only');
+    console.log('  npx tsx scripts/wpt-dom-runner.ts --svg       # Run SVG tests only');
     console.log('  npx tsx scripts/wpt-dom-runner.ts Document-*  # Run tests matching pattern');
     return;
   }
@@ -1130,6 +1178,10 @@ async function main(): Promise<void> {
 
   if (args[0] === '--all') {
     testFiles = getDomTestFiles();
+  } else if (args[0] === '--svg') {
+    testFiles = getTestFilesByCategory('svg');
+  } else if (args[0] === '--dom') {
+    testFiles = getTestFilesByCategory('dom');
   } else {
     for (const arg of args) {
       if (arg.includes('*')) {

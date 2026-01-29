@@ -10,7 +10,9 @@
     "css-position",
     "css-overflow",
     "css-contain",
-    "css-variables"
+    "css-variables",
+    "filter-effects",
+    "compositing"
   ],
   "includePrefixes": [
     "align-content", "align-items", "align-self",
@@ -23,6 +25,7 @@
     "position-", "relative-", "sticky-", "fixed-",
     "clip-", "overflow-",
     "contain-",
-    "var-", "variable-", "custom-property", "registered-", "css-variable", "inherit-", "fallback-"
+    "var-", "variable-", "custom-property", "registered-", "css-variable", "inherit-", "fallback-",
+    "filter-", "backdrop-filter", "mix-blend-mode", "isolation", "Blending"
   ]
 }

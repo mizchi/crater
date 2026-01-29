@@ -64,6 +64,7 @@ const VIEWPORT = { width: 800, height: 600 };
 const CSS_RESET = `
 <style>
   body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+  p { margin: 0; }
 </style>
 `;
 

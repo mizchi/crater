@@ -109,9 +109,23 @@ wpt-dom pattern:
 wpt-dom-all:
     npx tsx scripts/wpt-dom-runner.ts --all
 
+# Run WPT SVG DOM tests
+wpt-svg:
+    npx tsx scripts/wpt-dom-runner.ts --svg
+
 # List available WPT DOM tests
 wpt-dom-list:
     npx tsx scripts/wpt-dom-runner.ts --list
+
+# === WPT Filter Effects & Compositing ===
+
+# Run WPT filter-effects tests
+wpt-filter-effects:
+    npx tsx scripts/wpt-runner.ts filter-effects
+
+# Run WPT compositing tests
+wpt-compositing:
+    npx tsx scripts/wpt-runner.ts compositing
 
 # === WebDriver BiDi Server ===
 
