@@ -4,10 +4,13 @@ package "mizchi/crater/x/sixel"
 import {
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
+  "mizchi/crater/svg",
   "mizchi/crater/types",
 }
 
 // Values
+pub fn create_svg_demo_scene() -> @svg.Scene
+
 pub let font_height : Int
 
 pub let font_width : Int
@@ -24,9 +27,23 @@ pub fn render_layout(@types.Layout, Int, Int) -> String
 
 pub fn render_layout_with_options(@types.Layout, Int, Int, Bool) -> String
 
+pub fn render_paint_node_to_framebuffer(@paint.PaintNode, Framebuffer, DynamicPalette) -> Unit
+
 pub fn render_paint_node_to_sixel(@paint.PaintNode, Int, Int) -> String
 
 pub fn render_paint_node_to_sixel_scrolled(@paint.PaintNode, Int, Int, Int) -> String
+
+pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
+
+pub fn render_svg_path_to_sixel(String, Color?, Color?, Int, Int) -> String
+
+pub fn render_svg_scene(@svg.Scene, Framebuffer, DynamicPalette) -> Unit
+
+pub fn render_svg_scene_with_camera(@svg.Scene, Framebuffer, DynamicPalette, @svg.Camera) -> Unit
+
+pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
+
+pub fn render_svg_to_sixel_with_camera(@svg.Scene, @svg.Camera) -> String
 
 pub fn render_with_styles(@node.Node, @types.Layout, Int, Int) -> String
 
@@ -56,7 +73,11 @@ pub fn Color::transparent() -> Self
 pub fn Color::white() -> Self
 pub fn Color::yellow() -> Self
 
-type DynamicPalette
+pub struct DynamicPalette {
+  colors : Array[Color]
+  color_map : Map[Int, Int]
+}
+pub fn DynamicPalette::new() -> Self
 
 pub struct Framebuffer {
   width : Int
@@ -67,6 +88,7 @@ pub fn Framebuffer::draw_char(Self, Int, Int, Char, Int, Int) -> Int
 pub fn Framebuffer::draw_text(Self, Int, Int, String, Int, Int, Int) -> Int
 pub fn Framebuffer::fill_rect(Self, Int, Int, Int, Int, Int) -> Unit
 pub fn Framebuffer::fill_rect_hatched(Self, Int, Int, Int, Int, Int, Int, Int) -> Unit
+pub fn Framebuffer::get_pixel(Self, Int, Int) -> Int
 pub fn Framebuffer::new(Int, Int) -> Self
 pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
 

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/layout/svg"
+
+import {
+  "mizchi/crater/types",
+}
+
+// Values
+pub fn attributes_to_svg_node(String, Array[(String, String)]) -> @mizchi/crater/svg.SVGNode
+
+pub fn create_svg_layout(String, Array[(String, String)], Double, Double?) -> @types.Layout
+
+pub fn is_svg_element_tag(String) -> Bool
+
+pub fn is_svg_root_tag(String) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

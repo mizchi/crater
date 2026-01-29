@@ -3,6 +3,7 @@ import {
   "mizchi/crater/style",
   "mizchi/crater/paint",
   "mizchi/crater/types",
+  "mizchi/crater/svg",
 }
 
 import "wbtest" {

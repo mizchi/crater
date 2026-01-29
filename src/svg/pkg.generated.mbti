@@ -1,0 +1,306 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/svg"
+
+// Values
+pub fn circle(String, Double, Double, Double) -> SVGNode
+
+pub fn degrees_to_radians(Double) -> Double
+
+pub fn group(String, Array[SVGNode]) -> SVGNode
+
+pub fn line(String, Double, Double, Double, Double) -> SVGNode
+
+pub fn parse_path(String) -> Array[PathCommand]
+
+pub fn parse_svg(String) -> SVGNode?
+
+pub fn parse_transform(String) -> Transform
+
+pub fn path(String, String) -> SVGNode
+
+pub fn path_bbox(Array[PathCommand]) -> BoundingBox
+
+pub fn path_to_polylines(Array[PathCommand], Double) -> Array[Array[(Double, Double)]]
+
+pub fn radians_to_degrees(Double) -> Double
+
+pub fn raster_circle_fill(Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_circle_stroke(Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_ellipse_fill(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_ellipse_stroke(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_line(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_path(Array[PathCommand], Color?, Color?, Double, PixelSetter) -> Unit
+
+pub fn raster_polygon_fill(Array[(Int, Int)], Color, PixelSetter) -> Unit
+
+pub fn raster_polygon_stroke(Array[(Int, Int)], Color, PixelSetter) -> Unit
+
+pub fn raster_polyline(Array[(Int, Int)], Color, PixelSetter) -> Unit
+
+pub fn raster_rect_fill(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_rect_stroke(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_rounded_rect_stroke(Int, Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_thick_line(Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn rect(String, Double, Double, Double, Double) -> SVGNode
+
+// Errors
+
+// Types and methods
+pub(all) enum Align {
+  None
+  XMinYMin
+  XMidYMin
+  XMaxYMin
+  XMinYMid
+  XMidYMid
+  XMaxYMid
+  XMinYMax
+  XMidYMax
+  XMaxYMax
+}
+pub impl Eq for Align
+pub impl Show for Align
+
+pub(all) struct BoundingBox {
+  min_x : Double
+  min_y : Double
+  max_x : Double
+  max_y : Double
+}
+pub fn BoundingBox::contains_point(Self, Double, Double) -> Bool
+pub fn BoundingBox::empty() -> Self
+pub fn BoundingBox::expand_by_point(Self, Double, Double) -> Self
+pub fn BoundingBox::from_rect(Double, Double, Double, Double) -> Self
+pub fn BoundingBox::height(Self) -> Double
+pub fn BoundingBox::intersects(Self, Self) -> Bool
+pub fn BoundingBox::is_empty(Self) -> Bool
+pub fn BoundingBox::union(Self, Self) -> Self
+pub fn BoundingBox::width(Self) -> Double
+
+pub(all) struct Camera {
+  mut x : Double
+  mut y : Double
+  mut zoom : Double
+  viewport_width : Int
+  viewport_height : Int
+}
+pub fn Camera::get_transform(Self) -> Transform
+pub fn Camera::get_visible_bounds(Self) -> BoundingBox
+pub fn Camera::new(Int, Int) -> Self
+pub fn Camera::pan(Self, Double, Double) -> Unit
+pub fn Camera::screen_to_world(Self, Int, Int) -> (Double, Double)
+pub fn Camera::set_position(Self, Double, Double) -> Unit
+pub fn Camera::set_zoom(Self, Double) -> Unit
+pub fn Camera::world_to_screen(Self, Double, Double) -> (Int, Int)
+pub fn Camera::zoom_by(Self, Double) -> Unit
+
+pub(all) struct ClipRect {
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+}
+pub fn ClipRect::contains(Self, Int, Int) -> Bool
+pub fn ClipRect::from_size(Int, Int) -> Self
+pub fn ClipRect::new(Int, Int, Int, Int) -> Self
+pub fn ClipRect::to_bbox(Self) -> BoundingBox
+
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+  a : Int
+}
+pub fn Color::black() -> Self
+pub fn Color::is_transparent(Self) -> Bool
+pub fn Color::rgb(Int, Int, Int) -> Self
+pub fn Color::rgba(Int, Int, Int, Int) -> Self
+pub fn Color::transparent() -> Self
+pub fn Color::white() -> Self
+
+pub(all) enum FillRule {
+  NonZero
+  EvenOdd
+}
+pub impl Eq for FillRule
+pub impl Show for FillRule
+
+pub(all) enum LineCap {
+  Butt
+  Round
+  Square
+}
+pub impl Eq for LineCap
+pub impl Show for LineCap
+
+pub(all) enum LineJoin {
+  Miter
+  Round
+  Bevel
+}
+pub impl Eq for LineJoin
+pub impl Show for LineJoin
+
+pub(all) enum MeetOrSlice {
+  Meet
+  Slice
+}
+pub impl Eq for MeetOrSlice
+pub impl Show for MeetOrSlice
+
+pub(all) enum Paint {
+  None
+  SolidColor(Color)
+}
+
+pub(all) enum PathCommand {
+  MoveTo(Double, Double)
+  LineTo(Double, Double)
+  HorizontalLineTo(Double)
+  VerticalLineTo(Double)
+  CurveTo(Double, Double, Double, Double, Double, Double)
+  SmoothCurveTo(Double, Double, Double, Double)
+  QuadraticCurveTo(Double, Double, Double, Double)
+  SmoothQuadraticCurveTo(Double, Double)
+  ArcTo(Double, Double, Double, Bool, Bool, Double, Double)
+  ClosePath
+  MoveToRel(Double, Double)
+  LineToRel(Double, Double)
+  HorizontalLineToRel(Double)
+  VerticalLineToRel(Double)
+  CurveToRel(Double, Double, Double, Double, Double, Double)
+  SmoothCurveToRel(Double, Double, Double, Double)
+  QuadraticCurveToRel(Double, Double, Double, Double)
+  SmoothQuadraticCurveToRel(Double, Double)
+  ArcToRel(Double, Double, Double, Bool, Bool, Double, Double)
+}
+pub impl Show for PathCommand
+
+pub(all) struct PixelSetter {
+  set : (Int, Int, Color) -> Unit
+}
+pub fn PixelSetter::pixel(Self, Int, Int, Color) -> Unit
+pub fn PixelSetter::with_clip(Self, ClipRect) -> Self
+pub fn PixelSetter::with_clip_and_offset(Self, ClipRect, Int, Int) -> Self
+
+pub(all) struct PreserveAspectRatio {
+  align : Align
+  meet_or_slice : MeetOrSlice
+}
+pub fn PreserveAspectRatio::default() -> Self
+
+pub(all) struct RenderContext {
+  setter : PixelSetter
+  width : Int
+  height : Int
+  flatness : Double
+  clip : ClipRect?
+}
+pub fn RenderContext::for_camera(PixelSetter, Camera) -> Self
+pub fn RenderContext::new(PixelSetter, Int, Int) -> Self
+pub fn RenderContext::with_clip(PixelSetter, Int, Int, ClipRect) -> Self
+
+pub(all) struct SVGNode {
+  mut id : String
+  mut shape : Shape
+  mut transform : Transform
+  mut fill : Paint
+  mut fill_rule : FillRule
+  mut fill_opacity : Double
+  mut stroke : StrokeStyle
+  mut stroke_opacity : Double
+  mut opacity : Double
+  children : Array[SVGNode]
+}
+pub fn SVGNode::new(Shape) -> Self
+
+pub(all) struct Scene {
+  root : SVGNode
+  mut dirty : Bool
+}
+pub fn Scene::add_child(Self, String, SVGNode) -> Bool
+pub fn Scene::clear_dirty(Self) -> Unit
+pub fn Scene::empty() -> Self
+pub fn Scene::find_node(Self, String) -> SVGNode?
+pub fn Scene::get_bounds(Self) -> BoundingBox
+pub fn Scene::get_root(Self) -> SVGNode
+pub fn Scene::is_dirty(Self) -> Bool
+pub fn Scene::mark_dirty(Self) -> Unit
+pub fn Scene::new(SVGNode) -> Self
+pub fn Scene::remove_node(Self, String) -> Bool
+pub fn Scene::render(Self, RenderContext) -> Unit
+pub fn Scene::render_with_camera(Self, RenderContext, Camera) -> Unit
+pub fn Scene::update_node(Self, String, (SVGNode) -> SVGNode) -> Bool
+
+pub(all) enum Shape {
+  Rect(x~ : Double, y~ : Double, width~ : Double, height~ : Double, rx~ : Double, ry~ : Double)
+  Circle(cx~ : Double, cy~ : Double, r~ : Double)
+  Ellipse(cx~ : Double, cy~ : Double, rx~ : Double, ry~ : Double)
+  Line(x1~ : Double, y1~ : Double, x2~ : Double, y2~ : Double)
+  Polyline(points~ : Array[(Double, Double)])
+  Polygon(points~ : Array[(Double, Double)])
+  Path(commands~ : Array[PathCommand])
+  Group
+}
+pub impl Show for Shape
+
+pub(all) struct StrokeStyle {
+  paint : Paint
+  width : Double
+  linecap : LineCap
+  linejoin : LineJoin
+  miterlimit : Double
+  dasharray : Array[Double]?
+  dashoffset : Double
+}
+pub fn StrokeStyle::default() -> Self
+
+pub(all) struct Transform {
+  a : Double
+  b : Double
+  c : Double
+  d : Double
+  e : Double
+  f : Double
+}
+pub fn Transform::apply(Self, Double, Double) -> (Double, Double)
+pub fn Transform::apply_bbox(Self, BoundingBox) -> BoundingBox
+pub fn Transform::apply_point(Self, (Double, Double)) -> (Double, Double)
+pub fn Transform::determinant(Self) -> Double
+pub fn Transform::get_rotation(Self) -> Double
+pub fn Transform::get_scale(Self) -> (Double, Double)
+pub fn Transform::get_translate(Self) -> (Double, Double)
+pub fn Transform::identity() -> Self
+pub fn Transform::inverse(Self) -> Self
+pub fn Transform::is_identity(Self) -> Bool
+pub fn Transform::is_invertible(Self) -> Bool
+pub fn Transform::matrix(Double, Double, Double, Double, Double, Double) -> Self
+pub fn Transform::multiply(Self, Self) -> Self
+pub fn Transform::rotate(Double) -> Self
+pub fn Transform::rotate_around(Double, Double, Double) -> Self
+pub fn Transform::scale(Double, Double) -> Self
+pub fn Transform::scale_uniform(Double) -> Self
+pub fn Transform::skew_x(Double) -> Self
+pub fn Transform::skew_y(Double) -> Self
+pub fn Transform::translate(Double, Double) -> Self
+
+pub(all) struct ViewBox {
+  min_x : Double
+  min_y : Double
+  width : Double
+  height : Double
+}
+
+// Type aliases
+
+// Traits
+

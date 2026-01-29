@@ -104,7 +104,7 @@ fn Framebuffer::set_pixel(
 }
 
 ///|
-fn Framebuffer::get_pixel(self : Framebuffer, x : Int, y : Int) -> Int {
+pub fn Framebuffer::get_pixel(self : Framebuffer, x : Int, y : Int) -> Int {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.pixels[y * self.width + x]
   } else {
@@ -720,13 +720,13 @@ pub fn print_layout(layout : @types.Layout, width : Int, height : Int) -> Unit {
 
 ///|
 /// Dynamic color palette that builds from PaintNode colors
-struct DynamicPalette {
+pub struct DynamicPalette {
   colors : Array[Color]
   color_map : Map[Int, Int] // color hash -> palette index
 }
 
 ///|
-fn DynamicPalette::new() -> DynamicPalette {
+pub fn DynamicPalette::new() -> DynamicPalette {
   let colors : Array[Color] = []
   // Reserve index 0 for transparent/white background
   colors.push(Color::white())
@@ -986,4 +986,19 @@ pub fn render_with_styles_scrolled(
 ) -> String {
   let paint_node = @paint.from_node_and_layout(node, layout)
   render_paint_node_to_sixel_scrolled(paint_node, width, height, scroll_y)
+}
+
+///|
+/// Render PaintNode tree to framebuffer (for use by other renderers like Kitty)
+pub fn render_paint_node_to_framebuffer(
+  node : @paint.PaintNode,
+  fb : Framebuffer,
+  palette : DynamicPalette,
+) -> Unit {
+  // Sort by stacking order (z-index) for correct rendering
+  let sorted_node = @paint.sort_tree_by_stacking_order(node)
+  // Collect all colors first
+  collect_colors(palette, sorted_node)
+  // Render the tree
+  render_paint_node(fb, palette, sorted_node, 0.0, 0.0)
 }
