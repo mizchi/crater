@@ -153,6 +153,8 @@ pub fn fallback_layout(
     border: @types.Rect::zero(),
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: width,
+    scroll_height: height,
     children: [],
     text: node.text,
   }

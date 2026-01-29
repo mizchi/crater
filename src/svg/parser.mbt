@@ -470,7 +470,78 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
     "fill-opacity" => node.fill_opacity = parse_number(value)
     "stroke-opacity" => node.stroke_opacity = parse_number(value)
     "transform" => node.transform = parse_transform(value)
+    // Stroke detail attributes
+    "stroke-linecap" =>
+      node.stroke = { ..node.stroke, linecap: parse_linecap(value) }
+    "stroke-linejoin" =>
+      node.stroke = { ..node.stroke, linejoin: parse_linejoin(value) }
+    "stroke-miterlimit" =>
+      node.stroke = { ..node.stroke, miterlimit: parse_number(value) }
+    "stroke-dasharray" =>
+      node.stroke = { ..node.stroke, dasharray: parse_dasharray(value) }
+    "stroke-dashoffset" =>
+      node.stroke = { ..node.stroke, dashoffset: parse_number(value) }
+    // Fill rule
+    "fill-rule" => node.fill_rule = parse_fill_rule(value)
+    "clip-rule" => node.fill_rule = parse_fill_rule(value)
     _ => () // Ignore unknown attributes
+  }
+}
+
+///|
+fn parse_linecap(value : String) -> LineCap {
+  let v = trim_string(value)
+  match v {
+    "round" => Round
+    "square" => Square
+    _ => Butt // Default
+  }
+}
+
+///|
+fn parse_linejoin(value : String) -> LineJoin {
+  let v = trim_string(value)
+  match v {
+    "round" => Round
+    "bevel" => Bevel
+    _ => Miter // Default
+  }
+}
+
+///|
+fn parse_dasharray(value : String) -> Array[Double]? {
+  let v = trim_string(value)
+  if v == "none" || v.length() == 0 {
+    return None
+  }
+  let result : Array[Double] = []
+  let mut current = ""
+  for c in v {
+    if c == ',' || c == ' ' {
+      if current.length() > 0 {
+        result.push(parse_number(current))
+        current = ""
+      }
+    } else {
+      current = current + c.to_string()
+    }
+  }
+  if current.length() > 0 {
+    result.push(parse_number(current))
+  }
+  if result.is_empty() {
+    None
+  } else {
+    Some(result)
+  }
+}
+
+///|
+fn parse_fill_rule(value : String) -> FillRule {
+  let v = trim_string(value)
+  match v {
+    "evenodd" => EvenOdd
+    _ => NonZero // Default
   }
 }
 

@@ -3,6 +3,33 @@
 // =============================================================================
 
 ///|
+/// Calculate scroll dimensions from children layouts
+/// Returns (scroll_width, scroll_height) representing the scrollable content size
+fn calculate_scroll_dimensions(
+  container_width : Double,
+  container_height : Double,
+  padding : @types.Rect[Double],
+  children : Array[@types.Layout],
+) -> (Double, Double) {
+  // Start with content box dimensions
+  let mut max_right = container_width - padding.left - padding.right
+  let mut max_bottom = container_height - padding.top - padding.bottom
+  // Find the maximum extent of all children
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let child_right = child.x + child.width + child.margin.right
+    let child_bottom = child.y + child.height + child.margin.bottom
+    if child_right > max_right {
+      max_right = child_right
+    }
+    if child_bottom > max_bottom {
+      max_bottom = child_bottom
+    }
+  }
+  (max_right, max_bottom)
+}
+
+///|
 /// Layout with DOM index for sorting
 priv struct IndexedLayout {
   dom_index : Int
@@ -300,6 +327,8 @@ fn create_contents_layout(
     border: @types.Rect::zero(),
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: children_layouts,
     text: node.text,
   }
@@ -730,9 +759,7 @@ fn compute_min_content_flex_main_size(
 ///|
 /// Compute min-content size for a grid container
 /// (approximate to allow flex items to shrink below max-content)
-fn compute_min_content_grid_main_size(
-  _node : @node.Node,
-) -> Double {
+fn compute_min_content_grid_main_size(_node : @node.Node) -> Double {
   0.0
 }
 
@@ -1415,6 +1442,8 @@ fn create_hidden_layout(node : @node.Node) -> @types.Layout {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children,
     text: None,
   }
@@ -1429,9 +1458,8 @@ pub fn compute(
 ) -> @types.Layout {
   // For non-flex nodes, delegate to the dispatcher (tests call @flex.compute directly).
   match node.style.display {
-    @types.Display::Flex
-    | @types.Display::InlineFlex
-    | @types.Display::Block => ()
+    @types.Display::Flex | @types.Display::InlineFlex | @types.Display::Block =>
+      ()
     _ => {
       let @node.DispatchFn(dispatch_fn) = dispatch
       return dispatch_fn(node, ctx, dispatch)
@@ -1451,9 +1479,8 @@ pub fn compute_root(
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   match node.style.display {
-    @types.Display::Flex
-    | @types.Display::InlineFlex
-    | @types.Display::Block => ()
+    @types.Display::Flex | @types.Display::InlineFlex | @types.Display::Block =>
+      ()
     _ => {
       let @node.DispatchFn(dispatch_fn) = dispatch
       return dispatch_fn(node, ctx, dispatch)
@@ -1472,9 +1499,8 @@ pub fn compute_with_warnings(
   dispatch : @node.DispatchFn,
 ) -> @types.LayoutResult {
   match node.style.display {
-    @types.Display::Flex
-    | @types.Display::InlineFlex
-    | @types.Display::Block => ()
+    @types.Display::Flex | @types.Display::InlineFlex | @types.Display::Block =>
+      ()
     _ => {
       let @node.DispatchFn(dispatch_fn) = dispatch
       return { layout: dispatch_fn(node, ctx, dispatch), warnings: [] }
@@ -1503,9 +1529,8 @@ pub fn compute_with_trace(
   dispatch : @node.DispatchFn,
 ) -> TracedLayoutResult {
   match node.style.display {
-    @types.Display::Flex
-    | @types.Display::InlineFlex
-    | @types.Display::Block => ()
+    @types.Display::Flex | @types.Display::InlineFlex | @types.Display::Block =>
+      ()
     _ => {
       let @node.DispatchFn(dispatch_fn) = dispatch
       let layout = dispatch_fn(node, ctx, dispatch)
@@ -1595,13 +1620,15 @@ fn compute_internal(
     _ => None
   }
   // Check if this is a block-level flex container (Flex/Block) vs inline-level (InlineFlex)
-  let is_block_level = style.display == @types.Flex || style.display == @types.Block
+  let is_block_level = style.display == @types.Flex ||
+    style.display == @types.Block
   let mut container_width = match intrinsic_from_measure {
     Some((w, _)) => w
     None =>
       match style.width {
         @types.Length(w) =>
-          if use_available_width && ctx.sizing_mode == @types.Definite &&
+          if use_available_width &&
+            ctx.sizing_mode == @types.Definite &&
             available_width < w {
             available_width
           } else {
@@ -1759,9 +1786,7 @@ fn compute_internal(
             Some(ah - padding.vertical_sum() - border.vertical_sum())
           } else {
             Some(
-              parent_height * p -
-              padding.vertical_sum() -
-              border.vertical_sum(),
+              parent_height * p - padding.vertical_sum() - border.vertical_sum(),
             )
           }
         @types.Auto =>
@@ -2006,6 +2031,8 @@ fn compute_internal(
       border,
       overflow_x: style.overflow_x,
       overflow_y: style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: [],
       text: node.text,
     }
@@ -2048,7 +2075,11 @@ fn compute_internal(
       content_width
     } else {
       let avail = content_width - margin_cross_for_intrinsic
-      if avail > 0.0 { avail } else { 0.0 }
+      if avail > 0.0 {
+        avail
+      } else {
+        0.0
+      }
     }
 
     // Get explicit cross dimension value for aspect_ratio calculation
@@ -2426,8 +2457,10 @@ fn compute_internal(
 
     // Grid items in row flex containers should not exceed available main size.
     if is_row &&
-      (child_style.display == @types.Grid ||
-        child_style.display == @types.InlineGrid) {
+      (
+        child_style.display == @types.Grid ||
+        child_style.display == @types.InlineGrid
+      ) {
       let max_main = content_width - margin_main
       if max_main > 0.0 && base_main > max_main {
         base_main = max_main
@@ -2519,8 +2552,10 @@ fn compute_internal(
             // This allows flex items to shrink below their max-content width.
             // For flex-grow items, use max-content to match taffy behavior.
             let use_max_content_min = child_style.flex_grow > 0.0 &&
-              (child_style.display == @types.Flex ||
-                child_style.display == @types.InlineFlex)
+              (
+                child_style.display == @types.Flex ||
+                child_style.display == @types.InlineFlex
+              )
             let content_min = if aspect_min > 0.0 {
               aspect_min
             } else if use_max_content_min {
@@ -2628,8 +2663,10 @@ fn compute_internal(
             // This allows flex items to shrink below their max-content height.
             // For flex-grow items, use max-content to match taffy behavior.
             let use_max_content_min = child_style.flex_grow > 0.0 &&
-              (child_style.display == @types.Flex ||
-                child_style.display == @types.InlineFlex)
+              (
+                child_style.display == @types.Flex ||
+                child_style.display == @types.InlineFlex
+              )
             let content_min = if aspect_min > 0.0 {
               aspect_min
             } else if use_max_content_min {
@@ -4015,6 +4052,8 @@ fn compute_internal(
           border: child_border,
           overflow_x: child_style.overflow_x,
           overflow_y: child_style.overflow_y,
+          scroll_width: 0.0,
+          scroll_height: 0.0,
           children: [],
           text: child.text,
         }
@@ -4047,6 +4086,8 @@ fn compute_internal(
           border: nested_layout.border,
           overflow_x: nested_layout.overflow_x,
           overflow_y: nested_layout.overflow_y,
+          scroll_width: nested_layout.scroll_width,
+          scroll_height: nested_layout.scroll_height,
           children: nested_layout.children,
           text: child.text,
         }
@@ -4532,6 +4573,8 @@ fn compute_internal(
       border: child_inner.border,
       overflow_x: child_style.overflow_x,
       overflow_y: child_style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: child_inner.children,
       text: child.text,
     }
@@ -4757,6 +4800,8 @@ fn compute_internal(
       border: child_inner.border,
       overflow_x: child_style.overflow_x,
       overflow_y: child_style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: child_inner.children,
       text: child.text,
     }
@@ -4896,6 +4941,10 @@ fn compute_internal(
   } else {
     container_width
   }
+  // Calculate scroll dimensions
+  let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+    final_width, final_height, padding, child_layouts,
+  )
   {
     id: node.id,
     x: 0.0,
@@ -4907,6 +4956,8 @@ fn compute_internal(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width,
+    scroll_height,
     children: child_layouts,
     text: node.text,
   }
@@ -5003,6 +5054,8 @@ fn compute_nested(
       border,
       overflow_x: node.style.overflow_x,
       overflow_y: node.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: [],
       text: node.text,
     }

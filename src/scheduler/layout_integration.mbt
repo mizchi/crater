@@ -143,6 +143,8 @@ pub fn LayoutManager::execute_layout(
         border: @types.Rect::all(0.0),
         overflow_x: @types.Overflow::Visible,
         overflow_y: @types.Overflow::Visible,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
         children: [],
         text: None,
       }

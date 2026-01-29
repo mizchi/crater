@@ -217,6 +217,8 @@ pub fn compute_ifc(
         border: item.layout.border,
         overflow_x: item.layout.overflow_x,
         overflow_y: item.layout.overflow_y,
+        scroll_width: item.layout.scroll_width,
+        scroll_height: item.layout.scroll_height,
         children: item.layout.children,
         text: item.layout.text,
       }
@@ -389,6 +391,8 @@ fn compute_inline_child(
         border,
         overflow_x: style.overflow_x,
         overflow_y: style.overflow_y,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
         children: [],
         text: node.text,
       }
@@ -478,6 +482,8 @@ fn compute_inline_child(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children,
     text: node.text,
   }
@@ -507,6 +513,8 @@ fn create_zero_layout(node : @node.Node) -> @types.Layout {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children,
     text: node.text,
   }

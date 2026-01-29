@@ -1010,6 +1010,8 @@ fn parse_overflow(tokens : ArrayView[@token.Token]) -> @types.Overflow? {
         Some(@types.Visible)
       } else if s == "hidden" {
         Some(@types.Hidden)
+      } else if s == "clip" {
+        Some(@types.Clip)
       } else if s == "scroll" {
         Some(@types.Scroll)
       } else if s == "auto" {

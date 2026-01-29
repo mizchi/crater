@@ -144,6 +144,14 @@ pub fn find_link_at(
 }
 
 ///|
+/// Element scroll position (used for element-level scrollbar rendering)
+pub(all) struct ElementScrollPos {
+  scroll_top : Double
+  scroll_height : Double
+  client_height : Double
+}
+
+///|
 /// Rendering context for TUI
 pub struct TuiContext {
   buffer : CharBuffer
@@ -152,6 +160,7 @@ pub struct TuiContext {
   link_regions : Array[LinkRegion] // Collected link regions
   focused_element_name : String? // Name of currently focused element (for :focus styling)
   dark_mode : Bool // Dark mode enabled
+  element_scroll_positions : Map[String, ElementScrollPos] // Element-level scroll positions
 }
 
 ///|
@@ -404,6 +413,31 @@ fn render_paint_node(
       inside_pre=child_inside_pre,
     )
   }
+  // Draw scrollbar for scrollable elements
+  if node.is_scrollable() && h >= 3 {
+    // Get scroll position from context (default to 0 if not found)
+    let scroll_pos = match ctx.element_scroll_positions.get(node.id) {
+      Some(pos) => pos.scroll_top.to_int()
+      None => 0
+    }
+    let content_height = px_to_row_height(node.scroll_height)
+    let visible_height = h
+    // Draw scrollbar on the right edge of the element
+    let scrollbar_col = col + w - 1
+    let scrollbar_row = row.max(0)
+    let scrollbar_height = (row + h).min(ctx.viewport_height) - scrollbar_row
+    if scrollbar_height >= 3 && content_height > visible_height {
+      draw_scrollbar(
+        ctx.buffer,
+        scrollbar_col,
+        scrollbar_row,
+        scrollbar_height,
+        scroll_pos,
+        content_height,
+        visible_height,
+      )
+    }
+  }
 }
 
 ///|
@@ -418,6 +452,7 @@ pub(all) struct RenderResult {
 pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
+  scrollable_elements : Array[@paint.ScrollableElement]
 }
 
 ///|
@@ -471,10 +506,11 @@ pub fn render_to_buffer(
       node, layout, viewport_top, viewport_bottom, 0.0,
     ) {
     Some(n) => n
-    None => return { buffer: buf, link_regions: [] }
+    None => return { buffer: buf, link_regions: [], scrollable_elements: [] }
   }
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   let link_regions : Array[LinkRegion] = []
+  let scrollable_elements = @paint.collect_scrollable_elements(sorted)
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
@@ -482,9 +518,10 @@ pub fn render_to_buffer(
     link_regions,
     focused_element_name,
     dark_mode: false,
+    element_scroll_positions: {},
   }
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  { buffer: buf, link_regions }
+  { buffer: buf, link_regions, scrollable_elements }
 }
 
 ///|
@@ -537,6 +574,7 @@ pub fn render_to_buffer_with_status(
   dark_mode? : Bool = false,
   total_content_height? : Int = 0,
   show_scrollbar? : Bool = false,
+  element_scroll_positions? : Map[String, ElementScrollPos] = {},
 ) -> BufferRenderResult {
   // Reserve first row for status bar at top
   let content_height = height - 1
@@ -579,11 +617,13 @@ pub fn render_to_buffer_with_status(
         selection_mode~,
         dark_mode~,
       )
-      return { buffer: buf, link_regions: [] }
+      return { buffer: buf, link_regions: [], scrollable_elements: [] }
     }
   }
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
+  // Collect scrollable elements from the paint tree
+  let scrollable_elements = @paint.collect_scrollable_elements(sorted)
   // Create context with link regions array
   // Content is drawn with a 1-row offset via parent_y
   let link_regions : Array[LinkRegion] = []
@@ -594,6 +634,7 @@ pub fn render_to_buffer_with_status(
     link_regions,
     focused_element_name,
     dark_mode,
+    element_scroll_positions,
   }
   // Render content with offset (start with inside_link=false)
   render_paint_node(
@@ -627,8 +668,8 @@ pub fn render_to_buffer_with_status(
       content_height, // visible height in chars
     )
   }
-  // Return ANSI and link regions
-  { buffer: buf, link_regions }
+  // Return buffer, link regions, and scrollable elements
+  { buffer: buf, link_regions, scrollable_elements }
 }
 
 ///|
@@ -770,11 +811,13 @@ pub fn render_to_buffer_with_hints(
       // Content is outside viewport, just draw hints and status bar
       draw_hints(buf, hints, content_height)
       draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
-      return { buffer: buf, link_regions: [] }
+      return { buffer: buf, link_regions: [], scrollable_elements: [] }
     }
   }
   // Sort by stacking order
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
+  // Collect scrollable elements from the paint tree
+  let scrollable_elements = @paint.collect_scrollable_elements(sorted)
   // Create context with link regions array
   let link_regions : Array[LinkRegion] = []
   let ctx : TuiContext = {
@@ -784,6 +827,7 @@ pub fn render_to_buffer_with_hints(
     link_regions,
     focused_element_name,
     dark_mode: false, // TODO: Add dark_mode support for hints
+    element_scroll_positions: {},
   }
   // Render content (start with inside_link=false)
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
@@ -791,8 +835,8 @@ pub fn render_to_buffer_with_hints(
   draw_hints(buf, hints, content_height)
   // Draw status bar with hint list
   draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
-  // Return ANSI and link regions
-  { buffer: buf, link_regions }
+  // Return buffer, link regions, and scrollable elements
+  { buffer: buf, link_regions, scrollable_elements }
 }
 
 ///|

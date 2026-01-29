@@ -96,6 +96,9 @@ pub(all) struct PaintNode {
   // Overflow clipping
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
+  // Scroll dimensions (content extent for scrollable areas)
+  scroll_width : Double
+  scroll_height : Double
   // Legacy clip property (for accessibility)
   clip : @types.ClipRect
   // Paint properties
@@ -123,6 +126,8 @@ pub fn PaintNode::new(
   text? : String? = None,
   overflow_x? : @types.Overflow = @types.Visible,
   overflow_y? : @types.Overflow = @types.Visible,
+  scroll_width? : Double = 0.0,
+  scroll_height? : Double = 0.0,
   clip? : @types.ClipRect = @types.ClipRect::Auto,
 ) -> PaintNode {
   {
@@ -134,6 +139,16 @@ pub fn PaintNode::new(
     height,
     overflow_x,
     overflow_y,
+    scroll_width: if scroll_width == 0.0 {
+      width
+    } else {
+      scroll_width
+    },
+    scroll_height: if scroll_height == 0.0 {
+      height
+    } else {
+      scroll_height
+    },
     clip,
     paint,
     stacking_order: paint.z_index_value(),
@@ -183,6 +198,51 @@ pub fn PaintNode::clips_content(self : PaintNode) -> Bool {
     @types.ClipRect::Rect(_) => true
   }
   overflow_clips || clip_clips
+}
+
+///|
+/// Check if this node has horizontal scrollbar
+/// Returns true when overflow-x is scroll, or auto with overflow
+pub fn PaintNode::has_horizontal_scrollbar(self : PaintNode) -> Bool {
+  match self.overflow_x {
+    @types.Overflow::Scroll => true
+    @types.Overflow::Auto => self.scroll_width > self.width
+    _ => false
+  }
+}
+
+///|
+/// Check if this node has vertical scrollbar
+/// Returns true when overflow-y is scroll, or auto with overflow
+pub fn PaintNode::has_vertical_scrollbar(self : PaintNode) -> Bool {
+  match self.overflow_y {
+    @types.Overflow::Scroll => true
+    @types.Overflow::Auto => self.scroll_height > self.height
+    _ => false
+  }
+}
+
+///|
+/// Check if this node is scrollable (has any scrollbar)
+pub fn PaintNode::is_scrollable(self : PaintNode) -> Bool {
+  self.has_horizontal_scrollbar() || self.has_vertical_scrollbar()
+}
+
+///|
+/// Get scrollable content dimensions (how much content can be scrolled)
+/// Returns (max_scroll_x, max_scroll_y)
+pub fn PaintNode::get_max_scroll(self : PaintNode) -> (Double, Double) {
+  let max_x = if self.scroll_width > self.width {
+    self.scroll_width - self.width
+  } else {
+    0.0
+  }
+  let max_y = if self.scroll_height > self.height {
+    self.scroll_height - self.height
+  } else {
+    0.0
+  }
+  (max_x, max_y)
 }
 
 ///|
@@ -487,4 +547,99 @@ pub fn from_layout(layout : @types.Layout) -> PaintNode {
     overflow_x=layout.overflow_x,
     overflow_y=layout.overflow_y,
   )
+}
+
+// =============================================================================
+// Scrollable Element Detection
+// =============================================================================
+
+///|
+/// Scrollable element info for initializing scroll states
+pub(all) struct ScrollableElement {
+  id : String
+  scroll_width : Double
+  scroll_height : Double
+  client_width : Double
+  client_height : Double
+}
+
+///|
+/// Collect all scrollable elements from a PaintNode tree
+/// Returns elements that have overflow: auto/scroll and content exceeding bounds
+pub fn collect_scrollable_elements(
+  node : PaintNode,
+) -> Array[ScrollableElement] {
+  let result : Array[ScrollableElement] = []
+  fn collect(n : PaintNode, arr : Array[ScrollableElement]) -> Unit {
+    // Check if this node is scrollable
+    if n.is_scrollable() {
+      arr.push({
+        id: n.id,
+        scroll_width: n.scroll_width,
+        scroll_height: n.scroll_height,
+        client_width: n.width,
+        client_height: n.height,
+      })
+    }
+    // Recurse into children
+    for child in n.children {
+      collect(child, arr)
+    }
+  }
+
+  collect(node, result)
+  result
+}
+
+///|
+/// Hit test result for scrollable element
+pub(all) struct ScrollableHitResult {
+  id : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  scroll_width : Double
+  scroll_height : Double
+}
+
+///|
+/// Find the innermost scrollable element at the given coordinates
+/// Returns None if no scrollable element is found at that position
+pub fn find_scrollable_at(
+  node : PaintNode,
+  x : Double,
+  y : Double,
+  parent_x : Double,
+  parent_y : Double,
+) -> ScrollableHitResult? {
+  let abs_x = parent_x + node.x
+  let abs_y = parent_y + node.y
+  // Check if point is inside this node
+  if x < abs_x ||
+    x >= abs_x + node.width ||
+    y < abs_y ||
+    y >= abs_y + node.height {
+    return None
+  }
+  // Check children first (innermost element wins)
+  for child in node.children {
+    match find_scrollable_at(child, x, y, abs_x, abs_y) {
+      Some(result) => return Some(result)
+      None => ()
+    }
+  }
+  // If this node is scrollable and point is inside, return it
+  if node.is_scrollable() {
+    return Some({
+      id: node.id,
+      x: abs_x,
+      y: abs_y,
+      width: node.width,
+      height: node.height,
+      scroll_width: node.scroll_width,
+      scroll_height: node.scroll_height,
+    })
+  }
+  None
 }

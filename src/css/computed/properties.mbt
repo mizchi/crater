@@ -360,6 +360,7 @@ pub fn parse_overflow(value : String) -> @types.Overflow {
   match value.trim().to_lower() {
     "visible" => @types.Overflow::Visible
     "hidden" => @types.Overflow::Hidden
+    "clip" => @types.Overflow::Clip
     "scroll" => @types.Overflow::Scroll
     "auto" => @types.Overflow::Auto
     _ => @types.Overflow::Visible

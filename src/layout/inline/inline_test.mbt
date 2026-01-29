@@ -36,6 +36,8 @@ fn compute_ifc_node(
     border: @types.Rect::zero(),
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: node.text,
   }

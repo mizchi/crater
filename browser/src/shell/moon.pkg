@@ -8,6 +8,7 @@ import {
   "mizchi/crater/layout",
   "mizchi/crater/layout/node",
   "mizchi/crater/dom",
+  "mizchi/crater/paint",
   "mizchi/crater/scheduler",
   "mizchi/crater/x/arc90",
   "mizchi/crater/x/grounding",

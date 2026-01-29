@@ -43,6 +43,8 @@ fn create_zero_layout(node : @node.Node) -> @types.Layout {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children,
     text: node.text,
   }
@@ -747,6 +749,8 @@ fn layout_cell(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: child_layouts,
     text: cell.text,
   }
@@ -961,6 +965,8 @@ fn layout_row(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: final_cell_layouts,
     text: row.text,
   }
@@ -1631,6 +1637,8 @@ pub fn compute(
         border: group_border,
         overflow_x: group_style.overflow_x,
         overflow_y: group_style.overflow_y,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
         children: group_layouts,
         text: child.text,
       }
@@ -1670,6 +1678,8 @@ pub fn compute(
             border: zero_rect,
             overflow_x: @types.Visible,
             overflow_y: @types.Visible,
+            scroll_width: 0.0,
+            scroll_height: 0.0,
             children: [],
             text: col.text,
           }
@@ -1703,6 +1713,8 @@ pub fn compute(
         border: zero_rect,
         overflow_x: @types.Visible,
         overflow_y: @types.Visible,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
         children: col_layouts,
         text: child.text,
       }
@@ -1799,6 +1811,8 @@ pub fn compute(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: final_child_layouts,
     text: node.text,
   }

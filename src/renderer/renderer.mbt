@@ -1015,6 +1015,8 @@ pub fn render_with_external_css(
     border: layout.border,
     overflow_x: layout.overflow_x,
     overflow_y: layout.overflow_y,
+    scroll_width: layout.scroll_width,
+    scroll_height: layout.scroll_height,
     children: layout.children,
     text: layout.text,
   }
@@ -1119,6 +1121,8 @@ pub fn render_document_with_external_css(
     border: layout.border,
     overflow_x: layout.overflow_x,
     overflow_y: layout.overflow_y,
+    scroll_width: layout.scroll_width,
+    scroll_height: layout.scroll_height,
     children: layout.children,
     text: layout.text,
   }

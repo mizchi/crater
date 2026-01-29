@@ -150,6 +150,25 @@ pub fn Rect::new(Double, Double, Double, Double) -> Self
 pub impl Eq for Rect
 pub impl Show for Rect
 
+pub struct ScrollState {
+  scroll_left : Double
+  scroll_top : Double
+  scroll_width : Double
+  scroll_height : Double
+  client_width : Double
+  client_height : Double
+}
+pub fn ScrollState::can_scroll_x(Self) -> Bool
+pub fn ScrollState::can_scroll_y(Self) -> Bool
+pub fn ScrollState::default() -> Self
+pub fn ScrollState::max_scroll_left(Self) -> Double
+pub fn ScrollState::max_scroll_top(Self) -> Double
+pub fn ScrollState::new(Double, Double, Double, Double) -> Self
+pub fn ScrollState::scroll_by(Self, Double, Double) -> Self
+pub fn ScrollState::scroll_to(Self, Double, Double) -> Self
+pub impl Eq for ScrollState
+pub impl Show for ScrollState
+
 // Type aliases
 
 // Traits

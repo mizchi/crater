@@ -2,6 +2,33 @@
 // CSS Grid Layout Implementation
 // =============================================================================
 
+///|
+/// Calculate scroll dimensions from children layouts
+/// Returns (scroll_width, scroll_height) representing the scrollable content size
+fn calculate_scroll_dimensions(
+  container_width : Double,
+  container_height : Double,
+  padding : @types.Rect[Double],
+  children : Array[@types.Layout],
+) -> (Double, Double) {
+  // Start with content box dimensions
+  let mut max_right = container_width - padding.left - padding.right
+  let mut max_bottom = container_height - padding.top - padding.bottom
+  // Find the maximum extent of all children
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let child_right = child.x + child.width + child.margin.right
+    let child_bottom = child.y + child.height + child.margin.bottom
+    if child_right > max_right {
+      max_right = child_right
+    }
+    if child_bottom > max_bottom {
+      max_bottom = child_bottom
+    }
+  }
+  (max_right, max_bottom)
+}
+
 // =============================================================================
 // Intrinsic Size Cache for Grid
 // =============================================================================
@@ -130,6 +157,8 @@ fn create_grid_contents_layout(
     border: @types.Rect::zero(),
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: children_layouts,
     text: node.text,
   }
@@ -1318,6 +1347,8 @@ fn compute_grid_layout_internal(
         border: default_rect(),
         overflow_x: @types.Visible,
         overflow_y: @types.Visible,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
         children: [],
         text: child.text,
       })
@@ -1506,6 +1537,8 @@ fn compute_grid_layout_internal(
       border: default_rect(),
       overflow_x: child.style.overflow_x,
       overflow_y: child.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: child_inner.children,
       text: child.text,
     })
@@ -1594,6 +1627,16 @@ fn compute_grid_layout_internal(
       flattened_idx = flattened_idx + 1
     }
   }
+  // Calculate scroll dimensions
+  let padding : @types.Rect[Double] = {
+    left: padding_left,
+    right: padding_right,
+    top: padding_top,
+    bottom: padding_bottom,
+  }
+  let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+    container_width, container_height, padding, final_children,
+  )
   {
     id: node.id,
     x: 0.0,
@@ -1601,12 +1644,7 @@ fn compute_grid_layout_internal(
     width: container_width,
     height: container_height,
     margin: default_rect(),
-    padding: {
-      left: padding_left,
-      right: padding_right,
-      top: padding_top,
-      bottom: padding_bottom,
-    },
+    padding,
     border: {
       left: border_left,
       right: border_right,
@@ -1615,6 +1653,8 @@ fn compute_grid_layout_internal(
     },
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width,
+    scroll_height,
     children: final_children,
     text: node.text,
   }
@@ -4304,6 +4344,8 @@ fn compute_child_layout(
     border: default_rect(),
     overflow_x: child.style.overflow_x,
     overflow_y: child.style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: child_layouts,
     text: child.text,
   }
@@ -4893,6 +4935,8 @@ fn layout_absolute_child(
     border: default_rect(),
     overflow_x: child.style.overflow_x,
     overflow_y: child.style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: child_inner.children,
     text: child.text,
   }
@@ -5024,6 +5068,8 @@ fn layout_fixed_child(
     border: default_rect(),
     overflow_x: child.style.overflow_x,
     overflow_y: child.style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: child_inner.children,
     text: child.text,
   }

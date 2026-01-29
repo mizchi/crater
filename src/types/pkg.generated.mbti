@@ -215,6 +215,8 @@ pub(all) struct Layout {
   border : Rect[Double]
   overflow_x : Overflow
   overflow_y : Overflow
+  scroll_width : Double
+  scroll_height : Double
   children : Array[Layout]
   text : String?
 }
@@ -277,6 +279,7 @@ pub impl Show for MinTrackSizing
 pub(all) enum Overflow {
   Visible
   Hidden
+  Clip
   Scroll
   Auto
 }

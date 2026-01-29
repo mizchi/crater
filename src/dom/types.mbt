@@ -69,6 +69,126 @@ pub enum CoreError {
 } derive(Show)
 
 ///|
+/// Scroll state for a scrollable element
+pub struct ScrollState {
+  scroll_left : Double
+  scroll_top : Double
+  scroll_width : Double
+  scroll_height : Double
+  client_width : Double
+  client_height : Double
+} derive(Eq, Show)
+
+///|
+/// Create a new ScrollState
+pub fn ScrollState::new(
+  scroll_width : Double,
+  scroll_height : Double,
+  client_width : Double,
+  client_height : Double,
+) -> ScrollState {
+  {
+    scroll_left: 0.0,
+    scroll_top: 0.0,
+    scroll_width,
+    scroll_height,
+    client_width,
+    client_height,
+  }
+}
+
+///|
+/// Create a default ScrollState (no scrolling)
+pub fn ScrollState::default() -> ScrollState {
+  {
+    scroll_left: 0.0,
+    scroll_top: 0.0,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    client_width: 0.0,
+    client_height: 0.0,
+  }
+}
+
+///|
+/// Clamp a value between min and max
+fn clamp(value : Double, min_val : Double, max_val : Double) -> Double {
+  if value < min_val {
+    min_val
+  } else if value > max_val {
+    max_val
+  } else {
+    value
+  }
+}
+
+///|
+/// Set scroll position (clamped to valid range)
+pub fn ScrollState::scroll_to(
+  self : ScrollState,
+  left : Double,
+  top : Double,
+) -> ScrollState {
+  let max_left = if self.scroll_width > self.client_width {
+    self.scroll_width - self.client_width
+  } else {
+    0.0
+  }
+  let max_top = if self.scroll_height > self.client_height {
+    self.scroll_height - self.client_height
+  } else {
+    0.0
+  }
+  {
+    ..self,
+    scroll_left: clamp(left, 0.0, max_left),
+    scroll_top: clamp(top, 0.0, max_top),
+  }
+}
+
+///|
+/// Scroll by delta (relative scroll)
+pub fn ScrollState::scroll_by(
+  self : ScrollState,
+  delta_x : Double,
+  delta_y : Double,
+) -> ScrollState {
+  self.scroll_to(self.scroll_left + delta_x, self.scroll_top + delta_y)
+}
+
+///|
+/// Check if horizontal scrolling is possible
+pub fn ScrollState::can_scroll_x(self : ScrollState) -> Bool {
+  self.scroll_width > self.client_width
+}
+
+///|
+/// Check if vertical scrolling is possible
+pub fn ScrollState::can_scroll_y(self : ScrollState) -> Bool {
+  self.scroll_height > self.client_height
+}
+
+///|
+/// Get maximum scroll position (horizontal)
+pub fn ScrollState::max_scroll_left(self : ScrollState) -> Double {
+  if self.scroll_width > self.client_width {
+    self.scroll_width - self.client_width
+  } else {
+    0.0
+  }
+}
+
+///|
+/// Get maximum scroll position (vertical)
+pub fn ScrollState::max_scroll_top(self : ScrollState) -> Double {
+  if self.scroll_height > self.client_height {
+    self.scroll_height - self.client_height
+  } else {
+    0.0
+  }
+}
+
+///|
 /// Create a new Rect
 pub fn Rect::new(
   x : Double,

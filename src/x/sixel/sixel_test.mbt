@@ -42,6 +42,8 @@ test "render_layout simple" {
     border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }

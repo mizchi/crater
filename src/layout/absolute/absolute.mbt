@@ -419,6 +419,8 @@ pub fn create_zero_layout(id : String) -> @types.Layout {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }

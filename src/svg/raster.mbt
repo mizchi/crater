@@ -85,6 +85,123 @@ pub fn raster_line(
 }
 
 ///|
+/// Bresenham's line with dash pattern support
+pub fn raster_line_dashed(
+  x0 : Int,
+  y0 : Int,
+  x1 : Int,
+  y1 : Int,
+  color : Color,
+  dasharray : Array[Double],
+  dashoffset : Double,
+  setter : PixelSetter,
+) -> Unit {
+  if dasharray.length() == 0 {
+    // No dash pattern, draw solid line
+    raster_line(x0, y0, x1, y1, color, setter)
+    return
+  }
+  // Calculate total line length
+  let dx_f = (x1 - x0).to_double()
+  let dy_f = (y1 - y0).to_double()
+  let total_len = (dx_f * dx_f + dy_f * dy_f).sqrt()
+  if total_len < 0.5 {
+    return
+  }
+  // Dash pattern state
+  let mut dash_pos = -dashoffset
+  // Normalize dashoffset to be within pattern
+  let total_dash = dasharray.fold(init=0.0, fn(acc, v) { acc + v })
+  while dash_pos < 0.0 {
+    dash_pos = dash_pos + total_dash
+  }
+  while dash_pos >= total_dash {
+    dash_pos = dash_pos - total_dash
+  }
+  // Bresenham setup
+  let mut x = x0
+  let mut y = y0
+  let dx = if x1 > x0 { x1 - x0 } else { x0 - x1 }
+  let dy = if y1 > y0 { y1 - y0 } else { y0 - y1 }
+  let sx = if x0 < x1 { 1 } else { -1 }
+  let sy = if y0 < y1 { 1 } else { -1 }
+  let mut err = dx - dy
+  while true {
+    // Calculate distance from start
+    let cur_dx = (x - x0).to_double()
+    let cur_dy = (y - y0).to_double()
+    let cur_dist = (cur_dx * cur_dx + cur_dy * cur_dy).sqrt()
+    // Update dash state based on distance traveled
+    let travel = cur_dist
+    let mut pos_in_pattern = dash_pos + travel
+    while pos_in_pattern >= total_dash {
+      pos_in_pattern = pos_in_pattern - total_dash
+    }
+    // Find current dash index
+    let mut cum = 0.0
+    let mut cur_idx = 0
+    for i = 0; i < dasharray.length(); i = i + 1 {
+      if cum + dasharray[i] > pos_in_pattern {
+        cur_idx = i
+        break
+      }
+      cum = cum + dasharray[i]
+    }
+    // Even indices draw, odd indices gap
+    let is_drawing = cur_idx % 2 == 0
+    if is_drawing {
+      setter.pixel(x, y, color)
+    }
+    if x == x1 && y == y1 {
+      break
+    }
+    let e2 = 2 * err
+    if e2 > -dy {
+      err = err - dy
+      x = x + sx
+    }
+    if e2 < dx {
+      err = err + dx
+      y = y + sy
+    }
+  }
+}
+
+///|
+/// Draw polyline with dash pattern
+pub fn raster_polyline_dashed(
+  points : Array[(Int, Int)],
+  color : Color,
+  dasharray : Array[Double],
+  dashoffset : Double,
+  setter : PixelSetter,
+) -> Unit {
+  if points.length() < 2 {
+    return
+  }
+  if dasharray.length() == 0 {
+    raster_polyline(points, color, setter)
+    return
+  }
+  let mut offset = dashoffset
+  for i = 0; i < points.length() - 1; i = i + 1 {
+    let (x0, y0) = points[i]
+    let (x1, y1) = points[i + 1]
+    raster_line_dashed(x0, y0, x1, y1, color, dasharray, offset, setter)
+    // Calculate line length and update offset
+    let dx = (x1 - x0).to_double()
+    let dy = (y1 - y0).to_double()
+    let len = (dx * dx + dy * dy).sqrt()
+    offset = offset + len
+    // Normalize offset within dash pattern total length
+    let total_dash = dasharray.fold(init=0.0, fn(acc, v) { acc + v })
+    while offset >= total_dash {
+      offset = offset - total_dash
+    }
+  }
+}
+
+///|
 /// Draw rectangle outline (stroke only)
 pub fn raster_rect_stroke(
   x : Int,
@@ -131,6 +248,188 @@ pub fn raster_rect_fill(
   for py = y; py < y + h; py = py + 1 {
     for px = x; px < x + w; px = px + 1 {
       setter.pixel(px, py, color)
+    }
+  }
+}
+
+///|
+/// Draw filled rectangle with linear gradient
+pub fn raster_rect_gradient(
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  grad : LinearGradient,
+  opacity : Double,
+  setter : PixelSetter,
+) -> Unit {
+  if w <= 0 || h <= 0 {
+    return
+  }
+  // Gradient direction vector (in normalized 0-1 space)
+  let gx1 = grad.x1
+  let gy1 = grad.y1
+  let gx2 = grad.x2
+  let gy2 = grad.y2
+  let gdx = gx2 - gx1
+  let gdy = gy2 - gy1
+  let glen_sq = gdx * gdx + gdy * gdy
+  for py = y; py < y + h; py = py + 1 {
+    for px = x; px < x + w; px = px + 1 {
+      // Normalize pixel position to 0-1 within rect
+      let nx = if w > 1 {
+        (px - x).to_double() / (w - 1).to_double()
+      } else {
+        0.5
+      }
+      let ny = if h > 1 {
+        (py - y).to_double() / (h - 1).to_double()
+      } else {
+        0.5
+      }
+      // Project onto gradient line
+      let t = if glen_sq > 0.0001 {
+        ((nx - gx1) * gdx + (ny - gy1) * gdy) / glen_sq
+      } else {
+        0.0
+      }
+      // Get color at this position
+      let color = grad.color_at(t)
+      let final_color = if opacity < 1.0 {
+        Color::rgba(
+          color.r,
+          color.g,
+          color.b,
+          (color.a.to_double() * opacity).to_int(),
+        )
+      } else {
+        color
+      }
+      setter.pixel(px, py, final_color)
+    }
+  }
+}
+
+///|
+/// Draw filled rectangle with radial gradient
+pub fn raster_rect_radial_gradient(
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  grad : RadialGradient,
+  opacity : Double,
+  setter : PixelSetter,
+) -> Unit {
+  if w <= 0 || h <= 0 {
+    return
+  }
+  for py = y; py < y + h; py = py + 1 {
+    for px = x; px < x + w; px = px + 1 {
+      // Normalize pixel position to 0-1 within rect
+      let nx = if w > 1 {
+        (px - x).to_double() / (w - 1).to_double()
+      } else {
+        0.5
+      }
+      let ny = if h > 1 {
+        (py - y).to_double() / (h - 1).to_double()
+      } else {
+        0.5
+      }
+      // Get color using radial gradient
+      let color = grad.color_at(nx, ny, 1.0, 1.0)
+      let final_color = if opacity < 1.0 {
+        Color::rgba(
+          color.r,
+          color.g,
+          color.b,
+          (color.a.to_double() * opacity).to_int(),
+        )
+      } else {
+        color
+      }
+      setter.pixel(px, py, final_color)
+    }
+  }
+}
+
+///|
+/// Draw filled circle with radial gradient
+pub fn raster_circle_radial_gradient(
+  cx : Int,
+  cy : Int,
+  r : Int,
+  grad : RadialGradient,
+  opacity : Double,
+  setter : PixelSetter,
+) -> Unit {
+  if r <= 0 {
+    return
+  }
+  let r_sq = r * r
+  for py = cy - r; py <= cy + r; py = py + 1 {
+    for px = cx - r; px <= cx + r; px = px + 1 {
+      let dx = px - cx
+      let dy = py - cy
+      let dist_sq = dx * dx + dy * dy
+      if dist_sq <= r_sq {
+        // Normalize position: center is (0.5, 0.5), edges at distance r
+        let nx = 0.5 + dx.to_double() / (2.0 * r.to_double())
+        let ny = 0.5 + dy.to_double() / (2.0 * r.to_double())
+        let color = grad.color_at(nx, ny, 1.0, 1.0)
+        let final_color = if opacity < 1.0 {
+          Color::rgba(
+            color.r,
+            color.g,
+            color.b,
+            (color.a.to_double() * opacity).to_int(),
+          )
+        } else {
+          color
+        }
+        setter.pixel(px, py, final_color)
+      }
+    }
+  }
+}
+
+///|
+/// Draw filled ellipse with radial gradient
+pub fn raster_ellipse_radial_gradient(
+  cx : Int,
+  cy : Int,
+  rx : Int,
+  ry : Int,
+  grad : RadialGradient,
+  opacity : Double,
+  setter : PixelSetter,
+) -> Unit {
+  if rx <= 0 || ry <= 0 {
+    return
+  }
+  for py = cy - ry; py <= cy + ry; py = py + 1 {
+    for px = cx - rx; px <= cx + rx; px = px + 1 {
+      let dx = (px - cx).to_double() / rx.to_double()
+      let dy = (py - cy).to_double() / ry.to_double()
+      let dist_sq = dx * dx + dy * dy
+      if dist_sq <= 1.0 {
+        // Normalize position to 0-1 range
+        let nx = 0.5 + (px - cx).to_double() / (2.0 * rx.to_double())
+        let ny = 0.5 + (py - cy).to_double() / (2.0 * ry.to_double())
+        let color = grad.color_at(nx, ny, 1.0, 1.0)
+        let final_color = if opacity < 1.0 {
+          Color::rgba(
+            color.r,
+            color.g,
+            color.b,
+            (color.a.to_double() * opacity).to_int(),
+          )
+        } else {
+          color
+        }
+        setter.pixel(px, py, final_color)
+      }
     }
   }
 }
@@ -596,4 +895,153 @@ pub fn raster_thick_line(
     (x0 - px, y0 - py),
   ]
   raster_polygon_fill(points, color, setter)
+}
+
+///|
+/// Simple 5x7 bitmap font for ASCII characters
+/// Each character is represented as 7 bytes (rows), each byte has 5 bits (columns)
+/// Bit 0x10 = leftmost pixel, 0x01 = rightmost pixel
+fn get_char_bitmap(c : Char) -> Array[Int] {
+  match c {
+    ' ' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+    '!' => [0x04, 0x04, 0x04, 0x04, 0x04, 0x00, 0x04]
+    '"' => [0x0A, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00]
+    '#' => [0x0A, 0x1F, 0x0A, 0x0A, 0x1F, 0x0A, 0x00]
+    '$' => [0x04, 0x0F, 0x14, 0x0E, 0x05, 0x1E, 0x04]
+    '%' => [0x18, 0x19, 0x02, 0x04, 0x08, 0x13, 0x03]
+    '&' => [0x08, 0x14, 0x14, 0x08, 0x15, 0x12, 0x0D]
+    '\'' => [0x04, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00]
+    '(' => [0x02, 0x04, 0x08, 0x08, 0x08, 0x04, 0x02]
+    ')' => [0x08, 0x04, 0x02, 0x02, 0x02, 0x04, 0x08]
+    '*' => [0x04, 0x15, 0x0E, 0x1F, 0x0E, 0x15, 0x04]
+    '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00]
+    ',' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x08]
+    '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00]
+    '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04]
+    '/' => [0x01, 0x02, 0x02, 0x04, 0x08, 0x08, 0x10]
+    '0' => [0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E]
+    '1' => [0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E]
+    '2' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F]
+    '3' => [0x0E, 0x11, 0x01, 0x06, 0x01, 0x11, 0x0E]
+    '4' => [0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02]
+    '5' => [0x1F, 0x10, 0x1E, 0x01, 0x01, 0x11, 0x0E]
+    '6' => [0x06, 0x08, 0x10, 0x1E, 0x11, 0x11, 0x0E]
+    '7' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08]
+    '8' => [0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E]
+    '9' => [0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C]
+    ':' => [0x00, 0x00, 0x04, 0x00, 0x00, 0x04, 0x00]
+    ';' => [0x00, 0x00, 0x04, 0x00, 0x00, 0x04, 0x08]
+    '<' => [0x02, 0x04, 0x08, 0x10, 0x08, 0x04, 0x02]
+    '=' => [0x00, 0x00, 0x1F, 0x00, 0x1F, 0x00, 0x00]
+    '>' => [0x08, 0x04, 0x02, 0x01, 0x02, 0x04, 0x08]
+    '?' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x00, 0x04]
+    '@' => [0x0E, 0x11, 0x17, 0x15, 0x17, 0x10, 0x0E]
+    'A' => [0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11]
+    'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E]
+    'C' => [0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E]
+    'D' => [0x1E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1E]
+    'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F]
+    'F' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x10]
+    'G' => [0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E]
+    'H' => [0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11]
+    'I' => [0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E]
+    'J' => [0x07, 0x02, 0x02, 0x02, 0x02, 0x12, 0x0C]
+    'K' => [0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11]
+    'L' => [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F]
+    'M' => [0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11]
+    'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11]
+    'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E]
+    'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10]
+    'Q' => [0x0E, 0x11, 0x11, 0x11, 0x15, 0x12, 0x0D]
+    'R' => [0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11]
+    'S' => [0x0E, 0x11, 0x10, 0x0E, 0x01, 0x11, 0x0E]
+    'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04]
+    'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E]
+    'V' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x0A, 0x04]
+    'W' => [0x11, 0x11, 0x11, 0x15, 0x15, 0x1B, 0x11]
+    'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11]
+    'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04]
+    'Z' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F]
+    '[' => [0x0E, 0x08, 0x08, 0x08, 0x08, 0x08, 0x0E]
+    '\\' => [0x10, 0x08, 0x08, 0x04, 0x02, 0x02, 0x01]
+    ']' => [0x0E, 0x02, 0x02, 0x02, 0x02, 0x02, 0x0E]
+    '^' => [0x04, 0x0A, 0x11, 0x00, 0x00, 0x00, 0x00]
+    '_' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F]
+    '`' => [0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00]
+    'a' => [0x00, 0x00, 0x0E, 0x01, 0x0F, 0x11, 0x0F]
+    'b' => [0x10, 0x10, 0x1E, 0x11, 0x11, 0x11, 0x1E]
+    'c' => [0x00, 0x00, 0x0E, 0x10, 0x10, 0x10, 0x0E]
+    'd' => [0x01, 0x01, 0x0F, 0x11, 0x11, 0x11, 0x0F]
+    'e' => [0x00, 0x00, 0x0E, 0x11, 0x1F, 0x10, 0x0E]
+    'f' => [0x06, 0x08, 0x08, 0x1E, 0x08, 0x08, 0x08]
+    'g' => [0x00, 0x00, 0x0F, 0x11, 0x0F, 0x01, 0x0E]
+    'h' => [0x10, 0x10, 0x1E, 0x11, 0x11, 0x11, 0x11]
+    'i' => [0x04, 0x00, 0x0C, 0x04, 0x04, 0x04, 0x0E]
+    'j' => [0x02, 0x00, 0x06, 0x02, 0x02, 0x12, 0x0C]
+    'k' => [0x10, 0x10, 0x12, 0x14, 0x18, 0x14, 0x12]
+    'l' => [0x0C, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E]
+    'm' => [0x00, 0x00, 0x1A, 0x15, 0x15, 0x11, 0x11]
+    'n' => [0x00, 0x00, 0x1E, 0x11, 0x11, 0x11, 0x11]
+    'o' => [0x00, 0x00, 0x0E, 0x11, 0x11, 0x11, 0x0E]
+    'p' => [0x00, 0x00, 0x1E, 0x11, 0x1E, 0x10, 0x10]
+    'q' => [0x00, 0x00, 0x0F, 0x11, 0x0F, 0x01, 0x01]
+    'r' => [0x00, 0x00, 0x16, 0x19, 0x10, 0x10, 0x10]
+    's' => [0x00, 0x00, 0x0E, 0x10, 0x0E, 0x01, 0x1E]
+    't' => [0x08, 0x08, 0x1E, 0x08, 0x08, 0x09, 0x06]
+    'u' => [0x00, 0x00, 0x11, 0x11, 0x11, 0x11, 0x0E]
+    'v' => [0x00, 0x00, 0x11, 0x11, 0x11, 0x0A, 0x04]
+    'w' => [0x00, 0x00, 0x11, 0x11, 0x15, 0x15, 0x0A]
+    'x' => [0x00, 0x00, 0x11, 0x0A, 0x04, 0x0A, 0x11]
+    'y' => [0x00, 0x00, 0x11, 0x11, 0x0F, 0x01, 0x0E]
+    'z' => [0x00, 0x00, 0x1F, 0x02, 0x04, 0x08, 0x1F]
+    '{' => [0x02, 0x04, 0x04, 0x08, 0x04, 0x04, 0x02]
+    '|' => [0x04, 0x04, 0x04, 0x00, 0x04, 0x04, 0x04]
+    '}' => [0x08, 0x04, 0x04, 0x02, 0x04, 0x04, 0x08]
+    '~' => [0x00, 0x08, 0x15, 0x02, 0x00, 0x00, 0x00]
+    _ => [0x1F, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1F] // Default: box
+  }
+}
+
+///|
+/// Render text using bitmap font
+pub fn raster_text(
+  x : Int,
+  y : Int,
+  text : String,
+  font_size : Int,
+  color : Color,
+  setter : PixelSetter,
+) -> Unit {
+  // Base font is 5x7 pixels
+  // Scale factor based on font_size (base is 7 pixels high)
+  let scale = if font_size <= 7 { 1 } else { font_size / 7 }
+  let char_width = 5 * scale
+  let char_height = 7 * scale
+  let spacing = scale // Space between characters
+  let mut cursor_x = x
+  // y is the baseline, so move up by font height
+  let start_y = y - char_height
+  for i = 0; i < text.length(); i = i + 1 {
+    let c = text[i].unsafe_to_char()
+    let bitmap = get_char_bitmap(c)
+    // Draw the character
+    for row = 0; row < 7; row = row + 1 {
+      let row_bits = bitmap[row]
+      for col = 0; col < 5; col = col + 1 {
+        // Check if bit is set (MSB is left side)
+        let bit_mask = 0x10 >> col
+        if (row_bits & bit_mask) != 0 {
+          // Draw scaled pixel
+          for sy = 0; sy < scale; sy = sy + 1 {
+            for sx = 0; sx < scale; sx = sx + 1 {
+              let px = cursor_x + col * scale + sx
+              let py = start_y + row * scale + sy
+              setter.pixel(px, py, color)
+            }
+          }
+        }
+      }
+    }
+    cursor_x = cursor_x + char_width + spacing
+  }
 }

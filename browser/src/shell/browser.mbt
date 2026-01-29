@@ -71,6 +71,11 @@ pub struct Browser {
   mut script_executor : @js.ScriptExecutor?
   /// Whether JavaScript execution is enabled (requires --enable-js flag)
   mut enable_js : Bool
+  /// Element scroll states (keyed by element id)
+  /// For elements with overflow: auto/scroll that have scrollable content
+  element_scroll_states : Map[String, @dom.ScrollState]
+  /// Currently focused scrollable element id (for keyboard scrolling)
+  focused_scrollable : Ref[String?]
 }
 
 ///|
@@ -107,6 +112,8 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     scheduler: @scheduler.Scheduler::new(),
     script_executor: None,
     enable_js: false, // Disabled by default for security
+    element_scroll_states: {},
+    focused_scrollable: Ref::new(None),
   }
 }
 
@@ -417,6 +424,8 @@ async fn Browser::load_url(
   self.links = extract_links(self.html_content)
   self.focused_link = 0
   self.scroll_y = 0
+  // Clear element scroll states on navigation
+  self.clear_element_scroll_states()
   // Parse HTML using regular parser (streaming parser under investigation)
   let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
   self.parsed_doc = Some(doc)
@@ -467,6 +476,8 @@ pub async fn Browser::load_url_lightweight(
   self.links = []
   self.focused_link = 0
   self.scroll_y = 0
+  // Clear element scroll states on navigation
+  self.clear_element_scroll_states()
   // Parse HTML using regular parser (streaming parser under investigation)
   let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
   self.parsed_doc = Some(doc)
@@ -660,10 +671,13 @@ pub fn Browser::render_text(self : Browser) -> String {
       dark_mode=self.dark_mode,
       total_content_height=self.content_height,
       show_scrollbar=true,
+      element_scroll_positions=self.get_element_scroll_positions(),
     )
   }
   // Store link regions for click hit testing
   self.link_regions = buffer_result.link_regions
+  // Initialize scroll states for scrollable elements
+  self.init_scrollable_elements(buffer_result.scrollable_elements)
   let ansi = match self.prev_buffer {
     Some(prev) =>
       if force_full {
@@ -710,6 +724,208 @@ pub fn Browser::scroll_down(self : Browser, amount : Int) -> Unit {
 /// Scroll up
 pub fn Browser::scroll_up(self : Browser, amount : Int) -> Unit {
   self.scroll_y = (self.scroll_y - amount).max(0)
+}
+
+///|
+/// Scroll a specific element down
+pub fn Browser::element_scroll_down(
+  self : Browser,
+  element_id : String,
+  amount : Double,
+) -> Unit {
+  match self.element_scroll_states.get(element_id) {
+    Some(state) => {
+      let new_state = state.scroll_by(0.0, amount)
+      self.element_scroll_states.set(element_id, new_state)
+    }
+    None => ()
+  }
+}
+
+///|
+/// Scroll a specific element up
+pub fn Browser::element_scroll_up(
+  self : Browser,
+  element_id : String,
+  amount : Double,
+) -> Unit {
+  match self.element_scroll_states.get(element_id) {
+    Some(state) => {
+      let new_state = state.scroll_by(0.0, -amount)
+      self.element_scroll_states.set(element_id, new_state)
+    }
+    None => ()
+  }
+}
+
+///|
+/// Scroll focused scrollable element (if any)
+/// Returns true if scroll was handled, false otherwise
+pub fn Browser::scroll_focused_element(
+  self : Browser,
+  delta_y : Double,
+) -> Bool {
+  match self.focused_scrollable.val {
+    Some(id) => {
+      match self.element_scroll_states.get(id) {
+        Some(state) => {
+          let new_state = state.scroll_by(0.0, delta_y)
+          self.element_scroll_states.set(id, new_state)
+          true
+        }
+        None => false
+      }
+    }
+    None => false
+  }
+}
+
+///|
+/// Set the focused scrollable element
+pub fn Browser::set_focused_scrollable(
+  self : Browser,
+  element_id : String?,
+) -> Unit {
+  self.focused_scrollable.val = element_id
+}
+
+///|
+/// Get the focused scrollable element id
+pub fn Browser::get_focused_scrollable(self : Browser) -> String? {
+  self.focused_scrollable.val
+}
+
+///|
+/// Handle scroll event at screen coordinates (character-based)
+/// Returns true if scroll was handled by an element, false if page scroll should occur
+pub fn Browser::handle_scroll_at(
+  self : Browser,
+  char_col : Int,
+  char_row : Int,
+  delta_y : Double,
+) -> Bool {
+  // Convert character coordinates to pixel coordinates
+  let font_width = 8.0
+  let font_height = 16.0
+  let px_x = char_col.to_double() * font_width
+  let px_y = (char_row + self.scroll_y / 16).to_double() * font_height
+  // Try to find scrollable element at this position using the render tree
+  match self.find_scrollable_element_at(px_x, px_y) {
+    Some(element_id) => {
+      // Scroll the element
+      if delta_y > 0.0 {
+        self.element_scroll_down(element_id, delta_y)
+      } else {
+        self.element_scroll_up(element_id, -delta_y)
+      }
+      // Set as focused scrollable
+      self.set_focused_scrollable(Some(element_id))
+      true
+    }
+    None => {
+      // Clear focused scrollable when scrolling outside
+      self.set_focused_scrollable(None)
+      false
+    }
+  }
+}
+
+///|
+/// Find scrollable element at pixel coordinates using cached render/layout
+/// This is a simplified version that uses the element scroll states
+fn Browser::find_scrollable_element_at(
+  self : Browser,
+  _px_x : Double,
+  _px_y : Double,
+) -> String? {
+  // For now, return the first scrollable element if any exist
+  // Full hit testing requires access to the layout tree which is complex
+  // A more complete implementation would use @paint.find_scrollable_at
+  // with the current paint tree
+  //
+  // As a workaround, we check if there's a focused element that's scrollable
+  match self.get_focused_element_id() {
+    Some(id) =>
+      if self.element_scroll_states.contains(id) {
+        Some(id)
+      } else {
+        None
+      }
+    None => None
+  }
+}
+
+///|
+/// Get scroll state for an element
+pub fn Browser::get_element_scroll(
+  self : Browser,
+  element_id : String,
+) -> @dom.ScrollState? {
+  self.element_scroll_states.get(element_id)
+}
+
+///|
+/// Initialize scroll state for an element
+/// Call this when a scrollable element is detected
+pub fn Browser::init_element_scroll(
+  self : Browser,
+  element_id : String,
+  scroll_width : Double,
+  scroll_height : Double,
+  client_width : Double,
+  client_height : Double,
+) -> Unit {
+  let state = @dom.ScrollState::new(
+    scroll_width,
+    scroll_height,
+    client_width,
+    client_height,
+  )
+  self.element_scroll_states.set(element_id, state)
+}
+
+///|
+/// Clear all element scroll states (call on page navigation)
+pub fn Browser::clear_element_scroll_states(self : Browser) -> Unit {
+  self.element_scroll_states.clear()
+  self.focused_scrollable.val = None
+}
+
+///|
+/// Initialize scroll states from detected scrollable elements
+/// Called during render to set up scroll states for elements with overflow
+fn Browser::init_scrollable_elements(
+  self : Browser,
+  elements : Array[@paint.ScrollableElement],
+) -> Unit {
+  for elem in elements {
+    // Only initialize if not already tracked (preserve scroll position)
+    if not(self.element_scroll_states.contains(elem.id)) {
+      self.init_element_scroll(
+        elem.id,
+        elem.scroll_width,
+        elem.scroll_height,
+        elem.client_width,
+        elem.client_height,
+      )
+    }
+  }
+}
+
+///|
+/// Convert element scroll states to TUI format for rendering
+fn Browser::get_element_scroll_positions(
+  self : Browser,
+) -> Map[String, @tui.ElementScrollPos] {
+  let result : Map[String, @tui.ElementScrollPos] = {}
+  self.element_scroll_states.each(fn(id, state) {
+    result.set(id, {
+      scroll_top: state.scroll_top,
+      scroll_height: state.scroll_height,
+      client_height: state.client_height,
+    })
+  })
+  result
 }
 
 ///|

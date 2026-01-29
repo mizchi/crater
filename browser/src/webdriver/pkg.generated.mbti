@@ -182,6 +182,7 @@ pub impl Show for BidiEvent
 pub enum BidiOutMessage {
   Response(BidiResponse)
   Event(BidiEvent)
+  Raw(String)
 }
 pub fn BidiOutMessage::to_json(Self) -> String
 pub impl Show for BidiOutMessage
@@ -199,6 +200,7 @@ pub struct BidiProtocol {
   context_user_context : Map[String, String]
   mut socket : @core.Any?
   mut use_quickjs : Bool
+  mut dom_initialized : Bool
 }
 pub fn BidiProtocol::clear_socket(Self) -> Unit
 pub fn BidiProtocol::disable_quickjs(Self) -> Unit

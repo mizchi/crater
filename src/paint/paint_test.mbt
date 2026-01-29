@@ -151,6 +151,8 @@ test "viewport_culling_basic" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }
@@ -165,6 +167,8 @@ test "viewport_culling_basic" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }
@@ -179,6 +183,8 @@ test "viewport_culling_basic" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }
@@ -193,6 +199,8 @@ test "viewport_culling_basic" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [child1_layout, child2_layout, child3_layout],
     text: None,
   }
@@ -260,6 +268,8 @@ test "viewport_culling_zero_height_container" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }
@@ -275,6 +285,8 @@ test "viewport_culling_zero_height_container" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [child_layout],
     text: None,
   }
@@ -335,6 +347,8 @@ test "viewport_culling_scroll_simulation" {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: [],
     text: None,
   }

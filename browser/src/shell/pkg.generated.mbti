@@ -49,19 +49,26 @@ pub struct Browser {
   scheduler : @scheduler.Scheduler
   mut script_executor : @js.ScriptExecutor?
   mut enable_js : Bool
+  element_scroll_states : Map[String, @dom.ScrollState]
+  focused_scrollable : Ref[String?]
 }
+pub fn Browser::clear_element_scroll_states(Self) -> Unit
 pub fn Browser::debug_layout(Self) -> Unit
+pub fn Browser::element_scroll_down(Self, String, Double) -> Unit
+pub fn Browser::element_scroll_up(Self, String, Double) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
 pub fn Browser::execute_scripts(Self) -> Int
 pub async fn Browser::execute_scripts_async(Self) -> Int
 pub fn Browser::exit_hint_mode(Self) -> Unit
 pub fn Browser::focusable_count(Self) -> Int
 pub fn Browser::get_dom_tree(Self) -> @dom.DomTree?
+pub fn Browser::get_element_scroll(Self, String) -> @dom.ScrollState?
 pub fn Browser::get_focus_index(Self) -> Int
 pub fn Browser::get_focus_info(Self) -> (String?, @aom.Role?)
 pub fn Browser::get_focused_element_id(Self) -> String?
 pub fn Browser::get_focused_element_name(Self) -> String?
 pub fn Browser::get_focused_link_url(Self) -> String?
+pub fn Browser::get_focused_scrollable(Self) -> String?
 pub fn Browser::get_link_at(Self, Int, Int) -> String?
 pub fn Browser::get_request_sandbox(Self) -> @http.RequestSandbox
 pub fn Browser::get_scheduler(Self) -> @scheduler.Scheduler
@@ -69,6 +76,7 @@ pub fn Browser::get_visible_focus_index(Self) -> Int
 pub fn Browser::get_visible_focusable_count(Self) -> Int
 pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
 pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
+pub fn Browser::init_element_scroll(Self, String, Double, Double, Double, Double) -> Unit
 pub async fn Browser::load_url_lightweight(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate_lightweight(Self, String) -> String raise @http.HttpError
@@ -83,9 +91,11 @@ pub fn Browser::render_grounding(Self) -> String
 pub fn Browser::render_json(Self) -> String
 pub fn Browser::render_text(Self) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
+pub fn Browser::scroll_focused_element(Self, Double) -> Bool
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
+pub fn Browser::set_focused_scrollable(Self, String?) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool

@@ -23,9 +23,55 @@ fn create_zero_layout(node : @node.Node) -> @types.Layout {
     border: zero_rect,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children,
     text: node.text,
   }
+}
+
+///|
+/// Calculate scroll dimensions from children layouts
+/// Returns (scroll_width, scroll_height) representing the scrollable content size
+fn calculate_scroll_dimensions(
+  container_width : Double,
+  container_height : Double,
+  padding : @types.Rect[Double],
+  children : Array[@types.Layout],
+) -> (Double, Double) {
+  // Start with content box dimensions (container minus padding is content area)
+  let mut max_right = container_width - padding.left - padding.right
+  let mut max_bottom = container_height - padding.top - padding.bottom
+  // Find the maximum extent of all children
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    // Child position is relative to content box (after padding)
+    // Include child's margin in the extent
+    let child_right = child.x + child.width + child.margin.right
+    let child_bottom = child.y + child.height + child.margin.bottom
+    if child_right > max_right {
+      max_right = child_right
+    }
+    if child_bottom > max_bottom {
+      max_bottom = child_bottom
+    }
+    // Also consider child's scroll extent for nested scrollers
+    if child.scroll_width > child.width {
+      let nested_right = child.x + child.scroll_width + child.margin.right
+      if nested_right > max_right {
+        max_right = nested_right
+      }
+    }
+    if child.scroll_height > child.height {
+      let nested_bottom = child.y + child.scroll_height + child.margin.bottom
+      if nested_bottom > max_bottom {
+        max_bottom = nested_bottom
+      }
+    }
+  }
+  // Return scroll dimensions (content extent, not including padding)
+  // Minimum is the container's content area
+  (max_right, max_bottom)
 }
 
 ///|
@@ -460,6 +506,8 @@ fn compute_mixed_content_layout(
           border: child_layout.border,
           overflow_x: child_layout.overflow_x,
           overflow_y: child_layout.overflow_y,
+          scroll_width: child_layout.scroll_width,
+          scroll_height: child_layout.scroll_height,
           children: child_layout.children,
           text: child_layout.text,
         }
@@ -524,6 +572,8 @@ fn compute_root_layout(
             border: child.border,
             overflow_x: child.overflow_x,
             overflow_y: child.overflow_y,
+            scroll_width: child.scroll_width,
+            scroll_height: child.scroll_height,
             children: child.children,
             text: child.text,
           })
@@ -545,6 +595,8 @@ fn compute_root_layout(
           border: layout.border,
           overflow_x: layout.overflow_x,
           overflow_y: layout.overflow_y,
+          scroll_width: layout.scroll_width,
+          scroll_height: layout.scroll_height,
           children: adjusted_children,
           text: layout.text,
         }
@@ -566,6 +618,8 @@ fn compute_root_layout(
             border: layout.border,
             overflow_x: layout.overflow_x,
             overflow_y: layout.overflow_y,
+            scroll_width: layout.scroll_width,
+            scroll_height: layout.scroll_height,
             children: layout.children,
             text: layout.text,
           }
@@ -645,6 +699,8 @@ fn compute_with_collapse(
         border: child_layout.border,
         overflow_x: child_layout.overflow_x,
         overflow_y: child_layout.overflow_y,
+        scroll_width: child_layout.scroll_width,
+        scroll_height: child_layout.scroll_height,
         children: child_layout.children,
         text: child_layout.text,
       }
@@ -664,6 +720,8 @@ fn compute_with_collapse(
         border: @types.Rect::zero(),
         overflow_x: @types.Visible,
         overflow_y: @types.Visible,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
         children: children_layouts,
         text: node.text,
       },
@@ -778,6 +836,8 @@ fn compute_with_collapse(
             border,
             overflow_x: style.overflow_x,
             overflow_y: style.overflow_y,
+            scroll_width: 0.0,
+            scroll_height: 0.0,
             children: [],
             text: node.text,
           },
@@ -1366,6 +1426,10 @@ fn compute_with_collapse(
         None => ()
       }
     }
+    // Calculate scroll dimensions
+    let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+      box_width, box_height, padding, child_layouts,
+    )
     let layout : @types.Layout = {
       id: node.id,
       x: 0.0,
@@ -1377,6 +1441,8 @@ fn compute_with_collapse(
       border,
       overflow_x: style.overflow_x,
       overflow_y: style.overflow_y,
+      scroll_width,
+      scroll_height,
       children: child_layouts,
       text: node.text,
     }
@@ -1469,6 +1535,10 @@ fn compute_with_collapse(
         None => ()
       }
     }
+    // Calculate scroll dimensions
+    let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+      box_width, box_height, padding, child_layouts,
+    )
     let layout : @types.Layout = {
       id: node.id,
       x: 0.0,
@@ -1480,6 +1550,8 @@ fn compute_with_collapse(
       border,
       overflow_x: style.overflow_x,
       overflow_y: style.overflow_y,
+      scroll_width,
+      scroll_height,
       children: child_layouts,
       text: node.text,
     }
@@ -1685,6 +1757,8 @@ fn compute_with_collapse(
       border: child_inner.border,
       overflow_x: child.style.overflow_x,
       overflow_y: child.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: child_inner.children,
       text: child.text,
     }
@@ -1917,6 +1991,8 @@ fn compute_with_collapse(
       border: child_layout.border,
       overflow_x: child_layout.overflow_x,
       overflow_y: child_layout.overflow_y,
+      scroll_width: child_layout.scroll_width,
+      scroll_height: child_layout.scroll_height,
       children: child_layout.children,
       text: child_layout.text,
     }
@@ -2175,6 +2251,10 @@ fn compute_with_collapse(
       None => () // Should not happen
     }
   }
+  // Calculate scroll dimensions
+  let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+    box_width, box_height, padding, child_layouts,
+  )
   let layout : @types.Layout = {
     id: node.id,
     x: 0.0,
@@ -2186,6 +2266,8 @@ fn compute_with_collapse(
     border,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_width,
+    scroll_height,
     children: child_layouts,
     text: node.text,
   }
@@ -2459,6 +2541,8 @@ fn layout_absolute_child(
     border: child_inner.border,
     overflow_x: child_style.overflow_x,
     overflow_y: child_style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: child_inner.children,
     text: child.text,
   }
@@ -2663,6 +2747,8 @@ fn layout_fixed_child(
     border: child_inner.border,
     overflow_x: child_style.overflow_x,
     overflow_y: child_style.overflow_y,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
     children: child_inner.children,
     text: child.text,
   }
@@ -2732,6 +2818,8 @@ fn compute_nested(
       border,
       overflow_x: node.style.overflow_x,
       overflow_y: node.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: [],
       text: node.text,
     }
@@ -2817,6 +2905,8 @@ fn compute_nested_intrinsic(
       border,
       overflow_x: node.style.overflow_x,
       overflow_y: node.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
       children: [],
       text: node.text,
     }

@@ -2,13 +2,69 @@
 package "mizchi/crater/svg"
 
 // Values
+pub fn apply_blur(Array[Array[Color]], Int) -> Array[Array[Color]]
+
+pub fn apply_brightness(Color, Double) -> Color
+
+pub fn apply_color_matrix(Color, FixedArray[Double]) -> Color
+
+pub fn apply_contrast(Color, Double) -> Color
+
+pub fn apply_drop_shadow(Image, Int, Int, Int, Color) -> Image
+
+pub fn apply_filter(Image, Filter) -> Image
+
+pub fn apply_grayscale(Color, Double) -> Color
+
+pub fn apply_hue_rotate(Color, Double) -> Color
+
+pub fn apply_invert(Color, Double) -> Color
+
+pub fn apply_mask_to_image(Image, Image, MaskType) -> Image
+
+pub fn apply_saturate(Color, Double) -> Color
+
+pub fn apply_sepia(Color, Double) -> Color
+
+pub fn apply_text_overflow(String, Double, Double, TextOverflow) -> String
+
+pub fn blend_images(Image, Image, BlendMode) -> Image
+
+pub fn blend_with_mode(Color, Color, BlendMode) -> Color
+
+pub fn blit(Image, Image, Int, Int) -> Unit
+
+pub fn blit_scaled(Image, Image, Int, Int, Int, Int) -> Unit
+
+pub fn blit_sprite(Image, Sprite, Int, Int) -> Unit
+
 pub fn circle(String, Double, Double, Double) -> SVGNode
+
+pub fn collide_circle_circle(Double, Double, Double, Double, Double, Double) -> Bool
+
+pub fn collide_circle_rect(Double, Double, Double, Double, Double, Double, Double) -> Bool
+
+pub fn collide_rect_rect(Double, Double, Double, Double, Double, Double, Double, Double) -> Bool
+
+pub fn collide_shapes(Shape, Shape) -> Bool
+
+pub fn compute_alpha_mask(Color) -> Double
+
+pub fn compute_luminance(Color) -> Double
 
 pub fn degrees_to_radians(Double) -> Double
 
 pub fn group(String, Array[SVGNode]) -> SVGNode
 
+pub fn hit_test_shape(Double, Double, Shape) -> Bool
+
+pub fn hue_rotate_matrix(Double) -> FixedArray[Double]
+
+pub fn identity_matrix() -> FixedArray[Double]
+
 pub fn line(String, Double, Double, Double, Double) -> SVGNode
+
+pub fn luminance_to_alpha_matrix() -> FixedArray[Double]
 
 pub fn parse_path(String) -> Array[PathCommand]
 
@@ -22,17 +78,25 @@ pub fn path_bbox(Array[PathCommand]) -> BoundingBox
 
 pub fn path_to_polylines(Array[PathCommand], Double) -> Array[Array[(Double, Double)]]
 
+pub fn process_white_space(String, WhiteSpace) -> String
+
 pub fn radians_to_degrees(Double) -> Double
 
 pub fn raster_circle_fill(Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_circle_radial_gradient(Int, Int, Int, RadialGradient, Double, PixelSetter) -> Unit
 
 pub fn raster_circle_stroke(Int, Int, Int, Color, PixelSetter) -> Unit
 
 pub fn raster_ellipse_fill(Int, Int, Int, Int, Color, PixelSetter) -> Unit
 
+pub fn raster_ellipse_radial_gradient(Int, Int, Int, Int, RadialGradient, Double, PixelSetter) -> Unit
+
 pub fn raster_ellipse_stroke(Int, Int, Int, Int, Color, PixelSetter) -> Unit
 
 pub fn raster_line(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_line_dashed(Int, Int, Int, Int, Color, Array[Double], Double, PixelSetter) -> Unit
 
 pub fn raster_path(Array[PathCommand], Color?, Color?, Double, PixelSetter) -> Unit
 
@@ -42,15 +106,27 @@ pub fn raster_polygon_stroke(Array[(Int, Int)], Color, PixelSetter) -> Unit
 
 pub fn raster_polyline(Array[(Int, Int)], Color, PixelSetter) -> Unit
 
+pub fn raster_polyline_dashed(Array[(Int, Int)], Color, Array[Double], Double, PixelSetter) -> Unit
+
 pub fn raster_rect_fill(Int, Int, Int, Int, Color, PixelSetter) -> Unit
+
+pub fn raster_rect_gradient(Int, Int, Int, Int, LinearGradient, Double, PixelSetter) -> Unit
+
+pub fn raster_rect_radial_gradient(Int, Int, Int, Int, RadialGradient, Double, PixelSetter) -> Unit
 
 pub fn raster_rect_stroke(Int, Int, Int, Int, Color, PixelSetter) -> Unit
 
 pub fn raster_rounded_rect_stroke(Int, Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
 
+pub fn raster_text(Int, Int, String, Int, Color, PixelSetter) -> Unit
+
 pub fn raster_thick_line(Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
 
 pub fn rect(String, Double, Double, Double, Double) -> SVGNode
+
+pub fn saturate_matrix(Double) -> FixedArray[Double]
+
+pub fn text(String, Double, Double, String, Double) -> SVGNode
 
 // Errors
 
@@ -69,6 +145,72 @@ pub(all) enum Align {
 }
 pub impl Eq for Align
 pub impl Show for Align
+
+pub(all) enum AnimProperty {
+  TranslateX(Double)
+  TranslateY(Double)
+  Translate(Double, Double)
+  ScaleX(Double)
+  ScaleY(Double)
+  Scale(Double, Double)
+  ScaleUniform(Double)
+  Rotation(Double)
+  Opacity(Double)
+  FillColor(Color)
+}
+
+pub(all) struct AnimatedSprite {
+  sheet : SpriteSheet
+  frames : Array[Int]
+  mut current_frame : Int
+  frame_duration : Double
+  mut elapsed : Double
+  mut looping : Bool
+  mut playing : Bool
+}
+pub fn AnimatedSprite::continue_playing(Self) -> Unit
+pub fn AnimatedSprite::from_range(SpriteSheet, Int, Int, Double) -> Self
+pub fn AnimatedSprite::get_current_sprite(Self) -> Sprite
+pub fn AnimatedSprite::new(SpriteSheet, Array[Int], Double) -> Self
+pub fn AnimatedSprite::pause(Self) -> Unit
+pub fn AnimatedSprite::play(Self) -> Unit
+pub fn AnimatedSprite::set_looping(Self, Bool) -> Unit
+pub fn AnimatedSprite::stop(Self) -> Unit
+pub fn AnimatedSprite::update(Self, Double) -> Unit
+
+pub(all) struct AnimationManager {
+  tweens : Array[Tween]
+}
+pub fn AnimationManager::add(Self, Tween) -> Unit
+pub fn AnimationManager::animate_opacity(Self, String, Double, Double, Easing) -> Unit
+pub fn AnimationManager::animate_scale(Self, String, Double, Double, Easing) -> Unit
+pub fn AnimationManager::animate_translate(Self, String, Double, Double, Double, Easing) -> Unit
+pub fn AnimationManager::cleanup(Self) -> Unit
+pub fn AnimationManager::clear(Self) -> Unit
+pub fn AnimationManager::is_animating(Self) -> Bool
+pub fn AnimationManager::new() -> Self
+pub fn AnimationManager::update(Self, Double, Scene) -> Bool
+
+pub(all) enum BlendMode {
+  Normal
+  Multiply
+  Screen
+  Overlay
+  Darken
+  Lighten
+  ColorDodge
+  ColorBurn
+  HardLight
+  SoftLight
+  Difference
+  Exclusion
+  Hue
+  Saturation
+  ColorMode
+  Luminosity
+}
+pub impl Eq for BlendMode
+pub impl Show for BlendMode
 
 pub(all) struct BoundingBox {
   min_x : Double
@@ -103,6 +245,23 @@ pub fn Camera::set_zoom(Self, Double) -> Unit
 pub fn Camera::world_to_screen(Self, Double, Double) -> (Int, Int)
 pub fn Camera::zoom_by(Self, Double) -> Unit
 
+pub(all) struct ClipPath {
+  id : String
+  shape : Shape
+  transform : Transform
+  clip_rule : FillRule
+}
+pub fn ClipPath::contains(Self, Double, Double) -> Bool
+pub fn ClipPath::new(String, Shape) -> Self
+pub fn ClipPath::with_transform(String, Shape, Transform) -> Self
+
+pub(all) struct ClipPathRegistry {
+  clips : Map[String, ClipPath]
+}
+pub fn ClipPathRegistry::add(Self, ClipPath) -> Unit
+pub fn ClipPathRegistry::get(Self, String) -> ClipPath?
+pub fn ClipPathRegistry::new() -> Self
+
 pub(all) struct ClipRect {
   x : Int
   y : Int
@@ -127,12 +286,158 @@ pub fn Color::rgba(Int, Int, Int, Int) -> Self
 pub fn Color::transparent() -> Self
 pub fn Color::white() -> Self
 
+pub(all) enum DominantBaseline {
+  Auto
+  TextTop
+  Hanging
+  Middle
+  Central
+  TextBottom
+  Alphabetic
+  Ideographic
+}
+
+pub(all) enum Easing {
+  Linear
+  EaseIn
+  EaseOut
+  EaseInOut
+  EaseInCubic
+  EaseOutCubic
+  EaseInOutCubic
+}
+pub fn Easing::apply(Self, Double) -> Double
+pub impl Eq for Easing
+pub impl Show for Easing
+
+pub(all) struct EmitterConfig {
+  emit_rate : Double
+  life_min : Double
+  life_max : Double
+  speed_min : Double
+  speed_max : Double
+  angle_min : Double
+  angle_max : Double
+  size_start : Double
+  size_end : Double
+  color_start : Color
+  color_end : Color
+  gravity_x : Double
+  gravity_y : Double
+}
+pub fn EmitterConfig::default() -> Self
+
+pub(all) struct EventHandler {
+  call : (PointerEvent) -> Unit
+}
+
+pub(all) struct EventListener {
+  event_type : EventType
+  handler : EventHandler
+}
+
+pub(all) struct EventManager {
+  listeners : Map[String, Array[EventListener]]
+  mut hovered_node : String?
+  mut dragging_node : String?
+  mut drag_start_x : Double
+  mut drag_start_y : Double
+}
+pub fn EventManager::dispatch_click(Self, Double, Double, Int, Scene) -> Unit
+pub fn EventManager::dispatch_mouse_down(Self, Double, Double, Int, Scene) -> Unit
+pub fn EventManager::dispatch_mouse_move(Self, Double, Double, Scene) -> Unit
+pub fn EventManager::dispatch_mouse_up(Self, Double, Double, Int, Scene) -> Unit
+pub fn EventManager::new() -> Self
+pub fn EventManager::off_all(Self, String) -> Unit
+pub fn EventManager::on(Self, String, EventType, EventHandler) -> Unit
+
+pub(all) enum EventType {
+  Click
+  MouseDown
+  MouseUp
+  MouseMove
+  MouseEnter
+  MouseLeave
+  DragStart
+  DragMove
+  DragEnd
+}
+pub impl Eq for EventType
+pub impl Show for EventType
+
 pub(all) enum FillRule {
   NonZero
   EvenOdd
 }
 pub impl Eq for FillRule
 pub impl Show for FillRule
+
+pub(all) enum Filter {
+  Blur(Double)
+  DropShadow(Double, Double, Double, Color)
+  Brightness(Double)
+  Contrast(Double)
+  Grayscale(Double)
+  Sepia(Double)
+  HueRotate(Double)
+  Invert(Double)
+  Saturate(Double)
+  ColorMatrix(FixedArray[Double])
+}
+
+pub(all) enum FontStyle {
+  NormalStyle
+  Italic
+  Oblique
+}
+
+pub(all) enum FontWeight {
+  Normal
+  Bold
+  Lighter
+  Bolder
+  Weight(Int)
+}
+
+pub(all) struct GradientStop {
+  offset : Double
+  color : Color
+}
+
+pub(all) struct Image {
+  width : Int
+  height : Int
+  pixels : Array[Color]
+}
+pub fn Image::apply_blur_in_place(Self, Int) -> Unit
+pub fn Image::apply_brightness_in_place(Self, Double) -> Unit
+pub fn Image::apply_color_matrix_in_place(Self, FixedArray[Double]) -> Unit
+pub fn Image::apply_contrast_in_place(Self, Double) -> Unit
+pub fn Image::apply_filter(Self, Filter) -> Self
+pub fn Image::apply_grayscale_in_place(Self, Double) -> Unit
+pub fn Image::apply_hue_rotate_in_place(Self, Double) -> Unit
+pub fn Image::apply_invert_in_place(Self, Double) -> Unit
+pub fn Image::apply_saturate_in_place(Self, Double) -> Unit
+pub fn Image::apply_sepia_in_place(Self, Double) -> Unit
+pub fn Image::clear(Self) -> Unit
+pub fn Image::clone(Self) -> Self
+pub fn Image::fill_rect(Self, Int, Int, Int, Int, Color) -> Unit
+pub fn Image::filled(Int, Int, Color) -> Self
+pub fn Image::flip_horizontal(Self) -> Self
+pub fn Image::flip_vertical(Self) -> Self
+pub fn Image::get_pixel(Self, Int, Int) -> Color
+pub fn Image::new(Int, Int) -> Self
+pub fn Image::rotate_90_ccw(Self) -> Self
+pub fn Image::rotate_90_cw(Self) -> Self
+pub fn Image::set_pixel(Self, Int, Int, Color) -> Unit
+pub fn Image::sub_image(Self, Int, Int, Int, Int) -> Self
+
+pub(all) enum Isolation {
+  Auto
+  Isolate
+}
+pub impl Eq for Isolation
+pub impl Show for Isolation
 
 pub(all) enum LineCap {
   Butt
@@ -150,6 +455,99 @@ pub(all) enum LineJoin {
 pub impl Eq for LineJoin
 pub impl Show for LineJoin
 
+pub(all) struct LinearGradient {
+  x1 : Double
+  y1 : Double
+  x2 : Double
+  y2 : Double
+  stops : Array[GradientStop]
+  spread_method : SpreadMethod
+}
+pub fn LinearGradient::color_at(Self, Double) -> Color
+pub fn LinearGradient::horizontal(Color, Color) -> Self
+pub fn LinearGradient::new(Double, Double, Double, Double, Array[GradientStop]) -> Self
+pub fn LinearGradient::vertical(Color, Color) -> Self
+
+pub(all) struct MarkedLine {
+  points : Array[(Double, Double)]
+  marker_start : String?
+  marker_mid : String?
+  marker_end : String?
+}
+pub fn MarkedLine::get_angle_at(Self, Int) -> Double
+pub fn MarkedLine::new(Array[(Double, Double)]) -> Self
+pub fn MarkedLine::with_markers(Array[(Double, Double)], String?, String?, String?) -> Self
+
+pub(all) struct Marker {
+  id : String
+  content : SVGNode
+  ref_x : Double
+  ref_y : Double
+  marker_width : Double
+  marker_height : Double
+  orient : MarkerOrient
+  marker_units : MarkerUnits
+  view_box : ViewBox?
+}
+pub fn Marker::arrow(String) -> Self
+pub fn Marker::dot(String, Double) -> Self
+pub fn Marker::get_transform(Self, Double, Double, Double, Double) -> Transform
+pub fn Marker::new(String, SVGNode) -> Self
+
+pub(all) enum MarkerOrient {
+  Auto
+  AutoStartReverse
+  Angle(Double)
+}
+
+pub(all) struct MarkerRegistry {
+  markers : Map[String, Marker]
+}
+pub fn MarkerRegistry::add(Self, Marker) -> Unit
+pub fn MarkerRegistry::get(Self, String) -> Marker?
+pub fn MarkerRegistry::new() -> Self
+
+pub(all) enum MarkerUnits {
+  StrokeWidth
+  UserSpaceOnUse_
+}
+
+pub(all) struct Mask {
+  id : String
+  content : Array[SVGNode]
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  mask_units : MaskUnits
+  mask_content_units : MaskUnits
+  mask_type : MaskType
+}
+pub fn Mask::get_mask_bounds(Self, BoundingBox) -> BoundingBox
+pub fn Mask::new(String, Array[SVGNode]) -> Self
+pub fn Mask::with_bounds(String, Array[SVGNode], Double, Double, Double, Double) -> Self
+
+pub(all) struct MaskRegistry {
+  masks : Map[String, Mask]
+}
+pub fn MaskRegistry::add(Self, Mask) -> Unit
+pub fn MaskRegistry::get(Self, String) -> Mask?
+pub fn MaskRegistry::new() -> Self
+
+pub(all) enum MaskType {
+  Luminance
+  Alpha
+}
+pub impl Eq for MaskType
+pub impl Show for MaskType
+
+pub(all) enum MaskUnits {
+  UserSpaceOnUse
+  ObjectBoundingBox
+}
+pub impl Eq for MaskUnits
+pub impl Show for MaskUnits
+
 pub(all) enum MeetOrSlice {
   Meet
   Slice
@@ -157,10 +555,56 @@ pub(all) enum MeetOrSlice {
 pub impl Eq for MeetOrSlice
 pub impl Show for MeetOrSlice
 
+pub(all) struct ObjectPool[T] {
+  available : Array[T]
+  factory : () -> T
+  reset : (T) -> Unit
+}
+pub fn[T] ObjectPool::acquire(Self[T]) -> T
+pub fn[T] ObjectPool::available_count(Self[T]) -> Int
+pub fn[T] ObjectPool::new(() -> T, (T) -> Unit, Int) -> Self[T]
+pub fn[T] ObjectPool::release(Self[T], T) -> Unit
+
 pub(all) enum Paint {
   None
   SolidColor(Color)
+  LinearGrad(LinearGradient)
+  RadialGrad(RadialGradient)
 }
+
+pub(all) enum PaintOrder {
+  Normal
+  StrokeFirst
+  FillOnly
+  StrokeOnly
+}
+pub impl Eq for PaintOrder
+pub impl Show for PaintOrder
+
+pub(all) struct Particle {
+  mut x : Double
+  mut y : Double
+  mut vx : Double
+  mut vy : Double
+  mut life : Double
+  mut max_life : Double
+  mut size : Double
+  mut color : Color
+  mut active : Bool
+}
+pub fn Particle::new() -> Self
+
+pub(all) struct ParticleEmitter {
+  x : Double
+  y : Double
+  config : EmitterConfig
+  particles : Array[Particle]
+  mut emit_accumulator : Double
+  mut active : Bool
+}
+pub fn ParticleEmitter::active_count(Self) -> Int
+pub fn ParticleEmitter::new(Double, Double, EmitterConfig, Int) -> Self
+pub fn ParticleEmitter::update(Self, Double) -> Unit
 
 pub(all) enum PathCommand {
   MoveTo(Double, Double)
@@ -185,6 +629,42 @@ pub(all) enum PathCommand {
 }
 pub impl Show for PathCommand
 
+pub(all) struct PathFollower {
+  path : Array[PathCommand]
+  polyline : Array[(Double, Double)]
+  lengths : Array[Double]
+  total_length : Double
+  mut progress : Double
+  mut loop_anim : Bool
+}
+pub fn PathFollower::get_position(Self) -> (Double, Double)
+pub fn PathFollower::new(String) -> Self
+pub fn PathFollower::update(Self, Double, Double) -> Bool
+
+pub(all) struct Pattern {
+  id : String
+  width : Double
+  height : Double
+  content : Array[SVGNode]
+  pattern_units : PatternUnits
+  pattern_content_units : PatternUnits
+  transform : Transform
+}
+pub fn Pattern::get_color_at(Self, Double, Double, BoundingBox) -> Color?
+pub fn Pattern::new(String, Double, Double, Array[SVGNode]) -> Self
+
+pub(all) struct PatternRegistry {
+  patterns : Map[String, Pattern]
+}
+pub fn PatternRegistry::add(Self, Pattern) -> Unit
+pub fn PatternRegistry::get(Self, String) -> Pattern?
+pub fn PatternRegistry::new() -> Self
+
+pub(all) enum PatternUnits {
+  UserSpaceOnUse
+  ObjectBoundingBox
+}
+
 pub(all) struct PixelSetter {
   set : (Int, Int, Color) -> Unit
 }
@@ -192,11 +672,33 @@ pub fn PixelSetter::pixel(Self, Int, Int, Color) -> Unit
 pub fn PixelSetter::with_clip(Self, ClipRect) -> Self
 pub fn PixelSetter::with_clip_and_offset(Self, ClipRect, Int, Int) -> Self
 
+pub(all) struct PointerEvent {
+  x : Double
+  y : Double
+  button : Int
+  target : String
+  mut propagation_stopped : Bool
+}
+pub fn PointerEvent::new(Double, Double, Int, String) -> Self
+pub fn PointerEvent::stop_propagation(Self) -> Unit
+
 pub(all) struct PreserveAspectRatio {
   align : Align
   meet_or_slice : MeetOrSlice
 }
 pub fn PreserveAspectRatio::default() -> Self
+
+pub(all) struct RadialGradient {
+  cx : Double
+  cy : Double
+  fx : Double
+  fy : Double
+  r : Double
+  stops : Array[GradientStop]
+  spread_method : SpreadMethod
+}
+pub fn RadialGradient::color_at(Self, Double, Double, Double, Double) -> Color
+pub fn RadialGradient::new(Double, Double, Double, Array[GradientStop]) -> Self
 
 pub(all) struct RenderContext {
   setter : PixelSetter
@@ -219,26 +721,53 @@ pub(all) struct SVGNode {
   mut stroke : StrokeStyle
   mut stroke_opacity : Double
   mut opacity : Double
+  mut z_index : Int
+  mut node_dirty : Bool
+  mut prev_bounds : BoundingBox?
+  mut filters : Array[Filter]
+  mut mask_id : String?
+  mut clip_path_id : String?
   children : Array[SVGNode]
 }
+pub fn SVGNode::add_filter(Self, Filter) -> Unit
+pub fn SVGNode::clear_clip_path(Self) -> Unit
+pub fn SVGNode::clear_dirty(Self) -> Unit
+pub fn SVGNode::clear_filters(Self) -> Unit
+pub fn SVGNode::clear_mask(Self) -> Unit
+pub fn SVGNode::clone(Self) -> Self
+pub fn SVGNode::collides_with(Self, Self) -> Bool
+pub fn SVGNode::hit_test(Self, Double, Double) -> Bool
+pub fn SVGNode::hit_test_all(Self, Double, Double) -> Array[Self]
+pub fn SVGNode::mark_dirty(Self) -> Unit
 pub fn SVGNode::new(Shape) -> Self
+pub fn SVGNode::set_clip_path(Self, String) -> Unit
+pub fn SVGNode::set_mask(Self, String) -> Unit
 
 pub(all) struct Scene {
   root : SVGNode
   mut dirty : Bool
 }
 pub fn Scene::add_child(Self, String, SVGNode) -> Bool
+pub fn Scene::bring_to_front(Self, String) -> Bool
+pub fn Scene::clear_all_dirty(Self) -> Unit
 pub fn Scene::clear_dirty(Self) -> Unit
 pub fn Scene::empty() -> Self
 pub fn Scene::find_node(Self, String) -> SVGNode?
 pub fn Scene::get_bounds(Self) -> BoundingBox
+pub fn Scene::get_dirty_region(Self) -> BoundingBox
 pub fn Scene::get_root(Self) -> SVGNode
 pub fn Scene::is_dirty(Self) -> Bool
 pub fn Scene::mark_dirty(Self) -> Unit
+pub fn Scene::mark_node_dirty(Self, String) -> Bool
 pub fn Scene::new(SVGNode) -> Self
 pub fn Scene::remove_node(Self, String) -> Bool
 pub fn Scene::render(Self, RenderContext) -> Unit
+pub fn Scene::render_dirty(Self, RenderContext) -> BoundingBox
 pub fn Scene::render_with_camera(Self, RenderContext, Camera) -> Unit
+pub fn Scene::render_with_viewbox(Self, RenderContext, ViewBox, PreserveAspectRatio) -> Unit
+pub fn Scene::render_with_viewbox_and_camera(Self, RenderContext, ViewBox, PreserveAspectRatio, Camera) -> Unit
+pub fn Scene::send_to_back(Self, String) -> Bool
+pub fn Scene::set_z_index(Self, String, Int) -> Bool
 pub fn Scene::update_node(Self, String, (SVGNode) -> SVGNode) -> Bool
 
 pub(all) enum Shape {
@@ -249,9 +778,48 @@ pub(all) enum Shape {
   Polyline(points~ : Array[(Double, Double)])
   Polygon(points~ : Array[(Double, Double)])
   Path(commands~ : Array[PathCommand])
+  Text(x~ : Double, y~ : Double, text~ : String, font_size~ : Double)
   Group
 }
 pub impl Show for Shape
+
+pub(all) struct SimpleRNG {
+  mut state : Int
+}
+pub fn SimpleRNG::new(Int) -> Self
+pub fn SimpleRNG::next(Self) -> Double
+pub fn SimpleRNG::range(Self, Double, Double) -> Double
+
+pub(all) enum SpreadMethod {
+  Pad
+  Repeat
+  Reflect
+}
+pub impl Eq for SpreadMethod
+pub impl Show for SpreadMethod
+
+pub(all) struct Sprite {
+  image : Image
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+}
+pub fn Sprite::from_image(Image) -> Self
+pub fn Sprite::get_pixel(Self, Int, Int) -> Color
+pub fn Sprite::new(Image, Int, Int, Int, Int) -> Self
+
+pub(all) struct SpriteSheet {
+  image : Image
+  tile_width : Int
+  tile_height : Int
+  columns : Int
+  rows : Int
+}
+pub fn SpriteSheet::get_sprite(Self, Int, Int) -> Sprite
+pub fn SpriteSheet::get_sprite_by_index(Self, Int) -> Sprite
+pub fn SpriteSheet::new(Image, Int, Int) -> Self
+pub fn SpriteSheet::sprite_count(Self) -> Int
 
 pub(all) struct StrokeStyle {
   paint : Paint
@@ -263,6 +831,121 @@ pub(all) struct StrokeStyle {
   dashoffset : Double
 }
 pub fn StrokeStyle::default() -> Self
+
+pub(all) struct Symbol {
+  id : String
+  content : SVGNode
+  view_box : ViewBox?
+  preserve_aspect_ratio : PreserveAspectRatio
+}
+pub fn Symbol::new(String, SVGNode) -> Self
+pub fn Symbol::with_viewbox(String, SVGNode, ViewBox) -> Self
+
+pub(all) struct SymbolRegistry {
+  symbols : Map[String, Symbol]
+}
+pub fn SymbolRegistry::add(Self, Symbol) -> Unit
+pub fn SymbolRegistry::get(Self, String) -> Symbol?
+pub fn SymbolRegistry::new() -> Self
+
+pub(all) enum TextAnchor {
+  Start
+  Middle
+  End
+}
+
+pub(all) struct TextBlock {
+  spans : Array[TextSpan]
+  x : Double
+  y : Double
+  style : TextStyle
+  inline_size : Double?
+  text_overflow : TextOverflow
+}
+pub fn TextBlock::add_span(Self, TextSpan) -> Unit
+pub fn TextBlock::get_anchor_x(Self) -> Double
+pub fn TextBlock::get_baseline_y(Self) -> Double
+pub fn TextBlock::get_height(Self) -> Double
+pub fn TextBlock::get_line_count(Self) -> Int
+pub fn TextBlock::get_total_height(Self) -> Double
+pub fn TextBlock::get_width(Self) -> Double
+pub fn TextBlock::is_vertical(Self) -> Bool
+pub fn TextBlock::new(Double, Double, String) -> Self
+pub fn TextBlock::with_style(Double, Double, String, TextStyle) -> Self
+pub fn TextBlock::with_wrap(Double, Double, String, Double) -> Self
+pub fn TextBlock::wrap_text(Self) -> Array[String]
+
+pub(all) enum TextDecoration {
+  NoDecoration
+  Underline
+  Overline
+  LineThrough
+}
+pub impl Eq for TextDecoration
+pub impl Show for TextDecoration
+
+pub(all) struct TextDecorationFull {
+  line : TextDecoration
+  style : TextDecorationStyle
+  color : Color?
+  thickness : Double?
+}
+pub fn TextDecorationFull::default() -> Self
+
+pub(all) enum TextDecorationStyle {
+  Solid
+  Double
+  Dotted
+  Dashed
+  Wavy
+}
+pub impl Eq for TextDecorationStyle
+pub impl Show for TextDecorationStyle
+
+pub(all) enum TextOrientation {
+  Mixed
+  Upright
+  Sideways
+}
+pub impl Eq for TextOrientation
+pub impl Show for TextOrientation
+
+pub(all) enum TextOverflow {
+  Clip
+  Ellipsis
+  Custom(String)
+}
+pub impl Eq for TextOverflow
+pub impl Show for TextOverflow
+
+pub(all) struct TextSpan {
+  text : String
+  x : Double?
+  y : Double?
+  dx : Double
+  dy : Double
+  style : TextStyle?
+}
+pub fn TextSpan::new(String) -> Self
+pub fn TextSpan::with_offset(String, Double, Double) -> Self
+
+pub(all) struct TextStyle {
+  font_family : String
+  font_size : Double
+  font_weight : FontWeight
+  font_style : FontStyle
+  text_anchor : TextAnchor
+  dominant_baseline : DominantBaseline
+  text_decoration : TextDecoration
+  letter_spacing : Double
+  word_spacing : Double
+  line_height : Double
+  writing_mode : WritingMode
+  text_orientation : TextOrientation
+  white_space : WhiteSpace
+  paint_order : PaintOrder
+}
+pub fn TextStyle::default() -> Self
 
 pub(all) struct Transform {
   a : Double
@@ -293,12 +976,59 @@ pub fn Transform::skew_x(Double) -> Self
 pub fn Transform::skew_y(Double) -> Self
 pub fn Transform::translate(Double, Double) -> Self
 
+pub(all) struct Tween {
+  target_id : String
+  property : AnimProperty
+  mut start_value : AnimProperty
+  duration : Double
+  mut elapsed : Double
+  easing : Easing
+  mut started : Bool
+  mut completed : Bool
+}
+pub fn Tween::is_complete(Self) -> Bool
+pub fn Tween::new(String, AnimProperty, Double, Easing) -> Self
+pub fn Tween::update(Self, Double, SVGNode) -> Bool
+
+pub(all) struct UseElement {
+  href : String
+  x : Double
+  y : Double
+  width : Double?
+  height : Double?
+  transform : Transform
+}
+pub fn UseElement::get_id(Self) -> String
+pub fn UseElement::instantiate(Self, SymbolRegistry) -> SVGNode?
+pub fn UseElement::new(String, Double, Double) -> Self
+pub fn UseElement::with_size(String, Double, Double, Double, Double) -> Self
+
 pub(all) struct ViewBox {
   min_x : Double
   min_y : Double
   width : Double
   height : Double
 }
+pub fn ViewBox::get_transform(Self, Double, Double, PreserveAspectRatio) -> Transform
+
+pub(all) enum WhiteSpace {
+  Normal
+  Pre
+  NoWrap
+  PreWrap
+  PreLine
+  BreakSpaces
+}
+pub impl Eq for WhiteSpace
+pub impl Show for WhiteSpace
+
+pub(all) enum WritingMode {
+  HorizontalTB
+  VerticalRL
+  VerticalLR
+}
+pub impl Eq for WritingMode
+pub impl Show for WritingMode
 
 // Type aliases
 

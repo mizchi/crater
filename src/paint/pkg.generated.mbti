@@ -8,6 +8,10 @@ import {
 }
 
 // Values
+pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
+
+pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
+
 pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
 
 pub fn from_layout(@types.Layout) -> PaintNode
@@ -32,6 +36,8 @@ pub(all) struct PaintNode {
   height : Double
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
+  scroll_width : Double
+  scroll_height : Double
   clip : @types.ClipRect
   paint : PaintProperties
   stacking_order : Int
@@ -41,8 +47,12 @@ pub(all) struct PaintNode {
 pub fn PaintNode::clips_content(Self) -> Bool
 pub fn PaintNode::get_clip_rect(Self) -> (Double, Double, Double, Double)?
 pub fn PaintNode::get_legacy_clip(Self) -> (Double, Double, Double, Double)?
+pub fn PaintNode::get_max_scroll(Self) -> (Double, Double)
+pub fn PaintNode::has_horizontal_scrollbar(Self) -> Bool
 pub fn PaintNode::has_legacy_clip(Self) -> Bool
-pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, clip? : @types.ClipRect) -> Self
+pub fn PaintNode::has_vertical_scrollbar(Self) -> Bool
+pub fn PaintNode::is_scrollable(Self) -> Bool
+pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @types.ClipRect) -> Self
 pub impl Show for PaintNode
 
 pub(all) struct PaintProperties {
@@ -57,6 +67,24 @@ pub fn PaintProperties::from_style(@style.Style) -> Self
 pub fn PaintProperties::should_render(Self) -> Bool
 pub fn PaintProperties::z_index_value(Self) -> Int
 pub impl Show for PaintProperties
+
+pub(all) struct ScrollableElement {
+  id : String
+  scroll_width : Double
+  scroll_height : Double
+  client_width : Double
+  client_height : Double
+}
+
+pub(all) struct ScrollableHitResult {
+  id : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  scroll_width : Double
+  scroll_height : Double
+}
 
 // Type aliases
 

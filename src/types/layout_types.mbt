@@ -104,6 +104,7 @@ pub(all) enum Clear {
 pub(all) enum Overflow {
   Visible // Content is not clipped (default)
   Hidden // Content is clipped, no scrollbars
+  Clip // Content is clipped, no scrolling (like hidden but no scroll container)
   Scroll // Content is clipped with scrollbars
   Auto // Scrollbars if needed
 } derive(Show, Eq)
@@ -276,6 +277,11 @@ pub(all) struct Layout {
   // Overflow clipping info
   overflow_x : Overflow
   overflow_y : Overflow
+  // Scroll dimensions (content extent, used for scrollbar calculation)
+  // scroll_width/height is the total scrollable content size
+  // When content overflows, scroll_width/height > width/height
+  scroll_width : Double
+  scroll_height : Double
   // Children layouts
   children : Array[Layout]
   // Text content for text nodes
