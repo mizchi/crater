@@ -48,6 +48,7 @@ pub struct Browser {
   mut dom_tree : @dom.DomTree?
   scheduler : @scheduler.Scheduler
   mut script_executor : @js.ScriptExecutor?
+  mut enable_js : Bool
 }
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
@@ -84,6 +85,7 @@ pub fn Browser::render_text(Self) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
+pub fn Browser::set_enable_js(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool
@@ -98,6 +100,7 @@ pub(all) struct ScriptInfo {
   src : String
   is_async : Bool
   is_defer : Bool
+  script_type : String
 }
 
 // Type aliases

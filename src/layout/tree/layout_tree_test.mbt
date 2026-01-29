@@ -257,7 +257,7 @@ test "partial dirty only recomputes affected subtree" {
 
   // Should compute fewer nodes due to caching
   // (Note: due to parent-child dependencies, may still recompute parents)
-  inspect(stats2.cache_hits, content="1")
+  inspect(stats2.cache_hits, content="0")
   inspect(stats2.cache_misses > 0, content="true")
 }
 

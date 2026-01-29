@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn create_dom_init_code(@dom.DomTree) -> String
+
 pub fn enqueue_script(@scheduler.Scheduler, String, Bool) -> @scheduler.TaskId
 
 pub fn enqueue_script_after(@scheduler.Scheduler, String, Array[@scheduler.TaskId], Bool) -> @scheduler.TaskId
@@ -16,6 +18,8 @@ pub fn execute_script_task(@scheduler.Task, @dom.DomTree) -> @scheduler.TaskResu
 pub fn init_js_runtime() -> Unit
 
 pub fn process_script_tasks(@scheduler.Scheduler, @dom.DomTree) -> Int
+
+pub fn serialize_dom_for_mock(@dom.DomTree) -> String
 
 // Errors
 pub suberror JsError {

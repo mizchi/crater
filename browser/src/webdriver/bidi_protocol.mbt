@@ -40,6 +40,7 @@ pub struct BidiEvent {
 pub enum BidiOutMessage {
   Response(BidiResponse)
   Event(BidiEvent)
+  Raw(String)
 } derive(Show)
 
 ///|
@@ -57,6 +58,7 @@ pub struct BidiProtocol {
   context_user_context : Map[String, String]
   mut socket : @core.Any? // WebSocket for async responses
   mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
+  mut dom_initialized : Bool // Deno-side mock DOM initialized
 }
 
 ///|
@@ -77,6 +79,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     context_user_context: {},
     socket: None,
     use_quickjs: false,
+    dom_initialized: false,
   }
 }
 
@@ -149,6 +152,7 @@ pub fn BidiOutMessage::to_json(self : BidiOutMessage) -> String {
   match self {
     Response(resp) => response_to_json(resp)
     Event(evt) => event_to_json(evt)
+    Raw(raw) => raw
   }
 }
 
@@ -606,6 +610,12 @@ fn BidiProtocol::dispatch_script(
           }
         }
       }
+      // Fast path: no console capture, no awaitPromise, no QuickJS
+      if self.dom_initialized && not(capture_console) && not(await_promise) {
+        let raw = js_evaluate_expression_fast(request.id, expr)
+        self.send_raw(raw)
+        return Ok(())
+      }
       // If awaitPromise is true and we have a socket, use async evaluation
       if await_promise {
         match self.socket {
@@ -625,6 +635,7 @@ fn BidiProtocol::dispatch_script(
       }
       // Synchronous evaluation (Deno eval)
       let eval_result_json = evaluate_js_with_console(expr, capture_console)
+      self.dom_initialized = true
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
           self.send_error(
@@ -1354,6 +1365,12 @@ fn BidiProtocol::send_success(
 ) -> Unit {
   let resp : BidiResponse = { id, result, error: None }
   self.outbox.push(Response(resp))
+}
+
+///|
+/// Send a pre-serialized response JSON string
+fn BidiProtocol::send_raw(self : BidiProtocol, json : String) -> Unit {
+  self.outbox.push(Raw(json))
 }
 
 ///|

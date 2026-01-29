@@ -178,6 +178,29 @@ pub fn TextStyle::default() -> TextStyle {
 }
 
 ///|
+/// Get text content of a row (for testing)
+pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
+  if row < 0 || row >= self.height {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  for col = 0; col < self.width; col = col + 1 {
+    let cell = self.get_cell(col, row)
+    // Skip null placeholder (second half of wide character)
+    if cell.char == '\u0000' {
+      continue
+    }
+    if cell.char != ' ' {
+      buf.write_char(cell.char)
+    } else if buf.to_string().length() > 0 {
+      // Only add spaces after we've started collecting text
+      buf.write_char(' ')
+    }
+  }
+  buf.to_string().trim().to_string()
+}
+
+///|
 /// Write text at position with style
 /// Returns the number of columns written
 /// Note: If style.bg is transparent, preserves existing cell background
@@ -242,6 +265,88 @@ pub fn CharBuffer::write_text(
     cur_x = cur_x + width
   }
   cur_x - x
+}
+
+///|
+/// Write preformatted text (for white-space: pre)
+/// Respects newlines but does NOT auto-wrap at word boundaries
+/// Returns the number of lines used
+/// Note: If style.bg is transparent, preserves existing cell background
+pub fn CharBuffer::write_text_pre(
+  self : CharBuffer,
+  x : Int,
+  y : Int,
+  text : String,
+  style : TextStyle,
+  max_width : Int,
+  max_height : Int,
+) -> Int {
+  let mut cur_x = x
+  let mut cur_y = y
+  let end_x = x + max_width
+  let end_y = y + max_height
+  for c in text {
+    if cur_y >= end_y {
+      break
+    }
+    // Handle newline - move to next line
+    if c == '\n' {
+      cur_x = x
+      cur_y = cur_y + 1
+      continue
+    }
+    // Skip control characters except tab
+    if c != '\t' && c.to_int() < 32 {
+      continue
+    }
+    // Handle tab - move to next tab stop (every 8 chars)
+    if c == '\t' {
+      let tab_size = 8
+      let next_tab = ((cur_x - x) / tab_size + 1) * tab_size + x
+      cur_x = next_tab.min(end_x)
+      continue
+    }
+    let width = char_display_width(c)
+    // Don't wrap at word boundaries - just clip if exceeds width
+    if cur_x + width > end_x {
+      continue // Skip characters that don't fit
+    }
+    // Determine background: preserve existing if style.bg is transparent
+    let bg = if style.bg.is_transparent() {
+      self.get_cell(cur_x, cur_y).bg
+    } else {
+      style.bg
+    }
+    // Write the character
+    let cell : CharCell = {
+      char: c,
+      fg: style.fg,
+      bg,
+      bold: style.bold,
+      underline: style.underline,
+      reverse: false,
+    }
+    self.set_cell(cur_x, cur_y, cell)
+    // For wide characters, fill next cell with a placeholder
+    if width == 2 && cur_x + 1 < end_x {
+      let next_bg = if style.bg.is_transparent() {
+        self.get_cell(cur_x + 1, cur_y).bg
+      } else {
+        style.bg
+      }
+      let placeholder : CharCell = {
+        char: '\u0000',
+        fg: style.fg,
+        bg: next_bg,
+        bold: style.bold,
+        underline: style.underline,
+        reverse: false,
+      }
+      self.set_cell(cur_x + 1, cur_y, placeholder)
+    }
+    cur_x = cur_x + width
+  }
+  cur_y - y + 1
 }
 
 ///|

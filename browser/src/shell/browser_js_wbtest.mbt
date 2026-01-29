@@ -99,6 +99,7 @@ test "Browser execute_scripts runs inline scripts" {
     #|<body></body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   inspect(executed, content="1")
   // Verify DOM was modified
@@ -133,6 +134,7 @@ test "Browser execute_scripts runs multiple scripts in order" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   inspect(executed, content="2")
   // Verify both elements exist
@@ -165,6 +167,7 @@ test "Browser execute_scripts modifies attributes" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   inspect(executed, content="1")
   // Verify attributes were set
@@ -199,6 +202,7 @@ test "Browser execute_scripts handles no scripts" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   inspect(executed, content="0")
 }
@@ -218,6 +222,7 @@ test "Browser execute_scripts skips external scripts" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   // Only inline script should execute (external is skipped)
   inspect(executed, content="1")
@@ -259,6 +264,7 @@ test "Browser execute_scripts uses getElementById within single script" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   inspect(executed, content="1")
   // Verify getElementById worked within the script
@@ -290,6 +296,7 @@ test "Browser scheduler integration queues tasks correctly" {
     #|<script>console.log('test');</script>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   // Execute scripts (this queues and processes tasks)
   let executed = browser.execute_scripts()
   inspect(executed, content="1")
@@ -377,6 +384,7 @@ test "WPT-style: createElement and appendChild" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let executed = browser.execute_scripts()
   inspect(executed, content="1")
   // Verify WPT-style assertions
@@ -442,6 +450,7 @@ test "WPT-style: setAttribute and getAttribute" {
     #|</body>
     #|</html>
   browser.html_content = html
+  browser.set_enable_js(true)
   let _ = browser.execute_scripts()
   match browser.dom_tree {
     Some(dom) => {
@@ -488,6 +497,7 @@ test "Browser DOM tree persists across script executions" {
     #|</script>
     #|</html>
   browser.html_content = html1
+  browser.set_enable_js(true)
   let _ = browser.execute_scripts()
   // Verify element was created in real DOM tree
   match browser.dom_tree {

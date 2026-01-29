@@ -395,6 +395,34 @@ fn contains_replaced_element(elem : @html.Element) -> Bool {
 }
 
 ///|
+/// Check if element contains any block-level children (display: block, etc.)
+/// This is used to detect inline elements like <code> that contain block children
+fn contains_block_child(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        // Check if child has non-inline display
+        if will_have_non_inline_display(child_elem, stylesheets, ctx) {
+          return true
+        }
+        // Also check if child is a block-level element by default
+        let tag_lower = child_elem.tag.to_lower()
+        if not(is_inline_element(child_elem)) &&
+          not(is_replaced_element(tag_lower)) {
+          return true
+        }
+      }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
 /// Check if element is a replaced element (img, input, video, etc.)
 /// Replaced elements have intrinsic dimensions and don't contain text
 fn is_replaced_element(tag : String) -> Bool {
@@ -415,6 +443,8 @@ fn is_replaced_element(tag : String) -> Bool {
 /// Collect inline content from HTML children, combining text and <br> elements
 /// Returns collected text (with \n for br) and remaining block-level children
 /// Respects CSS display values to avoid merging text from inline-block elements
+/// IMPORTANT: When elements are kept separate (like <a>), we flush accumulated text
+/// first to preserve DOM order.
 fn collect_inline_content(
   children : Array[@html.Node],
   stylesheets : Array[@cascade.Stylesheet],
@@ -423,6 +453,17 @@ fn collect_inline_content(
   let text_builder = StringBuilder::new()
   let remaining : Array[@html.Node] = []
   let mut has_inline_content = false
+
+  // Helper to flush accumulated text as a synthetic text node
+  fn flush_text(builder : StringBuilder, out : Array[@html.Node]) -> Unit {
+    let text = builder.to_string()
+    if not(text.is_empty()) {
+      // Create a synthetic HTML text node for accumulated content
+      out.push(@html.Node::Text(text))
+      builder.reset()
+    }
+  }
+
   for child in children {
     match child {
       @html.Node::Text(text) => {
@@ -436,17 +477,24 @@ fn collect_inline_content(
           text_builder.write_string("\n")
           has_inline_content = true
         } else if is_replaced_element(tag_lower) {
+          // Flush any accumulated text first to preserve order
+          flush_text(text_builder, remaining)
           // Replaced elements (img, input, etc.) are kept as separate nodes
-          // They have intrinsic dimensions and shouldn't be merged into text
           remaining.push(child)
         } else if is_inline_element(elem) &&
           not(will_have_non_inline_display(elem, stylesheets, ctx)) {
           // Check if this inline element contains replaced elements (like <a><img></a>)
           if contains_replaced_element(elem) {
-            // Keep as separate node to preserve replaced element children
+            // Flush text first, then keep as separate node
+            flush_text(text_builder, remaining)
             remaining.push(child)
           } else if tag_lower == "a" {
-            // Keep <a> elements as separate nodes to preserve link styling (blue color)
+            // Flush text first, then keep <a> as separate node for link styling
+            flush_text(text_builder, remaining)
+            remaining.push(child)
+          } else if contains_block_child(elem, stylesheets, ctx) {
+            // Flush text first, then keep inline elements with block children
+            flush_text(text_builder, remaining)
             remaining.push(child)
           } else {
             // Recursively collect text from inline elements (span, em, etc.)
@@ -455,14 +503,20 @@ fn collect_inline_content(
             has_inline_content = true
           }
         } else {
-          // Block-level elements (or elements with CSS non-inline display) go to remaining
+          // Flush text first, then add block-level element
+          flush_text(text_builder, remaining)
           remaining.push(child)
         }
       }
     }
   }
-  if has_inline_content {
-    (text_builder.to_string(), remaining)
+
+  // Flush any trailing text to remaining to preserve complete order
+  flush_text(text_builder, remaining)
+
+  // Return empty string for inline_text since all text is now in remaining
+  if has_inline_content || remaining.length() > 0 {
+    ("", remaining)
   } else {
     ("", children)
   }
@@ -1323,7 +1377,7 @@ fn element_to_node_with_styles(
     children.push(text_node)
   }
 
-  // Process remaining block-level children
+  // Process remaining children (elements and synthetic text nodes)
   for i, child in remaining_children {
     match child {
       @html.Node::Element(child_elem) => {
@@ -1349,9 +1403,13 @@ fn element_to_node_with_styles(
         )
         children.push(child_node)
       }
-      @html.Node::Text(_text) =>
-        // Text should have been collected by collect_inline_content
-        ()
+      @html.Node::Text(text) =>
+        // Process synthetic text nodes created by collect_inline_content
+        // to preserve DOM order when elements are interleaved with text
+        if not(text.trim().is_empty()) {
+          let text_node = create_text_node(text, style)
+          children.push(text_node)
+        }
     }
   }
 
@@ -1388,9 +1446,16 @@ fn element_to_node_with_styles_internal(
 
   // If this is an inline element containing replaced elements (like <a><img></a>),
   // treat it as inline-block so it gets proper sizing from its content
+  // Also, if inline element contains block children (like <code><span class="line">),
+  // treat it as block so children can be properly laid out
   let style = if computed_style.display == @types.Inline &&
     contains_replaced_element(elem) {
     { ..computed_style, display: @types.InlineBlock }
+  } else if computed_style.display == @types.Inline &&
+    contains_block_child(elem, stylesheets, ctx) {
+    // Inline element with block children should become block
+    // This handles cases like <code><span class="line" style="display:block">
+    { ..computed_style, display: @types.Block }
   } else {
     computed_style
   }
@@ -1440,7 +1505,7 @@ fn element_to_node_with_styles_internal(
     children.push(text_node)
   }
 
-  // Process remaining block-level children
+  // Process remaining children (elements and synthetic text nodes)
   for i, child in remaining_children {
     match child {
       @html.Node::Element(child_elem) => {
@@ -1465,10 +1530,13 @@ fn element_to_node_with_styles_internal(
         )
         children.push(child_node)
       }
-      @html.Node::Text(_text) =>
-        // Text should have been collected by collect_inline_content
-        // This shouldn't happen, but handle it just in case
-        ()
+      @html.Node::Text(text) =>
+        // Process synthetic text nodes created by collect_inline_content
+        // to preserve DOM order when elements are interleaved with text
+        if not(text.trim().is_empty()) {
+          let text_node = create_text_node(text, style)
+          children.push(text_node)
+        }
     }
   }
   let node_id = make_node_id(elem)

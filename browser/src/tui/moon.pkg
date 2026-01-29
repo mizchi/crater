@@ -15,7 +15,7 @@ import "test" {
 options(
   targets: {
     "codeblock_test.mbt": [ "wasm-gc", "native" ],
-    "render_test.mbt": [ "wasm-gc" ],
+    "render_test.mbt": [ "wasm-gc", "js" ],
     "tui_js.mbt": [ "js" ],
     "tui_native.mbt": [ "native" ],
     "tui_wasm.mbt": [ "wasm", "wasm-gc" ],

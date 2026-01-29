@@ -174,9 +174,9 @@ fn render_paint_node(
   // Convert to character coordinates
   let col = px_to_col(abs_x)
   let row = px_to_row(abs_y) - ctx.scroll_y
-  // Use ceiling for width to ensure text content fits
+  // Use ceiling for width and height to ensure text content fits
   let w = px_to_col_width(node.width)
-  let h = px_to_row(node.height)
+  let h = px_to_row_height(node.height)
   // Check if we're inside a pre/code element (no text wrapping)
   // Also disable wrapping inside table cells (th/td) - cells should clip, not wrap
   let is_pre = node.tag == "pre" || node.tag == "code"
@@ -344,13 +344,19 @@ fn render_paint_node(
           let text_display_width = calculate_text_display_width(text_content)
           // Effective width ensures text is not clipped due to font-size differences
           let effective_width = w.max(text_display_width)
-          // Check if text needs wrapping: contains spaces/newlines and exceeds container width
-          let needs_wrapping = text_display_width > w &&
-            (text_content.contains(" ") || text_content.contains("\n"))
-          // Use non-wrapping text for pre/code elements to preserve formatting
+          // Check if text needs wrapping: exceeds container width
+          // CJK text can wrap at any character boundary, so we don't require spaces
+          let needs_wrapping = text_display_width > w
+          // Use preformatted text for pre/code elements to preserve formatting
+          // This respects newlines but doesn't auto-wrap at word boundaries
           if child_inside_pre {
-            let _ = ctx.buffer.write_text(
-              col, row, text_content, style, effective_width,
+            let _ = ctx.buffer.write_text_pre(
+              col,
+              row,
+              text_content,
+              style,
+              effective_width,
+              (row + h).min(ctx.viewport_height) - row,
             )
 
           } else if needs_wrapping {
@@ -529,6 +535,8 @@ pub fn render_to_buffer_with_status(
   focused_link_url? : String? = None,
   selection_mode? : Bool = false,
   dark_mode? : Bool = false,
+  total_content_height? : Int = 0,
+  show_scrollbar? : Bool = false,
 ) -> BufferRenderResult {
   // Reserve first row for status bar at top
   let content_height = height - 1
@@ -606,6 +614,19 @@ pub fn render_to_buffer_with_status(
     selection_mode~,
     dark_mode~,
   )
+  // Draw scrollbar if enabled and content overflows
+  if show_scrollbar && total_content_height > content_height * 16 {
+    let content_height_chars = total_content_height / 16 // Convert px to char rows
+    draw_scrollbar(
+      buf,
+      width - 1, // x: right edge
+      content_start_row, // y: start row
+      content_height, // height of track
+      scroll_y, // scroll position
+      content_height_chars, // total content height in chars
+      content_height, // visible height in chars
+    )
+  }
   // Return ANSI and link regions
   { buffer: buf, link_regions }
 }

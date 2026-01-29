@@ -64,6 +64,271 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     let nodeIdCounter = 1000;
   #|     const mockElements = new Map();
   #|
+  #|     // Microtask queue for queueMicrotask()
+  #|     const _microtaskQueue = [];
+  #|     function queueMicrotask(callback) {
+  #|       if (typeof callback !== 'function') {
+  #|         throw new TypeError('queueMicrotask requires a function argument');
+  #|       }
+  #|       _microtaskQueue.push(callback);
+  #|     }
+  #|     // Process all queued microtasks (called after script execution)
+  #|     function _flushMicrotasks() {
+  #|       let count = 0;
+  #|       const limit = 10000; // Prevent infinite loops
+  #|       while (_microtaskQueue.length > 0 && count < limit) {
+  #|         const task = _microtaskQueue.shift();
+  #|         try { task(); } catch (e) { logs.push('[ERROR] Microtask: ' + e); }
+  #|         count++;
+  #|       }
+  #|       if (count >= limit) {
+  #|         logs.push('[ERROR] Microtask limit exceeded (possible infinite loop)');
+  #|       }
+  #|     }
+  #|
+  #|     // Custom Promise implementation that uses _microtaskQueue for synchronous control
+  #|     // This ensures Promise.then callbacks run during _flushMicrotasks()
+  #|     const _PromiseState = { PENDING: 0, FULFILLED: 1, REJECTED: 2 };
+  #|     function _SyncPromise(executor) {
+  #|       this._state = _PromiseState.PENDING;
+  #|       this._value = undefined;
+  #|       this._handlers = [];
+  #|       const resolve = (value) => {
+  #|         if (this._state !== _PromiseState.PENDING) return;
+  #|         if (value && typeof value.then === 'function') {
+  #|           value.then(resolve, reject);
+  #|           return;
+  #|         }
+  #|         this._state = _PromiseState.FULFILLED;
+  #|         this._value = value;
+  #|         this._handlers.forEach(h => queueMicrotask(() => h.onFulfilled(value)));
+  #|         this._handlers = [];
+  #|       };
+  #|       const reject = (reason) => {
+  #|         if (this._state !== _PromiseState.PENDING) return;
+  #|         this._state = _PromiseState.REJECTED;
+  #|         this._value = reason;
+  #|         this._handlers.forEach(h => queueMicrotask(() => h.onRejected(reason)));
+  #|         this._handlers = [];
+  #|       };
+  #|       try { executor(resolve, reject); } catch (e) { reject(e); }
+  #|     }
+  #|     _SyncPromise.prototype.then = function(onFulfilled, onRejected) {
+  #|       return new _SyncPromise((resolve, reject) => {
+  #|         const handle = (handler, value, fallback) => {
+  #|           try {
+  #|             if (typeof handler === 'function') {
+  #|               resolve(handler(value));
+  #|             } else {
+  #|               fallback(value);
+  #|             }
+  #|           } catch (e) { reject(e); }
+  #|         };
+  #|         if (this._state === _PromiseState.FULFILLED) {
+  #|           queueMicrotask(() => handle(onFulfilled, this._value, resolve));
+  #|         } else if (this._state === _PromiseState.REJECTED) {
+  #|           queueMicrotask(() => handle(onRejected, this._value, reject));
+  #|         } else {
+  #|           this._handlers.push({
+  #|             onFulfilled: (v) => handle(onFulfilled, v, resolve),
+  #|             onRejected: (r) => handle(onRejected, r, reject)
+  #|           });
+  #|         }
+  #|       });
+  #|     };
+  #|     _SyncPromise.prototype.catch = function(onRejected) {
+  #|       return this.then(undefined, onRejected);
+  #|     };
+  #|     _SyncPromise.prototype.finally = function(onFinally) {
+  #|       return this.then(
+  #|         v => { onFinally(); return v; },
+  #|         r => { onFinally(); throw r; }
+  #|       );
+  #|     };
+  #|     _SyncPromise.resolve = function(value) {
+  #|       return new _SyncPromise(resolve => resolve(value));
+  #|     };
+  #|     _SyncPromise.reject = function(reason) {
+  #|       return new _SyncPromise((_, reject) => reject(reason));
+  #|     };
+  #|     _SyncPromise.all = function(promises) {
+  #|       return new _SyncPromise((resolve, reject) => {
+  #|         const results = [];
+  #|         let count = 0;
+  #|         const arr = Array.from(promises);
+  #|         if (arr.length === 0) { resolve([]); return; }
+  #|         arr.forEach((p, i) => {
+  #|           _SyncPromise.resolve(p).then(v => {
+  #|             results[i] = v;
+  #|             if (++count === arr.length) resolve(results);
+  #|           }, reject);
+  #|         });
+  #|       });
+  #|     };
+  #|     _SyncPromise.race = function(promises) {
+  #|       return new _SyncPromise((resolve, reject) => {
+  #|         Array.from(promises).forEach(p => _SyncPromise.resolve(p).then(resolve, reject));
+  #|       });
+  #|     };
+  #|     // Replace native Promise with our sync version
+  #|     const Promise = _SyncPromise;
+  #|
+  #|     // Fetch API implementation with mock support
+  #|     const _fetchMocks = new Map();
+  #|
+  #|     // Response class
+  #|     class Response {
+  #|       constructor(body, init) {
+  #|         this._body = body || '';
+  #|         this._init = init || {};
+  #|         this.status = this._init.status || 200;
+  #|         this.statusText = this._init.statusText || (this.status === 200 ? 'OK' : '');
+  #|         this.ok = this.status >= 200 && this.status < 300;
+  #|         this.headers = new Headers(this._init.headers);
+  #|         this.type = 'basic';
+  #|         this.url = this._init.url || '';
+  #|         this._bodyUsed = false;
+  #|       }
+  #|       get bodyUsed() { return this._bodyUsed; }
+  #|       _consumeBody() {
+  #|         if (this._bodyUsed) throw new TypeError('Body already consumed');
+  #|         this._bodyUsed = true;
+  #|         return this._body;
+  #|       }
+  #|       text() {
+  #|         return Promise.resolve(this._consumeBody());
+  #|       }
+  #|       json() {
+  #|         return this.text().then(text => JSON.parse(text));
+  #|       }
+  #|       blob() {
+  #|         return Promise.resolve(new Blob([this._consumeBody()]));
+  #|       }
+  #|       arrayBuffer() {
+  #|         const text = this._consumeBody();
+  #|         const buf = new ArrayBuffer(text.length);
+  #|         const view = new Uint8Array(buf);
+  #|         for (let i = 0; i < text.length; i++) view[i] = text.charCodeAt(i);
+  #|         return Promise.resolve(buf);
+  #|       }
+  #|       clone() {
+  #|         if (this._bodyUsed) throw new TypeError('Body already consumed');
+  #|         return new Response(this._body, this._init);
+  #|       }
+  #|     }
+  #|
+  #|     // Headers class
+  #|     class Headers {
+  #|       constructor(init) {
+  #|         this._headers = {};
+  #|         if (init) {
+  #|           if (init instanceof Headers) {
+  #|             init.forEach((v, k) => this.set(k, v));
+  #|           } else if (Array.isArray(init)) {
+  #|             init.forEach(([k, v]) => this.set(k, v));
+  #|           } else {
+  #|             Object.keys(init).forEach(k => this.set(k, init[k]));
+  #|           }
+  #|         }
+  #|       }
+  #|       get(name) { return this._headers[name.toLowerCase()] || null; }
+  #|       set(name, value) { this._headers[name.toLowerCase()] = String(value); }
+  #|       has(name) { return name.toLowerCase() in this._headers; }
+  #|       delete(name) { delete this._headers[name.toLowerCase()]; }
+  #|       append(name, value) {
+  #|         const key = name.toLowerCase();
+  #|         if (this._headers[key]) this._headers[key] += ', ' + value;
+  #|         else this._headers[key] = String(value);
+  #|       }
+  #|       forEach(callback, thisArg) {
+  #|         Object.keys(this._headers).forEach(k => callback.call(thisArg, this._headers[k], k, this));
+  #|       }
+  #|       keys() { return Object.keys(this._headers)[Symbol.iterator](); }
+  #|       values() { return Object.values(this._headers)[Symbol.iterator](); }
+  #|       entries() { return Object.entries(this._headers)[Symbol.iterator](); }
+  #|       [Symbol.iterator]() { return this.entries(); }
+  #|     }
+  #|
+  #|     // Request class (simplified)
+  #|     class Request {
+  #|       constructor(input, init) {
+  #|         this.url = typeof input === 'string' ? input : input.url;
+  #|         this.method = (init && init.method) || 'GET';
+  #|         this.headers = new Headers((init && init.headers) || {});
+  #|         this._body = (init && init.body) || null;
+  #|       }
+  #|       text() { return Promise.resolve(this._body || ''); }
+  #|       json() { return this.text().then(t => JSON.parse(t)); }
+  #|     }
+  #|
+  #|     // Blob class (simplified)
+  #|     class Blob {
+  #|       constructor(parts, options) {
+  #|         this._parts = parts || [];
+  #|         this.type = (options && options.type) || '';
+  #|         this.size = this._parts.reduce((acc, p) => acc + (p.length || 0), 0);
+  #|       }
+  #|       text() { return Promise.resolve(this._parts.join('')); }
+  #|       arrayBuffer() {
+  #|         const text = this._parts.join('');
+  #|         const buf = new ArrayBuffer(text.length);
+  #|         const view = new Uint8Array(buf);
+  #|         for (let i = 0; i < text.length; i++) view[i] = text.charCodeAt(i);
+  #|         return Promise.resolve(buf);
+  #|       }
+  #|     }
+  #|
+  #|     // fetch function
+  #|     function fetch(input, init) {
+  #|       return new Promise((resolve, reject) => {
+  #|         const url = typeof input === 'string' ? input : input.url;
+  #|         const mock = _fetchMocks.get(url);
+  #|         if (mock) {
+  #|           // Use mock response
+  #|           queueMicrotask(() => {
+  #|             const response = new Response(mock.body, {
+  #|               status: mock.status || 200,
+  #|               statusText: mock.statusText || '',
+  #|               headers: mock.headers || {},
+  #|               url: url
+  #|             });
+  #|             resolve(response);
+  #|           });
+  #|         } else {
+  #|           // No mock - reject with network error
+  #|           queueMicrotask(() => {
+  #|             reject(new TypeError('Network request failed: no mock for ' + url));
+  #|           });
+  #|         }
+  #|       });
+  #|     }
+  #|
+  #|     // Task queue for setTimeout/setInterval (populated by window.setTimeout)
+  #|     // Note: _timers is defined later with window object
+  #|     // Run one pending timeout and return true if there was one
+  #|     function _runOneTimeout() {
+  #|       const ids = Object.keys(_timers.timeouts);
+  #|       if (ids.length === 0) return false;
+  #|       // Sort by timeout value to run shorter timeouts first (simplified model)
+  #|       ids.sort((a, b) => (_timers.timeouts[a].timeout || 0) - (_timers.timeouts[b].timeout || 0));
+  #|       const id = ids[0];
+  #|       const entry = _timers.timeouts[id];
+  #|       delete _timers.timeouts[id];
+  #|       try { entry.handler(); } catch (e) { logs.push('[ERROR] setTimeout: ' + e); }
+  #|       return true;
+  #|     }
+  #|     // Run all pending timeouts (for testing - runs until queue is empty)
+  #|     function _runAllTimeouts(maxIterations) {
+  #|       let count = 0;
+  #|       const limit = maxIterations || 100;
+  #|       while (count < limit && _runOneTimeout()) { count++; }
+  #|       return count;
+  #|     }
+  #|     // Check if there are pending timers
+  #|     function _hasPendingTimers() {
+  #|       return Object.keys(_timers.timeouts).length > 0 || Object.keys(_timers.intervals).length > 0;
+  #|     }
+  #|
   #|     // DOMException class
   #|     function DOMException(message, name) {
   #|       Error.call(this, message);
@@ -5685,7 +5950,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       globalThis.window = window;
   #|       globalThis.self = window;
   #|       globalThis.location = window.location;
+  #|       globalThis.navigator = window.navigator;
+  #|       globalThis.queueMicrotask = queueMicrotask;
+  #|       globalThis.fetch = fetch;
+  #|       globalThis.Response = Response;
+  #|       globalThis.Request = Request;
+  #|       globalThis.Headers = Headers;
+  #|       globalThis.Blob = Blob;
   #|     }
+  #|     window.queueMicrotask = queueMicrotask;
+  #|     window.fetch = fetch;
+  #|     window.Response = Response;
+  #|     window.Request = Request;
+  #|     window.Headers = Headers;
+  #|     window.Blob = Blob;
   #|     const frames = [ { document: document.implementation.createHTMLDocument('') } ];
   #|     window.frames = frames;
   #|     if (typeof globalThis !== 'undefined') {
@@ -5700,6 +5978,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const requestAnimationFrame = window.requestAnimationFrame.bind(window);
   #|     const cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
   #|     const alert = window.alert.bind(window);
+  #|     const navigator = window.navigator;
   #|
   #|     // DOMTokenList class
   #|     function DOMTokenList(getter, setter) { this._getter = getter; this._setter = setter; }
@@ -6126,23 +6405,103 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const QuickJS = globalThis.__quickjs;
   #|     const vm = QuickJS.newContext();
   #|     try {
-  #|       const fullCode = setupCode + '\n' + code + '\n; JSON.stringify({ logs, domOps })';
-  #|       const result = vm.evalCode(fullCode);
-  #|       if (result.error) {
-  #|         const errorStr = vm.dump(result.error);
-  #|         result.error.dispose();
+  #|       // Phase 1: Run setup + user code and capture result
+  #|       const userCodeResult = vm.evalCode(setupCode + '\n' + code);
+  #|       if (userCodeResult.error) {
+  #|         const errorStr = vm.dump(userCodeResult.error);
+  #|         userCodeResult.error.dispose();
   #|         vm.dispose();
   #|         return JSON.stringify({
   #|           success: false, value: '', logs: [], domOps: [],
   #|           error: sanitizeErrorText(errorStr)
   #|         });
   #|       }
-  #|       const resultStr = vm.dump(result.value);
-  #|       result.value.dispose();
+  #|       // Capture the return value before disposing
+  #|       let userValue = 'undefined';
+  #|       if (userCodeResult.value) {
+  #|         userValue = vm.dump(userCodeResult.value);
+  #|         userCodeResult.value.dispose();
+  #|       }
+  #|
+  #|       // Phase 2: Event loop - process microtasks and timers
+  #|       // Model: script -> microtasks -> task -> microtasks -> task -> ...
+  #|       let maxIterations = 1000; // Prevent infinite loops
+  #|
+  #|       // Helper to flush all microtasks (Promise + queueMicrotask)
+  #|       const flushAllMicrotasks = () => {
+  #|         let totalWork = 0;
+  #|         for (let i = 0; i < 100; i++) {
+  #|           // Process QuickJS pending jobs (Promise.then callbacks)
+  #|           let jobsExecuted = 0;
+  #|           try {
+  #|             const pendingResult = vm.runtime.executePendingJobs();
+  #|             if (pendingResult.error) {
+  #|               const errHandle = pendingResult.error;
+  #|               const errorStr = vm.dump(errHandle);
+  #|               errHandle.dispose();
+  #|               vm.evalCode('logs.push("[ERROR] Promise: " + ' + JSON.stringify(errorStr) + ')');
+  #|             } else {
+  #|               jobsExecuted = pendingResult.value || 0;
+  #|             }
+  #|           } catch (e) {
+  #|             // executePendingJobs might not be available in all environments
+  #|             // Fall back to no-op
+  #|           }
+  #|
+  #|           // Process custom microtask queue
+  #|           const flushResult = vm.evalCode('_flushMicrotasks(); _microtaskQueue.length');
+  #|           let queueLength = 0;
+  #|           if (!flushResult.error && flushResult.value) {
+  #|             queueLength = vm.getNumber(flushResult.value);
+  #|             flushResult.value.dispose();
+  #|           } else if (flushResult.error) {
+  #|             flushResult.error.dispose();
+  #|           }
+  #|
+  #|           totalWork += jobsExecuted + (queueLength > 0 ? 1 : 0);
+  #|           if (jobsExecuted === 0 && queueLength === 0) break;
+  #|         }
+  #|         return totalWork;
+  #|       };
+  #|
+  #|       // Initial microtask checkpoint (after script execution)
+  #|       flushAllMicrotasks();
+  #|
+  #|       // Event loop: run timers and their microtasks
+  #|       while (maxIterations-- > 0) {
+  #|         // Run one setTimeout callback (task)
+  #|         const timerResult = vm.evalCode('_runOneTimeout()');
+  #|         let ranTimer = false;
+  #|         if (!timerResult.error && timerResult.value) {
+  #|           ranTimer = vm.dump(timerResult.value) === true;
+  #|           timerResult.value.dispose();
+  #|         } else if (timerResult.error) {
+  #|           timerResult.error.dispose();
+  #|         }
+  #|
+  #|         if (!ranTimer) break; // No more timers
+  #|
+  #|         // Microtask checkpoint after each task
+  #|         flushAllMicrotasks();
+  #|       }
+  #|
+  #|       // Phase 3: Collect logs and domOps
+  #|       const collectResult = vm.evalCode('JSON.stringify({ logs, domOps })');
+  #|       if (collectResult.error) {
+  #|         const errorStr = vm.dump(collectResult.error);
+  #|         collectResult.error.dispose();
+  #|         vm.dispose();
+  #|         return JSON.stringify({
+  #|           success: false, value: '', logs: [], domOps: [],
+  #|           error: sanitizeErrorText(errorStr)
+  #|         });
+  #|       }
+  #|       const resultStr = vm.dump(collectResult.value);
+  #|       collectResult.value.dispose();
   #|       vm.dispose();
   #|       const parsed = JSON.parse(resultStr);
   #|       return JSON.stringify({
-  #|         success: true, value: 'undefined',
+  #|         success: true, value: userValue,
   #|         logs: parsed.logs || [], domOps: parsed.domOps || []
   #|       });
   #|     } catch (e) {
@@ -6158,9 +6517,17 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const sandbox = {};
   #|     try {
   #|       vm.createContext(sandbox);
-  #|       // Phase 1: Run setup + user code and capture the return value
+  #|       // Phase 1: Run setup + user code and capture result
   #|       const userResult = vm.runInContext(setupCode + '\n' + code, sandbox, { timeout: 5000 });
-  #|       // Phase 2: Collect logs and domOps
+  #|       // Phase 2: Process microtasks and timers (event loop simulation)
+  #|       vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
+  #|       // Run timers with microtask checkpoints after each
+  #|       for (let i = 0; i < 100; i++) {
+  #|         const ranTimer = vm.runInContext('_runOneTimeout()', sandbox, { timeout: 1000 });
+  #|         if (!ranTimer) break;
+  #|         vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
+  #|       }
+  #|       // Phase 3: Collect logs and domOps
   #|       const collected = vm.runInContext('({ logs, domOps })', sandbox, { timeout: 1000 });
   #|       return JSON.stringify({
   #|         success: true,
@@ -6204,7 +6571,14 @@ pub fn JsContext::execute(
 ) -> JsResult raise JsError {
   init_js_runtime()
   let context_id = register_context(self.dom)
-  let result_json = quickjs_execute_with_mock_dom(code)
+
+  // Generate DOM initialization code from DomTree
+  // This populates the mock DOM with actual HTML content
+  let dom_init_code = create_dom_init_code(self.dom)
+
+  // Execute: setupCode -> dom_init_code -> user_code
+  let full_code = dom_init_code + "\n" + code
+  let result_json = quickjs_execute_with_mock_dom(full_code)
 
   // Parse result
   let (result, dom_ops) = parse_js_result_with_ops(result_json)
@@ -6336,6 +6710,22 @@ fn parse_int_field(json : String, field : String) -> Int {
 }
 
 ///|
+/// Resolve ID to NodeId for apply_dom_ops
+/// If ID is in map, use mapped value; otherwise treat as direct DomTree NodeId
+fn resolve_dom_id(id_map : Map[Int, @dom.NodeId], id : Int) -> @dom.NodeId? {
+  match id_map.get(id) {
+    Some(node_id) => Some(node_id)
+    None =>
+      // ID might be a direct DomTree NodeId (from DOM initialization)
+      if id > 0 {
+        Some(@dom.NodeId::from_int(id))
+      } else {
+        None
+      }
+  }
+}
+
+///|
 /// Apply DOM operations to DomTree
 fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
   // Map mock IDs to real NodeIds
@@ -6372,7 +6762,11 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
         id_map.set(op.id, node_id)
       }
       "appendChild" =>
-        match (id_map.get(op.parent_id), id_map.get(op.child_id)) {
+        match
+          (
+            resolve_dom_id(id_map, op.parent_id),
+            resolve_dom_id(id_map, op.child_id),
+          ) {
           (Some(parent), Some(child)) => {
             let _ = dom.append_child(parent, child)
 
@@ -6380,10 +6774,14 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           _ => ()
         }
       "insertBefore" =>
-        match (id_map.get(op.parent_id), id_map.get(op.child_id)) {
+        match
+          (
+            resolve_dom_id(id_map, op.parent_id),
+            resolve_dom_id(id_map, op.child_id),
+          ) {
           (Some(parent), Some(child)) => {
             let ref_node = if op.ref_id > 0 {
-              id_map.get(op.ref_id)
+              resolve_dom_id(id_map, op.ref_id)
             } else {
               None
             }
@@ -6392,13 +6790,11 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           }
           _ => ()
         }
-      "replaceChild" =>
-        match
-          (
-            id_map.get(op.parent_id),
-            id_map.get(op.child_id),
-            id_map.get(op.ref_id),
-          ) {
+      "replaceChild" => {
+        let parent_id = resolve_dom_id(id_map, op.parent_id)
+        let new_child_id = resolve_dom_id(id_map, op.child_id)
+        let old_child_id = resolve_dom_id(id_map, op.ref_id)
+        match (parent_id, new_child_id, old_child_id) {
           (Some(parent), Some(new_child), Some(old_child)) => {
             // replaceChild: insert new before old, then remove old
             let _ = dom.insert_before(parent, new_child, Some(old_child))
@@ -6407,8 +6803,13 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           }
           _ => ()
         }
+      }
       "removeChild" =>
-        match (id_map.get(op.parent_id), id_map.get(op.child_id)) {
+        match
+          (
+            resolve_dom_id(id_map, op.parent_id),
+            resolve_dom_id(id_map, op.child_id),
+          ) {
           (Some(parent), Some(child)) => {
             let _ = dom.remove_child(parent, child)
 
@@ -6416,7 +6817,7 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           _ => ()
         }
       "setAttribute" =>
-        match id_map.get(op.id) {
+        match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.set_attribute(node_id, op.name, op.value)
 
@@ -6424,7 +6825,7 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           None => ()
         }
       "removeAttribute" =>
-        match id_map.get(op.id) {
+        match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.remove_attribute(node_id, op.name)
 
@@ -6432,7 +6833,7 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           None => ()
         }
       "setTextContent" =>
-        match id_map.get(op.id) {
+        match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.set_text_content(node_id, op.value)
 

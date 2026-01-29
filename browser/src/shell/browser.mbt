@@ -69,6 +69,8 @@ pub struct Browser {
   scheduler : @scheduler.Scheduler
   /// Script executor for JS execution
   mut script_executor : @js.ScriptExecutor?
+  /// Whether JavaScript execution is enabled (requires --enable-js flag)
+  mut enable_js : Bool
 }
 
 ///|
@@ -104,7 +106,16 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     dom_tree: None,
     scheduler: @scheduler.Scheduler::new(),
     script_executor: None,
+    enable_js: false, // Disabled by default for security
   }
+}
+
+///|
+/// Enable or disable JavaScript execution
+/// JavaScript is disabled by default for security reasons.
+/// Use --enable-js flag to enable it.
+pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
+  self.enable_js = enable
 }
 
 ///|
@@ -427,14 +438,6 @@ async fn Browser::load_url(
     self.viewport_height,
     self.external_css,
   )
-  println(
-    "DEBUG: content_height=" +
-    self.content_height.to_string() +
-    " viewport_height=" +
-    self.viewport_height.to_string() +
-    " max_scroll=" +
-    (self.content_height - self.viewport_height).max(0).to_string(),
-  )
   // Build accessibility tree for focus navigation (uses cached doc)
   self.build_accessibility_tree()
   // Render to Sixel
@@ -655,6 +658,8 @@ pub fn Browser::render_text(self : Browser) -> String {
       focused_link_url~,
       selection_mode=self.selection_mode,
       dark_mode=self.dark_mode,
+      total_content_height=self.content_height,
+      show_scrollbar=true,
     )
   }
   // Store link regions for click hit testing
@@ -1334,6 +1339,22 @@ pub(all) struct ScriptInfo {
   is_async : Bool
   /// Whether script is deferred
   is_defer : Bool
+  /// Script type attribute (empty for default JavaScript)
+  script_type : String
+}
+
+///|
+/// Check if a script type is executable as JavaScript
+fn is_executable_script_type(script_type : String) -> Bool {
+  // Empty type or module/javascript types are executable
+  if script_type.length() == 0 {
+    return true
+  }
+  let lower = script_type.to_lower()
+  // Standard JavaScript MIME types
+  lower == "text/javascript" ||
+  lower == "application/javascript" ||
+  lower == "module"
 }
 
 ///|
@@ -1361,6 +1382,7 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
       // Parse script tag attributes
       let mut j = i + 7
       let mut src = ""
+      let mut script_type = ""
       let mut is_async = false
       let mut is_defer = false
       // Find end of opening tag
@@ -1378,6 +1400,23 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
               k = k + 1
             }
             src = html.unsafe_substring(start=j + 5, end=k)
+            j = k
+          }
+        }
+        // Check for type="..."
+        if j + 6 < len &&
+          (char_at(html, j) == 't' || char_at(html, j) == 'T') &&
+          (char_at(html, j + 1) == 'y' || char_at(html, j + 1) == 'Y') &&
+          (char_at(html, j + 2) == 'p' || char_at(html, j + 2) == 'P') &&
+          (char_at(html, j + 3) == 'e' || char_at(html, j + 3) == 'E') &&
+          char_at(html, j + 4) == '=' {
+          let quote = char_at(html, j + 5)
+          if quote == '"' || quote == '\'' {
+            let mut k = j + 6
+            while k < len && char_at(html, k) != quote {
+              k = k + 1
+            }
+            script_type = html.unsafe_substring(start=j + 6, end=k)
             j = k
           }
         }
@@ -1446,7 +1485,7 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
       }
       // Add script info if we have source or src
       if source.length() > 0 || src.length() > 0 {
-        scripts.push({ source, src, is_async, is_defer })
+        scripts.push({ source, src, is_async, is_defer, script_type })
       }
     }
     i = i + 1
@@ -1472,7 +1511,12 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
 
 ///|
 /// Execute scripts from the page (inline only, sync version)
+/// Requires enable_js to be set to true (use --enable-js flag)
 pub fn Browser::execute_scripts(self : Browser) -> Int {
+  // Check if JS execution is enabled
+  if not(self.enable_js) {
+    return 0
+  }
   // Ensure JS execution is initialized
   if self.dom_tree is None {
     self.init_js_execution()
@@ -1524,7 +1568,12 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
 
 ///|
 /// Execute scripts from the page (including external scripts, async version)
+/// Requires enable_js to be set to true (use --enable-js flag)
 pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
+  // Check if JS execution is enabled
+  if not(self.enable_js) {
+    return 0
+  }
   // Ensure JS execution is initialized
   if self.dom_tree is None {
     self.init_js_execution()
@@ -1537,9 +1586,14 @@ pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
   println("Found " + scripts.length().to_string() + " script(s)")
   let mut executed = 0
   for script in scripts {
+    // Skip non-JavaScript scripts (e.g., type="application/json")
+    if not(is_executable_script_type(script.script_type)) {
+      println("  [SKIP] Non-JS script type: " + script.script_type)
+      continue
+    }
     // Determine script source
     let mut source = ""
-    let mut script_type = "Inline"
+    let mut script_kind = "Inline"
     if script.src.length() > 0 {
       // Fetch external script
       let script_url = resolve_url(self.current_url, script.src)
@@ -1558,7 +1612,7 @@ pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
         let response = @http.fetch(script_url, options=script_options)
         println("    -> OK (" + response.body.length().to_string() + " bytes)")
         source = response.body
-        script_type = "External"
+        script_kind = "External"
       } catch {
         err => {
           println("    -> Error: " + err.to_string())
@@ -1577,7 +1631,7 @@ pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
     let task_id = @js.enqueue_script(self.scheduler, source, blocking)
     println(
       "  [QUEUED] " +
-      script_type +
+      script_kind +
       " script (task " +
       task_id.to_string() +
       ", blocking=" +
