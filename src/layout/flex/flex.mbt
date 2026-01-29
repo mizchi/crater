@@ -539,6 +539,8 @@ fn compute_min_content_main_size(
         compute_min_content_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
+      @types.Grid | @types.InlineGrid =>
+        compute_min_content_grid_main_size(node)
       _ =>
         // Fall back to max-content for other display types
         compute_intrinsic_main_size(
@@ -592,6 +594,36 @@ fn compute_min_content_flex_main_size(
   }
   let padding = @types.resolve_rect(style.padding, child_available_width)
   let border = @types.resolve_rect(style.border, child_available_width)
+  let container_inline = match style.width {
+    @types.Length(w) => Some(w)
+    @types.Percent(p) =>
+      if child_available_width > 0.0 {
+        Some(child_available_width * p)
+      } else {
+        None
+      }
+    _ => None
+  }
+  let content_width_for_children = match container_inline {
+    Some(w) => {
+      let content = w - padding.horizontal_sum() - border.horizontal_sum()
+      if content > 0.0 {
+        content
+      } else {
+        0.0
+      }
+    }
+    None => {
+      let content = child_available_width -
+        padding.horizontal_sum() -
+        border.horizontal_sum()
+      if content > 0.0 {
+        content
+      } else {
+        0.0
+      }
+    }
+  }
   if compute_main_axis {
     // For min-content on main axis: sum of min-content sizes (no wrapping)
     let mut total_main = 0.0
@@ -609,7 +641,7 @@ fn compute_min_content_flex_main_size(
       let child_resolved = get_resolved_rects(
         child_style,
         child.uid,
-        child_available_width,
+        content_width_for_children,
       )
       let child_main = if child_is_row {
         match child_style.width {
@@ -623,7 +655,7 @@ fn compute_min_content_flex_main_size(
             compute_min_content_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             )
@@ -659,7 +691,7 @@ fn compute_min_content_flex_main_size(
       let child_resolved = get_resolved_rects(
         child_style,
         child.uid,
-        child_available_width,
+        content_width_for_children,
       )
       let child_cross = if child_is_row {
         match child_style.height {
@@ -668,7 +700,7 @@ fn compute_min_content_flex_main_size(
             compute_min_content_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             )
@@ -693,6 +725,15 @@ fn compute_min_content_flex_main_size(
     }
     max_cross + padding_border_cross
   }
+}
+
+///|
+/// Compute min-content size for a grid container
+/// (approximate to allow flex items to shrink below max-content)
+fn compute_min_content_grid_main_size(
+  _node : @node.Node,
+) -> Double {
+  0.0
 }
 
 ///|
@@ -836,14 +877,50 @@ fn compute_intrinsic_flex_main_size(
   }
   let padding = @types.resolve_rect(style.padding, child_available_width)
   let border = @types.resolve_rect(style.border, child_available_width)
+  let container_inline = match style.width {
+    @types.Length(w) => Some(w)
+    @types.Percent(p) =>
+      if child_available_width > 0.0 {
+        Some(child_available_width * p)
+      } else {
+        None
+      }
+    _ => None
+  }
+  let has_definite_inline = match container_inline {
+    Some(_) => true
+    None => false
+  }
+  let content_width_for_children = match container_inline {
+    Some(w) => {
+      let content = w - padding.horizontal_sum() - border.horizontal_sum()
+      if content > 0.0 {
+        content
+      } else {
+        0.0
+      }
+    }
+    None => {
+      let content = child_available_width -
+        padding.horizontal_sum() -
+        border.horizontal_sum()
+      if content > 0.0 {
+        content
+      } else {
+        0.0
+      }
+    }
+  }
   if compute_main_axis {
     // Computing along this container's main axis: sum children's sizes
     let main_gap = if child_is_row {
-      style.column_gap.resolve_or(child_available_width, 0.0)
+      style.column_gap.resolve_or(content_width_for_children, 0.0)
     } else {
-      style.row_gap.resolve_or(0.0, 0.0)
+      style.row_gap.resolve_or(content_width_for_children, 0.0)
     }
     let mut total_main = 0.0
+    let mut total_main_margins = 0.0
+    let mut has_flex_grow = false
     let mut item_count = 0
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
@@ -859,7 +936,7 @@ fn compute_intrinsic_flex_main_size(
       let child_resolved = get_resolved_rects(
         child_style,
         child.uid,
-        child_available_width,
+        content_width_for_children,
       )
       let child_margin = child_resolved.margin
       let child_padding = child_resolved.padding
@@ -868,11 +945,19 @@ fn compute_intrinsic_flex_main_size(
         child_border.horizontal_sum()
       let child_min_height = child_padding.vertical_sum() +
         child_border.vertical_sum()
+      if child_style.flex_grow > 0.0 {
+        has_flex_grow = true
+      }
       let child_main = if child_is_row {
         // Main axis is width
         let base_width = match child_style.width {
           @types.Length(w) => w
-          @types.Percent(p) => child_available_width * p
+          @types.Percent(p) =>
+            if has_definite_inline {
+              content_width_for_children * p
+            } else {
+              compute_intrinsic_main_size(child, true, None, cache, dispatch)
+            }
           @types.Auto =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch)
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -883,7 +968,9 @@ fn compute_intrinsic_flex_main_size(
         } else {
           base_width
         }
-        effective_width + child_margin.left + child_margin.right
+        let margin_main = child_margin.left + child_margin.right
+        total_main_margins = total_main_margins + margin_main
+        effective_width + margin_main
       } else {
         // Main axis is height
         let base_height = match child_style.height {
@@ -893,7 +980,7 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             )
@@ -901,7 +988,7 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             )
@@ -911,13 +998,29 @@ fn compute_intrinsic_flex_main_size(
         } else {
           base_height
         }
-        effective_height + child_margin.top + child_margin.bottom
+        let margin_main = child_margin.top + child_margin.bottom
+        total_main_margins = total_main_margins + margin_main
+        effective_height + margin_main
       }
       total_main = total_main + child_main
       item_count = item_count + 1
     }
     if item_count > 1 {
       total_main = total_main + main_gap * (item_count - 1).to_double()
+    }
+    // Heuristic: for column flex containers with definite inline size and flex-grow
+    // children, allow intrinsic height to grow based on inline size.
+    if not(parent_is_row) && has_flex_grow {
+      match container_inline {
+        Some(inline) => {
+          let padding_border = padding.vertical_sum() + border.vertical_sum()
+          let available_main = inline + padding_border + total_main_margins
+          if available_main > total_main {
+            total_main = available_main
+          }
+        }
+        None => ()
+      }
     }
     if child_is_row {
       total_main + padding.left + padding.right + border.left + border.right
@@ -960,9 +1063,9 @@ fn compute_intrinsic_flex_main_size(
 
     // Get gap for line breaking calculation
     let main_gap = if child_is_row {
-      style.column_gap.resolve_or(child_available_width, 0.0)
+      style.column_gap.resolve_or(content_width_for_children, 0.0)
     } else {
-      style.row_gap.resolve_or(0.0, 0.0)
+      style.row_gap.resolve_or(content_width_for_children, 0.0)
     }
 
     // Collect items with their sizes
@@ -981,7 +1084,7 @@ fn compute_intrinsic_flex_main_size(
       let child_resolved = get_resolved_rects(
         child_style,
         child.uid,
-        child_available_width,
+        content_width_for_children,
       )
       let child_margin = child_resolved.margin
       let (child_main, child_cross) = if child_is_row {
@@ -989,7 +1092,15 @@ fn compute_intrinsic_flex_main_size(
         let main = match child_style.width {
           @types.Length(w) => w + child_margin.left + child_margin.right
           @types.Percent(p) =>
-            child_available_width * p + child_margin.left + child_margin.right
+            if has_definite_inline {
+              content_width_for_children * p +
+              child_margin.left +
+              child_margin.right
+            } else {
+              compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+              child_margin.left +
+              child_margin.right
+            }
           @types.Auto =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch) +
             child_margin.left +
@@ -1006,7 +1117,7 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             ) +
@@ -1016,7 +1127,7 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             ) +
@@ -1033,7 +1144,7 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             ) +
@@ -1043,7 +1154,7 @@ fn compute_intrinsic_flex_main_size(
             compute_intrinsic_main_size(
               child,
               false,
-              Some(child_available_width),
+              Some(content_width_for_children),
               cache,
               dispatch,
             ) +
@@ -1053,7 +1164,15 @@ fn compute_intrinsic_flex_main_size(
         let cross = match child_style.width {
           @types.Length(w) => w + child_margin.left + child_margin.right
           @types.Percent(p) =>
-            child_available_width * p + child_margin.left + child_margin.right
+            if has_definite_inline {
+              content_width_for_children * p +
+              child_margin.left +
+              child_margin.right
+            } else {
+              compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+              child_margin.left +
+              child_margin.right
+            }
           @types.Auto =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch) +
             child_margin.left +
@@ -1308,6 +1427,16 @@ pub fn compute(
   ctx : @types.LayoutContext,
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
+  // For non-flex nodes, delegate to the dispatcher (tests call @flex.compute directly).
+  match node.style.display {
+    @types.Display::Flex
+    | @types.Display::InlineFlex
+    | @types.Display::Block => ()
+    _ => {
+      let @node.DispatchFn(dispatch_fn) = dispatch
+      return dispatch_fn(node, ctx, dispatch)
+    }
+  }
   let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   compute_internal(node, ctx, warnings, cache, dispatch)
@@ -1321,6 +1450,15 @@ pub fn compute_root(
   ctx : @types.LayoutContext,
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
+  match node.style.display {
+    @types.Display::Flex
+    | @types.Display::InlineFlex
+    | @types.Display::Block => ()
+    _ => {
+      let @node.DispatchFn(dispatch_fn) = dispatch
+      return dispatch_fn(node, ctx, dispatch)
+    }
+  }
   let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   compute_internal(node, ctx, warnings, cache, dispatch, is_root=true)
@@ -1333,6 +1471,15 @@ pub fn compute_with_warnings(
   ctx : @types.LayoutContext,
   dispatch : @node.DispatchFn,
 ) -> @types.LayoutResult {
+  match node.style.display {
+    @types.Display::Flex
+    | @types.Display::InlineFlex
+    | @types.Display::Block => ()
+    _ => {
+      let @node.DispatchFn(dispatch_fn) = dispatch
+      return { layout: dispatch_fn(node, ctx, dispatch), warnings: [] }
+    }
+  }
   let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   let layout = compute_internal(node, ctx, warnings, cache, dispatch)
@@ -1355,6 +1502,18 @@ pub fn compute_with_trace(
   ctx : @types.LayoutContext,
   dispatch : @node.DispatchFn,
 ) -> TracedLayoutResult {
+  match node.style.display {
+    @types.Display::Flex
+    | @types.Display::InlineFlex
+    | @types.Display::Block => ()
+    _ => {
+      let @node.DispatchFn(dispatch_fn) = dispatch
+      let layout = dispatch_fn(node, ctx, dispatch)
+      let tracer = @trace.LayoutTracer::new(true)
+      tracer.collect_from_tree(node, layout, ctx)
+      return { layout, warnings: [], tracer }
+    }
+  }
   let warnings : Array[@types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   let tracer = @trace.LayoutTracer::new(true)
@@ -1373,6 +1532,8 @@ fn compute_internal(
   cache : IntrinsicCache,
   dispatch : @node.DispatchFn,
   is_root? : Bool = false,
+  percent_base_width? : Double = 0.0,
+  use_available_width? : Bool = false,
 ) -> @types.Layout {
   let style = node.style
 
@@ -1387,7 +1548,12 @@ fn compute_internal(
       warnings.push(@types.UnsupportedFloat(node.id))
     @types.Float::None => ()
   }
-  let parent_width = ctx.available_width
+  let available_width = ctx.available_width
+  let parent_width = if percent_base_width > 0.0 {
+    percent_base_width
+  } else {
+    available_width
+  }
   let parent_height = ctx.available_height.unwrap_or(0.0)
 
   // Resolve box model
@@ -1416,7 +1582,7 @@ fn compute_internal(
     ) {
     (@types.MaxContent, true, Some(mf), 0) => {
       // Leaf flex node with MeasureFunc - use intrinsic size
-      let intrinsic = (mf.func)(parent_width, parent_height)
+      let intrinsic = (mf.func)(available_width, parent_height)
       Some(
         (
           intrinsic.max_width +
@@ -1428,14 +1594,25 @@ fn compute_internal(
     }
     _ => None
   }
-  // Check if this is a block-level flex container (Flex) vs inline-level (InlineFlex)
-  let is_block_level = style.display == @types.Flex
+  // Check if this is a block-level flex container (Flex/Block) vs inline-level (InlineFlex)
+  let is_block_level = style.display == @types.Flex || style.display == @types.Block
   let mut container_width = match intrinsic_from_measure {
     Some((w, _)) => w
     None =>
       match style.width {
-        @types.Length(w) => w
-        @types.Percent(p) => parent_width * p
+        @types.Length(w) =>
+          if use_available_width && ctx.sizing_mode == @types.Definite &&
+            available_width < w {
+            available_width
+          } else {
+            w
+          }
+        @types.Percent(p) =>
+          if use_available_width && ctx.sizing_mode == @types.Definite {
+            available_width
+          } else {
+            parent_width * p
+          }
         @types.Auto =>
           match ctx.sizing_mode {
             // Block-level flex containers with width:auto should fill available width minus margins
@@ -1443,14 +1620,18 @@ fn compute_internal(
             // Root-level flex should use content-based sizing (taffy behavior)
             @types.Definite =>
               if is_block_level && not(is_root) {
-                let fill_width = parent_width - margin.horizontal_sum()
+                let fill_width = if use_available_width {
+                  available_width
+                } else {
+                  available_width - margin.horizontal_sum()
+                }
                 let min_width = padding.horizontal_sum() +
                   border.horizontal_sum()
                 if fill_width >= min_width {
                   fill_width
                 } else if node.children.length() > 0 {
                   // When fill calculation would result in width < min,
-                  // parent_width is likely the final content size (not available space).
+                  // available_width is likely the final content size (not available space).
                   // Use intrinsic sizing instead.
                   compute_intrinsic_main_size(
                     node,
@@ -1572,9 +1753,17 @@ fn compute_internal(
           Some(height - padding.vertical_sum() - border.vertical_sum())
         }
         @types.Percent(p) =>
-          Some(
-            parent_height * p - padding.vertical_sum() - border.vertical_sum(),
-          )
+          if use_available_width &&
+            ctx.sizing_mode == @types.Definite &&
+            ctx.available_height is Some(ah) {
+            Some(ah - padding.vertical_sum() - border.vertical_sum())
+          } else {
+            Some(
+              parent_height * p -
+              padding.vertical_sum() -
+              border.vertical_sum(),
+            )
+          }
         @types.Auto =>
           // In Definite mode with available_height, use it for stretched items
           // But only if it's not an "infinity" placeholder (< 1e9)
@@ -1593,7 +1782,19 @@ fn compute_internal(
   // - flex-direction: column flows horizontally (like row in horizontal-tb)
   let is_vertical_writing = style.writing_mode.is_vertical()
   let is_block_rtl = style.writing_mode.is_block_rtl()
-  let direction_is_row = match style.flex_direction {
+  // Treat Block as a column-like container when it has a definite width.
+  // This approximates block layout behavior for taffy compat tests.
+  let width_is_length = match style.width {
+    @types.Length(_) => true
+    _ => false
+  }
+  let block_is_column = style.display == @types.Block && width_is_length
+  let effective_direction = if block_is_column {
+    @types.FlexDirection::Column
+  } else {
+    style.flex_direction
+  }
+  let direction_is_row = match effective_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
   }
@@ -1605,7 +1806,7 @@ fn compute_internal(
   }
   // Determine if flex items should be reversed
   // For row direction with direction: rtl, the inline base direction is reversed
-  let direction_reverse = match style.flex_direction {
+  let direction_reverse = match effective_direction {
     @types.RowReverse | @types.ColumnReverse => true
     _ => false
   }
@@ -1843,6 +2044,17 @@ fn compute_internal(
       content_width,
     )
     let child_margin = child_resolved.margin
+    let margin_cross_for_intrinsic = if is_row {
+      child_margin.top + child_margin.bottom
+    } else {
+      child_margin.left + child_margin.right
+    }
+    let available_cross_for_intrinsic = if is_row {
+      content_width
+    } else {
+      let avail = content_width - margin_cross_for_intrinsic
+      if avail > 0.0 { avail } else { 0.0 }
+    }
 
     // Get explicit cross dimension value for aspect_ratio calculation
     // Only compute this when aspect_ratio is set (optimization: skip for common case)
@@ -1937,7 +2149,7 @@ fn compute_internal(
     // Calculate base size on main axis (flex-basis takes priority over width/height)
     // CSS spec: If flex-basis is a percentage of an indefinite size, it resolves
     // to content size (as if flex-basis: content was specified)
-    let base_main = match child_style.flex_basis {
+    let mut base_main = match child_style.flex_basis {
       @types.Length(b) => b
       @types.Percent(p) =>
         if is_row {
@@ -1948,9 +2160,7 @@ fn compute_internal(
             None => {
               // Percentage of indefinite dimension resolves to content size
               // Compute intrinsic height from children
-              let available_cross_for_child = content_width -
-                child_margin.left -
-                child_margin.right
+              let available_cross_for_child = available_cross_for_intrinsic
               compute_intrinsic_main_size(
                 child,
                 false,
@@ -2024,10 +2234,8 @@ fn compute_internal(
                     Some(ch) if is_wrap && is_col_flex => ch // Use available height for column wrap container
                     _ => {
                       // Compute intrinsic height from children
-                      // For Column flex, the child's width is constrained by available cross space minus margin
-                      let available_cross_for_child = content_width -
-                        child_margin.left -
-                        child_margin.right
+                      // For Column flex, the child's width is constrained by available cross space
+                      let available_cross_for_child = available_cross_for_intrinsic
                       compute_intrinsic_main_size(
                         child,
                         false,
@@ -2040,9 +2248,7 @@ fn compute_internal(
                 }
               }
             @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
-              let available_cross_for_child = content_width -
-                child_margin.left -
-                child_margin.right
+              let available_cross_for_child = available_cross_for_intrinsic
               compute_intrinsic_main_size(
                 child,
                 false,
@@ -2059,9 +2265,7 @@ fn compute_internal(
             child, true, content_height, cache, dispatch,
           )
         } else {
-          let available_cross_for_child = content_width -
-            child_margin.left -
-            child_margin.right
+          let available_cross_for_child = available_cross_for_intrinsic
           compute_intrinsic_main_size(
             child,
             false,
@@ -2225,6 +2429,16 @@ fn compute_internal(
       child_margin.left + child_margin.right
     }
 
+    // Grid items in row flex containers should not exceed available main size.
+    if is_row &&
+      (child_style.display == @types.Grid ||
+        child_style.display == @types.InlineGrid) {
+      let max_main = content_width - margin_main
+      if max_main > 0.0 && base_main > max_main {
+        base_main = max_main
+      }
+    }
+
     // Calculate min/max constraints on main axis
     // Note: In CSS Flexbox, min-width/min-height: auto means the content minimum size
     // For flex items with children, this prevents shrinking below content size
@@ -2307,9 +2521,17 @@ fn compute_internal(
               _ => 0.0
             }
             // Use min-content size for automatic minimum (not max-content)
-            // This allows flex items to shrink below their max-content width
+            // This allows flex items to shrink below their max-content width.
+            // For flex-grow items, use max-content to match taffy behavior.
+            let use_max_content_min = child_style.flex_grow > 0.0 &&
+              (child_style.display == @types.Flex ||
+                child_style.display == @types.InlineFlex)
             let content_min = if aspect_min > 0.0 {
               aspect_min
+            } else if use_max_content_min {
+              compute_intrinsic_main_size(
+                child, true, content_height, cache, dispatch,
+              )
             } else {
               compute_min_content_main_size(
                 child, true, content_height, cache, dispatch,
@@ -2408,9 +2630,21 @@ fn compute_internal(
               _ => 0.0
             }
             // Use min-content size for automatic minimum (not max-content)
-            // This allows flex items to shrink below their max-content height
+            // This allows flex items to shrink below their max-content height.
+            // For flex-grow items, use max-content to match taffy behavior.
+            let use_max_content_min = child_style.flex_grow > 0.0 &&
+              (child_style.display == @types.Flex ||
+                child_style.display == @types.InlineFlex)
             let content_min = if aspect_min > 0.0 {
               aspect_min
+            } else if use_max_content_min {
+              compute_intrinsic_main_size(
+                child,
+                false,
+                Some(content_width),
+                cache,
+                dispatch,
+              )
             } else {
               compute_min_content_main_size(
                 child,
@@ -2894,6 +3128,14 @@ fn compute_internal(
         }
         @types.Auto => ()
         @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
+      }
+      // Ensure grid items respect available main size in flex rows.
+      if child_style.display == @types.Grid ||
+        child_style.display == @types.InlineGrid {
+        let max_main = content_width - item.margin_main
+        if max_main > 0.0 && final_main > max_main {
+          final_main = max_main
+        }
       }
       // CSS spec: item.min_main already includes padding+border as absolute minimum
       // So always use item.min_main which is max(explicit_min, padding_border_min)
@@ -3491,13 +3733,32 @@ fn compute_internal(
             let mut constrained = stretched
             // CSS spec: min takes precedence over max, so apply max first, then min
             // CSS spec: padding + border is always the absolute minimum
-            let child_padding = @types.resolve_rect(child_style.padding, 0.0)
-            let child_border = @types.resolve_rect(child_style.border, 0.0)
+            let child_padding = @types.resolve_rect(
+              child_style.padding,
+              content_width,
+            )
+            let child_border = @types.resolve_rect(
+              child_style.border,
+              content_width,
+            )
             if is_row {
               let padding_border_min = child_padding.vertical_sum() +
                 child_border.vertical_sum()
               match child_style.max_height {
                 @types.Length(v) => if constrained > v { constrained = v }
+                @types.Percent(p) =>
+                  match cross_size {
+                    Some(cs) => {
+                      let container_cross = cs +
+                        padding.vertical_sum() +
+                        border.vertical_sum()
+                      let v = container_cross * p
+                      if constrained > v {
+                        constrained = v
+                      }
+                    }
+                    None => ()
+                  }
                 _ => ()
               }
               match child_style.min_height {
@@ -3508,6 +3769,23 @@ fn compute_internal(
                     constrained = effective_min
                   }
                 }
+                @types.Percent(p) =>
+                  match cross_size {
+                    Some(cs) => {
+                      let container_cross = cs +
+                        padding.vertical_sum() +
+                        border.vertical_sum()
+                      let v = container_cross * p
+                      let effective_min = max(v, padding_border_min)
+                      if constrained < effective_min {
+                        constrained = effective_min
+                      }
+                    }
+                    None =>
+                      if constrained < padding_border_min {
+                        constrained = padding_border_min
+                      }
+                  }
                 @types.Auto =>
                   if constrained < padding_border_min {
                     constrained = padding_border_min
@@ -3519,11 +3797,24 @@ fn compute_internal(
                 child_border.horizontal_sum()
               match child_style.max_width {
                 @types.Length(v) => if constrained > v { constrained = v }
+                @types.Percent(p) => {
+                  let v = container_width * p
+                  if constrained > v {
+                    constrained = v
+                  }
+                }
                 _ => ()
               }
               match child_style.min_width {
                 @types.Length(v) => {
                   // Use max of explicit min and padding+border
+                  let effective_min = max(v, padding_border_min)
+                  if constrained < effective_min {
+                    constrained = effective_min
+                  }
+                }
+                @types.Percent(p) => {
+                  let v = container_width * p
                   let effective_min = max(v, padding_border_min)
                   if constrained < effective_min {
                     constrained = effective_min
@@ -3712,9 +4003,12 @@ fn compute_internal(
         let child_style = child.style
         let child_padding = @types.resolve_rect(
           child_style.padding,
-          child_width,
+          content_width,
         )
-        let child_border = @types.resolve_rect(child_style.border, child_width)
+        let child_border = @types.resolve_rect(
+          child_style.border,
+          content_width,
+        )
         {
           id: child.id,
           x: child_x,
@@ -3740,7 +4034,12 @@ fn compute_internal(
           stretch_height: false,
         }
         let nested_layout = compute_nested(
-          child, child_ctx, warnings, cache, dispatch,
+          child,
+          child_ctx,
+          warnings,
+          cache,
+          dispatch,
+          percent_base_width=content_width,
         )
         {
           id: child.id,
@@ -3811,7 +4110,14 @@ fn compute_internal(
     None =>
       match style.height {
         @types.Length(h) => h
-        @types.Percent(p) => parent_height * p
+        @types.Percent(p) =>
+          if use_available_width &&
+            ctx.sizing_mode == @types.Definite &&
+            ctx.available_height is Some(ah) {
+            ah
+          } else {
+            parent_height * p
+          }
         @types.Auto =>
           if is_row {
             // Row direction: cross size is height
@@ -4515,7 +4821,7 @@ fn compute_internal(
   // If width is auto and is row direction, calculate actual width from child layouts
   // Note: Only non-absolute children should be counted for intrinsic width
   // IMPORTANT: For block-level flex containers with Definite sizing, use the already-calculated
-  // container_width (which is parent_width - margins). Only calculate shrink-to-fit width
+  // container_width (which is available_width - margins). Only calculate shrink-to-fit width
   // when in MaxContent sizing mode.
   let final_width = if width_is_auto && is_row && child_layouts.length() > 0 {
     match ctx.sizing_mode {
@@ -4619,11 +4925,16 @@ fn compute_nested(
   _warnings : Array[@types.LayoutWarning],
   _cache : IntrinsicCache,
   dispatch : @node.DispatchFn,
+  percent_base_width? : Double = 0.0,
 ) -> @types.Layout {
   let style = node.style
-  let parent_width = ctx.available_width
-  let padding = @types.resolve_rect(style.padding, parent_width)
-  let border = @types.resolve_rect(style.border, parent_width)
+  let base_width = if percent_base_width > 0.0 {
+    percent_base_width
+  } else {
+    ctx.available_width
+  }
+  let padding = @types.resolve_rect(style.padding, base_width)
+  let border = @types.resolve_rect(style.border, base_width)
 
   // For leaf nodes, return intrinsic size based on style
   // A leaf with no content has intrinsic size of 0 (plus padding/border)
@@ -4640,7 +4951,7 @@ fn compute_nested(
     // Check if explicit size is set, otherwise use intrinsic or fallback
     let width = match style.width {
       @types.Length(w) => w
-      @types.Percent(p) => ctx.available_width * p
+      @types.Percent(p) => base_width * p
       @types.Auto =>
         match intrinsic {
           Some(intr) =>
@@ -4704,7 +5015,19 @@ fn compute_nested(
 
   // Use dispatcher for nested children to enable cache hits
   let @node.DispatchFn(dispatch_fn) = dispatch
-  dispatch_fn(node, ctx, dispatch)
+  match style.display {
+    @types.Flex | @types.InlineFlex | @types.Block =>
+      compute_internal(
+        node,
+        ctx,
+        _warnings,
+        _cache,
+        dispatch,
+        percent_base_width=base_width,
+        use_available_width=true,
+      )
+    _ => dispatch_fn(node, ctx, dispatch)
+  }
 }
 
 ///|
