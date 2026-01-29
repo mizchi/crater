@@ -67,6 +67,9 @@ function extractMockDomSetup(): string {
   // Clean up #| prefixes used in MoonBit raw strings
   setupCode = setupCode.replace(/^  #\| ?/gm, '');
 
+  // Convert double backslashes to single backslashes (MoonBit raw string escaping)
+  setupCode = setupCode.replace(/\\\\/g, '\\');
+
   return setupCode;
 }
 
@@ -984,12 +987,16 @@ function buildMockDomCode(): string {
     }
   }
 
-  return setupLines.join('\n');
+  // Convert double backslashes to single backslashes (MoonBit raw string escaping)
+  let code = setupLines.join('\n');
+  code = code.replace(/\\\\/g, '\\');
+  return code;
 }
 
 // Run a single test file
 function runTestFile(htmlPath: string): TestFileResult {
   const fileName = path.basename(htmlPath);
+  let fullCode = '';
 
   try {
     const scripts = extractTestScripts(htmlPath);
@@ -1001,7 +1008,7 @@ function runTestFile(htmlPath: string): TestFileResult {
     // Combine all code
     // mockDomCode must come first as it defines document, createMockElement, etc.
     // testHarness augments these with prototype inheritance
-    const fullCode = [
+    fullCode = [
       mockDomCode,
       testHarness,
       doctypeCode,
@@ -1009,6 +1016,10 @@ function runTestFile(htmlPath: string): TestFileResult {
       ...scripts,
       '__runTests();',
     ].join('\n');
+
+    // Debug: write fullCode to temp file
+    // @ts-ignore - using imported fs
+    (globalThis as any).__debugFullCode = fullCode;
 
     // Create sandbox context
     const sandbox = {
@@ -1040,6 +1051,18 @@ function runTestFile(htmlPath: string): TestFileResult {
     return { file: fileName, tests: results, passed, failed, errors };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    // Debug: show stack trace and line info
+    if (error instanceof Error && error.stack) {
+      const match = error.stack.match(/evalmachine.*?:(\d+):(\d+)/);
+      if (match) {
+        const lineNum = parseInt(match[1]);
+        const colNum = parseInt(match[2]);
+        const lines = fullCode.split('\n');
+        console.error(`Error at line ${lineNum}, col ${colNum}:`);
+        console.error(`  ${lines[lineNum - 1]}`);
+        console.error(`  ${' '.repeat(colNum - 1)}^`);
+      }
+    }
     return {
       file: fileName,
       tests: [{ name: 'execution', status: 'error', message }],
