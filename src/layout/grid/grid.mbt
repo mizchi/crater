@@ -444,20 +444,22 @@ fn compute_grid_layout_internal(
   let container_width_for_expansion = if width_is_extrinsically_definite {
     available_width
   } else if is_intrinsic_sizing {
-    // For intrinsic sizing, percentages inside the grid resolve against the
-    // available width when width is auto; otherwise use the specified width.
-    match style.width {
-      @types.Auto => available_width
-      _ => style.width.resolve_or_intrinsic(available_width, 0.0)
-    }
+    resolve_intrinsic_dimension(
+      style.width,
+      available_width,
+      width_is_extrinsically_definite,
+    )
   } else {
     resolve_dimension(style.width, available_width, available_width)
   }
   let container_height_for_expansion = if height_is_extrinsically_definite {
     available_height
   } else if is_intrinsic_sizing {
-    // For intrinsic sizing, percent heights resolve to 0 if no definite height.
-    style.height.resolve_or_intrinsic(available_height, 0.0)
+    resolve_intrinsic_dimension(
+      style.height,
+      available_height,
+      height_is_extrinsically_definite,
+    )
   } else {
     resolve_dimension(style.height, available_height, available_height)
   }
@@ -536,24 +538,32 @@ fn compute_grid_layout_internal(
   let preliminary_width = if width_is_extrinsically_definite {
     available_width
   } else if is_intrinsic_sizing {
-    style.width.resolve_or_intrinsic(available_width, 0.0)
+    resolve_intrinsic_dimension(
+      style.width,
+      available_width,
+      width_is_extrinsically_definite,
+    )
   } else {
     resolve_dimension(style.width, available_width, available_width)
   }
   let preliminary_height = if height_is_extrinsically_definite {
     available_height
   } else if is_intrinsic_sizing {
-    style.height.resolve_or_intrinsic(available_height, 0.0)
+    resolve_intrinsic_dimension(
+      style.height,
+      available_height,
+      height_is_extrinsically_definite,
+    )
   } else {
     resolve_dimension(style.height, available_height, available_height)
   }
 
   // Get padding and border
-  // For intrinsic sizing, percentage padding/gaps should resolve against the available width
   let percent_base_width = if is_intrinsic_sizing {
-    match style.width {
-      @types.Length(_) => preliminary_width
-      _ => available_width
+    if viewport_width > 0.0 && viewport_width > preliminary_width {
+      viewport_width
+    } else {
+      preliminary_width
     }
   } else if viewport_width > 0.0 && viewport_width > available_width {
     viewport_width
@@ -608,23 +618,16 @@ fn compute_grid_layout_internal(
     padding_bottom -
     border_top -
     border_bottom
+  let content_height_for_intrinsic = if preliminary_content_height > 0.0 {
+    preliminary_content_height
+  } else {
+    0.0
+  }
   let content_width_for_intrinsic = if is_intrinsic_sizing {
-    match style.width {
-      @types.Auto =>
-        max(
-          0.0,
-          available_width -
-          padding_left -
-          padding_right -
-          border_left -
-          border_right,
-        )
-      _ =>
-        if preliminary_content_width > 0.0 {
-          preliminary_content_width
-        } else {
-          0.0
-        }
+    if preliminary_content_width > 0.0 {
+      preliminary_content_width
+    } else {
+      0.0
     }
   } else if preliminary_content_width > 0.0 {
     preliminary_content_width
@@ -674,6 +677,7 @@ fn compute_grid_layout_internal(
       total_column_count,
       true, // is_column
       content_width_for_intrinsic,
+      content_height_for_intrinsic,
       0.0, // gapless
       margin_percent_base,
       expanded_columns,
@@ -716,6 +720,7 @@ fn compute_grid_layout_internal(
     total_column_count,
     true, // is_column
     content_width_for_intrinsic,
+    content_height_for_intrinsic,
     column_gap,
     margin_percent_base,
     expanded_columns,
@@ -730,6 +735,7 @@ fn compute_grid_layout_internal(
     total_row_count,
     false, // is_column
     content_width_for_intrinsic, // CSS: percent padding resolves against width
+    content_height_for_intrinsic,
     row_gap,
     margin_percent_base,
     expanded_rows,
@@ -766,6 +772,8 @@ fn compute_grid_layout_internal(
     | @types.MinContent
     | @types.MaxContent
     | @types.FitContent(_) => true
+    @types.Percent(_) =>
+      is_intrinsic_sizing && not(width_is_extrinsically_definite)
     _ => false
   }
   // Track if width is specifically Auto (vs intrinsic keywords like min-content)
@@ -784,6 +792,8 @@ fn compute_grid_layout_internal(
     | @types.MinContent
     | @types.MaxContent
     | @types.FitContent(_) => true
+    @types.Percent(_) =>
+      is_intrinsic_sizing && not(height_is_extrinsically_definite)
     _ => false
   }
   // Track if height is min-content (fr tracks should be 0)
@@ -995,8 +1005,8 @@ fn compute_grid_layout_internal(
             continue
           }
           let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-            child, true, container_width_for_expansion, margin_percent_base, intrinsic_cache,
-            dispatch,
+            child, true, container_width_for_expansion, content_height_for_intrinsic,
+            margin_percent_base, intrinsic_cache, dispatch,
           )
           let contribution = max_content + margin_start + margin_end
           if contribution > content_max_width {
@@ -1092,8 +1102,8 @@ fn compute_grid_layout_internal(
               continue
             }
             let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-              child, false, container_width_for_expansion, margin_percent_base, intrinsic_cache,
-              dispatch,
+              child, false, container_width_for_expansion, content_height_for_intrinsic,
+              margin_percent_base, intrinsic_cache, dispatch,
             )
             let contribution = max_content + margin_start + margin_end
             if contribution > content_max_height {
@@ -1430,22 +1440,22 @@ fn compute_grid_layout_internal(
     let fixed_margin_left = if margin_left_auto {
       0.0
     } else {
-      resolve_dimension(child_style.margin.left, item_width, 0.0)
+      resolve_dimension(child_style.margin.left, content_box_width, 0.0)
     }
     let fixed_margin_right = if margin_right_auto {
       0.0
     } else {
-      resolve_dimension(child_style.margin.right, item_width, 0.0)
+      resolve_dimension(child_style.margin.right, content_box_width, 0.0)
     }
     let fixed_margin_top = if margin_top_auto {
       0.0
     } else {
-      resolve_dimension(child_style.margin.top, item_width, 0.0)
+      resolve_dimension(child_style.margin.top, content_box_width, 0.0)
     }
     let fixed_margin_bottom = if margin_bottom_auto {
       0.0
     } else {
-      resolve_dimension(child_style.margin.bottom, item_width, 0.0)
+      resolve_dimension(child_style.margin.bottom, content_box_width, 0.0)
     }
     let child_available_width = if width_is_auto {
       max(0.0, item_width - fixed_margin_left - fixed_margin_right)
@@ -1466,6 +1476,7 @@ fn compute_grid_layout_internal(
       dispatch,
       stretch_width=should_stretch_width,
       stretch_height=should_stretch_height,
+      percent_base_width=content_box_width,
     )
 
     // Apply alignment (without baseline adjustment yet)
@@ -1620,6 +1631,27 @@ fn resolve_dimension(
 }
 
 ///|
+/// Resolve dimension for intrinsic sizing contexts.
+/// Percentages resolve only when the containing size is extrinsically definite.
+fn resolve_intrinsic_dimension(
+  dim : @types.Dimension,
+  available : Double,
+  is_extrinsically_definite : Bool,
+) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(p) =>
+      if is_extrinsically_definite {
+        available * p
+      } else {
+        0.0
+      }
+    @types.Auto => 0.0
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+  }
+}
+
+///|
 /// Apply content alignment (justify-content/align-content) to tracks
 fn apply_content_alignment(
   tracks : Array[GridTrack],
@@ -1766,6 +1798,7 @@ fn calculate_track_intrinsic_sizes(
   track_count : Int,
   is_column : Bool,
   container_width : Double, // For resolving percent padding/widths
+  container_height : Double, // For resolving percent heights (aspect ratio)
   gap : Double, // Track gap for span contribution adjustment
   margin_percent_base : Double, // For resolving percent margins in intrinsic sizing
   templates : Array[@types.TrackSizingFunction], // Track templates for type-aware distribution
@@ -1829,7 +1862,8 @@ fn calculate_track_intrinsic_sizes(
       max_span = span
     }
     let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-      child, is_column, container_width, margin_percent_base, cache, dispatch,
+      child, is_column, container_width, container_height, margin_percent_base, cache,
+      dispatch,
     )
     let min_content_contribution = min_content + margin_start + margin_end
     let max_contribution = max_content + margin_start + margin_end
@@ -2112,6 +2146,7 @@ fn calculate_item_intrinsic_sizes(
   child : @node.Node,
   is_column : Bool,
   container_width : Double,
+  container_height : Double,
   margin_percent_base : Double,
   cache : GridIntrinsicCache,
   dispatch : @node.DispatchFn,
@@ -2261,9 +2296,14 @@ fn calculate_item_intrinsic_sizes(
             @types.Block => {
               add_box = false
               // Block layout for intrinsic width
+              let available_height = if container_height > 0.0 {
+                Some(container_height)
+              } else {
+                None
+              }
               let min_ctx : @types.LayoutContext = {
                 available_width: 0.0,
-                available_height: None,
+                available_height,
                 sizing_mode: @types.MaxContent,
                 viewport_width: container_width,
                 viewport_height: 0.0,
@@ -2273,7 +2313,7 @@ fn calculate_item_intrinsic_sizes(
               let min_layout = @block.compute(child, min_ctx, dispatch)
               let max_ctx : @types.LayoutContext = {
                 available_width: container_width,
-                available_height: None,
+                available_height,
                 sizing_mode: @types.MaxContent,
                 viewport_width: container_width,
                 viewport_height: 0.0,
@@ -2385,10 +2425,15 @@ fn calculate_item_intrinsic_sizes(
         add_box = false
         (v, v)
       }
-      @types.Percent(_) =>
-        // Percent height resolves against container height, but we don't have it here
-        // Return 0 for percent heights in intrinsic sizing
-        (0.0, 0.0)
+      @types.Percent(p) => {
+        add_box = false
+        let resolved = if container_height > 0.0 {
+          p * container_height
+        } else {
+          0.0
+        }
+        (resolved, resolved)
+      }
       @types.Auto =>
         if child.children.length() == 0 {
           let intrinsic = get_intrinsic_from_measure(
@@ -2400,6 +2445,21 @@ fn calculate_item_intrinsic_sizes(
           match child.style.display {
             @types.Grid => {
               add_box = false
+              let ml = match child.style.margin.left {
+                @types.Length(v) => v
+                @types.Percent(p) => p * margin_percent_base
+                _ => 0.0
+              }
+              let mr = match child.style.margin.right {
+                @types.Length(v) => v
+                @types.Percent(p) => p * margin_percent_base
+                _ => 0.0
+              }
+              let available_width_for_layout = if container_width > 0.0 {
+                max(0.0, container_width - ml - mr)
+              } else {
+                0.0
+              }
               // Determine intrinsic widths first, then compute heights at those widths
               let (min_width, max_width) = match child.style.width {
                 @types.Length(w) => (w, w)
@@ -2410,24 +2470,27 @@ fn calculate_item_intrinsic_sizes(
                 @types.Auto
                 | @types.MinContent
                 | @types.MaxContent
-                | @types.FitContent(_) => {
-                  let min_layout = compute_grid_layout_internal(
-                    child,
-                    0.0,
-                    1.0e10,
-                    true,
-                    false,
-                    @types.MaxContent,
-                    false,
-                    0.0,
-                    1.0e10,
-                    dispatch,
-                  )
-                  let max_layout = compute_grid_layout(
-                    child, 1.0e10, 1.0e10, dispatch,
-                  )
-                  (min_layout.width, max_layout.width)
-                }
+                | @types.FitContent(_) =>
+                  if available_width_for_layout > 0.0 {
+                    (available_width_for_layout, available_width_for_layout)
+                  } else {
+                    let min_layout = compute_grid_layout_internal(
+                      child,
+                      0.0,
+                      1.0e10,
+                      true,
+                      false,
+                      @types.MaxContent,
+                      false,
+                      0.0,
+                      1.0e10,
+                      dispatch,
+                    )
+                    let max_layout = compute_grid_layout(
+                      child, 1.0e10, 1.0e10, dispatch,
+                    )
+                    (min_layout.width, max_layout.width)
+                  }
               }
               let min_layout = compute_grid_layout_internal(
                 child,
@@ -2437,7 +2500,7 @@ fn calculate_item_intrinsic_sizes(
                 false,
                 @types.MaxContent,
                 false,
-                min_width,
+                container_width,
                 0.0,
                 dispatch,
               )
@@ -2449,7 +2512,7 @@ fn calculate_item_intrinsic_sizes(
                 false,
                 @types.MaxContent,
                 false,
-                max_width,
+                container_width,
                 1.0e10,
                 dispatch,
               )
@@ -3923,7 +3986,13 @@ fn compute_child_layout(
   _viewport_height? : Double = 0.0,
   stretch_width? : Bool = false,
   stretch_height? : Bool = false,
+  percent_base_width? : Double = 0.0,
 ) -> @types.Layout {
+  let percent_width_base = if percent_base_width > 0.0 {
+    percent_base_width
+  } else {
+    available_width
+  }
   // For leaf nodes with auto dimensions, use intrinsic sizes
   let intrinsic = get_intrinsic_from_measure(
     child, available_width, available_height,
@@ -3965,7 +4034,7 @@ fn compute_child_layout(
   // Resolve child size
   let mut width = resolve_dimension(
     child.style.width,
-    available_width,
+    percent_width_base,
     width_default,
   )
   let mut height = resolve_dimension(
@@ -3977,33 +4046,33 @@ fn compute_child_layout(
   // Resolve padding and border for minimum size enforcement
   let padding_left = resolve_dimension(
     child.style.padding.left,
-    available_width,
+    percent_width_base,
     0.0,
   )
   let padding_right = resolve_dimension(
     child.style.padding.right,
-    available_width,
+    percent_width_base,
     0.0,
   )
   // CSS spec: percent padding resolves against containing block's WIDTH, not height
   let padding_top = resolve_dimension(
     child.style.padding.top,
-    available_width,
+    percent_width_base,
     0.0,
   )
   let padding_bottom = resolve_dimension(
     child.style.padding.bottom,
-    available_width,
+    percent_width_base,
     0.0,
   )
   let border_left = resolve_dimension(
     child.style.border.left,
-    available_width,
+    percent_width_base,
     0.0,
   )
   let border_right = resolve_dimension(
     child.style.border.right,
-    available_width,
+    percent_width_base,
     0.0,
   )
   let border_top = resolve_dimension(
@@ -4031,12 +4100,12 @@ fn compute_child_layout(
   // Resolve min/max from style
   let min_width_constraint = resolve_dimension(
     child.style.min_width,
-    available_width,
+    percent_width_base,
     0.0,
   )
   let max_width_constraint = resolve_dimension(
     child.style.max_width,
-    available_width,
+    percent_width_base,
     1.0e10,
   )
   let min_height_constraint = resolve_dimension(
@@ -4134,7 +4203,7 @@ fn compute_child_layout(
       height_is_extrinsic_definite,
       @types.Definite,
       nested_is_block_level,
-      available_width, // Use available_width as viewport fallback
+      percent_width_base, // Use percent base for padding resolution
       available_height, // Use available_height as viewport fallback
       dispatch,
     )

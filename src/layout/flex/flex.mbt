@@ -1782,18 +1782,13 @@ fn compute_internal(
   // - flex-direction: column flows horizontally (like row in horizontal-tb)
   let is_vertical_writing = style.writing_mode.is_vertical()
   let is_block_rtl = style.writing_mode.is_block_rtl()
-  // Treat Block as a column-like container when it has a definite width.
-  // This approximates block layout behavior for taffy compat tests.
+  // Check if width is a fixed length (used for intrinsic sizing decisions)
   let width_is_length = match style.width {
     @types.Length(_) => true
     _ => false
   }
-  let block_is_column = style.display == @types.Block && width_is_length
-  let effective_direction = if block_is_column {
-    @types.FlexDirection::Column
-  } else {
-    style.flex_direction
-  }
+  let _ = width_is_length // silence unused warning for now
+  let effective_direction = style.flex_direction
   let direction_is_row = match effective_direction {
     @types.Row | @types.RowReverse => true
     @types.Column | @types.ColumnReverse => false
