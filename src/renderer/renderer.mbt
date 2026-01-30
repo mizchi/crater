@@ -1279,6 +1279,79 @@ pub fn render_to_node_with_document(
 }
 
 ///|
+/// Check if tag is an SVG element
+fn is_svg_element(tag : String) -> Bool {
+  match tag {
+    "svg" | "g" | "rect" | "circle" | "ellipse" | "line" | "polyline" | "polygon"
+    | "path" | "text" | "tspan" | "defs" | "use" | "symbol" | "clipPath" | "mask"
+    | "pattern" | "linearGradient" | "radialGradient" | "stop" | "image"
+    | "foreignObject" | "switch" | "a" => true
+    // Note: "a" in SVG context is an SVG element, but we can't distinguish here
+    // It will be handled by context in the future
+    _ => false
+  }
+}
+
+///|
+/// Apply SVG attributes (width, height) to style
+fn apply_svg_attributes_to_style(
+  style : @style.Style,
+  attrs : Map[String, String]
+) -> @style.Style {
+  let mut result = style
+
+  // Get width from attribute
+  match attrs.get("width") {
+    Some(w) => {
+      let width = parse_svg_length(w)
+      if width > 0.0 {
+        result = { ..result, width: @types.Length(width) }
+      }
+    }
+    None => ()
+  }
+
+  // Get height from attribute
+  match attrs.get("height") {
+    Some(h) => {
+      let height = parse_svg_length(h)
+      if height > 0.0 {
+        result = { ..result, height: @types.Length(height) }
+      }
+    }
+    None => ()
+  }
+
+  result
+}
+
+///|
+/// Parse SVG length value (e.g., "100", "100px", "50%")
+fn parse_svg_length(value : String) -> Double {
+  let trimmed = value.trim().to_string()
+  if trimmed.is_empty() {
+    return 0.0
+  }
+
+  // Remove common units
+  let num_str = if trimmed.has_suffix("px") {
+    trimmed.substring(end=trimmed.length() - 2)
+  } else if trimmed.has_suffix("pt") {
+    trimmed.substring(end=trimmed.length() - 2)
+  } else if trimmed.has_suffix("em") || trimmed.has_suffix("ex") {
+    // em/ex are relative units, treat as pixels for now
+    trimmed.substring(end=trimmed.length() - 2)
+  } else if trimmed.has_suffix("%") {
+    // Percentage - return 0 to skip (handled by CSS)
+    return 0.0
+  } else {
+    trimmed
+  }
+
+  @strconv.parse_double(num_str) catch { _ => 0.0 }
+}
+
+///|
 /// Check if element should be skipped during rendering
 fn should_skip_element(tag : String) -> Bool {
   match tag {
@@ -1301,9 +1374,7 @@ fn should_skip_element(tag : String) -> Bool {
     // Media elements (not yet supported)
     | "video"
     | "audio"
-    // Canvas is a replaced element with intrinsic size (300x150 by default)
-    // It should NOT be skipped
-    | "svg"
+    // math is not yet supported
     | "math"
     // Other non-visual elements
     | "map"
@@ -1490,6 +1561,13 @@ fn element_to_node_with_styles_internal(
       None => 1
     }
     { ..style, rowspan, colspan }
+  } else {
+    style
+  }
+
+  // Handle SVG element size from attributes
+  let style = if is_svg_element(cell_tag) {
+    apply_svg_attributes_to_style(style, elem.attributes)
   } else {
     style
   }
@@ -2004,8 +2082,14 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "bdo"
     | "wbr" => { ..default_style, display: @types.Inline }
     // Replaced inline elements - inline by default
-    "img" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" =>
+    // SVG has intrinsic size of 300x150 when no width/height specified
+    "img" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" | "svg" =>
       { ..default_style, display: @types.Inline }
+    // SVG child elements - inline-block to fit content
+    "g" | "rect" | "circle" | "ellipse" | "line" | "polyline" | "polygon" | "path"
+    | "text" | "tspan" | "defs" | "use" | "symbol" | "clipPath" | "mask" | "pattern"
+    | "linearGradient" | "radialGradient" | "stop" | "image" | "foreignObject" =>
+      { ..default_style, display: @types.InlineBlock }
     // Form elements - inline-block by default
     "input" | "button" | "select" | "textarea" =>
       { ..default_style, display: @types.InlineBlock }
