@@ -216,3 +216,223 @@ pub fn NodeId::from_int(id : Int) -> NodeId {
 pub fn NodeId::to_int(self : NodeId) -> Int {
   self.0
 }
+
+// =============================================================================
+// SVG DOM Geometry Types
+// =============================================================================
+
+///|
+/// SVGRect - represents a rectangle in SVG coordinate space
+/// Used by getBBox(), getClientRect(), and other SVG methods
+pub struct SVGRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, Show)
+
+///|
+/// Create a new SVGRect
+pub fn SVGRect::new(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+) -> SVGRect {
+  { x, y, width, height }
+}
+
+///|
+/// Create an empty SVGRect (0, 0, 0, 0)
+pub fn SVGRect::empty() -> SVGRect {
+  { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
+}
+
+///|
+/// Convert SVGRect to Rect
+pub fn SVGRect::to_rect(self : SVGRect) -> Rect {
+  { x: self.x, y: self.y, width: self.width, height: self.height }
+}
+
+///|
+/// Create SVGRect from Rect
+pub fn SVGRect::from_rect(rect : Rect) -> SVGRect {
+  { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+}
+
+///|
+/// SVGPoint - represents a point in SVG coordinate space
+/// Has matrixTransform method for coordinate transformations
+pub struct SVGPoint {
+  x : Double
+  y : Double
+} derive(Eq, Show)
+
+///|
+/// Create a new SVGPoint
+pub fn SVGPoint::new(x : Double, y : Double) -> SVGPoint {
+  { x, y }
+}
+
+///|
+/// Create an SVGPoint at origin (0, 0)
+pub fn SVGPoint::origin() -> SVGPoint {
+  { x: 0.0, y: 0.0 }
+}
+
+///|
+/// Transform this point by a matrix
+pub fn SVGPoint::matrix_transform(
+  self : SVGPoint,
+  matrix : SVGMatrix,
+) -> SVGPoint {
+  let new_x = matrix.a * self.x + matrix.c * self.y + matrix.e
+  let new_y = matrix.b * self.x + matrix.d * self.y + matrix.f
+  { x: new_x, y: new_y }
+}
+
+///|
+/// SVGMatrix - 2D transformation matrix for SVG
+/// Represents a 3x3 matrix: | a c e |
+///                          | b d f |
+///                          | 0 0 1 |
+pub struct SVGMatrix {
+  a : Double // scale x
+  b : Double // skew y
+  c : Double // skew x
+  d : Double // scale y
+  e : Double // translate x
+  f : Double // translate y
+} derive(Eq, Show)
+
+///|
+/// Create an identity matrix
+pub fn SVGMatrix::identity() -> SVGMatrix {
+  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+}
+
+///|
+/// Create a new SVGMatrix with specified values
+pub fn SVGMatrix::new(
+  a : Double,
+  b : Double,
+  c : Double,
+  d : Double,
+  e : Double,
+  f : Double,
+) -> SVGMatrix {
+  { a, b, c, d, e, f }
+}
+
+///|
+/// Multiply this matrix by another matrix (this * other)
+pub fn SVGMatrix::multiply(self : SVGMatrix, other : SVGMatrix) -> SVGMatrix {
+  {
+    a: self.a * other.a + self.c * other.b,
+    b: self.b * other.a + self.d * other.b,
+    c: self.a * other.c + self.c * other.d,
+    d: self.b * other.c + self.d * other.d,
+    e: self.a * other.e + self.c * other.f + self.e,
+    f: self.b * other.e + self.d * other.f + self.f,
+  }
+}
+
+///|
+/// Get the inverse of this matrix
+pub fn SVGMatrix::inverse(self : SVGMatrix) -> SVGMatrix? {
+  let det = self.a * self.d - self.b * self.c
+  if det == 0.0 {
+    return None
+  }
+  let inv_det = 1.0 / det
+  Some({
+    a: self.d * inv_det,
+    b: -self.b * inv_det,
+    c: -self.c * inv_det,
+    d: self.a * inv_det,
+    e: (self.c * self.f - self.d * self.e) * inv_det,
+    f: (self.b * self.e - self.a * self.f) * inv_det,
+  })
+}
+
+///|
+/// Create a translation matrix
+pub fn SVGMatrix::translate(tx : Double, ty : Double) -> SVGMatrix {
+  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: tx, f: ty }
+}
+
+///|
+/// Create a scale matrix
+pub fn SVGMatrix::scale(sx : Double, sy : Double) -> SVGMatrix {
+  { a: sx, b: 0.0, c: 0.0, d: sy, e: 0.0, f: 0.0 }
+}
+
+///|
+/// Create a uniform scale matrix
+pub fn SVGMatrix::scale_uniform(s : Double) -> SVGMatrix {
+  SVGMatrix::scale(s, s)
+}
+
+///|
+/// Create a rotation matrix (angle in radians)
+pub fn SVGMatrix::rotate(angle : Double) -> SVGMatrix {
+  let cos_a = @math.cos(angle)
+  let sin_a = @math.sin(angle)
+  { a: cos_a, b: sin_a, c: -sin_a, d: cos_a, e: 0.0, f: 0.0 }
+}
+
+///|
+/// Create a rotation matrix (angle in degrees)
+pub fn SVGMatrix::rotate_deg(angle_deg : Double) -> SVGMatrix {
+  SVGMatrix::rotate(angle_deg * 3.14159265358979323846 / 180.0)
+}
+
+///|
+/// Create a skew X matrix (angle in radians)
+pub fn SVGMatrix::skew_x(angle : Double) -> SVGMatrix {
+  { a: 1.0, b: 0.0, c: @math.tan(angle), d: 1.0, e: 0.0, f: 0.0 }
+}
+
+///|
+/// Create a skew Y matrix (angle in radians)
+pub fn SVGMatrix::skew_y(angle : Double) -> SVGMatrix {
+  { a: 1.0, b: @math.tan(angle), c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+}
+
+///|
+/// Apply translation to this matrix (returns new matrix)
+pub fn SVGMatrix::translate_self(
+  self : SVGMatrix,
+  tx : Double,
+  ty : Double,
+) -> SVGMatrix {
+  self.multiply(SVGMatrix::translate(tx, ty))
+}
+
+///|
+/// Apply scale to this matrix (returns new matrix)
+pub fn SVGMatrix::scale_self(
+  self : SVGMatrix,
+  sx : Double,
+  sy : Double,
+) -> SVGMatrix {
+  self.multiply(SVGMatrix::scale(sx, sy))
+}
+
+///|
+/// Apply rotation to this matrix (returns new matrix)
+pub fn SVGMatrix::rotate_self(self : SVGMatrix, angle : Double) -> SVGMatrix {
+  self.multiply(SVGMatrix::rotate(angle))
+}
+
+///|
+/// Flip on X axis
+pub fn SVGMatrix::flip_x(self : SVGMatrix) -> SVGMatrix {
+  self.multiply(SVGMatrix::scale(-1.0, 1.0))
+}
+
+///|
+/// Flip on Y axis
+pub fn SVGMatrix::flip_y(self : SVGMatrix) -> SVGMatrix {
+  self.multiply(SVGMatrix::scale(1.0, -1.0))
+}

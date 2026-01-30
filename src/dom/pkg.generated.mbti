@@ -2,6 +2,31 @@
 package "mizchi/crater/dom"
 
 // Values
+pub fn create_svg_angle() -> SVGAngle
+
+pub fn create_svg_length() -> SVGLength
+
+pub fn create_svg_matrix() -> SVGMatrix
+
+pub fn create_svg_matrix_with(Double, Double, Double, Double, Double, Double) -> SVGMatrix
+
+pub fn create_svg_number() -> SVGNumber
+
+pub fn create_svg_point() -> SVGPoint
+
+pub fn create_svg_point_with(Double, Double) -> SVGPoint
+
+pub fn create_svg_rect() -> SVGRect
+
+pub fn create_svg_rect_with(Double, Double, Double, Double) -> SVGRect
+
+pub fn create_svg_transform() -> SVGTransform
+
+pub fn create_svg_transform_rotate(Double) -> SVGTransform
+
+pub fn create_svg_transform_scale(Double, Double) -> SVGTransform
+
+pub fn create_svg_transform_translate(Double, Double) -> SVGTransform
 
 // Errors
 
@@ -30,8 +55,10 @@ pub fn DomTree::flush_mutations(Self) -> (Array[MutationRecord], FlushResult)
 pub fn[T] DomTree::flush_mutations_with(Self, (MutationRecord) -> T) -> (Array[T], FlushResult)
 pub fn DomTree::get_attribute(Self, NodeId, String) -> Result[String?, CoreError]
 pub fn DomTree::get_attributes(Self, NodeId) -> Result[Array[(String, String)], CoreError]
+pub fn DomTree::get_bbox(Self, NodeId, options? : GetBBoxOptions) -> SVGRect?
 pub fn DomTree::get_cached_rect(Self, NodeId) -> Rect?
 pub fn DomTree::get_children(Self, NodeId) -> Result[Array[NodeId], CoreError]
+pub fn DomTree::get_ctm(Self, NodeId) -> SVGMatrix?
 pub fn DomTree::get_document(Self) -> NodeId
 pub fn DomTree::get_first_child(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_focus(Self) -> NodeId?
@@ -39,6 +66,7 @@ pub fn DomTree::get_mutation_queue(Self) -> MutationQueue
 pub fn DomTree::get_next_sibling(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_node_info(Self, NodeId) -> Result[NodeInfo, CoreError]
 pub fn DomTree::get_parent(Self, NodeId) -> Result[NodeId?, CoreError]
+pub fn DomTree::get_screen_ctm(Self, NodeId) -> SVGMatrix?
 pub fn DomTree::get_tag_name(Self, NodeId) -> Result[String, CoreError]
 pub fn DomTree::get_text_content(Self, NodeId) -> Result[String, CoreError]
 pub fn DomTree::has_pending_mutations(Self) -> Bool
@@ -60,6 +88,17 @@ pub struct FlushResult {
   needs_layout : Bool
 }
 pub impl Show for FlushResult
+
+pub struct GetBBoxOptions {
+  fill : Bool
+  stroke : Bool
+  markers : Bool
+  clipped : Bool
+}
+pub fn GetBBoxOptions::all() -> Self
+pub fn GetBBoxOptions::default() -> Self
+pub impl Eq for GetBBoxOptions
+pub impl Show for GetBBoxOptions
 
 pub struct MutationQueue {
   mut records : Array[MutationRecord]
@@ -149,6 +188,137 @@ pub fn Rect::center(Self) -> Point
 pub fn Rect::new(Double, Double, Double, Double) -> Self
 pub impl Eq for Rect
 pub impl Show for Rect
+
+pub struct SVGAngle {
+  unit_type : SVGAngleType
+  value : Double
+  value_in_specified_units : Double
+}
+pub fn SVGAngle::new(Double) -> Self
+pub fn SVGAngle::to_degrees(Self) -> Double
+pub fn SVGAngle::to_radians(Self) -> Double
+pub impl Eq for SVGAngle
+pub impl Show for SVGAngle
+
+pub enum SVGAngleType {
+  Unknown
+  Unspecified
+  Deg
+  Rad
+  Grad
+  Turn
+}
+pub impl Eq for SVGAngleType
+pub impl Show for SVGAngleType
+
+pub struct SVGLength {
+  unit_type : SVGLengthType
+  value : Double
+  value_in_specified_units : Double
+}
+pub fn SVGLength::new(Double) -> Self
+pub fn SVGLength::to_user_units(Self, dpi? : Double, font_size? : Double) -> Double
+pub impl Eq for SVGLength
+pub impl Show for SVGLength
+
+pub enum SVGLengthType {
+  Unknown
+  Number
+  Percentage
+  Ems
+  Exs
+  Px
+  Cm
+  Mm
+  In
+  Pt
+  Pc
+}
+pub impl Eq for SVGLengthType
+pub impl Show for SVGLengthType
+
+pub struct SVGMatrix {
+  a : Double
+  b : Double
+  c : Double
+  d : Double
+  e : Double
+  f : Double
+}
+pub fn SVGMatrix::flip_x(Self) -> Self
+pub fn SVGMatrix::flip_y(Self) -> Self
+pub fn SVGMatrix::identity() -> Self
+pub fn SVGMatrix::inverse(Self) -> Self?
+pub fn SVGMatrix::multiply(Self, Self) -> Self
+pub fn SVGMatrix::new(Double, Double, Double, Double, Double, Double) -> Self
+pub fn SVGMatrix::rotate(Double) -> Self
+pub fn SVGMatrix::rotate_deg(Double) -> Self
+pub fn SVGMatrix::rotate_self(Self, Double) -> Self
+pub fn SVGMatrix::scale(Double, Double) -> Self
+pub fn SVGMatrix::scale_self(Self, Double, Double) -> Self
+pub fn SVGMatrix::scale_uniform(Double) -> Self
+pub fn SVGMatrix::skew_x(Double) -> Self
+pub fn SVGMatrix::skew_y(Double) -> Self
+pub fn SVGMatrix::translate(Double, Double) -> Self
+pub fn SVGMatrix::translate_self(Self, Double, Double) -> Self
+pub impl Eq for SVGMatrix
+pub impl Show for SVGMatrix
+
+pub struct SVGNumber {
+  value : Double
+}
+pub fn SVGNumber::new(Double) -> Self
+pub impl Eq for SVGNumber
+pub impl Show for SVGNumber
+
+pub struct SVGPoint {
+  x : Double
+  y : Double
+}
+pub fn SVGPoint::matrix_transform(Self, SVGMatrix) -> Self
+pub fn SVGPoint::new(Double, Double) -> Self
+pub fn SVGPoint::origin() -> Self
+pub impl Eq for SVGPoint
+pub impl Show for SVGPoint
+
+pub struct SVGRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+pub fn SVGRect::empty() -> Self
+pub fn SVGRect::from_rect(Rect) -> Self
+pub fn SVGRect::new(Double, Double, Double, Double) -> Self
+pub fn SVGRect::to_rect(Self) -> Rect
+pub impl Eq for SVGRect
+pub impl Show for SVGRect
+
+pub struct SVGTransform {
+  transform_type : SVGTransformType
+  matrix : SVGMatrix
+  angle : Double
+}
+pub fn SVGTransform::from_matrix(SVGMatrix) -> Self
+pub fn SVGTransform::rotate(Double, cx? : Double, cy? : Double) -> Self
+pub fn SVGTransform::scale(Double, Double) -> Self
+pub fn SVGTransform::skew_x(Double) -> Self
+pub fn SVGTransform::skew_y(Double) -> Self
+pub fn SVGTransform::translate(Double, Double) -> Self
+pub impl Eq for SVGTransform
+pub impl Show for SVGTransform
+
+pub enum SVGTransformType {
+  Unknown
+  Matrix
+  Translate
+  Scale
+  Rotate
+  SkewX
+  SkewY
+}
+pub impl Eq for SVGTransformType
+pub impl Show for SVGTransformType
 
 pub struct ScrollState {
   scroll_left : Double

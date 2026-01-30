@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/math",
 }
 
 import "wbtest" {
