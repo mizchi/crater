@@ -1,0 +1,4 @@
+{
+  "import": ["moonbitlang/core/math"],
+  "warn-list": "-6"
+}

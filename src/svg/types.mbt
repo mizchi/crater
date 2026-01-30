@@ -2437,34 +2437,6 @@ fn clip_color(r : Double, g : Double, b : Double) -> (Double, Double, Double) {
 }
 
 ///|
-/// Get saturation of RGB
-fn get_saturation(r : Double, g : Double, b : Double) -> Double {
-  let max_val = if r > g {
-    if r > b {
-      r
-    } else {
-      b
-    }
-  } else if g > b {
-    g
-  } else {
-    b
-  }
-  let min_val = if r < g {
-    if r < b {
-      r
-    } else {
-      b
-    }
-  } else if g < b {
-    g
-  } else {
-    b
-  }
-  max_val - min_val
-}
-
-///|
 /// Hue blend mode
 fn blend_hue(
   bd_r : Double,

@@ -1502,6 +1502,20 @@ fn apply_svg_attributes_to_style(
 }
 
 ///|
+/// Remove suffix of given length from string
+fn remove_suffix(s : String, len : Int) -> String {
+  let end = s.length() - len
+  if end <= 0 {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  for i = 0; i < end; i = i + 1 {
+    buf.write_char(s[i].to_int().unsafe_to_char())
+  }
+  buf.to_string()
+}
+
+///|
 /// Parse SVG length value (e.g., "100", "100px", "50%")
 fn parse_svg_length(value : String) -> Double {
   let trimmed = value.trim().to_string()
@@ -1511,12 +1525,12 @@ fn parse_svg_length(value : String) -> Double {
 
   // Remove common units
   let num_str = if trimmed.has_suffix("px") {
-    trimmed.substring(end=trimmed.length() - 2)
+    remove_suffix(trimmed, 2)
   } else if trimmed.has_suffix("pt") {
-    trimmed.substring(end=trimmed.length() - 2)
+    remove_suffix(trimmed, 2)
   } else if trimmed.has_suffix("em") || trimmed.has_suffix("ex") {
     // em/ex are relative units, treat as pixels for now
-    trimmed.substring(end=trimmed.length() - 2)
+    remove_suffix(trimmed, 2)
   } else if trimmed.has_suffix("%") {
     // Percentage - return 0 to skip (handled by CSS)
     return 0.0
