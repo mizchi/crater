@@ -6,6 +6,8 @@ package "mizchi/crater-browser/main"
 // Errors
 
 // Types and methods
+type HeadlessMode
+
 type Options
 
 // Type aliases

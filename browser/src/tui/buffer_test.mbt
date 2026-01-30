@@ -123,3 +123,87 @@ test "TextStyle::default" {
   inspect(style.bold, content="false")
   inspect(style.underline, content="false")
 }
+
+///|
+test "buffer_to_plain with underline" {
+  let buf = CharBuffer::new(10, 1)
+  // Write underlined text
+  let style : TextStyle = {
+    fg: @types.Color::white(),
+    bg: @types.Color::transparent(),
+    bold: false,
+    underline: true,
+  }
+  let _ = buf.write_text(2, 0, "Link", style, 10)
+  let output = buffer_to_plain(buf)
+  // Should contain underline escape sequence
+  inspect(output.contains("\u001b[4m"), content="true")
+  inspect(output.contains("Link"), content="true")
+}
+
+///|
+test "buffer_to_plain_with_links generates OSC 8" {
+  let buf = CharBuffer::new(20, 1)
+  // Write underlined text
+  let style : TextStyle = {
+    fg: @types.Color::white(),
+    bg: @types.Color::transparent(),
+    bold: false,
+    underline: true,
+  }
+  let _ = buf.write_text(2, 0, "Click", style, 20)
+  let links : Array[PlainLink] = [
+    { col: 2, row: 0, width: 5, url: "https://example.com" },
+  ]
+  let output = buffer_to_plain_with_links(buf, links)
+  // Debug: print escape sequences in hex for verification
+  println("Output length: " + output.length().to_string())
+  println("Contains OSC start: " + output.contains("\u001b]8;;").to_string())
+  println("Contains URL: " + output.contains("https://example.com").to_string())
+  // Check OSC 8 end sequence (ESC ] 8 ; ; BEL)
+  let osc_end = "\u001b]8;;\u0007"
+  println("Contains OSC end: " + output.contains(osc_end).to_string())
+  // Print full output as hex bytes for debugging
+  let hex = StringBuilder::new()
+  for c in output {
+    let code = c.to_int()
+    if code < 32 || code > 126 {
+      hex.write_string("<")
+      hex.write_string(code.to_string())
+      hex.write_string(">")
+    } else {
+      hex.write_char(c)
+    }
+  }
+  println("Full output: " + hex.to_string())
+  // Should contain OSC 8 hyperlink sequences
+  inspect(output.contains("\u001b]8;;https://example.com"), content="true")
+  inspect(output.contains("Click"), content="true")
+  // Verify link is properly closed
+  inspect(output.contains(osc_end), content="true")
+}
+
+///|
+test "OSC 8 escape sequence format" {
+  // Verify the escape sequence format is correct
+  let start = ansi_hyperlink_start("https://test.com")
+  let end = ansi_hyperlink_end()
+  // Build byte string for debugging
+  let start_bytes = StringBuilder::new()
+  for c in start {
+    start_bytes.write_string(c.to_int().to_string())
+    start_bytes.write_string(" ")
+  }
+  println("Start sequence bytes: " + start_bytes.to_string())
+  let end_bytes = StringBuilder::new()
+  for c in end {
+    end_bytes.write_string(c.to_int().to_string())
+    end_bytes.write_string(" ")
+  }
+  println("End sequence bytes: " + end_bytes.to_string())
+  // ESC = 27, ] = 93, 8 = 56, ; = 59, BEL = 7
+  // Expected start: ESC ] 8 ; ; URL BEL
+  // Expected end: ESC ] 8 ; ; BEL
+  inspect(start.has_prefix("\u001b]8;;"), content="true")
+  inspect(end == "\u001b]8;;\u0007", content="true")
+}

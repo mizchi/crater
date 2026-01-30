@@ -681,16 +681,37 @@ pub fn Browser::render_text(self : Browser) -> String {
   self.link_regions = buffer_result.link_regions
   // Initialize scroll states for scrollable elements
   self.init_scrollable_elements(buffer_result.scrollable_elements)
-  // Choose buffer-to-output function based on no_color mode
-  let buffer_to_output : (@tui.CharBuffer) -> String = if self.no_color {
-    @tui.buffer_to_plain
-  } else {
-    @tui.buffer_to_ansi
+  // Build plain links array for no_color mode with clickable hyperlinks
+  let plain_links : Array[@tui.PlainLink] = []
+  if self.no_color {
+    for region in buffer_result.link_regions {
+      // Find matching link URL from extracted links
+      for link in self.links {
+        if region.text == link.text {
+          let url = resolve_url(self.current_url, link.href)
+          if url.length() > 0 {
+            plain_links.push({
+              col: region.col,
+              row: region.row,
+              width: region.width,
+              url,
+            })
+          }
+          break
+        }
+      }
+    }
   }
+  // Choose buffer-to-output based on no_color mode
   let ansi = match self.prev_buffer {
     Some(prev) =>
       if force_full {
-        @tui.clear_screen() + buffer_to_output(buffer_result.buffer)
+        if self.no_color {
+          @tui.clear_screen() +
+          @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
+        } else {
+          @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+        }
       } else if dirty_rects.length() > 0 && not(self.no_color) {
         // Diff rendering only for color mode (plain mode always does full redraw)
         let content_height = if self.hint_mode {
@@ -708,11 +729,18 @@ pub fn Browser::render_text(self : Browser) -> String {
         )
         @tui.buffer_diff_to_ansi_rects(buffer_result.buffer, prev, dirty_cells)
       } else if self.no_color {
-        @tui.clear_screen() + buffer_to_output(buffer_result.buffer)
+        @tui.clear_screen() +
+        @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
       } else {
         ""
       }
-    None => @tui.clear_screen() + buffer_to_output(buffer_result.buffer)
+    None =>
+      if self.no_color {
+        @tui.clear_screen() +
+        @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
+      } else {
+        @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+      }
   }
   self.prev_buffer = Some(buffer_result.buffer)
   self.last_render_key = render_key

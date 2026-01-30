@@ -18,6 +18,10 @@ pub fn ansi_fg_256(Int) -> String
 
 pub fn ansi_fg_color(@types.Color) -> String
 
+pub fn ansi_hyperlink_end() -> String
+
+pub fn ansi_hyperlink_start(String) -> String
+
 pub fn ansi_move_to(Int, Int) -> String
 
 pub fn ansi_reset() -> String
@@ -33,6 +37,8 @@ pub fn buffer_diff_to_ansi_rects(CharBuffer, CharBuffer, Array[DirtyRect]) -> St
 pub fn buffer_to_ansi(CharBuffer) -> String
 
 pub fn buffer_to_plain(CharBuffer) -> String
+
+pub fn buffer_to_plain_with_links(CharBuffer, Array[PlainLink]) -> String
 
 pub fn char_display_width(Char) -> Int
 
@@ -213,6 +219,13 @@ pub(all) struct LinkRegion {
   text : String
 }
 pub fn LinkRegion::contains(Self, Int, Int) -> Bool
+
+pub(all) struct PlainLink {
+  col : Int
+  row : Int
+  width : Int
+  url : String
+}
 
 pub(all) struct RenderResult {
   ansi : String

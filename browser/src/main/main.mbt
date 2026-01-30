@@ -31,6 +31,14 @@ fn calculate_viewport(text_mode : Bool) -> (Int, Int) {
 }
 
 ///|
+/// Headless mode type
+enum HeadlessMode {
+  Off // Interactive mode
+  Full // Render full page content
+  Viewport // Render viewport only
+}
+
+///|
 /// Command line options
 struct Options {
   url : String
@@ -44,6 +52,8 @@ struct Options {
   dark : Bool // Start in dark mode
   no_color : Bool // Disable color output (text layout only)
   extract_main : Bool // Extract main content text only
+  headless : HeadlessMode // Headless rendering mode
+  show_help : Bool // Show help message
 }
 
 ///|
@@ -96,12 +106,69 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
 }
 
 ///|
+/// Print help message
+fn print_help() -> Unit {
+  println("crater-browser - A terminal-based web browser")
+  println("")
+  println("USAGE:")
+  println("  npx @mizchi/crater-browser [OPTIONS] <URL>")
+  println("")
+  println("ARGUMENTS:")
+  println("  <URL>    The URL to navigate to")
+  println("")
+  println("OPTIONS:")
+  println("  -h, --help          Show this help message and exit")
+  println("")
+  println("  Output Modes (mutually exclusive):")
+  println("    --text            Render page as ANSI text (default)")
+  println("    --sixel           Render page as Sixel graphics")
+  println("    --json            Output accessibility tree as JSON")
+  println(
+    "    --aom             Output accessibility tree as YAML (Playwright format)",
+  )
+  println("    --arc90           Run Arc90 content extraction")
+  println("    --grounding       Run visual grounding demo")
+  println("    --extract-main    Extract main content text only")
+  println("    --debug           Print layout tree for debugging")
+  println("")
+  println("  Headless Mode:")
+  println("    --headless=full      Render full page and exit (no interaction)")
+  println("    --headless=viewport  Render viewport only and exit")
+  println("")
+  println("  Display Options:")
+  println(
+    "    --dark            Start in dark mode (prefers-color-scheme: dark)",
+  )
+  println("    --no-color        Disable color output (underline links only)")
+  println("")
+  println("EXAMPLES:")
+  println("  npx @mizchi/crater-browser https://example.com")
+  println(
+    "  npx @mizchi/crater-browser --headless=viewport https://example.com",
+  )
+  println("  npx @mizchi/crater-browser --json https://example.com")
+  println("  npx @mizchi/crater-browser --dark --no-color https://example.com")
+  println("")
+  println("KEYBINDINGS (Interactive Mode):")
+  println("  j/k, Arrow keys     Scroll up/down")
+  println("  Ctrl-D/U, Space     Page down/up")
+  println("  Tab, n              Focus next link")
+  println("  Shift-Tab, p        Focus previous link")
+  println("  Enter               Activate focused link")
+  println("  f                   Enter hint mode (hit-a-hint)")
+  println("  g                   Go to URL")
+  println("  r                   Refresh page")
+  println("  H, Backspace        Go back")
+  println("  L                   Go forward")
+  println("  d                   Toggle dark mode")
+  println("  v                   Toggle selection mode (for copy)")
+  println("  q                   Quit")
+}
+
+///|
 /// Parse command line arguments
-fn parse_args() -> Options? {
+fn parse_args() -> Options {
   let args = @tui.get_args()
-  if args.length() == 0 {
-    return None
-  }
   let mut url = ""
   let mut sixel = false
   let mut text = false
@@ -113,8 +180,12 @@ fn parse_args() -> Options? {
   let mut dark = false
   let mut no_color = false
   let mut extract_main = false
+  let mut headless : HeadlessMode = Off
+  let mut show_help = false
   for arg in args {
-    if arg == "--sixel" {
+    if arg == "-h" || arg == "--help" {
+      show_help = true
+    } else if arg == "--sixel" {
       sixel = true
     } else if arg == "--text" {
       text = true
@@ -134,77 +205,60 @@ fn parse_args() -> Options? {
       no_color = true
     } else if arg == "--extract-main" {
       extract_main = true
-    } else if not(arg.has_prefix("--")) {
+    } else if arg == "--headless" || arg == "--headless=viewport" {
+      headless = Viewport
+    } else if arg == "--headless=full" {
+      headless = Full
+    } else if not(arg.has_prefix("-")) {
       url = arg
     }
   }
-  if url.length() == 0 {
-    None
+  // Default to text mode if no output mode is specified
+  let text = if not(sixel) &&
+    not(text) &&
+    not(debug) &&
+    not(json) &&
+    not(aom) &&
+    not(arc90) &&
+    not(grounding) &&
+    not(extract_main) {
+    true
   } else {
-    // Default to text mode if no output mode is specified
-    let text = if not(sixel) &&
-      not(text) &&
-      not(debug) &&
-      not(json) &&
-      not(aom) &&
-      not(arc90) &&
-      not(grounding) {
-      true
-    } else {
-      text
-    }
-    Some({
-      url,
-      sixel,
-      text,
-      debug,
-      json,
-      aom,
-      arc90,
-      grounding,
-      dark,
-      no_color,
-      extract_main,
-    })
+    text
+  }
+  {
+    url,
+    sixel,
+    text,
+    debug,
+    json,
+    aom,
+    arc90,
+    grounding,
+    dark,
+    no_color,
+    extract_main,
+    headless,
+    show_help,
   }
 }
 
 ///|
 /// Entry point - async main
 async fn main {
-  let options = match parse_args() {
-    Some(opts) => opts
-    None => {
-      println("Usage: npx @mizchi/crater-browser <URL> [options]")
-      println(
-        "Example: npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html",
-      )
-      println("")
-      println("Options:")
-      println("  --text   Render page as ANSI text (default)")
-      println(
-        "  --sixel  Render page as Sixel graphics (requires Sixel-capable terminal)",
-      )
-      println(
-        "  --json      Output accessibility tree as JSON (for AI scraping)",
-      )
-      println(
-        "  --aom       Output accessibility tree as YAML (Playwright format)",
-      )
-      println(
-        "  --arc90     Run Arc90 content extraction (detect main content)",
-      )
-      println(
-        "  --grounding Run visual grounding demo (spatial element queries)",
-      )
-      println("  --debug     Print layout tree for debugging")
-      println(
-        "  --dark      Start in dark mode (use prefers-color-scheme: dark)",
-      )
-      println("  --no-color  Disable color output (text layout only)")
-      println("  --extract-main  Extract main content text only")
-      return
-    }
+  let options = parse_args()
+  // Show help if requested or no URL provided
+  if options.show_help {
+    print_help()
+    return
+  }
+  if options.url.length() == 0 {
+    println("Error: URL is required")
+    println("")
+    println("Usage: npx @mizchi/crater-browser [OPTIONS] <URL>")
+    println("")
+    println("Run with -h or --help for more information.")
+    return
   }
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height) = calculate_viewport(options.text)
@@ -228,6 +282,27 @@ async fn main {
     let _ = browser.navigate(options.url)
     render_page(browser, options)
     return
+  }
+  // Headless mode: render and exit without interaction
+  match options.headless {
+    Full => {
+      // Render full page content
+      let _ = browser.navigate(options.url)
+      // For full mode, we need to scroll through entire content
+      // For now, just render the initial viewport
+      // TODO: Implement full page rendering by scrolling through content
+      let text_output = browser.render_text()
+      @tui.print_raw(text_output)
+      return
+    }
+    Viewport => {
+      // Render viewport only
+      let _ = browser.navigate(options.url)
+      let text_output = browser.render_text()
+      @tui.print_raw(text_output)
+      return
+    }
+    Off => ()
   }
   // Enter TUI mode
   if options.sixel || options.text {

@@ -352,10 +352,26 @@ pub fn disable_mouse() -> String {
 }
 
 ///|
+/// OSC 8 hyperlink start (URL)
+/// Uses BEL (0x07) as String Terminator for broader terminal compatibility
+pub fn ansi_hyperlink_start(url : String) -> String {
+  "\u001b]8;;" + url + "\u0007"
+}
+
+///|
+/// OSC 8 hyperlink end
+/// Uses BEL (0x07) as String Terminator for broader terminal compatibility
+pub fn ansi_hyperlink_end() -> String {
+  "\u001b]8;;\u0007"
+}
+
+///|
 /// Convert CharBuffer to plain text string (no ANSI color codes)
 /// Used for --no-color mode
+/// Preserves underline attribute for links
 pub fn buffer_to_plain(buf : CharBuffer) -> String {
   let sb = StringBuilder::new()
+  let mut last_underline = false
   for row = 0; row < buf.height; row = row + 1 {
     // Move to start of row (1-indexed)
     sb.write_string(ansi_move_to(row + 1, 1))
@@ -365,8 +381,98 @@ pub fn buffer_to_plain(buf : CharBuffer) -> String {
       if cell.char == '\u0000' {
         continue
       }
+      // Handle underline toggle (for links)
+      if cell.underline && not(last_underline) {
+        sb.write_string(ansi_underline())
+        last_underline = true
+      } else if not(cell.underline) && last_underline {
+        sb.write_string(ansi_reset())
+        last_underline = false
+      }
       // Write the character (no color codes)
       sb.write_char(cell.char)
+    }
+    // Reset underline at end of row if still active
+    if last_underline {
+      sb.write_string(ansi_reset())
+      last_underline = false
+    }
+  }
+  sb.to_string()
+}
+
+///|
+/// Link info for plain mode hyperlinks
+pub(all) struct PlainLink {
+  col : Int
+  row : Int
+  width : Int
+  url : String
+}
+
+///|
+/// Convert CharBuffer to plain text with clickable hyperlinks
+/// Uses OSC 8 escape sequences for terminal hyperlinks
+/// Preserves underline attribute for links
+pub fn buffer_to_plain_with_links(
+  buf : CharBuffer,
+  links : Array[PlainLink],
+) -> String {
+  // Build a map of link start positions for quick lookup
+  let link_starts : Map[Int, PlainLink] = {}
+  let link_ends : Map[Int, Bool] = {}
+  for link in links {
+    let start_key = link.row * buf.width + link.col
+    link_starts.set(start_key, link)
+    let end_key = link.row * buf.width + link.col + link.width
+    link_ends.set(end_key, true)
+  }
+  let sb = StringBuilder::new()
+  let mut last_underline = false
+  let mut in_hyperlink = false
+  for row = 0; row < buf.height; row = row + 1 {
+    // Move to start of row (1-indexed)
+    sb.write_string(ansi_move_to(row + 1, 1))
+    for col = 0; col < buf.width; col = col + 1 {
+      let cell = buf.get_cell(col, row)
+      let pos_key = row * buf.width + col
+      // Check for link end (before processing current cell)
+      if link_ends.contains(pos_key) && in_hyperlink {
+        sb.write_string(ansi_hyperlink_end())
+        in_hyperlink = false
+      }
+      // Check for link start
+      match link_starts.get(pos_key) {
+        Some(link) => {
+          sb.write_string(ansi_hyperlink_start(link.url))
+          in_hyperlink = true
+        }
+        None => ()
+      }
+      // Skip wide char placeholder
+      if cell.char == '\u0000' {
+        continue
+      }
+      // Handle underline toggle (for links)
+      if cell.underline && not(last_underline) {
+        sb.write_string(ansi_underline())
+        last_underline = true
+      } else if not(cell.underline) && last_underline {
+        sb.write_string(ansi_reset())
+        last_underline = false
+      }
+      // Write the character (no color codes)
+      sb.write_char(cell.char)
+    }
+    // End hyperlink at end of row if still active
+    if in_hyperlink {
+      sb.write_string(ansi_hyperlink_end())
+      in_hyperlink = false
+    }
+    // Reset underline at end of row if still active
+    if last_underline {
+      sb.write_string(ansi_reset())
+      last_underline = false
     }
   }
   sb.to_string()
