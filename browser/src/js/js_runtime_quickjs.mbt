@@ -2555,7 +2555,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function createMockElement(tagName, mockId) {
   #|       const el = {
   #|         _mockId: mockId,
-  #|         _tagName: tagName.toUpperCase(),
+  #|         _tagName: tagName,
   #|         _localName: null,
   #|         _namespaceURI: 'http://www.w3.org/1999/xhtml',
   #|         _prefix: null,
@@ -2566,10 +2566,22 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         _parent: null,
   #|         _nodeType: 1,
   #|         get nodeType() { return this._nodeType; },
-  #|         get nodeName() { return this._tagName; },
+  #|         get nodeName() {
+  #|           const doc = this._ownerDocument || getGlobalDocument();
+  #|           if (doc && doc.contentType === 'text/html' && this._namespaceURI === 'http://www.w3.org/1999/xhtml') {
+  #|             return this._tagName.toUpperCase();
+  #|           }
+  #|           return this._tagName;
+  #|         },
   #|         get nodeValue() { return null; },
   #|         set nodeValue(v) {},
-  #|         get tagName() { return this._tagName; },
+  #|         get tagName() {
+  #|           const doc = this._ownerDocument || getGlobalDocument();
+  #|           if (doc && doc.contentType === 'text/html' && this._namespaceURI === 'http://www.w3.org/1999/xhtml') {
+  #|             return this._tagName.toUpperCase();
+  #|           }
+  #|           return this._tagName;
+  #|         },
   #|         get localName() {
   #|           if (this._localName !== null && this._localName !== undefined) return this._localName;
   #|           if (this._namespaceURI === 'http://www.w3.org/1999/xhtml') return asciiLowercase(this._tagName);
@@ -2804,7 +2816,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           });
   #|         },
   #|         getAttributeNode(name) { return this.attributes.getNamedItem(name); },
-  #|         getAttributeNodeNS(ns, name) { return this.getAttributeNode(name); },
+  #|         getAttributeNodeNS(ns, localName) { return this.attributes.getNamedItemNS(ns, localName); },
   #|         setAttributeNode(attr) {
   #|           this.setAttribute(attr.name, attr.value);
   #|           if (attr) {
@@ -5488,14 +5500,13 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         el._localName = localName;
   #|         el._namespaceURI = normalizedNs;
   #|         el._prefix = prefix;
+  #|         el._tagName = tagName;
   #|         el._ownerDocument = document;
   #|         if (normalizedNs === 'http://www.w3.org/1999/xhtml') {
-  #|           el._tagName = tagName.toUpperCase();
   #|           const isLower = localName === localName.toLowerCase();
   #|           const Ctor = isLower ? (tagToConstructor[localName] || HTMLElement) : HTMLUnknownElement;
   #|           Object.setPrototypeOf(el, Ctor.prototype);
   #|         } else {
-  #|           el._tagName = tagName;
   #|           Object.setPrototypeOf(el, Element.prototype);
   #|         }
   #|         return el;
@@ -5507,7 +5518,22 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           collectElements(htmlEl, true, (el) => matchesNamespace(el, namespace) && matchesTagNameNS(el, name))
   #|         );
   #|       },
-  #|       importNode(node, deep) { return node.cloneNode ? node.cloneNode(deep) : node; },
+  #|       importNode(node, deep) {
+  #|         if (!node) return null;
+  #|         if (node._nodeType === 9 || node.nodeType === 9) {
+  #|           throw new DOMException('Cannot import a document node', 'NotSupportedError');
+  #|         }
+  #|         const cloned = node.cloneNode ? node.cloneNode(deep) : node;
+  #|         const updateOwner = (n) => {
+  #|           n._ownerDocument = this;
+  #|           if ('ownerDocument' in n) n.ownerDocument = this;
+  #|           if (n._children) {
+  #|             for (const c of n._children) updateOwner(c);
+  #|           }
+  #|         };
+  #|         updateOwner(cloned);
+  #|         return cloned;
+  #|       },
   #|       adoptNode(node) {
   #|         if (!node) return null;
   #|         if (node._nodeType === 9 || node.nodeType === 9) {
@@ -5515,14 +5541,35 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         }
   #|         const detach = (n) => {
   #|           if (!n._parent) return;
+  #|           // Special handling for DocumentType nodes
+  #|           if (n._nodeType === 10 || n.nodeType === 10) {
+  #|             // DocumentType is not in _children but has _parent set
+  #|             const parentDoc = n._parent;
+  #|             if (parentDoc.doctype === n) {
+  #|               // Don't clear doctype reference - just detach from tree
+  #|             }
+  #|             n._parent = null;
+  #|             if ('parentNode' in n) n.parentNode = null;
+  #|             return;
+  #|           }
   #|           if (typeof n._parent.removeChild === 'function') {
-  #|             n._parent.removeChild(n);
+  #|             try {
+  #|               n._parent.removeChild(n);
+  #|             } catch (e) {
+  #|               // Fallback: manually detach from _children
+  #|               if (Array.isArray(n._parent._children)) {
+  #|                 const idx = n._parent._children.indexOf(n);
+  #|                 if (idx >= 0) n._parent._children.splice(idx, 1);
+  #|               }
+  #|               n._parent = null;
+  #|               if ('parentNode' in n) n.parentNode = null;
+  #|             }
   #|           } else if (Array.isArray(n._parent._children)) {
   #|             const idx = n._parent._children.indexOf(n);
   #|             if (idx >= 0) n._parent._children.splice(idx, 1);
+  #|             n._parent = null;
+  #|             if ('parentNode' in n) n.parentNode = null;
   #|           }
-  #|           n._parent = null;
-  #|           if ('parentNode' in n) n.parentNode = null;
   #|         };
   #|         const updateOwner = (n) => {
   #|           n.ownerDocument = this;
@@ -5535,34 +5582,142 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         return node;
   #|       },
   #|       createRange() {
+  #|         const getNodeIndex = (node) => {
+  #|           if (!node._parent && !node.parentNode) return 0;
+  #|           const parent = node._parent || node.parentNode;
+  #|           const children = parent._children || parent.childNodes || [];
+  #|           for (let i = 0; i < children.length; i++) {
+  #|             if (children[i] === node) return i;
+  #|           }
+  #|           return 0;
+  #|         };
   #|         return {
   #|           startContainer: null, startOffset: 0, endContainer: null, endOffset: 0, collapsed: true,
-  #|           setStart(node, offset) { this.startContainer = node; this.startOffset = offset; },
-  #|           setEnd(node, offset) { this.endContainer = node; this.endOffset = offset; },
-  #|           selectNode(node) { this.startContainer = this.endContainer = node; },
-  #|           selectNodeContents(node) { this.startContainer = this.endContainer = node; },
+  #|           setStart(node, offset) { this.startContainer = node; this.startOffset = offset; this._updateCollapsed(); },
+  #|           setEnd(node, offset) { this.endContainer = node; this.endOffset = offset; this._updateCollapsed(); },
+  #|           setStartBefore(node) {
+  #|             const parent = node._parent || node.parentNode;
+  #|             if (!parent) throw new DOMException('Node has no parent', 'InvalidNodeTypeError');
+  #|             this.startContainer = parent;
+  #|             this.startOffset = getNodeIndex(node);
+  #|             this._updateCollapsed();
+  #|           },
+  #|           setStartAfter(node) {
+  #|             const parent = node._parent || node.parentNode;
+  #|             if (!parent) throw new DOMException('Node has no parent', 'InvalidNodeTypeError');
+  #|             this.startContainer = parent;
+  #|             this.startOffset = getNodeIndex(node) + 1;
+  #|             this._updateCollapsed();
+  #|           },
+  #|           setEndBefore(node) {
+  #|             const parent = node._parent || node.parentNode;
+  #|             if (!parent) throw new DOMException('Node has no parent', 'InvalidNodeTypeError');
+  #|             this.endContainer = parent;
+  #|             this.endOffset = getNodeIndex(node);
+  #|             this._updateCollapsed();
+  #|           },
+  #|           setEndAfter(node) {
+  #|             const parent = node._parent || node.parentNode;
+  #|             if (!parent) throw new DOMException('Node has no parent', 'InvalidNodeTypeError');
+  #|             this.endContainer = parent;
+  #|             this.endOffset = getNodeIndex(node) + 1;
+  #|             this._updateCollapsed();
+  #|           },
+  #|           _updateCollapsed() {
+  #|             this.collapsed = this.startContainer === this.endContainer && this.startOffset === this.endOffset;
+  #|           },
+  #|           selectNode(node) {
+  #|             const parent = node._parent || node.parentNode;
+  #|             if (parent) {
+  #|               const idx = getNodeIndex(node);
+  #|               this.startContainer = parent; this.startOffset = idx;
+  #|               this.endContainer = parent; this.endOffset = idx + 1;
+  #|             } else {
+  #|               this.startContainer = this.endContainer = node;
+  #|               this.startOffset = 0;
+  #|               this.endOffset = (node._children || node.childNodes || []).length;
+  #|             }
+  #|             this._updateCollapsed();
+  #|           },
+  #|           selectNodeContents(node) {
+  #|             this.startContainer = this.endContainer = node;
+  #|             this.startOffset = 0;
+  #|             this.endOffset = (node._children || node.childNodes || []).length;
+  #|             this._updateCollapsed();
+  #|           },
   #|           collapse(toStart) { if (toStart) { this.endContainer = this.startContainer; this.endOffset = this.startOffset; } else { this.startContainer = this.endContainer; this.startOffset = this.endOffset; } this.collapsed = true; },
   #|           cloneContents() { return document.createDocumentFragment(); },
   #|           deleteContents() {},
   #|           extractContents() { return document.createDocumentFragment(); },
   #|           insertNode(node) {},
   #|           surroundContents(node) {},
-  #|           cloneRange() { return document.createRange(); },
+  #|           cloneRange() {
+  #|             const newRange = document.createRange();
+  #|             newRange.startContainer = this.startContainer;
+  #|             newRange.startOffset = this.startOffset;
+  #|             newRange.endContainer = this.endContainer;
+  #|             newRange.endOffset = this.endOffset;
+  #|             newRange.collapsed = this.collapsed;
+  #|             return newRange;
+  #|           },
   #|           detach() {},
-  #|           toString() { return ''; }
+  #|           toString() { return ''; },
+  #|           compareBoundaryPoints(how, sourceRange) { return 0; },
+  #|           comparePoint(node, offset) { return 0; },
+  #|           isPointInRange(node, offset) { return false; },
+  #|           intersectsNode(node) { return false; },
+  #|           getClientRects() { return []; },
+  #|           getBoundingClientRect() { return { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 }; }
   #|         };
   #|       },
   #|       createNodeIterator(root, whatToShow, filter) {
-  #|         return { root, nextNode() { return null; }, previousNode() { return null; } };
+  #|         if (root === undefined) {
+  #|           throw new TypeError("Failed to execute 'createNodeIterator': 1 argument required, but only 0 present.");
+  #|         }
+  #|         const show = whatToShow === undefined ? 0xFFFFFFFF : (whatToShow >>> 0);
+  #|         const f = filter === undefined ? null : filter;
+  #|         return { root, whatToShow: show, filter: f, nextNode() { return null; }, previousNode() { return null; } };
   #|       },
   #|       createTreeWalker(root, whatToShow, filter) {
+  #|         if (root === undefined) {
+  #|           throw new TypeError("Failed to execute 'createTreeWalker': 1 argument required, but only 0 present.");
+  #|         }
+  #|         const show = whatToShow === undefined ? 0xFFFFFFFF : (whatToShow >>> 0);
+  #|         const f = filter === undefined ? null : filter;
   #|         return {
-  #|           root, currentNode: root,
-  #|           firstChild() { return this.currentNode.firstChild; },
-  #|           lastChild() { return this.currentNode.lastChild; },
-  #|           nextSibling() { return this.currentNode.nextSibling; },
-  #|           previousSibling() { return this.currentNode.previousSibling; },
-  #|           parentNode() { return this.currentNode.parentNode; },
+  #|           root,
+  #|           currentNode: root,
+  #|           whatToShow: show,
+  #|           filter: f,
+  #|           firstChild() {
+  #|             const child = this.currentNode.firstChild || (this.currentNode._children && this.currentNode._children[0]) || null;
+  #|             if (child) this.currentNode = child;
+  #|             return child;
+  #|           },
+  #|           lastChild() {
+  #|             const children = this.currentNode._children || this.currentNode.childNodes || [];
+  #|             const child = children.length > 0 ? children[children.length - 1] : null;
+  #|             if (child) this.currentNode = child;
+  #|             return child;
+  #|           },
+  #|           nextSibling() {
+  #|             const sibling = this.currentNode.nextSibling;
+  #|             if (sibling) this.currentNode = sibling;
+  #|             return sibling;
+  #|           },
+  #|           previousSibling() {
+  #|             const sibling = this.currentNode.previousSibling;
+  #|             if (sibling) this.currentNode = sibling;
+  #|             return sibling;
+  #|           },
+  #|           parentNode() {
+  #|             const parent = this.currentNode._parent || this.currentNode.parentNode;
+  #|             if (parent && parent !== this.root) {
+  #|               this.currentNode = parent;
+  #|               return parent;
+  #|             }
+  #|             return null;
+  #|           },
   #|           nextNode() { return null; },
   #|           previousNode() { return null; }
   #|         };
@@ -6375,10 +6530,19 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         doc = document.implementation.createHTMLDocument('');
   #|         doc.contentType = 'text/html';
   #|       } else {
-  #|         const ns = type === 'application/xhtml+xml' ? 'http://www.w3.org/1999/xhtml' : null;
+  #|         // Try to extract xmlns attribute from the root element
+  #|         let ns = type === 'application/xhtml+xml' ? 'http://www.w3.org/1999/xhtml' : null;
+  #|         const xmlnsMatch = text.match(/xmlns\\s*=\\s*["']([^"']+)["']/);
+  #|         if (xmlnsMatch) {
+  #|           ns = xmlnsMatch[1];
+  #|         }
   #|         const qname = tagMatch ? tagMatch[1] : null;
   #|         doc = document.implementation.createDocument(ns, qname, null);
   #|         doc.contentType = type;
+  #|         // Also set the namespace on the documentElement if created
+  #|         if (doc.documentElement && ns) {
+  #|           doc.documentElement._namespaceURI = ns;
+  #|         }
   #|       }
   #|       return doc;
   #|     };
