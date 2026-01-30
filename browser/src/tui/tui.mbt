@@ -32,8 +32,8 @@ pub fn key_to_action(key : String) -> BrowserAction? {
   match key {
     "j" | "ArrowDown" => Some(ScrollDown)
     "k" | "ArrowUp" => Some(ScrollUp)
-    "Ctrl-D" | "PageDown" => Some(PageDown)
-    "PageUp" => Some(PageUp)
+    "Ctrl-D" | "PageDown" | " " => Some(PageDown)
+    "Ctrl-U" | "PageUp" | "Shift-Space" => Some(PageUp)
     "Tab" | "n" => Some(NextLink)
     "Shift-Tab" | "N" | "p" => Some(PrevLink)
     "Enter" => Some(ActivateLink)

@@ -32,6 +32,7 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|       if (key === '\t') { resolve('Tab'); return; }
   #|       if (key === '\u001b[Z') { resolve('Shift-Tab'); return; }
   #|       if (key === '\u001b') { resolve('Escape'); return; }
+  #|       if (key === '\u0015') { resolve('Ctrl-U'); return; } // Ctrl+U
   #|       // Mouse events: SGR mode \e[<btn;col;row;M (press) or m (release)
   #|       if (key.startsWith('\u001b[<')) {
   #|         const match = key.match(/\u001b\[<(\d+);(\d+);(\d+)([Mm])/);
