@@ -102,6 +102,7 @@ pub(all) struct Style {
   mut background_color : @types.Color
   mut contain : Contain
   mut transform : Transform
+  mut zoom : Double
   mut border_spacing : Double
   mut border_collapse : BorderCollapse
   mut table_layout : TableLayout
@@ -121,9 +122,12 @@ pub impl Show for TableLayout
 pub(all) struct Transform {
   translate_x : TranslateValue
   translate_y : TranslateValue
+  scale_x : Double
+  scale_y : Double
 }
 pub fn Transform::compute_translate_x(Self, Double) -> Double
 pub fn Transform::compute_translate_y(Self, Double) -> Double
+pub fn Transform::has_scale(Self) -> Bool
 pub fn Transform::is_none(Self) -> Bool
 pub fn Transform::none() -> Self
 pub impl Eq for Transform

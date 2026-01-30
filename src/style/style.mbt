@@ -96,10 +96,12 @@ pub(all) enum TranslateValue {
 
 ///|
 /// CSS transform property - list of transform functions
-/// Currently supports translate only for layout purposes
+/// Supports translate and scale for layout purposes
 pub(all) struct Transform {
   translate_x : TranslateValue // translateX or first arg of translate()
   translate_y : TranslateValue // translateY or second arg of translate()
+  scale_x : Double // scaleX or first arg of scale() (default 1.0)
+  scale_y : Double // scaleY or second arg of scale() (default 1.0)
 } derive(Show, Eq)
 
 ///|
@@ -108,17 +110,27 @@ pub fn Transform::none() -> Transform {
   {
     translate_x: TranslateValue::Length(0.0),
     translate_y: TranslateValue::Length(0.0),
+    scale_x: 1.0,
+    scale_y: 1.0,
   }
 }
 
 ///|
 /// Check if transform is identity (no visual change)
 pub fn Transform::is_none(self : Transform) -> Bool {
-  match (self.translate_x, self.translate_y) {
+  let translate_none = match (self.translate_x, self.translate_y) {
     (TranslateValue::Length(0.0), TranslateValue::Length(0.0)) => true
     (TranslateValue::Percent(0.0), TranslateValue::Percent(0.0)) => true
     _ => false
   }
+  let scale_none = self.scale_x == 1.0 && self.scale_y == 1.0
+  translate_none && scale_none
+}
+
+///|
+/// Check if transform has scale applied
+pub fn Transform::has_scale(self : Transform) -> Bool {
+  self.scale_x != 1.0 || self.scale_y != 1.0
 }
 
 ///|
@@ -271,6 +283,8 @@ pub(all) struct Style {
   mut contain : Contain
   // CSS transform (visual offset, applied in paint phase)
   mut transform : Transform
+  // CSS zoom (affects layout scaling, inherited)
+  mut zoom : Double // zoom factor (1.0 = 100%, 2.0 = 200%)
   // Table properties
   mut border_spacing : Double // border-spacing in pixels (horizontal and vertical, simplified)
   mut border_collapse : BorderCollapse // border-collapse: separate | collapse
@@ -359,6 +373,7 @@ pub fn Style::default() -> Style {
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
     transform: Transform::none(),
+    zoom: 1.0,
     border_spacing: 0.0,
     border_collapse: Separate,
     table_layout: Auto,

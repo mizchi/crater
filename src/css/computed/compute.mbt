@@ -157,6 +157,8 @@ priv struct StyleBuilder {
   mut contain : @style.Contain
   // Transform
   mut transform : @style.Transform
+  // Zoom (affects layout scaling)
+  mut zoom : Double
   // Table properties
   mut border_spacing : Double
   mut border_collapse : @style.BorderCollapse
@@ -235,6 +237,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
     transform: @style.Transform::none(),
+    zoom: 1.0,
     border_spacing: 0.0,
     border_collapse: @style.BorderCollapse::Separate,
     table_layout: @style.TableLayout::Auto,
@@ -313,6 +316,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     background_color: style.background_color,
     contain: style.contain,
     transform: style.transform,
+    zoom: style.zoom,
     border_spacing: style.border_spacing,
     border_collapse: style.border_collapse,
     table_layout: style.table_layout,
@@ -400,6 +404,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     background_color: self.background_color,
     contain: self.contain,
     transform: self.transform,
+    zoom: self.zoom,
     border_spacing: self.border_spacing,
     border_collapse: self.border_collapse,
     table_layout: self.table_layout,
@@ -1157,6 +1162,8 @@ fn apply_property(
     }
     // Transform (visual position offset)
     "transform" => builder.transform = parse_transform(value)
+    // Zoom (layout scaling, inherited)
+    "zoom" => builder.zoom = parse_zoom(value)
     // Table properties
     "border-spacing" =>
       builder.border_spacing = parse_border_spacing(value, ctx)
@@ -1890,7 +1897,7 @@ fn is_pure_number(s : String) -> Bool {
 
 ///|
 /// Parse CSS transform property
-/// Supports translate(x, y), translateX(x), translateY(y)
+/// Supports translate(x, y), translateX(x), translateY(y), scale(x, y), scaleX(x), scaleY(y)
 fn parse_transform(value : String) -> @style.Transform {
   let v = value.trim().to_lower()
   // Handle none
@@ -1899,6 +1906,8 @@ fn parse_transform(value : String) -> @style.Transform {
   }
   let mut translate_x = @style.TranslateValue::Length(0.0)
   let mut translate_y = @style.TranslateValue::Length(0.0)
+  let mut scale_x = 1.0
+  let mut scale_y = 1.0
   // Parse transform functions
   // We handle each function in sequence
   let chars = v.to_array()
@@ -1958,10 +1967,72 @@ fn parse_transform(value : String) -> @style.Transform {
           translate_y = parse_translate_value(args[1])
         }
       }
-      _ => () // Ignore unsupported functions like rotate, scale, etc.
+      "scale" => {
+        // scale(x) or scale(x, y)
+        let args = split_by_comma(args_str)
+        if args.length() >= 1 {
+          let sx = parse_scale_value(args[0])
+          scale_x = scale_x * sx
+          scale_y = scale_y * sx // If only one arg, use same scale for both
+        }
+        if args.length() >= 2 {
+          scale_y = scale_y /
+            scale_x *
+            parse_scale_value(args[1]) *
+            scale_x /
+            scale_x
+          // Actually: if second arg provided, override scale_y
+          scale_y = parse_scale_value(args[1])
+        }
+      }
+      "scalex" => scale_x = scale_x * parse_scale_value(args_str)
+      "scaley" => scale_y = scale_y * parse_scale_value(args_str)
+      "scale3d" => {
+        // scale3d(x, y, z) - we only use x and y
+        let args = split_by_comma(args_str)
+        if args.length() >= 1 {
+          scale_x = scale_x * parse_scale_value(args[0])
+        }
+        if args.length() >= 2 {
+          scale_y = scale_y * parse_scale_value(args[1])
+        }
+      }
+      _ => () // Ignore unsupported functions like rotate, skew, etc.
     }
   }
-  { translate_x, translate_y }
+  { translate_x, translate_y, scale_x, scale_y }
+}
+
+///|
+/// Parse a scale value (number, no unit)
+fn parse_scale_value(value : String) -> Double {
+  let v = value.trim()
+  if v.is_empty() {
+    return 1.0
+  }
+  @strconv.parse_double(v) catch {
+    _ => 1.0
+  }
+}
+
+///|
+/// Parse CSS zoom property
+/// Supports: normal, number, percentage
+fn parse_zoom(value : String) -> Double {
+  let v = value.trim().to_lower()
+  if v.is_empty() || v == "normal" {
+    return 1.0
+  }
+  // Check for percentage (e.g., "150%")
+  if v.has_suffix("%") {
+    let num_str = v[:v.length() - 1].to_string() catch { _ => return 1.0 }
+    let n = @strconv.parse_double(num_str.trim()) catch { _ => return 1.0 }
+    return n / 100.0
+  }
+  // Parse as number (e.g., "1.5" or "2")
+  @strconv.parse_double(v) catch {
+    _ => 1.0
+  }
 }
 
 ///|

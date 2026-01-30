@@ -473,7 +473,11 @@ fn collect_inline_content(
       @html.Node::Element(elem) => {
         let tag_lower = elem.tag.to_lower()
         if tag_lower == "br" {
-          // Insert newline for <br>
+          // Flush accumulated text first
+          flush_text(text_builder, remaining)
+          // Keep <br> as a separate node for layout comparison
+          remaining.push(child)
+          // Also add newline for text rendering
           text_builder.write_string("\n")
           has_inline_content = true
         } else if is_replaced_element(tag_lower) {
@@ -602,6 +606,26 @@ fn create_input_measure(
         max_width: intrinsic_width,
         min_height: intrinsic_height,
         max_height: intrinsic_height,
+      }
+    },
+  }
+}
+
+///|
+/// Create a MeasureFunc for br elements
+/// br elements have zero width and line-height for height
+fn create_br_measure(line_height : Double) -> @types.MeasureFunc {
+  {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      // br elements have zero width but take up line-height vertically
+      {
+        min_width: 0.0,
+        max_width: 0.0,
+        min_height: line_height,
+        max_height: line_height,
       }
     },
   }
@@ -984,6 +1008,9 @@ pub fn render_with_external_css(
   // Compute layout using dispatcher (handles display type switching)
   let layout = @dispatch.compute_layout(root, layout_ctx)
 
+  // Apply zoom and transform scale to layout
+  let scaled_layout = apply_zoom_and_scale(layout, root, 1.0, 1.0, 1.0)
+
   // Apply root margin as position offset
   // For margin:auto, center horizontally
   let margin_left_is_auto = match root.style.margin.left {
@@ -996,29 +1023,29 @@ pub fn render_with_external_css(
   }
   let x_offset = if margin_left_is_auto && margin_right_is_auto {
     // Center horizontally
-    (ctx.viewport_width - layout.width) / 2.0
+    (ctx.viewport_width - scaled_layout.width) / 2.0
   } else if margin_left_is_auto {
     // Push to right
-    ctx.viewport_width - layout.width - root_margin.right
+    ctx.viewport_width - scaled_layout.width - root_margin.right
   } else {
     // Use left margin
     root_margin.left
   }
   {
-    id: layout.id,
+    id: scaled_layout.id,
     x: x_offset,
     y: root_margin.top,
-    width: layout.width,
-    height: layout.height,
-    margin: layout.margin,
-    padding: layout.padding,
-    border: layout.border,
-    overflow_x: layout.overflow_x,
-    overflow_y: layout.overflow_y,
-    scroll_width: layout.scroll_width,
-    scroll_height: layout.scroll_height,
-    children: layout.children,
-    text: layout.text,
+    width: scaled_layout.width,
+    height: scaled_layout.height,
+    margin: scaled_layout.margin,
+    padding: scaled_layout.padding,
+    border: scaled_layout.border,
+    overflow_x: scaled_layout.overflow_x,
+    overflow_y: scaled_layout.overflow_y,
+    scroll_width: scaled_layout.scroll_width,
+    scroll_height: scaled_layout.scroll_height,
+    children: scaled_layout.children,
+    text: scaled_layout.text,
   }
 }
 
@@ -1091,6 +1118,9 @@ pub fn render_document_with_external_css(
   // Compute layout
   let layout = @dispatch.compute_layout(root, layout_ctx)
 
+  // Apply zoom and transform scale to layout
+  let scaled_layout = apply_zoom_and_scale(layout, root, 1.0, 1.0, 1.0)
+
   // Apply root margin offset to final layout
   let margin_left_is_auto = match root.style.margin.left {
     @types.Dimension::Auto => true
@@ -1102,29 +1132,29 @@ pub fn render_document_with_external_css(
   }
   let x_offset = if margin_left_is_auto && margin_right_is_auto {
     // Center horizontally
-    (ctx.viewport_width - layout.width) / 2.0
+    (ctx.viewport_width - scaled_layout.width) / 2.0
   } else if margin_left_is_auto {
     // Push to right
-    ctx.viewport_width - layout.width - root_margin.right
+    ctx.viewport_width - scaled_layout.width - root_margin.right
   } else {
     // Use left margin
     root_margin.left
   }
   {
-    id: layout.id,
+    id: scaled_layout.id,
     x: x_offset,
     y: root_margin.top,
-    width: layout.width,
-    height: layout.height,
-    margin: layout.margin,
-    padding: layout.padding,
-    border: layout.border,
-    overflow_x: layout.overflow_x,
-    overflow_y: layout.overflow_y,
-    scroll_width: layout.scroll_width,
-    scroll_height: layout.scroll_height,
-    children: layout.children,
-    text: layout.text,
+    width: scaled_layout.width,
+    height: scaled_layout.height,
+    margin: scaled_layout.margin,
+    padding: scaled_layout.padding,
+    border: scaled_layout.border,
+    overflow_x: scaled_layout.overflow_x,
+    overflow_y: scaled_layout.overflow_y,
+    scroll_width: scaled_layout.scroll_width,
+    scroll_height: scaled_layout.scroll_height,
+    children: scaled_layout.children,
+    text: scaled_layout.text,
   }
 }
 
@@ -1282,10 +1312,30 @@ pub fn render_to_node_with_document(
 /// Check if tag is an SVG element
 fn is_svg_element(tag : String) -> Bool {
   match tag {
-    "svg" | "g" | "rect" | "circle" | "ellipse" | "line" | "polyline" | "polygon"
-    | "path" | "text" | "tspan" | "defs" | "use" | "symbol" | "clipPath" | "mask"
-    | "pattern" | "linearGradient" | "radialGradient" | "stop" | "image"
-    | "foreignObject" | "switch" | "a" => true
+    "svg"
+    | "g"
+    | "rect"
+    | "circle"
+    | "ellipse"
+    | "line"
+    | "polyline"
+    | "polygon"
+    | "path"
+    | "text"
+    | "tspan"
+    | "defs"
+    | "use"
+    | "symbol"
+    | "clipPath"
+    | "mask"
+    | "pattern"
+    | "linearGradient"
+    | "radialGradient"
+    | "stop"
+    | "image"
+    | "foreignObject"
+    | "switch"
+    | "a" => true
     // Note: "a" in SVG context is an SVG element, but we can't distinguish here
     // It will be handled by context in the future
     _ => false
@@ -1293,10 +1343,10 @@ fn is_svg_element(tag : String) -> Bool {
 }
 
 ///|
-/// Apply SVG attributes (width, height) to style
+/// Apply SVG attributes (width, height, x, y, line coords, circle/ellipse) to style
 fn apply_svg_attributes_to_style(
   style : @style.Style,
-  attrs : Map[String, String]
+  attrs : Map[String, String],
 ) -> @style.Style {
   let mut result = style
 
@@ -1322,6 +1372,132 @@ fn apply_svg_attributes_to_style(
     None => ()
   }
 
+  // Handle SVG x/y position attributes for rect, text, etc.
+  let has_x = attrs.contains("x")
+  let has_y = attrs.contains("y")
+  if has_x || has_y {
+    let svg_x = match attrs.get("x") {
+      Some(x_str) => parse_svg_length(x_str)
+      None => 0.0
+    }
+    let svg_y = match attrs.get("y") {
+      Some(y_str) => parse_svg_length(y_str)
+      None => 0.0
+    }
+    result = {
+      ..result,
+      position: @types.Absolute,
+      inset: {
+        left: @types.Length(svg_x),
+        right: result.inset.right,
+        top: @types.Length(svg_y),
+        bottom: result.inset.bottom,
+      },
+    }
+  }
+
+  // Handle SVG line elements (x1, y1, x2, y2) - compute bounding box
+  let has_x1 = attrs.contains("x1")
+  let has_y1 = attrs.contains("y1")
+  let has_x2 = attrs.contains("x2")
+  let has_y2 = attrs.contains("y2")
+  if has_x1 || has_y1 || has_x2 || has_y2 {
+    let x1 = match attrs.get("x1") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let y1 = match attrs.get("y1") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let x2 = match attrs.get("x2") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let y2 = match attrs.get("y2") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let min_x = if x1 < x2 { x1 } else { x2 }
+    let min_y = if y1 < y2 { y1 } else { y2 }
+    let width = if x1 > x2 { x1 - x2 } else { x2 - x1 }
+    let height = if y1 > y2 { y1 - y2 } else { y2 - y1 }
+    result = {
+      ..result,
+      position: @types.Absolute,
+      width: @types.Length(width),
+      height: @types.Length(height),
+      inset: {
+        left: @types.Length(min_x),
+        right: result.inset.right,
+        top: @types.Length(min_y),
+        bottom: result.inset.bottom,
+      },
+    }
+  }
+
+  // Handle SVG circle elements (cx, cy, r) - compute bounding box
+  let has_r = attrs.contains("r")
+  if has_r {
+    let cx = match attrs.get("cx") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let cy = match attrs.get("cy") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let r = match attrs.get("r") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    result = {
+      ..result,
+      position: @types.Absolute,
+      width: @types.Length(r * 2.0),
+      height: @types.Length(r * 2.0),
+      inset: {
+        left: @types.Length(cx - r),
+        right: result.inset.right,
+        top: @types.Length(cy - r),
+        bottom: result.inset.bottom,
+      },
+    }
+  }
+
+  // Handle SVG ellipse elements (cx, cy, rx, ry) - compute bounding box
+  let has_rx = attrs.contains("rx")
+  let has_ry = attrs.contains("ry")
+  if (has_rx || has_ry) && not(has_r) {
+    let cx = match attrs.get("cx") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let cy = match attrs.get("cy") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let rx = match attrs.get("rx") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    let ry = match attrs.get("ry") {
+      Some(v) => parse_svg_length(v)
+      None => 0.0
+    }
+    result = {
+      ..result,
+      position: @types.Absolute,
+      width: @types.Length(rx * 2.0),
+      height: @types.Length(ry * 2.0),
+      inset: {
+        left: @types.Length(cx - rx),
+        right: result.inset.right,
+        top: @types.Length(cy - ry),
+        bottom: result.inset.bottom,
+      },
+    }
+  }
   result
 }
 
@@ -1347,8 +1523,9 @@ fn parse_svg_length(value : String) -> Double {
   } else {
     trimmed
   }
-
-  @strconv.parse_double(num_str) catch { _ => 0.0 }
+  @strconv.parse_double(num_str) catch {
+    _ => 0.0
+  }
 }
 
 ///|
@@ -1826,6 +2003,14 @@ fn element_to_node_with_styles_internal(
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
     return @node.Node::with_measure(node_id, canvas_style, measure)
   }
+
+  // Handle br element with line-height for height
+  if tag_lower == "br" {
+    // br elements have zero width but take up line-height vertically
+    // line_height is already computed as absolute pixel value
+    let measure = create_br_measure(style.line_height)
+    return @node.Node::with_measure(node_id, style, measure)
+  }
   if children.is_empty() {
     @node.Node::leaf(node_id, style)
   } else {
@@ -2083,13 +2268,36 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "wbr" => { ..default_style, display: @types.Inline }
     // Replaced inline elements - inline by default
     // SVG has intrinsic size of 300x150 when no width/height specified
-    "img" | "video" | "audio" | "canvas" | "iframe" | "object" | "embed" | "svg" =>
-      { ..default_style, display: @types.Inline }
+    "img"
+    | "video"
+    | "audio"
+    | "canvas"
+    | "iframe"
+    | "object"
+    | "embed"
+    | "svg" => { ..default_style, display: @types.Inline }
     // SVG child elements - inline-block to fit content
-    "g" | "rect" | "circle" | "ellipse" | "line" | "polyline" | "polygon" | "path"
-    | "text" | "tspan" | "defs" | "use" | "symbol" | "clipPath" | "mask" | "pattern"
-    | "linearGradient" | "radialGradient" | "stop" | "image" | "foreignObject" =>
-      { ..default_style, display: @types.InlineBlock }
+    "g"
+    | "rect"
+    | "circle"
+    | "ellipse"
+    | "line"
+    | "polyline"
+    | "polygon"
+    | "path"
+    | "text"
+    | "tspan"
+    | "defs"
+    | "use"
+    | "symbol"
+    | "clipPath"
+    | "mask"
+    | "pattern"
+    | "linearGradient"
+    | "radialGradient"
+    | "stop"
+    | "image"
+    | "foreignObject" => { ..default_style, display: @types.InlineBlock }
     // Form elements - inline-block by default
     "input" | "button" | "select" | "textarea" =>
       { ..default_style, display: @types.InlineBlock }
@@ -2617,6 +2825,109 @@ fn safe_number(n : Double) -> Double {
     return 0.0
   }
   n
+}
+
+///|
+/// Apply zoom and transform scale to a layout tree
+/// This modifies the layout dimensions to reflect the visual bounding box
+/// as reported by getBoundingClientRect() in browsers
+///
+/// Note: While CSS zoom is inherited, transform scale is not. However, for
+/// getBoundingClientRect() calculations, parent transform affects children's
+/// visual bounding boxes. So we pass both zoom and parent_scale to children.
+fn apply_zoom_and_scale(
+  layout : @types.Layout,
+  node : @node.Node,
+  parent_zoom : Double,
+  parent_scale_x : Double,
+  parent_scale_y : Double,
+) -> @types.Layout {
+  // Calculate effective zoom (parent zoom * node zoom)
+  let effective_zoom = parent_zoom * node.style.zoom
+
+  // Calculate effective scale from transform (node's own scale)
+  let node_scale_x = node.style.transform.scale_x
+  let node_scale_y = node.style.transform.scale_y
+
+  // Total scale = parent_scale * zoom * node_scale
+  let total_scale_x = parent_scale_x * effective_zoom * node_scale_x
+  let total_scale_y = parent_scale_y * effective_zoom * node_scale_y
+
+  // Scale for children includes this node's transform (since parent transform affects children visually)
+  let child_parent_scale_x = total_scale_x / effective_zoom // Remove node zoom, will be re-applied
+  let child_parent_scale_y = total_scale_y / effective_zoom
+
+  // Scale the layout dimensions
+  let scaled_width = layout.width * total_scale_x
+  let scaled_height = layout.height * total_scale_y
+
+  // Compute translate offset (uses original layout dimensions before scaling)
+  let translate_x = node.style.transform.compute_translate_x(layout.width)
+  let translate_y = node.style.transform.compute_translate_y(layout.height)
+
+  // Scale position (x, y are relative to parent, scaled by parent's total scale)
+  // Add translate offset (translate is applied in local coordinates, then scaled)
+  let scaled_x = layout.x * parent_scale_x * effective_zoom +
+    translate_x * parent_scale_x * effective_zoom
+  let scaled_y = layout.y * parent_scale_y * effective_zoom +
+    translate_y * parent_scale_y * effective_zoom
+
+  // Process children with updated parent zoom and scale
+  let scaled_children : Array[@types.Layout] = []
+  let min_len = if layout.children.length() < node.children.length() {
+    layout.children.length()
+  } else {
+    node.children.length()
+  }
+  for i = 0; i < min_len; i = i + 1 {
+    let child_layout = layout.children[i]
+    let child_node = node.children[i]
+    scaled_children.push(
+      apply_zoom_and_scale(
+        child_layout, child_node, effective_zoom, child_parent_scale_x, child_parent_scale_y,
+      ),
+    )
+  }
+  // Add any remaining layout children without scaling (shouldn't happen in practice)
+  for i = min_len; i < layout.children.length(); i = i + 1 {
+    scaled_children.push(layout.children[i])
+  }
+
+  // Scale margin, padding, border
+  let scaled_margin : @types.Rect[Double] = {
+    left: layout.margin.left * total_scale_x,
+    right: layout.margin.right * total_scale_x,
+    top: layout.margin.top * total_scale_y,
+    bottom: layout.margin.bottom * total_scale_y,
+  }
+  let scaled_padding : @types.Rect[Double] = {
+    left: layout.padding.left * total_scale_x,
+    right: layout.padding.right * total_scale_x,
+    top: layout.padding.top * total_scale_y,
+    bottom: layout.padding.bottom * total_scale_y,
+  }
+  let scaled_border : @types.Rect[Double] = {
+    left: layout.border.left * total_scale_x,
+    right: layout.border.right * total_scale_x,
+    top: layout.border.top * total_scale_y,
+    bottom: layout.border.bottom * total_scale_y,
+  }
+  {
+    id: layout.id,
+    x: scaled_x,
+    y: scaled_y,
+    width: scaled_width,
+    height: scaled_height,
+    margin: scaled_margin,
+    padding: scaled_padding,
+    border: scaled_border,
+    overflow_x: layout.overflow_x,
+    overflow_y: layout.overflow_y,
+    scroll_width: layout.scroll_width * total_scale_x,
+    scroll_height: layout.scroll_height * total_scale_y,
+    children: scaled_children,
+    text: layout.text,
+  }
 }
 
 ///|

@@ -1196,6 +1196,8 @@ fn parse_transform_string(value : String) -> @style.Transform {
   }
   let mut translate_x = @style.TranslateValue::Length(0.0)
   let mut translate_y = @style.TranslateValue::Length(0.0)
+  let mut scale_x = 1.0
+  let mut scale_y = 1.0
   // Parse transform functions
   let chars = v.to_array()
   let len = chars.length()
@@ -1254,10 +1256,46 @@ fn parse_transform_string(value : String) -> @style.Transform {
           translate_y = parse_translate_value(args[1])
         }
       }
-      _ => () // Ignore unsupported functions like rotate, scale, etc.
+      "scale" => {
+        // scale(x) or scale(x, y)
+        let args = split_transform_args(args_str)
+        if args.length() >= 1 {
+          let sx = parse_scale_value(args[0])
+          scale_x = scale_x * sx
+          scale_y = scale_y * sx
+        }
+        if args.length() >= 2 {
+          scale_y = parse_scale_value(args[1])
+        }
+      }
+      "scalex" => scale_x = scale_x * parse_scale_value(args_str)
+      "scaley" => scale_y = scale_y * parse_scale_value(args_str)
+      "scale3d" => {
+        // scale3d(x, y, z) - we only use x and y
+        let args = split_transform_args(args_str)
+        if args.length() >= 1 {
+          scale_x = scale_x * parse_scale_value(args[0])
+        }
+        if args.length() >= 2 {
+          scale_y = scale_y * parse_scale_value(args[1])
+        }
+      }
+      _ => () // Ignore unsupported functions like rotate, skew, etc.
     }
   }
-  { translate_x, translate_y }
+  { translate_x, translate_y, scale_x, scale_y }
+}
+
+///|
+/// Parse a scale value (number, no unit)
+fn parse_scale_value(value : String) -> Double {
+  let v = value.trim()
+  if v.is_empty() {
+    return 1.0
+  }
+  @strconv.parse_double(v) catch {
+    _ => 1.0
+  }
 }
 
 ///|

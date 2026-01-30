@@ -304,7 +304,7 @@ test "font-size with nested selectors like WPT" {
 }
 
 ///|
-test "br element combines text into single node with newlines" {
+test "br element preserved as separate node with line-height" {
   let html =
     #|<!doctype html>
     #|<html><body>
@@ -317,12 +317,43 @@ test "br element combines text into single node with newlines" {
   let test_div = node.children[0]
   inspect(test_div.id, content="div#test")
 
-  // Should have exactly 1 child: combined text node
-  inspect(test_div.children.length(), content="1")
-  let text_node = test_div.children[0]
-  inspect(text_node.id, content="#text")
-  inspect(text_node.style.font_size, content="20")
-  inspect(text_node.style.line_height, content="20")
+  // Should have 3 children: text1, br, text2
+  inspect(test_div.children.length(), content="3")
+  let text1 = test_div.children[0]
+  inspect(text1.id, content="#text")
+  inspect(text1.style.font_size, content="20")
+  let br = test_div.children[1]
+  inspect(br.id, content="br")
+  inspect(br.style.line_height, content="20")
+
+  // Verify br has MeasureFunc (should have height via measure)
+  inspect(br.measure is None, content="false")
+  let text2 = test_div.children[2]
+  inspect(text2.id, content="#text")
+}
+
+///|
+test "br element has line-height for layout height" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<p id="test" style="font: 16px/1.2 Arial">Hello<br>World</p>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html, ctx)
+
+  // Check p#test
+  let test_p = layout.children[0]
+  inspect(test_p.id, content="p#test")
+
+  // p should have 3 children: text, br, text
+  inspect(test_p.children.length(), content="3")
+
+  // Check br has height = line_height (16 * 1.2 = 19.2)
+  let br = test_p.children[1]
+  inspect(br.id, content="br")
+  // height should be approximately 19.2 (16 * 1.2)
+  inspect(br.height, content="19.2")
 }
 
 ///|
