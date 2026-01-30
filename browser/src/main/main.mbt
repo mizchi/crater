@@ -42,6 +42,8 @@ struct Options {
   arc90 : Bool // Arc90 content extraction
   grounding : Bool // Visual grounding demo
   dark : Bool // Start in dark mode
+  no_color : Bool // Disable color output (text layout only)
+  extract_main : Bool // Extract main content text only
 }
 
 ///|
@@ -55,6 +57,10 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     // AOM YAML snapshot output (Playwright-compatible)
     let aom_output = browser.render_aom()
     println(aom_output)
+  } else if options.extract_main {
+    // Extract main content text only
+    let main_text = browser.render_extract_main()
+    println(main_text)
   } else if options.arc90 {
     // Arc90 content extraction
     let arc90_output = browser.render_arc90()
@@ -105,6 +111,8 @@ fn parse_args() -> Options? {
   let mut arc90 = false
   let mut grounding = false
   let mut dark = false
+  let mut no_color = false
+  let mut extract_main = false
   for arg in args {
     if arg == "--sixel" {
       sixel = true
@@ -122,6 +130,10 @@ fn parse_args() -> Options? {
       aom = true
     } else if arg == "--dark" {
       dark = true
+    } else if arg == "--no-color" {
+      no_color = true
+    } else if arg == "--extract-main" {
+      extract_main = true
     } else if not(arg.has_prefix("--")) {
       url = arg
     }
@@ -141,7 +153,19 @@ fn parse_args() -> Options? {
     } else {
       text
     }
-    Some({ url, sixel, text, debug, json, aom, arc90, grounding, dark })
+    Some({
+      url,
+      sixel,
+      text,
+      debug,
+      json,
+      aom,
+      arc90,
+      grounding,
+      dark,
+      no_color,
+      extract_main,
+    })
   }
 }
 
@@ -177,6 +201,8 @@ async fn main {
       println(
         "  --dark      Start in dark mode (use prefers-color-scheme: dark)",
       )
+      println("  --no-color  Disable color output (text layout only)")
+      println("  --extract-main  Extract main content text only")
       return
     }
   }
@@ -187,14 +213,18 @@ async fn main {
   if options.dark {
     browser.set_dark_mode(true)
   }
+  // Set no-color mode if requested
+  if options.no_color {
+    browser.set_no_color(true)
+  }
   // For JSON/AOM modes, use lightweight navigation (skip CSS cascade and layout)
   if options.json || options.aom {
     let _ = browser.navigate_lightweight(options.url)
     render_page(browser, options)
     return
   }
-  // For Arc90/Grounding modes, still need full rendering for bounds info
-  if options.arc90 || options.grounding {
+  // For Arc90/Grounding/ExtractMain modes, still need full rendering for bounds info
+  if options.arc90 || options.grounding || options.extract_main {
     let _ = browser.navigate(options.url)
     render_page(browser, options)
     return
@@ -310,6 +340,16 @@ async fn main {
           }
           None => ()
         }
+      Some(@tui.MouseScrollUp(_, _)) => {
+        // Mouse wheel scroll up - scroll page up
+        browser.scroll_up(48) // 3 lines * 16px
+        render_page(browser, options)
+      }
+      Some(@tui.MouseScrollDown(_, _)) => {
+        // Mouse wheel scroll down - scroll page down
+        browser.scroll_down(48) // 3 lines * 16px
+        render_page(browser, options)
+      }
       Some(@tui.EnterHintMode) => {
         browser.enter_hint_mode()
         render_page(browser, options)

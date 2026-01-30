@@ -3,6 +3,7 @@ package "mizchi/crater-browser/tui"
 
 import {
   "mizchi/crater/layout/node",
+  "mizchi/crater/paint",
   "mizchi/crater/types",
 }
 
@@ -30,6 +31,8 @@ pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
 pub fn buffer_diff_to_ansi_rects(CharBuffer, CharBuffer, Array[DirtyRect]) -> String
 
 pub fn buffer_to_ansi(CharBuffer) -> String
+
+pub fn buffer_to_plain(CharBuffer) -> String
 
 pub fn char_display_width(Char) -> Int
 
@@ -105,7 +108,7 @@ pub fn render_to_buffer(@node.Node, @types.Layout, Int, Int, Int, focused_elemen
 
 pub fn render_to_buffer_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> BufferRenderResult
 
-pub fn render_to_buffer_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool, total_content_height? : Int, show_scrollbar? : Bool) -> BufferRenderResult
+pub fn render_to_buffer_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool, total_content_height? : Int, show_scrollbar? : Bool, element_scroll_positions? : Map[String, ElementScrollPos]) -> BufferRenderResult
 
 pub fn rgb_to_256(Int, Int, Int) -> Int
 
@@ -137,6 +140,8 @@ pub enum BrowserAction {
   Back
   Forward
   MouseClick(Int, Int)
+  MouseScrollUp(Int, Int)
+  MouseScrollDown(Int, Int)
   EnterHintMode
   HintChar(String)
   ExitHintMode
@@ -147,6 +152,7 @@ pub enum BrowserAction {
 pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
+  scrollable_elements : Array[@paint.ScrollableElement]
 }
 
 pub struct CharBuffer {
@@ -183,6 +189,12 @@ pub(all) struct DirtyRect {
   row : Int
   width : Int
   height : Int
+}
+
+pub(all) struct ElementScrollPos {
+  scroll_top : Double
+  scroll_height : Double
+  client_height : Double
 }
 
 pub(all) struct HintData {
@@ -222,6 +234,7 @@ pub struct TuiContext {
   link_regions : Array[LinkRegion]
   focused_element_name : String?
   dark_mode : Bool
+  element_scroll_positions : Map[String, ElementScrollPos]
 }
 
 // Type aliases

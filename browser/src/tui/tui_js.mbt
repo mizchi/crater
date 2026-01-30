@@ -32,7 +32,7 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|       if (key === '\t') { resolve('Tab'); return; }
   #|       if (key === '\u001b[Z') { resolve('Shift-Tab'); return; }
   #|       if (key === '\u001b') { resolve('Escape'); return; }
-  #|       // Mouse click: SGR mode \e[<btn;col;row;M (press) or m (release)
+  #|       // Mouse events: SGR mode \e[<btn;col;row;M (press) or m (release)
   #|       if (key.startsWith('\u001b[<')) {
   #|         const match = key.match(/\u001b\[<(\d+);(\d+);(\d+)([Mm])/);
   #|         if (match) {
@@ -43,6 +43,16 @@ extern "js" fn js_read_key() -> @js_async.Promise[String] =
   #|           if (btn === 0 && pressed) {
   #|             // Left click - return as Mouse:col,row
   #|             resolve('Mouse:' + col + ',' + row);
+  #|             return;
+  #|           }
+  #|           if (btn === 64) {
+  #|             // Mouse wheel up (scroll up)
+  #|             resolve('MouseScrollUp:' + col + ',' + row);
+  #|             return;
+  #|           }
+  #|           if (btn === 65) {
+  #|             // Mouse wheel down (scroll down)
+  #|             resolve('MouseScrollDown:' + col + ',' + row);
   #|             return;
   #|           }
   #|         }

@@ -350,3 +350,24 @@ pub fn enable_mouse() -> String {
 pub fn disable_mouse() -> String {
   "\u001b[?1006l\u001b[?1000l"
 }
+
+///|
+/// Convert CharBuffer to plain text string (no ANSI color codes)
+/// Used for --no-color mode
+pub fn buffer_to_plain(buf : CharBuffer) -> String {
+  let sb = StringBuilder::new()
+  for row = 0; row < buf.height; row = row + 1 {
+    // Move to start of row (1-indexed)
+    sb.write_string(ansi_move_to(row + 1, 1))
+    for col = 0; col < buf.width; col = col + 1 {
+      let cell = buf.get_cell(col, row)
+      // Skip wide char placeholder
+      if cell.char == '\u0000' {
+        continue
+      }
+      // Write the character (no color codes)
+      sb.write_char(cell.char)
+    }
+  }
+  sb.to_string()
+}

@@ -51,6 +51,7 @@ pub struct Browser {
   mut enable_js : Bool
   element_scroll_states : Map[String, @dom.ScrollState]
   focused_scrollable : Ref[String?]
+  mut no_color : Bool
 }
 pub fn Browser::clear_element_scroll_states(Self) -> Unit
 pub fn Browser::debug_layout(Self) -> Unit
@@ -76,6 +77,7 @@ pub fn Browser::get_visible_focus_index(Self) -> Int
 pub fn Browser::get_visible_focusable_count(Self) -> Int
 pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
 pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
+pub fn Browser::handle_scroll_at(Self, Int, Int, Double) -> Bool
 pub fn Browser::init_element_scroll(Self, String, Double, Double, Double, Double) -> Unit
 pub async fn Browser::load_url_lightweight(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
@@ -87,6 +89,7 @@ pub fn Browser::process_hint_char(Self, String) -> String?
 pub fn Browser::render(Self) -> String
 pub fn Browser::render_aom(Self) -> String
 pub fn Browser::render_arc90(Self) -> String
+pub fn Browser::render_extract_main(Self) -> String
 pub fn Browser::render_grounding(Self) -> String
 pub fn Browser::render_json(Self) -> String
 pub fn Browser::render_text(Self) -> String
@@ -96,6 +99,7 @@ pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
 pub fn Browser::set_focused_scrollable(Self, String?) -> Unit
+pub fn Browser::set_no_color(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool

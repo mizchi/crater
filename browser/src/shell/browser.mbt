@@ -76,6 +76,8 @@ pub struct Browser {
   element_scroll_states : Map[String, @dom.ScrollState]
   /// Currently focused scrollable element id (for keyboard scrolling)
   focused_scrollable : Ref[String?]
+  /// No-color mode (disable ANSI color codes)
+  mut no_color : Bool
 }
 
 ///|
@@ -114,6 +116,7 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     enable_js: false, // Disabled by default for security
     element_scroll_states: {},
     focused_scrollable: Ref::new(None),
+    no_color: false,
   }
 }
 
@@ -678,11 +681,18 @@ pub fn Browser::render_text(self : Browser) -> String {
   self.link_regions = buffer_result.link_regions
   // Initialize scroll states for scrollable elements
   self.init_scrollable_elements(buffer_result.scrollable_elements)
+  // Choose buffer-to-output function based on no_color mode
+  let buffer_to_output : (@tui.CharBuffer) -> String = if self.no_color {
+    @tui.buffer_to_plain
+  } else {
+    @tui.buffer_to_ansi
+  }
   let ansi = match self.prev_buffer {
     Some(prev) =>
       if force_full {
-        @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
-      } else if dirty_rects.length() > 0 {
+        @tui.clear_screen() + buffer_to_output(buffer_result.buffer)
+      } else if dirty_rects.length() > 0 && not(self.no_color) {
+        // Diff rendering only for color mode (plain mode always does full redraw)
         let content_height = if self.hint_mode {
           char_height - 1
         } else {
@@ -697,10 +707,12 @@ pub fn Browser::render_text(self : Browser) -> String {
           row_offset,
         )
         @tui.buffer_diff_to_ansi_rects(buffer_result.buffer, prev, dirty_cells)
+      } else if self.no_color {
+        @tui.clear_screen() + buffer_to_output(buffer_result.buffer)
       } else {
         ""
       }
-    None => @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+    None => @tui.clear_screen() + buffer_to_output(buffer_result.buffer)
   }
   self.prev_buffer = Some(buffer_result.buffer)
   self.last_render_key = render_key
@@ -766,7 +778,7 @@ pub fn Browser::scroll_focused_element(
   delta_y : Double,
 ) -> Bool {
   match self.focused_scrollable.val {
-    Some(id) => {
+    Some(id) =>
       match self.element_scroll_states.get(id) {
         Some(state) => {
           let new_state = state.scroll_by(0.0, delta_y)
@@ -775,7 +787,6 @@ pub fn Browser::scroll_focused_element(
         }
         None => false
       }
-    }
     None => false
   }
 }
@@ -876,10 +887,7 @@ pub fn Browser::init_element_scroll(
   client_height : Double,
 ) -> Unit {
   let state = @dom.ScrollState::new(
-    scroll_width,
-    scroll_height,
-    client_width,
-    client_height,
+    scroll_width, scroll_height, client_width, client_height,
   )
   self.element_scroll_states.set(element_id, state)
 }
@@ -1290,6 +1298,80 @@ pub fn Browser::render_arc90(self : Browser) -> String {
 }
 
 ///|
+/// Extract main content text using Arc90 algorithm
+pub fn Browser::render_extract_main(self : Browser) -> String {
+  match self.a11y_tree {
+    Some(tree) => {
+      let config : @arc90.ExtractConfig = {
+        min_text_length: 50,
+        viewport_width: self.viewport_width.to_double(),
+        viewport_height: self.viewport_height.to_double(),
+        ad_sizes: [
+          (300.0, 250.0),
+          (728.0, 90.0),
+          (160.0, 600.0),
+          (300.0, 600.0),
+          (320.0, 50.0),
+          (320.0, 100.0),
+        ],
+      }
+      let result = @arc90.extract_content(tree, config)
+      match result.main_content {
+        Some(node) => collect_node_text(node)
+        None => "(No main content found)"
+      }
+    }
+    None => "No accessibility tree available."
+  }
+}
+
+///|
+/// Recursively collect text from an accessibility node
+fn collect_node_text(node : @aom.AccessibilityNode) -> String {
+  let buf = StringBuilder::new()
+  collect_node_text_recursive(node, buf)
+  buf.to_string().trim().to_string()
+}
+
+///|
+fn collect_node_text_recursive(
+  node : @aom.AccessibilityNode,
+  buf : StringBuilder,
+) -> Unit {
+  // Skip navigation elements
+  if node.role == @aom.Navigation ||
+    node.role == @aom.Banner ||
+    node.role == @aom.ContentInfo {
+    return
+  }
+  // Add text content if present
+  match node.text {
+    Some(text) if text.length() > 0 => {
+      buf.write_string(text)
+      // Add appropriate spacing based on role
+      match node.role {
+        @aom.Heading | @aom.Paragraph | @aom.ListItem | @aom.Article =>
+          buf.write_string("\n\n")
+        _ => buf.write_string(" ")
+      }
+    }
+    _ =>
+      // If no text, try name (for links, buttons, etc.)
+      match node.name {
+        Some(name) if name.length() > 0 && node.children.length() == 0 => {
+          buf.write_string(name)
+          buf.write_string(" ")
+        }
+        _ => ()
+      }
+  }
+  // Recurse into children
+  for child in node.children {
+    collect_node_text_recursive(child, buf)
+  }
+}
+
+///|
 /// Run visual grounding demo and return results
 pub fn Browser::render_grounding(self : Browser) -> String {
   match self.a11y_tree {
@@ -1514,6 +1596,12 @@ pub fn Browser::toggle_dark_mode(self : Browser) -> Unit {
 /// Set dark mode explicitly
 pub fn Browser::set_dark_mode(self : Browser, enabled : Bool) -> Unit {
   self.dark_mode = enabled
+}
+
+///|
+/// Set no-color mode (disable ANSI color codes)
+pub fn Browser::set_no_color(self : Browser, enabled : Bool) -> Unit {
+  self.no_color = enabled
 }
 
 ///|

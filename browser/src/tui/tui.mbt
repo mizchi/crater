@@ -17,6 +17,8 @@ pub enum BrowserAction {
   Back // Go back to previous page
   Forward // Go forward to next page
   MouseClick(Int, Int) // (col, row) coordinates
+  MouseScrollUp(Int, Int) // Mouse wheel scroll up at (col, row)
+  MouseScrollDown(Int, Int) // Mouse wheel scroll down at (col, row)
   EnterHintMode // Start hit-a-hint mode (triggered by 'f')
   HintChar(String) // Hint character input (a-z)
   ExitHintMode // Exit hint mode (Escape)
@@ -45,8 +47,12 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "H" | "Backspace" | "Delete" => Some(Back)
     "L" => Some(Forward)
     _ =>
-      // Check for mouse click: "Mouse:col,row"
-      if key.has_prefix("Mouse:") {
+      // Check for mouse events: "Mouse:col,row" or "MouseScrollUp:col,row" or "MouseScrollDown:col,row"
+      if key.has_prefix("MouseScrollUp:") {
+        parse_mouse_scroll_up(key)
+      } else if key.has_prefix("MouseScrollDown:") {
+        parse_mouse_scroll_down(key)
+      } else if key.has_prefix("Mouse:") {
         parse_mouse_click(key)
       } else {
         None
@@ -87,6 +93,40 @@ fn parse_mouse_click(key : String) -> BrowserAction? {
       let col = @strconv.parse_int(col_str) catch { _ => return None }
       let row = @strconv.parse_int(row_str) catch { _ => return None }
       Some(MouseClick(col, row))
+    }
+    None => None
+  }
+}
+
+///|
+/// Parse mouse scroll up event "MouseScrollUp:col,row"
+fn parse_mouse_scroll_up(key : String) -> BrowserAction? {
+  // Format: "MouseScrollUp:col,row"
+  let parts = key[14:].to_string() catch { _ => return None }
+  match parts.find(",") {
+    Some(comma_idx) => {
+      let col_str = parts[:comma_idx].to_string() catch { _ => return None }
+      let row_str = parts[comma_idx + 1:].to_string() catch { _ => return None }
+      let col = @strconv.parse_int(col_str) catch { _ => return None }
+      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      Some(MouseScrollUp(col, row))
+    }
+    None => None
+  }
+}
+
+///|
+/// Parse mouse scroll down event "MouseScrollDown:col,row"
+fn parse_mouse_scroll_down(key : String) -> BrowserAction? {
+  // Format: "MouseScrollDown:col,row"
+  let parts = key[16:].to_string() catch { _ => return None }
+  match parts.find(",") {
+    Some(comma_idx) => {
+      let col_str = parts[:comma_idx].to_string() catch { _ => return None }
+      let row_str = parts[comma_idx + 1:].to_string() catch { _ => return None }
+      let col = @strconv.parse_int(col_str) catch { _ => return None }
+      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      Some(MouseScrollDown(col, row))
     }
     None => None
   }
