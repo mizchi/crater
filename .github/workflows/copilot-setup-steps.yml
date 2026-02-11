@@ -56,5 +56,7 @@ jobs:
 
       - name: Build WASM component
         run: |
-          npm run build:wasm-component
-          npm run jco:transpile
+          moon build --manifest-path wasm/moon.mod.json --target wasm --release
+          wasm-tools component embed --world crater wasm/wit wasm/_build/wasm/release/build/gen/gen.wasm -o wasm/_build/crater-embedded.wasm
+          wasm-tools component new wasm/_build/crater-embedded.wasm -o wasm/_build/crater.wasm
+          npx jco transpile wasm/_build/crater.wasm -o wasm/dist --name crater
