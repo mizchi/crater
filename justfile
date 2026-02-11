@@ -41,6 +41,14 @@ test-baseline:
 test-baseline-update:
     scripts/test-baseline-update.sh
 
+# Verify WPT result does not regress from recorded baseline
+wpt-baseline:
+    scripts/test-wpt-baseline.sh
+
+# Update WPT baseline summary file
+wpt-baseline-update:
+    scripts/test-wpt-baseline-update.sh
+
 # === Code Quality ===
 
 # Check compilation (main + browser + js)

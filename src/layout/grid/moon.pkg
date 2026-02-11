@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/double",
+  "mizchi/crater/core",
   "moonbitlang/core/hashmap",
   "mizchi/crater/types",
   "mizchi/crater/style",
@@ -11,5 +12,5 @@ import {
   "mizchi/crater/layout/table",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

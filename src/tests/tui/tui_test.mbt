@@ -616,7 +616,6 @@ test "tui/layout_tree_needs_layout" {
   match tree.find_node_by_id("root") {
     Some(node) => {
       let _ = node.set_width(100.0)
-
     }
     None => ()
   }
@@ -713,11 +712,53 @@ test "tui/layout_package_tree_api" {
   match tree.find_node_by_id("left") {
     Some(node) => {
       let _ = node.set_width(40.0)
-
     }
     None => ()
   }
   let layout2 = tree.compute_incremental()
   inspect(layout2.children[0].width, content="40")
   inspect(layout2.children[1].width, content="60")
+}
+
+///|
+/// Test checked core subset compute API (success path)
+test "tui/compute_core_layout_success" {
+  let root_style = @layout.Style::default()
+  root_style.display = @types.Flex
+  root_style.flex_direction = @types.Column
+  root_style.width = @types.Length(40.0)
+  root_style.height = @types.Length(10.0)
+
+  let header_style = @layout.Style::default()
+  header_style.height = @types.Length(2.0)
+
+  let body_style = @layout.Style::default()
+  body_style.flex_grow = 1.0
+
+  let root = @layout.Node::new("root", root_style, [
+    @layout.Node::leaf("header", header_style),
+    @layout.Node::leaf("body", body_style),
+  ])
+
+  let result = @crater.compute_core_layout(root, @layout.size(40.0, 10.0))
+  inspect(result.issues.length(), content="0")
+  match result.layout {
+    Some(layout) => {
+      inspect(layout.width, content="40")
+      inspect(layout.children[0].height, content="2")
+      inspect(layout.children[1].height, content="8")
+    }
+    None => panic()
+  }
+}
+
+///|
+/// Test checked core subset compute API (rejection path)
+test "tui/compute_core_layout_reject_unsupported_style" {
+  let style = @layout.Style::default()
+  style.position = @types.Absolute
+  let root = @layout.Node::new("root", style, [])
+  let result = @crater.compute_core_layout(root, @layout.size(10.0, 10.0))
+  assert_true(result.layout is None)
+  assert_true(result.issues.length() > 0)
 }

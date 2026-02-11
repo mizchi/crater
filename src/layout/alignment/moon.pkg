@@ -1,3 +1,4 @@
 import {
+  "mizchi/crater/core",
   "mizchi/crater/types",
 }

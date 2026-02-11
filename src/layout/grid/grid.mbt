@@ -1714,113 +1714,73 @@ fn apply_content_alignment(
     }
   }
   let effective_count = effective_indices.length()
-  match alignment {
-    @types.Start | @types.FlexStart | @types.Baseline =>
-      // Start/FlexStart: tracks at start, no adjustment
-      // Baseline: treated as start for content alignment
-      ()
-    @types.Stretch => {
-      // Only distribute positive free_space
-      if free_space <= 0.0 {
-        return
+  if alignment == @types.Stretch {
+    // Only distribute positive free_space
+    if free_space <= 0.0 {
+      return
+    }
+    // Distribute free_space to stretchable tracks (expand their size)
+    let mut stretchable_count = 0
+    for i = 0; i < track_count; i = i + 1 {
+      if tracks[i].stretchable {
+        stretchable_count = stretchable_count + 1
       }
-      // Distribute free_space to stretchable tracks (expand their size)
-      let mut stretchable_count = 0
+    }
+    if stretchable_count > 0 {
+      let extra_per_track = free_space / stretchable_count.to_double()
+      let mut accumulated_offset = 0.0
       for i = 0; i < track_count; i = i + 1 {
-        if tracks[i].stretchable {
-          stretchable_count = stretchable_count + 1
-        }
-      }
-      if stretchable_count > 0 {
-        let extra_per_track = free_space / stretchable_count.to_double()
-        let mut accumulated_offset = 0.0
-        for i = 0; i < track_count; i = i + 1 {
-          let track = tracks[i]
-          if track.stretchable {
-            tracks[i] = {
-              position: track.position + accumulated_offset,
-              size: track.size + extra_per_track,
-              stretchable: track.stretchable,
-            }
-            accumulated_offset = accumulated_offset + extra_per_track
-          } else {
-            tracks[i] = {
-              position: track.position + accumulated_offset,
-              size: track.size,
-              stretchable: track.stretchable,
-            }
+        let track = tracks[i]
+        if track.stretchable {
+          tracks[i] = {
+            position: track.position + accumulated_offset,
+            size: track.size + extra_per_track,
+            stretchable: track.stretchable,
+          }
+          accumulated_offset = accumulated_offset + extra_per_track
+        } else {
+          tracks[i] = {
+            position: track.position + accumulated_offset,
+            size: track.size,
+            stretchable: track.stretchable,
           }
         }
       }
     }
-    @types.End | @types.FlexEnd =>
-      // Shift all tracks by free_space
+    return
+  }
+
+  let distribution_item_count = match alignment {
+    @types.SpaceBetween | @types.SpaceAround | @types.SpaceEvenly =>
+      effective_count
+    _ => track_count
+  }
+  let (start_offset, gap_between_tracks) = @core.compute_justify(
+    alignment, free_space, distribution_item_count,
+  )
+  match alignment {
+    @types.SpaceBetween | @types.SpaceAround | @types.SpaceEvenly =>
+      // Keep existing behavior: only non-zero tracks participate in space distribution.
+      for j = 0; j < effective_count; j = j + 1 {
+        let i = effective_indices[j]
+        let track = tracks[i]
+        tracks[i] = {
+          position: track.position +
+          start_offset +
+          gap_between_tracks * j.to_double(),
+          size: track.size,
+          stretchable: track.stretchable,
+        }
+      }
+    _ => {
+      // Start/FlexStart/Baseline -> no shift.
+      if start_offset == 0.0 {
+        return
+      }
       for i = 0; i < track_count; i = i + 1 {
         let track = tracks[i]
         tracks[i] = {
-          position: track.position + free_space,
-          size: track.size,
-          stretchable: track.stretchable,
-        }
-      }
-    @types.Center => {
-      // Shift all tracks by half of free_space
-      let offset = free_space / 2.0
-      for i = 0; i < track_count; i = i + 1 {
-        let track = tracks[i]
-        tracks[i] = {
-          position: track.position + offset,
-          size: track.size,
-          stretchable: track.stretchable,
-        }
-      }
-    }
-    @types.SpaceBetween => {
-      if effective_count <= 1 || free_space <= 0.0 {
-        return
-      }
-      // Distribute free_space between tracks
-      let gap_addition = free_space / (effective_count - 1).to_double()
-      for j = 0; j < effective_count; j = j + 1 {
-        let i = effective_indices[j]
-        let track = tracks[i]
-        tracks[i] = {
-          position: track.position + gap_addition * j.to_double(),
-          size: track.size,
-          stretchable: track.stretchable,
-        }
-      }
-    }
-    @types.SpaceAround => {
-      if free_space <= 0.0 || effective_count == 0 {
-        return
-      }
-      // Each track gets equal space on both sides
-      let space_per_track = free_space / effective_count.to_double()
-      for j = 0; j < effective_count; j = j + 1 {
-        let i = effective_indices[j]
-        let track = tracks[i]
-        let offset = space_per_track * (j.to_double() + 0.5)
-        tracks[i] = {
-          position: track.position + offset,
-          size: track.size,
-          stretchable: track.stretchable,
-        }
-      }
-    }
-    @types.SpaceEvenly => {
-      if free_space <= 0.0 || effective_count == 0 {
-        return
-      }
-      // Equal space between and around all tracks
-      let gap_count = effective_count + 1
-      let space_per_gap = free_space / gap_count.to_double()
-      for j = 0; j < effective_count; j = j + 1 {
-        let i = effective_indices[j]
-        let track = tracks[i]
-        let offset = space_per_gap * (j + 1).to_double()
-        tracks[i] = {
-          position: track.position + offset,
+          position: track.position + start_offset,
           size: track.size,
           stretchable: track.stretchable,
         }

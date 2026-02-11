@@ -2,6 +2,7 @@
 package "mizchi/crater"
 
 import {
+  "mizchi/crater/core",
   "mizchi/crater/layout/node",
   "mizchi/crater/types",
   "mizchi/crater/x/webvitals",
@@ -9,6 +10,8 @@ import {
 
 // Values
 pub fn compute_block_layout(@node.Node, @types.LayoutContext) -> @types.Layout
+
+pub fn compute_core_layout(@node.Node, @types.Size[Double]) -> @core.CoreComputeResult
 
 pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @webvitals.LayoutShift
 
@@ -19,6 +22,8 @@ pub fn compute_layout(@node.Node, @types.Size[Double]) -> @types.Layout
 pub fn compute_layout_with_warnings(@node.Node, @types.Size[Double]) -> @types.LayoutResult
 
 pub fn compute_total_cls(Array[@types.BoundingRect], Array[@types.BoundingRect], @types.Size[Double]) -> Double
+
+pub fn validate_core_subset(@node.Node) -> Array[@core.CoreIssue]
 
 // Errors
 

@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/core"
+
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/types",
+}
+
+// Values
+pub fn compute_align_offset(@types.Alignment, Double) -> Double
+
+pub fn compute_align_self_offset(@types.AlignSelf, @types.Alignment, Double) -> Double
+
+pub fn compute_if_supported(@node.Node, @types.Size[Double], LayoutComputeFn) -> CoreComputeResult
+
+pub fn compute_justify(@types.Alignment, Double, Int) -> (Double, Double)
+
+pub fn is_tui_subset(@node.Node) -> Bool
+
+pub fn validate_tui_subset(@node.Node) -> Array[CoreIssue]
+
+// Errors
+
+// Types and methods
+pub(all) struct CoreComputeResult {
+  layout : @types.Layout?
+  issues : Array[CoreIssue]
+}
+
+pub(all) struct CoreIssue {
+  node_id : String
+  property : String
+  detail : String
+}
+
+pub(all) struct LayoutComputeFn((@node.Node, @types.LayoutContext) -> @types.Layout)
+#deprecated
+pub fn LayoutComputeFn::inner(Self) -> (@node.Node, @types.LayoutContext) -> @types.Layout
+pub fn LayoutComputeFn::run(Self, @node.Node, @types.LayoutContext) -> @types.Layout
+
+// Type aliases
+
+// Traits
+
