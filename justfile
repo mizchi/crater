@@ -47,6 +47,7 @@ fmt:
     moon fmt
     moon fmt --manifest-path browser/moon.mod.json
     moon fmt --manifest-path js/moon.mod.json
+    moon fmt --manifest-path wasm/moon.mod.json
 
 # Update interface files (.mbti)
 info:
@@ -54,7 +55,8 @@ info:
 
 # Format and update interface (run before commit)
 prepare:
-    moon info && moon fmt
+    moon info
+    just fmt
 
 # Analyze test coverage
 coverage:

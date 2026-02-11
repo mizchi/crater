@@ -57,7 +57,6 @@ pub fn PageDomain::navigate(
   // Truncate forward history if any
   while self.history.length() > self.history_index {
     let _ = self.history.pop()
-
   }
   self.history.push({
     id: self.history_index,

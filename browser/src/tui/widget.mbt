@@ -327,6 +327,5 @@ pub fn draw_status_bar(
       link_count.to_string() +
       " | d:dark v:select "
     let _ = buf.write_text(col, y, rest, style, buf.width - col)
-
   }
 }

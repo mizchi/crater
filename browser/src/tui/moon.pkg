@@ -7,10 +7,10 @@ import {
   "moonbitlang/core/strconv",
 }
 
-import "test" {
+import {
   "mizchi/crater/renderer",
   "mizchi/crater/css/media",
-}
+} for "test"
 
 options(
   targets: {

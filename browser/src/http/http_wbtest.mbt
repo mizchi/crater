@@ -33,7 +33,6 @@ test "prepare_fetch_options blocks by same-origin sandbox" {
       origin: "https://example.test/page",
       sandbox: SameOrigin,
     })
-
   })
   match err {
     Some(SandboxError(_)) => ()
@@ -50,7 +49,6 @@ test "prepare_fetch_options blocks same-origin mode on cross-origin" {
       origin: "https://example.test/page",
       sandbox: Open,
     })
-
   })
   match err {
     Some(CorsError(_)) => ()
@@ -71,7 +69,6 @@ test "enforce_cors_response rejects missing ACAO" {
       },
       { status: 200, headers: {}, body: "" },
     )
-
   })
   match err {
     Some(CorsError(_)) => ()
@@ -96,7 +93,6 @@ test "enforce_cors_response rejects wildcard with credentials" {
       },
       { status: 200, headers, body: "" },
     )
-
   })
   match err {
     Some(CorsError(_)) => ()
