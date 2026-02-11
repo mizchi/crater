@@ -3,13 +3,25 @@
 ///|
 /// Render HTML to text layout tree representation
 pub fn render_html(html : String, width : UInt, height : UInt) -> String {
-  @crater.renderHtml(html, width.reinterpret_as_int(), height.reinterpret_as_int())
+  @crater.renderHtml(
+    html,
+    width.reinterpret_as_int(),
+    height.reinterpret_as_int(),
+  )
 }
 
 ///|
 /// Render HTML to JSON layout tree
-pub fn render_html_to_json(html : String, width : UInt, height : UInt) -> String {
-  @crater.renderHtmlToJson(html, width.reinterpret_as_int(), height.reinterpret_as_int())
+pub fn render_html_to_json(
+  html : String,
+  width : UInt,
+  height : UInt,
+) -> String {
+  @crater.renderHtmlToJson(
+    html,
+    width.reinterpret_as_int(),
+    height.reinterpret_as_int(),
+  )
 }
 
 ///|
@@ -19,5 +31,9 @@ pub fn render_html_to_paint_tree(
   width : UInt,
   height : UInt,
 ) -> String {
-  @crater.renderHtmlToPaintTree(html, width.reinterpret_as_int(), height.reinterpret_as_int())
+  @crater.renderHtmlToPaintTree(
+    html,
+    width.reinterpret_as_int(),
+    height.reinterpret_as_int(),
+  )
 }

@@ -1270,7 +1270,6 @@ pub fn EventManager::on(
 /// Remove all listeners for a node
 pub fn EventManager::off_all(self : EventManager, node_id : String) -> Unit {
   let _ = self.listeners.remove(node_id)
-
 }
 
 ///|

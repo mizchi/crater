@@ -1,7 +1,7 @@
 import {
   "mizchi/crater/types",
-  "mizchi/crater/svg" as @svgcore,
+  "mizchi/crater/svg" @svgcore,
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

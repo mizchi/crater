@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/gen/interface/mizchi/crater/core"
+
+// Values
+pub fn compute_layout(String, UInt, UInt) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

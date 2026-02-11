@@ -6933,7 +6933,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           ) {
           (Some(parent), Some(child)) => {
             let _ = dom.append_child(parent, child)
-
           }
           _ => ()
         }
@@ -6950,7 +6949,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
               None
             }
             let _ = dom.insert_before(parent, child, ref_node)
-
           }
           _ => ()
         }
@@ -6963,7 +6961,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
             // replaceChild: insert new before old, then remove old
             let _ = dom.insert_before(parent, new_child, Some(old_child))
             let _ = dom.remove_child(parent, old_child)
-
           }
           _ => ()
         }
@@ -6976,7 +6973,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
           ) {
           (Some(parent), Some(child)) => {
             let _ = dom.remove_child(parent, child)
-
           }
           _ => ()
         }
@@ -6984,7 +6980,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
         match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.set_attribute(node_id, op.name, op.value)
-
           }
           None => ()
         }
@@ -6992,7 +6987,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
         match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.remove_attribute(node_id, op.name)
-
           }
           None => ()
         }
@@ -7000,7 +6994,6 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
         match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.set_text_content(node_id, op.value)
-
           }
           None => ()
         }

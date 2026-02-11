@@ -5,9 +5,9 @@
     "mizchi/crater": {
       "path": ".."
     },
-    "mizchi/js": "0.10.11",
-    "moonbitlang/async": "0.16.0",
-    "moonbitlang/x": "0.4.38"
+    "mizchi/js": "0.10.13",
+    "moonbitlang/async": "0.16.6",
+    "moonbitlang/x": "0.4.40"
   },
   "source": "src",
   "preferred-target": "js"

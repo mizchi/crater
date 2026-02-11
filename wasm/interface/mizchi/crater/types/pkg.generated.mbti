@@ -1,0 +1,66 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/interface/mizchi/crater/types"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum AlignItems {
+  FLEX_START
+  FLEX_END
+  CENTER
+  STRETCH
+  BASELINE
+}
+pub fn AlignItems::from(Int) -> Self
+pub fn AlignItems::ordinal(Self) -> Int
+
+pub(all) struct CacheStats {
+  hits : UInt
+  misses : UInt
+  nodes_computed : UInt
+  hit_rate : Double
+}
+
+pub(all) enum Display {
+  FLEX
+  NONE
+  BLOCK
+  GRID
+}
+pub fn Display::from(Int) -> Self
+pub fn Display::ordinal(Self) -> Int
+
+pub(all) enum FlexDirection {
+  ROW
+  ROW_REVERSE
+  COLUMN
+  COLUMN_REVERSE
+}
+pub fn FlexDirection::from(Int) -> Self
+pub fn FlexDirection::ordinal(Self) -> Int
+
+pub(all) enum FlexWrap {
+  NO_WRAP
+  WRAP
+  WRAP_REVERSE
+}
+pub fn FlexWrap::from(Int) -> Self
+pub fn FlexWrap::ordinal(Self) -> Int
+
+pub(all) enum JustifyContent {
+  FLEX_START
+  FLEX_END
+  CENTER
+  SPACE_BETWEEN
+  SPACE_AROUND
+  SPACE_EVENLY
+}
+pub fn JustifyContent::from(Int) -> Self
+pub fn JustifyContent::ordinal(Self) -> Int
+
+// Type aliases
+
+// Traits
+

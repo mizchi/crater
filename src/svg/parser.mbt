@@ -46,7 +46,6 @@ fn SVGParser::skip_whitespace(self : SVGParser) -> Unit {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       let _ = self.advance()
-
     } else {
       break
     }
@@ -136,7 +135,6 @@ fn parse_element(parser : SVGParser) -> SVGNode? {
       break
     } else {
       let _ = parser.advance()
-
     }
   }
   if parser.is_end() {
@@ -197,7 +195,6 @@ fn skip_to_end_tag(parser : SVGParser, _tag_name : String) -> Unit {
       }
     } else {
       let _ = parser.advance()
-
     }
   }
 }
@@ -214,7 +211,6 @@ fn parse_children(
       // Skip text content
       while not(parser.is_end()) && parser.peek() != '<' {
         let _ = parser.advance()
-
       }
       continue
     }

@@ -46,7 +46,6 @@ fn PathParser::skip_whitespace_and_comma(self : PathParser) -> Unit {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' {
       let _ = self.advance()
-
     } else {
       break
     }
@@ -59,7 +58,6 @@ fn PathParser::skip_whitespace(self : PathParser) -> Unit {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       let _ = self.advance()
-
     } else {
       break
     }
@@ -82,7 +80,6 @@ fn PathParser::parse_number(self : PathParser) -> Double? {
   let c = self.peek()
   if c == '-' || c == '+' {
     let _ = self.advance()
-
   }
   // Integer part
   let mut has_digits = false
@@ -106,11 +103,9 @@ fn PathParser::parse_number(self : PathParser) -> Double? {
       let sign_char = self.peek()
       if sign_char == '-' || sign_char == '+' {
         let _ = self.advance()
-
       }
       while not(self.is_end()) && is_digit(self.peek()) {
         let _ = self.advance()
-
       }
     }
   }

@@ -1,0 +1,136 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/gen"
+
+// Values
+pub fn cabi_realloc(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportAddChild(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportCalculateLayout(Double, Double) -> Int
+
+pub fn wasmExportCalculateLayoutPostReturn(Int) -> Unit
+
+pub fn wasmExportComputeFull() -> Int
+
+pub fn wasmExportComputeFullPostReturn(Int) -> Unit
+
+pub fn wasmExportComputeIncremental() -> Int
+
+pub fn wasmExportComputeIncrementalPostReturn(Int) -> Unit
+
+pub fn wasmExportComputeLayout(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportComputeLayoutPostReturn(Int) -> Unit
+
+pub fn wasmExportCreateNode(Int, Int) -> Int
+
+pub fn wasmExportCreateTree(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportDestroyTree() -> Unit
+
+pub fn wasmExportExtractMainContent(Int, Int) -> Int
+
+pub fn wasmExportExtractMainContentPostReturn(Int) -> Unit
+
+pub fn wasmExportExtractMainContentWithLayout(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportExtractMainContentWithLayoutPostReturn(Int) -> Unit
+
+pub fn wasmExportGetAccessibilityTree(Int, Int) -> Int
+
+pub fn wasmExportGetAccessibilityTreePostReturn(Int) -> Unit
+
+pub fn wasmExportGetAriaSnapshot(Int, Int) -> Int
+
+pub fn wasmExportGetAriaSnapshotJson(Int, Int) -> Int
+
+pub fn wasmExportGetAriaSnapshotJsonPostReturn(Int) -> Unit
+
+pub fn wasmExportGetAriaSnapshotPostReturn(Int) -> Unit
+
+pub fn wasmExportGetCacheStats() -> Int
+
+pub fn wasmExportGetCacheStatsPostReturn(Int) -> Unit
+
+pub fn wasmExportGetChildCount(Int, Int) -> Int
+
+pub fn wasmExportGetComputedHeight(Int, Int) -> Double
+
+pub fn wasmExportGetComputedLeft(Int, Int) -> Double
+
+pub fn wasmExportGetComputedTop(Int, Int) -> Double
+
+pub fn wasmExportGetComputedWidth(Int, Int) -> Double
+
+pub fn wasmExportHasNewLayout(Int, Int) -> Int
+
+pub fn wasmExportInsertChild(Int, Int, Int, Int, Int) -> Int
+
+pub fn wasmExportMarkDirty(Int, Int) -> Int
+
+pub fn wasmExportMarkLayoutSeen(Int, Int) -> Int
+
+pub fn wasmExportNeedsLayout() -> Int
+
+pub fn wasmExportRemoveChild(Int, Int, Int) -> Int
+
+pub fn wasmExportRenderHtml(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportRenderHtmlPostReturn(Int) -> Unit
+
+pub fn wasmExportRenderHtmlToJson(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportRenderHtmlToJsonPostReturn(Int) -> Unit
+
+pub fn wasmExportRenderHtmlToPaintTree(Int, Int, Int, Int) -> Int
+
+pub fn wasmExportRenderHtmlToPaintTreePostReturn(Int) -> Unit
+
+pub fn wasmExportResetCacheStats() -> Unit
+
+pub fn wasmExportResizeViewport(Int, Int) -> Unit
+
+pub fn wasmExportSetAlignItems(Int, Int, Int) -> Int
+
+pub fn wasmExportSetDisplay(Int, Int, Int) -> Int
+
+pub fn wasmExportSetFlexBasis(Int, Int, Double) -> Int
+
+pub fn wasmExportSetFlexDirection(Int, Int, Int) -> Int
+
+pub fn wasmExportSetFlexGrow(Int, Int, Double) -> Int
+
+pub fn wasmExportSetFlexShrink(Int, Int, Double) -> Int
+
+pub fn wasmExportSetFlexWrap(Int, Int, Int) -> Int
+
+pub fn wasmExportSetGap(Int, Int, Double) -> Int
+
+pub fn wasmExportSetHeight(Int, Int, Double) -> Int
+
+pub fn wasmExportSetHeightAuto(Int, Int) -> Int
+
+pub fn wasmExportSetHeightPercent(Int, Int, Double) -> Int
+
+pub fn wasmExportSetJustifyContent(Int, Int, Int) -> Int
+
+pub fn wasmExportSetMargin(Int, Int, Double) -> Int
+
+pub fn wasmExportSetPadding(Int, Int, Double) -> Int
+
+pub fn wasmExportSetWidth(Int, Int, Double) -> Int
+
+pub fn wasmExportSetWidthAuto(Int, Int) -> Int
+
+pub fn wasmExportSetWidthPercent(Int, Int, Double) -> Int
+
+pub fn wasmExportUpdateStyle(Int, Int, Int, Int) -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

@@ -26,6 +26,10 @@ pub fn extract_main_content(html : String) -> String {
 
 ///|
 /// Extract main content with layout calculation for better accuracy
-pub fn extract_main_content_with_layout(html : String, width : Int, height : Int) -> String {
+pub fn extract_main_content_with_layout(
+  html : String,
+  width : Int,
+  height : Int,
+) -> String {
   @crater.extractMainContentWithLayout(html, width, height)
 }

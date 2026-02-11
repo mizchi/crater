@@ -6,5 +6,5 @@ import {
   "mizchi/crater/svg",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

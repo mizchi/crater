@@ -14,7 +14,11 @@ pub fn add_child(parent_id : String, child_id : String) -> Bool {
 
 ///|
 /// Insert child at index
-pub fn insert_child(parent_id : String, child_id : String, index : UInt) -> Bool {
+pub fn insert_child(
+  parent_id : String,
+  child_id : String,
+  index : UInt,
+) -> Bool {
   @crater.insertChild(parent_id, child_id, index.reinterpret_as_int())
 }
 
@@ -86,7 +90,10 @@ pub fn set_flex_basis(node_id : String, value : Double) -> Bool {
 
 ///|
 /// Set flex direction
-pub fn set_flex_direction(node_id : String, value : @types.FlexDirection) -> Bool {
+pub fn set_flex_direction(
+  node_id : String,
+  value : @types.FlexDirection,
+) -> Bool {
   @crater.setFlexDirection(node_id, value.ordinal())
 }
 
@@ -98,7 +105,10 @@ pub fn set_flex_wrap(node_id : String, value : @types.FlexWrap) -> Bool {
 
 ///|
 /// Set justify content
-pub fn set_justify_content(node_id : String, value : @types.JustifyContent) -> Bool {
+pub fn set_justify_content(
+  node_id : String,
+  value : @types.JustifyContent,
+) -> Bool {
   @crater.setJustifyContent(node_id, value.ordinal())
 }
 

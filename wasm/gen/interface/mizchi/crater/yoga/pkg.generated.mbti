@@ -1,0 +1,77 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/gen/interface/mizchi/crater/yoga"
+
+import {
+  "mizchi/crater-component/interface/mizchi/crater/types",
+  "mizchi/crater-js",
+}
+
+// Values
+pub fn add_child(String, String) -> Bool
+
+pub fn calculate_layout(Double, Double) -> String
+
+pub fn calculate_layout_structured(Double, Double) -> @crater-js.FlatLayoutResult
+
+pub fn create_node(String) -> UInt
+
+pub fn get_child_count(String) -> UInt
+
+pub fn get_computed_height(String) -> Double
+
+pub fn get_computed_left(String) -> Double
+
+pub fn get_computed_top(String) -> Double
+
+pub fn get_computed_width(String) -> Double
+
+pub fn has_new_layout(String) -> Bool
+
+pub fn insert_child(String, String, UInt) -> Bool
+
+pub fn mark_layout_seen(String) -> Bool
+
+pub fn remove_child(String, UInt) -> Bool
+
+pub fn set_align_items(String, @types.AlignItems) -> Bool
+
+pub fn set_display(String, @types.Display) -> Bool
+
+pub fn set_flex_basis(String, Double) -> Bool
+
+pub fn set_flex_direction(String, @types.FlexDirection) -> Bool
+
+pub fn set_flex_grow(String, Double) -> Bool
+
+pub fn set_flex_shrink(String, Double) -> Bool
+
+pub fn set_flex_wrap(String, @types.FlexWrap) -> Bool
+
+pub fn set_gap(String, Double) -> Bool
+
+pub fn set_height(String, Double) -> Bool
+
+pub fn set_height_auto(String) -> Bool
+
+pub fn set_height_percent(String, Double) -> Bool
+
+pub fn set_justify_content(String, @types.JustifyContent) -> Bool
+
+pub fn set_margin(String, Double) -> Bool
+
+pub fn set_padding(String, Double) -> Bool
+
+pub fn set_width(String, Double) -> Bool
+
+pub fn set_width_auto(String) -> Bool
+
+pub fn set_width_percent(String, Double) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

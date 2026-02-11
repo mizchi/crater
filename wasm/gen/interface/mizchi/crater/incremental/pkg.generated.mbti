@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/gen/interface/mizchi/crater/incremental"
+
+import {
+  "mizchi/crater-js",
+}
+
+// Values
+pub fn compute() -> @crater-js.FlatLayoutResult
+
+pub fn compute_full() -> String
+
+pub fn compute_full_structured() -> @crater-js.FlatLayoutResult
+
+pub fn compute_incremental() -> String
+
+pub fn create_tree(String, UInt, UInt) -> UInt
+
+pub fn destroy_tree() -> Unit
+
+pub fn get_cache_stats() -> String
+
+pub fn mark_dirty(String) -> Bool
+
+pub fn needs_layout() -> Bool
+
+pub fn reset_cache_stats() -> Unit
+
+pub fn resize_viewport(UInt, UInt) -> Unit
+
+pub fn update_style(String, String) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
