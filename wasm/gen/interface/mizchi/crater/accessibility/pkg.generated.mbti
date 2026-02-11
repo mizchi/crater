@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/gen/interface/mizchi/crater/accessibility"
+
+// Values
+pub fn extract_main_content(String) -> String
+
+pub fn extract_main_content_with_layout(String, Int, Int) -> String
+
+pub fn get_accessibility_tree(String) -> String
+
+pub fn get_aria_snapshot(String) -> String
+
+pub fn get_aria_snapshot_json(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

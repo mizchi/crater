@@ -1,6 +1,17 @@
-{
-  "link": {
+import {
+  "mizchi/crater-component/ffi" @ffi,
+  "mizchi/crater-component/gen/interface/mizchi/crater/core" @core,
+  "mizchi/crater-component/gen/interface/mizchi/crater/incremental" @incremental,
+  "mizchi/crater-component/gen/interface/mizchi/crater/renderer" @renderer,
+  "mizchi/crater-component/gen/interface/mizchi/crater/yoga" @yoga,
+  "mizchi/crater-component/gen/interface/mizchi/crater/accessibility" @accessibility,
+  "mizchi/crater-component/interface/mizchi/crater/types" @types,
+}
+
+options(
+  link: {
     "wasm": {
+      "export-memory-name": "memory",
       "exports": [
         "cabi_realloc:cabi_realloc",
         "wasmExportComputeLayout:mizchi:crater/core@0.1.0#compute-layout",
@@ -63,19 +74,9 @@
         "wasmExportExtractMainContent:mizchi:crater/accessibility@0.1.0#extract-main-content",
         "wasmExportExtractMainContentPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#extract-main-content",
         "wasmExportExtractMainContentWithLayout:mizchi:crater/accessibility@0.1.0#extract-main-content-with-layout",
-        "wasmExportExtractMainContentWithLayoutPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#extract-main-content-with-layout"
+        "wasmExportExtractMainContentWithLayoutPostReturn:cabi_post_mizchi:crater/accessibility@0.1.0#extract-main-content-with-layout",
       ],
-      "export-memory-name": "memory",
-      "heap-start-address": 16
-    }
+      "heap-start-address": 16,
+    },
   },
-  "import": [
-    { "path": "mizchi/crater-component/ffi", "alias": "ffi" },
-    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/core", "alias": "core" },
-    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/incremental", "alias": "incremental" },
-    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/renderer", "alias": "renderer" },
-    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/yoga", "alias": "yoga" },
-    { "path": "mizchi/crater-component/gen/interface/mizchi/crater/accessibility", "alias": "accessibility" },
-    { "path": "mizchi/crater-component/interface/mizchi/crater/types", "alias": "types" }
-  ]
-}
+)

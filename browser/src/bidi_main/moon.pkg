@@ -1,0 +1,7 @@
+import {
+  "mizchi/crater-browser/webdriver",
+}
+
+options(
+  "is-main": true,
+)

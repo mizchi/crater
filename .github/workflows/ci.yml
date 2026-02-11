@@ -28,30 +28,30 @@ jobs:
         run: moon update
 
       - name: Update js dependencies
-        run: moon update --directory js
+        run: moon update --manifest-path js/moon.mod.json
 
       - name: Update browser dependencies
-        run: moon update --directory browser
+        run: moon update --manifest-path browser/moon.mod.json
 
       - name: Check code
         run: moon check
 
       - name: Check js code
-        run: moon check --directory js
+        run: moon check --manifest-path js/moon.mod.json
 
       - name: Check browser code
-        run: moon check --directory browser
+        run: moon check --manifest-path browser/moon.mod.json
 
       - name: Run tests
         run: moon test
         continue-on-error: true
 
       - name: Run js tests
-        run: moon test --directory js
+        run: moon test --manifest-path js/moon.mod.json
         continue-on-error: true
 
       - name: Run browser tests
-        run: moon test --directory browser --target js
+        run: moon test --manifest-path browser/moon.mod.json --target js
         continue-on-error: true
 
       - name: Format check
@@ -88,7 +88,7 @@ jobs:
       - name: Update MoonBit dependencies
         run: |
           moon update
-          moon update --directory js
+          moon update --manifest-path js/moon.mod.json
 
       - name: Build js package
         run: pnpm run build
@@ -220,7 +220,7 @@ jobs:
       - name: Update MoonBit dependencies
         run: |
           moon update
-          moon update --directory browser
+          moon update --manifest-path browser/moon.mod.json
 
       - name: Run WPT DOM tests
         run: just wpt-dom-all
@@ -267,7 +267,7 @@ jobs:
       - name: Update MoonBit dependencies
         run: |
           moon update
-          moon update --directory browser
+          moon update --manifest-path browser/moon.mod.json
 
       - name: Build BiDi server
         run: just build-bidi
@@ -315,7 +315,7 @@ jobs:
       - name: Update MoonBit dependencies
         run: |
           moon update
-          moon update --directory browser
+          moon update --manifest-path browser/moon.mod.json
 
       - name: Build BiDi server
         run: just build-bidi

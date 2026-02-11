@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-component/gen/interface/mizchi/crater/renderer"
+
+// Values
+pub fn render_html(String, UInt, UInt) -> String
+
+pub fn render_html_to_json(String, UInt, UInt) -> String
+
+pub fn render_html_to_paint_tree(String, UInt, UInt) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

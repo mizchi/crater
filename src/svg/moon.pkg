@@ -3,5 +3,5 @@ import {
   "moonbitlang/core/math",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

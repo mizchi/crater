@@ -3,7 +3,11 @@
 ///|
 /// Create a new layout tree from HTML
 pub fn create_tree(html : String, width : UInt, height : UInt) -> UInt {
-  @crater.createTree(html, width.reinterpret_as_int(), height.reinterpret_as_int()).reinterpret_as_uint()
+  @crater.createTree(
+    html,
+    width.reinterpret_as_int(),
+    height.reinterpret_as_int(),
+  ).reinterpret_as_uint()
 }
 
 ///|
@@ -45,7 +49,10 @@ pub fn update_style(node_id : String, css : String) -> Bool {
 ///|
 /// Resize viewport
 pub fn resize_viewport(width : UInt, height : UInt) -> Unit {
-  @crater.resizeViewport(width.reinterpret_as_int(), height.reinterpret_as_int())
+  @crater.resizeViewport(
+    width.reinterpret_as_int(),
+    height.reinterpret_as_int(),
+  )
 }
 
 ///|

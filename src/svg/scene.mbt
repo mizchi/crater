@@ -102,7 +102,6 @@ pub fn AnimationManager::cleanup(self : AnimationManager) -> Unit {
   while i >= 0 {
     if self.tweens[i].is_complete() {
       let _ = self.tweens.remove(i)
-
     }
     i = i - 1
   }

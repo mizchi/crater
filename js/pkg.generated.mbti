@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-js"
 
-import(
-  "mizchi/crater/node"
-)
+import {
+  "mizchi/crater/types",
+}
 
 // Values
 pub fn addChild(String, String) -> Bool
@@ -30,7 +30,11 @@ pub fn createTree(String, Int, Int) -> Int
 
 pub fn destroyTree() -> Unit
 
-pub fn flatten_layout(@node.Layout) -> FlatLayoutResult
+pub fn extractMainContent(String) -> String
+
+pub fn extractMainContentWithLayout(String, Int, Int) -> String
+
+pub fn flatten_layout(@types.Layout) -> FlatLayoutResult
 
 pub fn getAccessibilityTree(String) -> String
 

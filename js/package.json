@@ -27,7 +27,7 @@
     "cli/"
   ],
   "scripts": {
-    "build": "moon build --target js && moon build --target wasm-gc && npm run copy",
+    "build": "moon build --target js --release && moon build --target wasm-gc --release && npm run copy",
     "copy": "mkdir -p dist && cp _build/js/release/build/crater-js.js dist/crater.js && cp _build/wasm-gc/release/build/crater-js.wasm dist/crater.wasm && cp index.js index.d.ts wasm.js wasm.d.ts dist/",
     "prepublishOnly": "npm run build",
     "test": "node --test 'test/**/*.test.mjs'"

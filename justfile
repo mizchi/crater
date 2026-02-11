@@ -39,14 +39,14 @@ test-taffy:
 check:
     moon info
     moon check
-    moon check -C browser
-    moon check -C js
+    moon check --manifest-path browser/moon.mod.json
+    moon check --manifest-path js/moon.mod.json
 
 # Format code
 fmt:
     moon fmt
-    moon fmt -C browser
-    moon fmt -C js
+    moon fmt --manifest-path browser/moon.mod.json
+    moon fmt --manifest-path js/moon.mod.json
 
 # Update interface files (.mbti)
 info:
@@ -131,11 +131,11 @@ wpt-compositing:
 
 # Build BiDi server
 build-bidi:
-    moon build -C browser --target js
+    moon build --manifest-path browser/moon.mod.json --target js --release
 
 # Start BiDi server (Deno)
 start-bidi:
-    deno run -A browser/target/js/release/build/bidi_main/bidi_main.js
+    deno run -A browser/_build/js/release/build/bidi_main/bidi_main.js
 
 # === WPT WebDriver BiDi Tests ===
 
@@ -184,21 +184,21 @@ test-bidi-manual:
 
 # Build JS module
 build-js:
-    moon build -C js --target js
+    moon build --manifest-path js/moon.mod.json --target js --release
 
 # Build JS module for WASM-GC
 build-js-wasm:
-    moon build -C js --target wasm-gc
+    moon build --manifest-path js/moon.mod.json --target wasm-gc --release
 
 # Build WASM component
 build-wasm:
-    moon build -C wasm --target wasm
-    wasm-tools component embed --world crater wasm/wit wasm/target/wasm/release/build/gen/gen.wasm -o wasm/target/crater-embedded.wasm
-    wasm-tools component new wasm/target/crater-embedded.wasm -o wasm/target/crater.wasm
+    moon build --manifest-path wasm/moon.mod.json --target wasm --release
+    wasm-tools component embed --world crater wasm/wit wasm/_build/wasm/release/build/gen/gen.wasm -o wasm/_build/crater-embedded.wasm
+    wasm-tools component new wasm/_build/crater-embedded.wasm -o wasm/_build/crater.wasm
 
 # Transpile WASM with jco
 transpile-wasm:
-    npx jco transpile wasm/target/crater.wasm -o wasm/dist --name crater
+    npx jco transpile wasm/_build/crater.wasm -o wasm/dist --name crater
 
 # Test WASM component
 test-wasm:
@@ -212,5 +212,5 @@ wasm: build-wasm transpile-wasm test-wasm
 # Clean build artifacts
 clean:
     moon clean
-    moon clean -C browser
-    moon clean -C js
+    moon clean --manifest-path browser/moon.mod.json
+    moon clean --manifest-path js/moon.mod.json

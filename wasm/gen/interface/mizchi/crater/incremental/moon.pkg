@@ -1,0 +1,3 @@
+import {
+  "mizchi/crater-js" @crater,
+}
