@@ -101,7 +101,6 @@ fn parse_html_content(
               i.val += 1
             }
             let _ = tree.set_attribute(elem, attr_name, attr_val)
-
           }
         }
       }
@@ -143,7 +142,6 @@ fn parse_html_content(
       if text.length() > 0 {
         let text_node = tree.create_text(text)
         let _ = tree.append_child(parent, text_node)
-
       }
     }
   }

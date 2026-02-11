@@ -164,7 +164,6 @@ pub fn TargetDomain::create_target(
   // Navigate if URL provided
   if url != "about:blank" {
     let _ = context.navigate(url)
-
   }
   // Auto-attach if enabled
   if self.auto_attach {

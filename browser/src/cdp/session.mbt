@@ -164,7 +164,6 @@ pub fn CdpSession::load_html(self : CdpSession, html : String) -> Unit {
     Ok(children) =>
       for child in children {
         let _ = self.tree.remove_child(doc, child)
-
       }
     Err(_) => ()
   }
@@ -238,7 +237,6 @@ fn parse_html_into(
               i.val += 1
             }
             let _ = tree.set_attribute(elem, attr_name, attr_val)
-
           }
         }
       }
@@ -280,7 +278,6 @@ fn parse_html_into(
       if text.length() > 0 {
         let text_node = tree.create_text(text)
         let _ = tree.append_child(parent, text_node)
-
       }
     }
   }

@@ -255,7 +255,6 @@ fn render_paint_node(
         let _ = ctx.buffer.write_text(
           col, draw_row, border_line, border_style, w,
         )
-
       }
       // Bottom border
       let bottom_row = draw_row + draw_h - 1
@@ -266,7 +265,6 @@ fn render_paint_node(
         let _ = ctx.buffer.write_text(
           col, bottom_row, border_line, border_style, w,
         )
-
       }
     }
     // Draw alt text (or "[IMG]" if no alt) centered in the image area
@@ -306,7 +304,6 @@ fn render_paint_node(
             label_style,
             w,
           )
-
         }
       }
     }
@@ -367,7 +364,6 @@ fn render_paint_node(
               effective_width,
               (row + h).min(ctx.viewport_height) - row,
             )
-
           } else if needs_wrapping {
             // Text with spaces that exceeds width - use w for proper line wrapping
             let _ = ctx.buffer.write_text_wrapped(
@@ -378,13 +374,11 @@ fn render_paint_node(
               w,
               (row + h).min(ctx.viewport_height) - row,
             )
-
           } else {
             // Single word or short text - use effective_width to prevent clipping
             let _ = ctx.buffer.write_text(
               col, row, text_content, style, effective_width,
             )
-
           }
           // Collect link region for hit testing
           if is_link && w > 0 && h > 0 {
@@ -743,7 +737,6 @@ fn draw_hints(
       hint_style,
       label_text.length(),
     )
-
   }
 }
 
@@ -905,5 +898,4 @@ fn draw_hint_mode_status_bar(
   sb.write_string(" | ESC:cancel")
   let status = sb.to_string()
   let _ = buf.write_text(0, y, status, style, buf.width)
-
 }

@@ -7,7 +7,6 @@ test "JsContext::new creates context with DOM" {
   let ctx = JsContext::new(dom)
   // Verify we can get DOM back
   let _ = ctx.get_dom()
-
 }
 
 ///|
