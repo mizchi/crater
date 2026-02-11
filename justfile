@@ -33,6 +33,14 @@ test-update:
 test-taffy:
     moon test -p mizchi/crater/tests/taffy_compat
 
+# Verify moon test result does not regress from recorded baseline
+test-baseline:
+    scripts/test-baseline.sh
+
+# Update moon test baseline summary file
+test-baseline-update:
+    scripts/test-baseline-update.sh
+
 # === Code Quality ===
 
 # Check compilation (main + browser + js)

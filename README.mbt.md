@@ -141,4 +141,4 @@ let layout = @renderer.render(html, ctx)
 
 ## License
 
-MIT
+Apache-2.0
