@@ -8,10 +8,10 @@ import {
   "mizchi/crater/types",
 }
 
-import "test" {
+import {
   "mizchi/crater/style",
   "mizchi/crater/layout/dispatch",
-}
+} for "test"
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

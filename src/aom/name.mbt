@@ -870,7 +870,6 @@ fn normalize_whitespace(s : String) -> String {
   // Trim trailing space
   while chars.length() > 0 && chars[chars.length() - 1] == ' ' {
     let _ = chars.pop()
-
   }
   String::from_array(chars)
 }

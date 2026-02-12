@@ -46,7 +46,6 @@ fn collect_readability_candidates(
     collect_readability_candidates(child, ancestors, scores, candidates, seen)
   }
   let _ = ancestors.pop()
-
 }
 
 ///|

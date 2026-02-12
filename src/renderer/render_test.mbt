@@ -48,6 +48,38 @@ test "intrinsic_percent_replaced_wpt_style" {
 }
 
 ///|
+test "svg_default_intrinsic_size_wpt_like" {
+  // Mirrors WPT-like behavior: <svg> without width/height defaults to 300x150.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<svg id="target"></svg>
+
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+
+  @dispatch.setup()
+  let layout_ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = @dispatch.compute_layout(root, layout_ctx)
+
+  let svg = layout.children[0]
+
+  inspect(svg.id, content="svg#target")
+  inspect(svg.width, content="300")
+  inspect(svg.height, content="150")
+}
+
+///|
 test "renderer_grid_column" {
   let html_str = "<!DOCTYPE html><div id=\"mygrid\" style=\"display: grid; grid-template-columns: 1fr 30px; width: min-content; border: 10px solid;\"><div id=\"item\" style=\"grid-column: 1 / span 2;\"><div id=\"filler\" style=\"width: 300px; height: 50px;\"></div></div></div>"
   let ctx = @renderer.RenderContext::default()

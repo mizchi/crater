@@ -1833,6 +1833,58 @@ fn apply_svg_attributes_to_style(
 }
 
 ///|
+/// Apply intrinsic fallback size for root SVG elements.
+/// If width/height are auto, browsers use 300x150 with intrinsic ratio 2:1.
+fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style {
+  if tag != "svg" {
+    return style
+  }
+
+  let width_is_percent = match style.width {
+    @types.Percent(_) => true
+    _ => false
+  }
+  let height_is_percent = match style.height {
+    @types.Percent(_) => true
+    _ => false
+  }
+
+  {
+    ..style
+    // SVG behaves as a replaced inline element. Inline-block approximation
+    // ensures width/height and intrinsic ratio participate in layout.
+    ,
+    display: if style.display == @types.Inline {
+      @types.InlineBlock
+    } else {
+      style.display
+    },
+    width: if style.width == @types.Auto {
+      if height_is_percent {
+        @types.Auto
+      } else {
+        @types.Length(300.0)
+      }
+    } else {
+      style.width
+    },
+    height: if style.height == @types.Auto {
+      if width_is_percent {
+        @types.Auto
+      } else {
+        @types.Length(150.0)
+      }
+    } else {
+      style.height
+    },
+    aspect_ratio: match style.aspect_ratio {
+      Some(_) => style.aspect_ratio
+      None => Some(2.0)
+    },
+  }
+}
+
+///|
 /// Remove suffix of given length from string
 fn remove_suffix(s : String, len : Int) -> String {
   let end = s.length() - len
@@ -2093,6 +2145,8 @@ fn element_to_node_with_styles_internal(
   } else {
     style
   }
+
+  let style = apply_svg_intrinsic_size(style, cell_tag)
 
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)

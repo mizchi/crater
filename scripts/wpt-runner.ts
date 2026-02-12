@@ -376,10 +376,31 @@ function countNodes(node: LayoutNode): number {
   return 1 + node.children.reduce((sum, child) => sum + countNodes(child), 0);
 }
 
+function isCrashOnlyTest(htmlPath: string): boolean {
+  const name = path.basename(htmlPath).toLowerCase();
+  if (name.includes('crash')) return true;
+
+  try {
+    const source = fs.readFileSync(htmlPath, 'utf-8').toLowerCase();
+    return source.includes('test passes by not crashing') ||
+      source.includes('not crash');
+  } catch {
+    return false;
+  }
+}
+
 async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<TestResult> {
   const name = path.basename(htmlPath);
 
   try {
+    if (isCrashOnlyTest(htmlPath)) {
+      // Crash-only WPTs assert stability, not geometry parity.
+      // We still execute both paths to ensure they don't throw.
+      await getBrowserLayout(browser, htmlPath);
+      getCraterLayout(htmlPath);
+      return { name, passed: true, mismatches: [], totalNodes: 0 };
+    }
+
     const browserLayout = await getBrowserLayout(browser, htmlPath);
     const craterLayout = getCraterLayout(htmlPath);
     const normalizedCraterLayout = normalizeCraterPositions(craterLayout);
