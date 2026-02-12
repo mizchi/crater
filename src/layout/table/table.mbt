@@ -1383,11 +1383,56 @@ pub fn compute(
     )
   }
 
+  // Resolve table height constraints
+  let resolved_min_table_height = match style.min_height {
+    @types.Length(h) => h
+    @types.Percent(p) =>
+      ctx.available_height.unwrap_or(0.0) * p +
+      padding.vertical_sum() +
+      border.vertical_sum()
+    _ => 0.0
+  }
+  let resolved_max_table_height = match style.max_height {
+    @types.Length(h) => h
+    @types.Percent(p) =>
+      ctx.available_height.unwrap_or(0.0) * p +
+      padding.vertical_sum() +
+      border.vertical_sum()
+    _ => 1.0e10
+  }
+
   // Resolve explicit table height from style
+  // Percent height is treated as content-box and converted to border-box.
   let explicit_table_height : Double? = match style.height {
     @types.Length(h) => Some(h)
-    @types.Percent(p) => Some(ctx.available_height.unwrap_or(0.0) * p)
+    @types.Percent(p) =>
+      Some(
+        ctx.available_height.unwrap_or(0.0) * p +
+        padding.vertical_sum() +
+        border.vertical_sum(),
+      )
     _ => None
+  }
+  let target_table_height = match explicit_table_height {
+    Some(h) => {
+      let clamped_min = max(h, resolved_min_table_height)
+      let clamped = if clamped_min > resolved_max_table_height {
+        resolved_max_table_height
+      } else {
+        clamped_min
+      }
+      Some(clamped)
+    }
+    None =>
+      if resolved_min_table_height > 0.0 {
+        if resolved_min_table_height > resolved_max_table_height {
+          Some(resolved_max_table_height)
+        } else {
+          Some(resolved_min_table_height)
+        }
+      } else {
+        None
+      }
   }
 
   // Calculate row heights with rowspan distribution
@@ -1402,8 +1447,8 @@ pub fn compute(
     // Step 3: Distribute rowspan cell heights across spanned rows
     distribute_rowspan_heights(base_heights, rowspan_cells, border_spacing)
 
-    // Step 4: If table has explicit height, ensure rows fill it
-    match explicit_table_height {
+    // Step 4: If table has explicit/min height, ensure rows fill it
+    match target_table_height {
       Some(h) => {
         // Calculate current total row height
         let mut current_total = border_spacing // top edge
@@ -1726,17 +1771,23 @@ pub fn compute(
 
   // Calculate table height
   let content_height = y_offset - padding.top - border.top
-  let table_height = match style.height {
+  let raw_table_height = match style.height {
     @types.Length(h) =>
       max(h, content_height + padding.vertical_sum() + border.vertical_sum())
     @types.Percent(p) => {
       let parent_h = ctx.available_height.unwrap_or(0.0)
       max(
-        parent_h * p,
+        parent_h * p + padding.vertical_sum() + border.vertical_sum(),
         content_height + padding.vertical_sum() + border.vertical_sum(),
       )
     }
     _ => content_height + padding.vertical_sum() + border.vertical_sum()
+  }
+  let clamped_min_height = max(raw_table_height, resolved_min_table_height)
+  let table_height = if clamped_min_height > resolved_max_table_height {
+    resolved_max_table_height
+  } else {
+    clamped_min_height
   }
 
   // Calculate row content height for colgroup/col height

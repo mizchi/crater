@@ -4449,8 +4449,12 @@ fn compute_child_layout(
     }
     if width_is_auto {
       width = nested_layout.width
+    } else if nested_layout.width > width {
+      width = nested_layout.width
     }
     if height_is_auto {
+      height = nested_layout.height
+    } else if nested_layout.height > height {
       height = nested_layout.height
     }
   } else {
