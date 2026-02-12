@@ -1298,13 +1298,22 @@ fn compute_intrinsic_grid_main_size(
     // Computing height - use max-content
     None
   }
+  // When computing grid intrinsic height for column flex items and the cross size
+  // (inline size) is known, treat that inline size as extrinsically definite so
+  // percentage inline sizes inside grid resolve against the final cross size.
+  let use_definite_for_column_height = not(parent_is_row) &&
+    available_cross is Some(_)
   let ctx : @types.LayoutContext = {
     available_width,
     available_height,
-    sizing_mode: @types.MaxContent,
+    sizing_mode: if use_definite_for_column_height {
+      @types.Definite
+    } else {
+      @types.MaxContent
+    },
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
-    stretch_width: false,
+    stretch_width: use_definite_for_column_height,
     stretch_height: false,
   }
   let @node.DispatchFn(dispatch_fn) = dispatch

@@ -1439,3 +1439,74 @@ test "replaced element aspect ratio with percent height" {
   // Float should shrink-to-fit to canvas width
   inspect(float_layout.width, content="100")
 }
+
+///|
+test "percent_height_with_indefinite_parent_and_max_height_clamps" {
+  let default_style = @style.Style::default()
+  let lines : Array[@node.Node] = []
+  for i = 0; i < 20; i = i + 1 {
+    lines.push(
+      @node.Node::leaf("line\{i}", {
+        ..default_style,
+        height: @types.Length(19.2),
+      }),
+    )
+  }
+  let scroll_inner = @node.Node::new(
+    "scroll-inner",
+    { ..default_style, height: @types.Percent(1.0), overflow_y: @types.Scroll },
+    lines,
+  )
+  let scroll_outer = @node.Node::new(
+    "scroll-outer",
+    {
+      ..default_style,
+      height: @types.Percent(1.0),
+      max_height: @types.Length(100.0),
+      overflow_y: @types.Hidden,
+    },
+    [scroll_inner],
+  )
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, width: @types.Length(100.0) },
+    [scroll_outer],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 100.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].height, content="100")
+  inspect(layout.children[0].children[0].height, content="100")
+
+  let min_ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(0.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 100.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let min_layout = compute(root, min_ctx, default_dispatch())
+  inspect(min_layout.height, content="100")
+
+  let max_ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(1.0e10),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 100.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let max_layout = compute(root, max_ctx, default_dispatch())
+  inspect(max_layout.height, content="100")
+}

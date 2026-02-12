@@ -9,6 +9,17 @@ fn default_dispatch() -> @node.DispatchFn {
 }
 
 ///|
+fn cross_layout_dispatch() -> @node.DispatchFn {
+  @node.DispatchFn(fn(node, ctx, dispatch) {
+    match node.style.display {
+      @types.Grid | @types.InlineGrid => compute(node, ctx, dispatch)
+      @types.Flex | @types.InlineFlex => @flex.compute(node, ctx, dispatch)
+      _ => @block.compute(node, ctx, dispatch)
+    }
+  })
+}
+
+///|
 test "grid_basic" {
   // 120x120 grid container with 3x3 cells of 40px each
   // 9 children should be placed in row-first order
@@ -107,6 +118,136 @@ test "grid_with_gap" {
   assert_eq(layout.children[2].y, 50.0)
   assert_eq(layout.children[3].x, 50.0)
   assert_eq(layout.children[3].y, 50.0)
+}
+
+///|
+test "grid_item_flex_column_reflows_nested_grid_height_at_final_width" {
+  let default_style = @style.Style::default()
+  let text_measure : @types.MeasureFunc = {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      let max_width = 200.0
+      let line_height = 50.0
+      let effective_width = if available_width > 0.0 {
+        available_width
+      } else {
+        max_width
+      }
+      let lines = if effective_width >= max_width {
+        1.0
+      } else {
+        (max_width / effective_width).ceil()
+      }
+      {
+        min_width: 100.0,
+        max_width,
+        min_height: line_height,
+        max_height: lines * line_height,
+      }
+    },
+  }
+  let text = @node.Node::with_measure("text", default_style, text_measure)
+  let grid_item = @node.Node::new(
+    "grid-item",
+    {
+      ..default_style,
+      width: @types.Percent(1.0),
+      min_width: @types.Length(0.0),
+    },
+    [text],
+  )
+  let inner_grid = @node.Node::new(
+    "inner-grid",
+    {
+      ..default_style,
+      display: @types.Grid,
+      width: @types.Percent(1.0),
+      flex_grow: 1.0,
+      flex_shrink: 1.0,
+      flex_basis: @types.Percent(0.0),
+    },
+    [grid_item],
+  )
+  let outer_flex = @node.Node::new(
+    "outer-flex",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      width: @types.Length(100.0),
+    },
+    [inner_grid],
+  )
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Grid },
+    [outer_flex],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, cross_layout_dispatch())
+
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].height, content="100")
+  inspect(layout.children[0].children[0].height, content="100")
+}
+
+///|
+test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
+  let default_style = @style.Style::default()
+  let lines : Array[@node.Node] = []
+  for i = 0; i < 20; i = i + 1 {
+    lines.push(
+      @node.Node::leaf("line\{i}", {
+        ..default_style,
+        height: @types.Length(19.2),
+      }),
+    )
+  }
+  let scroll_inner = @node.Node::new(
+    "scroll-inner",
+    { ..default_style, height: @types.Percent(1.0), overflow_y: @types.Scroll },
+    lines,
+  )
+  let scroll_outer = @node.Node::new(
+    "scroll-outer",
+    {
+      ..default_style,
+      height: @types.Percent(1.0),
+      max_height: @types.Length(100.0),
+      overflow_y: @types.Hidden,
+    },
+    [scroll_inner],
+  )
+  let grid_item = @node.Node::new("grid-item", default_style, [scroll_outer])
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Grid, width: @types.Length(100.0) },
+    [grid_item],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].height, content="100")
+  inspect(layout.children[0].children[0].height, content="100")
+  inspect(layout.children[0].children[0].children[0].height, content="100")
 }
 
 ///|

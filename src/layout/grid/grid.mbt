@@ -2377,8 +2377,18 @@ fn calculate_item_intrinsic_sizes(
       }
       @types.Auto =>
         if child.children.length() == 0 {
+          // If inline size is definite on the item, measure height against that
+          // width so wrapped content contributes correct block-size.
+          let measure_available_width = match child.style.width {
+            @types.Length(v) => v
+            @types.Percent(p) => p * container_width
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) => 1.0e10
+          }
           let intrinsic = get_intrinsic_from_measure(
-            child, 1.0e10, container_width,
+            child, measure_available_width, container_width,
           )
           (intrinsic.min_height, intrinsic.max_height)
         } else {
@@ -4259,13 +4269,21 @@ fn compute_child_layout(
       height = nested_layout.height
     }
   } else {
-    // For non-container children, still need to recursively compute layouts
-    for i = 0; i < child.children.length(); i = i + 1 {
-      let grandchild = child.children[i]
-      let grandchild_layout = compute_child_layout(
-        grandchild, width, height, dispatch,
-      )
-      child_layouts.push(grandchild_layout)
+    // For block/inline contents inside a grid item, use block layout so normal flow
+    // (line stacking, margin collapse, etc.) is preserved instead of stretching
+    // every descendant to the grid area's available height.
+    let child_ctx : @types.LayoutContext = {
+      available_width: width,
+      available_height: Some(height),
+      sizing_mode: @types.Definite,
+      viewport_width: available_width,
+      viewport_height: available_height,
+      stretch_width: false,
+      stretch_height: false,
+    }
+    let nested_layout = @block.compute(child, child_ctx, dispatch)
+    for i = 0; i < nested_layout.children.length(); i = i + 1 {
+      child_layouts.push(nested_layout.children[i])
     }
   }
   {

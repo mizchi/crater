@@ -300,11 +300,11 @@ test "flex_align_center" {
 ///|
 test "flex_align_stretch" {
   let default_style = @style.Style::default()
-  let child = @node.Node::leaf("child", {
-    ..default_style,
-    width: @types.Length(50.0),
+  let child = @node.Node::leaf(
+    "child",
+    { ..default_style, width: @types.Length(50.0) },
     // No height specified, should stretch
-  })
+  )
   let root_style = {
     ..default_style,
     display: @types.Flex,
@@ -809,11 +809,10 @@ test "flex_with_margin" {
 /// Test that explicit height prevents stretch
 test "flex_stretch_respects_explicit_height" {
   let default_style = @style.Style::default()
-  let child = @node.Node::leaf("child", {
-    ..default_style,
-    width: @types.Length(50.0),
-    height: @types.Length(40.0), // Explicit height
-  })
+  let child = @node.Node::leaf(
+    "child",
+    { ..default_style, width: @types.Length(50.0), height: @types.Length(40.0) }, // Explicit height
+  )
   let root_style = {
     ..default_style,
     display: @types.Flex,
@@ -1374,11 +1373,11 @@ test "flex_basis_behavior" {
 /// From taffy: flex_column_align_stretch
 test "flex_column_align_stretch" {
   let default_style = @style.Style::default()
-  let child = @node.Node::leaf("child", {
-    ..default_style,
-    height: @types.Length(50.0),
+  let child = @node.Node::leaf(
+    "child",
+    { ..default_style, height: @types.Length(50.0) },
     // width: auto (should stretch)
-  })
+  )
   let root_style = {
     ..default_style,
     display: @types.Flex,
@@ -3419,8 +3418,9 @@ test "flex_text_wrapping_in_fixed_width_container" {
   }
 }
 
-///|
 // Test Row > Column > Div - with cache reset
+
+///|
 test "row_column_div_with_cache_reset" {
   reset_intrinsic_cache() // Clear any stale cache
   let default_style = @style.Style::default()

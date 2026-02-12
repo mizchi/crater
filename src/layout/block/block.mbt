@@ -738,7 +738,8 @@ fn compute_with_collapse(
     match node.measure {
       Some(mf) => {
         let parent_width = ctx.available_width
-        let parent_height = ctx.available_height.unwrap_or(0.0)
+        let parent_height_opt = ctx.available_height
+        let parent_height = parent_height_opt.unwrap_or(0.0)
         let margin = @types.resolve_rect(style.margin, parent_width)
         let padding = @types.resolve_rect(style.padding, parent_width)
         let border = @types.resolve_rect(style.border, parent_width)
@@ -757,7 +758,8 @@ fn compute_with_collapse(
 
         // Check if height/width are definite (non-Auto) for aspect_ratio handling
         let height_is_definite = match style.height {
-          @types.Length(_) | @types.Percent(_) => true
+          @types.Length(_) => true
+          @types.Percent(_) => parent_height_opt is Some(_)
           _ => false
         }
         let width_is_definite = match style.width {
@@ -791,7 +793,16 @@ fn compute_with_collapse(
         // - If height is Auto AND width is definite, let aspect_ratio compute height
         let initial_height : Double? = match style.height {
           @types.Length(h) => Some(h)
-          @types.Percent(p) => Some(parent_height * p)
+          @types.Percent(p) =>
+            match parent_height_opt {
+              Some(ph) => Some(ph * p)
+              None =>
+                Some(
+                  intrinsic.max_height +
+                  padding.vertical_sum() +
+                  border.vertical_sum(),
+                )
+            }
           @types.Auto =>
             // If aspect_ratio is set and width is definite, use None to let aspect_ratio calculate
             if style.aspect_ratio is Some(_) && width_is_definite {
@@ -851,6 +862,7 @@ fn compute_with_collapse(
   // Resolve box model
   // For MaxContent sizing, percentage values resolve to 0 (CSS intrinsic sizing spec)
   let parent_width = ctx.available_width
+  let parent_height_opt = ctx.available_height
   let parent_height = ctx.available_height.unwrap_or(0.0)
   let is_intrinsic_sizing = match ctx.sizing_mode {
     @types.MaxContent => true
@@ -914,19 +926,25 @@ fn compute_with_collapse(
           border.horizontal_sum(),
         )
       }
-    (@types.Auto, @types.Percent(p), Some(ratio)) => {
-      let h = parent_height * p
-      if style.box_sizing == @types.BorderBox {
-        Some(h * ratio)
-      } else {
-        let content_height = h - padding.vertical_sum() - border.vertical_sum()
-        Some(
-          content_height * ratio +
-          padding.horizontal_sum() +
-          border.horizontal_sum(),
-        )
+    (@types.Auto, @types.Percent(p), Some(ratio)) =>
+      match parent_height_opt {
+        Some(ph) => {
+          let h = ph * p
+          if style.box_sizing == @types.BorderBox {
+            Some(h * ratio)
+          } else {
+            let content_height = h -
+              padding.vertical_sum() -
+              border.vertical_sum()
+            Some(
+              content_height * ratio +
+              padding.horizontal_sum() +
+              border.horizontal_sum(),
+            )
+          }
+        }
+        None => None
       }
-    }
     _ => None
   }
   let mut box_width = match width_from_aspect_ratio {
@@ -981,16 +999,20 @@ fn compute_with_collapse(
             padding.horizontal_sum() +
             border.horizontal_sum()
           }
-        (Some(ar), @types.Percent(p)) if ar > 0.0 => {
-          let h = parent_height * p
-          if style.box_sizing == @types.BorderBox {
-            h * ar
-          } else {
-            (h - padding.vertical_sum() - border.vertical_sum()) * ar +
-            padding.horizontal_sum() +
-            border.horizontal_sum()
+        (Some(ar), @types.Percent(p)) if ar > 0.0 =>
+          match parent_height_opt {
+            Some(ph) => {
+              let h = ph * p
+              if style.box_sizing == @types.BorderBox {
+                h * ar
+              } else {
+                (h - padding.vertical_sum() - border.vertical_sum()) * ar +
+                padding.horizontal_sum() +
+                border.horizontal_sum()
+              }
+            }
+            None => 0.0
           }
-        }
         _ => 0.0
       }
       let intrinsic_width = @types.max(children_width, aspect_width)
@@ -1037,7 +1059,24 @@ fn compute_with_collapse(
   let child_available_height : Double? = match style.height {
     @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
     @types.Percent(p) =>
-      Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+      match parent_height_opt {
+        Some(ph) =>
+          Some(ph * p - padding.vertical_sum() - border.vertical_sum())
+        None =>
+          // Percentage height in an indefinite containing block behaves like auto.
+          // If max-height is definite, use that constrained content height so
+          // descendants with percentage heights can resolve against the used size.
+          match style.max_height {
+            @types.Length(max_h) =>
+              Some(
+                @types.max(
+                  0.0,
+                  max_h - padding.vertical_sum() - border.vertical_sum(),
+                ),
+              )
+            _ => None
+          }
+      }
     @types.Auto
     | @types.MinContent
     | @types.MaxContent
@@ -1355,7 +1394,12 @@ fn compute_with_collapse(
     let content_height = ifc_result.total_height
     let mut box_height = match style.height {
       @types.Length(h) => h
-      @types.Percent(p) => parent_height * p
+      @types.Percent(p) =>
+        match parent_height_opt {
+          Some(ph) => ph * p
+          None =>
+            content_height + padding.vertical_sum() + border.vertical_sum()
+        }
       @types.Auto =>
         content_height + padding.vertical_sum() + border.vertical_sum()
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -1468,7 +1512,12 @@ fn compute_with_collapse(
     let content_height = mixed_result.content_height
     let mut box_height = match style.height {
       @types.Length(h) => h
-      @types.Percent(p) => parent_height * p
+      @types.Percent(p) =>
+        match parent_height_opt {
+          Some(ph) => ph * p
+          None =>
+            content_height + padding.vertical_sum() + border.vertical_sum()
+        }
       @types.Auto =>
         content_height + padding.vertical_sum() + border.vertical_sum()
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -2017,7 +2066,11 @@ fn compute_with_collapse(
   // Box height - consider aspect_ratio
   let mut box_height = match style.height {
     @types.Length(h) => h
-    @types.Percent(p) => parent_height * p
+    @types.Percent(p) =>
+      match parent_height_opt {
+        Some(ph) => ph * p
+        None => content_height + padding.vertical_sum() + border.vertical_sum()
+      }
     @types.Auto =>
       match style.aspect_ratio {
         Some(ratio) =>

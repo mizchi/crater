@@ -156,3 +156,103 @@ test "flex_margin_no_collapse_wpt" {
   inspect(box2_layout.y, content="250")
   inspect(box2_layout.height, content="100")
 }
+
+///|
+test "wpt_grid_container_as_flex_item_reflows_to_final_width" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.inner-grid {
+    #|  display: grid;
+    #|  flex: 1 1 0%;
+    #|  width: 100%;
+    #|}
+    #|.inner-grid-item {
+    #|  font: 50px/1 Ahem;
+    #|  min-width: 0;
+    #|  width: 100%;
+    #|}
+    #|</style>
+    #|<div style="display: grid">
+    #|  <div style="display: flex; flex-direction: column; width: 100px">
+    #|    <div class="inner-grid">
+    #|      <div class="inner-grid-item">XX XX</div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let root_grid = layout.children[0]
+  let outer_flex = root_grid.children[0]
+  let inner_grid = outer_flex.children[0]
+  let inner_item = inner_grid.children[0]
+
+  inspect(root_grid.height, content="100")
+  inspect(outer_flex.height, content="100")
+  inspect(inner_grid.height, content="100")
+  inspect(inner_item.height, content="100")
+}
+
+///|
+test "wpt_grid_child_percent_basis_resize_uses_definite_track_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body {
+    #|  margin: 0;
+    #|  font-family: monospace;
+    #|  font-size: 16px;
+    #|  line-height: 1.2;
+    #|}
+    #|.grid-container {
+    #|  display: grid;
+    #|  width: 100px;
+    #|}
+    #|.scroll-outer {
+    #|  overflow: hidden;
+    #|  height: 100%;
+    #|  max-height: 100px;
+    #|}
+    #|.scroll-inner {
+    #|  overflow: scroll;
+    #|  height: 100%;
+    #|}
+    #|</style>
+    #|<div class="grid-container">
+    #|  <div class="grid-item">
+    #|    <div class="scroll-outer">
+    #|      <div class="scroll-inner">
+    #|        <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div>
+    #|        <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+    #|        <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div>
+    #|        <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+    #|      </div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let node_tree = @renderer.render_to_node(html_str, ctx)
+  let node_grid = node_tree.children[0]
+  let node_grid_item = node_grid.children[0]
+  let node_scroll_outer = node_grid_item.children[0]
+  let node_scroll_inner = node_scroll_outer.children[0]
+  inspect(node_scroll_outer.style.max_height, content="Length(100)")
+  inspect(node_scroll_inner.style.height, content="Percent(1)")
+  inspect(node_scroll_inner.children[0].style.height, content="Auto")
+
+  let layout = @renderer.render(html_str, ctx)
+  let grid = layout.children[0]
+  let grid_item = grid.children[0]
+  let scroll_outer = grid_item.children[0]
+  let scroll_inner = scroll_outer.children[0]
+  let first_line = scroll_inner.children[0]
+  let second_line = scroll_inner.children[1]
+
+  inspect(first_line.height, content="19.2")
+  inspect(second_line.y, content="19.2")
+  inspect(grid.height, content="100")
+  inspect(grid_item.height, content="100")
+  inspect(scroll_outer.height, content="100")
+  inspect(scroll_inner.height, content="100")
+}
