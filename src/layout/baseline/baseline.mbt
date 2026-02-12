@@ -81,6 +81,19 @@ fn first_in_flow_child_baseline(
 }
 
 ///|
+fn resolve_top_inset(style : @style.Style) -> Double {
+  let padding_top = match style.padding.top {
+    @types.Length(v) => v
+    _ => 0.0
+  }
+  let border_top = match style.border.top {
+    @types.Length(v) => v
+    _ => 0.0
+  }
+  padding_top + border_top
+}
+
+///|
 /// Compute the baseline of a node for baseline alignment
 /// For text nodes: baseline = font_size * 0.8 (typical ascent ratio)
 /// For other leaf nodes: baseline = height (bottom of box)
@@ -149,10 +162,23 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
             None => node_height
           }
       }
-    @types.Block =>
-      // For Block containers with children: use first in-flow child's baseline
+    @types.Block | @types.FlowRoot | @types.Grid | @types.InlineGrid =>
+      // For block-like containers with children: use first in-flow child's baseline
       match first_in_flow_child_baseline(children, node_height) {
         Some(child_baseline) => child_baseline
+        None => node_height
+      }
+    @types.Table
+    | @types.InlineTable
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableRow
+    | @types.TableCell
+    | @types.TableCaption =>
+      // Table wrappers contribute top inset before descendants' baseline.
+      match first_in_flow_child_baseline(children, node_height) {
+        Some(child_baseline) => resolve_top_inset(style) + child_baseline
         None => node_height
       }
     @types.Inline =>

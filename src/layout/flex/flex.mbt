@@ -1939,7 +1939,9 @@ fn compute_internal(
             // Inline-level flex (InlineFlex) should use content-based sizing
             // Root-level flex should use content-based sizing (taffy behavior)
             @types.Definite =>
-              if is_block_level && not(is_root) {
+              if is_block_level &&
+                not(is_root) &&
+                not(style.writing_mode.is_vertical()) {
                 let fill_width = if use_available_width {
                   available_width
                 } else {
