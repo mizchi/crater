@@ -60,6 +60,8 @@ pub fn parse_grid_line_shorthand(String) -> (@types.GridPlacement, @types.GridPl
 
 pub fn parse_grid_placement(String) -> @types.GridPlacement
 
+pub fn parse_grid_template_shorthand(String) -> (Array[@types.TrackSizingFunction], Array[@types.TrackSizingFunction])?
+
 pub fn parse_grid_template_tracks(String) -> Array[@types.TrackSizingFunction]
 
 pub fn parse_integer(String) -> Int

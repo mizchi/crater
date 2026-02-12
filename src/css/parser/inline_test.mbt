@@ -208,6 +208,15 @@ test "grid-template-columns repeat" {
 }
 
 ///|
+test "grid-template shorthand rows and columns" {
+  let style = parse_inline_style("grid-template: 100px / 200px")
+  inspect(style.grid_template_rows.length(), content="1")
+  inspect(style.grid_template_rows[0], content="Length(100)")
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(style.grid_template_columns[0], content="Length(200)")
+}
+
+///|
 test "flex-flow row wrap" {
   let style = parse_inline_style("flex-flow: row wrap")
   inspect(style.flex_direction, content="Row")

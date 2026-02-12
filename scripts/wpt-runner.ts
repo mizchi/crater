@@ -315,9 +315,19 @@ function compareLayouts(
   options: { ignoreTextNodes?: boolean; ignoreBoxModel?: boolean } = {}
 ): Mismatch[] {
   const mismatches: Mismatch[] = [];
+  const bothZeroSized =
+    Math.abs(browser.width) < 0.5 &&
+    Math.abs(browser.height) < 0.5 &&
+    Math.abs(crater.width) < 0.5 &&
+    Math.abs(crater.height) < 0.5;
 
   const props: (keyof LayoutNode)[] = ['x', 'y', 'width', 'height'];
   for (const prop of props) {
+    // display:none descendants are zero-sized; browser getBoundingClientRect() can
+    // report viewport-origin coordinates for them, so x/y are not comparable.
+    if (bothZeroSized && (prop === 'x' || prop === 'y')) {
+      continue;
+    }
     const bVal = browser[prop] as number;
     const cVal = crater[prop] as number;
     const diff = Math.abs(bVal - cVal);

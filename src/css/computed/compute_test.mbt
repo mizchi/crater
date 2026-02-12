@@ -242,6 +242,18 @@ test "compute_inline grid-template" {
 }
 
 ///|
+test "compute_inline grid-template shorthand" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "display: grid; grid-template: 100px / 200px", ctx,
+  )
+  inspect(style.grid_template_rows.length(), content="1")
+  inspect(style.grid_template_rows[0], content="Length(100)")
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(style.grid_template_columns[0], content="Length(200)")
+}
+
+///|
 test "font-size parsing" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("font-size: 20px", ctx)

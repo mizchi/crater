@@ -485,6 +485,24 @@ pub fn parse_grid_template_tracks(
 }
 
 ///|
+/// Parse grid-template shorthand: `<rows> / <columns>`
+pub fn parse_grid_template_shorthand(
+  value : String,
+) -> (Array[@types.TrackSizingFunction], Array[@types.TrackSizingFunction])? {
+  let v = value.trim()
+  if not(v.contains("/")) {
+    return None
+  }
+  let parts = v.split("/").map(fn(s) { s.trim().to_string() }).collect()
+  if parts.length() != 2 {
+    return None
+  }
+  let rows = parse_grid_template_tracks(parts[0])
+  let cols = parse_grid_template_tracks(parts[1])
+  Some((rows, cols))
+}
+
+///|
 /// Parse aspect-ratio value
 pub fn parse_aspect_ratio(value : String) -> Double? {
   let v = value.trim()

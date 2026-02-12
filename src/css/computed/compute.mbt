@@ -1089,6 +1089,14 @@ fn apply_property(
       builder.grid_template_columns = parse_grid_template_tracks(value)
     "grid-template-rows" =>
       builder.grid_template_rows = parse_grid_template_tracks(value)
+    "grid-template" =>
+      match parse_grid_template_shorthand(value) {
+        Some((rows, cols)) => {
+          builder.grid_template_rows = rows
+          builder.grid_template_columns = cols
+        }
+        None => ()
+      }
     // Grid item placement
     "grid-column-start" =>
       builder.grid_column_start = parse_grid_placement(value)

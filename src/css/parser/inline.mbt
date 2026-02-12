@@ -990,6 +990,29 @@ fn parse_grid_template_tracks(
 }
 
 ///|
+/// Parse grid-template shorthand: `<rows> / <columns>`
+fn parse_grid_template_shorthand(
+  tokens : ArrayView[@token.Token],
+) -> (Array[@types.TrackSizingFunction], Array[@types.TrackSizingFunction])? {
+  let mut slash_index = -1
+  for i = 0; i < tokens.length(); i = i + 1 {
+    match tokens[i] {
+      @token.Token::Delim('/') => {
+        slash_index = i
+        break
+      }
+      _ => ()
+    }
+  }
+  if slash_index < 0 {
+    return None
+  }
+  let rows = parse_grid_template_tracks(tokens[:slash_index])
+  let cols = parse_grid_template_tracks(tokens[slash_index + 1:])
+  Some((rows, cols))
+}
+
+///|
 /// Parse grid-template-columns or grid-template-rows from a raw string
 pub fn parse_grid_template_tracks_from_string(
   value : String,
@@ -1919,6 +1942,18 @@ fn apply_property(
   if property == "grid-template-rows" {
     let tracks = parse_grid_template_tracks(value_tokens)
     return { ..style, grid_template_rows: tracks }
+  }
+  // grid-template shorthand: <rows> / <columns>
+  if property == "grid-template" {
+    match parse_grid_template_shorthand(value_tokens) {
+      Some((rows, cols)) =>
+        return {
+          ..style,
+          grid_template_rows: rows,
+          grid_template_columns: cols,
+        }
+      None => ()
+    }
   }
   // contain
   if property == "contain" {
