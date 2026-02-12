@@ -90,12 +90,12 @@ fn to_layout_rect_dimension(
 }
 
 ///|
-fn to_layout_track(track : ContentTrack) -> @layout.ContentTrack {
+fn to_layout_track(track : ContentTrack) -> @layout_kernel.ContentTrack {
   { position: track.position, size: track.size, stretchable: track.stretchable }
 }
 
 ///|
-fn from_layout_track(track : @layout.ContentTrack) -> ContentTrack {
+fn from_layout_track(track : @layout_kernel.ContentTrack) -> ContentTrack {
   { position: track.position, size: track.size, stretchable: track.stretchable }
 }
 
@@ -121,7 +121,11 @@ pub fn compute_justify(
   free_space : Double,
   item_count : Int,
 ) -> (Double, Double) {
-  @layout.compute_justify(to_layout_alignment(justify), free_space, item_count)
+  @layout_kernel.compute_justify(
+    to_layout_alignment(justify),
+    free_space,
+    item_count,
+  )
 }
 
 ///|
@@ -129,7 +133,7 @@ pub fn compute_align_offset(
   align : @types.Alignment,
   free_space : Double,
 ) -> Double {
-  @layout.compute_align_offset(to_layout_alignment(align), free_space)
+  @layout_kernel.compute_align_offset(to_layout_alignment(align), free_space)
 }
 
 ///|
@@ -138,7 +142,7 @@ pub fn resolve_flex_axis(
   vertical_writing : Bool,
   rtl : Bool,
 ) -> FlexAxis {
-  let axis = @layout.resolve_flex_axis(
+  let axis = @layout_kernel.resolve_flex_axis(
     to_layout_flex_direction(direction),
     vertical_writing,
     rtl,
@@ -152,32 +156,32 @@ pub fn resolve_flex_axis(
 
 ///|
 pub fn axis_main_start(is_row : Bool, rect : @types.Rect[Double]) -> Double {
-  @layout.axis_main_start(is_row, to_layout_rect_double(rect))
+  @layout_kernel.axis_main_start(is_row, to_layout_rect_double(rect))
 }
 
 ///|
 pub fn axis_main_end(is_row : Bool, rect : @types.Rect[Double]) -> Double {
-  @layout.axis_main_end(is_row, to_layout_rect_double(rect))
+  @layout_kernel.axis_main_end(is_row, to_layout_rect_double(rect))
 }
 
 ///|
 pub fn axis_cross_start(is_row : Bool, rect : @types.Rect[Double]) -> Double {
-  @layout.axis_cross_start(is_row, to_layout_rect_double(rect))
+  @layout_kernel.axis_cross_start(is_row, to_layout_rect_double(rect))
 }
 
 ///|
 pub fn axis_cross_end(is_row : Bool, rect : @types.Rect[Double]) -> Double {
-  @layout.axis_cross_end(is_row, to_layout_rect_double(rect))
+  @layout_kernel.axis_cross_end(is_row, to_layout_rect_double(rect))
 }
 
 ///|
 pub fn axis_main_sum(is_row : Bool, rect : @types.Rect[Double]) -> Double {
-  @layout.axis_main_sum(is_row, to_layout_rect_double(rect))
+  @layout_kernel.axis_main_sum(is_row, to_layout_rect_double(rect))
 }
 
 ///|
 pub fn axis_cross_sum(is_row : Bool, rect : @types.Rect[Double]) -> Double {
-  @layout.axis_cross_sum(is_row, to_layout_rect_double(rect))
+  @layout_kernel.axis_cross_sum(is_row, to_layout_rect_double(rect))
 }
 
 ///|
@@ -186,7 +190,7 @@ pub fn clamp_value(
   min_val : Double,
   max_val : Double,
 ) -> Double {
-  @layout.clamp_value(value, min_val, max_val)
+  @layout_kernel.clamp_value(value, min_val, max_val)
 }
 
 ///|
@@ -198,7 +202,7 @@ pub fn clamp_size(
   min_h : Double,
   max_h : Double,
 ) -> (Double, Double) {
-  @layout.clamp_size(width, height, min_w, max_w, min_h, max_h)
+  @layout_kernel.clamp_size(width, height, min_w, max_w, min_h, max_h)
 }
 
 ///|
@@ -212,7 +216,7 @@ pub fn clamp_size_with_box_min(
   box_min_w : Double,
   box_min_h : Double,
 ) -> (Double, Double) {
-  @layout.clamp_size_with_box_min(
+  @layout_kernel.clamp_size_with_box_min(
     width, height, style_min_w, max_w, style_min_h, max_h, box_min_w, box_min_h,
   )
 }
@@ -225,7 +229,7 @@ pub fn apply_aspect_ratio_after_constraints(
   width_has_constraint : Bool,
   height_has_constraint : Bool,
 ) -> (Double, Double) {
-  @layout.apply_aspect_ratio_after_constraints(
+  @layout_kernel.apply_aspect_ratio_after_constraints(
     width, height, aspect_ratio, width_has_constraint, height_has_constraint,
   )
 }
@@ -236,7 +240,7 @@ pub fn resolve_align_self(
   parent_align : @types.Alignment,
 ) -> @types.Alignment {
   from_layout_alignment(
-    @layout.resolve_align_self(
+    @layout_kernel.resolve_align_self(
       to_layout_align_self(align_self),
       to_layout_alignment(parent_align),
     ),
@@ -251,7 +255,7 @@ pub fn resolve_auto_margin_pair(
   fixed_end : Double,
   remaining_space : Double,
 ) -> (Double, Double) {
-  @layout.resolve_auto_margin_pair(
+  @layout_kernel.resolve_auto_margin_pair(
     start_is_auto, end_is_auto, fixed_start, fixed_end, remaining_space,
   )
 }
@@ -262,7 +266,7 @@ pub fn resolve_relative_inset_axis_offset(
   end : @types.Dimension,
   percent_context : Double?,
 ) -> Double {
-  @layout.resolve_relative_inset_axis_offset(
+  @layout_kernel.resolve_relative_inset_axis_offset(
     to_layout_dimension(start),
     to_layout_dimension(end),
     percent_context,
@@ -275,7 +279,7 @@ pub fn resolve_relative_inset_offsets(
   width_context : Double,
   height_context : Double?,
 ) -> (Double, Double) {
-  @layout.resolve_relative_inset_offsets(
+  @layout_kernel.resolve_relative_inset_offsets(
     to_layout_rect_dimension(inset),
     width_context,
     height_context,
@@ -290,7 +294,7 @@ pub fn compute_grid_self_alignment_offset(
   start_auto_margin : Bool,
   end_auto_margin : Bool,
 ) -> Double {
-  @layout.compute_grid_self_alignment_offset(
+  @layout_kernel.compute_grid_self_alignment_offset(
     to_layout_alignment(alignment),
     available_size,
     item_size,
@@ -310,7 +314,7 @@ pub fn compute_grid_absolute_self_position(
   start_inset_is_none : Bool,
   end_inset_is_none : Bool,
 ) -> Double {
-  @layout.compute_grid_absolute_self_position(
+  @layout_kernel.compute_grid_absolute_self_position(
     to_layout_align_self(align_self),
     base_position,
     area_start,
@@ -335,7 +339,7 @@ pub fn compute_inset_axis_position_with_auto_margin(
   area_size : Double,
   fallback_offset : Double,
 ) -> Double {
-  @layout.compute_inset_axis_position_with_auto_margin(
+  @layout_kernel.compute_inset_axis_position_with_auto_margin(
     start_inset, end_inset, margin_start, margin_end, margin_start_is_auto, margin_end_is_auto,
     child_size, area_start, area_size, fallback_offset,
   )
@@ -347,7 +351,7 @@ pub fn compute_align_self_offset(
   parent_align : @types.Alignment,
   free_space : Double,
 ) -> Double {
-  @layout.compute_align_self_offset(
+  @layout_kernel.compute_align_self_offset(
     to_layout_align_self(align_self),
     to_layout_alignment(parent_align),
     free_space,
@@ -360,11 +364,11 @@ pub fn align_content_tracks(
   container_size : Double,
   alignment : @types.Alignment,
 ) -> Array[ContentTrack] {
-  let layout_tracks : Array[@layout.ContentTrack] = []
+  let layout_tracks : Array[@layout_kernel.ContentTrack] = []
   for i = 0; i < tracks.length(); i = i + 1 {
     layout_tracks.push(to_layout_track(tracks[i]))
   }
-  let aligned = @layout.align_content_tracks(
+  let aligned = @layout_kernel.align_content_tracks(
     layout_tracks,
     container_size,
     to_layout_alignment(alignment),
