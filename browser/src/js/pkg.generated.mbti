@@ -34,18 +34,21 @@ pub impl Show for JsError
 pub struct JsContext {
   dom : @dom.DomTree
   mut logs : Array[String]
+  runtime : &JsRuntime
 }
 pub fn JsContext::clear_logs(Self) -> Unit
 pub fn JsContext::execute(Self, String) -> JsResult raise JsError
 pub fn JsContext::get_dom(Self) -> @dom.DomTree
 pub fn JsContext::get_logs(Self) -> Array[String]
 pub fn JsContext::new(@dom.DomTree) -> Self
+pub fn JsContext::new_with_runtime(@dom.DomTree, &JsRuntime) -> Self
 
 pub struct JsResult {
   value : String
   logs : Array[String]
   success : Bool
 }
+pub fn JsResult::new(String, Array[String], Bool) -> Self
 
 pub struct ScriptExecutor {
   dom : @dom.DomTree
@@ -59,4 +62,8 @@ pub fn ScriptExecutor::new(@dom.DomTree) -> Self
 // Type aliases
 
 // Traits
+pub(open) trait JsRuntime {
+  init(Self) -> Unit
+  execute(Self, @dom.DomTree, String) -> JsResult raise JsError
+}
 

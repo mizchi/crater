@@ -6717,8 +6717,22 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #| }
 
 ///|
-/// Initialize JS runtime with QuickJS
-pub fn init_js_runtime() -> Unit {
+/// QuickJS runtime implementation
+priv struct QuickJsRuntime {
+  _unused : Int
+}
+
+///|
+let quickjs_runtime : QuickJsRuntime = { _unused: 0 }
+
+///|
+fn default_js_runtime() -> &JsRuntime {
+  quickjs_runtime as &JsRuntime
+}
+
+///|
+impl JsRuntime for QuickJsRuntime with init(self : QuickJsRuntime) -> Unit {
+  let _ = self
   if not(runtime_state.initialized) {
     let success = quickjs_init()
     if success {
@@ -6728,17 +6742,17 @@ pub fn init_js_runtime() -> Unit {
 }
 
 ///|
-/// Execute JavaScript code with DOM bindings
-pub fn JsContext::execute(
-  self : JsContext,
+impl JsRuntime for QuickJsRuntime with execute(
+  self : QuickJsRuntime,
+  dom : @dom.DomTree,
   code : String,
 ) -> JsResult raise JsError {
-  init_js_runtime()
-  let context_id = register_context(self.dom)
+  let _ = self
+  let context_id = register_context(dom)
 
   // Generate DOM initialization code from DomTree
   // This populates the mock DOM with actual HTML content
-  let dom_init_code = create_dom_init_code(self.dom)
+  let dom_init_code = create_dom_init_code(dom)
 
   // Execute: setupCode -> dom_init_code -> user_code
   let full_code = dom_init_code + "\n" + code
@@ -6748,19 +6762,18 @@ pub fn JsContext::execute(
   let (result, dom_ops) = parse_js_result_with_ops(result_json)
 
   // Apply DOM operations to actual DomTree
-  apply_dom_ops(self.dom, dom_ops)
+  apply_dom_ops(dom, dom_ops)
 
   // Cleanup
   unregister_context(context_id)
 
-  // Add logs to context
-  for log in result.logs {
-    self.logs.push(log)
-  }
-  if not(result.success) {
-    raise ExecutionError(result.value)
-  }
   result
+}
+
+///|
+/// Initialize JS runtime with QuickJS
+pub fn init_js_runtime() -> Unit {
+  quickjs_runtime.init()
 }
 
 ///|
