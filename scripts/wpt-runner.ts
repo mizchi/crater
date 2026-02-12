@@ -21,6 +21,7 @@ const CSS_MODULES: string[] = wptConfig.modules;
 const INCLUDE_PREFIXES: string[] = wptConfig.includePrefixes;
 
 const WPT_DIR = 'wpt/css';
+const WPT_ROOT = path.join(process.cwd(), 'wpt');
 
 // Types
 interface Rect {
@@ -95,6 +96,72 @@ function getTestFiles(moduleName: string): string[] {
 /**
  * Inline external CSS files into HTML
  */
+function isExternalResourceUrl(url: string): boolean {
+  return url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('//') ||
+    url.startsWith('data:') ||
+    url.startsWith('blob:');
+}
+
+function stripQueryAndHash(url: string): string {
+  return url.split('#')[0].split('?')[0];
+}
+
+function resolveLocalResourcePath(baseDir: string, rawRef: string): string | null {
+  if (isExternalResourceUrl(rawRef)) return null;
+  const ref = stripQueryAndHash(rawRef.trim());
+  if (!ref) return null;
+  if (ref.startsWith('/')) {
+    return path.join(WPT_ROOT, ref.slice(1));
+  }
+  return path.resolve(baseDir, ref);
+}
+
+function mimeTypeFromPath(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+  case '.css': return 'text/css';
+  case '.ttf': return 'font/ttf';
+  case '.otf': return 'font/otf';
+  case '.woff': return 'font/woff';
+  case '.woff2': return 'font/woff2';
+  case '.png': return 'image/png';
+  case '.jpg':
+  case '.jpeg': return 'image/jpeg';
+  case '.gif': return 'image/gif';
+  case '.svg': return 'image/svg+xml';
+  default: return 'application/octet-stream';
+  }
+}
+
+function inlineCssAssetUrls(cssContent: string, cssPath: string): string {
+  const cssDir = path.dirname(cssPath);
+  const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|([^'")\s]+))\s*\)/gi;
+  return cssContent.replace(cssUrlRegex, (match, g1, g2, g3) => {
+    const assetRef = (g1 || g2 || g3 || '').trim();
+    if (!assetRef || isExternalResourceUrl(assetRef)) return match;
+
+    const assetPath = resolveLocalResourcePath(cssDir, assetRef);
+    if (!assetPath || !fs.existsSync(assetPath)) return match;
+    const ext = path.extname(assetPath).toLowerCase();
+    // Keep font loading behavior unchanged from previous runner
+    // to avoid introducing font-metric drift versus Crater.
+    if (ext === '.ttf' || ext === '.otf' || ext === '.woff' || ext === '.woff2') {
+      return match;
+    }
+
+    try {
+      const bytes = fs.readFileSync(assetPath);
+      const mime = mimeTypeFromPath(assetPath);
+      const encoded = bytes.toString('base64');
+      return `url("data:${mime};base64,${encoded}")`;
+    } catch {
+      return match;
+    }
+  });
+}
+
 function inlineExternalCSS(html: string, htmlPath: string): string {
   const htmlDir = path.dirname(htmlPath);
   const linkRegex = /<link\s+[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi;
@@ -104,15 +171,17 @@ function inlineExternalCSS(html: string, htmlPath: string): string {
     if (!hrefMatch) return match;
 
     const href = hrefMatch[1];
-    if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
+    if (isExternalResourceUrl(href)) {
       return match;
     }
 
-    const cssPath = path.resolve(htmlDir, href);
+    const cssPath = resolveLocalResourcePath(htmlDir, href);
+    if (!cssPath) return match;
     try {
       if (fs.existsSync(cssPath)) {
         const cssContent = fs.readFileSync(cssPath, 'utf-8');
-        return `<style>/* Inlined from ${href} */\n${cssContent}</style>`;
+        const inlinedCss = inlineCssAssetUrls(cssContent, cssPath);
+        return `<style>/* Inlined from ${href} */\n${inlinedCss}</style>`;
       }
     } catch {}
     return `<!-- CSS not found: ${href} -->`;
@@ -198,7 +267,9 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
       return Object.assign({}, layout, { x: 0, y: 0 });
     }
 
-    const testElement = document.getElementById('test') || document.getElementById('container');
+    const testElement = document.getElementById('test') ||
+      document.getElementById('container') ||
+      document.getElementById('target');
     if (testElement) {
       return normalizeRoot(extractLayout(testElement));
     }
@@ -256,7 +327,8 @@ function getCraterLayout(htmlPath: string): LayoutNode {
   }
 
   const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
-    findNodeById(layout, 'div#container') || findNodeById(layout, '#container');
+    findNodeById(layout, 'div#container') || findNodeById(layout, '#container') ||
+    findNodeById(layout, 'div#target') || findNodeById(layout, '#target');
   if (testElement) return normalizeRoot(testElement);
 
   const gridElement = findNodeByClass(layout, 'grid');

@@ -89,6 +89,12 @@ test "resolve_align_self maps auto to parent alignment" {
 }
 
 ///|
+test "resolve_align_self keeps stretch from parent" {
+  let resolved = resolve_align_self(@types.AlignSelf::Auto, @types.Stretch)
+  assert_eq(resolved, @types.Stretch)
+}
+
+///|
 test "resolve_align_self maps center explicitly" {
   let resolved = resolve_align_self(@types.AlignSelf::Center, @types.Start)
   assert_eq(resolved, @types.Center)
