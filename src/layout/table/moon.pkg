@@ -1,12 +1,13 @@
 import {
+  "mizchi/crater/core",
   "mizchi/crater/types",
   "mizchi/crater/style",
   "mizchi/crater/layout/node",
 }
 
-import "test" {
+import {
   "mizchi/crater/layout/dispatch",
-}
+} for "test"
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

@@ -1911,49 +1911,15 @@ fn compute_with_collapse(
     // (Static and Relative both apply inset as offset from flow position)
     let (final_x, final_y) = if child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed {
-      let inset = child_style.inset
-      // X offset: left takes precedence over right
-      // Percentages resolve against containing block width
-      let x_offset = match inset.left {
-        @types.Length(l) => l
-        @types.Percent(p) => box_width * p
-        @types.Auto =>
-          match inset.right {
-            @types.Length(r) => -r
-            @types.Percent(p) => -(box_width * p)
-            @types.Auto
-            | @types.MinContent
-            | @types.MaxContent
-            | @types.FitContent(_) => 0.0
-          }
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
+      let height_context = match child_available_height {
+        Some(h) => Some(h + padding.vertical_sum() + border.vertical_sum())
+        None => None
       }
-      // Y offset: top takes precedence over bottom
-      // CSS spec: percentages for top/bottom resolve against containing block HEIGHT
-      // If height is auto/indefinite, percentage resolves to 0
-      let y_offset = match inset.top {
-        @types.Length(t) => t
-        @types.Percent(p) =>
-          match child_available_height {
-            Some(h) => (h + padding.vertical_sum() + border.vertical_sum()) * p
-            None => 0.0 // Height is auto, percentage resolves to 0
-          }
-        @types.Auto =>
-          match inset.bottom {
-            @types.Length(b) => -b
-            @types.Percent(p) =>
-              match child_available_height {
-                Some(h) =>
-                  -((h + padding.vertical_sum() + border.vertical_sum()) * p)
-                None => 0.0
-              }
-            @types.Auto
-            | @types.MinContent
-            | @types.MaxContent
-            | @types.FitContent(_) => 0.0
-          }
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-      }
+      let (x_offset, y_offset) = @core.resolve_relative_inset_offsets(
+        child_style.inset,
+        box_width,
+        height_context,
+      )
       (child_x + x_offset, child_y + y_offset)
     } else {
       (child_x, child_y)
@@ -2686,55 +2652,10 @@ fn layout_fixed_child(
     child_height
   }
 
-  // Check if margins are Auto (for centering behavior)
-  let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
-  let margin_right_is_auto = @absolute.is_margin_auto(child_style.margin.right)
-  let margin_top_is_auto = @absolute.is_margin_auto(child_style.margin.top)
-  let margin_bottom_is_auto = @absolute.is_margin_auto(
-    child_style.margin.bottom,
+  // Calculate position relative to viewport (0, 0), including margin:auto behavior
+  let (child_x, child_y) = @absolute.compute_position_with_margin_auto(
+    params, child_style, child_width, child_height, 0.0, 0.0, viewport_width, viewport_height,
   )
-
-  // Calculate position relative to viewport (0, 0)
-  let child_x = match (params.inset_left, params.inset_right) {
-    (Some(l), Some(r)) =>
-      if margin_left_is_auto && margin_right_is_auto {
-        let available = viewport_width - l - r - child_width
-        if available >= 0.0 {
-          l + available / 2.0
-        } else {
-          l
-        }
-      } else if margin_left_is_auto {
-        viewport_width - child_width - r - params.margin_right
-      } else if margin_right_is_auto {
-        l + params.margin_left
-      } else {
-        l + params.margin_left
-      }
-    (Some(l), None) => l + params.margin_left
-    (None, Some(r)) => viewport_width - child_width - r - params.margin_right
-    (None, None) => params.margin_left // Default to 0 + margin
-  }
-  let child_y = match (params.inset_top, params.inset_bottom) {
-    (Some(t), Some(b)) =>
-      if margin_top_is_auto && margin_bottom_is_auto {
-        let available = viewport_height - t - b - child_height
-        if available >= 0.0 {
-          t + available / 2.0
-        } else {
-          t
-        }
-      } else if margin_top_is_auto {
-        viewport_height - child_height - b - params.margin_bottom
-      } else if margin_bottom_is_auto {
-        t + params.margin_top
-      } else {
-        t + params.margin_top
-      }
-    (Some(t), None) => t + params.margin_top
-    (None, Some(b)) => viewport_height - child_height - b - params.margin_bottom
-    (None, None) => params.margin_top // Default to 0 + margin
-  }
   let child_margin = @types.resolve_rect(child_style.margin, viewport_width)
   {
     id: child.id,

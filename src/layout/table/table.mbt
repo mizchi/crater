@@ -62,32 +62,11 @@ fn calculate_relative_offset(
   if style.position != @types.Relative {
     return (0.0, 0.0)
   }
-  let inset = style.inset
-  // X offset: left takes precedence over right
-  let x_offset = match inset.left {
-    @types.Length(l) => l
-    @types.Percent(p) => container_width * p
-    @types.Auto =>
-      match inset.right {
-        @types.Length(r) => -r
-        @types.Percent(p) => -(container_width * p)
-        _ => 0.0
-      }
-    _ => 0.0
-  }
-  // Y offset: top takes precedence over bottom
-  let y_offset = match inset.top {
-    @types.Length(t) => t
-    @types.Percent(p) => container_height * p
-    @types.Auto =>
-      match inset.bottom {
-        @types.Length(b) => -b
-        @types.Percent(p) => -(container_height * p)
-        _ => 0.0
-      }
-    _ => 0.0
-  }
-  (x_offset, y_offset)
+  @core.resolve_relative_inset_offsets(
+    style.inset,
+    container_width,
+    Some(container_height),
+  )
 }
 
 ///|

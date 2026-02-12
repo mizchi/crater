@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/double",
+  "mizchi/crater/core",
   "mizchi/crater/types",
   "mizchi/crater/style",
   "mizchi/crater/layout/node",
@@ -10,9 +11,9 @@ import {
   "mizchi/crater/layout/table",
 }
 
-import "test" {
+import {
   "mizchi/crater/css/parser",
-}
+} for "test"
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

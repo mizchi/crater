@@ -1421,22 +1421,14 @@ fn compute_grid_layout_internal(
     // Determine if item should stretch based on alignment
     // This is needed for table children to know whether to use shrink-to-fit or fill available
     let child_style = child.style
-    let justify : @types.Alignment = match child_style.justify_self {
-      @types.AlignSelf::Auto => style.justify_items
-      @types.AlignSelf::Start => @types.Alignment::Start
-      @types.AlignSelf::End => @types.Alignment::End
-      @types.AlignSelf::Center => @types.Alignment::Center
-      @types.AlignSelf::Stretch => @types.Alignment::Stretch
-      @types.AlignSelf::Baseline => @types.Alignment::Baseline
-    }
-    let align : @types.Alignment = match child_style.align_self {
-      @types.AlignSelf::Auto => style.align_items
-      @types.AlignSelf::Start => @types.Alignment::Start
-      @types.AlignSelf::End => @types.Alignment::End
-      @types.AlignSelf::Center => @types.Alignment::Center
-      @types.AlignSelf::Stretch => @types.Alignment::Stretch
-      @types.AlignSelf::Baseline => @types.Alignment::Baseline
-    }
+    let justify : @types.Alignment = @core.resolve_align_self(
+      child_style.justify_self,
+      style.justify_items,
+    )
+    let align : @types.Alignment = @core.resolve_align_self(
+      child_style.align_self,
+      style.align_items,
+    )
     let width_is_auto = match child_style.width {
       @types.Auto => true
       _ => false
@@ -1701,90 +1693,23 @@ fn apply_content_alignment(
   if tracks.length() == 0 {
     return
   }
-
-  // Calculate total track size (including gaps already baked in)
-  let last_track = tracks[tracks.length() - 1]
-  let total_track_size = last_track.position + last_track.size
-  let free_space = container_size - total_track_size
-  let track_count = tracks.length()
-  let effective_indices : Array[Int] = []
-  for i = 0; i < track_count; i = i + 1 {
-    if tracks[i].size > 0.0 {
-      effective_indices.push(i)
-    }
+  let core_tracks : Array[@core.ContentTrack] = []
+  for track in tracks {
+    core_tracks.push({
+      position: track.position,
+      size: track.size,
+      stretchable: track.stretchable,
+    })
   }
-  let effective_count = effective_indices.length()
-  if alignment == @types.Stretch {
-    // Only distribute positive free_space
-    if free_space <= 0.0 {
-      return
-    }
-    // Distribute free_space to stretchable tracks (expand their size)
-    let mut stretchable_count = 0
-    for i = 0; i < track_count; i = i + 1 {
-      if tracks[i].stretchable {
-        stretchable_count = stretchable_count + 1
-      }
-    }
-    if stretchable_count > 0 {
-      let extra_per_track = free_space / stretchable_count.to_double()
-      let mut accumulated_offset = 0.0
-      for i = 0; i < track_count; i = i + 1 {
-        let track = tracks[i]
-        if track.stretchable {
-          tracks[i] = {
-            position: track.position + accumulated_offset,
-            size: track.size + extra_per_track,
-            stretchable: track.stretchable,
-          }
-          accumulated_offset = accumulated_offset + extra_per_track
-        } else {
-          tracks[i] = {
-            position: track.position + accumulated_offset,
-            size: track.size,
-            stretchable: track.stretchable,
-          }
-        }
-      }
-    }
-    return
-  }
-
-  let distribution_item_count = match alignment {
-    @types.SpaceBetween | @types.SpaceAround | @types.SpaceEvenly =>
-      effective_count
-    _ => track_count
-  }
-  let (start_offset, gap_between_tracks) = @core.compute_justify(
-    alignment, free_space, distribution_item_count,
+  let aligned = @core.align_content_tracks(
+    core_tracks, container_size, alignment,
   )
-  match alignment {
-    @types.SpaceBetween | @types.SpaceAround | @types.SpaceEvenly =>
-      // Keep existing behavior: only non-zero tracks participate in space distribution.
-      for j = 0; j < effective_count; j = j + 1 {
-        let i = effective_indices[j]
-        let track = tracks[i]
-        tracks[i] = {
-          position: track.position +
-          start_offset +
-          gap_between_tracks * j.to_double(),
-          size: track.size,
-          stretchable: track.stretchable,
-        }
-      }
-    _ => {
-      // Start/FlexStart/Baseline -> no shift.
-      if start_offset == 0.0 {
-        return
-      }
-      for i = 0; i < track_count; i = i + 1 {
-        let track = tracks[i]
-        tracks[i] = {
-          position: track.position + start_offset,
-          size: track.size,
-          stretchable: track.stretchable,
-        }
-      }
+  for i = 0; i < tracks.length(); i = i + 1 {
+    let track = aligned[i]
+    tracks[i] = {
+      position: track.position,
+      size: track.size,
+      stretchable: track.stretchable,
     }
   }
 }
@@ -4371,23 +4296,15 @@ fn apply_alignment(
 
   // Get effective alignment
   // In Taffy, align_self applies to both axes when justify_self is not specified
-  let align : @types.Alignment = match child_style.align_self {
-    @types.AlignSelf::Auto => container_style.align_items
-    @types.AlignSelf::Start => @types.Alignment::Start
-    @types.AlignSelf::End => @types.Alignment::End
-    @types.AlignSelf::Center => @types.Alignment::Center
-    @types.AlignSelf::Stretch => @types.Alignment::Stretch
-    @types.AlignSelf::Baseline => @types.Alignment::Baseline
-  }
+  let align : @types.Alignment = @core.resolve_align_self(
+    child_style.align_self,
+    container_style.align_items,
+  )
   // Use justify_self for horizontal alignment
-  let justify : @types.Alignment = match child_style.justify_self {
-    @types.AlignSelf::Auto => container_style.justify_items
-    @types.AlignSelf::Start => @types.Alignment::Start
-    @types.AlignSelf::End => @types.Alignment::End
-    @types.AlignSelf::Center => @types.Alignment::Center
-    @types.AlignSelf::Stretch => @types.Alignment::Stretch
-    @types.AlignSelf::Baseline => @types.Alignment::Baseline
-  }
+  let justify : @types.Alignment = @core.resolve_align_self(
+    child_style.justify_self,
+    container_style.justify_items,
+  )
 
   // Check if aspect_ratio constrains dimensions
   let has_aspect_ratio = match child_style.aspect_ratio {
@@ -4517,7 +4434,6 @@ fn apply_alignment(
     cell_width,
     0.0,
   )
-  let resolved_min_width = max(style_min_width, child_min_from_box)
   let resolved_max_width = resolve_dimension(
     child_style.max_width,
     cell_width,
@@ -4528,130 +4444,52 @@ fn apply_alignment(
     cell_height,
     0.0,
   )
-  let resolved_min_height = max(style_min_height, child_min_height_from_box)
   let resolved_max_height = resolve_dimension(
     child_style.max_height,
     cell_height,
     1.0e10,
   )
 
-  // Clamp: min <= size <= max, but min always wins if min > max
-  if item_width > resolved_max_width {
-    item_width = resolved_max_width
-  }
-  if item_width < resolved_min_width {
-    item_width = resolved_min_width
-  }
-  if item_height > resolved_max_height {
-    item_height = resolved_max_height
-  }
-  if item_height < resolved_min_height {
-    item_height = resolved_min_height
-  }
+  let (clamped_width, clamped_height) = @core.clamp_size_with_box_min(
+    item_width, item_height, style_min_width, resolved_max_width, style_min_height,
+    resolved_max_height, child_min_from_box, child_min_height_from_box,
+  )
+  item_width = clamped_width
+  item_height = clamped_height
 
   // Calculate remaining space for auto margins
   let remaining_width = available_width - item_width
   let remaining_height = available_height - item_height
 
   // Calculate auto margins
-  let (final_margin_left, final_margin_right) = if margin_left_is_auto &&
-    margin_right_is_auto {
-    // Both auto: split remaining space evenly
-    let auto_margin = if remaining_width > 0.0 {
-      remaining_width / 2.0
-    } else {
-      0.0
-    }
-    (auto_margin, auto_margin)
-  } else if margin_left_is_auto {
-    // Only left auto: absorb all remaining space
-    let auto_margin = if remaining_width > 0.0 { remaining_width } else { 0.0 }
-    (auto_margin, fixed_margin_right)
-  } else if margin_right_is_auto {
-    // Only right auto: absorb all remaining space
-    let auto_margin = if remaining_width > 0.0 { remaining_width } else { 0.0 }
-    (fixed_margin_left, auto_margin)
-  } else {
-    (fixed_margin_left, fixed_margin_right)
-  }
-  let (final_margin_top, final_margin_bottom) = if margin_top_is_auto &&
-    margin_bottom_is_auto {
-    let auto_margin = if remaining_height > 0.0 {
-      remaining_height / 2.0
-    } else {
-      0.0
-    }
-    (auto_margin, auto_margin)
-  } else if margin_top_is_auto {
-    let auto_margin = if remaining_height > 0.0 {
-      remaining_height
-    } else {
-      0.0
-    }
-    (auto_margin, fixed_margin_bottom)
-  } else if margin_bottom_is_auto {
-    let auto_margin = if remaining_height > 0.0 {
-      remaining_height
-    } else {
-      0.0
-    }
-    (fixed_margin_top, auto_margin)
-  } else {
-    (fixed_margin_top, fixed_margin_bottom)
-  }
+  let (final_margin_left, final_margin_right) = @core.resolve_auto_margin_pair(
+    margin_left_is_auto, margin_right_is_auto, fixed_margin_left, fixed_margin_right,
+    remaining_width,
+  )
+  let (final_margin_top, final_margin_bottom) = @core.resolve_auto_margin_pair(
+    margin_top_is_auto, margin_bottom_is_auto, fixed_margin_top, fixed_margin_bottom,
+    remaining_height,
+  )
 
   // Calculate position based on alignment (auto margins override alignment)
-  let x_offset = if margin_left_is_auto || margin_right_is_auto {
-    0.0 // Auto margins handle positioning
-  } else {
-    match justify {
-      @types.Alignment::Start => 0.0
-      @types.Alignment::End => available_width - item_width
-      @types.Alignment::Center => (available_width - item_width) / 2.0
-      @types.Alignment::Stretch => 0.0
-      _ => 0.0
-    }
-  }
-  let y_offset = if margin_top_is_auto || margin_bottom_is_auto {
-    0.0 // Auto margins handle positioning
-  } else {
-    match align {
-      @types.Alignment::Start => 0.0
-      @types.Alignment::End => available_height - item_height
-      @types.Alignment::Center => (available_height - item_height) / 2.0
-      @types.Alignment::Stretch => 0.0
-      _ => 0.0
-    }
-  }
+  let x_offset = @core.compute_grid_self_alignment_offset(
+    justify, available_width, item_width, margin_left_is_auto, margin_right_is_auto,
+  )
+  let y_offset = @core.compute_grid_self_alignment_offset(
+    align, available_height, item_height, margin_top_is_auto, margin_bottom_is_auto,
+  )
 
   // Suppress unused variable warnings
   let _ = final_margin_right
   let _ = final_margin_bottom
 
   // Apply inset for relative positioning
-  // left takes precedence over right, top takes precedence over bottom
-  let inset_x = match child_style.inset.left {
-    @types.Length(v) => v
-    @types.Percent(p) => cell_width * p
-    @types.Auto =>
-      match child_style.inset.right {
-        @types.Length(r) => -r
-        @types.Percent(p) => -(cell_width * p)
-        _ => 0.0
-      }
-    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-  }
-  let inset_y = match child_style.inset.top {
-    @types.Length(v) => v
-    @types.Percent(p) => cell_height * p
-    @types.Auto =>
-      match child_style.inset.bottom {
-        @types.Length(b) => -b
-        @types.Percent(p) => -(cell_height * p)
-        _ => 0.0
-      }
-    @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-  }
+  // left/top take precedence over right/bottom.
+  let (inset_x, inset_y) = @core.resolve_relative_inset_offsets(
+    child_style.inset,
+    cell_width,
+    Some(cell_height),
+  )
   (
     cell_x + final_margin_left + x_offset + inset_x,
     cell_y + final_margin_top + y_offset + inset_y,
@@ -4856,34 +4694,26 @@ fn layout_absolute_child(
 
   // Apply align-self/justify-self for absolute children when insets are not specified
   // Grid absolute children use align-self/justify-self for positioning within grid area
-  let x = if params.inset_left is None && params.inset_right is None {
-    // No horizontal insets - apply justify-self
-    match style.justify_self {
-      @types.AlignSelf::End =>
-        area_left + area_width - final_width - params.margin_right
-      @types.AlignSelf::Center => area_left + (area_width - final_width) / 2.0
-      @types.AlignSelf::Auto
-      | @types.AlignSelf::Start
-      | @types.AlignSelf::Stretch
-      | @types.AlignSelf::Baseline => base_x
-    }
-  } else {
-    base_x
-  }
-  let y = if params.inset_top is None && params.inset_bottom is None {
-    // No vertical insets - apply align-self
-    match style.align_self {
-      @types.AlignSelf::End =>
-        area_top + area_height - final_height - params.margin_bottom
-      @types.AlignSelf::Center => area_top + (area_height - final_height) / 2.0
-      @types.AlignSelf::Auto
-      | @types.AlignSelf::Start
-      | @types.AlignSelf::Stretch
-      | @types.AlignSelf::Baseline => base_y
-    }
-  } else {
-    base_y
-  }
+  let x = @core.compute_grid_absolute_self_position(
+    style.justify_self,
+    base_x,
+    area_left,
+    area_width,
+    final_width,
+    params.margin_right,
+    params.inset_left is None,
+    params.inset_right is None,
+  )
+  let y = @core.compute_grid_absolute_self_position(
+    style.align_self,
+    base_y,
+    area_top,
+    area_height,
+    final_height,
+    params.margin_bottom,
+    params.inset_top is None,
+    params.inset_bottom is None,
+  )
   {
     id: child.id,
     x,

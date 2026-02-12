@@ -593,16 +593,12 @@ fn compute_min_content_flex_main_size(
 
   // Check if this flex container is row or column
   // Account for writing-mode: vertical modes swap row/column
-  let is_vertical_writing = style.writing_mode.is_vertical()
-  let direction_is_row = match style.flex_direction {
-    @types.Row | @types.RowReverse => true
-    @types.Column | @types.ColumnReverse => false
-  }
-  let child_is_row = if is_vertical_writing {
-    not(direction_is_row)
-  } else {
-    direction_is_row
-  }
+  let axis = @alignment.resolve_flex_axis(
+    style.flex_direction,
+    style.writing_mode.is_vertical(),
+    style.direction.is_rtl(),
+  )
+  let child_is_row = axis.is_row
 
   // Determine if we're computing along this container's main axis or cross axis
   let compute_main_axis = parent_is_row == child_is_row
@@ -868,16 +864,12 @@ fn compute_intrinsic_flex_main_size(
 
   // Check if this flex container is row or column
   // Account for writing-mode: vertical modes swap row/column
-  let is_vertical_writing = style.writing_mode.is_vertical()
-  let direction_is_row = match style.flex_direction {
-    @types.Row | @types.RowReverse => true
-    @types.Column | @types.ColumnReverse => false
-  }
-  let child_is_row = if is_vertical_writing {
-    not(direction_is_row)
-  } else {
-    direction_is_row
-  }
+  let axis = @alignment.resolve_flex_axis(
+    style.flex_direction,
+    style.writing_mode.is_vertical(),
+    style.direction.is_rtl(),
+  )
+  let child_is_row = axis.is_row
 
   // Determine if we're computing along this container's main axis or cross axis
   // parent_is_row = true means we want WIDTH
@@ -1814,30 +1806,13 @@ fn compute_internal(
   }
   let _ = width_is_length // silence unused warning for now
   let effective_direction = style.flex_direction
-  let direction_is_row = match effective_direction {
-    @types.Row | @types.RowReverse => true
-    @types.Column | @types.ColumnReverse => false
-  }
-  // XOR with vertical writing mode to get effective axis
-  let is_row = if is_vertical_writing {
-    not(direction_is_row)
-  } else {
-    direction_is_row
-  }
-  // Determine if flex items should be reversed
-  // For row direction with direction: rtl, the inline base direction is reversed
-  let direction_reverse = match effective_direction {
-    @types.RowReverse | @types.ColumnReverse => true
-    _ => false
-  }
-  // RTL affects only row direction (inline axis)
   let is_rtl = style.direction.is_rtl()
-  let is_reverse = if direction_is_row && is_rtl {
-    // RTL + row = reverse, RTL + row-reverse = normal (double negative)
-    not(direction_reverse)
-  } else {
-    direction_reverse
-  }
+  let axis = @alignment.resolve_flex_axis(
+    effective_direction, is_vertical_writing, is_rtl,
+  )
+  let direction_is_row = axis.direction_is_row
+  let is_row = axis.is_row
+  let is_reverse = axis.is_reverse
 
   // For main size, if container size is auto, we need special handling
   // min-height should only cause GROW (not SHRINK) when content < min
@@ -2444,16 +2419,8 @@ fn compute_internal(
           )
       }
     }
-    let margin_main = if is_row {
-      child_margin.left + child_margin.right
-    } else {
-      child_margin.top + child_margin.bottom
-    }
-    let margin_cross = if is_row {
-      child_margin.top + child_margin.bottom
-    } else {
-      child_margin.left + child_margin.right
-    }
+    let margin_main = @alignment.axis_main_sum(is_row, child_margin)
+    let margin_cross = @alignment.axis_cross_sum(is_row, child_margin)
 
     // Grid items in row flex containers should not exceed available main size.
     if is_row &&
@@ -3680,11 +3647,7 @@ fn compute_internal(
     let mut max_baseline = 0.0
     for item in line_items {
       // Baseline position from cross-start (including margin)
-      let cross_start_margin = if is_row {
-        item.margin.top
-      } else {
-        item.margin.left
-      }
+      let cross_start_margin = @alignment.axis_cross_start(is_row, item.margin)
       max_baseline = max(max_baseline, cross_start_margin + item.baseline)
     }
 
@@ -3736,14 +3699,7 @@ fn compute_internal(
       let raw_effective_align = if has_cross_auto_margin {
         @types.Alignment::Start // Auto margins will handle alignment
       } else {
-        match child.style.align_self {
-          @types.AlignSelf::Auto => style.align_items
-          @types.AlignSelf::Start => @types.Start
-          @types.AlignSelf::End => @types.End
-          @types.AlignSelf::Center => @types.Center
-          @types.AlignSelf::Stretch => @types.Stretch
-          @types.AlignSelf::Baseline => @types.Baseline
-        }
+        @alignment.resolve_align_self(child.style.align_self, style.align_items)
       }
       // For column flex, baseline alignment is not meaningful (cross axis is inline axis)
       // Treat baseline as flex-start per CSS Flexbox spec
@@ -3890,11 +3846,10 @@ fn compute_internal(
       } else {
         match effective_align {
           @types.Baseline => {
-            let cross_start_margin = if is_row {
-              item.margin.top
-            } else {
-              item.margin.left
-            }
+            let cross_start_margin = @alignment.axis_cross_start(
+              is_row,
+              item.margin,
+            )
             max_baseline - item.baseline - cross_start_margin
           }
           _ => {
@@ -3943,8 +3898,8 @@ fn compute_internal(
       } else {
         base_cross_align_offset
       }
-      let main_start = if is_row { item.margin.left } else { item.margin.top }
-      let cross_start = if is_row { item.margin.top } else { item.margin.left }
+      let main_start = @alignment.axis_main_start(is_row, item.margin)
+      let cross_start = @alignment.axis_cross_start(is_row, item.margin)
 
       // For is_reverse, calculate position from the end going backwards
       let effective_main_pos = if is_reverse {
@@ -3984,38 +3939,11 @@ fn compute_internal(
       let child_style = child.style
       let (child_x, child_y) = if child_style.position != @types.Absolute &&
         child_style.position != @types.Fixed {
-        // X offset: left takes precedence, otherwise use negative right
-        let x_offset = match child_style.inset.left {
-          @types.Length(v) => v
-          @types.Percent(p) => content_width * p
-          @types.Auto =>
-            match child_style.inset.right {
-              @types.Length(r) => -r
-              @types.Percent(p) => -(content_width * p)
-              _ => 0.0
-            }
-          @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-        }
-        // Y offset: top takes precedence, otherwise use negative bottom
-        let y_offset = match child_style.inset.top {
-          @types.Length(v) => v
-          @types.Percent(p) =>
-            match content_height {
-              Some(ch) => ch * p
-              None => 0.0
-            }
-          @types.Auto =>
-            match child_style.inset.bottom {
-              @types.Length(b) => -b
-              @types.Percent(p) =>
-                match content_height {
-                  Some(ch) => -(ch * p)
-                  None => 0.0
-                }
-              _ => 0.0
-            }
-          @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-        }
+        let (x_offset, y_offset) = @core.resolve_relative_inset_offsets(
+          child_style.inset,
+          content_width,
+          content_height,
+        )
         (base_x + x_offset, base_y + y_offset)
       } else {
         (base_x, base_y)
@@ -4732,55 +4660,17 @@ fn compute_internal(
       params.max_height,
     )
 
-    // Check if margins are Auto (for centering behavior)
-    let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
-    let margin_right_is_auto = @absolute.is_margin_auto(
-      child_style.margin.right,
+    // Calculate position relative to viewport, including margin:auto behavior
+    let (child_x, child_y) = @absolute.compute_position_with_margin_auto(
+      params,
+      child_style,
+      child_width,
+      child_height,
+      0.0,
+      0.0,
+      ctx.viewport_width,
+      ctx.viewport_height,
     )
-    let margin_top_is_auto = @absolute.is_margin_auto(child_style.margin.top)
-    let margin_bottom_is_auto = @absolute.is_margin_auto(
-      child_style.margin.bottom,
-    )
-
-    // Calculate position relative to viewport
-    let child_x = match (params.inset_left, params.inset_right) {
-      (Some(l), Some(r)) =>
-        if margin_left_is_auto && margin_right_is_auto {
-          let available = ctx.viewport_width - l - r - child_width
-          if available >= 0.0 {
-            l + available / 2.0
-          } else {
-            l
-          }
-        } else if margin_left_is_auto {
-          ctx.viewport_width - child_width - r - params.margin_right
-        } else {
-          l + params.margin_left
-        }
-      (Some(l), None) => l + params.margin_left
-      (None, Some(r)) =>
-        ctx.viewport_width - child_width - r - params.margin_right
-      (None, None) => params.margin_left
-    }
-    let child_y = match (params.inset_top, params.inset_bottom) {
-      (Some(t), Some(b)) =>
-        if margin_top_is_auto && margin_bottom_is_auto {
-          let available = ctx.viewport_height - t - b - child_height
-          if available >= 0.0 {
-            t + available / 2.0
-          } else {
-            t
-          }
-        } else if margin_top_is_auto {
-          ctx.viewport_height - child_height - b - params.margin_bottom
-        } else {
-          t + params.margin_top
-        }
-      (Some(t), None) => t + params.margin_top
-      (None, Some(b)) =>
-        ctx.viewport_height - child_height - b - params.margin_bottom
-      (None, None) => params.margin_top
-    }
     // Use cached resolved rects
     let child_resolved = get_resolved_rects(
       child_style,
@@ -5161,14 +5051,10 @@ fn compute_line_cross_size(
   let mut has_baseline_item = false
   for item in items {
     // Determine effective alignment for this item
-    let effective_align = match item.align_self {
-      @types.AlignSelf::Auto => align_items
-      @types.AlignSelf::Baseline => @types.Baseline
-      @types.AlignSelf::Start => @types.Start
-      @types.AlignSelf::End => @types.End
-      @types.AlignSelf::Center => @types.Center
-      @types.AlignSelf::Stretch => @types.Stretch
-    }
+    let effective_align = @alignment.resolve_align_self(
+      item.align_self,
+      align_items,
+    )
 
     // Check for auto margins which override alignment
     let has_cross_auto_margin = if is_row {
@@ -5182,12 +5068,8 @@ fn compute_line_cross_size(
     if not(has_cross_auto_margin) && effective_align == @types.Baseline {
       has_baseline_item = true
       // For baseline items, calculate above and below baseline
-      let margin_start = if is_row { item.margin.top } else { item.margin.left }
-      let margin_end = if is_row {
-        item.margin.bottom
-      } else {
-        item.margin.right
-      }
+      let margin_start = @alignment.axis_cross_start(is_row, item.margin)
+      let margin_end = @alignment.axis_cross_end(is_row, item.margin)
       let baseline_above = margin_start + item.baseline
       let baseline_below = item_cross - item.baseline + margin_end
       max_baseline_above = max(max_baseline_above, baseline_above)

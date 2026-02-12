@@ -40,14 +40,7 @@ pub fn clamp_value(
   min_val : Double,
   max_val : Double,
 ) -> Double {
-  // First apply max constraint
-  let clamped = if value > max_val { max_val } else { value }
-  // Then apply min constraint (min wins if min > max)
-  if clamped < min_val {
-    min_val
-  } else {
-    clamped
-  }
+  @core.clamp_value(value, min_val, max_val)
 }
 
 ///|
@@ -247,30 +240,20 @@ pub fn apply_constraints_with_aspect_ratio(
   max_h : Double,
 ) -> (Double, Double) {
   // Apply min/max constraints
-  let clamped_width = clamp_value(width, min_w, max_w)
-  let clamped_height = clamp_value(height, min_h, max_h)
+  let (clamped_width, clamped_height) = @core.clamp_size(
+    width, height, min_w, max_w, min_h, max_h,
+  )
 
   // Re-apply aspect ratio after min/max constraints
-  match style.aspect_ratio {
-    Some(ar) if ar > 0.0 => {
-      let width_has_constraint = has_dimension_constraint(style, true)
-      let height_has_constraint = has_dimension_constraint(style, false)
-      if height_has_constraint && not(width_has_constraint) {
-        // Height is the driver, calculate width
-        (clamped_height * ar, clamped_height)
-      } else if not(height_has_constraint) && width_has_constraint {
-        // Width is the driver, calculate height
-        (clamped_width, clamped_width / ar)
-      } else if not(height_has_constraint) && not(width_has_constraint) {
-        // No constraints - use aspect ratio with width as driver
-        (clamped_width, clamped_width / ar)
-      } else {
-        // Both have constraints - aspect ratio cannot be applied after clamping
-        (clamped_width, clamped_height)
-      }
-    }
-    _ => (clamped_width, clamped_height)
-  }
+  let width_has_constraint = has_dimension_constraint(style, true)
+  let height_has_constraint = has_dimension_constraint(style, false)
+  @core.apply_aspect_ratio_after_constraints(
+    clamped_width,
+    clamped_height,
+    style.aspect_ratio,
+    width_has_constraint,
+    height_has_constraint,
+  )
 }
 
 ///|
@@ -285,28 +268,30 @@ pub fn compute_inset_position(
   area_width : Double,
   area_height : Double,
 ) -> (Double, Double) {
-  let area_right = area_left + area_width
-  let area_bottom = area_top + area_height
-
-  // Calculate x position
-  let x = match params.inset_left {
-    Some(l) => area_left + l + params.margin_left
-    None =>
-      match params.inset_right {
-        Some(r) => area_right - r - params.margin_right - child_width
-        None => area_left + params.margin_left // Default to start
-      }
-  }
-
-  // Calculate y position
-  let y = match params.inset_top {
-    Some(t) => area_top + t + params.margin_top
-    None =>
-      match params.inset_bottom {
-        Some(b) => area_bottom - b - params.margin_bottom - child_height
-        None => area_top + params.margin_top // Default to start
-      }
-  }
+  let x = @core.compute_inset_axis_position_with_auto_margin(
+    params.inset_left,
+    params.inset_right,
+    params.margin_left,
+    params.margin_right,
+    false,
+    false,
+    child_width,
+    area_left,
+    area_width,
+    0.0,
+  )
+  let y = @core.compute_inset_axis_position_with_auto_margin(
+    params.inset_top,
+    params.inset_bottom,
+    params.margin_top,
+    params.margin_bottom,
+    false,
+    false,
+    child_height,
+    area_top,
+    area_height,
+    0.0,
+  )
   (x, y)
 }
 
@@ -332,70 +317,34 @@ pub fn compute_position_with_margin_auto(
   area_width : Double,
   area_height : Double,
 ) -> (Double, Double) {
-  let area_right = area_left + area_width
-  let area_bottom = area_top + area_height
   let margin_left_is_auto = is_margin_auto(style.margin.left)
   let margin_right_is_auto = is_margin_auto(style.margin.right)
   let margin_top_is_auto = is_margin_auto(style.margin.top)
   let margin_bottom_is_auto = is_margin_auto(style.margin.bottom)
-
-  // Calculate x position with margin:auto support
-  let x = match params.inset_left {
-    Some(l) =>
-      match params.inset_right {
-        Some(r) => {
-          // Both insets specified - check for margin:auto centering
-          let available = area_width - l - r - child_width
-          if margin_left_is_auto && margin_right_is_auto && available > 0.0 {
-            // Center horizontally
-            area_left + l + available / 2.0
-          } else if margin_right_is_auto && available > 0.0 {
-            // Push to left
-            area_left + l + params.margin_left
-          } else if margin_left_is_auto && available > 0.0 {
-            // Push to right
-            area_right - r - child_width - params.margin_right
-          } else {
-            area_left + l + params.margin_left
-          }
-        }
-        None => area_left + l + params.margin_left
-      }
-    None =>
-      match params.inset_right {
-        Some(r) => area_right - r - params.margin_right - child_width
-        None => area_left + params.margin_left
-      }
-  }
-
-  // Calculate y position with margin:auto support
-  let y = match params.inset_top {
-    Some(t) =>
-      match params.inset_bottom {
-        Some(b) => {
-          // Both insets specified - check for margin:auto centering
-          let available = area_height - t - b - child_height
-          if margin_top_is_auto && margin_bottom_is_auto && available > 0.0 {
-            // Center vertically
-            area_top + t + available / 2.0
-          } else if margin_bottom_is_auto && available > 0.0 {
-            // Push to top
-            area_top + t + params.margin_top
-          } else if margin_top_is_auto && available > 0.0 {
-            // Push to bottom
-            area_bottom - b - child_height - params.margin_bottom
-          } else {
-            area_top + t + params.margin_top
-          }
-        }
-        None => area_top + t + params.margin_top
-      }
-    None =>
-      match params.inset_bottom {
-        Some(b) => area_bottom - b - params.margin_bottom - child_height
-        None => area_top + params.margin_top
-      }
-  }
+  let x = @core.compute_inset_axis_position_with_auto_margin(
+    params.inset_left,
+    params.inset_right,
+    params.margin_left,
+    params.margin_right,
+    margin_left_is_auto,
+    margin_right_is_auto,
+    child_width,
+    area_left,
+    area_width,
+    0.0,
+  )
+  let y = @core.compute_inset_axis_position_with_auto_margin(
+    params.inset_top,
+    params.inset_bottom,
+    params.margin_top,
+    params.margin_bottom,
+    margin_top_is_auto,
+    margin_bottom_is_auto,
+    child_height,
+    area_top,
+    area_height,
+    0.0,
+  )
   (x, y)
 }
 

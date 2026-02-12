@@ -2,15 +2,32 @@
 package "mizchi/crater/layout/alignment"
 
 import {
+  "mizchi/crater/core",
   "mizchi/crater/types",
 }
 
 // Values
+pub fn axis_cross_end(Bool, @types.Rect[Double]) -> Double
+
+pub fn axis_cross_start(Bool, @types.Rect[Double]) -> Double
+
+pub fn axis_cross_sum(Bool, @types.Rect[Double]) -> Double
+
+pub fn axis_main_end(Bool, @types.Rect[Double]) -> Double
+
+pub fn axis_main_start(Bool, @types.Rect[Double]) -> Double
+
+pub fn axis_main_sum(Bool, @types.Rect[Double]) -> Double
+
 pub fn compute_align_offset(@types.Alignment, Double) -> Double
 
 pub fn compute_align_self_offset(@types.AlignSelf, @types.Alignment, Double) -> Double
 
 pub fn compute_justify(@types.Alignment, Double, Int) -> (Double, Double)
+
+pub fn resolve_align_self(@types.AlignSelf, @types.Alignment) -> @types.Alignment
+
+pub fn resolve_flex_axis(@types.FlexDirection, Bool, Bool) -> @core.FlexAxis
 
 // Errors
 
