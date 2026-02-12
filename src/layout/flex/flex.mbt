@@ -3817,7 +3817,11 @@ fn compute_internal(
         @types.Stretch =>
           if item.cross_is_auto {
             // Apply min/max constraints to stretched size
-            let stretched = line_cross_size - item.margin_cross
+            let stretch_cross_size = match align_cross_for_nowrap {
+              Some(acs) if not(should_wrap) => acs
+              _ => line_cross_size
+            }
+            let stretched = stretch_cross_size - item.margin_cross
             // item.final_cross already has constraints, use min of stretched and final_cross
             // to handle max constraints, and max with final_cross to handle min constraints
             let child = item.node
@@ -5058,7 +5062,7 @@ fn compute_nested(
   // Use dispatcher for nested children to enable cache hits
   let @node.DispatchFn(dispatch_fn) = dispatch
   match style.display {
-    @types.Flex | @types.InlineFlex | @types.Block =>
+    @types.Flex | @types.InlineFlex =>
       compute_internal(
         node,
         ctx,

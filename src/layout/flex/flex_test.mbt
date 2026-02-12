@@ -1404,6 +1404,38 @@ test "flex_column_align_stretch" {
 }
 
 ///|
+test "flex_row_stretch_uses_constrained_min_height" {
+  // Mirrors WPT align-items-008:
+  // container has min-height only (height:auto), item has auto cross-size,
+  // align-items: stretch should stretch item to the constrained cross-size.
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(100.0),
+    min_height: @types.Length(100.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    min_height: @types.Length(200.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 300.0,
+    available_height: None,
+    sizing_mode: @types.MaxContent,
+    viewport_width: 300.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="200")
+  inspect(layout.children[0].height, content="200")
+}
+
+///|
 /// From taffy: justify_content_row_single_item_center
 test "flex_single_item_center" {
   let default_style = @style.Style::default()

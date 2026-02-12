@@ -3252,11 +3252,10 @@ fn resolve_tracks_with_implicit(
   }
 
   // Phase 3: Build track array with positions
-  // Also determine which tracks are stretchable (auto, fr, or minmax with flexible max)
+  // align-content/justify-content: stretch applies only to auto-sized tracks.
   for i = 0; i < track_count; i = i + 1 {
     let is_stretchable = match all_templates[i] {
       @types.TrackSizingFunction::Auto => true
-      @types.TrackSizingFunction::Fr(_) => true
       @types.MinMax(_, _) => true
       _ => false
     }

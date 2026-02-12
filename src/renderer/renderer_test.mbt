@@ -357,6 +357,50 @@ test "br element has line-height for layout height" {
 }
 
 ///|
+test "inline style min-height does not set height" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="target" style="display:flex; min-height:200px;">
+    #|  <div id="item" style="width:100px; min-height:100px;"></div>
+    #|</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let target = node.children[0]
+  let item = target.children[0]
+  inspect(target.style.align_items, content="Stretch")
+  inspect(target.style.height, content="Auto")
+  inspect(target.style.min_height, content="Length(200)")
+  inspect(item.style.height, content="Auto")
+  inspect(item.style.min_height, content="Length(100)")
+}
+
+///|
+test "anchor remains inline inside fixed-height flex item" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<style>
+    #|#test { display: flex; }
+    #|#test div { align-self: baseline; }
+    #|#div1 { height: 90px; font-size: 20px; width: 30px; }
+    #|</style>
+    #|<div id="test"><div id="div1"><a href="#">aaa</a></div></div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let target = node.children[0]
+  let div1 = target.children[0]
+  let anchor = div1.children[0]
+  inspect(target.style.display, content="Flex")
+  inspect(div1.style.display, content="Block")
+  inspect(div1.style.zoom, content="1")
+  inspect(anchor.id, content="a")
+  inspect(anchor.style.display, content="Inline")
+}
+
+///|
 test "logical properties inline-size and block-size" {
   let html =
     #|<!doctype html>

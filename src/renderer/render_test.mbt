@@ -80,6 +80,73 @@ test "svg_default_intrinsic_size_wpt_like" {
 }
 
 ///|
+test "flex_stretch_respects_min_height_through_renderer" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<div id="target" style="display:flex; min-height:200px;">
+    #|  <div id="item" style="width:100px; min-height:100px; background:green;"></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let target = layout.children[0]
+  let item = target.children[0]
+  inspect(target.height, content="200")
+  inspect(item.height, content="200")
+}
+
+///|
+test "inline_anchor_height_in_block_with_fixed_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#test { display: flex; }
+    #|#test div { align-self: baseline; }
+    #|#div1 { height: 90px; font-size: 20px; width: 30px; }
+    #|</style>
+    #|<div id="test">
+    #|  <div id="div1"><a href="#">aaa</a></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let div1 = layout.children[0].children[0]
+  let anchor = div1.children[0]
+  inspect(div1.height, content="90")
+  inspect(anchor.height, content="20")
+}
+
+///|
+test "flex_baseline_align_offsets_smaller_font_item" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#test { display: flex; }
+    #|#test div { align-self: baseline; }
+    #|#div1 { height: 90px; font-size: 20px; width: 30px; }
+    #|#div2 { height: 50px; font-size: 10px; width: 30px; }
+    #|#div3 { height: 100px; font-size: 30px; width: 30px; }
+    #|</style>
+    #|<div id="test">
+    #|  <div id="div1"><a href="#">aaa</a></div>
+    #|  <div id="div2"><a href="#">aaa</a></div>
+    #|  <div id="div3"><a href="#">aaa</a></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let div1 = layout.children[0].children[0]
+  let div2 = layout.children[0].children[1]
+  let div3 = layout.children[0].children[2]
+  guard div3.y <= div1.y else {
+    fail("largest-font item should anchor baseline reference")
+  }
+  guard div1.y < div2.y else {
+    fail("smaller-font item should be pushed down for baseline alignment")
+  }
+  guard div2.y > 10.0 else {
+    fail("baseline offset for smaller-font item should be visibly non-zero")
+  }
+}
+
+///|
 test "renderer_grid_column" {
   let html_str = "<!DOCTYPE html><div id=\"mygrid\" style=\"display: grid; grid-template-columns: 1fr 30px; width: min-content; border: 10px solid;\"><div id=\"item\" style=\"grid-column: 1 / span 2;\"><div id=\"filler\" style=\"width: 300px; height: 50px;\"></div></div></div>"
   let ctx = @renderer.RenderContext::default()
