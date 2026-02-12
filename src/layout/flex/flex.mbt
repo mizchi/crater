@@ -560,8 +560,12 @@ fn compute_min_content_main_size(
     // for each display type, but for now we reuse the max-content functions
     // which gives us a conservative (larger) minimum
     match style.display {
-      @types.Flex | @types.Block =>
+      @types.Flex =>
         compute_min_content_flex_main_size(
+          node, is_row, available_cross, cache, dispatch,
+        )
+      @types.Block =>
+        compute_min_content_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
       @types.Inline | @types.InlineBlock | @types.FlowRoot =>
@@ -569,7 +573,9 @@ fn compute_min_content_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
       @types.Grid | @types.InlineGrid =>
-        compute_min_content_grid_main_size(node)
+        compute_min_content_grid_main_size(
+          node, is_row, available_cross, dispatch,
+        )
       _ =>
         // Fall back to max-content for other display types
         compute_intrinsic_main_size(
@@ -755,8 +761,91 @@ fn compute_min_content_flex_main_size(
 ///|
 /// Compute min-content size for a grid container
 /// (approximate to allow flex items to shrink below max-content)
-fn compute_min_content_grid_main_size(_node : @node.Node) -> Double {
-  0.0
+fn compute_min_content_grid_main_size(
+  node : @node.Node,
+  parent_is_row : Bool,
+  available_cross : Double?,
+  dispatch : @node.DispatchFn,
+) -> Double {
+  let style = node.style
+  let children = node.children
+  let available_width = match available_cross {
+    Some(w) if not(parent_is_row) => w
+    _ =>
+      match style.width {
+        @types.Length(w) => w
+        _ => 0.0
+      }
+  }
+  let padding = @types.resolve_rect(style.padding, available_width)
+  let border = @types.resolve_rect(style.border, available_width)
+  let cache = IntrinsicCache::new()
+
+  if parent_is_row {
+    // Approximate grid min-content width by max of item min-content widths.
+    let mut max_width = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @types.Display::None {
+        continue
+      }
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
+        continue
+      }
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
+        available_width,
+      )
+      let child_width = match child_style.width {
+        @types.Length(w) =>
+          w + child_resolved.margin.left + child_resolved.margin.right
+        _ =>
+          compute_min_content_main_size(child, true, None, cache, dispatch) +
+          child_resolved.margin.left +
+          child_resolved.margin.right
+      }
+      max_width = max(max_width, child_width)
+    }
+    max_width + padding.horizontal_sum() + border.horizontal_sum()
+  } else {
+    // Approximate grid min-content height by sum of item min-content heights.
+    let mut total_height = 0.0
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      let child_style = child.style
+      if child_style.display == @types.Display::None {
+        continue
+      }
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
+        continue
+      }
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
+        available_width,
+      )
+      let child_height = match child_style.height {
+        @types.Length(h) => h
+        _ =>
+          compute_min_content_main_size(
+            child,
+            false,
+            Some(available_width),
+            cache,
+            dispatch,
+          )
+      }
+      total_height = total_height +
+        child_height +
+        child_resolved.margin.top +
+        child_resolved.margin.bottom
+    }
+    total_height + padding.vertical_sum() + border.vertical_sum()
+  }
 }
 
 ///|
@@ -781,8 +870,10 @@ fn compute_min_content_block_main_size(
   let padding = @types.resolve_rect(style.padding, available_width)
   let border = @types.resolve_rect(style.border, available_width)
   if parent_is_row {
-    // Compute min-content width: max of children's min-content widths
-    let mut max_width = 0.0
+    // Compute min-content width.
+    // In vertical writing mode, blocks advance horizontally, so contributions sum.
+    let is_vertical_writing = style.writing_mode.is_vertical()
+    let mut width_acc = 0.0
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let child_style = child.style
@@ -807,9 +898,13 @@ fn compute_min_content_block_main_size(
           child_resolved.margin.left +
           child_resolved.margin.right
       }
-      max_width = max(max_width, child_width)
+      if is_vertical_writing {
+        width_acc = width_acc + child_width
+      } else {
+        width_acc = max(width_acc, child_width)
+      }
     }
-    max_width + padding.left + padding.right + border.left + border.right
+    width_acc + padding.left + padding.right + border.left + border.right
   } else {
     // Compute min-content height: sum of children's heights
     let mut total_height = 0.0

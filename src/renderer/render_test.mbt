@@ -83,6 +83,129 @@ test "renderer_grid_column" {
 }
 
 ///|
+test "orthogonal_child_within_flex_grid_wpt_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<div style="display: flex; width: 100px; overflow: hidden;">
+    #|  <div style="display: grid; height: 100px;">
+    #|    <div style="writing-mode: vertical-rl; line-height: 0;">
+    #|      <span style="display: inline-block; width: 50px; height: 100px;"></span>
+    #|      <span style="display: inline-block; width: 50px; height: 100px;"></span>
+    #|    </div>
+    #|  </div>
+    #|  <div>text</div>
+    #|</div>
+
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let flex = root.children[0]
+  let grid = flex.children[0]
+  let ortho = grid.children[0]
+  inspect(ortho.style.writing_mode, content="VerticalRl")
+
+  @dispatch.setup()
+  let layout_ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let flex_layout = layout.children[0]
+  let grid_layout = flex_layout.children[0]
+  let ortho_layout = grid_layout.children[0]
+  inspect(grid_layout.width, content="100")
+  inspect(ortho_layout.width, content="100")
+  inspect(ortho_layout.children[0].x, content="50")
+  inspect(ortho_layout.children[1].x, content="0")
+}
+
+///|
+test "inline_filter_preserves_abspos_descendant_wpt_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#cb { filter: brightness(100%); }
+    #|#abs { position: absolute; top: 0; left: 0; width: 10px; height: 10px; }
+    #|</style>
+    #|<div><span id="cb">text<span id="abs"></span></span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+
+  let container = root.children[0]
+  inspect(container.id, content="div")
+  let cb = container.children[0]
+  inspect(cb.id, content="span#cb")
+  inspect(cb.children.length(), content="2")
+  let abs = cb.children[1]
+  inspect(abs.id, content="span#abs")
+  inspect(abs.style.position, content="Absolute")
+}
+
+///|
+test "fixed_child_in_abspos_parent_uses_viewport_reference" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#parent {
+    #|  position: absolute;
+    #|  top: 100px;
+    #|  left: 100px;
+    #|}
+    #|#fixed {
+    #|  position: fixed;
+    #|  top: 50px;
+    #|  left: 50px;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|}
+    #|</style>
+    #|<div id="parent"><div id="fixed"></div></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let parent = layout.children[0]
+  let fixed = parent.children[0]
+
+  // Fixed element should be positioned from viewport, so relative to parent it is negative.
+  inspect(fixed.x, content="-50")
+  inspect(fixed.y, content="-50")
+}
+
+///|
+test "backdrop_filter_establishes_fixed_containing_block" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#container {
+    #|  width: 200px;
+    #|  backdrop-filter: invert(1);
+    #|}
+    #|#fixed {
+    #|  position: fixed;
+    #|  top: 0;
+    #|  width: 100%;
+    #|  height: 200px;
+    #|}
+    #|</style>
+    #|<div id="container"><div id="fixed"></div></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let container = layout.children[0]
+  let fixed = container.children[0]
+
+  inspect(container.width, content="200")
+  inspect(fixed.width, content="200")
+}
+
+///|
 test "flex_margin_no_collapse_wpt" {
   // Mimics the exact WPT test flex-margin-no-collapse.html
   let html_str =

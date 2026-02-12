@@ -1567,9 +1567,9 @@ fn compute_grid_layout_internal(
       y: final_y,
       width: final_width,
       height: final_height,
-      margin: default_rect(),
-      padding: default_rect(),
-      border: default_rect(),
+      margin: child_inner.margin,
+      padding: child_inner.padding,
+      border: child_inner.border,
       overflow_x: child.style.overflow_x,
       overflow_y: child.style.overflow_y,
       scroll_width: 0.0,
@@ -4329,6 +4329,19 @@ fn compute_child_layout(
 
   // For nested containers, recursively compute layout
   let child_layouts : Array[@types.Layout] = []
+  let mut child_margin = default_rect()
+  let mut child_padding : @types.Rect[Double] = {
+    left: padding_left,
+    right: padding_right,
+    top: padding_top,
+    bottom: padding_bottom,
+  }
+  let mut child_border : @types.Rect[Double] = {
+    left: border_left,
+    right: border_right,
+    top: border_top,
+    bottom: border_bottom,
+  }
   if child.style.display == @types.Grid {
     // Recursively compute grid layout for nested grid containers
     // When a grid item is stretched (width/height comes from cell size),
@@ -4363,6 +4376,9 @@ fn compute_child_layout(
       available_height, // Use available_height as viewport fallback
       dispatch,
     )
+    child_margin = nested_layout.margin
+    child_padding = nested_layout.padding
+    child_border = nested_layout.border
     // The nested layout's children need to be added
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
@@ -4403,6 +4419,9 @@ fn compute_child_layout(
     // Use dispatcher for cache support
     let @node.DispatchFn(dispatch_fn) = dispatch
     let nested_layout = dispatch_fn(child, ctx, dispatch)
+    child_margin = nested_layout.margin
+    child_padding = nested_layout.padding
+    child_border = nested_layout.border
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }
@@ -4435,6 +4454,9 @@ fn compute_child_layout(
       stretch_height,
     }
     let nested_layout = @table.compute(child, ctx, dispatch)
+    child_margin = nested_layout.margin
+    child_padding = nested_layout.padding
+    child_border = nested_layout.border
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }
@@ -4484,6 +4506,9 @@ fn compute_child_layout(
       stretch_height: false,
     }
     let nested_layout = @block.compute(child, child_ctx, dispatch)
+    child_margin = nested_layout.margin
+    child_padding = nested_layout.padding
+    child_border = nested_layout.border
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }
@@ -4500,9 +4525,9 @@ fn compute_child_layout(
     y: 0.0,
     width,
     height,
-    margin: default_rect(),
-    padding: default_rect(),
-    border: default_rect(),
+    margin: child_margin,
+    padding: child_padding,
+    border: child_border,
     overflow_x: child.style.overflow_x,
     overflow_y: child.style.overflow_y,
     scroll_width: 0.0,

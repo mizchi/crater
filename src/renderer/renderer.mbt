@@ -42,6 +42,61 @@ fn char_display_width(c : Char) -> Int {
 }
 
 ///|
+/// Place a word into wrapped lines.
+/// Returns (updated_lines, updated_line_width).
+fn place_word_with_wrap(
+  lines : Int,
+  line_width : Int,
+  word_width : Int,
+  cols_available : Int,
+  needs_space : Bool,
+) -> (Int, Int) {
+  if cols_available <= 0 {
+    return (lines, line_width)
+  }
+  let mut new_lines = lines
+  let mut new_line_width = line_width
+  let mut space_width = 0
+  if needs_space && new_line_width > 0 {
+    space_width = 1
+  }
+
+  // Fits current line
+  if new_line_width > 0 &&
+    new_line_width + space_width + word_width <= cols_available {
+    new_line_width = new_line_width + space_width + word_width
+    return (new_lines, new_line_width)
+  }
+
+  // Move to next line if current line already has content.
+  if new_line_width > 0 {
+    new_lines = new_lines + 1
+    new_line_width = 0
+  }
+
+  // Fits a fresh line.
+  if word_width <= cols_available {
+    return (new_lines, word_width)
+  }
+
+  // Long word fallback: hard-wrap by available columns.
+  let full_lines = word_width / cols_available
+  let remainder = word_width % cols_available
+  if remainder == 0 {
+    if full_lines > 0 {
+      new_lines = new_lines + full_lines - 1
+      new_line_width = cols_available
+    } else {
+      new_line_width = 0
+    }
+  } else {
+    new_lines = new_lines + full_lines
+    new_line_width = remainder
+  }
+  (new_lines, new_line_width)
+}
+
+///|
 /// Render context with viewport dimensions
 pub(all) struct RenderContext {
   viewport_width : Double
@@ -73,7 +128,12 @@ fn create_text_measure(
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
 ) -> @types.MeasureFunc {
-  let trimmed = text.trim()
+  let raw_trimmed = text.trim()
+  let trimmed = if raw_trimmed.is_empty() && not(text.is_empty()) {
+    " "
+  } else {
+    raw_trimmed.to_string()
+  }
   let char_width = font_size * char_width_ratio
 
   // Split by explicit line breaks and calculate per-line metrics
@@ -153,32 +213,82 @@ fn create_text_measure(
       }
       // Calculate total lines needed (considering both wrapping and explicit breaks)
       // For each explicit line, calculate how many visual lines it needs
-      let mut total_lines = 0
-      let mut current_line_width = 0
-      for c in trimmed.iter() {
-        if c == '\n' {
-          // End of explicit line
-          let line_visual_lines = if cols_available > 0 &&
-            current_line_width > 0 {
-            (current_line_width + cols_available - 1) / cols_available
+      let use_word_wrap = match white_space {
+        @style.WhiteSpace::Normal | @style.WhiteSpace::PreLine => true
+        _ => false
+      }
+      let mut total_lines = 1
+      if use_word_wrap && not(no_wrap) {
+        // Greedy word wrapping with long-word hard-wrap fallback.
+        let mut current_line_width = 0
+        let mut current_word_width = 0
+        let mut has_pending_space = false
+        for c in trimmed.iter() {
+          if c == '\n' {
+            if current_word_width > 0 {
+              let (l, w) = place_word_with_wrap(
+                total_lines, current_line_width, current_word_width, cols_available,
+                has_pending_space,
+              )
+              total_lines = l
+              current_line_width = w
+              current_word_width = 0
+            }
+            // Explicit line break always starts a new visual line.
+            total_lines = total_lines + 1
+            current_line_width = 0
+            has_pending_space = false
+          } else if c == ' ' || c == '\t' {
+            if current_word_width > 0 {
+              let (l, w) = place_word_with_wrap(
+                total_lines, current_line_width, current_word_width, cols_available,
+                has_pending_space,
+              )
+              total_lines = l
+              current_line_width = w
+              current_word_width = 0
+            }
+            has_pending_space = true
           } else {
-            1
+            current_word_width = current_word_width + char_display_width(c)
           }
-          total_lines = total_lines + line_visual_lines
-          current_line_width = 0
-        } else if c == ' ' || c == '\t' {
-          current_line_width = current_line_width + 1
-        } else {
-          current_line_width = current_line_width + char_display_width(c)
         }
-      }
-      // Handle last line
-      let last_line_visual = if cols_available > 0 && current_line_width > 0 {
-        (current_line_width + cols_available - 1) / cols_available
+        if current_word_width > 0 {
+          let (l, _w) = place_word_with_wrap(
+            total_lines, current_line_width, current_word_width, cols_available,
+            has_pending_space,
+          )
+          total_lines = l
+        }
       } else {
-        1
+        // Character-based wrapping for nowrap/pre/pre-wrap behavior.
+        let mut current_line_width = 0
+        total_lines = 0
+        for c in trimmed.iter() {
+          if c == '\n' {
+            // End of explicit line
+            let line_visual_lines = if cols_available > 0 &&
+              current_line_width > 0 {
+              (current_line_width + cols_available - 1) / cols_available
+            } else {
+              1
+            }
+            total_lines = total_lines + line_visual_lines
+            current_line_width = 0
+          } else if c == ' ' || c == '\t' {
+            current_line_width = current_line_width + 1
+          } else {
+            current_line_width = current_line_width + char_display_width(c)
+          }
+        }
+        // Handle last line
+        let last_line_visual = if cols_available > 0 && current_line_width > 0 {
+          (current_line_width + cols_available - 1) / cols_available
+        } else {
+          1
+        }
+        total_lines = total_lines + last_line_visual
       }
-      total_lines = total_lines + last_line_visual
 
       // In vertical mode, swap width/height concepts
       // - Width = number of lines (block dimension)
@@ -346,6 +456,121 @@ fn will_have_non_inline_display(
 }
 
 ///|
+/// Check whether an inline element must be preserved as a node
+/// (instead of being merged into surrounding text).
+/// This is needed for containing-block / positioning behaviors.
+fn should_preserve_inline_element(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  // Check inline style first
+  match elem.style {
+    Some(style) => {
+      let style_lower = style.to_lower()
+      let has_position = style_lower.contains("position:")
+      let is_static_position = style_lower.contains("position: static")
+      if has_position && not(is_static_position) {
+        return true
+      }
+      let has_filter = style_lower.contains("filter:")
+      let filter_none = style_lower.contains("filter: none")
+      if has_filter && not(filter_none) {
+        return true
+      }
+      let has_transform = style_lower.contains("transform:")
+      let transform_none = style_lower.contains("transform: none")
+      if has_transform && not(transform_none) {
+        return true
+      }
+      let has_perspective = style_lower.contains("perspective:")
+      let perspective_none = style_lower.contains("perspective: none")
+      if has_perspective && not(perspective_none) {
+        return true
+      }
+    }
+    None => ()
+  }
+
+  // Check stylesheet rules
+  if stylesheets.length() > 0 {
+    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    match elem.id {
+      Some(id) => selector_elem = selector_elem.set_id(id)
+      None => ()
+    }
+    for cls in elem.classes {
+      selector_elem = selector_elem.add_class(cls)
+    }
+    for attr in elem.attributes {
+      let (name, value) = attr
+      selector_elem = selector_elem.set_attribute(name, value)
+    }
+    let media_env = @media.MediaEnvironment::with_color_scheme(
+      ctx.viewport_width,
+      ctx.viewport_height,
+      ctx.color_scheme,
+    )
+    let cascaded = @cascade.cascade_element_with_media(
+      selector_elem,
+      stylesheets,
+      [],
+      Some(media_env),
+    )
+    match cascaded.get_value("position") {
+      Some(value) => if value.to_lower().trim() != "static" { return true }
+      None => ()
+    }
+    match cascaded.get_value("filter") {
+      Some(value) => if value.to_lower().trim() != "none" { return true }
+      None => ()
+    }
+    match cascaded.get_value("backdrop-filter") {
+      Some(value) => if value.to_lower().trim() != "none" { return true }
+      None => ()
+    }
+    match cascaded.get_value("transform") {
+      Some(value) => if value.to_lower().trim() != "none" { return true }
+      None => ()
+    }
+    match cascaded.get_value("perspective") {
+      Some(value) => {
+        let lowered = value.to_lower().trim()
+        if lowered != "none" && lowered != "0" && lowered != "0px" {
+          return true
+        }
+      }
+      None => ()
+    }
+  }
+  false
+}
+
+///|
+/// Check recursively whether an element contains any inline descendants
+/// that should be preserved for layout semantics.
+fn contains_preserved_inline_descendant(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        if should_preserve_inline_element(child_elem, stylesheets, ctx) {
+          return true
+        }
+        if contains_preserved_inline_descendant(child_elem, stylesheets, ctx) {
+          return true
+        }
+      }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
 /// Recursively collect text from inline elements
 fn collect_text_from_inline(
   elem : @html.Element,
@@ -364,7 +589,8 @@ fn collect_text_from_inline(
           // Skip replaced elements - they'll be handled separately
           continue
         } else if is_inline_element(child_elem) &&
-          not(will_have_non_inline_display(child_elem, stylesheets, ctx)) {
+          not(will_have_non_inline_display(child_elem, stylesheets, ctx)) &&
+          not(should_preserve_inline_element(child_elem, stylesheets, ctx)) {
           // Recursively collect text from nested inline elements
           // Only if CSS doesn't override to non-inline display
           collect_text_from_inline(child_elem, buf, stylesheets, ctx)
@@ -488,7 +714,12 @@ fn collect_inline_content(
         } else if is_inline_element(elem) &&
           not(will_have_non_inline_display(elem, stylesheets, ctx)) {
           // Check if this inline element contains replaced elements (like <a><img></a>)
-          if contains_replaced_element(elem) {
+          if should_preserve_inline_element(elem, stylesheets, ctx) ||
+            contains_preserved_inline_descendant(elem, stylesheets, ctx) {
+            // Keep inline elements that participate in containing-block / positioning behavior
+            flush_text(text_builder, remaining)
+            remaining.push(child)
+          } else if contains_replaced_element(elem) {
             // Flush text first, then keep as separate node
             flush_text(text_builder, remaining)
             remaining.push(child)
@@ -530,26 +761,37 @@ fn collect_inline_content(
 /// Create a node for text content with inherited font properties
 fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   let trimmed = text.trim()
+  let font_size = parent_style.font_size
+  let text_line_height = parent_style.line_height
+  let white_space = parent_style.white_space
+  let writing_mode = parent_style.writing_mode
+  // Create text style with inherited font properties and color for rendering
+  // Text nodes should be inline-level to flow with other inline content
+  let text_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Inline,
+    font_size,
+    line_height: text_line_height,
+    white_space,
+    writing_mode,
+    color: parent_style.color,
+  }
   if trimmed.is_empty() {
-    // Return a zero-size node for whitespace-only text
-    @node.Node::leaf("#text", @style.Style::default())
-  } else {
-    // Use parent's font_size and line_height for text measurement
-    let font_size = parent_style.font_size
-    let text_line_height = parent_style.line_height
-    let white_space = parent_style.white_space
-    let writing_mode = parent_style.writing_mode
-    // Create text style with inherited font properties and color for rendering
-    // Text nodes should be inline-level to flow with other inline content
-    let text_style : @style.Style = {
-      ..@style.Style::default(),
-      display: @types.Inline,
-      font_size,
-      line_height: text_line_height,
-      white_space,
-      writing_mode,
-      color: parent_style.color,
+    // Preserve collapsible whitespace as a single space so inline-block gaps match browser layout.
+    if text.is_empty() {
+      @node.Node::leaf("#text", @style.Style::default())
+    } else {
+      let collapsed = " "
+      @node.Node::text(
+        "#text",
+        text_style,
+        create_text_measure(
+          collapsed, font_size, text_line_height, white_space, writing_mode,
+        ),
+        collapsed,
+      )
     }
+  } else {
     // Use Node::text to store the text content for rendering
     @node.Node::text(
       "#text",
@@ -932,6 +1174,31 @@ fn find_body_in_children(elem : @html.Element) -> @html.Element? {
 }
 
 ///|
+/// Resolve zoom on the document root (html element).
+/// We render from body in most paths, so root zoom needs to be propagated.
+fn resolve_document_root_zoom(
+  doc_root : @html.Element,
+  ctx : RenderContext,
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  css_vars : Map[String, String],
+) -> Double {
+  if doc_root.tag.to_lower() != "html" {
+    return 1.0
+  }
+  let root_selector = html_to_selector_element(doc_root, None)
+  let root_style = compute_element_style_indexed(
+    root_selector,
+    doc_root.style,
+    indexed_stylesheets,
+    true,
+    ctx,
+    None,
+    css_vars,
+  )
+  root_style.zoom
+}
+
+///|
 /// Render HTML string to Layout
 pub fn render(html : String, ctx : RenderContext) -> @types.Layout {
   render_with_external_css(html, ctx, [])
@@ -984,6 +1251,17 @@ pub fn render_with_external_css(
     indexed_stylesheets,
     css_vars,
   )
+  if render_root.tag.to_lower() == "body" {
+    let root_zoom = resolve_document_root_zoom(
+      doc.root,
+      ctx,
+      indexed_stylesheets,
+      css_vars,
+    )
+    if root_zoom != 1.0 {
+      root.style.zoom = root.style.zoom * root_zoom
+    }
+  }
 
   // Create layout context - subtract root margin from available space
   let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
@@ -1009,7 +1287,16 @@ pub fn render_with_external_css(
   let layout = @dispatch.compute_layout(root, layout_ctx)
 
   // Apply zoom and transform scale to layout
-  let scaled_layout = apply_zoom_and_scale(layout, root, 1.0, 1.0, 1.0)
+  let scaled_layout = apply_zoom_and_scale(
+    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0,
+  )
+
+  let scaled_layout = if root.id == "body" &&
+    scaled_layout.height < ctx.viewport_height {
+    { ..scaled_layout, height: ctx.viewport_height }
+  } else {
+    scaled_layout
+  }
 
   // Apply root margin as position offset
   // For margin:auto, center horizontally
@@ -1094,6 +1381,17 @@ pub fn render_document_with_external_css(
     indexed_stylesheets,
     css_vars,
   )
+  if render_root.tag.to_lower() == "body" {
+    let root_zoom = resolve_document_root_zoom(
+      doc.root,
+      ctx,
+      indexed_stylesheets,
+      css_vars,
+    )
+    if root_zoom != 1.0 {
+      root.style.zoom = root.style.zoom * root_zoom
+    }
+  }
 
   // Create layout context - subtract root margin from available space
   let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
@@ -1119,7 +1417,16 @@ pub fn render_document_with_external_css(
   let layout = @dispatch.compute_layout(root, layout_ctx)
 
   // Apply zoom and transform scale to layout
-  let scaled_layout = apply_zoom_and_scale(layout, root, 1.0, 1.0, 1.0)
+  let scaled_layout = apply_zoom_and_scale(
+    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0,
+  )
+
+  let scaled_layout = if root.id == "body" &&
+    scaled_layout.height < ctx.viewport_height {
+    { ..scaled_layout, height: ctx.viewport_height }
+  } else {
+    scaled_layout
+  }
 
   // Apply root margin offset to final layout
   let margin_left_is_auto = match root.style.margin.left {
@@ -1258,7 +1565,7 @@ pub fn render_to_node_with_external_css(
     Some(body) => body
     None => doc.root
   }
-  element_to_node_with_styles(
+  let root = element_to_node_with_styles(
     render_root,
     None,
     ctx,
@@ -1266,6 +1573,18 @@ pub fn render_to_node_with_external_css(
     indexed_stylesheets,
     css_vars,
   )
+  if render_root.tag.to_lower() == "body" {
+    let root_zoom = resolve_document_root_zoom(
+      doc.root,
+      ctx,
+      indexed_stylesheets,
+      css_vars,
+    )
+    if root_zoom != 1.0 {
+      root.style.zoom = root.style.zoom * root_zoom
+    }
+  }
+  root
 }
 
 ///|
@@ -1298,7 +1617,7 @@ pub fn render_to_node_with_document(
     Some(body) => body
     None => doc.root
   }
-  element_to_node_with_styles(
+  let root = element_to_node_with_styles(
     render_root,
     None,
     ctx,
@@ -1306,6 +1625,18 @@ pub fn render_to_node_with_document(
     indexed_stylesheets,
     css_vars,
   )
+  if render_root.tag.to_lower() == "body" {
+    let root_zoom = resolve_document_root_zoom(
+      doc.root,
+      ctx,
+      indexed_stylesheets,
+      css_vars,
+    )
+    if root_zoom != 1.0 {
+      root.style.zoom = root.style.zoom * root_zoom
+    }
+  }
+  root
 }
 
 ///|
@@ -1671,8 +2002,8 @@ fn element_to_node_with_styles(
       }
       @html.Node::Text(text) =>
         // Process synthetic text nodes created by collect_inline_content
-        // to preserve DOM order when elements are interleaved with text
-        if not(text.trim().is_empty()) {
+        // to preserve DOM order when elements are interleaved with text.
+        if not(text.is_empty()) {
           let text_node = create_text_node(text, style)
           children.push(text_node)
         }
@@ -1805,8 +2136,8 @@ fn element_to_node_with_styles_internal(
       }
       @html.Node::Text(text) =>
         // Process synthetic text nodes created by collect_inline_content
-        // to preserve DOM order when elements are interleaved with text
-        if not(text.trim().is_empty()) {
+        // to preserve DOM order when elements are interleaved with text.
+        if not(text.is_empty()) {
           let text_node = create_text_node(text, style)
           children.push(text_node)
         }
@@ -2437,6 +2768,43 @@ fn compute_element_style_indexed(
     None => ()
   }
 
+  // Effects that establish a containing block for positioned descendants:
+  // filter and backdrop-filter (non-none values).
+  let mut establishes_effect_cb = false
+  match cascaded.get_value("filter") {
+    Some(value) =>
+      if value.to_lower().trim() != "none" {
+        establishes_effect_cb = true
+      }
+    None => ()
+  }
+  match cascaded.get_value("backdrop-filter") {
+    Some(value) =>
+      if value.to_lower().trim() != "none" {
+        establishes_effect_cb = true
+      }
+    None => ()
+  }
+  match inline_css {
+    Some(css) => {
+      let lowered = css.to_lower()
+      let has_filter = lowered.contains("filter:")
+      let filter_none = lowered.contains("filter: none")
+      if has_filter && not(filter_none) {
+        establishes_effect_cb = true
+      }
+      let has_backdrop_filter = lowered.contains("backdrop-filter:")
+      let backdrop_filter_none = lowered.contains("backdrop-filter: none")
+      if has_backdrop_filter && not(backdrop_filter_none) {
+        establishes_effect_cb = true
+      }
+    }
+    None => ()
+  }
+  if establishes_effect_cb {
+    style = { ..style, contain: { ..style.contain, paint: true } }
+  }
+
   // Apply viewport dimensions if root
   if is_root {
     match style.width {
@@ -2852,6 +3220,50 @@ fn safe_number(n : Double) -> Double {
 }
 
 ///|
+fn is_svg_container_id(id : String) -> Bool {
+  let mut end = id.length()
+  for i = 0; i < id.length(); i = i + 1 {
+    let c = id[i]
+    if c == '#' || c == '.' {
+      end = i
+      break
+    }
+  }
+  let tag = if end < id.length() {
+    id[:end].to_string() catch {
+      _ => id
+    }
+  } else {
+    id
+  }
+  match tag {
+    "svg"
+    | "g"
+    | "defs"
+    | "clipPath"
+    | "mask"
+    | "pattern"
+    | "symbol"
+    | "foreignObject" => true
+    _ => false
+  }
+}
+
+///|
+fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
+  let style = node.style
+  let positioned = match style.position {
+    @types.Static => false
+    _ => true
+  }
+  positioned ||
+  style.contain.paint ||
+  style.contain.layout ||
+  not(style.transform.is_none()) ||
+  is_svg_container_id(node.id)
+}
+
+///|
 /// Apply zoom and transform scale to a layout tree
 /// This modifies the layout dimensions to reflect the visual bounding box
 /// as reported by getBoundingClientRect() in browsers
@@ -2865,6 +3277,8 @@ fn apply_zoom_and_scale(
   parent_zoom : Double,
   parent_scale_x : Double,
   parent_scale_y : Double,
+  parent_global_x : Double,
+  parent_global_y : Double,
 ) -> @types.Layout {
   // Calculate effective zoom (parent zoom * node zoom)
   let effective_zoom = parent_zoom * node.style.zoom
@@ -2891,10 +3305,25 @@ fn apply_zoom_and_scale(
 
   // Scale position (x, y are relative to parent, scaled by parent's total scale)
   // Add translate offset (translate is applied in local coordinates, then scaled)
+  // CSS transforms scale around the element center by default (transform-origin: 50% 50%).
+  let origin_adjust_x = (1.0 - node_scale_x) *
+    layout.width /
+    2.0 *
+    parent_scale_x *
+    effective_zoom
+  let origin_adjust_y = (1.0 - node_scale_y) *
+    layout.height /
+    2.0 *
+    parent_scale_y *
+    effective_zoom
   let scaled_x = layout.x * parent_scale_x * effective_zoom +
-    translate_x * parent_scale_x * effective_zoom
+    translate_x * parent_scale_x * effective_zoom +
+    origin_adjust_x
   let scaled_y = layout.y * parent_scale_y * effective_zoom +
-    translate_y * parent_scale_y * effective_zoom
+    translate_y * parent_scale_y * effective_zoom +
+    origin_adjust_y
+  let global_x = parent_global_x + scaled_x
+  let global_y = parent_global_y + scaled_y
 
   // Process children with updated parent zoom and scale
   let scaled_children : Array[@types.Layout] = []
@@ -2906,11 +3335,21 @@ fn apply_zoom_and_scale(
   for i = 0; i < min_len; i = i + 1 {
     let child_layout = layout.children[i]
     let child_node = node.children[i]
-    scaled_children.push(
-      apply_zoom_and_scale(
-        child_layout, child_node, effective_zoom, child_parent_scale_x, child_parent_scale_y,
-      ),
+    let scaled_child = apply_zoom_and_scale(
+      child_layout, child_node, effective_zoom, child_parent_scale_x, child_parent_scale_y,
+      global_x, global_y,
     )
+    if child_node.style.position == @types.Absolute &&
+      not(establishes_absolute_containing_block(node)) {
+      // Absolute descendants without a containing block are viewport-relative.
+      scaled_children.push({
+        ..scaled_child,
+        x: scaled_child.x - global_x,
+        y: scaled_child.y - global_y,
+      })
+    } else {
+      scaled_children.push(scaled_child)
+    }
   }
   // Add any remaining layout children without scaling (shouldn't happen in practice)
   for i = min_len; i < layout.children.length(); i = i + 1 {

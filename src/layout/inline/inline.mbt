@@ -25,6 +25,217 @@ fn LineBox::new() -> LineBox {
 }
 
 ///|
+/// Resolve inset dimension (left/right/top/bottom) against containing size.
+fn resolve_inset_dimension(
+  dim : @types.Dimension,
+  available : Double,
+) -> Double? {
+  match dim {
+    @types.Length(v) => Some(v)
+    @types.Percent(p) => Some(available * p)
+    _ => None
+  }
+}
+
+///|
+priv struct WrappedTextMetrics {
+  line_count : Int
+  last_line_width : Double
+}
+
+///|
+fn is_wide_char(c : Char) -> Bool {
+  let cp = c.to_int()
+  (cp >= 0x4E00 && cp <= 0x9FFF) ||
+  (cp >= 0x3400 && cp <= 0x4DBF) ||
+  (cp >= 0x3040 && cp <= 0x309F) ||
+  (cp >= 0x30A0 && cp <= 0x30FF) ||
+  (cp >= 0xAC00 && cp <= 0xD7AF) ||
+  (cp >= 0xFF00 && cp <= 0xFFEF) ||
+  (cp >= 0x3000 && cp <= 0x303F)
+}
+
+///|
+fn char_display_width(c : Char) -> Int {
+  if is_wide_char(c) {
+    2
+  } else {
+    1
+  }
+}
+
+///|
+fn place_word_with_wrap(
+  lines : Int,
+  line_width : Int,
+  word_width : Int,
+  cols_available : Int,
+  needs_space : Bool,
+) -> (Int, Int) {
+  if cols_available <= 0 {
+    return (lines, line_width)
+  }
+  let mut new_lines = lines
+  let mut new_line_width = line_width
+  let mut space_width = 0
+  if needs_space && new_line_width > 0 {
+    space_width = 1
+  }
+  if new_line_width > 0 &&
+    new_line_width + space_width + word_width <= cols_available {
+    new_line_width = new_line_width + space_width + word_width
+    return (new_lines, new_line_width)
+  }
+  if new_line_width > 0 {
+    new_lines = new_lines + 1
+    new_line_width = 0
+  }
+  if word_width <= cols_available {
+    return (new_lines, word_width)
+  }
+  let full_lines = word_width / cols_available
+  let remainder = word_width % cols_available
+  if remainder == 0 {
+    if full_lines > 0 {
+      new_lines = new_lines + full_lines - 1
+      new_line_width = cols_available
+    } else {
+      new_line_width = 0
+    }
+  } else {
+    new_lines = new_lines + full_lines
+    new_line_width = remainder
+  }
+  (new_lines, new_line_width)
+}
+
+///|
+fn estimate_wrapped_text_metrics(
+  node : @node.Node,
+  available_width : Double,
+) -> WrappedTextMetrics? {
+  match node.text {
+    Some(raw_text) => {
+      let text = raw_text.trim().to_string()
+      if text.is_empty() || node.style.writing_mode.is_vertical() {
+        return None
+      }
+      let font_size = node.style.font_size
+      let char_width = if font_size > 0.0 { font_size * 0.5 } else { 0.0 }
+      if char_width <= 0.0 {
+        return None
+      }
+      let no_wrap = match node.style.white_space {
+        @style.WhiteSpace::Nowrap => true
+        _ => false
+      }
+      let use_word_wrap = match node.style.white_space {
+        @style.WhiteSpace::Normal | @style.WhiteSpace::PreLine => true
+        _ => false
+      }
+      let mut cols_available = if no_wrap {
+        1000000
+      } else if available_width > 0.0 {
+        (available_width / char_width).to_int()
+      } else {
+        80
+      }
+      if cols_available <= 0 {
+        cols_available = 80
+      }
+
+      let mut total_lines = 1
+      let mut last_line_cols = 0
+      if use_word_wrap && not(no_wrap) {
+        let mut current_line_width = 0
+        let mut current_word_width = 0
+        let mut has_pending_space = false
+        for c in text.iter() {
+          if c == '\n' {
+            if current_word_width > 0 {
+              let (l, w) = place_word_with_wrap(
+                total_lines, current_line_width, current_word_width, cols_available,
+                has_pending_space,
+              )
+              total_lines = l
+              current_line_width = w
+              current_word_width = 0
+            }
+            total_lines = total_lines + 1
+            current_line_width = 0
+            has_pending_space = false
+          } else if c == ' ' || c == '\t' {
+            if current_word_width > 0 {
+              let (l, w) = place_word_with_wrap(
+                total_lines, current_line_width, current_word_width, cols_available,
+                has_pending_space,
+              )
+              total_lines = l
+              current_line_width = w
+              current_word_width = 0
+            }
+            has_pending_space = true
+          } else {
+            current_word_width = current_word_width + char_display_width(c)
+          }
+        }
+        if current_word_width > 0 {
+          let (l, w) = place_word_with_wrap(
+            total_lines, current_line_width, current_word_width, cols_available,
+            has_pending_space,
+          )
+          total_lines = l
+          current_line_width = w
+        }
+        last_line_cols = current_line_width
+      } else {
+        let mut current_line_width = 0
+        total_lines = 0
+        for c in text.iter() {
+          if c == '\n' {
+            let line_visual_lines = if cols_available > 0 &&
+              current_line_width > 0 {
+              (current_line_width + cols_available - 1) / cols_available
+            } else {
+              1
+            }
+            total_lines = total_lines + line_visual_lines
+            current_line_width = 0
+          } else if c == ' ' || c == '\t' {
+            current_line_width = current_line_width + 1
+          } else {
+            current_line_width = current_line_width + char_display_width(c)
+          }
+        }
+        let last_line_visual = if cols_available > 0 && current_line_width > 0 {
+          (current_line_width + cols_available - 1) / cols_available
+        } else {
+          1
+        }
+        total_lines = total_lines + last_line_visual
+        if cols_available > 0 && current_line_width > cols_available {
+          last_line_cols = current_line_width % cols_available
+          if last_line_cols == 0 {
+            last_line_cols = cols_available
+          }
+        } else {
+          last_line_cols = current_line_width
+        }
+      }
+      Some({
+        line_count: if total_lines > 0 {
+          total_lines
+        } else {
+          1
+        },
+        last_line_width: last_line_cols.to_double() * char_width,
+      })
+    }
+    None => None
+  }
+}
+
+///|
 /// Add an item to the line box
 fn LineBox::add_item(
   self : LineBox,
@@ -121,7 +332,15 @@ pub fn compute_ifc(
     // Calculate baseline based on font metrics
     // For text nodes, baseline is at font_size * ascender_ratio from top
     // Typical ascender ratio is ~0.8 (80% of font height is above baseline)
-    let baseline = if child.text is Some(_) {
+    let baseline = if child.id == "br" {
+      // <br> participates in line boxes but its baseline should align with text baseline,
+      // not with its full line-height box bottom.
+      let font_size = child.style.font_size
+      let ascender_ratio = 0.8
+      font_size * ascender_ratio +
+      child_layout.padding.top +
+      child_layout.border.top
+    } else if child.text is Some(_) {
       // Text node: use font metrics
       let font_size = child.style.font_size
       let ascender_ratio = 0.8 // Standard approximation
@@ -131,6 +350,20 @@ pub fn compute_ifc(
     } else {
       // Non-text element: baseline is at bottom (last baseline of content)
       child_layout.height
+    }
+
+    // <br> always forces a line break after itself.
+    if child.id == "br" {
+      current_line.add_item(
+        i,
+        child_layout,
+        baseline,
+        child_margin.left,
+        child_margin.right,
+      )
+      line_boxes.push(current_line)
+      current_line = LineBox::new()
+      continue
     }
 
     // Check if this item fits in the current line
@@ -170,7 +403,10 @@ pub fn compute_ifc(
   let mut current_y = content_offset_y
   for line in line_boxes {
     let mut current_x = content_offset_x
-    for item in line.items {
+    for item_index = 0
+        item_index < line.items.length()
+        item_index = item_index + 1 {
+      let item = line.items[item_index]
       let child = children[item.index]
       let child_margin = @types.resolve_rect(
         child.style.margin,
@@ -206,10 +442,42 @@ pub fn compute_ifc(
           baseline_y - child.style.font_size * 0.4
         }
       }
+      let mut positioned_x = x
+      let mut positioned_y = y
+      if child.id == "br" && item_index > 0 {
+        let prev_item = line.items[item_index - 1]
+        let prev_child = children[prev_item.index]
+        if prev_child.text is Some(_) {
+          match estimate_wrapped_text_metrics(prev_child, available_width) {
+            Some(metrics) if metrics.line_count > 1 =>
+              match layout_map.get(prev_item.index) {
+                Some(prev_layout) => {
+                  let line_height = if prev_child.style.line_height > 0.0 {
+                    prev_child.style.line_height
+                  } else {
+                    prev_layout.height
+                  }
+                  let fallback_last_width = prev_layout.width
+                  let mut last_line_width = metrics.last_line_width
+                  if last_line_width <= 0.0 {
+                    last_line_width = fallback_last_width
+                  }
+                  let max_x = content_offset_x + available_width
+                  let raw_x = prev_layout.x + last_line_width
+                  positioned_x = if raw_x > max_x { max_x } else { raw_x }
+                  positioned_y = prev_layout.y +
+                    (metrics.line_count - 1).to_double() * line_height
+                }
+                _ => ()
+              }
+            _ => ()
+          }
+        }
+      }
       let positioned : @types.Layout = {
         id: item.layout.id,
-        x,
-        y,
+        x: positioned_x,
+        y: positioned_y,
         width: item.layout.width,
         height: item.layout.height,
         margin: child_margin,
@@ -223,7 +491,7 @@ pub fn compute_ifc(
         text: item.layout.text,
       }
       layout_map[item.index] = positioned
-      current_x = x + item.layout.width + child_margin.right
+      current_x = positioned_x + item.layout.width + child_margin.right
     }
     current_y = current_y + line.height
   }
@@ -426,6 +694,7 @@ fn compute_inline_child(
   let mut content_height = 0.0
 
   // Process children - handle absolute positioned elements
+  let absolute_entries : Array[(Int, @node.Node)] = []
   for child in node.children {
     if child.style.display == @types.Display::None {
       children.push(create_zero_layout(child))
@@ -444,7 +713,11 @@ fn compute_inline_child(
       }
       let @node.DispatchFn(dispatch_fn) = dispatch
       let child_layout = dispatch_fn(child, child_ctx, dispatch)
+      let child_index = children.length()
       children.push(child_layout)
+      if child.style.position == @types.Absolute {
+        absolute_entries.push((child_index, child))
+      }
       // Absolute children don't contribute to inline element's size
     } else if is_inline_level(child.style.display) {
       // Recursively process inline children
@@ -471,6 +744,53 @@ fn compute_inline_child(
   let final_height = content_height +
     padding.vertical_sum() +
     border.vertical_sum()
+
+  // Resolve absolute child positions against this inline element's content box.
+  if absolute_entries.length() > 0 {
+    let area_left = padding.left + border.left
+    let area_top = padding.top + border.top
+    let area_width_raw = final_width -
+      padding.horizontal_sum() -
+      border.horizontal_sum()
+    let area_height_raw = final_height -
+      padding.vertical_sum() -
+      border.vertical_sum()
+    let area_width = if area_width_raw > 0.0 { area_width_raw } else { 0.0 }
+    let area_height = if area_height_raw > 0.0 { area_height_raw } else { 0.0 }
+    for entry in absolute_entries {
+      let (idx, abs_child) = entry
+      let abs_layout = children[idx]
+      let child_style = abs_child.style
+      let inset_left = resolve_inset_dimension(
+        child_style.inset.left,
+        area_width,
+      )
+      let inset_right = resolve_inset_dimension(
+        child_style.inset.right,
+        area_width,
+      )
+      let inset_top = resolve_inset_dimension(
+        child_style.inset.top,
+        area_height,
+      )
+      let inset_bottom = resolve_inset_dimension(
+        child_style.inset.bottom,
+        area_height,
+      )
+      let x = match (inset_left, inset_right) {
+        (Some(l), _) => area_left + l
+        (None, Some(r)) => area_left + area_width - r - abs_layout.width
+        (None, None) => abs_layout.x
+      }
+      let y = match (inset_top, inset_bottom) {
+        (Some(t), _) => area_top + t
+        (None, Some(b)) => area_top + area_height - b - abs_layout.height
+        (None, None) => abs_layout.y
+      }
+      children[idx] = { ..abs_layout, x, y }
+    }
+  }
+
   {
     id: node.id,
     x: 0.0,

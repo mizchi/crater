@@ -673,7 +673,7 @@ fn layout_cell(
   let child_layouts : Array[@types.Layout] = []
   let mut content_height = 0.0
   // Note: In border-collapse mode, border is already 0
-  let mut y_offset = padding.top + border.top
+  let mut y_offset = border.top
   for child in cell.children {
     if child.style.display == @types.Display::None {
       child_layouts.push(create_zero_layout(child))
@@ -1447,6 +1447,19 @@ pub fn compute(
     // Step 3: Distribute rowspan cell heights across spanned rows
     distribute_rowspan_heights(base_heights, rowspan_cells, border_spacing)
 
+    // Step 3.5: Table padding contributes to the row grid edges.
+    // Put top/bottom padding into first/last row so row-group/cell sizes
+    // keep matching table growth behavior.
+    if base_heights.length() > 0 {
+      if padding.top > 0.0 {
+        base_heights[0] = base_heights[0] + padding.top
+      }
+      if padding.bottom > 0.0 {
+        let last = base_heights.length() - 1
+        base_heights[last] = base_heights[last] + padding.bottom
+      }
+    }
+
     // Step 4: If table has explicit/min height, ensure rows fill it
     match target_table_height {
       Some(h) => {
@@ -1770,6 +1783,8 @@ pub fn compute(
   }
 
   // Calculate table height
+  // y_offset includes table padding/border offsets already.
+  // Convert back to content height before adding box model in final height.
   let content_height = y_offset - padding.top - border.top
   let raw_table_height = match style.height {
     @types.Length(h) =>

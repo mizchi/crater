@@ -1444,7 +1444,7 @@ fn parse_css_math_function(
 ///|
 /// Parse a calc() expression from a string and try to simplify it
 /// Returns Some(dimension) if simplification is possible, None otherwise
-fn parse_calc_string(expr : String) -> @types.Dimension? {
+fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
   // Extract the expression inside calc(...)
   let v = expr.trim()
   if not(v.has_prefix("calc(")) || not(v.has_suffix(")")) {
@@ -1485,38 +1485,114 @@ fn parse_calc_string(expr : String) -> @types.Dimension? {
               '/' => result_pct = result_pct / n
               _ => ()
             }
-          } else if token.has_suffix("px") {
-            let num_str = token[:token.length() - 2].to_string() catch {
-              _ => ""
-            }
-            let n = @strconv.parse_double(num_str.to_string()) catch {
-              _ => 0.0
-            }
-            match current_op {
-              '+' => result_px = result_px + n
-              '-' => result_px = result_px - n
-              '*' => result_px = result_px * n
-              '/' => result_px = result_px / n
-              _ => ()
-            }
           } else {
-            // Try as unitless number (treat as px if 0, otherwise skip)
-            let n = @strconv.parse_double(token) catch { _ => 0.0 }
-            if n == 0.0 {
-              // 0 has no effect on the result
-              ()
+            // Try to resolve known length units to px for calc() simplification.
+            let resolved_px : Double? = if token.has_suffix("px") {
+              let num_str = token[:token.length() - 2].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              Some(n)
+            } else if token.has_suffix("vw") {
+              let num_str = token[:token.length() - 2].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              Some(n * ctx.viewport_width / 100.0)
+            } else if token.has_suffix("vh") {
+              let num_str = token[:token.length() - 2].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              Some(n * ctx.viewport_height / 100.0)
+            } else if token.has_suffix("vmin") {
+              let num_str = token[:token.length() - 4].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              let min_dimension = if ctx.viewport_width < ctx.viewport_height {
+                ctx.viewport_width
+              } else {
+                ctx.viewport_height
+              }
+              Some(n * min_dimension / 100.0)
+            } else if token.has_suffix("vmax") {
+              let num_str = token[:token.length() - 4].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              let max_dimension = if ctx.viewport_width > ctx.viewport_height {
+                ctx.viewport_width
+              } else {
+                ctx.viewport_height
+              }
+              Some(n * max_dimension / 100.0)
+            } else if token.has_suffix("rem") {
+              let num_str = token[:token.length() - 3].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              Some(n * ctx.root_font_size)
+            } else if token.has_suffix("em") {
+              let num_str = token[:token.length() - 2].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              Some(n * ctx.font_size)
+            } else if token.has_suffix("pt") {
+              let num_str = token[:token.length() - 2].to_string() catch {
+                _ => ""
+              }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => return None
+              }
+              Some(n * 96.0 / 72.0)
             } else {
-              // Non-zero unitless - treat as multiplier for current values if *, /
-              match current_op {
-                '*' => {
-                  result_px = result_px * n
-                  result_pct = result_pct * n
+              None
+            }
+            match resolved_px {
+              Some(n) =>
+                match current_op {
+                  '+' => result_px = result_px + n
+                  '-' => result_px = result_px - n
+                  '*' => result_px = result_px * n
+                  '/' => result_px = result_px / n
+                  _ => ()
                 }
-                '/' => {
-                  result_px = result_px / n
-                  result_pct = result_pct / n
+              None => {
+                // Try as unitless number (treat as px if 0, otherwise skip)
+                let n = @strconv.parse_double(token) catch { _ => return None }
+                if n == 0.0 {
+                  // 0 has no effect on the result
+                  ()
+                } else {
+                  // Non-zero unitless - treat as multiplier for current values if *, /
+                  match current_op {
+                    '*' => {
+                      result_px = result_px * n
+                      result_pct = result_pct * n
+                    }
+                    '/' => {
+                      result_px = result_px / n
+                      result_pct = result_pct / n
+                    }
+                    _ => return None
+                  }
                 }
-                _ => ()
               }
             }
           }
@@ -1688,7 +1764,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
 
   // Handle calc() expressions
   if v.has_prefix("calc(") {
-    match parse_calc_string(v.to_string()) {
+    match parse_calc_string(v.to_string(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex calc
     }

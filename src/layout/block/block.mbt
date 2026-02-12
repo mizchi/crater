@@ -148,6 +148,7 @@ fn calculate_children_max_content_width(
   parent_width : Double,
 ) -> Double {
   let mut max_content_width = 0.0
+  let is_vertical_writing = node.style.writing_mode.is_vertical()
   // Check if node itself has MeasureFunc (leaf node with intrinsic size)
   match node.measure {
     Some(mf) => {
@@ -215,7 +216,10 @@ fn calculate_children_max_content_width(
         child_min_box
     }
     let child_contribution = child_intrinsic_width + child_margin_sum
-    if child_contribution > max_content_width {
+    if is_vertical_writing {
+      // In vertical writing mode, normal-flow blocks advance horizontally.
+      max_content_width = max_content_width + child_contribution
+    } else if child_contribution > max_content_width {
       max_content_width = child_contribution
     }
   }
@@ -1448,7 +1452,8 @@ fn compute_with_collapse(
 
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
-  let use_ifc = @inline.should_establish_ifc(flow_nodes)
+  let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
+    not(style.writing_mode.is_vertical())
   // Check for mixed inline/block content (needs anonymous block boxes)
   let has_mixed = has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
@@ -1530,8 +1535,18 @@ fn compute_with_collapse(
     for i = 0; i < node.children.length(); i = i + 1 {
       let child = node.children[i]
       if child.style.position == @types.Fixed {
-        let fixed_layout = layout_fixed_child(
+        let fixed_layout = layout_fixed_child_for_parent(
           child,
+          style,
+          parent_width,
+          if parent_height > 0.0 {
+            parent_height
+          } else {
+            ctx.viewport_height
+          },
+          box_width,
+          box_height,
+          border,
           ctx.viewport_width,
           ctx.viewport_height,
           warnings,
@@ -1645,8 +1660,18 @@ fn compute_with_collapse(
     for i = 0; i < node.children.length(); i = i + 1 {
       let child = node.children[i]
       if child.style.position == @types.Fixed {
-        let fixed_layout = layout_fixed_child(
+        let fixed_layout = layout_fixed_child_for_parent(
           child,
+          style,
+          parent_width,
+          if parent_height > 0.0 {
+            parent_height
+          } else {
+            ctx.viewport_height
+          },
+          box_width,
+          box_height,
+          border,
           ctx.viewport_width,
           ctx.viewport_height,
           warnings,
@@ -2330,8 +2355,18 @@ fn compute_with_collapse(
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
     if child.style.position == @types.Fixed {
-      let fixed_layout = layout_fixed_child(
+      let fixed_layout = layout_fixed_child_for_parent(
         child,
+        style,
+        parent_width,
+        if parent_height > 0.0 {
+          parent_height
+        } else {
+          ctx.viewport_height
+        },
+        box_width,
+        box_height,
+        border,
         ctx.viewport_width,
         ctx.viewport_height,
         warnings,
@@ -2370,6 +2405,73 @@ fn compute_with_collapse(
     text: node.text,
   }
   { layout, collapsed: { top: escaped_top, bottom: escaped_bottom } }
+}
+
+///|
+fn resolve_fixed_inset_offset(
+  dim : @types.Dimension,
+  available : Double,
+) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(p) => available * p
+    _ => 0.0
+  }
+}
+
+///|
+fn establishes_fixed_containing_block(style : @style.Style) -> Bool {
+  style.contain.paint || style.contain.layout || not(style.transform.is_none())
+}
+
+///|
+fn estimate_self_offset_for_fixed(
+  style : @style.Style,
+  parent_width : Double,
+  parent_height : Double,
+) -> (Double, Double) {
+  match style.position {
+    @types.Absolute | @types.Fixed =>
+      (
+        resolve_fixed_inset_offset(style.inset.left, parent_width),
+        resolve_fixed_inset_offset(style.inset.top, parent_height),
+      )
+    _ => (0.0, 0.0)
+  }
+}
+
+///|
+fn layout_fixed_child_for_parent(
+  child : @node.Node,
+  parent_style : @style.Style,
+  parent_width : Double,
+  parent_height : Double,
+  container_width : Double,
+  container_height : Double,
+  parent_border : @types.Rect[Double],
+  viewport_width : Double,
+  viewport_height : Double,
+  warnings : Array[@types.LayoutWarning],
+  dispatch : @node.DispatchFn,
+) -> @types.Layout {
+  if establishes_fixed_containing_block(parent_style) {
+    // Transform/filter/backdrop-filter/perspective/containment establish CB for fixed descendants.
+    return layout_absolute_child(
+      child, container_width, container_height, parent_border, 0.0, warnings, dispatch,
+    )
+  }
+  let fixed_layout = layout_fixed_child(
+    child, viewport_width, viewport_height, warnings, dispatch,
+  )
+  // Fixed boxes are viewport-relative; convert to parent-relative coordinates.
+  let (parent_offset_x, parent_offset_y) = estimate_self_offset_for_fixed(
+    parent_style, parent_width, parent_height,
+  )
+  {
+    ..fixed_layout,
+    x: fixed_layout.x - parent_offset_x,
+    y: fixed_layout.y - parent_offset_y,
+  }
 }
 
 ///|

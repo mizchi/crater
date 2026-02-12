@@ -172,6 +172,20 @@ test "compute_inline viewport units" {
 }
 
 ///|
+test "compute_inline calc viewport units" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline("width: calc(100vw + 100px)", ctx)
+  inspect(style.width, content="Length(900)")
+}
+
+///|
 test "compute_inline box model" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline(

@@ -438,3 +438,67 @@ test "inline_element_with_padding_and_child" {
   // Link height = child height (20) + padding top (2) + padding bottom (2) = 24
   inspect(result.layouts[0].height, content="24")
 }
+
+///|
+test "br_after_wrapped_text_uses_last_visual_line_position" {
+  let default_style = @style.Style::default()
+  let text_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 16.0,
+    line_height: 19.2,
+    white_space: @style.WhiteSpace::Normal,
+  }
+  let text = "Expected: A green box, overlapping red box, and a small, inset cyan box. The"
+  // Intrinsic width 624px at 16px monospace-like metrics, wraps into two lines at 600px.
+  let text_measure : @types.MeasureFunc = {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      let line_height = 19.2
+      let max_width = 624.0
+      let wrapped_height = if available_width >= max_width {
+        line_height
+      } else {
+        line_height * 2.0
+      }
+      {
+        min_width: 24.0,
+        max_width,
+        min_height: line_height,
+        max_height: wrapped_height,
+      }
+    },
+  }
+  let text_node = @node.Node::text("#text", text_style, text_measure, text)
+
+  let br_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 16.0,
+    line_height: 19.2,
+  }
+  let br_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      { min_width: 0.0, max_width: 0.0, min_height: 19.2, max_height: 19.2 }
+    },
+  }
+  let br_node = @node.Node::with_measure("br", br_style, br_measure)
+
+  let result = compute_ifc(
+    [text_node, br_node],
+    600.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[1].x, content="24")
+  inspect(result.layouts[1].y, content="19.2")
+}
