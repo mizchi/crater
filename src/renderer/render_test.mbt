@@ -256,3 +256,43 @@ test "wpt_grid_child_percent_basis_resize_uses_definite_track_height" {
   inspect(scroll_outer.height, content="100")
   inspect(scroll_inner.height, content="100")
 }
+
+///|
+test "wpt_grid_item_percentage_quirk_canvas_behaves_like_browser" {
+  let html_str =
+    #|<!-- quirks mode -->
+    #|<div style="width: 100px; height: 100px; overflow: hidden; background: green;">
+    #|  <div style="display: grid; position: relative; left: -20px;">
+    #|    <canvas width=10 height=10 style="height: 200%; background: red;"></canvas>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let outer = layout.children[0]
+  let grid = outer.children[0]
+  let canvas = grid.children[0]
+
+  inspect(grid.height, content="10")
+  inspect(canvas.width, content="20")
+  inspect(canvas.height, content="20")
+}
+
+///|
+test "wpt_grid_item_percentage_quirk_non_replaced_stays_auto" {
+  let html_str =
+    #|<!-- quirks mode -->
+    #|<div style="width: 100px; height: 100px; overflow: hidden; background: green;">
+    #|  <div style="display: grid; position: relative; left: -20px;">
+    #|    <div width=10 height=10 style="height: 200%; width: 200px; background: red;"></div>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let outer = layout.children[0]
+  let grid = outer.children[0]
+  let child = grid.children[0]
+
+  inspect(grid.height, content="0")
+  inspect(child.width, content="200")
+  inspect(child.height, content="0")
+}

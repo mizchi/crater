@@ -337,7 +337,7 @@ pub fn compute(
   ctx : @types.LayoutContext,
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
-  let available_height = ctx.available_height.unwrap_or(ctx.available_width)
+  let available_height = ctx.available_height.unwrap_or(0.0)
   let is_block_level = node.style.display == @types.Grid
   // When called with Definite sizing_mode, the container size may be extrinsically definite.
   // Only treat it as definite for block-level grid with width/height:auto, or when stretched.
@@ -2368,12 +2368,27 @@ fn calculate_item_intrinsic_sizes(
       }
       @types.Percent(p) => {
         add_box = false
-        let resolved = if container_height > 0.0 {
-          p * container_height
+        if container_height > 0.0 {
+          let resolved = p * container_height
+          (resolved, resolved)
+          // In an indefinite block-size context, percentage heights contribute
+          // like auto for leaf replaced elements (intrinsic size), otherwise 0.
+        } else if child.children.length() == 0 {
+          let measure_available_width = match child.style.width {
+            @types.Length(v) => v
+            @types.Percent(p) => p * container_width
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) => 1.0e10
+          }
+          let intrinsic = get_intrinsic_from_measure(
+            child, measure_available_width, container_width,
+          )
+          (intrinsic.min_height, intrinsic.max_height)
         } else {
-          0.0
+          (0.0, 0.0)
         }
-        (resolved, resolved)
       }
       @types.Auto =>
         if child.children.length() == 0 {
