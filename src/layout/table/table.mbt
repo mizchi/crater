@@ -306,6 +306,43 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
 }
 
 ///|
+fn is_inline_intrinsic_child(node : @node.Node) -> Bool {
+  if node.id == "br" || node.id.has_prefix("#text") {
+    return true
+  }
+  match node.style.display {
+    @types.Inline
+    | @types.InlineBlock
+    | @types.InlineFlex
+    | @types.InlineGrid => true
+    _ => false
+  }
+}
+
+///|
+fn has_vertical_inline_flow_children(children : Array[@node.Node]) -> Bool {
+  let mut has_in_flow_child = false
+  for child in children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
+    }
+    has_in_flow_child = true
+    if not(is_inline_intrinsic_child(child)) {
+      return false
+    }
+  }
+  has_in_flow_child
+}
+
+///|
 /// Measure intrinsic width of a cell's content
 fn measure_cell_content_width(cell : @node.Node) -> Double {
   let style = cell.style
@@ -366,6 +403,25 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
   let padding = @types.resolve_rect_intrinsic(style.padding)
   let border = @types.resolve_rect_intrinsic(style.border)
   let box_extra = padding.horizontal_sum() + border.horizontal_sum()
+  if style.writing_mode.is_vertical() &&
+    has_vertical_inline_flow_children(node.children) {
+    let mut total_columns_width = 0.0
+    let mut current_column_width = 0.0
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      let child_width = measure_node_intrinsic_width(child)
+      if child.id == "br" {
+        total_columns_width = total_columns_width +
+          max(current_column_width, child_width)
+        current_column_width = 0.0
+      } else {
+        current_column_width = max(current_column_width, child_width)
+      }
+    }
+    return total_columns_width + current_column_width + box_extra
+  }
   let mut max_width = 0.0
   for child in node.children {
     if child.style.display == @types.Display::None {
@@ -1261,6 +1317,24 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
   let padding = @types.resolve_rect_intrinsic(style.padding)
   let border = @types.resolve_rect_intrinsic(style.border)
   let box_extra = padding.vertical_sum() + border.vertical_sum()
+  if style.writing_mode.is_vertical() &&
+    has_vertical_inline_flow_children(node.children) {
+    let mut max_column_height = 0.0
+    let mut current_column_height = 0.0
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      let child_height = measure_node_intrinsic_height(child)
+      if child.id == "br" {
+        max_column_height = max(max_column_height, current_column_height)
+        current_column_height = 0.0
+      } else {
+        current_column_height = current_column_height + child_height
+      }
+    }
+    return max(max_column_height, current_column_height) + box_extra
+  }
   let mut total_height = 0.0
   for child in node.children {
     if child.style.display == @types.Display::None {

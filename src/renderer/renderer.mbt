@@ -675,6 +675,7 @@ fn collect_inline_content(
   children : Array[@html.Node],
   stylesheets : Array[@cascade.Stylesheet],
   ctx : RenderContext,
+  preserve_inline_elements : Bool,
 ) -> (String, Array[@html.Node]) {
   let text_builder = StringBuilder::new()
   let remaining : Array[@html.Node] = []
@@ -711,8 +712,14 @@ fn collect_inline_content(
           remaining.push(child)
         } else if is_inline_element(elem) &&
           not(will_have_non_inline_display(elem, stylesheets, ctx)) {
-          // Check if this inline element contains replaced elements (like <a><img></a>)
-          if should_preserve_inline_element(elem, stylesheets, ctx) ||
+          if preserve_inline_elements {
+            // In flex/grid containers, direct inline children are layout items
+            // and must be preserved as elements.
+            flush_text(text_builder, remaining)
+            remaining.push(child)
+            has_inline_content = true
+            // Check if this inline element contains replaced elements (like <a><img></a>)
+          } else if should_preserve_inline_element(elem, stylesheets, ctx) ||
             contains_preserved_inline_descendant(elem, stylesheets, ctx) {
             // Keep inline elements that participate in containing-block / positioning behavior
             flush_text(text_builder, remaining)
@@ -2027,10 +2034,15 @@ fn element_to_node_with_styles(
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []
+  let preserve_inline_elements = match style.display {
+    @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
+    _ => false
+  }
   let (inline_text, remaining_children) = collect_inline_content(
     elem.children,
     stylesheets,
     ctx,
+    preserve_inline_elements,
   )
 
   // Add combined text node if there's inline content
@@ -2164,10 +2176,15 @@ fn element_to_node_with_styles_internal(
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []
+  let preserve_inline_elements = match style.display {
+    @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
+    _ => false
+  }
   let (inline_text, remaining_children) = collect_inline_content(
     elem.children,
     stylesheets,
     ctx,
+    preserve_inline_elements,
   )
 
   // Add combined text node if there's inline content
@@ -2912,9 +2929,9 @@ fn apply_css_property_with_viewport(
 ) -> @style.Style {
   // Use direct property application to avoid string parsing overhead
   let ctx : @computed.ComputeContext = {
-    parent_style: None,
+    parent_style: Some(style),
     root_font_size: 16.0,
-    font_size: 16.0,
+    font_size: style.font_size,
     viewport_width,
     viewport_height,
     custom_properties: css_vars,
