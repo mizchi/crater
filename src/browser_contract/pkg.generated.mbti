@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/browser_contract"
+
+import {
+  "mizchi/crater/aom",
+  "mizchi/crater/renderer",
+}
+
+// Values
+pub fn create_render_context(Int, Int, Bool) -> @renderer.RenderContext
+
+pub fn extract_main_text(@aom.AccessibilityTree, Int, Int) -> String
+
+pub fn render_arc90_summary(@aom.AccessibilityTree, Int, Int) -> String
+
+pub fn render_grounding_demo(@aom.AccessibilityTree, Int, Int) -> String
+
+pub fn report_css_support(Array[String]) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

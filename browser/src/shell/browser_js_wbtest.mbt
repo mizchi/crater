@@ -2,6 +2,37 @@
 /// Tests for Browser JS integration
 
 ///|
+test "Browser getter API returns initial state" {
+  let browser = Browser::new(800, 600)
+  inspect(browser.get_current_url(), content="")
+  inspect(browser.get_viewport_height(), content="600")
+  inspect(browser.get_link_count(), content="0")
+  inspect(browser.get_focused_link_index(), content="0")
+  inspect(browser.is_hint_mode(), content="false")
+}
+
+///|
+test "Browser render_output returns defaults when content is empty" {
+  let browser = Browser::new(800, 600)
+  inspect(browser.render_output(Text), content="")
+  inspect(browser.render_output(Sixel), content="")
+  inspect(browser.render_output(Json), content="{}")
+  inspect(browser.render_output(Aom), content="")
+  inspect(
+    browser.render_output(Arc90),
+    content="No accessibility tree available.",
+  )
+  inspect(
+    browser.render_output(ExtractMain),
+    content="No accessibility tree available.",
+  )
+  inspect(
+    browser.render_output(Grounding),
+    content="No accessibility tree available.",
+  )
+}
+
+///|
 test "extract_scripts extracts inline script" {
   let html =
     #|<html>

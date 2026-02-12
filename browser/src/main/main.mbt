@@ -61,39 +61,39 @@ struct Options {
 fn render_page(browser : @shell.Browser, options : Options) -> Unit {
   if options.json {
     // AOM JSON output for AI scraping
-    let json_output = browser.render_json()
+    let json_output = browser.render_output(@shell.OutputMode::Json)
     println(json_output)
   } else if options.aom {
     // AOM YAML snapshot output (Playwright-compatible)
-    let aom_output = browser.render_aom()
+    let aom_output = browser.render_output(@shell.OutputMode::Aom)
     println(aom_output)
   } else if options.extract_main {
     // Extract main content text only
-    let main_text = browser.render_extract_main()
+    let main_text = browser.render_output(@shell.OutputMode::ExtractMain)
     println(main_text)
   } else if options.arc90 {
     // Arc90 content extraction
-    let arc90_output = browser.render_arc90()
+    let arc90_output = browser.render_output(@shell.OutputMode::Arc90)
     println(arc90_output)
   } else if options.grounding {
     // Visual grounding demo
-    let grounding_output = browser.render_grounding()
+    let grounding_output = browser.render_output(@shell.OutputMode::Grounding)
     println(grounding_output)
   } else if options.sixel {
-    let sixel = browser.render()
+    let sixel = browser.render_output(@shell.OutputMode::Sixel)
     @tui.print_raw(@tui.clear_screen())
     @tui.print_raw(sixel)
     println("")
     println(
       @tui.format_status_bar(
-        browser.current_url,
-        browser.links.length(),
-        browser.focused_link,
+        browser.get_current_url(),
+        browser.get_link_count(),
+        browser.get_focused_link_index(),
       ),
     )
   } else if options.text {
     // TUI text mode: character-based rendering
-    let text_output = browser.render_text()
+    let text_output = browser.render_output(@shell.OutputMode::Text)
     @tui.print_raw(text_output)
   } else if options.debug {
     // Debug mode: print layout tree
@@ -291,14 +291,14 @@ async fn main {
       // For full mode, we need to scroll through entire content
       // For now, just render the initial viewport
       // TODO: Implement full page rendering by scrolling through content
-      let text_output = browser.render_text()
+      let text_output = browser.render_output(@shell.OutputMode::Text)
       @tui.print_raw(text_output)
       return
     }
     Viewport => {
       // Render viewport only
       let _ = browser.navigate(options.url)
-      let text_output = browser.render_text()
+      let text_output = browser.render_output(@shell.OutputMode::Text)
       @tui.print_raw(text_output)
       return
     }
@@ -326,7 +326,7 @@ async fn main {
   while running {
     let key = @tui.read_key()
     // Use different key handling based on hint mode
-    let action = if browser.hint_mode {
+    let action = if browser.is_hint_mode() {
       @tui.key_to_hint_action(key)
     } else {
       @tui.key_to_action(key)
@@ -350,11 +350,11 @@ async fn main {
       }
       Some(@tui.PageDown) => {
         // Scroll by viewport height (minus some overlap)
-        browser.scroll_down(browser.viewport_height - 50)
+        browser.scroll_down(browser.get_viewport_height() - 50)
         render_page(browser, options)
       }
       Some(@tui.PageUp) => {
-        browser.scroll_up(browser.viewport_height - 50)
+        browser.scroll_up(browser.get_viewport_height() - 50)
         render_page(browser, options)
       }
       Some(@tui.NextLink) => {
@@ -386,7 +386,7 @@ async fn main {
       }
       Some(@tui.Refresh) => {
         println("Refreshing...")
-        let _ = browser.navigate(browser.current_url)
+        let _ = browser.navigate(browser.get_current_url())
         render_page(browser, options)
       }
       Some(@tui.Back) =>

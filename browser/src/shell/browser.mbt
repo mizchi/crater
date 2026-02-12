@@ -3,14 +3,26 @@
 
 ///|
 /// Link found in the page
-pub(all) struct Link {
+priv struct Link {
   href : String
   text : String
 }
 
 ///|
+/// Browser output mode
+pub(all) enum OutputMode {
+  Sixel
+  Text
+  Json
+  Aom
+  Arc90
+  ExtractMain
+  Grounding
+}
+
+///|
 /// Browser state
-pub struct Browser {
+struct Browser {
   /// Current URL
   mut current_url : String
   /// Request sandbox policy
@@ -138,9 +150,33 @@ pub fn Browser::set_request_sandbox(
 }
 
 ///|
-/// Get current request sandbox policy
-pub fn Browser::get_request_sandbox(self : Browser) -> @http.RequestSandbox {
-  self.request_sandbox
+/// Get current URL
+pub fn Browser::get_current_url(self : Browser) -> String {
+  self.current_url
+}
+
+///|
+/// Get viewport height in pixels
+pub fn Browser::get_viewport_height(self : Browser) -> Int {
+  self.viewport_height
+}
+
+///|
+/// Get number of extracted links
+pub fn Browser::get_link_count(self : Browser) -> Int {
+  self.links.length()
+}
+
+///|
+/// Get currently focused link index
+pub fn Browser::get_focused_link_index(self : Browser) -> Int {
+  self.focused_link
+}
+
+///|
+/// Whether hint mode is active
+pub fn Browser::is_hint_mode(self : Browser) -> Bool {
+  self.hint_mode
 }
 
 ///|
@@ -234,144 +270,8 @@ async fn fetch_external_css(
   }
   println("Loaded " + css_contents.length().to_string() + " stylesheets")
   // Analyze CSS support
-  analyze_css_support(css_contents)
+  @browser_contract.report_css_support(css_contents)
   css_contents
-}
-
-///|
-/// Analyze CSS support and print diagnostics
-fn analyze_css_support(css_list : Array[String]) -> Unit {
-  // Aggregate summaries from all stylesheets
-  let mut total = 0
-  let mut supported = 0
-  let mut partial = 0
-  let mut unsupported_layout = 0
-  let mut unsupported_visual = 0
-  let mut deprecated = 0
-  let mut unknown = 0
-  let all_diagnostics : Array[@diagnostics.Diagnostic] = []
-  let seen : Map[String, Bool] = {}
-  // Parse all CSS with diagnostics
-  for css in css_list {
-    let result = @parser.parse_stylesheet_with_diagnostics(css)
-    let summary = result.diagnostics.get_summary()
-    // Aggregate counts
-    total += summary.total_properties
-    supported += summary.supported
-    partial += summary.partial
-    unsupported_layout += summary.unsupported_layout
-    unsupported_visual += summary.unsupported_visual
-    deprecated += summary.deprecated
-    unknown += summary.unknown
-    // Collect unique diagnostics (non-supported only)
-    for diag in result.diagnostics.get_diagnostics() {
-      let key = diag.property + ":" + diag.value
-      if not(seen.contains(key)) {
-        seen.set(key, true)
-        all_diagnostics.push(diag)
-      }
-    }
-  }
-  // Print compact summary
-  let buf = StringBuilder::new()
-  buf.write_string("\nCSS: ")
-  buf.write_string(supported.to_string())
-  buf.write_string(" ok")
-  if partial > 0 {
-    buf.write_string(", ")
-    buf.write_string(partial.to_string())
-    buf.write_string(" partial")
-  }
-  if unsupported_visual > 0 {
-    buf.write_string(", ")
-    buf.write_string(unsupported_visual.to_string())
-    buf.write_string(" visual-only")
-  }
-  if unsupported_layout > 0 {
-    buf.write_string(", ")
-    buf.write_string(unsupported_layout.to_string())
-    buf.write_string(" layout!")
-  }
-  if unknown > 0 {
-    buf.write_string(", ")
-    buf.write_string(unknown.to_string())
-    buf.write_string(" unknown!")
-  }
-  println(buf.to_string())
-  // Print detailed report if there are issues
-  if unsupported_layout > 0 || unknown > 0 {
-    println("=== CSS Support Report ===")
-    println("Total properties: " + total.to_string())
-    println("  Supported: " + supported.to_string())
-    if partial > 0 {
-      println("  Partial: " + partial.to_string())
-    }
-    if deprecated > 0 {
-      println("  Deprecated: " + deprecated.to_string())
-    }
-    if unsupported_visual > 0 {
-      println("  Unsupported (visual): " + unsupported_visual.to_string())
-    }
-    if unsupported_layout > 0 {
-      println(
-        "  Unsupported (layout): " +
-        unsupported_layout.to_string() +
-        " [WARNING]",
-      )
-    }
-    if unknown > 0 {
-      println("  Unknown: " + unknown.to_string() + " [ERROR]")
-    }
-    // Print first few layout-affecting issues
-    let layout_issues : Array[@diagnostics.Diagnostic] = []
-    for diag in all_diagnostics {
-      if @diagnostics.affects_layout(diag.level) {
-        layout_issues.push(diag)
-      }
-    }
-    if layout_issues.length() > 0 {
-      println("\n--- Layout-affecting issues ---")
-      let count = if layout_issues.length() > 10 {
-        10
-      } else {
-        layout_issues.length()
-      }
-      for i = 0; i < count; i = i + 1 {
-        let diag = layout_issues[i]
-        println("  " + diag.property + ": " + diag.value)
-      }
-      if layout_issues.length() > 10 {
-        println(
-          "  ... and " + (layout_issues.length() - 10).to_string() + " more",
-        )
-      }
-    }
-    // Print first few unknown properties
-    let unknown_props : Array[@diagnostics.Diagnostic] = []
-    for diag in all_diagnostics {
-      match diag.level {
-        @diagnostics.Unknown => unknown_props.push(diag)
-        _ => ()
-      }
-    }
-    if unknown_props.length() > 0 {
-      println("\n--- Unknown properties ---")
-      let count = if unknown_props.length() > 10 {
-        10
-      } else {
-        unknown_props.length()
-      }
-      for i = 0; i < count; i = i + 1 {
-        let diag = unknown_props[i]
-        println("  " + diag.property + ": " + diag.value)
-      }
-      if unknown_props.length() > 10 {
-        println(
-          "  ... and " + (unknown_props.length() - 10).to_string() + " more",
-        )
-      }
-    }
-  }
 }
 
 ///|
@@ -459,7 +359,7 @@ async fn Browser::load_url(
 ///|
 /// Load a URL in lightweight mode (for --json, --aom modes)
 /// Skips CSS cascade and layout calculation to reduce memory usage
-pub async fn Browser::load_url_lightweight(
+async fn Browser::load_url_lightweight(
   self : Browser,
   url : String,
 ) -> String raise @http.HttpError {
@@ -529,8 +429,22 @@ pub async fn Browser::go_forward(
 }
 
 ///|
+/// Render current content in selected output mode
+pub fn Browser::render_output(self : Browser, mode : OutputMode) -> String {
+  match mode {
+    Sixel => self.render()
+    Text => self.render_text()
+    Json => self.render_json()
+    Aom => self.render_aom()
+    Arc90 => self.render_arc90()
+    ExtractMain => self.render_extract_main()
+    Grounding => self.render_grounding()
+  }
+}
+
+///|
 /// Render current content to Sixel
-pub fn Browser::render(self : Browser) -> String {
+fn Browser::render(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
@@ -545,21 +459,15 @@ pub fn Browser::render(self : Browser) -> String {
 
 ///|
 /// Render current content to ANSI text (TUI mode)
-pub fn Browser::render_text(self : Browser) -> String {
+fn Browser::render_text(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  let color_scheme : @media.ColorScheme = if self.dark_mode {
-    @media.ColorScheme::Dark
-  } else {
-    @media.ColorScheme::Light
-  }
-  let ctx : @renderer.RenderContext = {
-    viewport_width: self.viewport_width.to_double(),
-    viewport_height: self.viewport_height.to_double(),
-    root_font_size: 16.0,
-    color_scheme,
-  }
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    self.dark_mode,
+  )
   if self.last_color_scheme_dark != self.dark_mode {
     self.render_node = None
     self.layout_tree = None
@@ -767,146 +675,9 @@ pub fn Browser::scroll_up(self : Browser, amount : Int) -> Unit {
 }
 
 ///|
-/// Scroll a specific element down
-pub fn Browser::element_scroll_down(
-  self : Browser,
-  element_id : String,
-  amount : Double,
-) -> Unit {
-  match self.element_scroll_states.get(element_id) {
-    Some(state) => {
-      let new_state = state.scroll_by(0.0, amount)
-      self.element_scroll_states.set(element_id, new_state)
-    }
-    None => ()
-  }
-}
-
-///|
-/// Scroll a specific element up
-pub fn Browser::element_scroll_up(
-  self : Browser,
-  element_id : String,
-  amount : Double,
-) -> Unit {
-  match self.element_scroll_states.get(element_id) {
-    Some(state) => {
-      let new_state = state.scroll_by(0.0, -amount)
-      self.element_scroll_states.set(element_id, new_state)
-    }
-    None => ()
-  }
-}
-
-///|
-/// Scroll focused scrollable element (if any)
-/// Returns true if scroll was handled, false otherwise
-pub fn Browser::scroll_focused_element(
-  self : Browser,
-  delta_y : Double,
-) -> Bool {
-  match self.focused_scrollable.val {
-    Some(id) =>
-      match self.element_scroll_states.get(id) {
-        Some(state) => {
-          let new_state = state.scroll_by(0.0, delta_y)
-          self.element_scroll_states.set(id, new_state)
-          true
-        }
-        None => false
-      }
-    None => false
-  }
-}
-
-///|
-/// Set the focused scrollable element
-pub fn Browser::set_focused_scrollable(
-  self : Browser,
-  element_id : String?,
-) -> Unit {
-  self.focused_scrollable.val = element_id
-}
-
-///|
-/// Get the focused scrollable element id
-pub fn Browser::get_focused_scrollable(self : Browser) -> String? {
-  self.focused_scrollable.val
-}
-
-///|
-/// Handle scroll event at screen coordinates (character-based)
-/// Returns true if scroll was handled by an element, false if page scroll should occur
-pub fn Browser::handle_scroll_at(
-  self : Browser,
-  char_col : Int,
-  char_row : Int,
-  delta_y : Double,
-) -> Bool {
-  // Convert character coordinates to pixel coordinates
-  let font_width = 8.0
-  let font_height = 16.0
-  let px_x = char_col.to_double() * font_width
-  let px_y = (char_row + self.scroll_y / 16).to_double() * font_height
-  // Try to find scrollable element at this position using the render tree
-  match self.find_scrollable_element_at(px_x, px_y) {
-    Some(element_id) => {
-      // Scroll the element
-      if delta_y > 0.0 {
-        self.element_scroll_down(element_id, delta_y)
-      } else {
-        self.element_scroll_up(element_id, -delta_y)
-      }
-      // Set as focused scrollable
-      self.set_focused_scrollable(Some(element_id))
-      true
-    }
-    None => {
-      // Clear focused scrollable when scrolling outside
-      self.set_focused_scrollable(None)
-      false
-    }
-  }
-}
-
-///|
-/// Find scrollable element at pixel coordinates using cached render/layout
-/// This is a simplified version that uses the element scroll states
-fn Browser::find_scrollable_element_at(
-  self : Browser,
-  _px_x : Double,
-  _px_y : Double,
-) -> String? {
-  // For now, return the first scrollable element if any exist
-  // Full hit testing requires access to the layout tree which is complex
-  // A more complete implementation would use @paint.find_scrollable_at
-  // with the current paint tree
-  //
-  // As a workaround, we check if there's a focused element that's scrollable
-  match self.get_focused_element_id() {
-    Some(id) =>
-      if self.element_scroll_states.contains(id) {
-        Some(id)
-      } else {
-        None
-      }
-    None => None
-  }
-}
-
-///|
-/// Get scroll state for an element
-pub fn Browser::get_element_scroll(
-  self : Browser,
-  element_id : String,
-) -> @dom.ScrollState? {
-  self.element_scroll_states.get(element_id)
-}
-
-///|
 /// Initialize scroll state for an element
 /// Call this when a scrollable element is detected
-pub fn Browser::init_element_scroll(
+fn Browser::init_element_scroll(
   self : Browser,
   element_id : String,
   scroll_width : Double,
@@ -922,7 +693,7 @@ pub fn Browser::init_element_scroll(
 
 ///|
 /// Clear all element scroll states (call on page navigation)
-pub fn Browser::clear_element_scroll_states(self : Browser) -> Unit {
+fn Browser::clear_element_scroll_states(self : Browser) -> Unit {
   self.element_scroll_states.clear()
   self.focused_scrollable.val = None
 }
@@ -1062,12 +833,11 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
     }
   }
   // Use the renderer's layout which applies CSS properly
-  let ctx : @renderer.RenderContext = {
-    viewport_width: self.viewport_width.to_double(),
-    viewport_height: self.viewport_height.to_double(),
-    root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
-  }
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    false,
+  )
   // Render with CSS to get proper layout bounds
   // Use the document with synthetic IDs for consistent ID matching
   let layout = @renderer.render_document_with_external_css(
@@ -1111,31 +881,9 @@ fn Browser::build_accessibility_tree_lightweight(self : Browser) -> Unit {
 }
 
 ///|
-/// Get currently focused element ID from FocusManager
-pub fn Browser::get_focused_element_id(self : Browser) -> String? {
-  match self.focus_manager {
-    Some(fm) => fm.current_id()
-    None => None
-  }
-}
-
-///|
-/// Get focus info for rendering (element id and role)
-pub fn Browser::get_focus_info(self : Browser) -> (String?, @aom.Role?) {
-  match self.focus_manager {
-    Some(fm) =>
-      match fm.current() {
-        Some(node) => (Some(node.id), Some(node.role))
-        None => (None, None)
-      }
-    None => (None, None)
-  }
-}
-
-///|
 /// Get the accessible name of the currently focused element
 /// Used for :focus styling in TUI rendering
-pub fn Browser::get_focused_element_name(self : Browser) -> String? {
+fn Browser::get_focused_element_name(self : Browser) -> String? {
   match self.focus_manager {
     Some(fm) =>
       match fm.current() {
@@ -1185,45 +933,14 @@ pub fn Browser::get_focused_link_url(self : Browser) -> String? {
 }
 
 ///|
-/// Get number of focusable elements
-pub fn Browser::focusable_count(self : Browser) -> Int {
-  match self.focus_manager {
-    Some(fm) => fm.focusable_count()
-    None => self.links.length()
-  }
-}
-
-///|
-/// Get current focus index (0-based, -1 if no focus)
-pub fn Browser::get_focus_index(self : Browser) -> Int {
-  match self.focus_manager {
-    Some(fm) =>
-      if fm.has_focus() {
-        // Find current index by matching current id in tab order
-        let current_id = fm.current_id()
-        let tab_order = fm.get_tab_order()
-        for i, item in tab_order {
-          if Some(item.node.id) == current_id {
-            return i
-          }
-        }
-        -1
-      } else {
-        -1
-      }
-    None => self.focused_link
-  }
-}
-
-///|
 /// Get number of visible focusable elements (links visible on screen)
-pub fn Browser::get_visible_focusable_count(self : Browser) -> Int {
+fn Browser::get_visible_focusable_count(self : Browser) -> Int {
   self.link_regions.length()
 }
 
 ///|
 /// Get current focus index among visible elements (-1 if no focus or not visible)
-pub fn Browser::get_visible_focus_index(self : Browser) -> Int {
+fn Browser::get_visible_focus_index(self : Browser) -> Int {
   let focused_name = self.get_focused_element_name()
   match focused_name {
     Some(name) => {
@@ -1265,12 +982,11 @@ pub fn Browser::debug_layout(self : Browser) -> Unit {
     println("No content loaded")
     return
   }
-  let ctx : @renderer.RenderContext = {
-    viewport_width: self.viewport_width.to_double(),
-    viewport_height: self.viewport_height.to_double(),
-    root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
-  }
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    false,
+  )
   let layout = @renderer.render_with_external_css(
     self.html_content,
     ctx,
@@ -1284,7 +1000,7 @@ pub fn Browser::debug_layout(self : Browser) -> Unit {
 
 ///|
 /// Render accessibility tree as JSON (for AI scraping)
-pub fn Browser::render_json(self : Browser) -> String {
+fn Browser::render_json(self : Browser) -> String {
   match self.a11y_tree {
     Some(tree) => tree.to_aria_json()
     None => "{}"
@@ -1293,7 +1009,7 @@ pub fn Browser::render_json(self : Browser) -> String {
 
 ///|
 /// Render accessibility tree as YAML (Playwright-compatible)
-pub fn Browser::render_aom(self : Browser) -> String {
+fn Browser::render_aom(self : Browser) -> String {
   match self.a11y_tree {
     Some(tree) => tree.to_aria_snapshot()
     None => ""
@@ -1302,176 +1018,42 @@ pub fn Browser::render_aom(self : Browser) -> String {
 
 ///|
 /// Run Arc90 content extraction and return result
-pub fn Browser::render_arc90(self : Browser) -> String {
+fn Browser::render_arc90(self : Browser) -> String {
   match self.a11y_tree {
-    Some(tree) => {
-      let config : @arc90.ExtractConfig = {
-        min_text_length: 50,
-        viewport_width: self.viewport_width.to_double(),
-        viewport_height: self.viewport_height.to_double(),
-        ad_sizes: [
-          (300.0, 250.0),
-          (728.0, 90.0),
-          (160.0, 600.0),
-          (300.0, 600.0),
-          (320.0, 50.0),
-          (320.0, 100.0),
-        ],
-      }
-      let result = @arc90.extract_content(tree, config)
-      result.to_summary()
-    }
+    Some(tree) =>
+      @browser_contract.render_arc90_summary(
+        tree,
+        self.viewport_width,
+        self.viewport_height,
+      )
     None => "No accessibility tree available."
   }
 }
 
 ///|
 /// Extract main content text using Arc90 algorithm
-pub fn Browser::render_extract_main(self : Browser) -> String {
+fn Browser::render_extract_main(self : Browser) -> String {
   match self.a11y_tree {
-    Some(tree) => {
-      let config : @arc90.ExtractConfig = {
-        min_text_length: 50,
-        viewport_width: self.viewport_width.to_double(),
-        viewport_height: self.viewport_height.to_double(),
-        ad_sizes: [
-          (300.0, 250.0),
-          (728.0, 90.0),
-          (160.0, 600.0),
-          (300.0, 600.0),
-          (320.0, 50.0),
-          (320.0, 100.0),
-        ],
-      }
-      let result = @arc90.extract_content(tree, config)
-      match result.main_content {
-        Some(node) => collect_node_text(node)
-        None => "(No main content found)"
-      }
-    }
+    Some(tree) =>
+      @browser_contract.extract_main_text(
+        tree,
+        self.viewport_width,
+        self.viewport_height,
+      )
     None => "No accessibility tree available."
   }
 }
 
 ///|
-/// Recursively collect text from an accessibility node
-fn collect_node_text(node : @aom.AccessibilityNode) -> String {
-  let buf = StringBuilder::new()
-  collect_node_text_recursive(node, buf)
-  buf.to_string().trim().to_string()
-}
-
-///|
-fn collect_node_text_recursive(
-  node : @aom.AccessibilityNode,
-  buf : StringBuilder,
-) -> Unit {
-  // Skip navigation elements
-  if node.role == @aom.Navigation ||
-    node.role == @aom.Banner ||
-    node.role == @aom.ContentInfo {
-    return
-  }
-  // Add text content if present
-  match node.text {
-    Some(text) if text.length() > 0 => {
-      buf.write_string(text)
-      // Add appropriate spacing based on role
-      match node.role {
-        @aom.Heading | @aom.Paragraph | @aom.ListItem | @aom.Article =>
-          buf.write_string("\n\n")
-        _ => buf.write_string(" ")
-      }
-    }
-    _ =>
-      // If no text, try name (for links, buttons, etc.)
-      match node.name {
-        Some(name) if name.length() > 0 && node.children.length() == 0 => {
-          buf.write_string(name)
-          buf.write_string(" ")
-        }
-        _ => ()
-      }
-  }
-  // Recurse into children
-  for child in node.children {
-    collect_node_text_recursive(child, buf)
-  }
-}
-
-///|
 /// Run visual grounding demo and return results
-pub fn Browser::render_grounding(self : Browser) -> String {
+fn Browser::render_grounding(self : Browser) -> String {
   match self.a11y_tree {
-    Some(tree) => {
-      let viewport : @grounding.Viewport = {
-        width: self.viewport_width.to_double(),
-        height: self.viewport_height.to_double(),
-      }
-      let buf = StringBuilder::new()
-      buf.write_string("=== Visual Grounding Demo ===\n")
-      buf.write_string("Viewport: ")
-      buf.write_string(self.viewport_width.to_string())
-      buf.write_string("x")
-      buf.write_string(self.viewport_height.to_string())
-      buf.write_string("\n\n")
-
-      // Test different spatial queries
-      let regions : Array[(@grounding.SpatialRegion, String)] = [
-        (@grounding.TopLeft, "Top Left"),
-        (@grounding.TopRight, "Top Right"),
-        (@grounding.Center, "Center"),
-        (@grounding.BottomLeft, "Bottom Left"),
-        (@grounding.BottomRight, "Bottom Right"),
-      ]
-      for region_info in regions {
-        let (region, name) = region_info
-        buf.write_string("--- ")
-        buf.write_string(name)
-        buf.write_string(" ---\n")
-        let results = @grounding.find_by_spatial(
-          tree,
-          @grounding.InRegion(region),
-          viewport,
-        )
-        if results.length() == 0 {
-          buf.write_string("  (no interactive elements)\n")
-        } else {
-          let limit = if results.length() < 3 { results.length() } else { 3 }
-          for i in 0..<limit {
-            let r = results[i]
-            buf.write_string("  ")
-            buf.write_string(r.to_string())
-            buf.write_string("\n")
-          }
-        }
-        buf.write_string("\n")
-      }
-
-      // Test role-based search
-      buf.write_string("--- Links in Top Right ---\n")
-      let top_right_links = @grounding.find_by_spatial(
+    Some(tree) =>
+      @browser_contract.render_grounding_demo(
         tree,
-        @grounding.RoleInRegion(@aom.Link, @grounding.TopRight),
-        viewport,
+        self.viewport_width,
+        self.viewport_height,
       )
-      if top_right_links.length() == 0 {
-        buf.write_string("  (no links)\n")
-      } else {
-        let limit = if top_right_links.length() < 5 {
-          top_right_links.length()
-        } else {
-          5
-        }
-        for i in 0..<limit {
-          let r = top_right_links[i]
-          buf.write_string("  ")
-          buf.write_string(r.to_string())
-          buf.write_string("\n")
-        }
-      }
-      buf.to_string()
-    }
     None => "No accessibility tree available."
   }
 }
@@ -1662,7 +1244,7 @@ pub fn Browser::process_hint_char(self : Browser, char : String) -> String? {
 
 ///|
 /// Script info extracted from HTML
-pub(all) struct ScriptInfo {
+priv struct ScriptInfo {
   /// Inline script source (empty if external)
   source : String
   /// External script URL (empty if inline)
@@ -1844,7 +1426,7 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
 ///|
 /// Execute scripts from the page (inline only, sync version)
 /// Requires enable_js to be set to true (use --enable-js flag)
-pub fn Browser::execute_scripts(self : Browser) -> Int {
+fn Browser::execute_scripts(self : Browser) -> Int {
   // Check if JS execution is enabled
   if not(self.enable_js) {
     return 0
@@ -1901,7 +1483,7 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
 ///|
 /// Execute scripts from the page (including external scripts, async version)
 /// Requires enable_js to be set to true (use --enable-js flag)
-pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
+async fn Browser::execute_scripts_async(self : Browser) -> Int {
   // Check if JS execution is enabled
   if not(self.enable_js) {
     return 0
@@ -1990,16 +1572,4 @@ pub async fn Browser::execute_scripts_async(self : Browser) -> Int {
   }
   println("Executed " + executed.to_string() + " script(s)")
   executed
-}
-
-///|
-/// Get the DOM tree for external access
-pub fn Browser::get_dom_tree(self : Browser) -> @dom.DomTree? {
-  self.dom_tree
-}
-
-///|
-/// Get the scheduler for external access
-pub fn Browser::get_scheduler(self : Browser) -> @scheduler.Scheduler {
-  self.scheduler
 }

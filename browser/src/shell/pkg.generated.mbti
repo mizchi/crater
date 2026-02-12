@@ -3,14 +3,6 @@ package "mizchi/crater-browser/shell"
 
 import {
   "mizchi/crater-browser/http",
-  "mizchi/crater-browser/js",
-  "mizchi/crater-browser/tui",
-  "mizchi/crater/aom",
-  "mizchi/crater/dom",
-  "mizchi/crater/html",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/layout/tree",
-  "mizchi/crater/scheduler",
 }
 
 // Values
@@ -18,103 +10,43 @@ import {
 // Errors
 
 // Types and methods
-pub struct Browser {
-  mut current_url : String
-  mut request_sandbox : @http.RequestSandbox
-  viewport_width : Int
-  viewport_height : Int
-  mut html_content : String
-  mut parsed_doc : @html.Document?
-  mut external_css : Array[String]
-  mut links : Array[Link]
-  mut focused_link : Int
-  mut scroll_y : Int
-  mut content_height : Int
-  mut link_regions : Array[@tui.LinkRegion]
-  mut hint_mode : Bool
-  mut hints : Array[@tui.HintData]
-  mut hint_input : String
-  back_history : Array[String]
-  forward_history : Array[String]
-  mut focus_manager : @aom.FocusManager?
-  mut a11y_tree : @aom.AccessibilityTree?
-  mut selection_mode : Bool
-  mut dark_mode : Bool
-  mut render_node : @node.Node?
-  mut layout_tree : @tree.LayoutTree?
-  mut prev_buffer : @tui.CharBuffer?
-  mut last_render_key : String
-  mut last_color_scheme_dark : Bool
-  mut dom_tree : @dom.DomTree?
-  scheduler : @scheduler.Scheduler
-  mut script_executor : @js.ScriptExecutor?
-  mut enable_js : Bool
-  element_scroll_states : Map[String, @dom.ScrollState]
-  focused_scrollable : Ref[String?]
-  mut no_color : Bool
-}
-pub fn Browser::clear_element_scroll_states(Self) -> Unit
+type Browser
 pub fn Browser::debug_layout(Self) -> Unit
-pub fn Browser::element_scroll_down(Self, String, Double) -> Unit
-pub fn Browser::element_scroll_up(Self, String, Double) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
-pub fn Browser::execute_scripts(Self) -> Int
-pub async fn Browser::execute_scripts_async(Self) -> Int
 pub fn Browser::exit_hint_mode(Self) -> Unit
-pub fn Browser::focusable_count(Self) -> Int
-pub fn Browser::get_dom_tree(Self) -> @dom.DomTree?
-pub fn Browser::get_element_scroll(Self, String) -> @dom.ScrollState?
-pub fn Browser::get_focus_index(Self) -> Int
-pub fn Browser::get_focus_info(Self) -> (String?, @aom.Role?)
-pub fn Browser::get_focused_element_id(Self) -> String?
-pub fn Browser::get_focused_element_name(Self) -> String?
+pub fn Browser::get_current_url(Self) -> String
+pub fn Browser::get_focused_link_index(Self) -> Int
 pub fn Browser::get_focused_link_url(Self) -> String?
-pub fn Browser::get_focused_scrollable(Self) -> String?
 pub fn Browser::get_link_at(Self, Int, Int) -> String?
-pub fn Browser::get_request_sandbox(Self) -> @http.RequestSandbox
-pub fn Browser::get_scheduler(Self) -> @scheduler.Scheduler
-pub fn Browser::get_visible_focus_index(Self) -> Int
-pub fn Browser::get_visible_focusable_count(Self) -> Int
+pub fn Browser::get_link_count(Self) -> Int
+pub fn Browser::get_viewport_height(Self) -> Int
 pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
 pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
-pub fn Browser::handle_scroll_at(Self, Int, Int, Double) -> Bool
-pub fn Browser::init_element_scroll(Self, String, Double, Double, Double, Double) -> Unit
-pub async fn Browser::load_url_lightweight(Self, String) -> String raise @http.HttpError
+pub fn Browser::is_hint_mode(Self) -> Bool
 pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate_lightweight(Self, String) -> String raise @http.HttpError
 pub fn Browser::new(Int, Int) -> Self
 pub fn Browser::next_link(Self) -> Unit
 pub fn Browser::prev_link(Self) -> Unit
 pub fn Browser::process_hint_char(Self, String) -> String?
-pub fn Browser::render(Self) -> String
-pub fn Browser::render_aom(Self) -> String
-pub fn Browser::render_arc90(Self) -> String
-pub fn Browser::render_extract_main(Self) -> String
-pub fn Browser::render_grounding(Self) -> String
-pub fn Browser::render_json(Self) -> String
-pub fn Browser::render_text(Self) -> String
+pub fn Browser::render_output(Self, OutputMode) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
-pub fn Browser::scroll_focused_element(Self, Double) -> Bool
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
-pub fn Browser::set_focused_scrollable(Self, String?) -> Unit
 pub fn Browser::set_no_color(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool
 
-pub(all) struct Link {
-  href : String
-  text : String
-}
-
-pub(all) struct ScriptInfo {
-  source : String
-  src : String
-  is_async : Bool
-  is_defer : Bool
-  script_type : String
+pub(all) enum OutputMode {
+  Sixel
+  Text
+  Json
+  Aom
+  Arc90
+  ExtractMain
+  Grounding
 }
 
 // Type aliases
