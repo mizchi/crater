@@ -2,7 +2,9 @@
   "name": "mizchi/crater",
   "version": "0.4.4",
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
-  "deps": {},
+  "deps": {
+    "mizchi/layout": { "path": "../layout" }
+  },
   "source": "src",
   "readme": "README.mbt.md",
   "repository": "https://github.com/mizchi/crater",
