@@ -4287,9 +4287,22 @@ fn compute_child_layout(
     // For block/inline contents inside a grid item, use block layout so normal flow
     // (line stacking, margin collapse, etc.) is preserved instead of stretching
     // every descendant to the grid area's available height.
+    let width_is_auto = match child.style.width {
+      @types.Auto => true
+      _ => false
+    }
+    let height_is_auto = match child.style.height {
+      @types.Auto => true
+      _ => false
+    }
+    let child_available_height = if height_is_auto && not(stretch_height) {
+      None
+    } else {
+      Some(height)
+    }
     let child_ctx : @types.LayoutContext = {
       available_width: width,
-      available_height: Some(height),
+      available_height: child_available_height,
       sizing_mode: @types.Definite,
       viewport_width: available_width,
       viewport_height: available_height,
@@ -4299,6 +4312,12 @@ fn compute_child_layout(
     let nested_layout = @block.compute(child, child_ctx, dispatch)
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
+    }
+    if width_is_auto && not(stretch_width) {
+      width = nested_layout.width
+    }
+    if height_is_auto && not(stretch_height) {
+      height = nested_layout.height
     }
   }
   {

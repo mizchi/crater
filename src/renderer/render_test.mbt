@@ -296,3 +296,31 @@ test "wpt_grid_item_percentage_quirk_non_replaced_stays_auto" {
   inspect(child.width, content="200")
   inspect(child.height, content="0")
 }
+
+///|
+test "wpt_grid_align_start_item_uses_content_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.grid {
+    #|  display: grid;
+    #|  grid-template-columns: 100%;
+    #|  grid-template-rows: 50px;
+    #|  height: 50px;
+    #|  font: 10px/1 Ahem;
+    #|}
+    #|.alignStart {
+    #|  align-items: start;
+    #|}
+    #|</style>
+    #|<div class="grid alignStart">
+    #|  <div class="test">x x x x</div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let grid = layout.children[0]
+  let item = grid.children[0]
+
+  inspect(grid.height, content="50")
+  inspect(item.height, content="10")
+}
