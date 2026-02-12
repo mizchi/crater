@@ -853,19 +853,34 @@ fn create_input_measure(
 
 ///|
 /// Create a MeasureFunc for br elements
-/// br elements have zero width and line-height for height
-fn create_br_measure(line_height : Double) -> @types.MeasureFunc {
+/// In horizontal writing-mode, br has 0 width and line-height height.
+/// In vertical writing-mode, br advances one line on x-axis.
+fn create_br_measure(
+  line_height : Double,
+  writing_mode : @style.WritingMode,
+) -> @types.MeasureFunc {
+  let is_vertical = writing_mode.is_vertical()
   {
     func: fn(
       _available_width : Double,
       _available_height : Double,
     ) -> @types.IntrinsicSize {
-      // br elements have zero width but take up line-height vertically
-      {
-        min_width: 0.0,
-        max_width: 0.0,
-        min_height: line_height,
-        max_height: line_height,
+      if is_vertical {
+        // Vertical flow: br occupies one column advance.
+        {
+          min_width: line_height,
+          max_width: line_height,
+          min_height: 0.0,
+          max_height: 0.0,
+        }
+      } else {
+        // Horizontal flow: br occupies one line advance.
+        {
+          min_width: 0.0,
+          max_width: 0.0,
+          min_height: line_height,
+          max_height: line_height,
+        }
       }
     },
   }
@@ -2415,7 +2430,7 @@ fn element_to_node_with_styles_internal(
   if tag_lower == "br" {
     // br elements have zero width but take up line-height vertically
     // line_height is already computed as absolute pixel value
-    let measure = create_br_measure(style.line_height)
+    let measure = create_br_measure(style.line_height, style.writing_mode)
     return @node.Node::with_measure(node_id, style, measure)
   }
   if children.is_empty() {

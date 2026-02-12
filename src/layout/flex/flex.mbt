@@ -1576,6 +1576,62 @@ fn compute_intrinsic_block_main_size(
   // For block layout, if parent is row, intrinsic width is max of children's widths
   // If parent is column, intrinsic height is sum of children's heights
   if parent_is_row {
+    if style.writing_mode.is_vertical() {
+      // Vertical writing-mode inline flow advances horizontally by line/column.
+      // For inline-only children, accumulate per-line max thickness and line breaks.
+      let mut has_flow_child = false
+      let mut only_inline_flow = true
+      let mut inline_advance = 0.0
+      let mut current_line_cross = 0.0
+      for i = 0; i < children.length(); i = i + 1 {
+        let child = children[i]
+        let child_style = child.style
+        if child_style.display == @types.Display::None {
+          continue
+        }
+        if child_style.position == @types.Absolute ||
+          child_style.position == @types.Fixed {
+          continue
+        }
+        match child_style.float {
+          @types.Float::Left | @types.Float::Right => continue
+          @types.Float::None => ()
+        }
+        has_flow_child = true
+        if not(@inline.is_inline_level(child_style.display)) {
+          only_inline_flow = false
+          break
+        }
+        let child_resolved = get_resolved_rects(
+          child_style,
+          child.uid,
+          available_width,
+        )
+        let child_margin = child_resolved.margin
+        let child_width = match child_style.width {
+          @types.Length(w) => w + child_margin.left + child_margin.right
+          _ =>
+            compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+            child_margin.left +
+            child_margin.right
+        }
+        if child.id == "br" {
+          let line_cross = max(current_line_cross, child_width)
+          inline_advance = inline_advance + line_cross
+          current_line_cross = 0.0
+        } else {
+          current_line_cross = max(current_line_cross, child_width)
+        }
+      }
+      if has_flow_child && only_inline_flow {
+        let content_width = inline_advance + current_line_cross
+        return content_width +
+          padding.left +
+          padding.right +
+          border.left +
+          border.right
+      }
+    }
     // Compute intrinsic width
     let mut max_width = 0.0
     for i = 0; i < children.length(); i = i + 1 {
@@ -3946,7 +4002,17 @@ fn compute_internal(
       } else {
         @alignment.resolve_align_self(child.style.align_self, style.align_items)
       }
-      let effective_align = raw_effective_align
+      let effective_align = match (is_row, raw_effective_align) {
+        // Column flex with orthogonal vertical writing-modes often cannot
+        // establish a usable baseline-sharing group; fall back to physical side.
+        (false, @types.Baseline) if child.style.writing_mode.is_vertical() =>
+          if child.style.writing_mode.is_block_rtl() {
+            @types.Alignment::End
+          } else {
+            @types.Baseline
+          }
+        (_, align) => align
+      }
 
       // For stretch, use line cross size (with min/max constraints) if cross_is_auto
       let item_cross = match effective_align {
@@ -4197,8 +4263,10 @@ fn compute_internal(
       } else {
         (item_cross, item.final_main)
       }
-      // For vertical-rl: flip x position (items flow from right to left)
-      let (child_x, child_y) = if is_block_rtl {
+      // For vertical-rl in column directions, flip x position.
+      // In row directions under vertical writing-mode, cross positioning is
+      // already resolved by alignment and should not be mirrored again.
+      let (child_x, child_y) = if is_block_rtl && not(direction_is_row) {
         (container_width - child_x - child_width, child_y)
       } else {
         (child_x, child_y)

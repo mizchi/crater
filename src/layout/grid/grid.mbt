@@ -1555,8 +1555,9 @@ fn compute_grid_layout_internal(
       item_height,
       child_inner,
     )
-    // For vertical-rl: flip x position (items flow from right to left)
-    let positioned_x = if is_block_rtl {
+    // Track span resolution already produces physical coordinates for vertical writing-modes.
+    // Mirroring again in vertical-rl double-applies RTL and shifts items left.
+    let positioned_x = if is_block_rtl && not(is_vertical_writing) {
       container_width - final_x - final_width
     } else {
       final_x

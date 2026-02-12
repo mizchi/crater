@@ -308,6 +308,148 @@ pub fn compute_ifc(
     return { layouts: [], total_height: 0.0 }
   }
 
+  // In vertical-rl writing-mode, inline progression columns are mirrored on x-axis.
+  let mut writing_mode = children[0].style.writing_mode
+  for child in children {
+    if child.style.display != @types.Display::None {
+      writing_mode = child.style.writing_mode
+      break
+    }
+  }
+  let is_vertical_rl = writing_mode.is_vertical() && writing_mode.is_block_rtl()
+  if writing_mode.is_vertical() {
+    let columns : Array[Array[Int]] = []
+    let column_widths : Array[Double] = []
+    let column_heights : Array[Double] = []
+    let layout_map : Map[Int, @types.Layout] = {}
+    let child_layout_cache : Map[Int, @types.Layout] = {}
+    let child_margin_cache : Map[Int, @types.Rect[Double]] = {}
+
+    let mut current_column : Array[Int] = []
+    let mut current_width = 0.0
+    let mut current_height = 0.0
+
+    for i = 0; i < children.length(); i = i + 1 {
+      let child = children[i]
+      if child.style.display == @types.Display::None {
+        layout_map[i] = create_zero_layout(child)
+        continue
+      }
+      let child_margin = @types.resolve_rect(
+        child.style.margin,
+        available_width,
+      )
+      let child_layout = compute_inline_child(
+        child, available_width, available_height, dispatch,
+      )
+      child_layout_cache[i] = child_layout
+      child_margin_cache[i] = child_margin
+
+      current_column.push(i)
+      let outer_width = child_layout.width +
+        child_margin.left +
+        child_margin.right
+      if outer_width > current_width {
+        current_width = outer_width
+      }
+      current_height = current_height +
+        child_layout.height +
+        child_margin.top +
+        child_margin.bottom
+
+      if child.id == "br" {
+        columns.push(current_column)
+        column_widths.push(current_width)
+        column_heights.push(current_height)
+        current_column = []
+        current_width = 0.0
+        current_height = 0.0
+      }
+    }
+
+    if current_column.length() > 0 {
+      columns.push(current_column)
+      column_widths.push(current_width)
+      column_heights.push(current_height)
+    }
+
+    let mut total_height = 0.0
+    let mut total_columns_width = 0.0
+    for col_width in column_widths {
+      total_columns_width = total_columns_width + col_width
+    }
+    let resolved_inline_span = if available_width > total_columns_width {
+      available_width
+    } else {
+      total_columns_width
+    }
+    let mut x_cursor = if is_vertical_rl {
+      content_offset_x + resolved_inline_span
+    } else {
+      content_offset_x
+    }
+
+    for col_idx = 0; col_idx < columns.length(); col_idx = col_idx + 1 {
+      let column = columns[col_idx]
+      let col_width = column_widths[col_idx]
+      let col_height = column_heights[col_idx]
+      if col_height > total_height {
+        total_height = col_height
+      }
+
+      let mut col_x = x_cursor
+      if is_vertical_rl {
+        x_cursor = x_cursor - col_width
+        col_x = x_cursor
+      } else {
+        col_x = x_cursor
+        x_cursor = x_cursor + col_width
+      }
+
+      let mut y_cursor = content_offset_y
+      for item_index in column {
+        match child_layout_cache.get(item_index) {
+          Some(item_layout) =>
+            match child_margin_cache.get(item_index) {
+              Some(child_margin) => {
+                let positioned : @types.Layout = {
+                  id: item_layout.id,
+                  x: col_x + child_margin.left,
+                  y: y_cursor + child_margin.top,
+                  width: item_layout.width,
+                  height: item_layout.height,
+                  margin: child_margin,
+                  padding: item_layout.padding,
+                  border: item_layout.border,
+                  overflow_x: item_layout.overflow_x,
+                  overflow_y: item_layout.overflow_y,
+                  scroll_width: item_layout.scroll_width,
+                  scroll_height: item_layout.scroll_height,
+                  children: item_layout.children,
+                  text: item_layout.text,
+                }
+                layout_map[item_index] = positioned
+                y_cursor = positioned.y +
+                  item_layout.height +
+                  child_margin.bottom
+              }
+              None => ()
+            }
+          None => ()
+        }
+      }
+    }
+
+    let layouts : Array[@types.Layout] = []
+    for i = 0; i < children.length(); i = i + 1 {
+      match layout_map.get(i) {
+        Some(layout) => layouts.push(layout)
+        None => ()
+      }
+    }
+    return { layouts, total_height }
+  }
+
   // Collect inline-level children and compute their layouts
   let line_boxes : Array[LineBox] = []
   let mut current_line = LineBox::new()
@@ -472,6 +614,18 @@ pub fn compute_ifc(
               }
             _ => ()
           }
+        }
+      }
+      if is_vertical_rl {
+        let rel_x = positioned_x - content_offset_x
+        positioned_x = content_offset_x +
+          available_width -
+          rel_x -
+          item.layout.width
+        if child.id == "br" {
+          // br is positioned at inline advance end before forcing next column.
+          // After x-mirroring for vertical-rl, compensate the consumed advance.
+          positioned_x = positioned_x + item.layout.width * 2.0
         }
       }
       let positioned : @types.Layout = {

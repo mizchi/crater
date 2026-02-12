@@ -1452,8 +1452,7 @@ fn compute_with_collapse(
 
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
-  let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
-    not(style.writing_mode.is_vertical())
+  let use_ifc = @inline.should_establish_ifc(flow_nodes)
   // Check for mixed inline/block content (needs anonymous block boxes)
   let has_mixed = has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
