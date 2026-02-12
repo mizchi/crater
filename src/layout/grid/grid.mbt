@@ -866,11 +866,27 @@ fn compute_grid_layout_internal(
   )
   if is_vertical_writing {
     adjust_block_tracks_for_measured_items(
-      children, adjusted_placements, row_tracks, column_tracks, column_gap, true,
+      children,
+      adjusted_placements,
+      row_tracks,
+      column_tracks,
+      column_gap,
+      true,
+      expanded_columns,
+      style.grid_auto_columns,
+      col_offset,
     )
   } else {
     adjust_block_tracks_for_measured_items(
-      children, adjusted_placements, column_tracks, row_tracks, row_gap, false,
+      children,
+      adjusted_placements,
+      column_tracks,
+      row_tracks,
+      row_gap,
+      false,
+      expanded_rows,
+      style.grid_auto_rows,
+      row_offset,
     )
   }
   collapse_auto_fit_tracks(column_tracks, collapse_columns, column_gap)
@@ -3233,6 +3249,27 @@ fn get_auto_template_reverse(
 }
 
 ///|
+/// Resolve effective template at track index with implicit before/after handling.
+fn get_track_template_for_index(
+  explicit_templates : Array[@types.TrackSizingFunction],
+  auto_templates : Array[@types.TrackSizingFunction],
+  explicit_offset : Int,
+  index : Int,
+) -> @types.TrackSizingFunction {
+  if index < explicit_offset {
+    let k = explicit_offset - index
+    get_auto_template_reverse(auto_templates, k)
+  } else if index < explicit_offset + explicit_templates.length() {
+    explicit_templates[index - explicit_offset]
+  } else {
+    get_auto_template(
+      auto_templates,
+      index - explicit_offset - explicit_templates.length(),
+    )
+  }
+}
+
+///|
 /// Grid area bounds (row_start, row_end, col_start, col_end)
 struct GridAreaBounds {
   row_start : Int
@@ -3721,6 +3758,9 @@ fn adjust_block_tracks_for_measured_items(
   block_tracks : Array[GridTrack],
   block_gap : Double,
   is_vertical_writing : Bool,
+  explicit_templates : Array[@types.TrackSizingFunction],
+  auto_templates : Array[@types.TrackSizingFunction],
+  explicit_offset : Int,
 ) -> Unit {
   if block_tracks.length() == 0 {
     return
@@ -3753,6 +3793,16 @@ fn adjust_block_tracks_for_measured_items(
       placement.row_end
     }
     if block_end - block_start != 1 {
+      continue
+    }
+    if block_start < 0 || block_start >= block_tracks.length() {
+      continue
+    }
+    let block_template = get_track_template_for_index(
+      explicit_templates, auto_templates, explicit_offset, block_start,
+    )
+    // Min-content tracks must remain based on intrinsic min-content contributions.
+    if block_template == @types.TrackSizingFunction::MinContent {
       continue
     }
     let inline_start = if is_vertical_writing {

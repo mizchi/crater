@@ -7,24 +7,6 @@ pub(all) struct CoreIssue {
 }
 
 ///|
-/// Host-provided layout compute function.
-/// Core stays independent from concrete layout package wiring.
-pub(all) struct LayoutComputeFn(
-  (@node.Node, @types.LayoutContext) -> @types.Layout
-)
-
-///|
-pub fn LayoutComputeFn::run(
-  self : LayoutComputeFn,
-  node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
-  match self {
-    LayoutComputeFn(f) => f(node, ctx)
-  }
-}
-
-///|
 /// Result for checked core layout computation.
 pub(all) struct CoreComputeResult {
   layout : @types.Layout?
@@ -32,26 +14,21 @@ pub(all) struct CoreComputeResult {
 }
 
 ///|
-pub fn is_tui_subset(node : @node.Node) -> Bool {
-  validate_tui_subset(node).length() == 0
-}
-
-///|
-/// Validate whether a node tree is within the predictable TUI subset.
-pub fn validate_tui_subset(node : @node.Node) -> Array[CoreIssue] {
+/// Validate a node tree against the predictable core (TUI-oriented) subset.
+pub fn validate_core_subset(node : @node.Node) -> Array[CoreIssue] {
   let issues : Array[CoreIssue] = []
   validate_tui_subset_impl(node, issues)
   issues
 }
 
 ///|
-/// Compute only when the tree satisfies core subset constraints.
-pub fn compute_if_supported(
+/// Compute layout only when the node tree satisfies core subset constraints.
+/// Returns issues without computing if unsupported styles are present.
+pub fn compute_core_layout(
   node : @node.Node,
   viewport : @types.Size[Double],
-  compute : LayoutComputeFn,
 ) -> CoreComputeResult {
-  let issues = validate_tui_subset(node)
+  let issues = validate_core_subset(node)
   if issues.length() > 0 {
     return { layout: None, issues }
   }
@@ -64,7 +41,7 @@ pub fn compute_if_supported(
     stretch_width: false,
     stretch_height: false,
   }
-  { layout: Some(compute.run(node, ctx)), issues: [] }
+  { layout: Some(@dispatch.compute_layout(node, ctx)), issues: [] }
 }
 
 ///|

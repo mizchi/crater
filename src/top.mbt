@@ -48,26 +48,6 @@ pub fn compute_layout_with_warnings(
 }
 
 ///|
-/// Validate a node tree against the predictable core (TUI-oriented) subset.
-pub fn validate_core_subset(node : @node.Node) -> Array[@core.CoreIssue] {
-  @core.validate_tui_subset(node)
-}
-
-///|
-/// Compute layout only when the node tree satisfies core subset constraints.
-/// Returns issues without computing if unsupported styles are present.
-pub fn compute_core_layout(
-  node : @node.Node,
-  viewport : @types.Size[Double],
-) -> @core.CoreComputeResult {
-  @core.compute_if_supported(
-    node,
-    viewport,
-    @core.LayoutComputeFn(fn(node, ctx) { @dispatch.compute_layout(node, ctx) }),
-  )
-}
-
-///|
 /// Dispatch to appropriate layout algorithm based on display type
 fn dispatch_compute(
   node : @node.Node,

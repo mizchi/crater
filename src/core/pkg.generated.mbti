@@ -2,7 +2,6 @@
 package "mizchi/crater/core"
 
 import {
-  "mizchi/crater/layout/node",
   "mizchi/crater/types",
 }
 
@@ -37,13 +36,9 @@ pub fn compute_grid_absolute_self_position(@types.AlignSelf, Double, Double, Dou
 
 pub fn compute_grid_self_alignment_offset(@types.Alignment, Double, Double, Bool, Bool) -> Double
 
-pub fn compute_if_supported(@node.Node, @types.Size[Double], LayoutComputeFn) -> CoreComputeResult
-
 pub fn compute_inset_axis_position_with_auto_margin(Double?, Double?, Double, Double, Bool, Bool, Double, Double, Double, Double) -> Double
 
 pub fn compute_justify(@types.Alignment, Double, Int) -> (Double, Double)
-
-pub fn is_tui_subset(@node.Node) -> Bool
 
 pub fn resolve_align_self(@types.AlignSelf, @types.Alignment) -> @types.Alignment
 
@@ -55,8 +50,6 @@ pub fn resolve_relative_inset_axis_offset(@types.Dimension, @types.Dimension, Do
 
 pub fn resolve_relative_inset_offsets(@types.Rect[@types.Dimension], Double, Double?) -> (Double, Double)
 
-pub fn validate_tui_subset(@node.Node) -> Array[CoreIssue]
-
 // Errors
 
 // Types and methods
@@ -66,27 +59,11 @@ pub(all) struct ContentTrack {
   stretchable : Bool
 }
 
-pub(all) struct CoreComputeResult {
-  layout : @types.Layout?
-  issues : Array[CoreIssue]
-}
-
-pub(all) struct CoreIssue {
-  node_id : String
-  property : String
-  detail : String
-}
-
 pub(all) struct FlexAxis {
   direction_is_row : Bool
   is_row : Bool
   is_reverse : Bool
 }
-
-pub(all) struct LayoutComputeFn((@node.Node, @types.LayoutContext) -> @types.Layout)
-#deprecated
-pub fn LayoutComputeFn::inner(Self) -> (@node.Node, @types.LayoutContext) -> @types.Layout
-pub fn LayoutComputeFn::run(Self, @node.Node, @types.LayoutContext) -> @types.Layout
 
 // Type aliases
 

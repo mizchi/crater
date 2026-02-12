@@ -50,17 +50,15 @@ fn make_grid_node() -> @node.Node {
 ///|
 test "core subset accepts tui-like flex tree" {
   let node = make_flex_node()
-  let issues = validate_tui_subset(node)
+  let issues = validate_core_subset(node)
   assert_eq(issues.length(), 0)
-  assert_eq(is_tui_subset(node), true)
 }
 
 ///|
 test "core subset accepts tui-like grid tree" {
   let node = make_grid_node()
-  let issues = validate_tui_subset(node)
+  let issues = validate_core_subset(node)
   assert_eq(issues.length(), 0)
-  assert_eq(is_tui_subset(node), true)
 }
 
 ///|
@@ -68,7 +66,7 @@ test "core subset rejects absolute positioning" {
   let style = @style.Style::default()
   style.position = @types.Absolute
   let node = @node.Node::new("abs", style, [])
-  let issues = validate_tui_subset(node)
+  let issues = validate_core_subset(node)
   assert_eq(issues.length() > 0, true)
 }
 
@@ -79,25 +77,16 @@ test "core subset rejects unsupported grid track sizing" {
   style.grid_template_columns = [@types.TrackSizingFunction::MinContent]
   style.grid_template_rows = [@types.TrackSizingFunction::Fr(1.0)]
   let node = @node.Node::new("grid", style, [])
-  let issues = validate_tui_subset(node)
+  let issues = validate_core_subset(node)
   assert_eq(issues.length() > 0, true)
 }
 
 ///|
-test "core compute_if_supported skips compute when violations exist" {
+test "core compute_core_layout skips compute when violations exist" {
   let style = @style.Style::default()
   style.position = @types.Fixed
   let node = @node.Node::new("fixed", style, [])
-  let mut called = false
-  let result = compute_if_supported(
-    node,
-    @types.Size::new(10.0, 10.0),
-    @core.LayoutComputeFn(fn(_node, _ctx) {
-      called = true
-      panic()
-    }),
-  )
+  let result = compute_core_layout(node, @types.Size::new(10.0, 10.0))
   assert_eq(result.layout is None, true)
   assert_eq(result.issues.length() > 0, true)
-  assert_eq(called, false)
 }
