@@ -605,3 +605,74 @@ test "table rowspan with tbody" {
   let cell_c_layout = row1_layout.children[0]
   inspect(cell_c_layout.x, content="100")
 }
+
+///|
+/// Vertical writing-mode inline flow should contribute column advances to table intrinsic width.
+test "table intrinsic width includes vertical inline columns" {
+  let text_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Inline,
+    width: @types.Length(10.0),
+    height: @types.Length(15.0),
+  }
+  let br_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Inline,
+    width: @types.Length(10.0),
+    height: @types.Length(0.0),
+  }
+  let content_style : @style.Style = {
+    ..@style.Style::default(),
+    writing_mode: @style.WritingMode::VerticalLr,
+  }
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    padding: {
+      left: @types.Length(30.0),
+      right: @types.Length(5.0),
+      top: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+    },
+    border: {
+      left: @types.Length(5.0),
+      right: @types.Length(5.0),
+      top: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+    },
+  }
+
+  let text1 = @node.Node::leaf("#text", text_style)
+  let br = @node.Node::leaf("br", br_style)
+  let text2 = @node.Node::leaf("#text", text_style)
+  let content = @node.Node::new("content", content_style, [text1, br, text2])
+  let cell = @node.Node::new("td", cell_style, [content])
+  let row = @node.Node::new("tr", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  // (10 + 10 columns) + (padding 35) + (border 10)
+  assert_true(layout.width > 60.0)
+  let cell_layout = layout.children[0].children[0]
+  let content_layout = cell_layout.children[0]
+  assert_true(content_layout.width > 10.0)
+}
