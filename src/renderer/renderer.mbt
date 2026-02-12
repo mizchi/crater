@@ -703,8 +703,6 @@ fn collect_inline_content(
           flush_text(text_builder, remaining)
           // Keep <br> as a separate node for layout comparison
           remaining.push(child)
-          // Also add newline for text rendering
-          text_builder.write_string("\n")
           has_inline_content = true
         } else if is_replaced_element(tag_lower) {
           // Flush any accumulated text first to preserve order

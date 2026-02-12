@@ -335,6 +335,55 @@ fn create_contents_layout(
 }
 
 ///|
+/// Compute a baseline distance on flex column cross axis (horizontal).
+/// Uses first in-flow descendant baseline so nested grid/table wrappers don't
+/// fallback to their full width.
+fn compute_column_cross_baseline(
+  node : @node.Node,
+  fallback_cross : Double,
+  cache : IntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> Double {
+  let own_cross = if fallback_cross > 0.0 {
+    fallback_cross
+  } else {
+    compute_intrinsic_main_size(node, true, None, cache, dispatch)
+  }
+  if node.children.length() == 0 {
+    return own_cross
+  }
+  let resolved = get_resolved_rects(node.style, node.uid, own_cross)
+  let cross_start = resolved.padding.left + resolved.border.left
+  for child in node.children {
+    let child_style = child.style
+    if child_style.display == @types.Display::None {
+      continue
+    }
+    if child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed {
+      continue
+    }
+    match child_style.float {
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
+    }
+    let child_resolved = get_resolved_rects(child_style, child.uid, own_cross)
+    let child_cross = compute_intrinsic_main_size(
+      child,
+      true,
+      None,
+      cache,
+      dispatch,
+    )
+    let child_baseline = compute_column_cross_baseline(
+      child, child_cross, cache, dispatch,
+    )
+    return cross_start + child_resolved.margin.left + child_baseline
+  }
+  own_cross
+}
+
+///|
 fn max(a : Double, b : Double) -> Double {
   if a > b {
     a
@@ -349,6 +398,78 @@ fn min(a : Double, b : Double) -> Double {
     a
   } else {
     b
+  }
+}
+
+///|
+/// Compute block content height through Inline Formatting Context when possible.
+/// This avoids over-counting inline children like #text/<br>/#text as stacked blocks.
+fn compute_inline_flow_height(
+  node : @node.Node,
+  available_width : Double,
+  cache : IntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> Double? {
+  if available_width <= 0.0 {
+    return None
+  }
+  let flow_inline_children : Array[@node.Node] = []
+  for child in node.children {
+    let child_style = child.style
+    if child_style.display == @types.Display::None {
+      continue
+    }
+    if child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed {
+      continue
+    }
+    match child_style.float {
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
+    }
+    flow_inline_children.push(child)
+  }
+  if not(@inline.should_establish_ifc(flow_inline_children)) {
+    return None
+  }
+  if node.style.writing_mode.is_vertical() {
+    // Vertical writing-mode: block-size corresponds to the max inline extent.
+    // Summing child heights over-counts <br>-separated inline runs.
+    let mut max_height = 0.0
+    for child in flow_inline_children {
+      let child_style = child.style
+      let child_resolved = get_resolved_rects(
+        child_style,
+        child.uid,
+        available_width,
+      )
+      let child_height = match child_style.height {
+        @types.Length(h) => h
+        _ =>
+          compute_intrinsic_main_size(
+            child,
+            false,
+            Some(available_width),
+            cache,
+            dispatch,
+          )
+      }
+      let outer_height = child_height +
+        child_resolved.margin.top +
+        child_resolved.margin.bottom
+      max_height = max(max_height, outer_height)
+    }
+    Some(max_height)
+  } else {
+    let ifc = @inline.compute_ifc(
+      flow_inline_children,
+      available_width,
+      None,
+      0.0,
+      0.0,
+      dispatch,
+    )
+    Some(ifc.total_height)
   }
 }
 
@@ -474,11 +595,11 @@ fn compute_intrinsic_main_size(
   } else {
     // For containers, compute based on display type and children
     match style.display {
-      @types.Flex | @types.Block =>
+      @types.Flex =>
         compute_intrinsic_flex_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
-      @types.Inline | @types.InlineBlock | @types.FlowRoot =>
+      @types.Block | @types.Inline | @types.InlineBlock | @types.FlowRoot =>
         compute_intrinsic_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
@@ -907,40 +1028,50 @@ fn compute_min_content_block_main_size(
     width_acc + padding.left + padding.right + border.left + border.right
   } else {
     // Compute min-content height: sum of children's heights
-    let mut total_height = 0.0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
-      let child_style = child.style
-      if child_style.display == @types.Display::None {
-        continue
-      }
-      if child_style.position == @types.Absolute ||
-        child_style.position == @types.Fixed {
-        continue
-      }
-      // Use cached resolved rects
-      let child_resolved = get_resolved_rects(
-        child_style,
-        child.uid,
-        available_width,
-      )
-      let child_height = match child_style.height {
-        @types.Length(h) => h
-        _ =>
-          compute_min_content_main_size(
-            child,
-            false,
-            Some(available_width),
-            cache,
-            dispatch,
-          )
-      }
-      total_height = total_height +
-        child_height +
-        child_resolved.margin.top +
-        child_resolved.margin.bottom
+    let ifc_height = match available_cross {
+      Some(_) =>
+        compute_inline_flow_height(node, available_width, cache, dispatch)
+      None => None
     }
-    total_height + padding.top + padding.bottom + border.top + border.bottom
+    match ifc_height {
+      Some(h) => h + padding.top + padding.bottom + border.top + border.bottom
+      None => {
+        let mut total_height = 0.0
+        for i = 0; i < children.length(); i = i + 1 {
+          let child = children[i]
+          let child_style = child.style
+          if child_style.display == @types.Display::None {
+            continue
+          }
+          if child_style.position == @types.Absolute ||
+            child_style.position == @types.Fixed {
+            continue
+          }
+          // Use cached resolved rects
+          let child_resolved = get_resolved_rects(
+            child_style,
+            child.uid,
+            available_width,
+          )
+          let child_height = match child_style.height {
+            @types.Length(h) => h
+            _ =>
+              compute_min_content_main_size(
+                child,
+                false,
+                Some(available_width),
+                cache,
+                dispatch,
+              )
+          }
+          total_height = total_height +
+            child_height +
+            child_resolved.margin.top +
+            child_resolved.margin.bottom
+        }
+        total_height + padding.top + padding.bottom + border.top + border.bottom
+      }
+    }
   }
 }
 
@@ -1476,40 +1607,50 @@ fn compute_intrinsic_block_main_size(
     max_width + padding.left + padding.right + border.left + border.right
   } else {
     // Compute intrinsic height
-    let mut total_height = 0.0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
-      let child_style = child.style
-      if child_style.display == @types.Display::None {
-        continue
-      }
-      if child_style.position == @types.Absolute ||
-        child_style.position == @types.Fixed {
-        continue
-      }
-      // Use cached resolved rects
-      let child_resolved = get_resolved_rects(
-        child_style,
-        child.uid,
-        available_width,
-      )
-      let child_margin = child_resolved.margin
-      let child_height = match child_style.height {
-        @types.Length(h) => h + child_margin.top + child_margin.bottom
-        _ =>
-          compute_intrinsic_main_size(
-            child,
-            false,
-            Some(available_width),
-            cache,
-            dispatch,
-          ) +
-          child_margin.top +
-          child_margin.bottom
-      }
-      total_height = total_height + child_height
+    let ifc_height = match available_cross {
+      Some(_) =>
+        compute_inline_flow_height(node, available_width, cache, dispatch)
+      None => None
     }
-    total_height + padding.top + padding.bottom + border.top + border.bottom
+    match ifc_height {
+      Some(h) => h + padding.top + padding.bottom + border.top + border.bottom
+      None => {
+        let mut total_height = 0.0
+        for i = 0; i < children.length(); i = i + 1 {
+          let child = children[i]
+          let child_style = child.style
+          if child_style.display == @types.Display::None {
+            continue
+          }
+          if child_style.position == @types.Absolute ||
+            child_style.position == @types.Fixed {
+            continue
+          }
+          // Use cached resolved rects
+          let child_resolved = get_resolved_rects(
+            child_style,
+            child.uid,
+            available_width,
+          )
+          let child_margin = child_resolved.margin
+          let child_height = match child_style.height {
+            @types.Length(h) => h + child_margin.top + child_margin.bottom
+            _ =>
+              compute_intrinsic_main_size(
+                child,
+                false,
+                Some(available_width),
+                cache,
+                dispatch,
+              ) +
+              child_margin.top +
+              child_margin.bottom
+          }
+          total_height = total_height + child_height
+        }
+        total_height + padding.top + padding.bottom + border.top + border.bottom
+      }
+    }
   }
 }
 
@@ -2828,7 +2969,7 @@ fn compute_internal(
     let baseline = if is_row {
       @baseline.compute_node_baseline(child, base_cross)
     } else {
-      base_cross // For column flex, baseline = height (simplified)
+      compute_column_cross_baseline(child, base_cross, cache, dispatch)
     }
     // Initial final_main is clamped by min/max constraints
     // This ensures min_main is applied even when flex_grow = 0
@@ -3805,12 +3946,7 @@ fn compute_internal(
       } else {
         @alignment.resolve_align_self(child.style.align_self, style.align_items)
       }
-      // For column flex, baseline alignment is not meaningful (cross axis is inline axis)
-      // Treat baseline as flex-start per CSS Flexbox spec
-      let effective_align = match (is_row, raw_effective_align) {
-        (false, @types.Baseline) => @types.FlexStart
-        (_, align) => align
-      }
+      let effective_align = raw_effective_align
 
       // For stretch, use line cross size (with min/max constraints) if cross_is_auto
       let item_cross = match effective_align {
@@ -5072,7 +5208,33 @@ fn compute_nested(
         percent_base_width=base_width,
         use_available_width=true,
       )
-    _ => dispatch_fn(node, ctx, dispatch)
+    _ => {
+      // A flex item's outer margin is handled by flex item positioning.
+      // Nested block layout should compute inner content size without re-applying
+      // the item's own margins.
+      let nested_node = if style.display == @types.Block {
+        let zero_dim = @types.Dimension::Length(0.0)
+        @node.Node::with_uid_and_measure(
+          node.id,
+          node.uid,
+          {
+            ..style,
+            margin: {
+              top: zero_dim,
+              right: zero_dim,
+              bottom: zero_dim,
+              left: zero_dim,
+            },
+          },
+          node.children,
+          node.measure,
+          node.text,
+        )
+      } else {
+        node
+      }
+      dispatch_fn(nested_node, ctx, dispatch)
+    }
   }
 }
 

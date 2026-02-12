@@ -401,6 +401,68 @@ test "anchor remains inline inside fixed-height flex item" {
 }
 
 ///|
+test "wpt_baseline_row_horz_text_nodes_keep_single_line_metrics" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|#target {
+    #|  display: flex;
+    #|  align-items: baseline;
+    #|  inline-size: min-content;
+    #|  block-size: 100px;
+    #|  border: solid 3px;
+    #|}
+    #|#target > div {
+    #|  margin: 5px 7px 9px 11px;
+    #|}
+    #|#target > :nth-child(1) {
+    #|  background: lime;
+    #|  font: 30px/1 Ahem;
+    #|}
+    #|#target > :nth-child(2) {
+    #|  background: hotpink;
+    #|  font: 20px/1 Ahem;
+    #|}
+    #|#target > :nth-child(3) {
+    #|  background: cyan;
+    #|  writing-mode: vertical-rl;
+    #|  font: 16px/1 Ahem;
+    #|  width: 40px;
+    #|  height: 40px;
+    #|}
+    #|</style>
+    #|</head><body>
+    #|<div id="target">
+    #|  <div>line1<br>line2</div>
+    #|  <div>line1<br>line2</div>
+    #|  <div></div>
+    #|</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let target = node.children[0]
+  let first = target.children[0]
+  let text1 = first.children[0]
+  let text2 = first.children[2]
+  inspect(first.style.width, content="Auto")
+  inspect(first.style.font_size, content="30")
+  inspect(text1.style.font_size, content="30")
+  inspect(text1.style.line_height, content="30")
+  inspect(text1.text, content="Some(\"line1\")")
+  inspect(text2.text, content="Some(\"line2\")")
+
+  let layout = @renderer.render(html, ctx)
+  let target_layout = layout.children[0]
+  let first_layout = target_layout.children[0]
+  inspect(first_layout.height, content="60")
+  inspect(first_layout.children[0].height, content="30")
+  inspect(first_layout.children[1].y, content="0")
+  inspect(first_layout.children[2].y, content="30")
+}
+
+///|
 test "logical properties inline-size and block-size" {
   let html =
     #|<!doctype html>

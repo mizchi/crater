@@ -28,10 +28,7 @@ fn text_baseline_from_style(style : @style.Style) -> Double {
 }
 
 ///|
-fn infer_baseline_height(
-  node : @node.Node,
-  fallback_height : Double,
-) -> Double {
+fn infer_baseline_height(node : @node.Node, fallback_height : Double) -> Double {
   match node.style.height {
     @types.Length(h) => h
     @types.Percent(p) => fallback_height * p
@@ -145,28 +142,25 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
           // No in-flow children, use own height
           return node_height
         }
-        @types.Row | @types.RowReverse => {
+        @types.Row | @types.RowReverse =>
           // For Row flex: baseline is first in-flow child's baseline
           match first_in_flow_child_baseline(children, node_height) {
             Some(child_baseline) => child_baseline
             None => node_height
           }
-        }
       }
-    @types.Block => {
+    @types.Block =>
       // For Block containers with children: use first in-flow child's baseline
       match first_in_flow_child_baseline(children, node_height) {
         Some(child_baseline) => child_baseline
         None => node_height
       }
-    }
-    @types.Inline => {
+    @types.Inline =>
       // Inline containers participate in baseline from their first line box.
       match first_in_flow_child_baseline(children, node_height) {
         Some(child_baseline) => child_baseline
         None => text_baseline_from_style(style)
       }
-    }
     _ => node_height
   }
 }
