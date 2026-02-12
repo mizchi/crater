@@ -21,6 +21,8 @@ pub fn process_script_tasks(@scheduler.Scheduler, @dom.DomTree) -> Int
 
 pub fn serialize_dom_for_mock(@dom.DomTree) -> String
 
+pub fn serialize_dom_to_html(@dom.DomTree) -> String
+
 // Errors
 pub suberror JsError {
   NotSupported

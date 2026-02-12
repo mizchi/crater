@@ -153,6 +153,134 @@ pub fn create_dom_init_code(dom : @dom.DomTree) -> String {
 }
 
 ///|
+/// Serialize DomTree to HTML string for renderer reparse
+pub fn serialize_dom_to_html(dom : @dom.DomTree) -> String {
+  let buf = StringBuilder::new()
+  let doc_id = dom.get_document()
+  match dom.get_children(doc_id) {
+    Ok(children) =>
+      for child in children {
+        serialize_node_to_html(dom, child, buf)
+      }
+    Err(_) => ()
+  }
+  buf.to_string()
+}
+
+///|
+fn serialize_node_to_html(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  buf : StringBuilder,
+) -> Unit {
+  let info = dom.get_node_info(node_id)
+  guard info is Ok(info) else { return }
+  match info.node_type {
+    @dom.Document =>
+      match dom.get_children(node_id) {
+        Ok(children) =>
+          for child in children {
+            serialize_node_to_html(dom, child, buf)
+          }
+        Err(_) => ()
+      }
+    @dom.DocumentType => {
+      let name = info.node_name.to_lower()
+      if name == "html" {
+        buf.write_string("<!DOCTYPE html>")
+      }
+    }
+    @dom.Text => buf.write_string(escape_html_text(info.node_value))
+    @dom.Comment => {
+      buf.write_string("<!--")
+      buf.write_string(info.node_value)
+      buf.write_string("-->")
+    }
+    @dom.Element => {
+      let tag = info.node_name
+      buf.write_char('<')
+      buf.write_string(tag)
+      match dom.get_attributes(node_id) {
+        Ok(attrs) =>
+          for pair in attrs {
+            let (name, value) = pair
+            buf.write_char(' ')
+            buf.write_string(name)
+            buf.write_string("=\"")
+            buf.write_string(escape_html_attr(value))
+            buf.write_char('"')
+          }
+        Err(_) => ()
+      }
+      buf.write_char('>')
+      if is_void_html_element(tag) {
+        return
+      }
+      match dom.get_children(node_id) {
+        Ok(children) =>
+          for child in children {
+            serialize_node_to_html(dom, child, buf)
+          }
+        Err(_) => ()
+      }
+      buf.write_string("</")
+      buf.write_string(tag)
+      buf.write_char('>')
+    }
+  }
+}
+
+///|
+fn is_void_html_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "area"
+    | "base"
+    | "br"
+    | "col"
+    | "embed"
+    | "hr"
+    | "img"
+    | "input"
+    | "link"
+    | "meta"
+    | "param"
+    | "source"
+    | "track"
+    | "wbr" => true
+    _ => false
+  }
+}
+
+///|
+fn escape_html_text(s : String) -> String {
+  let out = StringBuilder::new()
+  for c in s {
+    match c {
+      '&' => out.write_string("&amp;")
+      '<' => out.write_string("&lt;")
+      '>' => out.write_string("&gt;")
+      _ => out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
+fn escape_html_attr(s : String) -> String {
+  let out = StringBuilder::new()
+  for c in s {
+    match c {
+      '&' => out.write_string("&amp;")
+      '"' => out.write_string("&quot;")
+      '<' => out.write_string("&lt;")
+      '>' => out.write_string("&gt;")
+      _ => out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
 /// Find body element and serialize its children
 fn find_and_serialize_body(dom : @dom.DomTree, start : @dom.NodeId) -> String {
   let buf = StringBuilder::new()

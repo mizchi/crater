@@ -63,6 +63,7 @@ impl JsRuntime for FailRuntime with execute(
   JsResult::new("boom", ["before-fail"], false)
 }
 
+///|
 test "JsContext::new_with_runtime uses runtime trait for execution" {
   let dom = @dom.DomTree::new()
   let init_calls = Ref::new(0)

@@ -94,6 +94,60 @@ test "DOM operations are applied to DomTree" {
 }
 
 ///|
+test "JS DOM operations produce mutation records" {
+  let dom = @dom.DomTree::new()
+
+  // Create initial structure
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  // Ignore setup-time mutations
+  dom.clear_mutations()
+
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const p = document.createElement('p');
+    #|p.setAttribute('id', 'm1');
+    #|p.textContent = 'hello';
+    #|document.body.appendChild(p);
+    #|p.setAttribute('class', 'updated');
+    #|'ok'
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+
+  // DOM state itself should reflect all script operations
+  match dom.query_selector(doc, "#m1") {
+    Ok(Some(node_id)) => {
+      match dom.get_attribute(node_id, "class") {
+        Ok(Some(v)) => inspect(v, content="updated")
+        _ => assert_true(false)
+      }
+      match dom.get_text_content(node_id) {
+        Ok(text) => inspect(text, content="hello")
+        _ => assert_true(false)
+      }
+    }
+    _ => assert_true(false)
+  }
+
+  assert_true(dom.pending_mutation_count() > 0)
+  let (records, flush_result) = dom.flush_mutations()
+  assert_true(records.length() > 0)
+
+  let mut has_child_list = false
+  for record in records {
+    match record.type_ {
+      @dom.ChildList => has_child_list = true
+      _ => ()
+    }
+  }
+  assert_true(has_child_list)
+  inspect(flush_result.needs_layout, content="true")
+}
+
+///|
 test "insertBefore inserts element before reference node" {
   let dom = @dom.DomTree::new()
 

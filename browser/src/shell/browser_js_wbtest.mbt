@@ -575,3 +575,57 @@ test "Browser DOM tree persists across script executions" {
     None => assert_true(false)
   }
 }
+
+///|
+test "Browser apply JS DOM changes to TUI render output" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|<p id="greet">before</p>
+    #|<script>
+    #|  const el = document.getElementById('greet');
+    #|  if (el) {
+    #|    el.textContent = 'after';
+    #|  }
+    #|</script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+test "Browser syncs JS DOM mutations into html_content and link cache" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|<a id="target" href="/before">before</a>
+    #|<script>
+    #|  const el = document.getElementById('target');
+    #|  if (el) {
+    #|    el.setAttribute('href', '/after');
+    #|    el.textContent = 'after';
+    #|  }
+    #|</script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+
+  // HTML source used by renderer is synchronized from mutated DomTree
+  assert_true(browser.html_content.contains("href=\"/after\""))
+  assert_true(browser.html_content.contains(">after</a>"))
+  assert_true(not(browser.html_content.contains("href=\"/before\"")))
+
+  // Link cache should also be rebuilt from synchronized HTML
+  inspect(browser.get_link_count(), content="1")
+  inspect(browser.links[0].href, content="/after")
+  inspect(browser.links[0].text, content="after")
+}

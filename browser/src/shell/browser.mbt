@@ -343,9 +343,13 @@ async fn Browser::load_url(
       "Executed " + script_count.to_string() + " script(s) during page load",
     )
   }
-  // Calculate content height using the pre-parsed document
+  // Calculate content height from latest parsed document
+  let content_doc = match self.parsed_doc {
+    Some(d) => d
+    None => doc
+  }
   self.content_height = @renderer.get_content_height_with_document(
-    doc,
+    content_doc,
     self.viewport_width,
     self.viewport_height,
     self.external_css,
@@ -1410,15 +1414,29 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
 ///|
 /// Initialize DOM tree and script executor
 fn Browser::init_js_execution(self : Browser) -> Unit {
-  let dom = @dom.DomTree::new()
-  // Create basic DOM structure
-  let html = dom.create_element("html")
-  let head = dom.create_element("head")
-  let body = dom.create_element("body")
-  let doc = dom.get_document()
-  let _ = dom.append_child(doc, html)
-  let _ = dom.append_child(html, head)
-  let _ = dom.append_child(html, body)
+  // Build from parsed_doc/html_content when available so scripts can mutate
+  // existing DOM and those mutations can be reflected back to rendering.
+  let dom = match self.parsed_doc {
+    Some(doc) => build_dom_tree_from_document(doc)
+    None =>
+      if self.html_content.length() > 0 {
+        let doc = @html.assign_synthetic_ids(
+          @html.parse_document(self.html_content),
+        )
+        self.parsed_doc = Some(doc)
+        build_dom_tree_from_document(doc)
+      } else {
+        let d = @dom.DomTree::new()
+        let html = d.create_element("html")
+        let head = d.create_element("head")
+        let body = d.create_element("body")
+        let doc_id = d.get_document()
+        let _ = d.append_child(doc_id, html)
+        let _ = d.append_child(html, head)
+        let _ = d.append_child(html, body)
+        d
+      }
+  }
   self.dom_tree = Some(dom)
   self.script_executor = Some(@js.ScriptExecutor::new(dom))
 }
@@ -1463,6 +1481,9 @@ fn Browser::execute_scripts(self : Browser) -> Int {
   match self.dom_tree {
     Some(dom) => {
       executed = @js.process_script_tasks(self.scheduler, dom)
+      if executed > 0 {
+        self.sync_render_state_from_dom_tree()
+      }
       // Print JS logs
       match self.script_executor {
         Some(executor) => {
@@ -1557,6 +1578,9 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
   match self.dom_tree {
     Some(dom) => {
       executed = @js.process_script_tasks(self.scheduler, dom)
+      if executed > 0 {
+        self.sync_render_state_from_dom_tree()
+      }
       // Print JS logs
       match self.script_executor {
         Some(executor) => {
@@ -1572,4 +1596,71 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
   }
   println("Executed " + executed.to_string() + " script(s)")
   executed
+}
+
+///|
+/// Apply JS-mutated DomTree back to renderer inputs and invalidate caches
+fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Unit {
+  match self.dom_tree {
+    Some(dom) => {
+      let next_html = @js.serialize_dom_to_html(dom)
+      if next_html.length() == 0 {
+        return
+      }
+      self.html_content = next_html
+      self.links = extract_links(self.html_content)
+      if self.links.length() == 0 {
+        self.focused_link = 0
+      } else if self.focused_link >= self.links.length() {
+        self.focused_link = self.links.length() - 1
+      }
+      let next_doc = @html.assign_synthetic_ids(
+        @html.parse_document(self.html_content),
+      )
+      self.parsed_doc = Some(next_doc)
+      self.render_node = None
+      self.layout_tree = None
+      self.prev_buffer = None
+      self.last_render_key = ""
+      self.content_height = @renderer.get_content_height_with_document(
+        next_doc,
+        self.viewport_width,
+        self.viewport_height,
+        self.external_css,
+      )
+      self.build_accessibility_tree()
+    }
+    None => ()
+  }
+}
+
+///|
+fn build_dom_tree_from_document(doc : @html.Document) -> @dom.DomTree {
+  let dom = @dom.DomTree::new()
+  let doc_id = dom.get_document()
+  let root_id = build_dom_element(dom, doc.root)
+  let _ = dom.append_child(doc_id, root_id)
+  dom
+}
+
+///|
+fn build_dom_element(dom : @dom.DomTree, elem : @html.Element) -> @dom.NodeId {
+  let node_id = dom.create_element(elem.tag)
+  for name, value in elem.attributes {
+    let _ = dom.set_attribute(node_id, name, value)
+  }
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        let child_id = build_dom_element(dom, child_elem)
+        let _ = dom.append_child(node_id, child_id)
+      }
+      @html.Node::Text(text) =>
+        if text.length() > 0 {
+          let text_id = dom.create_text(text)
+          let _ = dom.append_child(node_id, text_id)
+        }
+    }
+  }
+  node_id
 }
