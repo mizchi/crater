@@ -14,6 +14,7 @@
 import { spawn, execSync, ChildProcess } from "child_process";
 import fs from "fs";
 import path from "path";
+import { pathToFileURL } from "url";
 
 const WPT_BIDI_TESTS = "wpt/webdriver/tests/bidi";
 const CRATER_BIDI_PORT = 9222;
@@ -43,15 +44,29 @@ function checkUv(): boolean {
 }
 
 // Start Crater BiDi server
+export function resolveBidiServerPath(cwd: string = process.cwd()): string | null {
+  const candidates = [
+    path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js"),
+    path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js"),
+  ];
+
+  for (const serverPath of candidates) {
+    if (fs.existsSync(serverPath)) {
+      return serverPath;
+    }
+  }
+  return null;
+}
+
 function startServer(): ChildProcess {
   console.log("Starting Crater BiDi server...");
-  const serverPath = path.join(
-    process.cwd(),
-    "browser/target/js/release/build/bidi_main/bidi_main.js"
-  );
+  const serverPath = resolveBidiServerPath();
 
-  if (!fs.existsSync(serverPath)) {
+  if (!serverPath) {
     console.error("BiDi server not built. Run: just build-bidi");
+    console.error("Expected one of:");
+    console.error("  browser/target/js/release/build/bidi_main/bidi_main.js");
+    console.error("  browser/_build/js/release/build/bidi_main/bidi_main.js");
     process.exit(1);
   }
 
@@ -337,7 +352,7 @@ async function runSubset(): Promise<number> {
 }
 
 // Main
-async function main(): Promise<void> {
+async function main(): Promise<number> {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args[0] === "--help") {
@@ -348,17 +363,17 @@ async function main(): Promise<void> {
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --subset     # Known-passing tests only");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --quick <module>  # Skip timeout tests");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --all");
-    return;
+    return 0;
   }
 
   if (args[0] === "--list") {
     listTests();
-    return;
+    return 0;
   }
 
   if (!checkUv()) {
     console.error("uv not found. Install: curl -LsSf https://astral.sh/uv/install.sh | sh");
-    process.exit(1);
+    return 1;
   }
 
   // Start server
@@ -370,7 +385,7 @@ async function main(): Promise<void> {
     const ready = await waitForServer();
     if (!ready) {
       console.error("Server failed to start");
-      process.exit(1);
+      return 1;
     }
     console.log("Server ready.\n");
 
@@ -391,14 +406,24 @@ async function main(): Promise<void> {
       exitCode = await runTests(testPath);
     }
 
-    process.exit(exitCode);
+    return exitCode;
   } finally {
     // Stop server
     server.kill("SIGTERM");
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const isMainModule =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  }).then((code) => {
+    if (typeof code === "number") {
+      process.exitCode = code;
+    }
+  });
+}
