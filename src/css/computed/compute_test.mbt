@@ -183,6 +183,16 @@ test "compute_inline box model" {
 }
 
 ///|
+test "compute_inline margin auto" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("margin: auto", ctx)
+  inspect(style.margin.top, content="Auto")
+  inspect(style.margin.right, content="Auto")
+  inspect(style.margin.bottom, content="Auto")
+  inspect(style.margin.left, content="Auto")
+}
+
+///|
 test "is_inherited" {
   // Inherited properties
   inspect(@computed.is_inherited("color"), content="true")

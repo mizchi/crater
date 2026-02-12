@@ -876,6 +876,18 @@ fn compute_grid_layout_internal(
       style.grid_auto_columns,
       col_offset,
     )
+    adjust_block_tracks_for_content_items(
+      children,
+      adjusted_placements,
+      row_tracks,
+      column_tracks,
+      column_gap,
+      true,
+      expanded_columns,
+      style.grid_auto_columns,
+      col_offset,
+      dispatch,
+    )
   } else {
     adjust_block_tracks_for_measured_items(
       children,
@@ -887,6 +899,18 @@ fn compute_grid_layout_internal(
       expanded_rows,
       style.grid_auto_rows,
       row_offset,
+    )
+    adjust_block_tracks_for_content_items(
+      children,
+      adjusted_placements,
+      column_tracks,
+      row_tracks,
+      row_gap,
+      false,
+      expanded_rows,
+      style.grid_auto_rows,
+      row_offset,
+      dispatch,
     )
   }
   collapse_auto_fit_tracks(column_tracks, collapse_columns, column_gap)
@@ -1469,8 +1493,11 @@ fn compute_grid_layout_internal(
       @types.Auto => true
       _ => false
     }
+    let has_horizontal_auto_margin = margin_left_auto || margin_right_auto
     let has_vertical_auto_margin = margin_top_auto || margin_bottom_auto
-    let should_stretch_width = width_is_auto && justify == @types.Stretch
+    let should_stretch_width = width_is_auto &&
+      justify == @types.Stretch &&
+      not(has_horizontal_auto_margin)
     let should_stretch_height = height_is_auto &&
       align == @types.Stretch &&
       not(has_vertical_auto_margin)
@@ -3890,6 +3917,123 @@ fn adjust_block_tracks_for_measured_items(
 }
 
 ///|
+/// Ensure block-axis tracks can accommodate non-leaf content that depends on inline size.
+fn adjust_block_tracks_for_content_items(
+  children : Array[@node.Node],
+  placements : Array[GridItemPlacement],
+  inline_tracks : Array[GridTrack],
+  block_tracks : Array[GridTrack],
+  block_gap : Double,
+  is_vertical_writing : Bool,
+  explicit_templates : Array[@types.TrackSizingFunction],
+  auto_templates : Array[@types.TrackSizingFunction],
+  explicit_offset : Int,
+  dispatch : @node.DispatchFn,
+) -> Unit {
+  if block_tracks.length() == 0 {
+    return
+  }
+  let required_sizes : Array[Double] = []
+  for t in block_tracks {
+    required_sizes.push(t.size)
+  }
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    // Leaf replaced items are handled by adjust_block_tracks_for_measured_items.
+    if child.children.length() == 0 {
+      continue
+    }
+    let child_height_is_auto = match child.style.height {
+      @types.Auto => true
+      _ => false
+    }
+    if not(child_height_is_auto) {
+      continue
+    }
+    let placement = placements[i]
+    let block_start = if is_vertical_writing {
+      placement.column_start
+    } else {
+      placement.row_start
+    }
+    let block_end = if is_vertical_writing {
+      placement.column_end
+    } else {
+      placement.row_end
+    }
+    if block_end - block_start != 1 {
+      continue
+    }
+    if block_start < 0 || block_start >= block_tracks.length() {
+      continue
+    }
+    let block_template = get_track_template_for_index(
+      explicit_templates, auto_templates, explicit_offset, block_start,
+    )
+    if block_template == @types.TrackSizingFunction::MinContent {
+      continue
+    }
+    let inline_start = if is_vertical_writing {
+      placement.row_start
+    } else {
+      placement.column_start
+    }
+    let inline_end = if is_vertical_writing {
+      placement.row_end
+    } else {
+      placement.column_end
+    }
+    let (_, inline_size) = get_span_bounds(
+      inline_tracks, inline_start, inline_end,
+    )
+    if inline_size <= 0.0 {
+      continue
+    }
+    let content_layout = compute_child_layout(
+      child,
+      inline_size,
+      1.0e10,
+      dispatch,
+      stretch_width=false,
+      stretch_height=false,
+      percent_base_width=inline_size,
+    )
+    let (margin_start, margin_end) = if is_vertical_writing {
+      (
+        resolve_dimension(child.style.margin.left, inline_size, 0.0),
+        resolve_dimension(child.style.margin.right, inline_size, 0.0),
+      )
+    } else {
+      (
+        resolve_dimension(child.style.margin.top, inline_size, 0.0),
+        resolve_dimension(child.style.margin.bottom, inline_size, 0.0),
+      )
+    }
+    let required = content_layout.height + margin_start + margin_end
+    if required > required_sizes[block_start] {
+      required_sizes[block_start] = required
+    }
+  }
+  let mut pos = 0.0
+  for i = 0; i < block_tracks.length(); i = i + 1 {
+    let size = required_sizes[i]
+    block_tracks[i] = {
+      position: pos,
+      size,
+      stretchable: block_tracks[i].stretchable,
+    }
+    pos = pos + size + block_gap
+  }
+}
+
+///|
 /// Mark empty auto-fit tracks for collapse
 fn compute_auto_fit_collapse(
   children : Array[@node.Node],
@@ -4189,12 +4333,24 @@ fn compute_child_layout(
     // Recursively compute grid layout for nested grid containers
     // When a grid item is stretched (width/height comes from cell size),
     // treat the size as extrinsically definite for track sizing
-    // If the computed size is finite, treat it as extrinsically definite to
-    // avoid re-resolving percentages against the already-resolved size.
-    let width_is_extrinsic_definite = width < 1.0e9
-    let height_is_extrinsic_definite = height < 1.0e9
-    // Nested Grid: use Definite sizing since we're in a parent Grid context with known size
-    let nested_is_block_level = child.style.display == @types.Grid
+    // If auto-size is not stretched, it remains content-based (indefinite)
+    // for nested track sizing.
+    let child_width_is_auto = match child.style.width {
+      @types.Auto => true
+      _ => false
+    }
+    let child_height_is_auto = match child.style.height {
+      @types.Auto => true
+      _ => false
+    }
+    let width_is_extrinsic_definite = width < 1.0e9 &&
+      (not(child_width_is_auto) || stretch_width)
+    let height_is_extrinsic_definite = height < 1.0e9 &&
+      (not(child_height_is_auto) || stretch_height)
+    // Non-stretched auto-width grid items should keep content-based sizing
+    // instead of block-level fill-available behavior.
+    let nested_is_block_level = child.style.display == @types.Grid &&
+      (not(child_width_is_auto) || stretch_width)
     let nested_layout = compute_grid_layout_internal(
       child,
       width,
@@ -4210,6 +4366,20 @@ fn compute_child_layout(
     // The nested layout's children need to be added
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
+    }
+    let width_is_auto = match child.style.width {
+      @types.Auto => true
+      _ => false
+    }
+    let height_is_auto = match child.style.height {
+      @types.Auto => true
+      _ => false
+    }
+    if width_is_auto && not(stretch_width) {
+      width = nested_layout.width
+    }
+    if height_is_auto && not(stretch_height) {
+      height = nested_layout.height
     }
   } else if child.style.display == @types.Flex {
     // Recursively compute flex layout for nested flex containers
@@ -4413,6 +4583,18 @@ fn apply_alignment(
     Some(_) => true
     None => false
   }
+  let is_replaced_leaf = match child.measure {
+    Some(_) => child.children.length() == 0
+    None => false
+  }
+  let replaced_with_definite_height = if is_replaced_leaf {
+    match child_style.height {
+      @types.Auto => false
+      _ => true
+    }
+  } else {
+    false
+  }
   let width_is_auto = match child_style.width {
     @types.Auto => true
     _ => false
@@ -4445,7 +4627,14 @@ fn apply_alignment(
         child_layout.width < available_width {
         // aspect_ratio with max_width constraint, width was derived from height
         child_layout.width
-      } else if justify == @types.Alignment::Stretch {
+      } else if justify == @types.Alignment::Stretch &&
+        not(replaced_with_definite_height) &&
+        not(
+          child_layout.width <= 0.0 &&
+          margin_left_is_auto &&
+          margin_right_is_auto,
+        ) &&
+        not(is_replaced_leaf && child_layout.width <= 0.0) {
         // Stretch to fill available width
         available_width
       } else {

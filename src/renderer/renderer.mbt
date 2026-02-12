@@ -1885,12 +1885,22 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
+    let max_height_is_percent = match style.max_height {
+      @types.Percent(_) => true
+      _ => false
+    }
+    let max_width_is_percent = match style.max_width {
+      @types.Percent(_) => true
+      _ => false
+    }
 
     // Handle img with intrinsic dimensions OR CSS percentage dimensions
     if intrinsic_width > 0.0 ||
       intrinsic_height > 0.0 ||
       height_is_percent ||
-      width_is_percent {
+      width_is_percent ||
+      max_height_is_percent ||
+      max_width_is_percent {
       let measure = create_image_measure(intrinsic_width, intrinsic_height)
       // Get alt text for accessibility/placeholder display
       let alt_text = elem.attributes.get("alt")

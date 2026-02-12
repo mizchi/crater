@@ -516,6 +516,15 @@ test "parse margin with 4 values" {
 }
 
 ///|
+test "parse margin auto" {
+  let style = parse_inline_style("margin: auto")
+  inspect(style.margin.top, content="Auto")
+  inspect(style.margin.right, content="Auto")
+  inspect(style.margin.bottom, content="Auto")
+  inspect(style.margin.left, content="Auto")
+}
+
+///|
 test "parse padding with 2 values" {
   let style = parse_inline_style("padding: 5px 15px")
   inspect(style.padding.top, content="Length(5)")

@@ -196,10 +196,20 @@ fn calculate_children_max_content_width(
             let intrinsic = (mf.func)(0.0, 0.0)
             @types.max(intrinsic.max_width + child_min_box, child_min_box)
           }
-          None =>
-            // Recursively calculate for nested elements
-            calculate_children_max_content_width(child, parent_width) +
-            child_min_box
+          None => {
+            let recursive_width = calculate_children_max_content_width(
+              child, parent_width,
+            )
+            let grid_track_width = estimate_grid_track_intrinsic_width(
+              child_style,
+            )
+            let content_width = if grid_track_width > recursive_width {
+              grid_track_width
+            } else {
+              recursive_width
+            }
+            content_width + child_min_box
+          }
         }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         child_min_box
@@ -210,6 +220,61 @@ fn calculate_children_max_content_width(
     }
   }
   max_content_width
+}
+
+///|
+fn resolve_single_track_intrinsic(track : @types.SingleTrackSizing) -> Double {
+  match track {
+    @types.SingleTrackSizing::Length(v) => v
+    @types.SingleTrackSizing::FitContentLength(v) => v
+    @types.SingleTrackSizing::MinMax(min_track, _max_track) =>
+      match min_track {
+        @types.MinTrackSizing::Length(v) => v
+        _ => 0.0
+      }
+    _ => 0.0
+  }
+}
+
+///|
+fn resolve_track_intrinsic(track : @types.TrackSizingFunction) -> Double {
+  match track {
+    @types.TrackSizingFunction::Length(v) => v
+    @types.FitContentLength(v) => v
+    @types.TrackSizingFunction::MinMax(min_track, _max_track) =>
+      match min_track {
+        @types.MinTrackSizing::Length(v) => v
+        _ => 0.0
+      }
+    @types.TrackSizingFunction::Repeat(count, tracks) =>
+      match count {
+        @types.RepeatCount::Count(n) => {
+          let mut unit = 0.0
+          for t in tracks {
+            unit = unit + resolve_single_track_intrinsic(t)
+          }
+          unit * n.to_double()
+        }
+        _ => 0.0
+      }
+    _ => 0.0
+  }
+}
+
+///|
+fn estimate_grid_track_intrinsic_width(style : @style.Style) -> Double {
+  if style.display != @types.Grid && style.display != @types.InlineGrid {
+    return 0.0
+  }
+  let mut width = 0.0
+  for track in style.grid_template_columns {
+    width = width + resolve_track_intrinsic(track)
+  }
+  if style.grid_template_columns.length() > 1 {
+    let gap = resolve_dimension_intrinsic(style.column_gap)
+    width = width + gap * (style.grid_template_columns.length() - 1).to_double()
+  }
+  width
 }
 
 ///|
@@ -898,7 +963,8 @@ fn compute_with_collapse(
   // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
   // InlineBlock elements also use shrink-to-fit (max-content) when width is auto
-  let is_inline_block = style.display == @types.InlineBlock
+  let is_inline_block = style.display == @types.InlineBlock ||
+    style.display == @types.TableCell
   let use_max_content = match (ctx.sizing_mode, style.width) {
     (@types.MaxContent, @types.Auto) => true
     (_, @types.MaxContent) => true
@@ -1283,7 +1349,9 @@ fn compute_with_collapse(
                     if child.children.length() == 0 {
                       child_min_box // Leaf nodes with no content have padding+border as minimum
                     } else {
-                      // Recursively compute child's max-content width
+                      // Recursively compute child's max-content width.
+                      // Grid/Flex/Table children must be dispatched to their own
+                      // layout algorithms in intrinsic sizing.
                       let intrinsic_ctx : @types.LayoutContext = {
                         available_width: parent_width, // Use parent_width as reference for percentages
                         available_height: child_available_height,
@@ -1293,10 +1361,21 @@ fn compute_with_collapse(
                         stretch_width: false,
                         stretch_height: false,
                       }
-                      let child_result = compute_with_collapse(
-                        child, intrinsic_ctx, warnings, dispatch,
-                      )
-                      child_result.layout.width
+                      let @node.DispatchFn(dispatch_fn) = dispatch
+                      let child_width = match child_style.display {
+                        @types.Flex
+                        | @types.InlineFlex
+                        | @types.Grid
+                        | @types.InlineGrid
+                        | @types.Table
+                        | @types.InlineTable =>
+                          dispatch_fn(child, intrinsic_ctx, dispatch).width
+                        _ =>
+                          compute_with_collapse(
+                            child, intrinsic_ctx, warnings, dispatch,
+                          ).layout.width
+                      }
+                      child_width
                     }
                 }
             }

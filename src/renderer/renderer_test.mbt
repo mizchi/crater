@@ -650,6 +650,47 @@ test "img_alt_text_propagation" {
 }
 
 ///|
+test "img without src and percent max-size stays zero-sized in grid item" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<html>
+    #|<head><style>body { margin: 0; }</style></head>
+    #|<body>
+    #|  <div style="display: grid; width: 100px;">
+    #|    <div style="display: grid; margin: auto;">
+    #|      <img style="max-width: 100%; max-height: 100%;">
+    #|    </div>
+    #|  </div>
+    #|</body>
+    #|</html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let outer_node = node.children[0]
+  let inner_node = outer_node.children[0]
+  let img_node = inner_node.children[0]
+  inspect(inner_node.style.margin.left, content="Auto")
+  inspect(inner_node.style.margin.right, content="Auto")
+  inspect(img_node.style.display, content="Inline")
+  inspect(img_node.style.max_width, content="Percent(1)")
+  inspect(img_node.style.max_height, content="Percent(1)")
+  inspect(
+    match img_node.measure {
+      Some(_) => true
+      None => false
+    },
+    content="true",
+  )
+
+  let layout = @renderer.render(html, ctx)
+  let outer = layout.children[0]
+  let inner = outer.children[0]
+  let img = inner.children[0]
+  inspect(outer.width, content="100")
+  inspect(img.width, content="0")
+  inspect(inner.width, content="0")
+}
+
+///|
 /// Test tall content for scrollability (simulates Zenn article structure)
 test "tall_content_scrollability" {
   // Simulate Zenn article structure with multiple sections
