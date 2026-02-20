@@ -892,7 +892,12 @@ fn compute_mixed_content_layout(
         let child_height_for_ctx : Double? = match node.style.display {
           @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
             match node.style.height {
-              @types.Auto => None
+              @types.Auto =>
+                if node.style.writing_mode.is_vertical() {
+                  available_height
+                } else {
+                  None
+                }
               _ => available_height
             }
           _ => available_height
@@ -2747,7 +2752,12 @@ fn compute_with_collapse(
         // This allows them to size to their content rather than stretching to fill
         // the available space. Flex item sizing should be decided by the flex/grid parent.
         let child_height_for_ctx : Double? = match child.style.height {
-          @types.Auto => None
+          @types.Auto =>
+            if child.style.writing_mode.is_vertical() {
+              child_available_height
+            } else {
+              None
+            }
           _ => child_available_height
         }
         let child_ctx : @types.LayoutContext = {
@@ -2846,7 +2856,12 @@ fn compute_with_collapse(
           let keyword_height_for_ctx : Double? = match keyword_style.display {
             @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
               match keyword_style.height {
-                @types.Auto => None
+                @types.Auto =>
+                  if keyword_style.writing_mode.is_vertical() {
+                    float_available_height
+                  } else {
+                    None
+                  }
                 _ => float_available_height
               }
             _ => float_available_height
@@ -2928,7 +2943,12 @@ fn compute_with_collapse(
     let child_height_for_ctx : Double? = match child_style.display {
       @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
         match child_style.height {
-          @types.Auto => None
+          @types.Auto =>
+            if child_style.writing_mode.is_vertical() {
+              float_available_height
+            } else {
+              None
+            }
           _ => float_available_height
         }
       _ => float_available_height

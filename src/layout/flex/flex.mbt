@@ -2637,12 +2637,12 @@ fn compute_internal(
   } else {
     content_width
   }
-  let main_gap = if is_row {
+  let main_gap = if direction_is_row {
     style.column_gap.resolve_or(main_gap_base, 0.0)
   } else {
     style.row_gap.resolve_or(main_gap_base, 0.0)
   }
-  let cross_gap = if is_row {
+  let cross_gap = if direction_is_row {
     style.row_gap.resolve_or(cross_gap_base, 0.0)
   } else {
     style.column_gap.resolve_or(cross_gap_base, 0.0)
@@ -2882,6 +2882,9 @@ fn compute_internal(
       None
     }
 
+    let is_table_item = child_style.display == @types.Table ||
+      child_style.display == @types.InlineTable
+
     // Calculate base size on main axis (flex-basis takes priority over width/height)
     // CSS spec: If flex-basis is a percentage of an indefinite size, it resolves
     // to content size (as if flex-basis: content was specified)
@@ -3011,6 +3014,77 @@ fn compute_internal(
           )
         }
     }
+    if is_table_item {
+      let main_padding_border = if is_row {
+        child_resolved.padding.horizontal_sum() +
+        child_resolved.border.horizontal_sum()
+      } else {
+        child_resolved.padding.vertical_sum() +
+        child_resolved.border.vertical_sum()
+      }
+      match child_style.flex_basis {
+        @types.Length(_) | @types.Percent(_) =>
+          base_main = base_main + main_padding_border
+        @types.Auto =>
+          if is_row {
+            match child_style.width {
+              @types.Length(_) | @types.Percent(_) =>
+                base_main = base_main + main_padding_border
+              _ => ()
+            }
+          } else {
+            match child_style.height {
+              @types.Length(_) | @types.Percent(_) =>
+                base_main = base_main + main_padding_border
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      if not(is_row) {
+        let mut caption_main_extra = 0.0
+        for table_child in child.children {
+          if table_child.style.display == @types.Display::None {
+            continue
+          }
+          if table_child.style.display == @types.TableCaption {
+            let caption_height = match table_child.style.height {
+              @types.Length(h) => h
+              @types.Percent(_) => 0.0
+              _ => {
+                let caption_padding = @types.resolve_rect(
+                  table_child.style.padding,
+                  content_width,
+                )
+                let caption_border = @types.resolve_rect(
+                  table_child.style.border,
+                  content_width,
+                )
+                let mut intrinsic_child_height = 0.0
+                for caption_child in table_child.children {
+                  if caption_child.style.display == @types.Display::None {
+                    continue
+                  }
+                  intrinsic_child_height = intrinsic_child_height +
+                    compute_intrinsic_main_size(
+                      caption_child,
+                      false,
+                      Some(content_width),
+                      cache,
+                      dispatch,
+                    )
+                }
+                intrinsic_child_height +
+                caption_padding.vertical_sum() +
+                caption_border.vertical_sum()
+              }
+            }
+            caption_main_extra = caption_main_extra + caption_height
+          }
+        }
+        base_main = base_main + caption_main_extra
+      }
+    }
 
     // Get explicit main dimension value for aspect_ratio calculation on cross axis
     let explicit_main : Double? = if is_row {
@@ -3053,53 +3127,92 @@ fn compute_internal(
     // cross_is_auto indicates whether the cross style dimension is Auto
     // (this is used for stretch behavior - stretch only applies to Auto dimensions)
     let (base_cross, cross_is_auto) = if is_row {
-      match child_style.height {
-        @types.Length(h) => (h, false)
-        @types.Percent(p) =>
-          match content_height {
-            Some(ch) => (ch * p, false)
-            None => (0.0, false)
-          }
-        @types.Auto =>
-          // Try to use aspect_ratio if main dimension is known
-          // Otherwise compute intrinsic height from children
-          match (child_style.aspect_ratio, explicit_main) {
-            (Some(ratio), Some(main_val)) => (main_val / ratio, true)
-            _ =>
-              // Compute intrinsic height for containers with children
-              if child.children.length() > 0 {
-                (
-                  compute_intrinsic_main_size(
-                    child,
-                    false,
-                    Some(content_width),
-                    cache,
-                    dispatch,
-                  ),
-                  true,
-                )
-              } else {
-                // Leaf node - use MeasureFunc if available
-                match child.measure {
-                  Some(mf) => {
-                    let intrinsic = (mf.func)(content_width, 0.0)
-                    (intrinsic.max_height, true)
-                  }
-                  None => (0.0, true)
-                }
-              }
-          }
-        @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-          (
-            compute_intrinsic_main_size(
-              child,
-              false,
-              Some(content_width),
-              cache,
-              dispatch,
-            ),
+      if is_table_item && child.children.length() == 0 {
+        (
+          compute_intrinsic_main_size(
+            child,
             false,
-          )
+            Some(content_width),
+            cache,
+            dispatch,
+          ),
+          true,
+        )
+      } else {
+        match child_style.height {
+          @types.Length(h) =>
+            if is_table_item {
+              (
+                max(
+                  0.0,
+                  h -
+                  child_resolved.padding.vertical_sum() -
+                  child_resolved.border.vertical_sum(),
+                ),
+                false,
+              )
+            } else {
+              (h, false)
+            }
+          @types.Percent(p) =>
+            match content_height {
+              Some(ch) =>
+                if is_table_item {
+                  (
+                    max(
+                      0.0,
+                      ch * p -
+                      child_resolved.padding.vertical_sum() -
+                      child_resolved.border.vertical_sum(),
+                    ),
+                    false,
+                  )
+                } else {
+                  (ch * p, false)
+                }
+              None => (0.0, false)
+            }
+          @types.Auto =>
+            // Try to use aspect_ratio if main dimension is known
+            // Otherwise compute intrinsic height from children
+            match (child_style.aspect_ratio, explicit_main) {
+              (Some(ratio), Some(main_val)) => (main_val / ratio, true)
+              _ =>
+                // Compute intrinsic height for containers with children
+                if child.children.length() > 0 {
+                  (
+                    compute_intrinsic_main_size(
+                      child,
+                      false,
+                      Some(content_width),
+                      cache,
+                      dispatch,
+                    ),
+                    true,
+                  )
+                } else {
+                  // Leaf node - use MeasureFunc if available
+                  match child.measure {
+                    Some(mf) => {
+                      let intrinsic = (mf.func)(content_width, 0.0)
+                      (intrinsic.max_height, true)
+                    }
+                    None => (0.0, true)
+                  }
+                }
+            }
+          @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+            (
+              compute_intrinsic_main_size(
+                child,
+                false,
+                Some(content_width),
+                cache,
+                dispatch,
+              ),
+              false,
+            )
+        }
       }
     } else {
       match child_style.width {
@@ -3234,7 +3347,7 @@ fn compute_internal(
       // Use cached resolved rects
       let padding_border_min = child_resolved.padding.horizontal_sum() +
         child_resolved.border.horizontal_sum()
-      let min_w = match child_style.min_width {
+      let mut min_w = match child_style.min_width {
         @types.Length(v) => max(v, padding_border_min) // Explicit min, but padding+border is absolute minimum
         @types.Percent(p) => max(content_width * p, padding_border_min)
         @types.Auto => {
@@ -3291,6 +3404,14 @@ fn compute_internal(
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           padding_border_min
       }
+      if is_table_item {
+        let table_min_w = compute_min_content_main_size(
+          child, true, row_intrinsic_cross_for_child, cache, dispatch,
+        )
+        if min_w < table_min_w {
+          min_w = table_min_w
+        }
+      }
       (min_w, max_w)
     } else {
       let max_h = match child_style.max_height {
@@ -3341,7 +3462,7 @@ fn compute_internal(
       // Use cached resolved rects
       let padding_border_min = child_resolved.padding.vertical_sum() +
         child_resolved.border.vertical_sum()
-      let min_h = match child_style.min_height {
+      let mut min_h = match child_style.min_height {
         @types.Length(v) => max(v, padding_border_min) // Explicit min, but padding+border is absolute minimum
         @types.Percent(p) =>
           match content_height {
@@ -3413,6 +3534,18 @@ fn compute_internal(
         }
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           padding_border_min
+      }
+      if is_table_item {
+        let table_min_h = compute_min_content_main_size(
+          child,
+          false,
+          Some(content_width),
+          cache,
+          dispatch,
+        )
+        if min_h < table_min_h {
+          min_h = table_min_h
+        }
       }
       (min_h, max_h)
     }
@@ -3910,6 +4043,8 @@ fn compute_internal(
   for i = 0; i < flex_items.length(); i = i + 1 {
     let item = flex_items[i]
     let child_style = item.node.style
+    let child_is_table = child_style.display == @types.Table ||
+      child_style.display == @types.InlineTable
 
     // Determine effective alignment (align-self overrides align-items)
     let effective_align = match child_style.align_self {
@@ -4092,7 +4227,19 @@ fn compute_internal(
               }
           }
         @types.Auto =>
-          if constrained_cross < padding_border_min {
+          if child_is_table {
+            let table_min_cross = compute_min_content_main_size(
+              item.node,
+              false,
+              Some(content_width),
+              cache,
+              dispatch,
+            )
+            let effective_min = max(table_min_cross, padding_border_min)
+            if constrained_cross < effective_min {
+              constrained_cross = effective_min
+            }
+          } else if constrained_cross < padding_border_min {
             constrained_cross = padding_border_min
           }
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -4559,10 +4706,25 @@ fn compute_internal(
                         constrained = padding_border_min
                       }
                   }
-                @types.Auto =>
-                  if constrained < padding_border_min {
+                @types.Auto => {
+                  let child_is_table = child_style.display == @types.Table ||
+                    child_style.display == @types.InlineTable
+                  if child_is_table {
+                    let table_min_cross = compute_min_content_main_size(
+                      child,
+                      false,
+                      Some(content_width),
+                      cache,
+                      dispatch,
+                    )
+                    let effective_min = max(table_min_cross, padding_border_min)
+                    if constrained < effective_min {
+                      constrained = effective_min
+                    }
+                  } else if constrained < padding_border_min {
                     constrained = padding_border_min
                   }
+                }
                 _ => ()
               }
             } else {
@@ -4738,10 +4900,10 @@ fn compute_internal(
       } else {
         (item_cross, item.final_main)
       }
-      // For vertical-rl in column directions, flip x position.
-      // In row directions under vertical writing-mode, cross positioning is
-      // already resolved by alignment and should not be mirrored again.
-      let (child_x, child_y) = if is_block_rtl && not(direction_is_row) {
+      // For vertical-rl, flip x in column directions.
+      // In wrapped row directions, line progression is also mirrored.
+      let (child_x, child_y) = if is_block_rtl &&
+        (not(direction_is_row) || should_wrap) {
         (container_width - child_x - child_width, child_y)
       } else {
         (child_x, child_y)
@@ -4787,6 +4949,10 @@ fn compute_internal(
           @types.Grid | @types.InlineGrid => true
           _ => false
         }
+        let child_is_table = match child.style.display {
+          @types.Table | @types.InlineTable => true
+          _ => false
+        }
         let child_ctx : @types.LayoutContext = {
           available_width: child_width,
           available_height: nested_available_height,
@@ -4794,10 +4960,10 @@ fn compute_internal(
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
           // Flex main-axis result is a definite used size for the item.
-          // Grid descendants need this flag to treat auto track sizing as
+          // Grid and table descendants need this flag to treat auto sizing as
           // extrinsically definite on the flex main axis.
-          stretch_width: child_is_grid && is_row,
-          stretch_height: child_is_grid && not(is_row),
+          stretch_width: (child_is_grid && is_row) || child_is_table,
+          stretch_height: (child_is_grid && not(is_row)) || child_is_table,
         }
         let nested_layout = compute_nested(
           child,
@@ -4888,8 +5054,20 @@ fn compute_internal(
           }
         @types.Auto =>
           if is_row {
-            // Row direction: cross size is height
-            total_lines_cross + padding.vertical_sum() + border.vertical_sum()
+            // Row direction: cross size is height.
+            // In vertical writing-modes, auto height corresponds to inline-size
+            // and should use the available inline extent when definite.
+            if style.writing_mode.is_vertical() {
+              match (ctx.sizing_mode, ctx.available_height) {
+                (@types.Definite, Some(ah)) if ah < 1.0e9 => ah
+                _ =>
+                  total_lines_cross +
+                  padding.vertical_sum() +
+                  border.vertical_sum()
+              }
+            } else {
+              total_lines_cross + padding.vertical_sum() + border.vertical_sum()
+            }
           } else {
             // Column direction: main size is height
             // Calculate total main size including gaps within and between lines

@@ -188,6 +188,43 @@ test "compute_inline calc viewport units" {
 }
 
 ///|
+test "compute_inline calc mixed width resolves with fallback basis" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline("width: calc(50% - 10px)", ctx)
+  inspect(style.width, content="Length(390)")
+}
+
+///|
+test "compute_inline gap shorthand two values" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("gap: 40px 20px", ctx)
+  inspect(style.row_gap, content="Length(40)")
+  inspect(style.column_gap, content="Length(20)")
+}
+
+///|
+test "compute_inline mixed calc gap resolves with fallback basis" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline("gap: calc(10% - 1rem / 2)", ctx)
+  inspect(style.row_gap, content="Length(72)")
+  inspect(style.column_gap, content="Length(72)")
+}
+
+///|
 test "compute_inline box model" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline(

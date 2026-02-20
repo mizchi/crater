@@ -1281,6 +1281,7 @@ pub fn element_to_node(
           let inherited = @style.Style::default()
           // Copy inherited properties from parent
           inherited.writing_mode = ps.writing_mode
+          inherited.direction = ps.direction
           inherited.color = ps.color
           inherited
         }
@@ -1558,7 +1559,7 @@ pub fn render_with_external_css(
 
   // Apply zoom and transform scale to layout
   let scaled_layout = apply_zoom_and_scale(
-    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0,
+    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0, false,
   )
   let scaled_layout = if should_clamp_body_to_viewport(root) {
     // Body auto-height should be at least viewport-height, but still grow to
@@ -1733,7 +1734,7 @@ pub fn render_document_with_external_css(
 
   // Apply zoom and transform scale to layout
   let scaled_layout = apply_zoom_and_scale(
-    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0,
+    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0, false,
   )
   let scaled_layout = if should_clamp_body_to_viewport(root) {
     let min_viewport_height = if scaled_layout.height < ctx.viewport_height {
@@ -3336,6 +3337,7 @@ fn compute_element_style_indexed(
         font_size: ps.font_size,
         line_height: ps.font_size * lh_ratio,
         writing_mode: ps.writing_mode,
+        direction: ps.direction,
       }
     }
     None => ()
@@ -3360,6 +3362,7 @@ fn compute_element_style_indexed(
           ctx.viewport_width,
           ctx.viewport_height,
           css_vars,
+          parent_style,
         )
       None => ()
     }
@@ -3382,6 +3385,7 @@ fn compute_element_style_indexed(
         css_vars,
         ctx.viewport_width,
         ctx.viewport_height,
+        parent_style,
       )
     None => ()
   }
@@ -3460,10 +3464,11 @@ fn apply_css_property_with_viewport(
   viewport_width : Double,
   viewport_height : Double,
   css_vars : Map[String, String],
+  inherited_parent_style : @style.Style?,
 ) -> @style.Style {
   // Use direct property application to avoid string parsing overhead
   let ctx : @computed.ComputeContext = {
-    parent_style: Some(style),
+    parent_style: inherited_parent_style,
     root_font_size: 16.0,
     font_size: style.font_size,
     viewport_width,
@@ -3491,6 +3496,7 @@ fn apply_inline_css_with_vars(
   css_vars : Map[String, String],
   viewport_width : Double,
   viewport_height : Double,
+  inherited_parent_style : @style.Style?,
 ) -> @style.Style {
   // Parse the inline CSS to get property/value pairs
   // Format: "property1: value1; property2: value2"
@@ -3516,7 +3522,7 @@ fn apply_inline_css_with_vars(
         if prop.length() > 0 && value.length() > 0 {
           // Use viewport-aware property application with CSS variables
           result = apply_css_property_with_viewport(
-            result, prop, value, viewport_width, viewport_height, css_vars,
+            result, prop, value, viewport_width, viewport_height, css_vars, inherited_parent_style,
           )
         }
       } catch {
@@ -3897,6 +3903,7 @@ fn apply_zoom_and_scale(
   parent_scale_y : Double,
   parent_global_x : Double,
   parent_global_y : Double,
+  has_abs_containing_block_ancestor : Bool,
 ) -> @types.Layout {
   // Calculate effective zoom (parent zoom * node zoom)
   let effective_zoom = parent_zoom * node.style.zoom
@@ -3942,6 +3949,8 @@ fn apply_zoom_and_scale(
     origin_adjust_y
   let global_x = parent_global_x + scaled_x
   let global_y = parent_global_y + scaled_y
+  let has_abs_containing_block = has_abs_containing_block_ancestor ||
+    establishes_absolute_containing_block(node)
 
   // Process children with updated parent zoom and scale
   let scaled_children : Array[@types.Layout] = []
@@ -3955,10 +3964,10 @@ fn apply_zoom_and_scale(
     let child_node = node.children[i]
     let scaled_child = apply_zoom_and_scale(
       child_layout, child_node, effective_zoom, child_parent_scale_x, child_parent_scale_y,
-      global_x, global_y,
+      global_x, global_y, has_abs_containing_block,
     )
     if child_node.style.position == @types.Absolute &&
-      not(establishes_absolute_containing_block(node)) {
+      not(has_abs_containing_block) {
       // Absolute descendants without a containing block are viewport-relative.
       scaled_children.push({
         ..scaled_child,

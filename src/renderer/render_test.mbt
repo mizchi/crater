@@ -143,6 +143,124 @@ test "wpt_aspect_ratio_intrinsic_size_005_like" {
 }
 
 ///|
+test "wpt_gap_vertical_writing_lr_inline_size_propagation" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; writing-mode: vertical-lr; }
+    #|section { display: flex; block-size: 100px; gap: 20px; }
+    #|section > div { flex: 1 1 auto; }
+    #|</style>
+    #|<section><div></div><div></div><div></div></section>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let section = layout.children[0]
+  guard section.width >= 99.0 else {
+    fail("section block-size should map to physical width in vertical writing")
+  }
+  guard section.height >= 500.0 else {
+    fail("section inline-size should use available viewport height")
+  }
+  guard section.children[0].height > 100.0 else {
+    fail("flex item should receive non-zero main size with gap distribution")
+  }
+}
+
+///|
+test "wpt_gap_rtl_direction_inheritance_for_flex" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; direction: rtl; }
+    #|section { display: flex; block-size: 100px; gap: 20px; }
+    #|section > div { flex: 1 1 auto; }
+    #|</style>
+    #|<section><div></div><div></div><div></div></section>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let section = root.children[0]
+  assert_true(section.style.direction.is_rtl())
+
+  let layout = @renderer.render(html_str, ctx)
+  let section_layout = layout.children[0]
+  guard section_layout.children.length() == 3 else {
+    fail("section should have three flex items")
+  }
+  let x0 = section_layout.children[0].x
+  let x1 = section_layout.children[1].x
+  let x2 = section_layout.children[2].x
+  guard x0 > x1 && x1 > x2 else {
+    fail("rtl row flex should place earlier DOM items further right")
+  }
+}
+
+///|
+test "wpt_gap_vertical_column_wrap_uses_available_inline_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; writing-mode: vertical-lr; }
+    #|section { display: flex; flex-direction: column; flex-wrap: wrap; block-size: 100px; gap: 20px; }
+    #|section > div { width: calc(50% - 10px); }
+    #|</style>
+    #|<section><div></div><div></div><div></div><div></div></section>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let section = layout.children[0]
+  guard section.width >= 99.0 else {
+    fail("section block-size should map to physical width in vertical writing")
+  }
+  guard section.height >= 500.0 else {
+    fail("section auto inline-size should fill available viewport height")
+  }
+}
+
+///|
+test "wpt_gap_vertical_row_wrap_uses_column_gap_percentage" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.flex { display: flex; width: 220px; height: 200px; writing-mode: vertical-lr; flex-flow: row wrap; column-gap: 10%; row-gap: 10px; align-content: flex-start; justify-content: flex-end; }
+    #|.item { width: 28px; height: 28px; border: 1px solid blue; }
+    #|</style>
+    #|<div class="flex">
+    #|  <div class="item"></div><div class="item"></div><div class="item"></div>
+    #|  <div class="item"></div><div class="item"></div><div class="item"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  let y0 = flex.children[0].y
+  let y1 = flex.children[1].y
+  guard y1 - y0 >= 45.0 else {
+    fail(
+      "row-wrap main-axis gap should follow column-gap percentage in vertical writing",
+    )
+  }
+}
+
+///|
+test "wpt_gap_vertical_rl_wrap_progression_is_mirrored" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; writing-mode: vertical-rl; }
+    #|section { block-size: 100px; inline-size: 200px; display: inline-flex; flex-wrap: wrap; gap: 20px; }
+    #|section > div { block-size: 20px; }
+    #|#bp { inline-size: 120px; } #ww { inline-size: 130px; } #s, #f { inline-size: 40px; }
+    #|</style>
+    #|<section>
+    #|  <div id="bp"></div><div id="ww"></div><div id="s"></div><div id="f"></div>
+    #|</section>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let section = layout.children[0]
+  let bp = section.children[0]
+  let f = section.children[3]
+  guard bp.x > f.x else {
+    fail("vertical-rl wrap should progress lines from right to left")
+  }
+}
+
+///|
 test "svg_default_intrinsic_size_wpt_like" {
   // Mirrors WPT-like behavior: <svg> without width/height defaults to 300x150.
   let html_str =
@@ -230,6 +348,80 @@ test "wpt_block_size_table_container_keeps_auto_size_in_computed_style" {
   inspect(container.style.writing_mode, content="VerticalLr")
   inspect(container.style.width, content="Auto")
   inspect(container.style.height, content="Auto")
+}
+
+///|
+test "wpt_table_as_flex_item_auto_min_width_floor" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; width:100px; background:red;">
+    #|  <div style="display:table; width:10px; max-width:10px; height:100px; background:green;">
+    #|    <div style="width:100px; height:10px; background:green;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let table_item = layout.children[0].children[0]
+  guard table_item.width >= 99.0 else {
+    fail("table flex item should not shrink below intrinsic min-content width")
+  }
+}
+
+///|
+test "wpt_table_as_flex_item_fixed_min_width_floor" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; width:100px; background:red;">
+    #|  <div style="display:table; min-width:5px; width:10px; max-width:10px; height:100px; background:green;">
+    #|    <div style="width:100px; height:10px; background:green;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let table_item = layout.children[0].children[0]
+  guard table_item.width >= 99.0 else {
+    fail(
+      "table flex item should honor intrinsic floor beyond specified min-width",
+    )
+  }
+}
+
+///|
+test "wpt_table_flex_item_auto_width_uses_flex_used_size" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; width:100px; height:100px; align-items:flex-start; background:green;">
+    #|  <table style="flex-grow:1; flex-shrink:0; height:50px; background:green;" cellpadding="0" cellspacing="0">
+    #|    <tr>
+    #|      <td style="width:100%; background:green;">&nbsp;</td>
+    #|      <td style="background:green;">&nbsp;</td>
+    #|    </tr>
+    #|  </table>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let table = layout.children[0].children[0]
+  guard table.width >= 99.0 else {
+    fail("table flex item with auto width should use flex-assigned main size")
+  }
+}
+
+///|
+test "wpt_table_flex_item_percent_width_does_not_override_used_size" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; width:200px;">
+    #|  <div style="width:200px;"></div>
+    #|  <table style="width:70%; flex-basis:200px; border-spacing:0;">
+    #|    <tr><td><div style="width:10px; height:10px;"></div></td></tr>
+    #|  </table>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let table = layout.children[0].children[1]
+  guard table.width >= 99.0 && table.width <= 101.0 else {
+    fail("flex-assigned used width should win over table percentage width")
+  }
 }
 
 ///|
@@ -727,7 +919,7 @@ test "body_overflow_scroll_is_not_forced_to_viewport" {
   let layout = @renderer.render(html_str, ctx)
 
   inspect(layout.id, content="body")
-  inspect(layout.height, content="19.2")
+  inspect(layout.height, content="16")
 }
 
 ///|
@@ -782,7 +974,7 @@ test "wpt_intrinsic_percent_non_replaced_calc_mixed_static_layout" {
   let inner = outer.children[0]
 
   inspect(outer.height, content="420")
-  inspect(inner.width, content="106")
+  inspect(inner.width, content="104")
   inspect(inner.height, content="404")
 }
 

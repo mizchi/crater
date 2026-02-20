@@ -697,8 +697,10 @@ fn apply_property(
         _ => @types.BoxSizing::ContentBox
       }
     // Sizing
-    "width" => builder.width = resolve_dimension(value, ctx)
-    "height" => builder.height = resolve_dimension(value, ctx)
+    "width" =>
+      builder.width = resolve_dimension_with_calc_percent_fallback(value, ctx)
+    "height" =>
+      builder.height = resolve_dimension_with_calc_percent_fallback(value, ctx)
     "min-width" =>
       builder.min_width = resolve_dimension_with_mixed_calc_fallback(
         "min-width", value, ctx,
@@ -714,7 +716,7 @@ fn apply_property(
     // - inline axis is vertical -> inline-size maps to height
     // - block axis is horizontal -> block-size maps to width
     "inline-size" => {
-      let dim = resolve_dimension(value, ctx)
+      let dim = resolve_dimension_with_calc_percent_fallback(value, ctx)
       if builder.writing_mode.is_vertical() {
         builder.height = dim
       } else {
@@ -722,7 +724,7 @@ fn apply_property(
       }
     }
     "block-size" => {
-      let dim = resolve_dimension(value, ctx)
+      let dim = resolve_dimension_with_calc_percent_fallback(value, ctx)
       if builder.writing_mode.is_vertical() {
         builder.width = dim
       } else {
@@ -1218,14 +1220,43 @@ fn apply_property(
     }
     // Gap (grid-gap is legacy alias)
     "gap" | "grid-gap" => {
-      let dim = resolve_dimension(value, ctx)
-      builder.row_gap = dim
-      builder.column_gap = dim
+      let parts : Array[StringView] = value
+        .trim()
+        .split(" ")
+        .filter(fn(s) { not(s.is_empty()) })
+        .collect()
+      match parts.length() {
+        1 => {
+          let dim = resolve_dimension_with_calc_percent_fallback(
+            parts[0].to_string(),
+            ctx,
+          )
+          builder.row_gap = dim
+          builder.column_gap = dim
+        }
+        2 => {
+          builder.row_gap = resolve_dimension_with_calc_percent_fallback(
+            parts[0].to_string(),
+            ctx,
+          )
+          builder.column_gap = resolve_dimension_with_calc_percent_fallback(
+            parts[1].to_string(),
+            ctx,
+          )
+        }
+        _ => {
+          let dim = resolve_dimension_with_calc_percent_fallback(value, ctx)
+          builder.row_gap = dim
+          builder.column_gap = dim
+        }
+      }
     }
     "row-gap" | "grid-row-gap" =>
-      builder.row_gap = resolve_dimension(value, ctx)
+      builder.row_gap = resolve_dimension_with_calc_percent_fallback(value, ctx)
     "column-gap" | "grid-column-gap" =>
-      builder.column_gap = resolve_dimension(value, ctx)
+      builder.column_gap = resolve_dimension_with_calc_percent_fallback(
+        value, ctx,
+      )
     // Inset
     "top" => builder.inset_top = resolve_dimension(value, ctx)
     "right" => builder.inset_right = resolve_dimension(value, ctx)
@@ -1797,6 +1828,38 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
 }
 
 ///|
+/// Extract first percentage token from calc() expression as ratio.
+/// Used as a fallback when mixed calc contains multiplicative terms.
+fn extract_first_percent_ratio(expr : String) -> Double? {
+  let mut i = 0
+  while i < expr.length() {
+    if expr[i].to_int().unsafe_to_char() == '%' {
+      let mut start = i
+      while start > 0 {
+        let c = expr[start - 1].to_int().unsafe_to_char()
+        if (c >= '0' && c <= '9') || c == '.' {
+          start = start - 1
+          continue
+        }
+        if c == '+' || c == '-' {
+          start = start - 1
+        }
+        break
+      }
+      let num = expr[start:i].to_string().trim() catch { _ => "" }
+      if not(num.is_empty()) {
+        let n = @strconv.parse_double(num.to_string()) catch {
+          _ => return None
+        }
+        return Some(n / 100.0)
+      }
+    }
+    i = i + 1
+  }
+  None
+}
+
+///|
 /// Parse a calc() expression from a string and try to simplify it
 /// Returns Some(dimension) if simplification is possible, None otherwise
 fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
@@ -1810,6 +1873,60 @@ fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
         None
       }
     None => None
+  }
+}
+
+///|
+/// Choose a width reference for mixed calc() fallback.
+/// Prefer parent's definite width when available; otherwise use viewport width.
+fn mixed_calc_width_reference(ctx : ComputeContext) -> Double {
+  match ctx.parent_style {
+    Some(parent) =>
+      match parent.width {
+        @types.Length(w) => w
+        @types.Percent(p) => ctx.viewport_width * p
+        _ => ctx.viewport_width
+      }
+    None => ctx.viewport_width
+  }
+}
+
+///|
+/// Fallback for mixed calc() on properties that need concrete dimensions.
+/// For expressions like calc(50% - 10px), resolve using a width reference.
+fn resolve_dimension_with_calc_percent_fallback(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Dimension {
+  let dim = resolve_dimension(value, ctx)
+  match dim {
+    @types.Auto =>
+      if value.trim().has_prefix("calc(") {
+        match parse_calc_terms(value, ctx) {
+          Some((length_px, percent_ratio)) =>
+            if percent_ratio.abs() >= 0.0001 {
+              let percent_for_resolution = if value.contains("*") ||
+                value.contains("/") {
+                match extract_first_percent_ratio(value) {
+                  Some(p) => p
+                  None => percent_ratio
+                }
+              } else {
+                percent_ratio
+              }
+              let basis = mixed_calc_width_reference(ctx)
+              @types.Length(basis * percent_for_resolution + length_px)
+            } else if length_px.abs() >= 0.0001 {
+              @types.Length(length_px)
+            } else {
+              @types.Length(0.0)
+            }
+          None => dim
+        }
+      } else {
+        dim
+      }
+    _ => dim
   }
 }
 

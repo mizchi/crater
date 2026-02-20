@@ -250,6 +250,23 @@ test "table width less than intrinsic min expands" {
 }
 
 ///|
+test "table intrinsic width includes anonymous flow child" {
+  let child_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Block,
+    width: @types.Length(100.0),
+    height: @types.Length(10.0),
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+  }
+  let child = @node.Node::new("child", child_style, [])
+  let table = @node.Node::new("table", table_style, [child])
+  inspect(compute_intrinsic_size(table, true), content="100")
+}
+
+///|
 test "vertical writing table ignores intrinsic max-width constraint" {
   let cell_style : @style.Style = {
     ..@style.Style::default(),
