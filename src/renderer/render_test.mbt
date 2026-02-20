@@ -80,6 +80,64 @@ test "svg_default_intrinsic_size_wpt_like" {
 }
 
 ///|
+test "form_controls_max_content_intrinsic_size_wpt_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|input, textarea { font: 20px monospace; white-space: pre; }
+    #|</style>
+    #|<input id="i" value="sample text" style="width: max-content">
+    #|<textarea id="t" rows="3" cols="12" style="height: max-content">sample text 1</textarea>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let input = layout.children[0]
+  let textarea = layout.children[1]
+  inspect(input.width, content="215")
+  inspect(textarea.width, content="142")
+  inspect(textarea.height, content="69")
+}
+
+///|
+test "vertical writing table keeps intrinsic max-width in computed style" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|  .container { writing-mode: vertical-lr; }
+    #|  .big-w { width: 150px; }
+    #|  .max-width-min-content { max-width: 0px; max-width: min-content; }
+    #|</style>
+    #|<div class="container">
+    #|  <table class="big-w max-width-min-content"><td>x</td></table>
+    #|</div>
+
+  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let container = root.children[0]
+  let table = container.children[0]
+  let td = table.children[0]
+  inspect(container.style.writing_mode, content="VerticalLr")
+  inspect(table.style.writing_mode, content="VerticalLr")
+  inspect(td.style.writing_mode, content="VerticalLr")
+  inspect(table.style.width, content="Length(150)")
+  inspect(table.style.max_width, content="MinContent")
+}
+
+///|
+test "wpt_block_size_table_container_keeps_auto_size_in_computed_style" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|  .container { writing-mode: vertical-lr; }
+    #|</style>
+    #|<div class="container"><table><td>x</td></table></div>
+
+  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let container = root.children[0]
+  inspect(container.style.writing_mode, content="VerticalLr")
+  inspect(container.style.width, content="Auto")
+  inspect(container.style.height, content="Auto")
+}
+
+///|
 test "flex_stretch_respects_min_height_through_renderer" {
   let html_str =
     #|<!DOCTYPE html>
@@ -545,4 +603,124 @@ test "wpt_grid_align_start_item_uses_content_height" {
 
   inspect(grid.height, content="50")
   inspect(item.height, content="10")
+}
+
+///|
+test "body_explicit_height_is_not_forced_to_viewport" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; height: 200px; }
+    #|</style>
+    #|<div style="height: 20px;"></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+
+  inspect(layout.id, content="body")
+  inspect(layout.height, content="200")
+}
+
+///|
+test "body_overflow_scroll_is_not_forced_to_viewport" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; overflow: scroll; }
+    #|</style>
+    #|body text
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+
+  inspect(layout.id, content="body")
+  inspect(layout.height, content="19.2")
+}
+
+///|
+test "intrinsic_percent_replaced_nested_wrapper_quirks_like" {
+  let html_str =
+    #|<!-- quirks mode -->
+    #|<style>
+    #|#float { float: left; height: 100px; background: green; }
+    #|canvas { height: 100%; }
+    #|</style>
+    #|<p style="margin-top: 1em;">Test passes if there is a filled green square.</p>
+    #|<div id=float>
+    #|  <div>
+    #|    <canvas width=10 height=10></canvas>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let float_div = layout.children[1]
+  let inner = float_div.children[0]
+  let canvas = inner.children[0]
+
+  inspect(float_div.width, content="100")
+  inspect(inner.width, content="100")
+  inspect(canvas.width, content="100")
+  inspect(canvas.height, content="100")
+}
+
+///|
+test "wpt_intrinsic_percent_non_replaced_calc_mixed_static_layout" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#outer {
+    #|  display: inline-block;
+    #|  border: 5px solid;
+    #|  padding: 3px;
+    #|}
+    #|#inner {
+    #|  min-width: calc(100px + 50%);
+    #|  min-height: calc(100px + 50%);
+    #|  border: 2px solid cyan;
+    #|}
+    #|</style>
+    #|<div id="outer">
+    #|  <div id="inner"></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let outer = layout.children[0]
+  let inner = outer.children[0]
+
+  inspect(outer.height, content="420")
+  inspect(inner.width, content="106")
+  inspect(inner.height, content="404")
+}
+
+///|
+test "wpt_intrinsic_percent_replaced_dynamic_010_static_layout" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|p { margin: 0; }
+    #|</style>
+    #|<p>Test passes if there is a filled green square.</p>
+    #|<div id="target" style="float: left; background: green; color: transparent;">
+    #|  <span>
+    #|    <div style="float: left; height: 100%;">
+    #|      <canvas width="1" height="1" style="height: 100%;"></canvas>
+    #|    </div>
+    #|  </span>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let target = layout.children[1]
+  let span = target.children[0]
+  let float_div = span.children[0]
+  let canvas = float_div.children[0]
+
+  inspect(target.width, content="600")
+  inspect(target.height, content="600")
+  inspect(span.x, content="600")
+  inspect(span.width, content="0")
+  inspect(float_div.x, content="-600")
+  inspect(float_div.width, content="600")
+  inspect(float_div.height, content="600")
+  inspect(canvas.width, content="600")
+  inspect(canvas.height, content="600")
 }

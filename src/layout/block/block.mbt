@@ -102,6 +102,32 @@ fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
 }
 
 ///|
+/// Whether this subtree contains replaced-like measured descendants that rely on
+/// percentage sizing. In quirks-like cases browsers propagate a usable
+/// block-size through auto-height wrappers for these elements.
+fn has_percent_sized_replaced_descendant(node : @node.Node) -> Bool {
+  for child in node.children {
+    let child_uses_percent_size = match
+      (child.style.width, child.style.height) {
+      (@types.Percent(_), _) => true
+      (_, @types.Percent(_)) => true
+      _ => false
+    }
+    let child_is_measured_leaf = match child.measure {
+      Some(_) => child.children.length() == 0
+      None => false
+    }
+    if child_is_measured_leaf && child_uses_percent_size {
+      return true
+    }
+    if has_percent_sized_replaced_descendant(child) {
+      return true
+    }
+  }
+  false
+}
+
+///|
 /// Collapsed margins that escape from a child element
 priv struct CollapsedMargins {
   top : Double? // Margin that escapes upward
@@ -149,17 +175,8 @@ fn calculate_children_max_content_width(
 ) -> Double {
   let mut max_content_width = 0.0
   let is_vertical_writing = node.style.writing_mode.is_vertical()
-  // Check if node itself has MeasureFunc (leaf node with intrinsic size)
-  match node.measure {
-    Some(mf) => {
-      let intrinsic = (mf.func)(0.0, 0.0)
-      max_content_width = intrinsic.max_width
-    }
-    None => ()
-  }
-  // Calculate max-content width from children
+  let flow_children : Array[@node.Node] = []
   for child in node.children {
-    // Skip display:none, absolute, fixed, and float elements
     if child.style.display == @types.Display::None ||
       child.style.position == @types.Absolute ||
       child.style.position == @types.Fixed {
@@ -169,6 +186,29 @@ fn calculate_children_max_content_width(
       @types.Float::Left | @types.Float::Right => continue
       @types.Float::None => ()
     }
+    flow_children.push(child)
+  }
+  let inline_only = @inline.should_establish_ifc(flow_children)
+  let mut inline_has_forced_break = false
+  if inline_only && not(is_vertical_writing) {
+    for child in flow_children {
+      if child.id == "br" {
+        inline_has_forced_break = true
+        break
+      }
+    }
+  }
+  let mut current_inline_line_width = 0.0
+  // Check if node itself has MeasureFunc (leaf node with intrinsic size)
+  match node.measure {
+    Some(mf) => {
+      let intrinsic = (mf.func)(0.0, 0.0)
+      max_content_width = intrinsic.max_width
+    }
+    None => ()
+  }
+  // Calculate max-content width from children
+  for child in flow_children {
     let child_style = child.style
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
@@ -190,7 +230,19 @@ fn calculate_children_max_content_width(
     // Calculate child's intrinsic width
     let child_intrinsic_width : Double = match child_style.width {
       @types.Length(w) => @types.max(w, child_min_box)
-      @types.Percent(_) => child_min_box
+      @types.Percent(p) =>
+        if child_style.writing_mode.is_vertical() &&
+          child.children.length() == 0 {
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              @types.max(intrinsic.max_width * p + child_min_box, child_min_box)
+            }
+            None => child_min_box
+          }
+        } else {
+          child_min_box
+        }
       @types.Auto =>
         match child.measure {
           Some(mf) => {
@@ -219,11 +271,263 @@ fn calculate_children_max_content_width(
     if is_vertical_writing {
       // In vertical writing mode, normal-flow blocks advance horizontally.
       max_content_width = max_content_width + child_contribution
+    } else if inline_only && inline_has_forced_break {
+      // Respect forced line breaks (<br>) in inline formatting contexts.
+      // max-content width is the widest forced line, not total sum.
+      current_inline_line_width = current_inline_line_width + child_contribution
+      if child.id == "br" {
+        if current_inline_line_width > max_content_width {
+          max_content_width = current_inline_line_width
+        }
+        current_inline_line_width = 0.0
+      }
+    } else if inline_only {
+      // No forced breaks: max-content is one unwrapped line.
+      max_content_width = max_content_width + child_contribution
     } else if child_contribution > max_content_width {
       max_content_width = child_contribution
     }
   }
-  max_content_width
+  if inline_only &&
+    inline_has_forced_break &&
+    current_inline_line_width > max_content_width {
+    max_content_width = current_inline_line_width
+  }
+  if max_content_width < 0.0 {
+    0.0
+  } else {
+    max_content_width
+  }
+}
+
+///|
+/// Calculate min-content width of children for intrinsic sizing
+fn calculate_children_min_content_width(
+  node : @node.Node,
+  parent_width : Double,
+  parent_content_height : Double?,
+) -> Double {
+  let mut min_content_width = 0.0
+  let is_vertical_writing = node.style.writing_mode.is_vertical()
+  let flow_children : Array[@node.Node] = []
+  for child in node.children {
+    // Skip display:none, absolute, fixed, and float elements
+    if child.style.display == @types.Display::None ||
+      child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
+    }
+    flow_children.push(child)
+  }
+  let inline_only = @inline.should_establish_ifc(flow_children)
+  let mut inline_needs_line_width = false
+  if inline_only && not(is_vertical_writing) {
+    for child in flow_children {
+      if child.id == "br" {
+        inline_needs_line_width = true
+        break
+      }
+      let margin_left = resolve_dimension_intrinsic(child.style.margin.left)
+      let margin_right = resolve_dimension_intrinsic(child.style.margin.right)
+      if margin_left + margin_right < 0.0 {
+        inline_needs_line_width = true
+        break
+      }
+    }
+  }
+  let mut current_inline_line_width = 0.0
+  // Check if node itself has MeasureFunc (leaf node with intrinsic size)
+  match node.measure {
+    Some(mf) => {
+      let intrinsic = (mf.func)(0.0, 0.0)
+      min_content_width = intrinsic.min_width
+    }
+    None => ()
+  }
+  // Calculate min-content width from children
+  for child in flow_children {
+    let child_style = child.style
+    // Calculate child's margin contribution (percentages resolve to 0)
+    let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
+    let child_margin_right = resolve_dimension_intrinsic(
+      child_style.margin.right,
+    )
+    let child_margin_sum = child_margin_left + child_margin_right
+    // Calculate child's padding (percentages resolve to 0)
+    let child_padding_left = resolve_dimension_intrinsic(
+      child_style.padding.left,
+    )
+    let child_padding_right = resolve_dimension_intrinsic(
+      child_style.padding.right,
+    )
+    let child_padding_top = resolve_dimension_intrinsic(child_style.padding.top)
+    let child_padding_bottom = resolve_dimension_intrinsic(
+      child_style.padding.bottom,
+    )
+    let child_border = @types.resolve_rect(child_style.border, parent_width)
+    let child_min_box = child_padding_left +
+      child_padding_right +
+      child_border.horizontal_sum()
+    fn calc_aspect_width(
+      ratio : Double,
+      h : Double,
+      box_sizing : @types.BoxSizing,
+      padding_v : Double,
+      border_v : Double,
+      padding_h : Double,
+      border_h : Double,
+      min_box : Double,
+    ) -> Double {
+      if box_sizing == @types.BorderBox {
+        if h > 0.0 {
+          h * ratio
+        } else {
+          min_box
+        }
+      } else {
+        let content_height = h - padding_v - border_v
+        if content_height > 0.0 {
+          content_height * ratio + padding_h + border_h
+        } else {
+          min_box
+        }
+      }
+    }
+    fn fallback_auto_min_width() -> Double {
+      match child.measure {
+        Some(mf) => {
+          let intrinsic = (mf.func)(0.0, 0.0)
+          @types.max(intrinsic.min_width + child_min_box, child_min_box)
+        }
+        None => {
+          let recursive_width = calculate_children_min_content_width(
+            child,
+            parent_width,
+            None,
+          )
+          recursive_width + child_min_box
+        }
+      }
+    }
+    fn apply_intrinsic_inline_constraints(raw_width : Double) -> Double {
+      let mut resolved = raw_width
+      let width_is_inline_axis = not(child_style.writing_mode.is_vertical())
+      // For intrinsic min-content contribution, percentages are indefinite and
+      // resolve to 0 for inline-size constraints.
+      match child_style.max_width {
+        @types.Length(max_w) => if resolved > max_w { resolved = max_w }
+        @types.Percent(_) =>
+          if width_is_inline_axis && resolved > 0.0 {
+            resolved = 0.0
+          }
+        _ => ()
+      }
+      // min-width takes precedence over max-width when both are specified.
+      match child_style.min_width {
+        @types.Length(min_w) => if resolved < min_w { resolved = min_w }
+        @types.Percent(_) =>
+          if width_is_inline_axis && resolved < 0.0 {
+            resolved = 0.0
+          }
+        _ => ()
+      }
+      if resolved < child_min_box {
+        child_min_box
+      } else {
+        resolved
+      }
+    }
+    // Calculate child's intrinsic min-content width
+    let child_intrinsic_width_raw : Double = match child_style.width {
+      @types.Length(w) => @types.max(w, child_min_box)
+      @types.Percent(p) =>
+        if child_style.writing_mode.is_vertical() &&
+          child.children.length() == 0 {
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              @types.max(intrinsic.min_width * p + child_min_box, child_min_box)
+            }
+            None => child_min_box
+          }
+        } else {
+          child_min_box
+        }
+      @types.Auto =>
+        match (child_style.aspect_ratio, child_style.height) {
+          (Some(ratio), @types.Length(h)) if ratio > 0.0 =>
+            calc_aspect_width(
+              ratio,
+              h,
+              child_style.box_sizing,
+              child_padding_top + child_padding_bottom,
+              child_border.vertical_sum(),
+              child_padding_left + child_padding_right,
+              child_border.horizontal_sum(),
+              child_min_box,
+            )
+          (Some(ratio), @types.Percent(p)) if ratio > 0.0 =>
+            match parent_content_height {
+              Some(parent_h) =>
+                calc_aspect_width(
+                  ratio,
+                  parent_h * p,
+                  child_style.box_sizing,
+                  child_padding_top + child_padding_bottom,
+                  child_border.vertical_sum(),
+                  child_padding_left + child_padding_right,
+                  child_border.horizontal_sum(),
+                  child_min_box,
+                )
+              None => fallback_auto_min_width()
+            }
+          _ => fallback_auto_min_width()
+        }
+      @types.MinContent | @types.FitContent(_) => {
+        let recursive_width = calculate_children_min_content_width(
+          child,
+          parent_width,
+          None,
+        )
+        recursive_width + child_min_box
+      }
+      @types.MaxContent => {
+        let recursive_width = calculate_children_max_content_width(
+          child, parent_width,
+        )
+        recursive_width + child_min_box
+      }
+    }
+    let child_intrinsic_width = apply_intrinsic_inline_constraints(
+      child_intrinsic_width_raw,
+    )
+    let child_contribution = child_intrinsic_width + child_margin_sum
+    if is_vertical_writing {
+      min_content_width = min_content_width + child_contribution
+    } else if inline_needs_line_width {
+      current_inline_line_width = current_inline_line_width + child_contribution
+      if child.id == "br" {
+        if current_inline_line_width > min_content_width {
+          min_content_width = current_inline_line_width
+        }
+        current_inline_line_width = 0.0
+      }
+    } else if child_contribution > min_content_width {
+      min_content_width = child_contribution
+    }
+  }
+  if inline_needs_line_width && current_inline_line_width > min_content_width {
+    min_content_width = current_inline_line_width
+  }
+  if min_content_width < 0.0 {
+    0.0
+  } else {
+    min_content_width
+  }
 }
 
 ///|
@@ -377,6 +681,46 @@ fn get_children_total_width(children : Array[@types.Layout]) -> Double {
 }
 
 ///|
+/// Browser-compat quirk for inline wrappers that only contain floated content.
+/// Browsers report zero-sized inline box shifted after its float contribution.
+fn adjust_inline_span_float_quirk(
+  layout : @types.Layout,
+  is_vertical_writing : Bool,
+) -> @types.Layout {
+  if layout.id != "span" ||
+    is_vertical_writing ||
+    layout.height != 0.0 ||
+    layout.width <= 0.0 ||
+    layout.children.length() == 0 {
+    return layout
+  }
+
+  let mut has_visible_child = false
+  for child in layout.children {
+    if child.width > 0.0 || child.height > 0.0 {
+      has_visible_child = true
+      break
+    }
+  }
+
+  if not(has_visible_child) {
+    return layout
+  }
+
+  let shifted_children : Array[@types.Layout] = []
+  for child in layout.children {
+    shifted_children.push({ ..child, x: child.x - layout.width })
+  }
+
+  {
+    ..layout,
+    x: layout.x + layout.width,
+    width: 0.0,
+    children: shifted_children,
+  }
+}
+
+///|
 /// Check if flow_nodes contains both inline and block level elements
 /// This determines whether we need anonymous block box processing
 fn has_mixed_inline_block_content(flow_nodes : Array[@node.Node]) -> Bool {
@@ -497,6 +841,7 @@ fn compute_mixed_content_layout(
             content_offset_y + current_pos
           },
           dispatch,
+          container_writing_mode=writing_mode,
         )
         // Store layouts with original indices
         for j = 0; j < indices.length(); j = j + 1 {
@@ -556,19 +901,44 @@ fn compute_mixed_content_layout(
           current_pos = current_pos + collapsed
         }
         // Position and store layout - swap x/y based on writing mode
+        let base_x = if is_vertical {
+          content_offset_x + current_pos
+        } else {
+          content_offset_x + child_layout.margin.left
+        }
+        let base_y = if is_vertical {
+          content_offset_y + child_layout.margin.top
+        } else {
+          content_offset_y + current_pos
+        }
+        let (layout_x, layout_width, layout_children) = if node.id == "span" {
+          let mut has_visible_child = false
+          for grand_layout in child_layout.children {
+            if grand_layout.width > 0.0 || grand_layout.height > 0.0 {
+              has_visible_child = true
+              break
+            }
+          }
+          if has_visible_child {
+            let shifted_children : Array[@types.Layout] = []
+            for grand_layout in child_layout.children {
+              shifted_children.push({
+                ..grand_layout,
+                x: grand_layout.x - child_layout.width,
+              })
+            }
+            (base_x + child_layout.width, 0.0, shifted_children)
+          } else {
+            (base_x, child_layout.width, child_layout.children)
+          }
+        } else {
+          (base_x, child_layout.width, child_layout.children)
+        }
         let positioned_layout : @types.Layout = {
           id: child_layout.id,
-          x: if is_vertical {
-            content_offset_x + current_pos
-          } else {
-            content_offset_x + child_layout.margin.left
-          },
-          y: if is_vertical {
-            content_offset_y + child_layout.margin.top
-          } else {
-            content_offset_y + current_pos
-          },
-          width: child_layout.width,
+          x: layout_x,
+          y: base_y,
+          width: layout_width,
           height: child_layout.height,
           margin: child_layout.margin,
           padding: child_layout.padding,
@@ -577,7 +947,7 @@ fn compute_mixed_content_layout(
           overflow_y: child_layout.overflow_y,
           scroll_width: child_layout.scroll_width,
           scroll_height: child_layout.scroll_height,
-          children: child_layout.children,
+          children: layout_children,
           text: child_layout.text,
         }
         layout_map[index] = positioned_layout
@@ -850,8 +1220,13 @@ fn compute_with_collapse(
               let content_width = intrinsic.max_width +
                 padding.horizontal_sum() +
                 border.horizontal_sum()
-              // Text should not exceed parent width
-              Some(@types.min(content_width, parent_width))
+              // Text nodes should wrap to available inline size, but replaced elements
+              // keep their intrinsic width contribution for shrink-to-fit/abspos sizing.
+              if node.text is Some(_) && ctx.sizing_mode == @types.Definite {
+                Some(@types.min(content_width, parent_width))
+              } else {
+                Some(content_width)
+              }
             }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             Some(parent_width)
@@ -950,19 +1325,46 @@ fn compute_with_collapse(
   let border = @types.resolve_rect(style.border, parent_width)
 
   // Check if margins can collapse with children
-  // Collapse blocked by: border, padding, overflow hidden/scroll/auto, or display:flow-root
-  // display:flow-root establishes a new BFC, which blocks margin collapse
+  // Collapse blocked by: border/padding, BFC-establishing properties.
+  // contain:layout/paint/size also establish an independent formatting context.
   let overflow_blocks = match (style.overflow_x, style.overflow_y) {
     (@types.Overflow::Visible, @types.Overflow::Visible) => false
     _ => true
   }
-  let establishes_bfc = overflow_blocks || style.display == @types.FlowRoot
+  let is_float_container = match style.float {
+    @types.Float::None => false
+    _ => true
+  }
+  let establishes_bfc = overflow_blocks ||
+    is_float_container ||
+    style.display == @types.FlowRoot ||
+    style.contain.layout ||
+    style.contain.paint ||
+    style.contain.size
   let can_collapse_top = border.top == 0.0 &&
     padding.top == 0.0 &&
     not(establishes_bfc)
   let can_collapse_bottom = border.bottom == 0.0 &&
     padding.bottom == 0.0 &&
     not(establishes_bfc)
+  let has_available_height = match ctx.available_height {
+    Some(_) => true
+    None => false
+  }
+  let auto_height_with_percent_replaced = match style.height {
+    @types.Auto => has_percent_sized_replaced_descendant(node)
+    _ => false
+  }
+  let should_fill_from_percent_replaced = style.writing_mode.is_vertical() &&
+    has_available_height &&
+    auto_height_with_percent_replaced
+  let fill_vertical_auto_height = style.writing_mode.is_vertical() &&
+    (ctx.stretch_height || should_fill_from_percent_replaced) &&
+    (
+      style.display == @types.Block ||
+      style.display == @types.FlowRoot ||
+      style.display == @types.Table
+    )
 
   // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
@@ -1050,7 +1452,7 @@ fn compute_with_collapse(
         box_width = max_w
       }
     }
-    @types.MaxContent | @types.MinContent => {
+    @types.MaxContent | @types.FitContent(_) => {
       // Calculate intrinsic width for max-width constraint
       // For elements with aspect-ratio, use the larger of:
       // 1. Children's max-content width
@@ -1090,7 +1492,19 @@ fn compute_with_collapse(
         box_width = intrinsic_width
       }
     }
-    @types.Auto | @types.FitContent(_) => ()
+    @types.MinContent => {
+      let intrinsic_width = calculate_children_min_content_width(
+          node,
+          parent_width,
+          None,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      if box_width > intrinsic_width {
+        box_width = intrinsic_width
+      }
+    }
+    @types.Auto => ()
   }
   match style.min_width {
     @types.Length(min_w) => if box_width < min_w { box_width = min_w }
@@ -1100,8 +1514,8 @@ fn compute_with_collapse(
         box_width = min_w
       }
     }
-    @types.MaxContent | @types.MinContent => {
-      // Calculate intrinsic width of children
+    @types.MaxContent => {
+      // Calculate max-content width of children
       let intrinsic_width = calculate_children_max_content_width(
           node, parent_width,
         ) +
@@ -1111,7 +1525,20 @@ fn compute_with_collapse(
         box_width = intrinsic_width
       }
     }
-    @types.Auto | @types.FitContent(_) => ()
+    @types.MinContent | @types.FitContent(_) => {
+      // fit-content/min-content minimum should not exceed min-content contribution.
+      let intrinsic_width = calculate_children_min_content_width(
+          node,
+          parent_width,
+          None,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      if box_width < intrinsic_width {
+        box_width = intrinsic_width
+      }
+    }
+    @types.Auto => ()
   }
 
   // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
@@ -1150,7 +1577,40 @@ fn compute_with_collapse(
     @types.Auto
     | @types.MinContent
     | @types.MaxContent
-    | @types.FitContent(_) => None
+    | @types.FitContent(_) =>
+      match (ctx.sizing_mode, style.height, style.aspect_ratio) {
+        (@types.Definite, @types.Auto, Some(ratio)) if ratio > 0.0 =>
+          if style.box_sizing == @types.BorderBox {
+            Some(
+              @types.max(
+                0.0,
+                box_width / ratio -
+                padding.vertical_sum() -
+                border.vertical_sum(),
+              ),
+            )
+          } else {
+            let content_w = box_width -
+              padding.horizontal_sum() -
+              border.horizontal_sum()
+            Some(@types.max(0.0, content_w / ratio))
+          }
+        _ =>
+          match ctx.available_height {
+            // Compatibility: propagate a usable block-size through auto wrappers
+            // when percent-sized descendants need it. The root body also
+            // uses viewport-height as the percentage basis in practice.
+            Some(available_h) if node.id == "body" ||
+              has_percent_sized_replaced_descendant(node) =>
+              Some(
+                @types.max(
+                  0.0,
+                  available_h - padding.vertical_sum() - border.vertical_sum(),
+                ),
+              )
+            _ => None
+          }
+      }
   }
 
   // Map to store layouts by original index
@@ -1208,6 +1668,17 @@ fn compute_with_collapse(
   // But if aspect-ratio calculated width is available, prefer that
   if use_max_content && width_from_aspect_ratio is None {
     let mut max_content_width = 0.0
+    let inline_only = @inline.should_establish_ifc(flow_nodes)
+    let mut inline_has_forced_break = false
+    if inline_only && not(style.writing_mode.is_vertical()) {
+      for child in flow_nodes {
+        if child.id == "br" {
+          inline_has_forced_break = true
+          break
+        }
+      }
+    }
+    let mut current_inline_line_width = 0.0
     // CSS Containment: contain: inline-size means intrinsic width is 0 (no content contribution)
     let skip_content_contribution = style.contain.inline_size ||
       style.contain.size
@@ -1270,6 +1741,43 @@ fn compute_with_collapse(
         let child_min_box = child_padding_left +
           child_padding_right +
           child_border.horizontal_sum()
+        let has_intrinsic_width_constraint = match
+          (child_style.min_width, child_style.max_width) {
+          (@types.MinContent | @types.MaxContent | @types.FitContent(_), _) =>
+            true
+          (_, @types.MinContent | @types.MaxContent | @types.FitContent(_)) =>
+            true
+          _ => false
+        }
+        let child_recursive_intrinsic_width : Double? = if has_intrinsic_width_constraint &&
+          child.children.length() > 0 {
+          // Recursively compute child's intrinsic width so min/max intrinsic
+          // constraints (e.g. fit-content) are applied on the child itself.
+          let intrinsic_ctx : @types.LayoutContext = {
+            available_width: parent_width,
+            available_height: child_available_height,
+            sizing_mode: @types.MaxContent,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
+          }
+          let @node.DispatchFn(dispatch_fn) = dispatch
+          let child_width = match child_style.display {
+            @types.Flex
+            | @types.InlineFlex
+            | @types.Grid
+            | @types.InlineGrid
+            | @types.Table
+            | @types.InlineTable =>
+              dispatch_fn(child, intrinsic_ctx, dispatch).width
+            _ =>
+              compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout.width
+          }
+          Some(child_width)
+        } else {
+          None
+        }
         // Helper function to calculate width from aspect-ratio
         fn calc_aspect_width(
           ratio : Double,
@@ -1297,9 +1805,162 @@ fn compute_with_collapse(
             child_style.padding.top,
           ) +
           resolve_dimension_intrinsic(child_style.padding.bottom)
+        fn compute_recursive_child_width() -> Double {
+          let intrinsic_ctx : @types.LayoutContext = {
+            available_width: parent_width, // Use parent_width as reference for percentages
+            available_height: child_available_height,
+            sizing_mode: @types.MaxContent,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
+          }
+          let @node.DispatchFn(dispatch_fn) = dispatch
+          match child_style.display {
+            @types.Flex
+            | @types.InlineFlex
+            | @types.Grid
+            | @types.InlineGrid
+            | @types.Table
+            | @types.InlineTable =>
+              dispatch_fn(child, intrinsic_ctx, dispatch).width
+            _ =>
+              compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout.width
+          }
+        }
         let child_intrinsic_width : Double = match child_style.width {
-          @types.Length(w) => @types.max(w, child_min_box)
-          @types.Percent(_) => child_min_box // At minimum, padding+border
+          @types.Length(w) =>
+            match child_recursive_intrinsic_width {
+              Some(recursive_w) => recursive_w
+              None => @types.max(w, child_min_box)
+            }
+          @types.Percent(p) =>
+            if child_style.writing_mode.is_vertical() &&
+              child.children.length() == 0 {
+              match child.measure {
+                Some(mf) => {
+                  let intrinsic = (mf.func)(0.0, 0.0)
+                  @types.max(
+                    intrinsic.max_width * p + child_min_box,
+                    child_min_box,
+                  )
+                }
+                None => child_min_box
+              }
+            } else if child.children.length() == 0 {
+              let measured_aspect_width : Double? = match
+                (child.measure, child_style.aspect_ratio) {
+                (Some(mf), Some(ratio)) if ratio > 0.0 => {
+                  let intrinsic = (mf.func)(0.0, 0.0)
+                  let resolved_height : Double? = match child_style.height {
+                    @types.Length(h) => Some(h)
+                    @types.Percent(height_p) =>
+                      match child_available_height {
+                        Some(parent_content_h) =>
+                          Some(parent_content_h * height_p)
+                        None => None
+                      }
+                    @types.Auto
+                    | @types.MinContent
+                    | @types.MaxContent
+                    | @types.FitContent(_) => {
+                      let min_h = match child_style.min_height {
+                        @types.Length(h) => h
+                        @types.Percent(height_p) =>
+                          match child_available_height {
+                            Some(parent_content_h) =>
+                              parent_content_h * height_p
+                            None => 0.0
+                          }
+                        _ => 0.0
+                      }
+                      let max_h = match child_style.max_height {
+                        @types.Length(h) => h
+                        @types.Percent(height_p) =>
+                          match child_available_height {
+                            Some(parent_content_h) =>
+                              parent_content_h * height_p
+                            None => @double.infinity
+                          }
+                        _ => @double.infinity
+                      }
+                      if max_h < @double.infinity || min_h > 0.0 {
+                        Some(
+                          @types.clamp(
+                            intrinsic.max_height +
+                            child_padding_v +
+                            child_border.vertical_sum(),
+                            min_h,
+                            max_h,
+                          ),
+                        )
+                      } else {
+                        None
+                      }
+                    }
+                  }
+                  match resolved_height {
+                    Some(h) =>
+                      Some(
+                        calc_aspect_width(
+                          ratio,
+                          h,
+                          child_style.box_sizing,
+                          child_padding_v,
+                          child_border.vertical_sum(),
+                          child_padding_left + child_padding_right,
+                          child_border.horizontal_sum(),
+                          child_min_box,
+                        ),
+                      )
+                    None => None
+                  }
+                }
+                _ => None
+              }
+              match measured_aspect_width {
+                Some(w) => @types.max(w, child_min_box)
+                None =>
+                  if has_intrinsic_width_constraint {
+                    match child_recursive_intrinsic_width {
+                      Some(recursive_w) => recursive_w
+                      None => child_min_box
+                    }
+                  } else if has_percent_sized_replaced_descendant(child) {
+                    match child_available_height {
+                      Some(h) =>
+                        @types.max(h * p + child_min_box, child_min_box)
+                      None =>
+                        if child.children.length() == 0 {
+                          child_min_box
+                        } else {
+                          let recursive_w = compute_recursive_child_width()
+                          @types.max(recursive_w, child_min_box)
+                        }
+                    }
+                  } else {
+                    child_min_box
+                  }
+              }
+            } else if has_intrinsic_width_constraint {
+              match child_recursive_intrinsic_width {
+                Some(recursive_w) => recursive_w
+                None => child_min_box
+              }
+            } else if has_percent_sized_replaced_descendant(child) {
+              match child_available_height {
+                Some(h) => @types.max(h * p + child_min_box, child_min_box)
+                None =>
+                  if child.children.length() == 0 {
+                    child_min_box
+                  } else {
+                    let recursive_w = compute_recursive_child_width()
+                    @types.max(recursive_w, child_min_box)
+                  }
+              }
+            } else {
+              child_min_box // At minimum, padding+border
+            }
           @types.Auto =>
             // For width:auto, check if aspect-ratio can determine width from height
             // This applies to both MeasureFunc elements (canvas, img) and regular elements
@@ -1320,12 +1981,8 @@ fn compute_with_collapse(
                 // Height is percentage, resolve from parent height
                 match child_available_height {
                   Some(parent_content_h) => {
-                    // child_available_height is already content height of parent
-                    // Add back padding+border to get border-box height for percentage
-                    let parent_h = parent_content_h +
-                      padding.vertical_sum() +
-                      border.vertical_sum()
-                    let h = parent_h * p
+                    // Percentage heights resolve against containing block content box.
+                    let h = parent_content_h * p
                     calc_aspect_width(
                       ratio,
                       h,
@@ -1356,46 +2013,247 @@ fn compute_with_collapse(
                       // Recursively compute child's max-content width.
                       // Grid/Flex/Table children must be dispatched to their own
                       // layout algorithms in intrinsic sizing.
-                      let intrinsic_ctx : @types.LayoutContext = {
-                        available_width: parent_width, // Use parent_width as reference for percentages
-                        available_height: child_available_height,
-                        sizing_mode: @types.MaxContent,
-                        viewport_width: ctx.viewport_width,
-                        viewport_height: ctx.viewport_height,
-                        stretch_width: false,
-                        stretch_height: false,
-                      }
-                      let @node.DispatchFn(dispatch_fn) = dispatch
-                      let child_width = match child_style.display {
-                        @types.Flex
-                        | @types.InlineFlex
-                        | @types.Grid
-                        | @types.InlineGrid
-                        | @types.Table
-                        | @types.InlineTable =>
-                          dispatch_fn(child, intrinsic_ctx, dispatch).width
-                        _ =>
-                          compute_with_collapse(
-                            child, intrinsic_ctx, warnings, dispatch,
-                          ).layout.width
-                      }
-                      child_width
+                      compute_recursive_child_width()
+                    }
+                }
+            }
+          @types.MinContent | @types.MaxContent => child_min_box
+          @types.FitContent(_) =>
+            if child.children.length() == 0 {
+              child_min_box
+            } else {
+              let recursive_w = compute_recursive_child_width()
+              @types.max(recursive_w, child_min_box)
+            }
+        }
+        let child_contribution = child_intrinsic_width + child_margin_sum
+        if style.writing_mode.is_vertical() {
+          max_content_width = max_content_width + child_contribution
+        } else if inline_only && inline_has_forced_break {
+          current_inline_line_width = current_inline_line_width +
+            child_contribution
+          if child.id == "br" {
+            if current_inline_line_width > max_content_width {
+              max_content_width = current_inline_line_width
+            }
+            current_inline_line_width = 0.0
+          }
+        } else if inline_only {
+          max_content_width = max_content_width + child_contribution
+        } else if child_contribution > max_content_width {
+          max_content_width = child_contribution
+        }
+      }
+      if inline_only &&
+        inline_has_forced_break &&
+        current_inline_line_width > max_content_width {
+        max_content_width = current_inline_line_width
+      }
+
+      // Floats also contribute to shrink-to-fit/max-content width.
+      // Use the total inline span of floats to match fit-content behavior.
+      let mut float_total_width = 0.0
+      for child in float_nodes {
+        let child_style = child.style
+        let child_margin_left : Double = match child_style.margin.left {
+          @types.Length(l) => l
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_margin_right : Double = match child_style.margin.right {
+          @types.Length(r) => r
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_margin_sum = child_margin_left + child_margin_right
+        let child_padding_left : Double = match child_style.padding.left {
+          @types.Length(l) => l
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_padding_right : Double = match child_style.padding.right {
+          @types.Length(r) => r
+          @types.Percent(_) => 0.0
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => 0.0
+        }
+        let child_border = @types.resolve_rect(child_style.border, parent_width)
+        let child_min_box = child_padding_left +
+          child_padding_right +
+          child_border.horizontal_sum()
+        let child_padding_v = resolve_dimension_intrinsic(
+            child_style.padding.top,
+          ) +
+          resolve_dimension_intrinsic(child_style.padding.bottom)
+        fn calc_float_aspect_width(
+          ratio : Double,
+          h : Double,
+          box_sizing : @types.BoxSizing,
+          padding_v : Double,
+          border_v : Double,
+          padding_h : Double,
+          border_h : Double,
+          min_box : Double,
+        ) -> Double {
+          if box_sizing == @types.BorderBox {
+            h * ratio
+          } else {
+            let content_height = h - padding_v - border_v
+            if content_height > 0.0 {
+              content_height * ratio + padding_h + border_h
+            } else {
+              min_box
+            }
+          }
+        }
+        fn compute_float_recursive_width(
+          width_keyword : @types.Dimension,
+        ) -> Double {
+          let intrinsic_basis_width = if parent_width > 0.0 {
+            parent_width
+          } else {
+            ctx.viewport_width
+          }
+          let intrinsic_child = @node.Node::with_uid_and_measure(
+            child.id,
+            child.uid,
+            { ..child_style, width: width_keyword },
+            child.children,
+            child.measure,
+            child.text,
+          )
+          let intrinsic_ctx : @types.LayoutContext = {
+            available_width: intrinsic_basis_width,
+            available_height: child_available_height,
+            sizing_mode: @types.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
+          }
+          let @node.DispatchFn(dispatch_fn) = dispatch
+          match child_style.display {
+            @types.Flex
+            | @types.InlineFlex
+            | @types.Grid
+            | @types.InlineGrid
+            | @types.Table
+            | @types.InlineTable =>
+              dispatch_fn(intrinsic_child, intrinsic_ctx, dispatch).width
+            _ =>
+              compute_with_collapse(
+                intrinsic_child, intrinsic_ctx, warnings, dispatch,
+              ).layout.width
+          }
+        }
+        let child_intrinsic_width : Double = match child_style.width {
+          @types.Length(w) => @types.max(w, child_min_box)
+          @types.Percent(_) => child_min_box
+          @types.Auto =>
+            match (child_style.aspect_ratio, child_style.height) {
+              (Some(ratio), @types.Length(h)) if ratio > 0.0 =>
+                calc_float_aspect_width(
+                  ratio,
+                  h,
+                  child_style.box_sizing,
+                  child_padding_v,
+                  child_border.vertical_sum(),
+                  child_padding_left + child_padding_right,
+                  child_border.horizontal_sum(),
+                  child_min_box,
+                )
+              (Some(ratio), @types.Percent(p)) if ratio > 0.0 =>
+                match child_available_height {
+                  Some(parent_content_h) => {
+                    let h = parent_content_h * p
+                    calc_float_aspect_width(
+                      ratio,
+                      h,
+                      child_style.box_sizing,
+                      child_padding_v,
+                      child_border.vertical_sum(),
+                      child_padding_left + child_padding_right,
+                      child_border.horizontal_sum(),
+                      child_min_box,
+                    )
+                  }
+                  None => child_min_box
+                }
+              _ =>
+                match child.measure {
+                  Some(mf) => {
+                    let intrinsic = (mf.func)(0.0, 0.0)
+                    @types.max(
+                      intrinsic.max_width + child_min_box,
+                      child_min_box,
+                    )
+                  }
+                  None =>
+                    if child.children.length() == 0 {
+                      child_min_box
+                    } else {
+                      let recursive_w = compute_float_recursive_width(
+                        @types.MaxContent,
+                      )
+                      @types.max(recursive_w, child_min_box)
                     }
                 }
             }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             child_min_box
         }
-        let child_contribution = child_intrinsic_width + child_margin_sum
-        if child_contribution > max_content_width {
-          max_content_width = child_contribution
-        }
+        float_total_width = float_total_width +
+          child_intrinsic_width +
+          child_margin_sum
+      }
+      if float_total_width > max_content_width {
+        max_content_width = float_total_width
       }
     }
-    // Update box_width from max-content
-    box_width = max_content_width +
+    if max_content_width < 0.0 {
+      max_content_width = 0.0
+    }
+    let min_content_width = calculate_children_min_content_width(
+        node, parent_width, child_available_height,
+      ) +
       padding.horizontal_sum() +
       border.horizontal_sum()
+    let shrink_available_width = if box_width > 0.0 { box_width } else { 0.0 }
+    // Update box_width from intrinsic width according to specified width keyword.
+    box_width = match style.width {
+      @types.MinContent => min_content_width
+      @types.Auto =>
+        if is_inline_block {
+          // Inline-block width:auto uses shrink-to-fit.
+          let preferred_max = max_content_width +
+            padding.horizontal_sum() +
+            border.horizontal_sum()
+          let mut shrink_to_fit = @types.max(
+            min_content_width, shrink_available_width,
+          )
+          if shrink_to_fit > preferred_max {
+            shrink_to_fit = preferred_max
+          }
+          shrink_to_fit
+        } else {
+          max_content_width + padding.horizontal_sum() + border.horizontal_sum()
+        }
+      @types.MaxContent | @types.FitContent(_) =>
+        max_content_width + padding.horizontal_sum() + border.horizontal_sum()
+      _ =>
+        max_content_width + padding.horizontal_sum() + border.horizontal_sum()
+    }
     // Re-apply min/max constraints (max first, then min for precedence)
     match style.max_width {
       @types.Length(max_w) => if box_width > max_w { box_width = max_w }
@@ -1405,8 +2263,8 @@ fn compute_with_collapse(
           box_width = max_w
         }
       }
-      @types.MaxContent | @types.MinContent => {
-        // Calculate intrinsic width of children
+      @types.MaxContent | @types.FitContent(_) => {
+        // Calculate intrinsic max-content width of children
         let intrinsic_width = calculate_children_max_content_width(
             node, parent_width,
           ) +
@@ -1416,7 +2274,17 @@ fn compute_with_collapse(
           box_width = intrinsic_width
         }
       }
-      @types.Auto | @types.FitContent(_) => ()
+      @types.MinContent => {
+        let intrinsic_width = calculate_children_min_content_width(
+            node, parent_width, child_available_height,
+          ) +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        if box_width > intrinsic_width {
+          box_width = intrinsic_width
+        }
+      }
+      @types.Auto => ()
     }
     match style.min_width {
       @types.Length(min_w) => if box_width < min_w { box_width = min_w }
@@ -1426,8 +2294,8 @@ fn compute_with_collapse(
           box_width = min_w
         }
       }
-      @types.MaxContent | @types.MinContent => {
-        // Calculate intrinsic width of children
+      @types.MaxContent => {
+        // Calculate intrinsic max-content width of children
         let intrinsic_width = calculate_children_max_content_width(
             node, parent_width,
           ) +
@@ -1437,7 +2305,17 @@ fn compute_with_collapse(
           box_width = intrinsic_width
         }
       }
-      @types.Auto | @types.FitContent(_) => ()
+      @types.MinContent | @types.FitContent(_) => {
+        let intrinsic_width = calculate_children_min_content_width(
+            node, parent_width, child_available_height,
+          ) +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        if box_width < intrinsic_width {
+          box_width = intrinsic_width
+        }
+      }
+      @types.Auto => ()
     }
     // Ensure box_width is at least padding + border (CSS rule: padding/border override max-size)
     if box_width < min_box_width {
@@ -1464,17 +2342,45 @@ fn compute_with_collapse(
       padding.left + border.left,
       padding.top + border.top,
       dispatch,
+      container_writing_mode=style.writing_mode,
     )
 
     // Store IFC layouts with original indices
     for i = 0; i < flow_indices.length(); i = i + 1 {
       if i < ifc_result.layouts.length() {
-        layout_map[flow_indices[i]] = ifc_result.layouts[i]
+        layout_map[flow_indices[i]] = adjust_inline_span_float_quirk(
+          ifc_result.layouts[i],
+          style.writing_mode.is_vertical(),
+        )
       }
     }
 
     // Calculate box height from IFC content
-    let content_height = ifc_result.total_height
+    let mut content_height = ifc_result.total_height
+    if establishes_bfc {
+      // Include floated descendants wrapped by zero-height inline boxes.
+      let mut ifc_descendant_extent = 0.0
+      for i = 0; i < flow_indices.length(); i = i + 1 {
+        match layout_map.get(flow_indices[i]) {
+          Some(layout) => {
+            let descendant_h = get_children_total_height(layout.children)
+            let child_block = if layout.height > descendant_h {
+              layout.height
+            } else {
+              descendant_h
+            }
+            let extent = layout.y + child_block
+            if extent > ifc_descendant_extent {
+              ifc_descendant_extent = extent
+            }
+          }
+          None => ()
+        }
+      }
+      if ifc_descendant_extent > content_height {
+        content_height = ifc_descendant_extent
+      }
+    }
     let mut box_height = match style.height {
       @types.Length(h) => h
       @types.Percent(p) =>
@@ -1484,7 +2390,15 @@ fn compute_with_collapse(
             content_height + padding.vertical_sum() + border.vertical_sum()
         }
       @types.Auto =>
-        content_height + padding.vertical_sum() + border.vertical_sum()
+        if fill_vertical_auto_height {
+          match parent_height_opt {
+            Some(ph) => @types.max(0.0, ph - margin.top - margin.bottom)
+            None =>
+              content_height + padding.vertical_sum() + border.vertical_sum()
+          }
+        } else {
+          content_height + padding.vertical_sum() + border.vertical_sum()
+        }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         content_height + padding.vertical_sum() + border.vertical_sum()
     }
@@ -1602,7 +2516,32 @@ fn compute_with_collapse(
       writing_mode=style.writing_mode,
     )
     // Calculate box height from mixed content
-    let content_height = mixed_result.content_height
+    let mut content_height = mixed_result.content_height
+    if establishes_bfc {
+      // Floats in descendant anonymous/block wrappers still participate in this BFC.
+      // Include their visual block extent when mixed-content grouping is used.
+      let mut mixed_descendant_extent = 0.0
+      for i = 0; i < node.children.length(); i = i + 1 {
+        match layout_map.get(i) {
+          Some(layout) => {
+            let descendant_h = get_children_total_height(layout.children)
+            let child_block = if layout.height > descendant_h {
+              layout.height
+            } else {
+              descendant_h
+            }
+            let extent = layout.y + child_block
+            if extent > mixed_descendant_extent {
+              mixed_descendant_extent = extent
+            }
+          }
+          None => ()
+        }
+      }
+      if mixed_descendant_extent > content_height {
+        content_height = mixed_descendant_extent
+      }
+    }
     let mut box_height = match style.height {
       @types.Length(h) => h
       @types.Percent(p) =>
@@ -1612,7 +2551,15 @@ fn compute_with_collapse(
             content_height + padding.vertical_sum() + border.vertical_sum()
         }
       @types.Auto =>
-        content_height + padding.vertical_sum() + border.vertical_sum()
+        if fill_vertical_auto_height {
+          match parent_height_opt {
+            Some(ph) => @types.max(0.0, ph - margin.top - margin.bottom)
+            None =>
+              content_height + padding.vertical_sum() + border.vertical_sum()
+          }
+        } else {
+          content_height + padding.vertical_sum() + border.vertical_sum()
+        }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         content_height + padding.vertical_sum() + border.vertical_sum()
     }
@@ -1805,16 +2752,10 @@ fn compute_with_collapse(
     let float_available_height : Double? = match child_style.height {
       @types.Length(h) =>
         Some(h - child_padding.vertical_sum() - child_border.vertical_sum())
-      @types.Percent(p) =>
-        match child_available_height {
-          Some(parent_h) =>
-            Some(
-              parent_h * p -
-              child_padding.vertical_sum() -
-              child_border.vertical_sum(),
-            )
-          None => None
-        }
+      @types.Percent(_) =>
+        // Keep parent content height as the percentage basis.
+        // The float node itself resolves its own percentage height later.
+        child_available_height
       _ => child_available_height
     }
 
@@ -1823,25 +2764,89 @@ fn compute_with_collapse(
       @types.Length(w) => w
       @types.Percent(p) => actual_child_available_width * p
       @types.Auto => {
-        // Shrink-to-fit: compute intrinsic width
-        let intrinsic_ctx : @types.LayoutContext = {
-          available_width: actual_child_available_width,
-          available_height: float_available_height,
-          sizing_mode: @types.MaxContent,
-          viewport_width: ctx.viewport_width,
-          viewport_height: ctx.viewport_height,
-          stretch_width: false,
-          stretch_height: false,
-        }
-        // Use dispatch for flex/grid elements, block layout for others
         let @node.DispatchFn(dispatch_fn) = dispatch
-        let intrinsic_layout = match child_style.display {
-          @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-            dispatch_fn(child, intrinsic_ctx, dispatch)
-          _ =>
-            compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout
+        fn compute_float_keyword_width(
+          width_keyword : @types.Dimension,
+        ) -> Double {
+          let keyword_style = { ..child_style, width: width_keyword }
+          let keyword_child = @node.Node::with_uid_and_measure(
+            child.id,
+            child.uid,
+            keyword_style,
+            child.children,
+            child.measure,
+            child.text,
+          )
+          let keyword_padding = @types.resolve_rect(
+            keyword_style.padding,
+            actual_child_available_width,
+          )
+          let keyword_border = @types.resolve_rect(
+            keyword_style.border,
+            actual_child_available_width,
+          )
+          let provisional_width = actual_child_available_width
+          let content_width = provisional_width -
+            keyword_padding.horizontal_sum() -
+            keyword_border.horizontal_sum()
+          let keyword_height_for_ctx : Double? = match keyword_style.display {
+            @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
+              match keyword_style.height {
+                @types.Auto => None
+                _ => float_available_height
+              }
+            _ => float_available_height
+          }
+          let keyword_ctx : @types.LayoutContext = {
+            available_width: if content_width > 0.0 {
+              content_width
+            } else {
+              0.0
+            },
+            available_height: keyword_height_for_ctx,
+            sizing_mode: @types.Definite,
+            viewport_width: ctx.viewport_width,
+            viewport_height: ctx.viewport_height,
+            stretch_width: false,
+            stretch_height: false,
+          }
+          match keyword_style.display {
+            @types.Flex
+            | @types.InlineFlex
+            | @types.Grid
+            | @types.InlineGrid
+            | @types.Table
+            | @types.InlineTable =>
+              dispatch_fn(keyword_child, keyword_ctx, dispatch).width
+            _ =>
+              compute_with_collapse(
+                keyword_child, keyword_ctx, warnings, dispatch,
+              ).layout.width
+          }
         }
-        @types.min(intrinsic_layout.width, actual_child_available_width)
+        let preferred_max = compute_float_keyword_width(@types.MaxContent)
+        let mut preferred_min = compute_float_keyword_width(@types.MinContent)
+        if float_available_height is Some(_) &&
+          has_percent_sized_replaced_descendant(child) &&
+          preferred_max > preferred_min {
+          // Browser-compat quirk: percent-sized replaced descendants in auto-height
+          // wrappers behave as if preferred-min tracks preferred width.
+          preferred_min = preferred_max
+        }
+        let available_for_shrink = if actual_child_available_width > 0.0 {
+          actual_child_available_width
+        } else {
+          0.0
+        }
+        let mut shrink_to_fit = @types.max(preferred_min, available_for_shrink)
+        if shrink_to_fit > preferred_max {
+          shrink_to_fit = preferred_max
+        }
+        if shrink_to_fit < 0.0 {
+          0.0
+        } else {
+          shrink_to_fit
+        }
       }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         actual_child_available_width
@@ -1851,6 +2856,18 @@ fn compute_with_collapse(
     let child_content_width = child_width -
       child_padding.horizontal_sum() -
       child_border.horizontal_sum()
+    let child_for_layout = match child_style.width {
+      @types.Auto =>
+        @node.Node::with_uid_and_measure(
+          child.id,
+          child.uid,
+          { ..child_style, width: @types.Length(child_width) },
+          child.children,
+          child.measure,
+          child.text,
+        )
+      _ => child
+    }
     // For BFC-establishing children (flex/grid) with auto height, don't pass available_height
     // This allows them to size to their content rather than stretching
     // Use float_available_height which accounts for float's own explicit height
@@ -1879,8 +2896,9 @@ fn compute_with_collapse(
     let @node.DispatchFn(dispatch_fn) = dispatch
     let child_inner = match child_style.display {
       @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-        dispatch_fn(child, child_ctx, dispatch)
-      _ => compute_with_collapse(child, child_ctx, warnings, dispatch).layout
+        dispatch_fn(child_for_layout, child_ctx, dispatch)
+      _ =>
+        compute_with_collapse(child_for_layout, child_ctx, warnings, dispatch).layout
     }
 
     // Get child dimensions
@@ -1962,12 +2980,17 @@ fn compute_with_collapse(
     }
 
     // Check if child collapses through
-    // Blocked by: height, border, padding, overflow, aspect_ratio
+    // Blocked by: height, border, padding, BFC-establishing properties, aspect_ratio
     let child_overflow_blocks = match
       (child_style.overflow_x, child_style.overflow_y) {
       (@types.Overflow::Visible, @types.Overflow::Visible) => false
       _ => true
     }
+    let child_establishes_bfc = child_overflow_blocks ||
+      child_style.display == @types.FlowRoot ||
+      child_style.contain.layout ||
+      child_style.contain.paint ||
+      child_style.contain.size
     let child_has_aspect_ratio = match child_style.aspect_ratio {
       Some(_) => true
       None => false
@@ -1984,7 +3007,7 @@ fn compute_with_collapse(
         child_layout.border,
         child_layout.padding,
       ) &&
-      not(child_overflow_blocks) &&
+      not(child_establishes_bfc) &&
       not(child_has_aspect_ratio)
 
     // Calculate position and track escaping margins
@@ -2098,21 +3121,25 @@ fn compute_with_collapse(
     } else {
       (final_x, final_y)
     }
+    let adjusted_layout = adjust_inline_span_float_quirk(
+      { ..child_layout, x: positioned_x },
+      is_vertical_writing,
+    )
     let positioned_layout : @types.Layout = {
-      id: child_layout.id,
-      x: positioned_x,
+      id: adjusted_layout.id,
+      x: adjusted_layout.x,
       y: positioned_y,
-      width: child_layout.width,
-      height: child_layout.height,
-      margin: child_layout.margin,
-      padding: child_layout.padding,
-      border: child_layout.border,
-      overflow_x: child_layout.overflow_x,
-      overflow_y: child_layout.overflow_y,
-      scroll_width: child_layout.scroll_width,
-      scroll_height: child_layout.scroll_height,
-      children: child_layout.children,
-      text: child_layout.text,
+      width: adjusted_layout.width,
+      height: adjusted_layout.height,
+      margin: adjusted_layout.margin,
+      padding: adjusted_layout.padding,
+      border: adjusted_layout.border,
+      overflow_x: adjusted_layout.overflow_x,
+      overflow_y: adjusted_layout.overflow_y,
+      scroll_width: adjusted_layout.scroll_width,
+      scroll_height: adjusted_layout.scroll_height,
+      children: adjusted_layout.children,
+      text: adjusted_layout.text,
     }
     layout_map[flow_indices[i]] = positioned_layout
 
@@ -2165,6 +3192,54 @@ fn compute_with_collapse(
     @types.max(0.0, current_pos + prev_margin_end)
   }
   let content_height = @types.max(flow_content_height, float_height)
+  let mut content_height_for_auto = content_height
+
+  if is_vertical_writing {
+    // In vertical writing mode, block-flow accumulates on x while auto height
+    // should use the inline-axis extent (max cross-size of in-flow children).
+    let mut inline_cross_extent = 0.0
+    for idx in flow_indices {
+      match layout_map.get(idx) {
+        Some(child_layout) => {
+          let extent = child_layout.y +
+            child_layout.height +
+            child_layout.margin.bottom
+          if extent > inline_cross_extent {
+            inline_cross_extent = extent
+          }
+        }
+        None => ()
+      }
+    }
+    for idx in float_indices {
+      match layout_map.get(idx) {
+        Some(child_layout) => {
+          let extent = child_layout.y +
+            child_layout.height +
+            child_layout.margin.bottom
+          if extent > inline_cross_extent {
+            inline_cross_extent = extent
+          }
+        }
+        None => ()
+      }
+    }
+    content_height_for_auto = @types.max(inline_cross_extent, float_height)
+
+    // For unconstrained vertical blocks, auto width should follow block-flow extent.
+    match (style.width, style.min_width, style.max_width) {
+      (@types.Auto, @types.Auto, @types.Auto) => {
+        box_width = content_height +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        let min_box_width = padding.horizontal_sum() + border.horizontal_sum()
+        if box_width < min_box_width {
+          box_width = min_box_width
+        }
+      }
+      _ => ()
+    }
+  }
 
   // Box height - consider aspect_ratio
   let mut box_height = match style.height {
@@ -2172,7 +3247,10 @@ fn compute_with_collapse(
     @types.Percent(p) =>
       match parent_height_opt {
         Some(ph) => ph * p
-        None => content_height + padding.vertical_sum() + border.vertical_sum()
+        None =>
+          content_height_for_auto +
+          padding.vertical_sum() +
+          border.vertical_sum()
       }
     @types.Auto =>
       match style.aspect_ratio {
@@ -2190,10 +3268,23 @@ fn compute_with_collapse(
             padding.vertical_sum() +
             border.vertical_sum()
           }
-        None => content_height + padding.vertical_sum() + border.vertical_sum()
+        None =>
+          if fill_vertical_auto_height {
+            match parent_height_opt {
+              Some(ph) => @types.max(0.0, ph - margin.top - margin.bottom)
+              None =>
+                content_height_for_auto +
+                padding.vertical_sum() +
+                border.vertical_sum()
+            }
+          } else {
+            content_height_for_auto +
+            padding.vertical_sum() +
+            border.vertical_sum()
+          }
       }
     @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-      content_height + padding.vertical_sum() + border.vertical_sum()
+      content_height_for_auto + padding.vertical_sum() + border.vertical_sum()
   }
 
   // Apply min/max height constraints
@@ -2207,7 +3298,7 @@ fn compute_with_collapse(
     }
     @types.MinContent | @types.MaxContent => {
       // min-height: min-content/max-content uses content height
-      let min_h = content_height +
+      let min_h = content_height_for_auto +
         padding.vertical_sum() +
         border.vertical_sum()
       if box_height < min_h {
@@ -2216,7 +3307,7 @@ fn compute_with_collapse(
     }
     @types.FitContent(_) => {
       // fit-content for min-height acts like min-content
-      let min_h = content_height +
+      let min_h = content_height_for_auto +
         padding.vertical_sum() +
         border.vertical_sum()
       if box_height < min_h {
@@ -2235,7 +3326,7 @@ fn compute_with_collapse(
     }
     @types.MinContent | @types.MaxContent => {
       // max-height: min-content/max-content caps at content height
-      let max_h = content_height +
+      let max_h = content_height_for_auto +
         padding.vertical_sum() +
         border.vertical_sum()
       if box_height > max_h {
@@ -2244,7 +3335,7 @@ fn compute_with_collapse(
     }
     @types.FitContent(_) => {
       // fit-content for max-height acts like max-content
-      let max_h = content_height +
+      let max_h = content_height_for_auto +
         padding.vertical_sum() +
         border.vertical_sum()
       if box_height > max_h {
@@ -2485,6 +3576,16 @@ fn layout_absolute_child(
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let child_style = child.style
+  let cb_width = if container_width > parent_border.horizontal_sum() {
+    container_width - parent_border.horizontal_sum()
+  } else {
+    0.0
+  }
+  let cb_height = if container_height > parent_border.vertical_sum() {
+    container_height - parent_border.vertical_sum()
+  } else {
+    0.0
+  }
 
   // Handle display:none - return zero-sized layout
   if child_style.display == @types.Display::None {
@@ -2492,9 +3593,27 @@ fn layout_absolute_child(
   }
 
   // Use shared absolute module for size calculation
-  let params = @absolute.compute_size_params(
-    child_style, container_width, container_height,
-  )
+  let params = @absolute.compute_size_params(child_style, cb_width, cb_height)
+
+  // When used size is already resolved for abs/fixed items, passing that value
+  // directly as available size would re-resolve percentage widths/heights.
+  // Convert used size back to the containing-block basis for nested layout.
+  fn nested_basis_width(used_width : Double) -> Double {
+    match child_style.width {
+      @types.Percent(p) if p > 0.0 => used_width / p
+      _ => used_width
+    }
+  }
+  fn nested_basis_height(used_height : Double?) -> Double? {
+    match used_height {
+      Some(h) =>
+        match child_style.height {
+          @types.Percent(p) if p > 0.0 => Some(h / p)
+          _ => Some(h)
+        }
+      None => None
+    }
+  }
 
   // Apply aspect ratio to calculate missing dimension
   let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
@@ -2507,15 +3626,70 @@ fn layout_absolute_child(
     params.max_height,
   )
 
+  fn compute_abs_intrinsic_width(
+    width_keyword : @types.Dimension,
+    intrinsic_height : Double?,
+  ) -> Double {
+    let intrinsic_child = @node.Node::with_uid_and_measure(
+      child.id,
+      child.uid,
+      { ..child_style, width: width_keyword },
+      child.children,
+      child.measure,
+      child.text,
+    )
+    compute_nested_intrinsic(
+      intrinsic_child, intrinsic_height, warnings, dispatch,
+    ).width
+  }
+
+  fn resolve_abs_shrink_to_fit_width(intrinsic_height : Double?) -> Double {
+    let preferred_max = compute_abs_intrinsic_width(
+      @types.MaxContent,
+      intrinsic_height,
+    )
+    let mut preferred_min = compute_abs_intrinsic_width(
+      @types.MinContent,
+      intrinsic_height,
+    )
+    if intrinsic_height is Some(_) &&
+      has_percent_sized_replaced_descendant(child) &&
+      preferred_max > preferred_min {
+      preferred_min = preferred_max
+    }
+    let available_for_shrink = if cb_width > 0.0 { cb_width } else { 0.0 }
+    let mut shrink_to_fit = @types.max(preferred_min, available_for_shrink)
+    if shrink_to_fit > preferred_max {
+      shrink_to_fit = preferred_max
+    }
+    if shrink_to_fit < 0.0 {
+      0.0
+    } else {
+      shrink_to_fit
+    }
+  }
+
   // Compute intrinsic size if needed, and get child's inner layout
   let (child_width, child_height, child_inner) = match
     (initial_width, initial_height) {
     (Some(w), Some(h)) => {
-      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
+      let inner = compute_nested(
+        child,
+        nested_basis_width(w),
+        nested_basis_height(Some(h)),
+        warnings,
+        dispatch,
+      )
       (w, h, inner)
     }
     (Some(w), None) => {
-      let inner = compute_nested(child, w, None, warnings, dispatch)
+      let inner = compute_nested(
+        child,
+        nested_basis_width(w),
+        None,
+        warnings,
+        dispatch,
+      )
       let h = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -2524,50 +3698,43 @@ fn layout_absolute_child(
     }
     (None, Some(h)) => {
       // Width is auto: use shrink-to-fit approach
-      // Step 1: Compute intrinsic width using MaxContent sizing
-      let intrinsic = compute_nested_intrinsic(
-        child,
-        Some(h),
-        warnings,
-        dispatch,
-      )
-      // Shrink-to-fit: min(max-content, available_width)
-      let shrink_to_fit_width = if intrinsic.width < container_width {
-        intrinsic.width
-      } else {
-        container_width
-      }
+      let shrink_to_fit_width = resolve_abs_shrink_to_fit_width(Some(h))
       let w = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
         _ => shrink_to_fit_width
       }
       // Step 2: Re-layout with definite width
-      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
+      let inner = compute_nested(
+        child,
+        nested_basis_width(w),
+        nested_basis_height(Some(h)),
+        warnings,
+        dispatch,
+      )
       (w, h, inner)
     }
     (None, None) => {
       // Both width and height are auto: use shrink-to-fit approach
-      // Step 1: Compute intrinsic size using MaxContent sizing
-      let intrinsic = compute_nested_intrinsic(child, None, warnings, dispatch)
-      // Shrink-to-fit: min(max-content, available_width)
-      let shrink_to_fit_width = if intrinsic.width < container_width {
-        intrinsic.width
-      } else {
-        container_width
-      }
+      let shrink_to_fit_width = resolve_abs_shrink_to_fit_width(None)
       match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
           let w = shrink_to_fit_width
           let h = w / ar
           // Re-layout with definite size
-          let inner = compute_nested(child, w, Some(h), warnings, dispatch)
+          let inner = compute_nested(
+            child,
+            nested_basis_width(w),
+            nested_basis_height(Some(h)),
+            warnings,
+            dispatch,
+          )
           (w, h, inner)
         }
         _ => {
           // Re-layout with definite width
           let inner = compute_nested(
             child,
-            shrink_to_fit_width,
+            nested_basis_width(shrink_to_fit_width),
             None,
             warnings,
             dispatch,
@@ -2625,8 +3792,8 @@ fn layout_absolute_child(
   )
 
   // CSS rule: padding+border override explicit size constraints
-  let child_padding = @types.resolve_rect(child_style.padding, container_width)
-  let child_border = @types.resolve_rect(child_style.border, container_width)
+  let child_padding = @types.resolve_rect(child_style.padding, cb_width)
+  let child_border = @types.resolve_rect(child_style.border, cb_width)
   let min_child_width = child_padding.horizontal_sum() +
     child_border.horizontal_sum()
   let min_child_height = child_padding.vertical_sum() +
@@ -2658,7 +3825,7 @@ fn layout_absolute_child(
       // Check for margin auto centering behavior
       if margin_left_is_auto && margin_right_is_auto {
         // Both margins auto: try to center the element
-        let available = container_width - l - r - child_width
+        let available = cb_width - l - r - child_width
         if available >= 0.0 {
           // Enough space: center by distributing margins equally
           l + available / 2.0 + parent_border.left
@@ -2669,11 +3836,7 @@ fn layout_absolute_child(
         }
       } else if margin_left_is_auto {
         // Only left margin auto: push to right
-        container_width -
-        child_width -
-        r -
-        params.margin_right +
-        parent_border.left
+        cb_width - child_width - r - params.margin_right + parent_border.left
       } else if margin_right_is_auto {
         // Only right margin auto: push to left
         l + params.margin_left + parent_border.left
@@ -2683,11 +3846,7 @@ fn layout_absolute_child(
       }
     (Some(l), None) => l + params.margin_left + parent_border.left
     (None, Some(r)) =>
-      container_width -
-      child_width -
-      r -
-      params.margin_right -
-      parent_border.right
+      cb_width - child_width - r - params.margin_right - parent_border.right
     (None, None) => params.margin_left + parent_border.left
   }
   let child_y = match (params.inset_top, params.inset_bottom) {
@@ -2696,7 +3855,7 @@ fn layout_absolute_child(
       // Check for margin auto centering behavior
       if margin_top_is_auto && margin_bottom_is_auto {
         // Both margins auto: try to center the element
-        let available = container_height - t - b - child_height
+        let available = cb_height - t - b - child_height
         if available >= 0.0 {
           // Enough space: center by distributing margins equally
           t + available / 2.0 + parent_border.top
@@ -2707,11 +3866,7 @@ fn layout_absolute_child(
         }
       } else if margin_top_is_auto {
         // Only top margin auto: push to bottom
-        container_height -
-        child_height -
-        b -
-        params.margin_bottom +
-        parent_border.top
+        cb_height - child_height - b - params.margin_bottom + parent_border.top
       } else if margin_bottom_is_auto {
         // Only bottom margin auto: push to top
         t + params.margin_top + parent_border.top
@@ -2721,14 +3876,10 @@ fn layout_absolute_child(
       }
     (Some(t), None) => t + params.margin_top + parent_border.top
     (None, Some(b)) =>
-      container_height -
-      child_height -
-      b -
-      params.margin_bottom -
-      parent_border.bottom
+      cb_height - child_height - b - params.margin_bottom - parent_border.bottom
     (None, None) => static_y + params.margin_top + parent_border.top
   }
-  let child_margin = @types.resolve_rect(child_style.margin, container_width)
+  let child_margin = @types.resolve_rect(child_style.margin, cb_width)
   {
     id: child.id,
     x: child_x,
@@ -2768,6 +3919,23 @@ fn layout_fixed_child(
     child_style, viewport_width, viewport_height,
   )
 
+  fn nested_basis_width(used_width : Double) -> Double {
+    match child_style.width {
+      @types.Percent(p) if p > 0.0 => used_width / p
+      _ => used_width
+    }
+  }
+  fn nested_basis_height(used_height : Double?) -> Double? {
+    match used_height {
+      Some(h) =>
+        match child_style.height {
+          @types.Percent(p) if p > 0.0 => Some(h / p)
+          _ => Some(h)
+        }
+      None => None
+    }
+  }
+
   // Apply aspect ratio to calculate missing dimension
   let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
     params.initial_width,
@@ -2779,15 +3947,74 @@ fn layout_fixed_child(
     params.max_height,
   )
 
+  fn compute_fixed_intrinsic_width(
+    width_keyword : @types.Dimension,
+    intrinsic_height : Double?,
+  ) -> Double {
+    let intrinsic_child = @node.Node::with_uid_and_measure(
+      child.id,
+      child.uid,
+      { ..child_style, width: width_keyword },
+      child.children,
+      child.measure,
+      child.text,
+    )
+    compute_nested_intrinsic(
+      intrinsic_child, intrinsic_height, warnings, dispatch,
+    ).width
+  }
+
+  fn resolve_fixed_shrink_to_fit_width(intrinsic_height : Double?) -> Double {
+    let preferred_max = compute_fixed_intrinsic_width(
+      @types.MaxContent,
+      intrinsic_height,
+    )
+    let mut preferred_min = compute_fixed_intrinsic_width(
+      @types.MinContent,
+      intrinsic_height,
+    )
+    if intrinsic_height is Some(_) &&
+      has_percent_sized_replaced_descendant(child) &&
+      preferred_max > preferred_min {
+      preferred_min = preferred_max
+    }
+    let available_for_shrink = if viewport_width > 0.0 {
+      viewport_width
+    } else {
+      0.0
+    }
+    let mut shrink_to_fit = @types.max(preferred_min, available_for_shrink)
+    if shrink_to_fit > preferred_max {
+      shrink_to_fit = preferred_max
+    }
+    if shrink_to_fit < 0.0 {
+      0.0
+    } else {
+      shrink_to_fit
+    }
+  }
+
   // Compute intrinsic size if needed, and get child's inner layout
   let (child_width, child_height, child_inner) = match
     (initial_width, initial_height) {
     (Some(w), Some(h)) => {
-      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
+      let inner = compute_nested(
+        child,
+        nested_basis_width(w),
+        nested_basis_height(Some(h)),
+        warnings,
+        dispatch,
+      )
       (w, h, inner)
     }
     (Some(w), None) => {
-      let inner = compute_nested(child, w, None, warnings, dispatch)
+      let inner = compute_nested(
+        child,
+        nested_basis_width(w),
+        None,
+        warnings,
+        dispatch,
+      )
       let h = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => w / ar
         _ => inner.height
@@ -2796,43 +4023,40 @@ fn layout_fixed_child(
     }
     (None, Some(h)) => {
       // Width is auto: use shrink-to-fit approach
-      let intrinsic = compute_nested_intrinsic(
-        child,
-        Some(h),
-        warnings,
-        dispatch,
-      )
-      let shrink_to_fit_width = if intrinsic.width < viewport_width {
-        intrinsic.width
-      } else {
-        viewport_width
-      }
+      let shrink_to_fit_width = resolve_fixed_shrink_to_fit_width(Some(h))
       let w = match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => h * ar
         _ => shrink_to_fit_width
       }
-      let inner = compute_nested(child, w, Some(h), warnings, dispatch)
+      let inner = compute_nested(
+        child,
+        nested_basis_width(w),
+        nested_basis_height(Some(h)),
+        warnings,
+        dispatch,
+      )
       (w, h, inner)
     }
     (None, None) => {
       // Both width and height are auto: use shrink-to-fit approach
-      let intrinsic = compute_nested_intrinsic(child, None, warnings, dispatch)
-      let shrink_to_fit_width = if intrinsic.width < viewport_width {
-        intrinsic.width
-      } else {
-        viewport_width
-      }
+      let shrink_to_fit_width = resolve_fixed_shrink_to_fit_width(None)
       match child_style.aspect_ratio {
         Some(ar) if ar > 0.0 => {
           let w = shrink_to_fit_width
           let h = w / ar
-          let inner = compute_nested(child, w, Some(h), warnings, dispatch)
+          let inner = compute_nested(
+            child,
+            nested_basis_width(w),
+            nested_basis_height(Some(h)),
+            warnings,
+            dispatch,
+          )
           (w, h, inner)
         }
         _ => {
           let inner = compute_nested(
             child,
-            shrink_to_fit_width,
+            nested_basis_width(shrink_to_fit_width),
             None,
             warnings,
             dispatch,

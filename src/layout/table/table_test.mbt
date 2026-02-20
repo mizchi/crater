@@ -147,6 +147,145 @@ test "table equal column widths" {
 }
 
 ///|
+test "table_max_width_percent_constraint" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(60.0),
+    height: @types.Length(10.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    max_width: @types.Percent(0.5),
+  }
+  let cell = @node.Node::new("cell", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 100.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  // Explicit max-width can clamp below intrinsic minimum width.
+  inspect(layout.width, content="50")
+}
+
+///|
+test "table_min_width_percent_constraint" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(10.0),
+    height: @types.Length(10.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    min_width: @types.Percent(1.0),
+  }
+  let cell = @node.Node::new("cell", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 100.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  inspect(layout.width, content="100")
+}
+
+///|
+test "table width less than intrinsic min expands" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(50.0),
+    height: @types.Length(10.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    width: @types.Length(1.0),
+  }
+  let cell = @node.Node::new("cell", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 100.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  inspect(layout.width, content="50")
+}
+
+///|
+test "vertical writing table ignores intrinsic max-width constraint" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(60.0),
+    height: @types.Length(10.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    writing_mode: @style.WritingMode::VerticalLr,
+    width: @types.Length(150.0),
+    max_width: @types.MinContent,
+  }
+  let cell = @node.Node::new("cell", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  inspect(layout.width, content="150")
+}
+
+///|
 /// Test content-based column width with explicit cell widths
 test "table content-based column widths" {
   // Cell with explicit width should affect column width
@@ -675,4 +814,64 @@ test "table intrinsic width includes vertical inline columns" {
   let cell_layout = layout.children[0].children[0]
   let content_layout = cell_layout.children[0]
   assert_true(content_layout.width > 10.0)
+}
+
+///|
+test "table cell centers block child in vertical writing mode" {
+  let block_style : @style.Style = {
+    ..@style.Style::default(),
+    width: @types.Length(50.0),
+    height: @types.Length(50.0),
+    border: {
+      left: @types.Length(1.0),
+      right: @types.Length(1.0),
+      top: @types.Length(1.0),
+      bottom: @types.Length(1.0),
+    },
+  }
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    writing_mode: @style.WritingMode::VerticalLr,
+    border: {
+      left: @types.Length(2.0),
+      right: @types.Length(2.0),
+      top: @types.Length(2.0),
+      bottom: @types.Length(2.0),
+    },
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    writing_mode: @style.WritingMode::VerticalLr,
+    width: @types.Length(150.0),
+    border: {
+      left: @types.Length(2.0),
+      right: @types.Length(2.0),
+      top: @types.Length(2.0),
+      bottom: @types.Length(2.0),
+    },
+  }
+
+  let block = @node.Node::leaf("div.item", block_style)
+  let cell = @node.Node::new("td", cell_style, [block])
+  let row = @node.Node::new("tr", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  let block_layout = layout.children[0].children[0].children[0]
+  assert_true(block_layout.x > 35.0)
 }

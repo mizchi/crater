@@ -242,6 +242,8 @@ fn LineBox::add_item(
   index : Int,
   layout : @types.Layout,
   baseline : Double,
+  margin_top : Double,
+  margin_bottom : Double,
   margin_left : Double,
   margin_right : Double,
 ) -> Unit {
@@ -252,12 +254,12 @@ fn LineBox::add_item(
   // Items are aligned by their baselines, so we need to track:
   // - max distance from top to baseline (above baseline)
   // - max distance from baseline to bottom (below baseline)
-  let above_baseline = baseline
-  let below_baseline = layout.height - baseline
+  let above_baseline = baseline + margin_top
+  let below_baseline = layout.height - baseline + margin_bottom
   if self.items.length() == 1 {
     // First item sets the initial baseline
     self.baseline = above_baseline
-    self.height = layout.height
+    self.height = above_baseline + below_baseline
   } else {
     // Adjust line box to accommodate this item's baseline
     if above_baseline > self.baseline {
@@ -270,6 +272,78 @@ fn LineBox::add_item(
       // This item has more content below baseline
       self.height = self.baseline + below_baseline
     }
+  }
+}
+
+///|
+fn id_matches_tag(node_id : String, tag : String) -> Bool {
+  node_id == tag ||
+  node_id.has_prefix(tag + "#") ||
+  node_id.has_prefix(tag + ".")
+}
+
+///|
+fn is_replaced_strut_candidate(node : @node.Node) -> Bool {
+  if node.text is Some(_) {
+    return false
+  }
+  match node.measure {
+    Some(_) => ()
+    None => return false
+  }
+  let id = node.id
+  id_matches_tag(id, "img") ||
+  id_matches_tag(id, "canvas") ||
+  id_matches_tag(id, "video") ||
+  id_matches_tag(id, "iframe") ||
+  id_matches_tag(id, "svg") ||
+  id_matches_tag(id, "input") ||
+  id_matches_tag(id, "textarea")
+}
+
+///|
+/// Ensure each line box includes the inline formatting strut from parent font metrics.
+/// This affects replaced-only lines that would otherwise have zero descent.
+fn LineBox::ensure_line_strut(
+  self : LineBox,
+  children : Array[@node.Node],
+) -> Unit {
+  if self.items.length() == 0 {
+    return ()
+  }
+  let mut replaced_like_count = 0
+  for item in self.items {
+    let child = children[item.index]
+    if is_replaced_strut_candidate(child) {
+      replaced_like_count = replaced_like_count + 1
+    }
+  }
+  if replaced_like_count < 2 {
+    return ()
+  }
+  let first_item = self.items[0]
+  let first_child = children[first_item.index]
+  let font_size = first_child.style.font_size
+  let line_height = if first_child.style.line_height > 0.0 {
+    first_child.style.line_height
+  } else {
+    font_size
+  }
+  let ascender_ratio = 0.8
+  let strut_baseline = font_size * ascender_ratio
+  let strut_below = if line_height > strut_baseline {
+    line_height - strut_baseline
+  } else {
+    0.0
+  }
+
+  if self.baseline < strut_baseline {
+    self.height = self.height + (strut_baseline - self.baseline)
+    self.baseline = strut_baseline
+  }
+  let current_below = self.height - self.baseline
+  if current_below < strut_below {
+    self.height = self.baseline + strut_below
   }
 }
 
@@ -303,19 +377,14 @@ pub fn compute_ifc(
   content_offset_x : Double, // Padding + border left
   content_offset_y : Double, // Padding + border top
   dispatch : @node.DispatchFn,
+  container_writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
 ) -> InlineLayoutResult {
   if children.length() == 0 {
     return { layouts: [], total_height: 0.0 }
   }
 
-  // In vertical-rl writing-mode, inline progression columns are mirrored on x-axis.
-  let mut writing_mode = children[0].style.writing_mode
-  for child in children {
-    if child.style.display != @types.Display::None {
-      writing_mode = child.style.writing_mode
-      break
-    }
-  }
+  // Inline progression should follow container writing-mode, not child writing-mode.
+  let writing_mode = container_writing_mode
   let is_vertical_rl = writing_mode.is_vertical() && writing_mode.is_block_rtl()
   if writing_mode.is_vertical() {
     let columns : Array[Array[Int]] = []
@@ -500,9 +569,12 @@ pub fn compute_ifc(
         i,
         child_layout,
         baseline,
+        child_margin.top,
+        child_margin.bottom,
         child_margin.left,
         child_margin.right,
       )
+      current_line.ensure_line_strut(children)
       line_boxes.push(current_line)
       current_line = LineBox::new()
       continue
@@ -519,17 +591,22 @@ pub fn compute_ifc(
         i,
         child_layout,
         baseline,
+        child_margin.top,
+        child_margin.bottom,
         child_margin.left,
         child_margin.right,
       )
     } else {
       // Start a new line
+      current_line.ensure_line_strut(children)
       line_boxes.push(current_line)
       current_line = LineBox::new()
       current_line.add_item(
         i,
         child_layout,
         baseline,
+        child_margin.top,
+        child_margin.bottom,
         child_margin.left,
         child_margin.right,
       )
@@ -538,6 +615,7 @@ pub fn compute_ifc(
 
   // Don't forget the last line
   if current_line.items.length() > 0 {
+    current_line.ensure_line_strut(children)
     line_boxes.push(current_line)
   }
 
@@ -802,12 +880,37 @@ fn compute_inline_child(
               border.vertical_sum()
           }
       }
+      let min_width = style.min_width.resolve_or(available_width, 0.0)
+      let max_width = style.max_width.resolve_or(
+        available_width, @double.infinity,
+      )
+      let height_context = available_height.unwrap_or(0.0)
+      let min_height = style.min_height.resolve_or(height_context, 0.0)
+      let max_height = style.max_height.resolve_or(
+        height_context, @double.infinity,
+      )
+      let mut final_width = @types.clamp(width, min_width, max_width)
+      let mut final_height = @types.clamp(height, min_height, max_height)
+      match style.aspect_ratio {
+        Some(ratio) if ratio > 0.0 => {
+          let width_changed = final_width != width
+          let height_changed = final_height != height
+          if width_changed && not(height_changed) {
+            final_height = final_width / ratio
+          } else if height_changed && not(width_changed) {
+            final_width = final_height * ratio
+          }
+          final_width = @types.clamp(final_width, min_width, max_width)
+          final_height = @types.clamp(final_height, min_height, max_height)
+        }
+        _ => ()
+      }
       return {
         id: node.id,
         x: 0.0,
         y: 0.0,
-        width,
-        height,
+        width: final_width,
+        height: final_height,
         margin: @types.Rect::zero(),
         padding,
         border,
@@ -826,11 +929,18 @@ fn compute_inline_child(
   if style.display == @types.InlineBlock ||
     style.display == @types.InlineFlex ||
     style.display == @types.InlineGrid {
+    let sizing_mode = if style.display == @types.InlineBlock {
+      // Inline-block width:auto shrink-to-fit is handled in block layout even in Definite mode.
+      // Keep Definite here so percentage padding/height resolve against containing block.
+      @types.Definite
+    } else {
+      @types.MaxContent
+    }
     // Use the dispatch function to get proper block/flex/grid layout
     let ctx : @types.LayoutContext = {
       available_width,
       available_height,
-      sizing_mode: @types.MaxContent,
+      sizing_mode,
       viewport_width: available_width,
       viewport_height: available_height.unwrap_or(0.0),
       stretch_width: false,

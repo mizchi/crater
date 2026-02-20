@@ -117,16 +117,9 @@ fn build_occupancy_grid(
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
     let mut col_idx = 0
-    let mut cell_idx = 0
-    for child in row.children {
-      if child.style.display == @types.Display::None {
-        cell_idx = cell_idx + 1
-        continue
-      }
-      if not(is_table_cell(child.style.display)) {
-        cell_idx = cell_idx + 1
-        continue
-      }
+    let row_cells = get_row_cells(row)
+    for cell_idx = 0; cell_idx < row_cells.length(); cell_idx = cell_idx + 1 {
+      let child = row_cells[cell_idx]
 
       // Skip columns that are already occupied by rowspan from previous rows
       while grid.contains(key_for_pos(row_idx, col_idx)) {
@@ -160,7 +153,6 @@ fn build_occupancy_grid(
         num_columns = col_idx + colspan
       }
       col_idx = col_idx + colspan
-      cell_idx = cell_idx + 1
     }
   }
   (grid, num_columns)
@@ -285,13 +277,38 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
 /// Handles both direct rows and rows inside row groups (thead, tbody, tfoot)
 fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
   let rows : Array[@node.Node] = []
+  let mut pending_cells : Array[@node.Node] = []
+  let mut anon_row_index = 0
+  fn flush_pending_cells() -> Unit {
+    if pending_cells.length() == 0 {
+      return ()
+    }
+    let anon_row_style : @style.Style = {
+      ..@style.Style::default(),
+      display: @types.TableRow,
+    }
+    rows.push(
+      @node.Node::new(
+        "__anon-table-row-" + anon_row_index.to_string(),
+        anon_row_style,
+        pending_cells,
+      ),
+    )
+    pending_cells = []
+    anon_row_index = anon_row_index + 1
+  }
   for child in table_node.children {
     if child.style.display == @types.Display::None {
       continue
     }
     if is_table_row(child.style.display) {
+      flush_pending_cells()
       rows.push(child)
+    } else if is_table_cell(child.style.display) {
+      // Anonymous table row wrapper for direct table-cell children.
+      pending_cells.push(child)
     } else if is_table_row_group(child.style.display) {
+      flush_pending_cells()
       // Collect rows from row group
       for row in child.children {
         if row.style.display != @types.Display::None &&
@@ -302,6 +319,7 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
     }
     // Ignore caption, col, colgroup for now
   }
+  flush_pending_cells()
   rows
 }
 
@@ -317,6 +335,13 @@ fn is_inline_intrinsic_child(node : @node.Node) -> Bool {
     | @types.InlineGrid => true
     _ => false
   }
+}
+
+///|
+/// In vertical writing mode, physical width is block axis and WPT expects
+/// table max-width intrinsic keywords to behave like an initial constraint.
+fn ignore_intrinsic_max_width_constraint(style : @style.Style) -> Bool {
+  style.writing_mode.is_vertical()
 }
 
 ///|
@@ -434,16 +459,49 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
 }
 
 ///|
-/// Get cells from a row as an array
-fn get_row_cells(row : @node.Node) -> Array[@node.Node] {
+/// Normalize row children into table cells.
+/// Non-cell children are wrapped into anonymous table-cell boxes.
+fn normalize_row_cells(row : @node.Node) -> Array[@node.Node] {
   let cells : Array[@node.Node] = []
+  let mut pending_non_cells : Array[@node.Node] = []
+  let mut anon_cell_index = 0
+  fn flush_pending_non_cells() -> Unit {
+    if pending_non_cells.length() == 0 {
+      return ()
+    }
+    let anon_cell_style : @style.Style = {
+      ..@style.Style::default(),
+      display: @types.TableCell,
+    }
+    cells.push(
+      @node.Node::new(
+        "__anon-table-cell-" + anon_cell_index.to_string(),
+        anon_cell_style,
+        pending_non_cells,
+      ),
+    )
+    pending_non_cells = []
+    anon_cell_index = anon_cell_index + 1
+  }
   for child in row.children {
-    if child.style.display != @types.Display::None &&
-      is_table_cell(child.style.display) {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if is_table_cell(child.style.display) {
+      flush_pending_non_cells()
       cells.push(child)
+    } else {
+      pending_non_cells.push(child)
     }
   }
+  flush_pending_non_cells()
   cells
+}
+
+///|
+/// Get cells from a row as an array
+fn get_row_cells(row : @node.Node) -> Array[@node.Node] {
+  normalize_row_cells(row)
 }
 
 ///|
@@ -737,9 +795,20 @@ fn layout_cell(
     }
     let @node.DispatchFn(dispatch_fn) = dispatch
     let child_layout = dispatch_fn(child, child_ctx, dispatch)
+    let mut child_x = padding.left + border.left + child_layout.x
+    if style.writing_mode.is_vertical() {
+      // Vertical table-cells in browsers center in-flow block content
+      // across the horizontal (physical x) axis.
+      let free_space = content_width - child_layout.width
+      if free_space > 0.0 {
+        child_x = child_x + free_space / 2.0
+      }
+    }
     let positioned_layout = {
-      ..child_layout,
-      x: padding.left + border.left + child_layout.margin.left,
+      ..child_layout
+      // Preserve child-local offset and apply table-cell alignment.
+      ,
+      x: child_x,
       y: y_offset + child_layout.margin.top,
     }
     y_offset = y_offset +
@@ -820,7 +889,7 @@ fn layout_row(
       let parent_h = ctx.available_height.unwrap_or(0.0)
       Some(parent_h * p)
     }
-    _ => None
+    _ => ctx.available_height
   }
 
   // Create cell context with row height for percentage height resolution
@@ -841,19 +910,9 @@ fn layout_row(
   let mut collapsed_border_width = 0.0
   let mut first_cell_left_border = 0.0
   let mut last_cell_right_border = 0.0
-  let mut cell_idx = 0
-  for child in row.children {
-    if child.style.display == @types.Display::None {
-      cell_layouts.push(create_zero_layout(child))
-      cell_idx = cell_idx + 1
-      continue
-    }
-    if not(is_table_cell(child.style.display)) {
-      // Skip non-cell children
-      cell_layouts.push(create_zero_layout(child))
-      cell_idx = cell_idx + 1
-      continue
-    }
+  let row_cells = get_row_cells(row)
+  for cell_idx = 0; cell_idx < row_cells.length(); cell_idx = cell_idx + 1 {
+    let child = row_cells[cell_idx]
 
     // Skip columns occupied by rowspan cells from previous rows
     while true {
@@ -928,8 +987,17 @@ fn layout_row(
     x_offset = x_offset + cell_width + border_spacing
     // Advance by colspan columns
     col_index = col_index + colspan
-    cell_idx = cell_idx + 1
-    cell_layouts.push(positioned_cell)
+    if child.id.has_prefix("__anon-table-cell-") {
+      for anon_child in positioned_cell.children {
+        cell_layouts.push({
+          ..anon_child,
+          x: positioned_cell.x + anon_child.x,
+          y: positioned_cell.y + anon_child.y,
+        })
+      }
+    } else {
+      cell_layouts.push(positioned_cell)
+    }
   }
 
   // Calculate row width
@@ -1085,11 +1153,7 @@ fn compute_row_intrinsic_height(row : @node.Node) -> Double {
 
   // Find max cell height
   let mut max_height = 0.0
-  for child in row.children {
-    if child.style.display == @types.Display::None ||
-      not(is_table_cell(child.style.display)) {
-      continue
-    }
+  for child in get_row_cells(row) {
     let cell_height = compute_cell_intrinsic_height(child)
     if cell_height > max_height {
       max_height = cell_height
@@ -1118,13 +1182,7 @@ fn compute_base_row_heights(
     }
 
     // Find max cell height among cells that DON'T have rowspan > 1
-    let mut cell_idx = 0
-    for child in row.children {
-      if child.style.display == @types.Display::None ||
-        not(is_table_cell(child.style.display)) {
-        cell_idx = cell_idx + 1
-        continue
-      }
+    for child in get_row_cells(row) {
       let rowspan = if child.style.rowspan > 0 {
         child.style.rowspan
       } else {
@@ -1138,7 +1196,6 @@ fn compute_base_row_heights(
           max_height = cell_height
         }
       }
-      cell_idx = cell_idx + 1
     }
     heights.push(max_height)
   }
@@ -1197,11 +1254,7 @@ fn collect_rowspan_cells(rows : Array[@node.Node]) -> Array[RowspanCellInfo] {
   let cells : Array[RowspanCellInfo] = []
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
-    for child in row.children {
-      if child.style.display == @types.Display::None ||
-        not(is_table_cell(child.style.display)) {
-        continue
-      }
+    for child in get_row_cells(row) {
       let rowspan = if child.style.rowspan > 0 {
         child.style.rowspan
       } else {
@@ -1393,6 +1446,35 @@ pub fn compute(
   // For table shrink-to-fit, border-spacing is added:
   // - Between columns: (num_columns - 1) gaps
   // - On outer edges: 2 gaps (left and right)
+  let mut anon_flow_intrinsic_width = 0.0
+  if num_columns == 0 {
+    let mut float_total_width = 0.0
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      if is_table_row(child.style.display) ||
+        is_table_row_group(child.style.display) ||
+        is_table_column(child.style.display) ||
+        is_table_column_group(child.style.display) ||
+        child.style.display == @types.TableCaption ||
+        is_table_cell(child.style.display) {
+        continue
+      }
+      let child_width = measure_node_intrinsic_width(child)
+      match child.style.float {
+        @types.Float::Left | @types.Float::Right =>
+          float_total_width = float_total_width + child_width
+        @types.Float::None =>
+          if child_width > anon_flow_intrinsic_width {
+            anon_flow_intrinsic_width = child_width
+          }
+      }
+    }
+    if float_total_width > anon_flow_intrinsic_width {
+      anon_flow_intrinsic_width = float_total_width
+    }
+  }
   let intrinsic_content_width = if num_columns > 0 {
     let mut total = 0.0
     for w in intrinsic_col_widths {
@@ -1401,14 +1483,19 @@ pub fn compute(
     // Total spacing = (num_columns - 1) between + 2 for edges = num_columns + 1
     total + border_spacing * (num_columns + 1).to_double()
   } else {
-    0.0
+    anon_flow_intrinsic_width
   }
 
   // Calculate table width: shrink-to-fit for auto, unless in stretch context
-  let table_width = match style.width {
+  let intrinsic_table_width = intrinsic_content_width +
+    padding.horizontal_sum() +
+    border.horizontal_sum()
+  let mut table_width = match style.width {
     @types.Length(w) => w
     @types.Percent(p) => parent_width * p
-    _ =>
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      intrinsic_table_width
+    @types.Auto =>
       // Auto width: check if we should stretch or shrink-to-fit
       if ctx.stretch_width {
         // In stretch context (e.g., grid cell with stretch alignment),
@@ -1417,9 +1504,7 @@ pub fn compute(
       } else {
         // Normal flow: shrink-to-fit behavior
         // Table width = content width + padding + border
-        let min_width = intrinsic_content_width +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
+        let min_width = intrinsic_table_width
         // Don't exceed available width
         if min_width > parent_width {
           parent_width
@@ -1427,6 +1512,52 @@ pub fn compute(
           min_width
         }
       }
+  }
+  // Apply max-width first, then min-width (min takes precedence over max).
+  match style.max_width {
+    @types.Length(max_w) => if table_width > max_w { table_width = max_w }
+    @types.Percent(p) => {
+      let max_w = parent_width * p
+      if table_width > max_w {
+        table_width = max_w
+      }
+    }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      if not(ignore_intrinsic_max_width_constraint(style)) &&
+        table_width > intrinsic_table_width {
+        table_width = intrinsic_table_width
+      }
+    @types.Auto => ()
+  }
+  match style.min_width {
+    @types.Length(min_w) => if table_width < min_w { table_width = min_w }
+    @types.Percent(p) => {
+      let min_w = parent_width * p
+      if table_width < min_w {
+        table_width = min_w
+      }
+    }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      if table_width < intrinsic_table_width {
+        table_width = intrinsic_table_width
+      }
+    @types.Auto => ()
+  }
+  let min_table_width = padding.horizontal_sum() + border.horizontal_sum()
+  if table_width < min_table_width {
+    table_width = min_table_width
+  }
+  let should_enforce_intrinsic_min_width = match style.max_width {
+    @types.Length(max_w) => max_w >= intrinsic_table_width
+    @types.Percent(p) => parent_width * p >= intrinsic_table_width
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      not(ignore_intrinsic_max_width_constraint(style))
+    @types.Auto => true
+  }
+  // Auto-layout tables cannot be narrower than their intrinsic minimum width,
+  // except when an explicit max-width is tighter than the intrinsic minimum.
+  if should_enforce_intrinsic_min_width && table_width < intrinsic_table_width {
+    table_width = intrinsic_table_width
   }
 
   // Content width = table width - padding - border
@@ -1630,212 +1761,310 @@ pub fn compute(
 
   // Track global row index (matching order in collect_table_rows)
   let mut global_row_idx = 0
+  let mut has_anon_flow_children = false
 
   // Second: layout rows and row groups
-  for entry in row_children {
-    let (child, idx) = entry
-    if child.style.display == @types.Display::None {
-      layout_map[idx] = create_zero_layout(child)
-      continue
+  if row_count == 0 {
+    // No table rows: lay out non-table children as an anonymous block flow.
+    let anon_children : Array[@node.Node] = []
+    let anon_indices : Array[Int] = []
+    for entry in row_children {
+      let (child, idx) = entry
+      if child.style.display == @types.Display::None {
+        layout_map[idx] = create_zero_layout(child)
+        continue
+      }
+      if is_table_column_group(child.style.display) ||
+        is_table_column(child.style.display) {
+        layout_map[idx] = create_zero_layout(child)
+        continue
+      }
+      anon_children.push(child)
+      anon_indices.push(idx)
     }
-    if is_table_row(child.style.display) {
-      // Direct row - use pre-calculated row height
-      let row_height = if global_row_idx < row_heights.length() {
-        Some(row_heights[global_row_idx])
-      } else {
-        None
+    if anon_children.length() > 0 {
+      has_anon_flow_children = true
+      let anon_style : @style.Style = {
+        ..@style.Style::default(),
+        display: @types.Block,
+        width: @types.Length(row_content_width),
       }
-      let row_ctx : @types.LayoutContext = {
-        ..base_child_ctx,
-        available_height: row_height,
-      }
-      let row_layout = layout_row(
-        child, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
-        grid, dispatch,
+      let anon_node = @node.Node::new(
+        "__anon-table-flow", anon_style, anon_children,
       )
-      // Apply position: relative offset for rows
-      let (rel_x, rel_y) = calculate_relative_offset(
-        child.style,
-        row_layout.width,
-        row_layout.height,
-      )
-      let positioned_row = {
-        ..row_layout,
-        x: row_x_offset + rel_x,
-        y: y_offset + rel_y,
+      let anon_ctx : @types.LayoutContext = {
+        available_width: row_content_width,
+        available_height: None,
+        sizing_mode: @types.Definite,
+        viewport_width: ctx.viewport_width,
+        viewport_height: ctx.viewport_height,
+        stretch_width: false,
+        stretch_height: false,
       }
-      y_offset = y_offset + row_layout.height + border_spacing
-      layout_map[idx] = positioned_row
-      global_row_idx = global_row_idx + 1
-    } else if is_table_row_group(child.style.display) {
-      // Row group (thead, tbody, tfoot)
-      let group_layouts : Array[@types.Layout] = []
-      let mut group_y = 0.0
-      let mut max_row_width = 0.0
-      let group_style = child.style
-      let group_margin = @types.resolve_rect(group_style.margin, parent_width)
-      let group_padding = @types.resolve_rect(group_style.padding, parent_width)
-      let group_border = @types.resolve_rect(group_style.border, parent_width)
-      for row in child.children {
-        if row.style.display == @types.Display::None {
-          group_layouts.push(create_zero_layout(row))
-          continue
+      let anon_layout = dispatch_fn(anon_node, anon_ctx, dispatch)
+      for i = 0; i < anon_indices.length(); i = i + 1 {
+        if i < anon_layout.children.length() {
+          let child_layout = anon_layout.children[i]
+          layout_map[anon_indices[i]] = {
+            ..child_layout,
+            x: row_x_offset + child_layout.x,
+            y: y_offset + child_layout.y,
+          }
         }
-        if is_table_row(row.style.display) {
-          // Use pre-calculated row height for rows in row groups
-          let row_height = if global_row_idx < row_heights.length() {
-            Some(row_heights[global_row_idx])
-          } else {
-            None
-          }
-          let row_ctx : @types.LayoutContext = {
-            ..base_child_ctx,
-            available_height: row_height,
-          }
-          let row_layout = layout_row(
-            row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
-            grid, dispatch,
-          )
-          // Apply position: relative offset for rows inside groups
+      }
+      y_offset = y_offset + anon_layout.height
+    }
+  } else {
+    for entry in row_children {
+      let (child, idx) = entry
+      if child.style.display == @types.Display::None {
+        layout_map[idx] = create_zero_layout(child)
+        continue
+      }
+      if is_table_cell(child.style.display) {
+        // Anonymous table row wrapper for direct table-cell children.
+        let anon_row_style : @style.Style = {
+          ..@style.Style::default(),
+          display: @types.TableRow,
+        }
+        let anon_row = @node.Node::new(
+          "__anon-table-row-layout-" + idx.to_string(),
+          anon_row_style,
+          [child],
+        )
+        let row_height = if global_row_idx < row_heights.length() {
+          Some(row_heights[global_row_idx])
+        } else {
+          None
+        }
+        let row_ctx : @types.LayoutContext = {
+          ..base_child_ctx,
+          available_height: row_height,
+        }
+        let row_layout = layout_row(
+          anon_row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+          grid, dispatch,
+        )
+        let positioned_cell = if row_layout.children.length() > 0 {
+          let cell_layout = row_layout.children[0]
           let (rel_x, rel_y) = calculate_relative_offset(
-            row.style,
-            row_layout.width,
-            row_layout.height,
+            child.style,
+            cell_layout.width,
+            cell_layout.height,
           )
-          let positioned_row = {
-            ..row_layout,
-            x: group_padding.left + group_border.left + rel_x,
-            y: group_y + group_padding.top + group_border.top + rel_y,
+          {
+            ..cell_layout,
+            x: row_x_offset + cell_layout.x + rel_x,
+            y: y_offset + cell_layout.y + rel_y,
           }
-          group_y = group_y + row_layout.height + border_spacing
-          // Track max row width for consistent group width
-          max_row_width = max(max_row_width, row_layout.width)
-          group_layouts.push(positioned_row)
-          global_row_idx = global_row_idx + 1
         } else {
-          group_layouts.push(create_zero_layout(row))
+          create_zero_layout(child)
         }
-      }
-      // Group height excludes trailing border-spacing
-      let group_height = if group_y > 0.0 {
-        group_y -
-        border_spacing +
-        group_padding.vertical_sum() +
-        group_border.vertical_sum()
-      } else {
-        group_padding.vertical_sum() + group_border.vertical_sum()
-      }
-      // In border-collapse mode, use actual row width; otherwise use row_content_width
-      let group_width = if is_border_collapse && max_row_width > 0.0 {
-        max_row_width +
-        group_padding.horizontal_sum() +
-        group_border.horizontal_sum()
-      } else {
-        row_content_width
-      }
-      // Apply position: relative offset for row groups
-      let (rel_x, rel_y) = calculate_relative_offset(
-        group_style, row_content_width, group_height,
-      )
-      let group_layout : @types.Layout = {
-        id: child.id,
-        x: row_x_offset + rel_x,
-        y: y_offset + rel_y,
-        width: group_width,
-        height: group_height,
-        margin: group_margin,
-        padding: group_padding,
-        border: group_border,
-        overflow_x: group_style.overflow_x,
-        overflow_y: group_style.overflow_y,
-        scroll_width: 0.0,
-        scroll_height: 0.0,
-        children: group_layouts,
-        text: child.text,
-      }
-      y_offset = y_offset + group_height + border_spacing
-      layout_map[idx] = group_layout
-    } else if is_table_column_group(child.style.display) {
-      // Colgroup: layout with column widths, positioned later
-      // These are placeholder layouts that will be updated after we know table height
-      let col_layouts : Array[@types.Layout] = []
-      let mut col_x = 0.0
-      let mut col_idx = 0
-      for col in child.children {
-        if col.style.display == @types.Display::None {
-          col_layouts.push(create_zero_layout(col))
-          continue
+        y_offset = y_offset + row_layout.height + border_spacing
+        layout_map[idx] = positioned_cell
+        global_row_idx = global_row_idx + 1
+      } else if is_table_row(child.style.display) {
+        // Direct row - use pre-calculated row height
+        let row_height = if global_row_idx < row_heights.length() {
+          Some(row_heights[global_row_idx])
+        } else {
+          None
         }
-        if is_table_column(col.style.display) {
-          let col_width = if col_idx < column_widths.length() {
-            column_widths[col_idx]
+        let row_ctx : @types.LayoutContext = {
+          ..base_child_ctx,
+          available_height: row_height,
+        }
+        let row_layout = layout_row(
+          child, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+          grid, dispatch,
+        )
+        // Apply position: relative offset for rows
+        let (rel_x, rel_y) = calculate_relative_offset(
+          child.style,
+          row_layout.width,
+          row_layout.height,
+        )
+        let positioned_row = {
+          ..row_layout,
+          x: row_x_offset + rel_x,
+          y: y_offset + rel_y,
+        }
+        y_offset = y_offset + row_layout.height + border_spacing
+        layout_map[idx] = positioned_row
+        global_row_idx = global_row_idx + 1
+      } else if is_table_row_group(child.style.display) {
+        // Row group (thead, tbody, tfoot)
+        let group_layouts : Array[@types.Layout] = []
+        let mut group_y = 0.0
+        let mut max_row_width = 0.0
+        let group_style = child.style
+        let group_margin = @types.resolve_rect(group_style.margin, parent_width)
+        let group_padding = @types.resolve_rect(
+          group_style.padding,
+          parent_width,
+        )
+        let group_border = @types.resolve_rect(group_style.border, parent_width)
+        for row in child.children {
+          if row.style.display == @types.Display::None {
+            group_layouts.push(create_zero_layout(row))
+            continue
+          }
+          if is_table_row(row.style.display) {
+            // Use pre-calculated row height for rows in row groups
+            let row_height = if global_row_idx < row_heights.length() {
+              Some(row_heights[global_row_idx])
+            } else {
+              None
+            }
+            let row_ctx : @types.LayoutContext = {
+              ..base_child_ctx,
+              available_height: row_height,
+            }
+            let row_layout = layout_row(
+              row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+              grid, dispatch,
+            )
+            // Apply position: relative offset for rows inside groups
+            let (rel_x, rel_y) = calculate_relative_offset(
+              row.style,
+              row_layout.width,
+              row_layout.height,
+            )
+            let positioned_row = {
+              ..row_layout,
+              x: group_padding.left + group_border.left + rel_x,
+              y: group_y + group_padding.top + group_border.top + rel_y,
+            }
+            group_y = group_y + row_layout.height + border_spacing
+            // Track max row width for consistent group width
+            max_row_width = max(max_row_width, row_layout.width)
+            group_layouts.push(positioned_row)
+            global_row_idx = global_row_idx + 1
           } else {
-            0.0
+            group_layouts.push(create_zero_layout(row))
           }
-          let zero_rect : @types.Rect[Double] = {
-            left: 0.0,
-            right: 0.0,
-            top: 0.0,
-            bottom: 0.0,
-          }
-          let col_layout : @types.Layout = {
-            id: col.id,
-            x: col_x,
-            y: 0.0,
-            width: col_width,
-            height: 0.0, // Will be updated
-            margin: zero_rect,
-            padding: zero_rect,
-            border: zero_rect,
-            overflow_x: @types.Visible,
-            overflow_y: @types.Visible,
-            scroll_width: 0.0,
-            scroll_height: 0.0,
-            children: [],
-            text: col.text,
-          }
-          col_x = col_x + col_width + border_spacing
-          col_idx = col_idx + 1
-          col_layouts.push(col_layout)
-        } else {
-          col_layouts.push(create_zero_layout(col))
         }
-      }
-      // Calculate colgroup total width
-      let colgroup_width = if col_x > 0.0 {
-        col_x - border_spacing
+        // Group height excludes trailing border-spacing
+        let group_height = if group_y > 0.0 {
+          group_y -
+          border_spacing +
+          group_padding.vertical_sum() +
+          group_border.vertical_sum()
+        } else {
+          group_padding.vertical_sum() + group_border.vertical_sum()
+        }
+        // In border-collapse mode, use actual row width; otherwise use row_content_width
+        let group_width = if is_border_collapse && max_row_width > 0.0 {
+          max_row_width +
+          group_padding.horizontal_sum() +
+          group_border.horizontal_sum()
+        } else {
+          row_content_width
+        }
+        // Apply position: relative offset for row groups
+        let (rel_x, rel_y) = calculate_relative_offset(
+          group_style, row_content_width, group_height,
+        )
+        let group_layout : @types.Layout = {
+          id: child.id,
+          x: row_x_offset + rel_x,
+          y: y_offset + rel_y,
+          width: group_width,
+          height: group_height,
+          margin: group_margin,
+          padding: group_padding,
+          border: group_border,
+          overflow_x: group_style.overflow_x,
+          overflow_y: group_style.overflow_y,
+          scroll_width: 0.0,
+          scroll_height: 0.0,
+          children: group_layouts,
+          text: child.text,
+        }
+        y_offset = y_offset + group_height + border_spacing
+        layout_map[idx] = group_layout
+      } else if is_table_column_group(child.style.display) {
+        // Colgroup: layout with column widths, positioned later
+        // These are placeholder layouts that will be updated after we know table height
+        let col_layouts : Array[@types.Layout] = []
+        let mut col_x = 0.0
+        let mut col_idx = 0
+        for col in child.children {
+          if col.style.display == @types.Display::None {
+            col_layouts.push(create_zero_layout(col))
+            continue
+          }
+          if is_table_column(col.style.display) {
+            let col_width = if col_idx < column_widths.length() {
+              column_widths[col_idx]
+            } else {
+              0.0
+            }
+            let zero_rect : @types.Rect[Double] = {
+              left: 0.0,
+              right: 0.0,
+              top: 0.0,
+              bottom: 0.0,
+            }
+            let col_layout : @types.Layout = {
+              id: col.id,
+              x: col_x,
+              y: 0.0,
+              width: col_width,
+              height: 0.0, // Will be updated
+              margin: zero_rect,
+              padding: zero_rect,
+              border: zero_rect,
+              overflow_x: @types.Visible,
+              overflow_y: @types.Visible,
+              scroll_width: 0.0,
+              scroll_height: 0.0,
+              children: [],
+              text: col.text,
+            }
+            col_x = col_x + col_width + border_spacing
+            col_idx = col_idx + 1
+            col_layouts.push(col_layout)
+          } else {
+            col_layouts.push(create_zero_layout(col))
+          }
+        }
+        // Calculate colgroup total width
+        let colgroup_width = if col_x > 0.0 {
+          col_x - border_spacing
+        } else {
+          0.0
+        }
+        let zero_rect : @types.Rect[Double] = {
+          left: 0.0,
+          right: 0.0,
+          top: 0.0,
+          bottom: 0.0,
+        }
+        let colgroup_layout : @types.Layout = {
+          id: child.id,
+          x: row_x_offset,
+          y: y_offset,
+          width: colgroup_width,
+          height: 0.0, // Will be updated after layout
+          margin: zero_rect,
+          padding: zero_rect,
+          border: zero_rect,
+          overflow_x: @types.Visible,
+          overflow_y: @types.Visible,
+          scroll_width: 0.0,
+          scroll_height: 0.0,
+          children: col_layouts,
+          text: child.text,
+        }
+        layout_map[idx] = colgroup_layout
+      } else if is_table_column(child.style.display) {
+        // Standalone col element (outside colgroup)
+        layout_map[idx] = create_zero_layout(child)
       } else {
-        0.0
+        // Other children: create zero layout
+        layout_map[idx] = create_zero_layout(child)
       }
-      let zero_rect : @types.Rect[Double] = {
-        left: 0.0,
-        right: 0.0,
-        top: 0.0,
-        bottom: 0.0,
-      }
-      let colgroup_layout : @types.Layout = {
-        id: child.id,
-        x: row_x_offset,
-        y: y_offset,
-        width: colgroup_width,
-        height: 0.0, // Will be updated after layout
-        margin: zero_rect,
-        padding: zero_rect,
-        border: zero_rect,
-        overflow_x: @types.Visible,
-        overflow_y: @types.Visible,
-        scroll_width: 0.0,
-        scroll_height: 0.0,
-        children: col_layouts,
-        text: child.text,
-      }
-      layout_map[idx] = colgroup_layout
-    } else if is_table_column(child.style.display) {
-      // Standalone col element (outside colgroup)
-      layout_map[idx] = create_zero_layout(child)
-    } else {
-      // Other children: create zero layout
-      layout_map[idx] = create_zero_layout(child)
     }
   }
 
@@ -1860,17 +2089,25 @@ pub fn compute(
   // y_offset includes table padding/border offsets already.
   // Convert back to content height before adding box model in final height.
   let content_height = y_offset - padding.top - border.top
-  let raw_table_height = match style.height {
-    @types.Length(h) =>
-      max(h, content_height + padding.vertical_sum() + border.vertical_sum())
-    @types.Percent(p) => {
-      let parent_h = ctx.available_height.unwrap_or(0.0)
-      max(
-        parent_h * p + padding.vertical_sum() + border.vertical_sum(),
-        content_height + padding.vertical_sum() + border.vertical_sum(),
-      )
+  let has_rendered_content = row_count > 0 ||
+    has_anon_flow_children ||
+    top_captions.length() > 0 ||
+    bottom_captions.length() > 0
+  let raw_table_height = if has_rendered_content {
+    match style.height {
+      @types.Length(h) =>
+        max(h, content_height + padding.vertical_sum() + border.vertical_sum())
+      @types.Percent(p) => {
+        let parent_h = ctx.available_height.unwrap_or(0.0)
+        max(
+          parent_h * p + padding.vertical_sum() + border.vertical_sum(),
+          content_height + padding.vertical_sum() + border.vertical_sum(),
+        )
+      }
+      _ => content_height + padding.vertical_sum() + border.vertical_sum()
     }
-    _ => content_height + padding.vertical_sum() + border.vertical_sum()
+  } else {
+    padding.vertical_sum() + border.vertical_sum()
   }
   let clamped_min_height = max(raw_table_height, resolved_min_table_height)
   let table_height = if clamped_min_height > resolved_max_table_height {

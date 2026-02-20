@@ -145,6 +145,71 @@ test "ifc_with_margins" {
 }
 
 ///|
+test "ifc_line_height_with_vertical_margins" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(0.0),
+    height: @types.Length(3.0),
+    margin: {
+      left: @types.Length(5.0),
+      right: @types.Length(5.0),
+      top: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+    },
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    0.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts[0].x, content="5")
+  inspect(result.layouts[0].y, content="5")
+  inspect(result.layouts[1].y, content="18")
+  inspect(result.total_height, content="26")
+}
+
+///|
+test "ifc_replaced_only_line_includes_strut_descent" {
+  let default_style = @style.Style::default()
+  let replaced_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 16.0,
+    line_height: 19.2,
+  }
+  let replaced_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let child1 = @node.Node::with_measure("img", replaced_style, replaced_measure)
+  let child2 = @node.Node::with_measure(
+    "video", replaced_style, replaced_measure,
+  )
+  let result = compute_ifc(
+    [child1, child2],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.total_height, content="156.4")
+}
+
+///|
 test "ifc_content_offset" {
   // IFC with content offset (padding/border of container)
   let default_style = @style.Style::default()

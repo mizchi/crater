@@ -93,6 +93,8 @@ test "extract_border_width" {
   inspect(@computed.extract_border_width("solid 3px"), content="Length(3)")
   inspect(@computed.extract_border_width("1px solid red"), content="Length(1)")
   inspect(@computed.extract_border_width("none"), content="Length(0)")
+  inspect(@computed.extract_border_width("solid"), content="Length(1.5)")
+  inspect(@computed.extract_border_width("medium"), content="Length(3)")
 }
 
 ///|
@@ -322,6 +324,56 @@ test "logical properties inline-size and block-size" {
   )
   inspect(style3.width, content="Length(300)")
   inspect(style3.height, content="Length(150)")
+}
+
+///|
+test "intrinsic sizing keywords are preserved on physical and logical sizes" {
+  let ctx = @computed.ComputeContext::new()
+
+  // Physical properties keep intrinsic keywords as-is.
+  let horizontal = @computed.compute_inline(
+    "height: min-content; min-height: min-content; max-height: max-content", ctx,
+  )
+  inspect(horizontal.height, content="MinContent")
+  inspect(horizontal.min_height, content="MinContent")
+  inspect(horizontal.max_height, content="MaxContent")
+
+  // Writing mode does not normalize intrinsic keywords on physical width/height.
+  let vertical_width = @computed.compute_inline(
+    "writing-mode: vertical-lr; width: min-content; min-width: min-content; max-width: max-content",
+    ctx,
+  )
+  inspect(vertical_width.width, content="MinContent")
+  inspect(vertical_width.min_width, content="MinContent")
+  inspect(vertical_width.max_width, content="MaxContent")
+
+  // Logical properties map to the target axis while preserving intrinsic keywords.
+  let vertical_height = @computed.compute_inline(
+    "writing-mode: vertical-lr; height: min-content; min-height: min-content; max-height: max-content",
+    ctx,
+  )
+  inspect(vertical_height.height, content="MinContent")
+  inspect(vertical_height.min_height, content="MinContent")
+  inspect(vertical_height.max_height, content="MaxContent")
+
+  // In vertical writing mode, block-size maps to width.
+  let vertical_block = @computed.compute_inline(
+    "writing-mode: vertical-lr; min-block-size: max-content; max-block-size: min-content",
+    ctx,
+  )
+  inspect(vertical_block.min_width, content="MaxContent")
+  inspect(vertical_block.max_width, content="MinContent")
+}
+
+///|
+test "intrinsic keywords remain preserved with inherited writing-mode" {
+  let root_ctx = @computed.ComputeContext::new()
+  let parent = @computed.compute_inline("writing-mode: vertical-lr", root_ctx)
+  let child_ctx = @computed.ComputeContext::with_parent(parent)
+  let child = @computed.compute_inline(
+    "width: 150px; max-width: min-content", child_ctx,
+  )
+  inspect(child.max_width, content="MinContent")
 }
 
 ///|

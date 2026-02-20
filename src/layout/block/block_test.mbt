@@ -1104,6 +1104,213 @@ test "inline_block_shrink_to_fit" {
 }
 
 ///|
+test "inline_block_shrink_to_fit_percent_max_width_min_content" {
+  let default_style = @style.Style::default()
+  let canvas_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    max_width: @types.Percent(0.5),
+  }
+  let canvas_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 100.0, max_width: 100.0, min_height: 50.0, max_height: 50.0 }
+    },
+  }
+  let canvas = @node.Node::with_measure("canvas", canvas_style, canvas_measure)
+  let inline_block_style = { ..default_style, display: @types.InlineBlock }
+  let inline_block = @node.Node::new("inline-block", inline_block_style, [
+    canvas,
+  ])
+  let root_style = { ..default_style, width: @types.Length(0.0) }
+  let root = @node.Node::new("root", root_style, [inline_block])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let inline_block_layout = layout.children[0]
+  let canvas_layout = inline_block_layout.children[0]
+  inspect(inline_block_layout.width, content="0")
+  inspect(canvas_layout.width, content="0")
+}
+
+///|
+test "min_content_vertical_child_percent_max_block_size_not_zero" {
+  let default_style = @style.Style::default()
+  let canvas_style = {
+    ..default_style,
+    width: @types.Length(200.0),
+    height: @types.Length(200.0),
+    writing_mode: @style.WritingMode::VerticalRl,
+    max_width: @types.Percent(0.5),
+  }
+  let canvas_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 200.0,
+        max_width: 200.0,
+        min_height: 200.0,
+        max_height: 200.0,
+      }
+    },
+  }
+  let canvas = @node.Node::with_measure("canvas", canvas_style, canvas_measure)
+  let root_style = { ..default_style, width: @types.MinContent }
+  let root = @node.Node::new("root", root_style, [canvas])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let canvas_layout = layout.children[0]
+  inspect(layout.width, content="200")
+  inspect(canvas_layout.width, content="100")
+}
+
+///|
+test "vertical_auto_block_uses_block_extent_for_width_and_cross_extent_for_height" {
+  let default_style = @style.Style::default()
+  let child_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(40.0),
+  }
+  let child1 = @node.Node::leaf("child1", child_style)
+  let child2 = @node.Node::leaf("child2", child_style)
+  let root_style = {
+    ..default_style,
+    writing_mode: @style.WritingMode::VerticalLr,
+  }
+  let root = @node.Node::new("root", root_style, [child1, child2])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="200")
+  inspect(layout.height, content="40")
+}
+
+///|
+test "vertical_auto_block_with_table_children_uses_block_extent" {
+  let default_style = @style.Style::default()
+  let cell_style : @style.Style = {
+    ..default_style,
+    display: @types.TableCell,
+    width: @types.Length(58.0),
+    height: @types.Length(58.0),
+  }
+  let row_style : @style.Style = { ..default_style, display: @types.TableRow }
+  let table_style : @style.Style = {
+    ..default_style,
+    display: @types.Table,
+    border: {
+      left: @types.Length(4.0),
+      right: @types.Length(4.0),
+      top: @types.Length(4.0),
+      bottom: @types.Length(4.0),
+    },
+  }
+  fn make_table(id : String, w : Double) -> @node.Node {
+    let t_style = { ..table_style, width: @types.Length(w) }
+    let cell = @node.Node::new(id + "-cell", cell_style, [])
+    let row = @node.Node::new(id + "-row", row_style, [cell])
+    @node.Node::new(id, t_style, [row])
+  }
+  let t1 = make_table("t1", 150.0)
+  let t2 = make_table("t2", 150.0)
+  let t3 = make_table("t3", 66.0)
+  let t4 = make_table("t4", 66.0)
+
+  let root_style = {
+    ..default_style,
+    writing_mode: @style.WritingMode::VerticalLr,
+  }
+  let root = @node.Node::new("root", root_style, [t1, t2, t3, t4])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="432")
+  inspect(layout.height, content="66")
+}
+
+///|
+test "vertical_auto_block_with_percent_replaced_descendant_fills_available_height" {
+  let default_style = @style.Style::default()
+  let img_style = {
+    ..default_style,
+    width: @types.Percent(1.0),
+    max_height: @types.Percent(1.0),
+  }
+  let img_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 100.0, max_width: 100.0, min_height: 50.0, max_height: 50.0 }
+    },
+  }
+  let img = @node.Node::with_measure("img", img_style, img_measure)
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Percent(1.0),
+  }
+  let inline = @node.Node::new("inline", inline_style, [img])
+  let abs_style = {
+    ..default_style,
+    position: @types.Absolute,
+    width: @types.Percent(1.0),
+    height: @types.Percent(1.0),
+  }
+  let abs = @node.Node::new("abs", abs_style, [inline])
+  let root_style = {
+    ..default_style,
+    writing_mode: @style.WritingMode::VerticalLr,
+    position: @types.Relative,
+    width: @types.Length(0.0),
+    padding: {
+      left: @types.Length(100.0),
+      right: @types.Auto,
+      top: @types.Auto,
+      bottom: @types.Auto,
+    },
+  }
+  let root = @node.Node::new("root", root_style, [abs])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="600")
+  inspect(layout.children[0].height, content="600")
+}
+
+///|
 /// Test anonymous block box handling for mixed inline/block content
 /// When a block container has both inline and block children,
 /// contiguous inline children are grouped and laid out through IFC
@@ -1438,6 +1645,32 @@ test "replaced element aspect ratio with percent height" {
   inspect(canvas_layout.height, content="100")
   // Float should shrink-to-fit to canvas width
   inspect(float_layout.width, content="100")
+}
+
+///|
+test "body_auto_height_propagates_viewport_for_percent_child" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Percent(1.0),
+  })
+  let body = @node.Node::new(
+    "body",
+    { ..default_style, display: @types.Block, width: @types.Length(800.0) },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = @block.compute(body, ctx, default_dispatch())
+  inspect(layout.children[0].height, content="600")
 }
 
 ///|
