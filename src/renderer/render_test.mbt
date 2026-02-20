@@ -100,6 +100,49 @@ test "parse_aspect_ratio_transferred_max_size_style" {
 }
 
 ///|
+test "wpt_aspect_ratio_intrinsic_size_005_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="height: 50px; width: min-content; background: green;">
+    #|  <div style="display: flex; height: 100%; background: green;">
+    #|    <div style="aspect-ratio: 1/1;"></div>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let target = root.children[0]
+  let flex = target.children[0]
+  let ratio_item = flex.children[0]
+  inspect(target.style.width, content="MinContent")
+  inspect(target.style.height, content="Length(50)")
+  inspect(flex.style.display, content="Flex")
+  inspect(flex.style.height, content="Percent(1)")
+  inspect(ratio_item.style.aspect_ratio, content="Some(1)")
+
+  @dispatch.setup()
+  let layout_ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let target_layout = layout.children[0]
+  let flex_layout = target_layout.children[0]
+  let ratio_layout = flex_layout.children[0]
+  inspect(target_layout.width, content="50")
+  inspect(target_layout.height, content="50")
+  inspect(flex_layout.width, content="50")
+  inspect(flex_layout.height, content="50")
+  inspect(ratio_layout.width, content="50")
+  inspect(ratio_layout.height, content="50")
+}
+
+///|
 test "svg_default_intrinsic_size_wpt_like" {
   // Mirrors WPT-like behavior: <svg> without width/height defaults to 300x150.
   let html_str =

@@ -2626,6 +2626,101 @@ test "aspect_ratio_transferred_max_height_from_flex_grow_width" {
   inspect(layout.children[0].height, content="100")
 }
 
+///|
+test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
+  // Mirrors css-flexbox/aspect-ratio-intrinsic-size-005.html (without script mutation):
+  // parent block has width:min-content + height:50px
+  // child is flex with height:100%
+  // grandchild has aspect-ratio:1/1 and stretches in cross-axis
+  // => intrinsic width should become 50px.
+  let default_style = @style.Style::default()
+  let ratio_child = @node.Node::leaf("ratio", {
+    ..default_style,
+    aspect_ratio: Some(1.0),
+  })
+  let flex_child = @node.Node::new(
+    "flex",
+    { ..default_style, display: @types.Flex, height: @types.Percent(1.0) },
+    [ratio_child],
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Block,
+      width: @types.MinContent,
+      height: @types.Length(50.0),
+    },
+    [flex_child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="50")
+  inspect(layout.height, content="50")
+  inspect(layout.children[0].width, content="50")
+  inspect(layout.children[0].height, content="50")
+  inspect(layout.children[0].children[0].width, content="50")
+  inspect(layout.children[0].children[0].height, content="50")
+}
+
+///|
+test "inline_flex_min_content_includes_child_border_box" {
+  // Mirrors the first case in flex-container-min-content-002.tentative.html
+  // Renderer normalizes content-box lengths to border-box before layout.
+  // Expected width: root border (10) + child border-box width (35) = 45.
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(35.0),
+    height: @types.Length(35.0),
+    box_sizing: @types.BorderBox,
+    border: {
+      left: @types.Length(5.0),
+      right: @types.Length(5.0),
+      top: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+    },
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.InlineFlex,
+      width: @types.MinContent,
+      height: @types.MinContent,
+      border: {
+        left: @types.Length(5.0),
+        right: @types.Length(5.0),
+        top: @types.Length(5.0),
+        bottom: @types.Length(5.0),
+      },
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="45")
+  inspect(layout.height, content="45")
+  inspect(layout.children[0].width, content="35")
+  inspect(layout.children[0].height, content="35")
+}
+
 // =============================================================================
 // Wrap Reverse Tests (ported from taffy)
 // =============================================================================

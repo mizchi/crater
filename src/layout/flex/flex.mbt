@@ -851,7 +851,7 @@ fn compute_intrinsic_main_size(
   } else {
     // For containers, compute based on display type and children
     match style.display {
-      @types.Flex =>
+      @types.Flex | @types.InlineFlex =>
         compute_intrinsic_flex_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
@@ -956,7 +956,7 @@ fn compute_min_content_main_size(
     // for each display type, but for now we reuse the max-content functions
     // which gives us a conservative (larger) minimum
     match style.display {
-      @types.Flex =>
+      @types.Flex | @types.InlineFlex =>
         compute_min_content_flex_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
@@ -1949,6 +1949,40 @@ fn compute_intrinsic_block_main_size(
       None => ()
     }
 
+    // Children with percentage heights (or aspect-ratio transfer via stretch)
+    // should resolve against this block's used content-box height when definite.
+    let intrinsic_cross_for_children : Double? = match style.height {
+      @types.Length(h) => {
+        let content_h = if style.box_sizing == @types.BorderBox {
+          h - padding.top - padding.bottom - border.top - border.bottom
+        } else {
+          h
+        }
+        Some(max(0.0, content_h))
+      }
+      @types.Percent(p) =>
+        match available_cross {
+          Some(cross) => {
+            let resolved_h = cross * p
+            let content_h = if style.box_sizing == @types.BorderBox {
+              resolved_h -
+              padding.top -
+              padding.bottom -
+              border.top -
+              border.bottom
+            } else {
+              resolved_h
+            }
+            Some(max(0.0, content_h))
+          }
+          None => None
+        }
+      @types.Auto
+      | @types.MinContent
+      | @types.MaxContent
+      | @types.FitContent(_) => available_cross
+    }
+
     if style.writing_mode.is_vertical() {
       // Vertical writing-mode inline flow advances horizontally by line/column.
       // For inline-only children, accumulate per-line max thickness and line breaks.
@@ -1985,7 +2019,7 @@ fn compute_intrinsic_block_main_size(
           @types.Length(w) => w + child_margin.left + child_margin.right
           _ =>
             compute_intrinsic_main_size(
-              child, true, available_cross, cache, dispatch,
+              child, true, intrinsic_cross_for_children, cache, dispatch,
             ) +
             child_margin.left +
             child_margin.right
@@ -2030,7 +2064,7 @@ fn compute_intrinsic_block_main_size(
         @types.Length(w) => w + child_margin.left + child_margin.right
         _ =>
           compute_intrinsic_main_size(
-            child, true, available_cross, cache, dispatch,
+            child, true, intrinsic_cross_for_children, cache, dispatch,
           ) +
           child_margin.left +
           child_margin.right

@@ -405,9 +405,7 @@ fn calculate_children_min_content_width(
         }
         None => {
           let recursive_width = calculate_children_min_content_width(
-            child,
-            parent_width,
-            None,
+            child, parent_width, parent_content_height,
           )
           recursive_width + child_min_box
         }
@@ -485,6 +483,40 @@ fn calculate_children_min_content_width(
                 )
               None => fallback_auto_min_width()
             }
+          (Some(ratio), @types.Auto) if ratio > 0.0 => {
+            let is_flex_row_parent = match
+              (node.style.display, node.style.flex_direction) {
+              (@types.Flex | @types.InlineFlex, @types.Row | @types.RowReverse) =>
+                true
+              _ => false
+            }
+            let align_cross = match child_style.align_self {
+              @types.AlignSelf::Auto => node.style.align_items
+              @types.AlignSelf::Start => @types.Start
+              @types.AlignSelf::End => @types.End
+              @types.AlignSelf::Center => @types.Center
+              @types.AlignSelf::Stretch => @types.Stretch
+              @types.AlignSelf::Baseline => @types.Baseline
+            }
+            if is_flex_row_parent && align_cross == @types.Stretch {
+              match parent_content_height {
+                Some(parent_h) =>
+                  calc_aspect_width(
+                    ratio,
+                    parent_h,
+                    child_style.box_sizing,
+                    child_padding_top + child_padding_bottom,
+                    child_border.vertical_sum(),
+                    child_padding_left + child_padding_right,
+                    child_border.horizontal_sum(),
+                    child_min_box,
+                  )
+                None => fallback_auto_min_width()
+              }
+            } else {
+              fallback_auto_min_width()
+            }
+          }
           _ => fallback_auto_min_width()
         }
       @types.MinContent | @types.FitContent(_) => {
