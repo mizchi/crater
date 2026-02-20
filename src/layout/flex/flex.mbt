@@ -485,13 +485,26 @@ fn compute_measured_cross_size(
   intrinsic : @types.IntrinsicSize,
   constrained_main : Double,
   is_row : Bool,
+  scale_fixed_intrinsic? : Bool = true,
 ) -> Double {
+  let is_fixed_intrinsic = intrinsic.min_width == intrinsic.max_width &&
+    intrinsic.min_height == intrinsic.max_height
   if is_row {
     // Computing height based on constrained width
     let max_width = intrinsic.max_width
     let max_height = intrinsic.max_height
-    // Handle edge cases: unconstrained, no content, or zero/negative constraint
-    if constrained_main >= max_width ||
+    if is_fixed_intrinsic && not(scale_fixed_intrinsic) {
+      max_height
+    } else if is_fixed_intrinsic && max_width > 0.0 && max_height > 0.0 {
+      if constrained_main <= 0.0 {
+        0.0
+      } else if constrained_main >= max_width {
+        max_height
+      } else {
+        max_height * (constrained_main / max_width)
+      }
+      // Handle edge cases: unconstrained, no content, or zero/negative constraint
+    } else if constrained_main >= max_width ||
       max_width <= 0.0 ||
       constrained_main <= 0.0 {
       max_height
@@ -507,8 +520,18 @@ fn compute_measured_cross_size(
     // Computing width based on constrained height
     let max_width = intrinsic.max_width
     let max_height = intrinsic.max_height
-    // Handle edge cases: unconstrained, no content, or zero/negative constraint
-    if constrained_main >= max_height ||
+    if is_fixed_intrinsic && not(scale_fixed_intrinsic) {
+      max_width
+    } else if is_fixed_intrinsic && max_width > 0.0 && max_height > 0.0 {
+      if constrained_main <= 0.0 {
+        0.0
+      } else if constrained_main >= max_height {
+        max_width
+      } else {
+        max_width * (constrained_main / max_height)
+      }
+      // Handle edge cases: unconstrained, no content, or zero/negative constraint
+    } else if constrained_main >= max_height ||
       max_height <= 0.0 ||
       constrained_main <= 0.0 {
       max_width
@@ -570,6 +593,10 @@ fn compute_intrinsic_main_size(
       Some(mf) => {
         // Call MeasureFunc to get intrinsic size
         let intrinsic = (mf.func)(0.0, 0.0)
+        let has_aspect_ratio = match style.aspect_ratio {
+          Some(ratio) => ratio > 0.0
+          None => false
+        }
         let padding = @types.resolve_rect(style.padding, 0.0)
         let border = @types.resolve_rect(style.border, 0.0)
 
@@ -672,16 +699,24 @@ fn compute_intrinsic_main_size(
 
         match aspect_main {
           Some(main) => main
-          None =>
-            // For measured nodes, apply proportional scaling when cross is constrained
-            // This simulates text wrapping: when width is constrained, height increases proportionally
-            if is_row {
+          None => {
+            let main_box = if is_row {
+              padding.horizontal_sum() + border.horizontal_sum()
+            } else {
+              padding.vertical_sum() + border.vertical_sum()
+            }
+            let content_main = if is_row {
               // Computing width - check if height is constrained
               match available_cross {
                 Some(h) if h < intrinsic.max_height &&
                   intrinsic.max_height > 0.0 =>
                   // Width scales proportionally when height is constrained
-                  compute_measured_cross_size(intrinsic, h, false)
+                  compute_measured_cross_size(
+                    intrinsic,
+                    h,
+                    false,
+                    scale_fixed_intrinsic=has_aspect_ratio,
+                  )
                 _ => intrinsic.max_width
               }
             } else {
@@ -689,10 +724,17 @@ fn compute_intrinsic_main_size(
               match available_cross {
                 Some(w) if w < intrinsic.max_width && intrinsic.max_width > 0.0 =>
                   // Height scales proportionally when width is constrained
-                  compute_measured_cross_size(intrinsic, w, true)
+                  compute_measured_cross_size(
+                    intrinsic,
+                    w,
+                    true,
+                    scale_fixed_intrinsic=has_aspect_ratio,
+                  )
                 _ => intrinsic.max_height
               }
             }
+            content_main + main_box
+          }
         }
       }
       None => {
@@ -871,18 +913,37 @@ fn compute_min_content_main_size(
       Some(mf) => {
         // Call MeasureFunc to get intrinsic size
         let intrinsic = (mf.func)(0.0, 0.0)
+        let has_aspect_ratio = match style.aspect_ratio {
+          Some(ratio) => ratio > 0.0
+          None => false
+        }
+        let main_box = if is_row {
+          let padding = @types.resolve_rect(style.padding, 0.0)
+          let border = @types.resolve_rect(style.border, 0.0)
+          padding.horizontal_sum() + border.horizontal_sum()
+        } else {
+          let padding = @types.resolve_rect(style.padding, 0.0)
+          let border = @types.resolve_rect(style.border, 0.0)
+          padding.vertical_sum() + border.vertical_sum()
+        }
         // For min-content, return min_width (longest unbreakable unit)
         if is_row {
-          intrinsic.min_width
+          intrinsic.min_width + main_box
         } else {
           // For height, prefer constrained width if available
           match available_cross {
             Some(w) if w < intrinsic.max_width && intrinsic.max_width > 0.0 =>
-              compute_measured_cross_size(intrinsic, w, true)
+              compute_measured_cross_size(
+                intrinsic,
+                w,
+                true,
+                scale_fixed_intrinsic=has_aspect_ratio,
+              ) +
+              main_box
             _ => {
               // Fallback: height at min_width
               let constrained = (mf.func)(intrinsic.min_width, 0.0)
-              constrained.max_height
+              constrained.max_height + main_box
             }
           }
         }
@@ -1408,6 +1469,22 @@ fn compute_intrinsic_flex_main_size(
         has_flex_grow = true
       }
       let child_main = if child_is_row {
+        let intrinsic_cross_for_aspect : Double? = match style.height {
+          @types.Length(h) =>
+            Some(max(0.0, h - padding.vertical_sum() - border.vertical_sum()))
+          @types.Percent(p) =>
+            match available_cross {
+              Some(ac) =>
+                Some(
+                  max(
+                    0.0,
+                    ac * p - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              None => None
+            }
+          _ => None
+        }
         // Main axis is width
         let base_width = match child_style.width {
           @types.Length(w) => w
@@ -1418,7 +1495,14 @@ fn compute_intrinsic_flex_main_size(
               compute_intrinsic_main_size(child, true, None, cache, dispatch)
             }
           @types.Auto =>
-            compute_intrinsic_main_size(child, true, None, cache, dispatch)
+            match child_style.aspect_ratio {
+              Some(ratio) if ratio > 0.0 =>
+                compute_intrinsic_main_size(
+                  child, true, intrinsic_cross_for_aspect, cache, dispatch,
+                )
+              _ =>
+                compute_intrinsic_main_size(child, true, None, cache, dispatch)
+            }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch)
         }
@@ -3808,16 +3892,25 @@ fn compute_internal(
       @types.Wrap | @types.WrapReverse => true
       @types.NoWrap => false
     }
-    // If final_main differs from content_width, we may need to recalculate cross size
-    // because base_cross was computed using content_width, not the actual item width
-    // This is especially important when text wrapping changes with different widths
+    // If final_main differs from the item's base main size, we may need to
+    // recalculate cross size because base_cross was computed from the
+    // pre-flexing main size.
+    // This is especially important for aspect-ratio / wrapping items that grow.
     let child = item.node
-    // Compare final_main with content_width (the width used to compute base_cross)
-    let width_differs_from_base = (item.final_main - content_width).abs() > 0.01
+    let width_differs_from_base = (item.final_main - item.base_main).abs() >
+      0.01
+    let child_has_aspect_ratio = match child.style.aspect_ratio {
+      Some(ratio) => ratio > 0.0
+      None => false
+    }
     let needs_cross_recalc = width_differs_from_base &&
       is_row &&
       item.cross_is_auto &&
-      (child.children.length() > 0 || child.measure is Some(_))
+      (
+        child.children.length() > 0 ||
+        child.measure is Some(_) ||
+        child_has_aspect_ratio
+      )
     let recalc_cross = fn() -> Double {
       compute_intrinsic_main_size(
         child,
@@ -3858,11 +3951,43 @@ fn compute_internal(
           match child_style.aspect_ratio {
             Some(ratio) =>
               if is_row {
-                // height = width / ratio
-                item.final_main / ratio
+                let child_padding = @types.resolve_rect(
+                  child_style.padding,
+                  content_width,
+                )
+                let child_border = @types.resolve_rect(
+                  child_style.border,
+                  content_width,
+                )
+                let content_width_for_ratio = item.final_main -
+                  child_padding.horizontal_sum() -
+                  child_border.horizontal_sum()
+                if content_width_for_ratio > 0.0 {
+                  content_width_for_ratio / ratio +
+                  child_padding.vertical_sum() +
+                  child_border.vertical_sum()
+                } else {
+                  child_padding.vertical_sum() + child_border.vertical_sum()
+                }
               } else {
-                // width = height * ratio
-                item.final_main * ratio
+                let child_padding = @types.resolve_rect(
+                  child_style.padding,
+                  content_width,
+                )
+                let child_border = @types.resolve_rect(
+                  child_style.border,
+                  content_width,
+                )
+                let content_height_for_ratio = item.final_main -
+                  child_padding.vertical_sum() -
+                  child_border.vertical_sum()
+                if content_height_for_ratio > 0.0 {
+                  content_height_for_ratio * ratio +
+                  child_padding.horizontal_sum() +
+                  child_border.horizontal_sum()
+                } else {
+                  child_padding.horizontal_sum() + child_border.horizontal_sum()
+                }
               }
             None =>
               if needs_cross_recalc {
@@ -4624,14 +4749,21 @@ fn compute_internal(
         } else {
           Some(child_height)
         }
+        let child_is_grid = match child.style.display {
+          @types.Grid | @types.InlineGrid => true
+          _ => false
+        }
         let child_ctx : @types.LayoutContext = {
           available_width: child_width,
           available_height: nested_available_height,
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
-          stretch_width: false,
-          stretch_height: false,
+          // Flex main-axis result is a definite used size for the item.
+          // Grid descendants need this flag to treat auto track sizing as
+          // extrinsically definite on the flex main axis.
+          stretch_width: child_is_grid && is_row,
+          stretch_height: child_is_grid && not(is_row),
         }
         let nested_layout = compute_nested(
           child,

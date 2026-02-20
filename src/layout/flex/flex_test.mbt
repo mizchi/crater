@@ -2591,6 +2591,41 @@ test "aspect_ratio_flex_row_stretch_fill_height" {
   inspect(layout.children[0].y, content="0")
 }
 
+///|
+test "aspect_ratio_transferred_max_height_from_flex_grow_width" {
+  // Mirrors css-flexbox/aspect-ratio-transferred-max-size.html
+  // flex: 1 item gets width 100, aspect-ratio 1/2 => natural height 200,
+  // then max-height clamps to 100.
+  let default_style = @style.Style::default()
+  let child0 = @node.Node::leaf("child0", {
+    ..default_style,
+    aspect_ratio: Some(0.5), // 1 / 2
+    max_height: @types.Length(100.0),
+    flex_grow: 1.0,
+    flex_shrink: 1.0,
+    flex_basis: @types.Length(0.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Flex, width: @types.Length(100.0) },
+    [child0],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="100")
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].width, content="100")
+  inspect(layout.children[0].height, content="100")
+}
+
 // =============================================================================
 // Wrap Reverse Tests (ported from taffy)
 // =============================================================================

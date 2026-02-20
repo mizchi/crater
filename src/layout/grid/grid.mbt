@@ -867,6 +867,7 @@ fn compute_grid_layout_internal(
     height_is_min_content, // Use min-content sizing (fr tracks = 0)
   )
   if is_vertical_writing {
+    let allow_block_content_expansion = width_is_auto
     adjust_block_tracks_for_measured_items(
       children,
       adjusted_placements,
@@ -878,19 +879,22 @@ fn compute_grid_layout_internal(
       style.grid_auto_columns,
       col_offset,
     )
-    adjust_block_tracks_for_content_items(
-      children,
-      adjusted_placements,
-      row_tracks,
-      column_tracks,
-      column_gap,
-      true,
-      expanded_columns,
-      style.grid_auto_columns,
-      col_offset,
-      dispatch,
-    )
+    if allow_block_content_expansion {
+      adjust_block_tracks_for_content_items(
+        children,
+        adjusted_placements,
+        row_tracks,
+        column_tracks,
+        column_gap,
+        true,
+        expanded_columns,
+        style.grid_auto_columns,
+        col_offset,
+        dispatch,
+      )
+    }
   } else {
+    let allow_block_content_expansion = height_is_auto
     adjust_block_tracks_for_measured_items(
       children,
       adjusted_placements,
@@ -902,18 +906,20 @@ fn compute_grid_layout_internal(
       style.grid_auto_rows,
       row_offset,
     )
-    adjust_block_tracks_for_content_items(
-      children,
-      adjusted_placements,
-      column_tracks,
-      row_tracks,
-      row_gap,
-      false,
-      expanded_rows,
-      style.grid_auto_rows,
-      row_offset,
-      dispatch,
-    )
+    if allow_block_content_expansion {
+      adjust_block_tracks_for_content_items(
+        children,
+        adjusted_placements,
+        column_tracks,
+        row_tracks,
+        row_gap,
+        false,
+        expanded_rows,
+        style.grid_auto_rows,
+        row_offset,
+        dispatch,
+      )
+    }
   }
   collapse_auto_fit_tracks(column_tracks, collapse_columns, column_gap)
   collapse_auto_fit_tracks(row_tracks, collapse_rows, row_gap)
@@ -2446,6 +2452,20 @@ fn calculate_item_intrinsic_sizes(
             child, measure_available_width, measure_available_height,
           )
           (intrinsic.min_height, intrinsic.max_height)
+        } else if child.style.writing_mode.is_vertical() &&
+          container_height > 0.0 {
+          add_box = false
+          let vertical_ctx : @types.LayoutContext = {
+            available_width: container_width,
+            available_height: Some(container_height),
+            sizing_mode: @types.Definite,
+            viewport_width: container_width,
+            viewport_height: container_height,
+            stretch_width: false,
+            stretch_height: false,
+          }
+          let vertical_layout = @block.compute(child, vertical_ctx, dispatch)
+          (vertical_layout.height, vertical_layout.height)
         } else {
           // For containers, recursively compute layout to get intrinsic size
           match child.style.display {
@@ -2575,22 +2595,37 @@ fn calculate_item_intrinsic_sizes(
             @types.Block => {
               add_box = false
               // Compute block layout for intrinsic height
+              let intrinsic_available_height = if container_height > 0.0 {
+                container_height
+              } else {
+                0.0
+              }
+              let max_intrinsic_available_height = if container_height > 0.0 {
+                container_height
+              } else {
+                1.0e10
+              }
+              let intrinsic_sizing_mode = if container_height > 0.0 {
+                @types.Definite
+              } else {
+                @types.MaxContent
+              }
               let min_ctx : @types.LayoutContext = {
                 available_width: container_width,
-                available_height: Some(0.0),
-                sizing_mode: @types.MaxContent,
+                available_height: Some(intrinsic_available_height),
+                sizing_mode: intrinsic_sizing_mode,
                 viewport_width: container_width,
-                viewport_height: 0.0,
+                viewport_height: intrinsic_available_height,
                 stretch_width: false,
                 stretch_height: false,
               }
               let min_layout = @block.compute(child, min_ctx, dispatch)
               let max_ctx : @types.LayoutContext = {
                 available_width: container_width,
-                available_height: Some(1.0e10),
-                sizing_mode: @types.MaxContent,
+                available_height: Some(max_intrinsic_available_height),
+                sizing_mode: intrinsic_sizing_mode,
                 viewport_width: container_width,
-                viewport_height: 0.0,
+                viewport_height: max_intrinsic_available_height,
                 stretch_width: false,
                 stretch_height: false,
               }
@@ -4524,8 +4559,8 @@ fn compute_child_layout(
       sizing_mode: @types.Definite,
       viewport_width: available_width,
       viewport_height: available_height,
-      stretch_width: false,
-      stretch_height: false,
+      stretch_width,
+      stretch_height,
     }
     let nested_layout = @block.compute(child, child_ctx, dispatch)
     child_margin = nested_layout.margin

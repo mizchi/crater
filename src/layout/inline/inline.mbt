@@ -397,6 +397,10 @@ pub fn compute_ifc(
     let mut current_column : Array[Int] = []
     let mut current_width = 0.0
     let mut current_height = 0.0
+    let max_inline_extent : Double? = match available_height {
+      Some(h) if h > 0.0 => Some(h)
+      _ => None
+    }
 
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
@@ -414,6 +418,25 @@ pub fn compute_ifc(
       child_layout_cache[i] = child_layout
       child_margin_cache[i] = child_margin
 
+      let outer_height = child_layout.height +
+        child_margin.top +
+        child_margin.bottom
+      let should_wrap_column = match max_inline_extent {
+        Some(limit) =>
+          current_column.length() > 0 &&
+          child.id != "br" &&
+          current_height + outer_height > limit
+        None => false
+      }
+      if should_wrap_column {
+        columns.push(current_column)
+        column_widths.push(current_width)
+        column_heights.push(current_height)
+        current_column = []
+        current_width = 0.0
+        current_height = 0.0
+      }
+
       current_column.push(i)
       let outer_width = child_layout.width +
         child_margin.left +
@@ -421,10 +444,7 @@ pub fn compute_ifc(
       if outer_width > current_width {
         current_width = outer_width
       }
-      current_height = current_height +
-        child_layout.height +
-        child_margin.top +
-        child_margin.bottom
+      current_height = current_height + outer_height
 
       if child.id == "br" {
         columns.push(current_column)

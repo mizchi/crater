@@ -113,6 +113,34 @@ test "ifc_line_wrapping" {
 }
 
 ///|
+test "ifc_vertical_writing_wraps_by_available_height" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(100.0),
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(100.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+    container_writing_mode=@style.WritingMode::VerticalRl,
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="50")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].x, content="0")
+  inspect(result.layouts[1].y, content="0")
+  inspect(result.total_height, content="100")
+}
+
+///|
 test "ifc_with_margins" {
   // Inline-block elements with margins
   let default_style = @style.Style::default()

@@ -48,6 +48,58 @@ test "intrinsic_percent_replaced_wpt_style" {
 }
 
 ///|
+test "img_intrinsic_src_keeps_auto_size_for_flex_aspect_ratio_constraints" {
+  // Mirrors WPT flex-aspect-ratio-img-row-010.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="display: flex;">
+    #|  <img
+    #|    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='200'%3E%3Crect width='100%25' height='100%25' fill='green'/%3E%3C/svg%3E"
+    #|    style="max-height: 100px; flex: 0 0 auto; background: red;"
+    #|  >
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let target = root.children[0]
+  let img = target.children[0]
+  inspect(img.style.width, content="Auto")
+  inspect(img.style.height, content="Auto")
+  inspect(img.style.aspect_ratio, content="Some(1)")
+
+  let layout = @renderer.render(html_str, ctx)
+  let target_layout = layout.children[0]
+  let img_layout = target_layout.children[0]
+  inspect(img_layout.width, content="100")
+  inspect(img_layout.height, content="100")
+}
+
+///|
+test "parse_aspect_ratio_transferred_max_size_style" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; width: 100px;">
+    #|  <div style="aspect-ratio: 1/2; max-height: 100px; flex: 1; background: green;"></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let flex = root.children[0]
+  let item = flex.children[0]
+  inspect(item.style.aspect_ratio, content="Some(0.5)")
+  inspect(item.style.max_height, content="Length(100)")
+  inspect(item.style.flex_grow, content="1")
+  inspect(item.style.flex_shrink, content="1")
+  inspect(item.style.flex_basis, content="Length(0)")
+
+  let layout = @renderer.render(html_str, ctx)
+  let flex_layout = layout.children[0]
+  let item_layout = flex_layout.children[0]
+  inspect(flex_layout.height, content="100")
+  inspect(item_layout.height, content="100")
+}
+
+///|
 test "svg_default_intrinsic_size_wpt_like" {
   // Mirrors WPT-like behavior: <svg> without width/height defaults to 300x150.
   let html_str =

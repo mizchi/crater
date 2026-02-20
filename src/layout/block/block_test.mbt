@@ -1434,6 +1434,59 @@ test "anonymous_block_multiple_inline_in_group" {
 }
 
 ///|
+/// Regression: mixed content path must not force auto-height flex children to
+/// the parent's available_height.
+test "anonymous_block_mixed_does_not_stretch_auto_height_flex" {
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_measure = @types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0 }
+    },
+  }
+  let inline = @node.Node::with_measure("inline", inline_style, inline_measure)
+
+  let grid_item = @node.Node::leaf("grid-item", default_style)
+  let grid = @node.Node::new(
+    "grid",
+    { ..default_style, display: @types.Grid, flex_grow: 1.0 },
+    [grid_item],
+  )
+  let flex = @node.Node::new(
+    "flex",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      min_height: @types.Length(100.0),
+      width: @types.Length(100.0),
+    },
+    [grid],
+  )
+
+  // Use id="body" to mirror the renderer path that provides viewport height.
+  let root = @node.Node::new("body", default_style, [inline, flex])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+
+  // Inline group should remain 16px, flex container should honor min-height:100
+  // instead of stretching to available_height.
+  inspect(layout.children[0].height, content="16")
+  inspect(layout.children[1].height, content="100")
+  inspect(layout.children[1].children[0].height, content="100")
+  inspect(layout.children[1].children[0].children[0].height, content="100")
+}
+
+///|
 /// Test float flex container with wrap-reverse and align-content: start
 test "float_flex_wrap_reverse_align_start" {
   @dispatch.setup()

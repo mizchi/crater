@@ -1190,13 +1190,74 @@ fn parse_gif_data_uri(src : String) -> (Double, Double)? {
 }
 
 ///|
+fn parse_png_data_uri(src : String) -> (Double, Double)? {
+  if not(src.to_lower().has_prefix("data:image/png;base64,")) {
+    return None
+  }
+  let mut comma_idx = -1
+  for i = 0; i < src.length(); i = i + 1 {
+    if src[i].to_int().unsafe_to_char() == ',' {
+      comma_idx = i
+      break
+    }
+  }
+  if comma_idx < 0 {
+    return None
+  }
+  let encoded = src[comma_idx + 1:].to_string() catch { _ => return None }
+  match decode_base64_prefix(encoded, 24) {
+    Some(bytes) => {
+      if bytes.length() < 24 {
+        return None
+      }
+      // PNG signature
+      if bytes[0] != 0x89 ||
+        bytes[1] != 0x50 ||
+        bytes[2] != 0x4E ||
+        bytes[3] != 0x47 ||
+        bytes[4] != 0x0D ||
+        bytes[5] != 0x0A ||
+        bytes[6] != 0x1A ||
+        bytes[7] != 0x0A {
+        return None
+      }
+      // First chunk must be IHDR
+      if bytes[12] != 'I'.to_int() ||
+        bytes[13] != 'H'.to_int() ||
+        bytes[14] != 'D'.to_int() ||
+        bytes[15] != 'R'.to_int() {
+        return None
+      }
+      let width = (bytes[16] << 24) |
+        (bytes[17] << 16) |
+        (bytes[18] << 8) |
+        bytes[19]
+      let height = (bytes[20] << 24) |
+        (bytes[21] << 16) |
+        (bytes[22] << 8) |
+        bytes[23]
+      if width > 0 && height > 0 {
+        Some((width.to_double(), height.to_double()))
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
 /// Get intrinsic size from image src attribute
 fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
   // Restrict to data URI parsing to avoid filesystem/network side-effects.
-  // SVG supports width/height/viewBox, GIF supports compact intrinsic extraction.
+  // SVG/GIF/PNG support compact intrinsic extraction.
   match parse_svg_data_uri(src) {
     Some(size) => Some(size)
-    None => parse_gif_data_uri(src)
+    None =>
+      match parse_gif_data_uri(src) {
+        Some(size) => Some(size)
+        None => parse_png_data_uri(src)
+      }
   }
 }
 
@@ -1981,6 +2042,17 @@ fn apply_svg_attributes_to_style(
       aspect_ratio: Some(attr_width_for_ratio / attr_height_for_ratio),
     }
   }
+  if result.aspect_ratio is None {
+    match attrs.get("viewBox") {
+      Some(vb) =>
+        match parse_viewbox(vb) {
+          Some((vb_w, vb_h)) if vb_w > 0.0 && vb_h > 0.0 =>
+            result = { ..result, aspect_ratio: Some(vb_w / vb_h) }
+          _ => ()
+        }
+      None => ()
+    }
+  }
 
   // Root <svg> width/height attributes behave as intrinsic dimensions.
   // If CSS already specifies either dimension, keep attributes only as ratio hints.
@@ -2168,21 +2240,13 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
     } else {
       style.display
     },
-    width: if style.width == @types.Auto {
-      if height_is_percent {
-        @types.Auto
-      } else {
-        @types.Length(300.0)
-      }
+    width: if style.width == @types.Auto && height_is_percent {
+      @types.Auto
     } else {
       style.width
     },
-    height: if style.height == @types.Auto {
-      if width_is_percent {
-        @types.Auto
-      } else {
-        @types.Length(150.0)
-      }
+    height: if style.height == @types.Auto && width_is_percent {
+      @types.Auto
     } else {
       style.height
     },
@@ -2609,24 +2673,48 @@ fn element_to_node_with_styles_internal(
     }
     return @node.Node::with_measure(node_id, textarea_style, measure)
   }
-  if tag_lower == "img" && children.is_empty() {
-    // Get intrinsic dimensions from HTML attributes first
-    let mut intrinsic_width = match elem.attributes.get("width") {
+  if tag_lower == "svg" && children.is_empty() {
+    // Root SVG behaves as a replaced element with default object size 300x150.
+    // Keep CSS width/height auto semantics and expose intrinsic size via MeasureFunc.
+    let attr_width = match elem.attributes.get("width") {
       Some(w) => parse_html_dimension(w).unwrap_or(0.0)
       None => 0.0
     }
-    let mut intrinsic_height = match elem.attributes.get("height") {
+    let attr_height = match elem.attributes.get("height") {
       Some(h) => parse_html_dimension(h).unwrap_or(0.0)
       None => 0.0
     }
-    // If no HTML attributes, try to get from src attribute
-    if intrinsic_width == 0.0 && intrinsic_height == 0.0 {
+    let intrinsic_width = if attr_width > 0.0 { attr_width } else { 300.0 }
+    let intrinsic_height = if attr_height > 0.0 { attr_height } else { 150.0 }
+    let measure = create_image_measure(intrinsic_width, intrinsic_height)
+    return @node.Node::with_measure(node_id, style, measure)
+  }
+  if tag_lower == "img" && children.is_empty() {
+    // HTML width/height attributes are presentational hints (used as CSS defaults),
+    // while decoded image size is intrinsic data used for MeasureFunc/aspect-ratio.
+    let attr_width = match elem.attributes.get("width") {
+      Some(w) => parse_html_dimension(w).unwrap_or(0.0)
+      None => 0.0
+    }
+    let attr_height = match elem.attributes.get("height") {
+      Some(h) => parse_html_dimension(h).unwrap_or(0.0)
+      None => 0.0
+    }
+    let mut intrinsic_width = attr_width
+    let mut intrinsic_height = attr_height
+    let mut uses_svg_fallback_object_size = false
+    // Fill missing intrinsic dimensions from src data when available.
+    if intrinsic_width == 0.0 || intrinsic_height == 0.0 {
       match elem.attributes.get("src") {
         Some(src) =>
           match get_image_intrinsic_size(src) {
             Some((w, h)) => {
-              intrinsic_width = w
-              intrinsic_height = h
+              if intrinsic_width == 0.0 {
+                intrinsic_width = w
+              }
+              if intrinsic_height == 0.0 {
+                intrinsic_height = h
+              }
             }
             None => ()
           }
@@ -2641,6 +2729,7 @@ fn element_to_node_with_styles_internal(
     if intrinsic_width == 0.0 && intrinsic_height == 0.0 && has_svg_data_src {
       intrinsic_width = 300.0
       intrinsic_height = 150.0
+      uses_svg_fallback_object_size = true
     }
 
     // Check if CSS dimensions are percentages - we need to handle these specially
@@ -2661,7 +2750,8 @@ fn element_to_node_with_styles_internal(
 
     // Calculate intrinsic aspect ratio (width / height)
     let intrinsic_aspect_ratio = if intrinsic_height > 0.0 &&
-      intrinsic_width > 0.0 {
+      intrinsic_width > 0.0 &&
+      not(uses_svg_fallback_object_size) {
       Some(intrinsic_width / intrinsic_height)
     } else {
       None
@@ -2678,8 +2768,8 @@ fn element_to_node_with_styles_internal(
         // If height is %, keep width Auto to let aspect_ratio compute it
         if height_is_percent {
           @types.Auto
-        } else if intrinsic_width > 0.0 {
-          @types.Length(intrinsic_width)
+        } else if attr_width > 0.0 {
+          @types.Length(attr_width)
         } else {
           style.width
         }
@@ -2690,8 +2780,8 @@ fn element_to_node_with_styles_internal(
         // If width is %, keep height Auto to let aspect_ratio compute it
         if width_is_percent {
           @types.Auto
-        } else if intrinsic_height > 0.0 {
-          @types.Length(intrinsic_height)
+        } else if attr_height > 0.0 {
+          @types.Length(attr_height)
         } else {
           style.height
         }

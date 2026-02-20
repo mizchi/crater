@@ -854,9 +854,20 @@ fn compute_mixed_content_layout(
       }
       BlockChild(node~, index~) => {
         // Process block child with margin collapsing
+        // Keep auto-height flex/grid children unconstrained on block axis.
+        // Otherwise mixed-content path can incorrectly stretch them to the
+        // parent's available height (e.g. viewport-sized body context).
+        let child_height_for_ctx : Double? = match node.style.display {
+          @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
+            match node.style.height {
+              @types.Auto => None
+              _ => available_height
+            }
+          _ => available_height
+        }
         let child_ctx : @types.LayoutContext = {
           available_width,
-          available_height,
+          available_height: child_height_for_ctx,
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
@@ -1574,42 +1585,64 @@ fn compute_with_collapse(
             _ => None
           }
       }
-    @types.Auto
-    | @types.MinContent
-    | @types.MaxContent
-    | @types.FitContent(_) =>
-      match (ctx.sizing_mode, style.height, style.aspect_ratio) {
-        (@types.Definite, @types.Auto, Some(ratio)) if ratio > 0.0 =>
-          if style.box_sizing == @types.BorderBox {
+    @types.Auto =>
+      if ctx.stretch_height {
+        match ctx.available_height {
+          Some(available_h) =>
             Some(
               @types.max(
                 0.0,
-                box_width / ratio -
-                padding.vertical_sum() -
-                border.vertical_sum(),
+                available_h - padding.vertical_sum() - border.vertical_sum(),
               ),
             )
-          } else {
-            let content_w = box_width -
-              padding.horizontal_sum() -
-              border.horizontal_sum()
-            Some(@types.max(0.0, content_w / ratio))
-          }
-        _ =>
-          match ctx.available_height {
-            // Compatibility: propagate a usable block-size through auto wrappers
-            // when percent-sized descendants need it. The root body also
-            // uses viewport-height as the percentage basis in practice.
-            Some(available_h) if node.id == "body" ||
-              has_percent_sized_replaced_descendant(node) =>
+          None => None
+        }
+      } else {
+        match (ctx.sizing_mode, style.aspect_ratio) {
+          (@types.Definite, Some(ratio)) if ratio > 0.0 =>
+            if style.box_sizing == @types.BorderBox {
               Some(
                 @types.max(
                   0.0,
-                  available_h - padding.vertical_sum() - border.vertical_sum(),
+                  box_width / ratio -
+                  padding.vertical_sum() -
+                  border.vertical_sum(),
                 ),
               )
-            _ => None
-          }
+            } else {
+              let content_w = box_width -
+                padding.horizontal_sum() -
+                border.horizontal_sum()
+              Some(@types.max(0.0, content_w / ratio))
+            }
+          _ =>
+            match ctx.available_height {
+              // Compatibility: propagate a usable block-size through auto wrappers
+              // when percent-sized descendants need it. The root body also
+              // uses viewport-height as the percentage basis in practice.
+              Some(available_h) if node.id == "body" ||
+                has_percent_sized_replaced_descendant(node) =>
+                Some(
+                  @types.max(
+                    0.0,
+                    available_h - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              _ => None
+            }
+        }
+      }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+      match ctx.available_height {
+        Some(available_h) if node.id == "body" ||
+          has_percent_sized_replaced_descendant(node) =>
+          Some(
+            @types.max(
+              0.0,
+              available_h - padding.vertical_sum() - border.vertical_sum(),
+            ),
+          )
+        _ => None
       }
   }
 
@@ -2680,20 +2713,9 @@ fn compute_with_collapse(
       | @types.InlineTable => {
         // For BFC-establishing children with auto height, don't pass available_height
         // This allows them to size to their content rather than stretching to fill
-        // the available space. Flex items are different - they get their final height
-        // from their flex parent, which passes it as available_height.
+        // the available space. Flex item sizing should be decided by the flex/grid parent.
         let child_height_for_ctx : Double? = match child.style.height {
-          @types.Auto =>
-            if (
-                child.style.display == @types.Flex ||
-                child.style.display == @types.InlineFlex
-              ) &&
-              child.style.flex_grow > 0.0 {
-              // Taffy compat: allow flex containers with grow to fill available height.
-              child_available_height
-            } else {
-              None
-            }
+          @types.Auto => None
           _ => child_available_height
         }
         let child_ctx : @types.LayoutContext = {
