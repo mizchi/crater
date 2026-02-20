@@ -14,9 +14,16 @@
     "filter-effects",
     "compositing"
   ],
+  "recursiveModules": [
+    "css-align",
+    "css-box"
+  ],
   "includePrefixes": [
+    "align-", "place-",
     "align-content", "align-items", "align-self",
     "flex-", "justify-", "order-", "gap-",
+    "scroll-", "scrollbar-", "scrollable-",
+    "text-overflow-", "column-scroll-", "targeted-column-scroll-",
     "table-", "border-collapse", "border-spacing", "caption-side", "empty-cells", "visibility-collapse",
     "grid-", "subgrid-",
     "aspect-ratio", "block-size", "inline-size", "min-content", "max-content", "fit-content", "intrinsic", "contain-intrinsic",

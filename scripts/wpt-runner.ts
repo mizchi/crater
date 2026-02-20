@@ -19,6 +19,7 @@ import { execSync } from 'child_process';
 const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
 const CSS_MODULES: string[] = wptConfig.modules;
 const INCLUDE_PREFIXES: string[] = wptConfig.includePrefixes;
+const RECURSIVE_MODULES: string[] = wptConfig.recursiveModules ?? [];
 
 const WPT_DIR = 'wpt/css';
 const WPT_ROOT = path.join(process.cwd(), 'wpt');
@@ -113,6 +114,27 @@ function isLayoutTest(filename: string): boolean {
   return INCLUDE_PREFIXES.some(prefix => filename.startsWith(prefix));
 }
 
+function collectHtmlFilesRecursive(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+
+  const files: string[] = [];
+  const stack = [dir];
+
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.html')) {
+        files.push(fullPath);
+      }
+    }
+  }
+
+  return files;
+}
+
 /**
  * Get test files for a module
  */
@@ -121,6 +143,14 @@ function getTestFiles(moduleName: string): string[] {
   if (!fs.existsSync(moduleDir)) {
     return [];
   }
+
+  const recursive = RECURSIVE_MODULES.includes(moduleName);
+  if (recursive) {
+    return collectHtmlFilesRecursive(moduleDir)
+      .filter(fullPath => isLayoutTest(path.basename(fullPath)))
+      .map(fullPath => path.relative(process.cwd(), fullPath));
+  }
+
   return fs.readdirSync(moduleDir)
     .filter(isLayoutTest)
     .map(f => path.join(moduleDir, f));

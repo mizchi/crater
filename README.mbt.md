@@ -57,6 +57,18 @@ npm run wpt:fetch-all  # Fetch all WPT tests
 npm run wpt:run-all    # Run all WPT tests
 ```
 
+WPT target selection is configured in `wpt.json`.
+
+- Added recursive module scan for `css-align` and `css-box` via `recursiveModules`
+- Expanded `includePrefixes` for additional overflow/alignment coverage
+  (`scroll-`, `scrollbar-`, `scrollable-`, `text-overflow-`,
+  `column-scroll-`, `targeted-column-scroll-`, `align-`, `place-`)
+
+Check current enabled test counts:
+```bash
+npx tsx scripts/wpt-runner.ts --list
+```
+
 ## Features
 
 ### Layout Modes
