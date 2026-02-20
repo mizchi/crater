@@ -2,5 +2,5 @@ import {
   "mizchi/crater/types",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

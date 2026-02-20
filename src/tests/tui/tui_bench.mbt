@@ -323,7 +323,6 @@ fn create_layout_node_tree(n_items : Int) -> @layout.LayoutNode {
   for i = 0; i < n_items; i = i + 1 {
     let item = @layout.layout_node_create("item\{i}").set_height(1.0)
     let _ = content.add_child(item)
-
   }
   let footer = @layout.layout_node_create("footer").set_height(1.0)
   root.add_child(header).add_child(content).add_child(footer)
@@ -530,7 +529,6 @@ fn create_large_list(n : Int) -> @layout.LayoutNode {
     let text = @layout.layout_node_create("text\{i}").set_flex_grow(1.0)
     let _ = item.add_child(icon).add_child(text)
     let _ = content.add_child(item)
-
   }
   let footer = @layout.layout_node_create("footer").set_height(1.0)
   root.add_child(header).add_child(content).add_child(footer)

@@ -5,5 +5,5 @@ import {
   "mizchi/crater/layout/node",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

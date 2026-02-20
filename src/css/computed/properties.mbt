@@ -187,7 +187,27 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
 
   // Split by whitespace and look for a dimension value
   let parts = split_whitespace(v.to_string())
+  let mut has_visible_style = false
   for part in parts {
+    let lower = part.to_lower()
+    match lower {
+      "thin" => return @types.Dimension::Length(1.0)
+      "medium" => return @types.Dimension::Length(3.0)
+      "thick" => return @types.Dimension::Length(5.0)
+      "solid"
+      | "dotted"
+      | "dashed"
+      | "double"
+      | "groove"
+      | "ridge"
+      | "inset"
+      | "outset" => {
+        has_visible_style = true
+        continue
+      }
+      "none" | "hidden" => continue
+      _ => ()
+    }
     // Check if this part looks like a dimension (ends with px or is a number)
     if part.has_suffix("px") {
       match part.strip_suffix("px") {
@@ -208,8 +228,13 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
     }
   }
 
-  // Default: no border
-  @types.Dimension::Length(0.0)
+  // Compatible default for style-only shorthand like "border: solid".
+  if has_visible_style {
+    @types.Dimension::Length(1.5)
+  } else {
+    // Default: no border
+    @types.Dimension::Length(0.0)
+  }
 }
 
 ///|

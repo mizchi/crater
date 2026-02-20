@@ -3,11 +3,12 @@ package "mizchi/crater/layout/inline"
 
 import {
   "mizchi/crater/layout/node",
+  "mizchi/crater/style",
   "mizchi/crater/types",
 }
 
 // Values
-pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double, @node.DispatchFn) -> InlineLayoutResult
+pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double, @node.DispatchFn, container_writing_mode? : @style.WritingMode) -> InlineLayoutResult
 
 pub fn is_inline_level(@types.Display) -> Bool
 

@@ -91,7 +91,6 @@ fn Tokenizer::consume_whitespace(self : Tokenizer) -> Unit {
     match self.peek() {
       Some(c) if is_whitespace(c) => {
         let _ = self.consume()
-
       }
       _ => break
     }
@@ -107,7 +106,6 @@ fn Tokenizer::consume_name(self : Tokenizer) -> String {
       Some(c) if is_name_char(c) => {
         buf.write_char(c)
         let _ = self.consume()
-
       }
       Some('\\') => {
         // Escape sequence - simplified handling
@@ -145,7 +143,6 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
       Some(c) if is_digit(c) => {
         buf.write_char(c)
         let _ = self.consume()
-
       }
       _ => break
     }
@@ -162,7 +159,6 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
           Some(c) if is_digit(c) => {
             buf.write_char(c)
             let _ = self.consume()
-
           }
           _ => break
         }
@@ -194,7 +190,6 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
               Some(c) if is_digit(c) => {
                 buf.write_char(c)
                 let _ = self.consume()
-
               }
               _ => break
             }
@@ -439,7 +434,6 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
               }
               _ => {
                 let _ = self.consume()
-
               }
             }
           }

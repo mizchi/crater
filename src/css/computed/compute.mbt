@@ -587,6 +587,10 @@ pub fn compute(
     }
   }
 
+  // Seed writing-mode before applying logical properties.
+  // Logical sizing must follow the element's effective writing mode.
+  seed_writing_mode(builder, cascaded, ctx)
+
   // Second pass: apply regular properties with var() resolution
   for prop in props {
     if not(prop.has_prefix("--")) {
@@ -628,6 +632,9 @@ pub fn compute_with_vars(
     }
   }
 
+  // Seed writing-mode before applying logical properties.
+  seed_writing_mode(builder, cascaded, ctx)
+
   // Second pass: apply regular properties
   for prop in props {
     if not(prop.has_prefix("--")) {
@@ -646,6 +653,27 @@ pub fn compute_with_vars(
 
   // Return both the style and the custom properties for children
   (builder.build(), ctx.custom_properties)
+}
+
+///|
+/// Seed writing-mode on the builder before logical properties are applied.
+/// Uses inherited writing-mode as default, then overrides with explicit declaration.
+fn seed_writing_mode(
+  builder : StyleBuilder,
+  cascaded : @cascade.CascadedValues,
+  ctx : ComputeContext,
+) -> Unit {
+  match ctx.parent_style {
+    Some(parent_style) => builder.writing_mode = parent_style.writing_mode
+    None => ()
+  }
+  match cascaded.get("writing-mode") {
+    Some(decl) => {
+      let value = resolve_keyword("writing-mode", decl.value, ctx)
+      builder.writing_mode = parse_writing_mode(value)
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -671,18 +699,68 @@ fn apply_property(
     // Sizing
     "width" => builder.width = resolve_dimension(value, ctx)
     "height" => builder.height = resolve_dimension(value, ctx)
-    "min-width" => builder.min_width = resolve_dimension(value, ctx)
-    "min-height" => builder.min_height = resolve_dimension(value, ctx)
+    "min-width" =>
+      builder.min_width = resolve_dimension_with_mixed_calc_fallback(
+        "min-width", value, ctx,
+      )
+    "min-height" =>
+      builder.min_height = resolve_dimension_with_mixed_calc_fallback(
+        "min-height", value, ctx,
+      )
     "max-width" => builder.max_width = resolve_dimension(value, ctx)
     "max-height" => builder.max_height = resolve_dimension(value, ctx)
-    // Logical sizing properties (horizontal-tb writing mode only)
-    // inline-size -> width, block-size -> height
-    "inline-size" => builder.width = resolve_dimension(value, ctx)
-    "block-size" => builder.height = resolve_dimension(value, ctx)
-    "min-inline-size" => builder.min_width = resolve_dimension(value, ctx)
-    "min-block-size" => builder.min_height = resolve_dimension(value, ctx)
-    "max-inline-size" => builder.max_width = resolve_dimension(value, ctx)
-    "max-block-size" => builder.max_height = resolve_dimension(value, ctx)
+    // Logical sizing properties
+    // In vertical writing-modes:
+    // - inline axis is vertical -> inline-size maps to height
+    // - block axis is horizontal -> block-size maps to width
+    "inline-size" => {
+      let dim = resolve_dimension(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.height = dim
+      } else {
+        builder.width = dim
+      }
+    }
+    "block-size" => {
+      let dim = resolve_dimension(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.width = dim
+      } else {
+        builder.height = dim
+      }
+    }
+    "min-inline-size" => {
+      let dim = resolve_dimension(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.min_height = dim
+      } else {
+        builder.min_width = dim
+      }
+    }
+    "min-block-size" => {
+      let dim = resolve_dimension(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.min_width = dim
+      } else {
+        builder.min_height = dim
+      }
+    }
+    "max-inline-size" => {
+      let dim = resolve_dimension(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.max_height = dim
+      } else {
+        builder.max_width = dim
+      }
+    }
+    "max-block-size" => {
+      let dim = resolve_dimension(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.max_width = dim
+      } else {
+        builder.max_height = dim
+      }
+    }
     // Box model
     "margin" => {
       // Parse margin shorthand: 1-4 values
@@ -856,11 +934,95 @@ fn apply_property(
     "border-bottom-width" =>
       builder.border_bottom = resolve_dimension(value, ctx)
     "border-left-width" => builder.border_left = resolve_dimension(value, ctx)
+    "border-style" => {
+      let raw_parts = value.trim().to_lower().split(" ")
+      let parts : Array[String] = []
+      for part in raw_parts {
+        let p = part.to_string().trim().to_string()
+        if not(p.is_empty()) {
+          parts.push(p)
+        }
+      }
+      let mut top_none = false
+      let mut right_none = false
+      let mut bottom_none = false
+      let mut left_none = false
+      if parts.length() == 1 {
+        let is_none = is_none_border_style(parts[0])
+        top_none = is_none
+        right_none = is_none
+        bottom_none = is_none
+        left_none = is_none
+      } else if parts.length() == 2 {
+        let v = is_none_border_style(parts[0])
+        let h = is_none_border_style(parts[1])
+        top_none = v
+        bottom_none = v
+        right_none = h
+        left_none = h
+      } else if parts.length() == 3 {
+        top_none = is_none_border_style(parts[0])
+        right_none = is_none_border_style(parts[1])
+        left_none = is_none_border_style(parts[1])
+        bottom_none = is_none_border_style(parts[2])
+      } else if parts.length() >= 4 {
+        top_none = is_none_border_style(parts[0])
+        right_none = is_none_border_style(parts[1])
+        bottom_none = is_none_border_style(parts[2])
+        left_none = is_none_border_style(parts[3])
+      }
+      if top_none {
+        builder.border_top = @types.Length(0.0)
+      }
+      if right_none {
+        builder.border_right = @types.Length(0.0)
+      }
+      if bottom_none {
+        builder.border_bottom = @types.Length(0.0)
+      }
+      if left_none {
+        builder.border_left = @types.Length(0.0)
+      }
+    }
+    "border-top-style" =>
+      if is_none_border_style(value) {
+        builder.border_top = @types.Length(0.0)
+      }
+    "border-right-style" =>
+      if is_none_border_style(value) {
+        builder.border_right = @types.Length(0.0)
+      }
+    "border-bottom-style" =>
+      if is_none_border_style(value) {
+        builder.border_bottom = @types.Length(0.0)
+      }
+    "border-left-style" =>
+      if is_none_border_style(value) {
+        builder.border_left = @types.Length(0.0)
+      }
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
       let width = extract_border_width(value)
       builder.border_top = width
       builder.border_bottom = width
+    }
+    "border-block-style" => {
+      let raw_parts = value.trim().to_lower().split(" ")
+      let parts : Array[String] = []
+      for part in raw_parts {
+        let p = part.to_string().trim().to_string()
+        if not(p.is_empty()) {
+          parts.push(p)
+        }
+      }
+      if parts.length() > 0 && is_none_border_style(parts[0]) {
+        builder.border_top = @types.Length(0.0)
+      }
+      if parts.length() > 1 && is_none_border_style(parts[1]) {
+        builder.border_bottom = @types.Length(0.0)
+      } else if parts.length() == 1 && is_none_border_style(parts[0]) {
+        builder.border_bottom = @types.Length(0.0)
+      }
     }
     "border-block-start" | "border-block-start-width" =>
       builder.border_top = extract_border_width(value)
@@ -870,6 +1032,24 @@ fn apply_property(
       let width = extract_border_width(value)
       builder.border_left = width
       builder.border_right = width
+    }
+    "border-inline-style" => {
+      let raw_parts = value.trim().to_lower().split(" ")
+      let parts : Array[String] = []
+      for part in raw_parts {
+        let p = part.to_string().trim().to_string()
+        if not(p.is_empty()) {
+          parts.push(p)
+        }
+      }
+      if parts.length() > 0 && is_none_border_style(parts[0]) {
+        builder.border_left = @types.Length(0.0)
+      }
+      if parts.length() > 1 && is_none_border_style(parts[1]) {
+        builder.border_right = @types.Length(0.0)
+      } else if parts.length() == 1 && is_none_border_style(parts[0]) {
+        builder.border_right = @types.Length(0.0)
+      }
     }
     "border-inline-start" | "border-inline-start-width" =>
       builder.border_left = extract_border_width(value)
@@ -1193,6 +1373,13 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
 }
 
 ///|
+/// Border style keywords that suppress used border width.
+fn is_none_border_style(value : String) -> Bool {
+  let v = value.trim().to_lower()
+  v == "none" || v == "hidden"
+}
+
+///|
 /// Parse table-layout value
 fn parse_table_layout(value : String) -> @style.TableLayout {
   match value.trim() {
@@ -1442,9 +1629,9 @@ fn parse_css_math_function(
 }
 
 ///|
-/// Parse a calc() expression from a string and try to simplify it
-/// Returns Some(dimension) if simplification is possible, None otherwise
-fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
+/// Parse calc() terms and return (length_px, percent_ratio)
+/// percent_ratio is 0.5 for 50%.
+fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
   // Extract the expression inside calc(...)
   let v = expr.trim()
   if not(v.has_prefix("calc(")) || not(v.has_suffix(")")) {
@@ -1606,16 +1793,56 @@ fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
     }
     i = i + 1
   }
-  // Determine final dimension type
-  if result_pct.abs() < 0.0001 {
-    // Pure length
-    Some(@types.Length(result_px))
-  } else if result_px.abs() < 0.0001 {
-    // Pure percentage
-    Some(@types.Percent(result_pct / 100.0))
-  } else {
-    // Mixed - cannot simplify
-    None
+  Some((result_px, result_pct / 100.0))
+}
+
+///|
+/// Parse a calc() expression from a string and try to simplify it
+/// Returns Some(dimension) if simplification is possible, None otherwise
+fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
+  match parse_calc_terms(expr, ctx) {
+    Some((result_px, result_percent)) =>
+      if result_percent.abs() < 0.0001 {
+        Some(@types.Length(result_px))
+      } else if result_px.abs() < 0.0001 {
+        Some(@types.Percent(result_percent))
+      } else {
+        None
+      }
+    None => None
+  }
+}
+
+///|
+/// Compatibility fallback for mixed calc() in min-size properties.
+/// keep current Dimension model and pick axis-specific term when mixed.
+fn resolve_dimension_with_mixed_calc_fallback(
+  property : String,
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Dimension {
+  let dim = resolve_dimension(value, ctx)
+  match dim {
+    @types.Auto =>
+      if value.trim().has_prefix("calc(") {
+        match parse_calc_terms(value, ctx) {
+          Some((length_px, percent_ratio)) =>
+            if length_px.abs() >= 0.0001 && percent_ratio.abs() >= 0.0001 {
+              match property {
+                "min-width" => @types.Length(length_px)
+                "min-height" =>
+                  @types.Length(ctx.viewport_width * percent_ratio)
+                _ => dim
+              }
+            } else {
+              dim
+            }
+          None => dim
+        }
+      } else {
+        dim
+      }
+    _ => dim
   }
 }
 

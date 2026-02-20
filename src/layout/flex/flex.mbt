@@ -570,27 +570,241 @@ fn compute_intrinsic_main_size(
       Some(mf) => {
         // Call MeasureFunc to get intrinsic size
         let intrinsic = (mf.func)(0.0, 0.0)
-        // For measured nodes, apply proportional scaling when cross is constrained
-        // This simulates text wrapping: when width is constrained, height increases proportionally
-        if is_row {
-          // Computing width - check if height is constrained
-          match available_cross {
-            Some(h) if h < intrinsic.max_height && intrinsic.max_height > 0.0 =>
-              // Width scales proportionally when height is constrained
-              compute_measured_cross_size(intrinsic, h, false)
-            _ => intrinsic.max_width
+        let padding = @types.resolve_rect(style.padding, 0.0)
+        let border = @types.resolve_rect(style.border, 0.0)
+
+        // Replaced-like leaf compatibility:
+        // when width/height is auto on the main axis and the cross axis is a
+        // definite percent/length, derive main size from aspect-ratio.
+        fn width_from_height_with_aspect(
+          ratio : Double,
+          box_height : Double,
+        ) -> Double {
+          if style.box_sizing == @types.BorderBox {
+            box_height * ratio
+          } else {
+            let content_height = box_height -
+              padding.vertical_sum() -
+              border.vertical_sum()
+            if content_height > 0.0 {
+              content_height * ratio +
+              padding.horizontal_sum() +
+              border.horizontal_sum()
+            } else {
+              intrinsic.max_width
+            }
+          }
+        }
+
+        fn height_from_width_with_aspect(
+          ratio : Double,
+          box_width : Double,
+        ) -> Double {
+          if style.box_sizing == @types.BorderBox {
+            box_width / ratio
+          } else {
+            let content_width = box_width -
+              padding.horizontal_sum() -
+              border.horizontal_sum()
+            if content_width > 0.0 {
+              content_width / ratio +
+              padding.vertical_sum() +
+              border.vertical_sum()
+            } else {
+              intrinsic.max_height
+            }
+          }
+        }
+
+        let aspect_main : Double? = if is_row {
+          match
+            (style.width, style.height, style.aspect_ratio, available_cross) {
+            (@types.Auto, @types.Length(h), Some(ratio), _) if ratio > 0.0 =>
+              Some(width_from_height_with_aspect(ratio, h))
+            (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                Some(width_from_height_with_aspect(ratio, cross * p))
+              } else {
+                None
+              }
+            (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                Some(width_from_height_with_aspect(ratio, cross))
+              } else {
+                None
+              }
+            (@types.Percent(_), @types.Length(h), Some(ratio), _) if ratio > 0.0 =>
+              Some(width_from_height_with_aspect(ratio, h))
+            (@types.Percent(_), @types.Percent(p), Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                Some(width_from_height_with_aspect(ratio, cross * p))
+              } else {
+                None
+              }
+            (@types.Percent(_), @types.Auto, Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                Some(width_from_height_with_aspect(ratio, cross))
+              } else {
+                None
+              }
+            _ => None
           }
         } else {
-          // Computing height - check if width is constrained
-          match available_cross {
-            Some(w) if w < intrinsic.max_width && intrinsic.max_width > 0.0 =>
-              // Height scales proportionally when width is constrained
-              compute_measured_cross_size(intrinsic, w, true)
-            _ => intrinsic.max_height
+          match
+            (style.height, style.width, style.aspect_ratio, available_cross) {
+            (@types.Auto, @types.Length(w), Some(ratio), _) if ratio > 0.0 =>
+              Some(height_from_width_with_aspect(ratio, w))
+            (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                Some(height_from_width_with_aspect(ratio, cross * p))
+              } else {
+                None
+              }
+            (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                Some(height_from_width_with_aspect(ratio, cross))
+              } else {
+                None
+              }
+            _ => None
+          }
+        }
+
+        match aspect_main {
+          Some(main) => main
+          None =>
+            // For measured nodes, apply proportional scaling when cross is constrained
+            // This simulates text wrapping: when width is constrained, height increases proportionally
+            if is_row {
+              // Computing width - check if height is constrained
+              match available_cross {
+                Some(h) if h < intrinsic.max_height &&
+                  intrinsic.max_height > 0.0 =>
+                  // Width scales proportionally when height is constrained
+                  compute_measured_cross_size(intrinsic, h, false)
+                _ => intrinsic.max_width
+              }
+            } else {
+              // Computing height - check if width is constrained
+              match available_cross {
+                Some(w) if w < intrinsic.max_width && intrinsic.max_width > 0.0 =>
+                  // Height scales proportionally when width is constrained
+                  compute_measured_cross_size(intrinsic, w, true)
+                _ => intrinsic.max_height
+              }
+            }
+        }
+      }
+      None => {
+        let padding = @types.resolve_rect(style.padding, 0.0)
+        let border = @types.resolve_rect(style.border, 0.0)
+
+        fn leaf_width_from_height(
+          ratio : Double,
+          box_height : Double,
+        ) -> Double {
+          if style.box_sizing == @types.BorderBox {
+            box_height * ratio
+          } else {
+            let content_height = box_height -
+              padding.vertical_sum() -
+              border.vertical_sum()
+            if content_height > 0.0 {
+              content_height * ratio +
+              padding.horizontal_sum() +
+              border.horizontal_sum()
+            } else {
+              0.0
+            }
+          }
+        }
+
+        fn leaf_height_from_width(
+          ratio : Double,
+          box_width : Double,
+        ) -> Double {
+          if style.box_sizing == @types.BorderBox {
+            box_width / ratio
+          } else {
+            let content_width = box_width -
+              padding.horizontal_sum() -
+              border.horizontal_sum()
+            if content_width > 0.0 {
+              content_width / ratio +
+              padding.vertical_sum() +
+              border.vertical_sum()
+            } else {
+              0.0
+            }
+          }
+        }
+
+        if is_row {
+          match
+            (style.width, style.height, style.aspect_ratio, available_cross) {
+            (@types.Auto, @types.Length(h), Some(ratio), _) =>
+              if ratio > 0.0 {
+                leaf_width_from_height(ratio, h)
+              } else {
+                0.0
+              }
+            (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                leaf_width_from_height(ratio, cross * p)
+              } else {
+                0.0
+              }
+            (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                leaf_width_from_height(ratio, cross)
+              } else {
+                0.0
+              }
+            (@types.Percent(_), @types.Length(h), Some(ratio), _) =>
+              if ratio > 0.0 {
+                leaf_width_from_height(ratio, h)
+              } else {
+                0.0
+              }
+            (@types.Percent(_), @types.Percent(p), Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                leaf_width_from_height(ratio, cross * p)
+              } else {
+                0.0
+              }
+            (@types.Percent(_), @types.Auto, Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                leaf_width_from_height(ratio, cross)
+              } else {
+                0.0
+              }
+            _ => 0.0
+          }
+        } else {
+          match
+            (style.height, style.width, style.aspect_ratio, available_cross) {
+            (@types.Auto, @types.Length(w), Some(ratio), _) =>
+              if ratio > 0.0 {
+                leaf_height_from_width(ratio, w)
+              } else {
+                0.0
+              }
+            (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                leaf_height_from_width(ratio, cross * p)
+              } else {
+                0.0
+              }
+            (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+              if ratio > 0.0 {
+                leaf_height_from_width(ratio, cross)
+              } else {
+                0.0
+              }
+            _ => 0.0
           }
         }
       }
-      None => 0.0
     }
   } else {
     // For containers, compute based on display type and children
@@ -1576,6 +1790,81 @@ fn compute_intrinsic_block_main_size(
   // For block layout, if parent is row, intrinsic width is max of children's widths
   // If parent is column, intrinsic height is sum of children's heights
   if parent_is_row {
+    // Replaced-like block compatibility:
+    // when inline size is auto/percent and cross size is definite, transfer
+    // the cross size through aspect-ratio for intrinsic width contribution.
+    let aspect_width_from_cross : Double? = match
+      (style.width, style.height, style.aspect_ratio) {
+      (@types.Auto, _, Some(ratio)) | (@types.Percent(_), _, Some(ratio)) =>
+        if ratio > 0.0 {
+          let raw_height : Double? = match style.height {
+            @types.Length(h) => Some(h)
+            @types.Percent(p) =>
+              match available_cross {
+                Some(cross) => Some(cross * p)
+                None => None
+              }
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) => available_cross
+          }
+          match raw_height {
+            Some(h) => {
+              let min_h = match style.min_height {
+                @types.Length(v) => v
+                @types.Percent(p) =>
+                  match available_cross {
+                    Some(cross) => cross * p
+                    None => 0.0
+                  }
+                _ => 0.0
+              }
+              let max_h = match style.max_height {
+                @types.Length(v) => v
+                @types.Percent(p) =>
+                  match available_cross {
+                    Some(cross) => cross * p
+                    None => @double.infinity
+                  }
+                _ => @double.infinity
+              }
+              let clamped_h = @types.clamp(h, min_h, max_h)
+              if style.box_sizing == @types.BorderBox {
+                Some(clamped_h * ratio)
+              } else {
+                let content_h = clamped_h -
+                  padding.top -
+                  padding.bottom -
+                  border.top -
+                  border.bottom
+                if content_h > 0.0 {
+                  Some(
+                    content_h * ratio +
+                    padding.left +
+                    padding.right +
+                    border.left +
+                    border.right,
+                  )
+                } else {
+                  Some(
+                    padding.left + padding.right + border.left + border.right,
+                  )
+                }
+              }
+            }
+            None => None
+          }
+        } else {
+          None
+        }
+      _ => None
+    }
+    match aspect_width_from_cross {
+      Some(w) => return w
+      None => ()
+    }
+
     if style.writing_mode.is_vertical() {
       // Vertical writing-mode inline flow advances horizontally by line/column.
       // For inline-only children, accumulate per-line max thickness and line breaks.
@@ -1611,7 +1900,9 @@ fn compute_intrinsic_block_main_size(
         let child_width = match child_style.width {
           @types.Length(w) => w + child_margin.left + child_margin.right
           _ =>
-            compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+            compute_intrinsic_main_size(
+              child, true, available_cross, cache, dispatch,
+            ) +
             child_margin.left +
             child_margin.right
         }
@@ -1654,7 +1945,9 @@ fn compute_intrinsic_block_main_size(
       let child_width = match child_style.width {
         @types.Length(w) => w + child_margin.left + child_margin.right
         _ =>
-          compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+          compute_intrinsic_main_size(
+            child, true, available_cross, cache, dispatch,
+          ) +
           child_margin.left +
           child_margin.right
       }
@@ -2450,6 +2743,27 @@ fn compute_internal(
         }
     }
 
+    // For row flex intrinsic main-size calculation, descendants should resolve
+    // percent heights against the flex item's used cross-size (if known), not
+    // always the container cross-size.
+    let row_intrinsic_cross_for_child : Double? = if is_row {
+      match content_height {
+        Some(ch) =>
+          match child_style.height {
+            @types.Length(h) => Some(h)
+            @types.Percent(p) => Some(ch * p)
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) =>
+              Some(max(0.0, ch - margin_cross_for_intrinsic))
+          }
+        None => None
+      }
+    } else {
+      None
+    }
+
     // Calculate base size on main axis (flex-basis takes priority over width/height)
     // CSS spec: If flex-basis is a percentage of an indefinite size, it resolves
     // to content size (as if flex-basis: content was specified)
@@ -2501,14 +2815,14 @@ fn compute_internal(
                   } else {
                     // Compute intrinsic width from children
                     compute_intrinsic_main_size(
-                      child, true, content_height, cache, dispatch,
+                      child, true, row_intrinsic_cross_for_child, cache, dispatch,
                     )
                   }
                 }
               }
             @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
               compute_intrinsic_main_size(
-                child, true, content_height, cache, dispatch,
+                child, true, row_intrinsic_cross_for_child, cache, dispatch,
               )
           }
         } else {
@@ -2566,7 +2880,7 @@ fn compute_internal(
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         if is_row {
           compute_intrinsic_main_size(
-            child, true, content_height, cache, dispatch,
+            child, true, row_intrinsic_cross_for_child, cache, dispatch,
           )
         } else {
           let available_cross_for_child = available_cross_for_intrinsic
@@ -2697,7 +3011,7 @@ fn compute_internal(
                 // Compute intrinsic width for containers with children
                 (
                   compute_intrinsic_main_size(
-                    child, true, content_height, cache, dispatch,
+                    child, true, row_intrinsic_cross_for_child, cache, dispatch,
                   ),
                   true,
                 )
@@ -2716,7 +3030,7 @@ fn compute_internal(
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           (
             compute_intrinsic_main_size(
-              child, true, content_height, cache, dispatch,
+              child, true, row_intrinsic_cross_for_child, cache, dispatch,
             ),
             false,
           )
@@ -2830,11 +3144,11 @@ fn compute_internal(
               aspect_min
             } else if use_max_content_min {
               compute_intrinsic_main_size(
-                child, true, content_height, cache, dispatch,
+                child, true, row_intrinsic_cross_for_child, cache, dispatch,
               )
             } else {
               compute_min_content_main_size(
-                child, true, content_height, cache, dispatch,
+                child, true, row_intrinsic_cross_for_child, cache, dispatch,
               )
             }
             // Clamp by specified size (width) if set
@@ -4300,9 +4614,19 @@ fn compute_internal(
           text: child.text,
         }
       } else {
+        let nested_available_height : Double? = if is_row {
+          match child.style.height {
+            // Row flex item with %height: keep container cross-size context
+            // so descendants don't resolve percentage height twice.
+            @types.Percent(_) => content_height
+            _ => Some(child_height)
+          }
+        } else {
+          Some(child_height)
+        }
         let child_ctx : @types.LayoutContext = {
           available_width: child_width,
-          available_height: Some(child_height),
+          available_height: nested_available_height,
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,

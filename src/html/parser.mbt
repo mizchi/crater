@@ -179,7 +179,6 @@ fn Parser::skip_whitespace(self : Parser) -> Unit {
     match self.peek() {
       Some(c) if is_whitespace(c) => {
         let _ = self.consume()
-
       }
       _ => break
     }
@@ -206,7 +205,6 @@ fn Parser::skip_doctype(self : Parser) -> Unit {
         // Skip until >
         while self.peek() is Some(c) && c != '>' {
           let _ = self.consume()
-
         }
         if self.peek() is Some('>') {
           let _ = self.consume()
@@ -244,7 +242,6 @@ fn Parser::skip_comment(self : Parser) -> Bool {
         return true
       }
       let _ = self.consume()
-
     }
     return true
   }
@@ -291,7 +288,6 @@ fn Parser::consume_name(self : Parser) -> String {
       Some(c) if is_name_char(c) => {
         buf.write_char(c)
         let _ = self.consume()
-
       }
       _ => break
     }
@@ -308,7 +304,6 @@ fn Parser::consume_until(self : Parser, end_char : Char) -> String {
       Some(c) => {
         buf.write_char(c)
         let _ = self.consume()
-
       }
       None => break
     }
@@ -364,7 +359,6 @@ fn Parser::consume_raw_text(self : Parser, tag : String) -> String {
         // Found closing tag, consume '>' and return
         if self.peek() is Some('>') {
           let _ = self.consume()
-
         }
         return buf.to_string()
       }
@@ -390,7 +384,6 @@ fn Parser::parse_element(self : Parser) -> Element? {
   match self.peek() {
     Some('<') => {
       let _ = self.consume()
-
     }
     _ => return None
   }
@@ -427,7 +420,6 @@ fn Parser::parse_element(self : Parser) -> Element? {
         match self.peek() {
           Some('>') => {
             let _ = self.consume()
-
           }
           _ => ()
         }
@@ -546,7 +538,6 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
             match self.peek() {
               Some('>') => {
                 let _ = self.consume()
-
               }
               _ => ()
             }
@@ -597,7 +588,6 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
               None => {
                 // Skip this character and continue
                 let _ = self.consume()
-
               }
             }
           }
@@ -619,7 +609,6 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
               None => {
                 // Skip this character and continue
                 let _ = self.consume()
-
               }
             }
         }
@@ -774,7 +763,6 @@ fn Parser::parse_text(self : Parser) -> String {
       Some(c) => {
         buf.write_char(c)
         let _ = self.consume()
-
       }
       None => break
     }

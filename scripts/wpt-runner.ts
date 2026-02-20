@@ -13,7 +13,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
-import { renderer } from '../wasm/dist/crater.js';
+import { execSync } from 'child_process';
 
 // Load config from wpt.json
 const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
@@ -56,6 +56,39 @@ interface Mismatch {
   browser: number;
   crater: number;
   diff: number;
+}
+
+type RenderHtmlToJsonFn = (html: string, width: number, height: number) => string;
+
+let renderHtmlToJsonImpl: RenderHtmlToJsonFn | null = null;
+
+async function initCraterRenderer(): Promise<void> {
+  if (renderHtmlToJsonImpl) return;
+
+  try {
+    const mod = await import('../_build/js/release/build/wpt_runtime/wpt_runtime.js');
+    renderHtmlToJsonImpl = mod.renderHtmlToJsonForWpt as RenderHtmlToJsonFn;
+    return;
+  } catch {
+    // Try building lightweight local runtime first.
+  }
+
+  try {
+    execSync('moon build src/wpt_runtime --target js --release --warn-list -27-29', {
+      stdio: 'ignore',
+      cwd: process.cwd(),
+    });
+    const mod = await import('../_build/js/release/build/wpt_runtime/wpt_runtime.js');
+    renderHtmlToJsonImpl = mod.renderHtmlToJsonForWpt as RenderHtmlToJsonFn;
+    return;
+  } catch {
+    // Fallback to committed wasm/dist runtime for environments where local build is unavailable.
+  }
+
+  const mod = await import('../wasm/dist/crater.js');
+  renderHtmlToJsonImpl = (html: string, width: number, height: number) => (
+    mod.renderer.renderHtmlToJson(html, width, height)
+  );
 }
 
 // Configuration
@@ -303,10 +336,13 @@ function prepareHtmlContent(htmlPath: string): string {
   htmlContent = inlineExternalCSS(htmlContent, htmlPath);
   htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
-  if (htmlContent.includes('<head>')) {
-    htmlContent = htmlContent.replace('<head>', '<head>' + CSS_RESET);
-  } else if (htmlContent.includes('<body>')) {
-    htmlContent = htmlContent.replace('<body>', CSS_RESET + '<body>');
+  const headOpenTag = /<head\b[^>]*>/i;
+  const bodyOpenTag = /<body\b[^>]*>/i;
+
+  if (headOpenTag.test(htmlContent)) {
+    htmlContent = htmlContent.replace(headOpenTag, (m) => m + CSS_RESET);
+  } else if (bodyOpenTag.test(htmlContent)) {
+    htmlContent = htmlContent.replace(bodyOpenTag, (m) => CSS_RESET + m);
   } else {
     htmlContent = CSS_RESET + htmlContent;
   }
@@ -314,12 +350,16 @@ function prepareHtmlContent(htmlPath: string): string {
 }
 
 function getCraterLayout(htmlPath: string): LayoutNode {
+  if (!renderHtmlToJsonImpl) {
+    throw new Error('Crater renderer is not initialized');
+  }
+
   function normalizeRoot(node: LayoutNode): LayoutNode {
     return { ...node, x: 0, y: 0 };
   }
 
   const htmlContent = prepareHtmlContent(htmlPath);
-  const result = renderer.renderHtmlToJson(htmlContent, 800, 600);
+  const result = renderHtmlToJsonImpl(htmlContent, 800, 600);
   let layout = JSON.parse(result) as LayoutNode;
 
   if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
@@ -562,6 +602,8 @@ async function runTestsParallel(htmlFiles: string[]): Promise<{ passed: number; 
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
+
+  await initCraterRenderer();
 
   if (args.length === 0) {
     console.log('WPT Runner for Crater\n');

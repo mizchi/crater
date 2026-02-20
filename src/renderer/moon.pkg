@@ -13,5 +13,5 @@ import {
   "mizchi/crater/x/sixel",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

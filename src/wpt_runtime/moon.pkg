@@ -1,0 +1,8 @@
+import {
+  "mizchi/crater/renderer",
+  "mizchi/crater/css/media",
+}
+
+options(
+  link: { "js": { "exports": [ "renderHtmlToJsonForWpt" ], "format": "esm" } },
+)

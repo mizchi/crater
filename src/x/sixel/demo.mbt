@@ -107,7 +107,6 @@ test "sixel demo layout" {
 
   // Render to Sixel
   let _ = render_layout(layout, 300, 200)
-
 }
 
 ///|

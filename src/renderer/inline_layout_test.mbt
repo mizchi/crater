@@ -154,6 +154,5 @@ test "preactjs_actual_css_both_inline_block" {
   for _, child in container.children {
     let _ = (child.y / 16.0).to_int()
     let _ = (child.x / 8.0).to_int()
-
   }
 }

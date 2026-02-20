@@ -10,5 +10,5 @@ import {
   "mizchi/crater/dom",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

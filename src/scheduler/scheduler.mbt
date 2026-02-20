@@ -273,14 +273,12 @@ pub fn Scheduler::fail(
   error : String,
 ) -> Unit {
   let _ = self.complete(task_id, Failure(error~))
-
 }
 
 ///|
 /// タスクキャンセルを通知（ショートカット）
 pub fn Scheduler::cancel(self : Scheduler, task_id : TaskId) -> Unit {
   let _ = self.complete(task_id, Cancelled)
-
 }
 
 ///|

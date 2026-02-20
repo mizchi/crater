@@ -46,7 +46,6 @@ fn SelectorParser::skip_whitespace(self : SelectorParser) -> Unit {
     match self.peek() {
       Whitespace => {
         let _ = self.advance()
-
       }
       _ => break
     }
@@ -251,7 +250,6 @@ fn SelectorParser::parse_attribute_selector(
   match self.peek() {
     LeftBracket => {
       let _ = self.advance()
-
     }
     _ => return None
   }
@@ -286,7 +284,6 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
-
         }
         _ => return None
       }
@@ -301,7 +298,6 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
-
         }
         _ => return None
       }
@@ -316,7 +312,6 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
-
         }
         _ => return None
       }
@@ -331,7 +326,6 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
-
         }
         _ => return None
       }
@@ -346,7 +340,6 @@ fn SelectorParser::parse_attribute_selector(
       match self.peek() {
         Delim('=') => {
           let _ = self.advance()
-
         }
         _ => return None
       }
@@ -381,7 +374,6 @@ fn SelectorParser::parse_attribute_selector(
   match self.peek() {
     RightBracket => {
       let _ = self.advance()
-
     }
     _ => return None
   }
@@ -710,7 +702,6 @@ fn SelectorParser::parse_compound_selector_list_until_paren(
       RightParen | EOF => break
       Comma => {
         let _ = self.advance()
-
       }
       _ =>
         match self.parse_compound_selector() {
@@ -733,7 +724,6 @@ fn SelectorParser::parse_complex_selector_list_until_paren(
       RightParen | EOF => break
       Comma => {
         let _ = self.advance()
-
       }
       _ =>
         match self.parse_complex_selector() {
@@ -756,7 +746,6 @@ fn SelectorParser::parse_relative_selector_list_until_paren(
       RightParen | EOF => break
       Comma => {
         let _ = self.advance()
-
       }
       _ => {
         // Check for optional leading combinator

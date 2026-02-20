@@ -7,5 +7,5 @@ import {
   "mizchi/crater/layout/grid",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

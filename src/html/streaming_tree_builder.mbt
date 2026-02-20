@@ -267,7 +267,6 @@ fn StreamingTreeBuilder::generate_implied_end_tags(
           | "rt"
           | "rtc" => {
             let _ = self.open_elements.pop()
-
           }
           _ => break
         }
@@ -297,7 +296,6 @@ fn StreamingTreeBuilder::generate_implied_end_tags_except(
           | "rt"
           | "rtc" => {
             let _ = self.open_elements.pop()
-
           }
           _ => break
         }
@@ -432,7 +430,6 @@ fn StreamingTreeBuilder::stb_handle_in_head(
           let elem = stb_create_element(tag, attrs)
           self.insert_element(elem)
           let _ = self.open_elements.pop()
-
         }
         "head" => ()
         _ => {
@@ -496,7 +493,6 @@ fn StreamingTreeBuilder::stb_handle_in_body(
         let elem = stb_create_element(tag, attrs)
         self.insert_element(elem)
         let _ = self.open_elements.pop()
-
       } else {
         let elem = stb_create_element(tag, attrs)
         self.insert_element(elem)

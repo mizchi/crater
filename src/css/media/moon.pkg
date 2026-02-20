@@ -2,5 +2,5 @@ import {
   "moonbitlang/core/strconv",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

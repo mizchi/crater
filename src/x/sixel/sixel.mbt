@@ -711,7 +711,6 @@ fn render_node_with_box_model(
 /// Simple print function that outputs sixel to stdout
 pub fn print_layout(layout : @types.Layout, width : Int, height : Int) -> Unit {
   let _ = render_layout(layout, width, height)
-
 }
 
 // =============================================================================
@@ -774,7 +773,6 @@ fn collect_colors(palette : DynamicPalette, node : @paint.PaintNode) -> Unit {
     let _ = palette.get_or_add(
       types_color_to_sixel(node.paint.background_color),
     )
-
   }
   // Add text color
   let _ = palette.get_or_add(types_color_to_sixel(node.paint.color))
@@ -845,7 +843,6 @@ fn render_paint_node(
       let text_idx = palette.get_or_add(types_color_to_sixel(node.paint.color))
       let scale = 1
       let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
-
     }
     None => ()
   }

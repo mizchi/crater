@@ -242,7 +242,6 @@ fn TreeBuilder::handle_in_body_start_tag(
           e.tag == "h5" ||
           e.tag == "h6" => {
           let _ = self.open_elements.pop()
-
         }
         _ => ()
       }
@@ -357,7 +356,6 @@ fn TreeBuilder::handle_in_body_start_tag(
       let elem = create_element("img", attrs)
       self.insert_element(elem)
       let _ = self.open_elements.pop()
-
     }
     "textarea" => {
       let elem = create_element(tag, attrs)
@@ -373,7 +371,6 @@ fn TreeBuilder::handle_in_body_start_tag(
     "optgroup" | "option" => {
       if self.current_node() is Some(e) && e.tag == "option" {
         let _ = self.open_elements.pop()
-
       }
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
@@ -394,7 +391,6 @@ fn TreeBuilder::handle_in_body_start_tag(
       self.insert_element(elem)
       if self_closing {
         let _ = self.open_elements.pop()
-
       }
     }
   }
@@ -500,7 +496,6 @@ fn TreeBuilder::handle_in_body_end_tag(
           }
           _ => {
             let _ = self.open_elements.pop()
-
           }
         }
       }
@@ -530,7 +525,6 @@ fn TreeBuilder::handle_in_body_end_tag(
       let elem = create_element("br", {})
       self.insert_element(elem)
       let _ = self.open_elements.pop()
-
     }
     _ =>
       // Any other end tag
@@ -548,7 +542,6 @@ fn TreeBuilder::any_other_end_tag(self : TreeBuilder, tag : String) -> Unit {
       // Pop until this node
       while self.open_elements.length() > i + 1 {
         let _ = self.open_elements.pop()
-
       }
       let _ = self.open_elements.pop() // Pop the matched node
       return
@@ -623,7 +616,6 @@ fn TreeBuilder::handle_in_table(self : TreeBuilder, token : Token) -> Unit {
               let elem = create_element(tag, attrs)
               self.insert_element(elem)
               let _ = self.open_elements.pop()
-
             }
             _ => {
               // Foster parent
@@ -1163,7 +1155,6 @@ fn TreeBuilder::clear_stack_to_table_context(self : TreeBuilder) -> Unit {
         return
       _ => {
         let _ = self.open_elements.pop()
-
       }
     }
   }
@@ -1185,7 +1176,6 @@ fn TreeBuilder::clear_stack_to_table_body_context(self : TreeBuilder) -> Unit {
       Some(e) if is_table_body_context(e.tag) => return
       _ => {
         let _ = self.open_elements.pop()
-
       }
     }
   }
@@ -1200,7 +1190,6 @@ fn TreeBuilder::clear_stack_to_table_row_context(self : TreeBuilder) -> Unit {
         return
       _ => {
         let _ = self.open_elements.pop()
-
       }
     }
   }
@@ -1230,7 +1219,6 @@ fn TreeBuilder::close_cell(self : TreeBuilder) -> Unit {
       }
       _ => {
         let _ = self.open_elements.pop()
-
       }
     }
   }

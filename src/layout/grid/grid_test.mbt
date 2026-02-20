@@ -251,6 +251,44 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
 }
 
 ///|
+test "grid_auto_height_does_not_fill_available_height" {
+  let default_style = @style.Style::default()
+  let img_style = { ..default_style, min_height: @types.Percent(1.0) }
+  let img_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
+    },
+  }
+  let img = @node.Node::with_measure("img", img_style, img_measure)
+  let grid_item = @node.Node::new(
+    "grid-item",
+    { ..default_style, display: @types.Grid },
+    [img],
+  )
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Grid, width: @types.Length(800.0) },
+    [grid_item],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(800.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 800.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="0")
+  inspect(layout.children[0].height, content="0")
+  inspect(layout.children[0].children[0].height, content="0")
+}
+
+///|
 test "grid_with_fr_units" {
   // 200px wide grid with 1fr 2fr columns
   let default_style = @style.Style::default()

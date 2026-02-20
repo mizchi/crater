@@ -1096,11 +1096,108 @@ fn parse_svg_data_uri(src : String) -> (Double, Double)? {
 }
 
 ///|
+fn base64_char_value(c : Char) -> Int? {
+  let cp = c.to_int()
+  if cp >= 'A'.to_int() && cp <= 'Z'.to_int() {
+    Some(cp - 'A'.to_int())
+  } else if cp >= 'a'.to_int() && cp <= 'z'.to_int() {
+    Some(cp - 'a'.to_int() + 26)
+  } else if cp >= '0'.to_int() && cp <= '9'.to_int() {
+    Some(cp - '0'.to_int() + 52)
+  } else if cp == '+'.to_int() {
+    Some(62)
+  } else if cp == '/'.to_int() {
+    Some(63)
+  } else {
+    None
+  }
+}
+
+///|
+fn decode_base64_prefix(encoded : String, byte_count : Int) -> Array[Int]? {
+  let bytes : Array[Int] = []
+  let quartet : Array[Int] = []
+  for c in encoded.iter() {
+    if c == '=' {
+      quartet.push(-1)
+    } else {
+      match base64_char_value(c) {
+        Some(v) => quartet.push(v)
+        None => continue
+      }
+    }
+    if quartet.length() == 4 {
+      let v0 = quartet[0]
+      let v1 = quartet[1]
+      let v2 = quartet[2]
+      let v3 = quartet[3]
+      if v0 < 0 || v1 < 0 {
+        break
+      }
+      bytes.push(((v0 << 2) | (v1 >> 4)) & 0xFF)
+      if v2 >= 0 {
+        bytes.push((((v1 & 0x0F) << 4) | (v2 >> 2)) & 0xFF)
+      }
+      if v2 >= 0 && v3 >= 0 {
+        bytes.push((((v2 & 0x03) << 6) | v3) & 0xFF)
+      }
+      if bytes.length() >= byte_count {
+        return Some(bytes)
+      }
+      quartet.clear()
+    }
+  }
+  None
+}
+
+///|
+fn parse_gif_data_uri(src : String) -> (Double, Double)? {
+  if not(src.to_lower().has_prefix("data:image/gif;base64,")) {
+    return None
+  }
+  let mut comma_idx = -1
+  for i = 0; i < src.length(); i = i + 1 {
+    if src[i].to_int().unsafe_to_char() == ',' {
+      comma_idx = i
+      break
+    }
+  }
+  if comma_idx < 0 {
+    return None
+  }
+  let encoded = src[comma_idx + 1:].to_string() catch { _ => return None }
+  match decode_base64_prefix(encoded, 10) {
+    Some(bytes) => {
+      if bytes.length() < 10 {
+        return None
+      }
+      // GIF header + logical screen descriptor (little-endian width/height)
+      if bytes[0] != 'G'.to_int() ||
+        bytes[1] != 'I'.to_int() ||
+        bytes[2] != 'F'.to_int() {
+        return None
+      }
+      let width = bytes[6] + (bytes[7] << 8)
+      let height = bytes[8] + (bytes[9] << 8)
+      if width > 0 && height > 0 {
+        Some((width.to_double(), height.to_double()))
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
 /// Get intrinsic size from image src attribute
 fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
-  // Only SVG data URI is supported - filename patterns are too unreliable
-  // and can cause issues with tests that expect 0 intrinsic size
-  parse_svg_data_uri(src)
+  // Restrict to data URI parsing to avoid filesystem/network side-effects.
+  // SVG supports width/height/viewBox, GIF supports compact intrinsic extraction.
+  match parse_svg_data_uri(src) {
+    Some(size) => Some(size)
+    None => parse_gif_data_uri(src)
+  }
 }
 
 ///|
@@ -1219,6 +1316,55 @@ fn resolve_document_root_zoom(
 }
 
 ///|
+/// Browser behavior: body often paints at least viewport height when its block-size
+/// is auto. Do not force this when author-specified height/min-height exists.
+fn should_clamp_body_to_viewport(root : @node.Node) -> Bool {
+  if root.id != "body" {
+    return false
+  }
+  let auto_height = match root.style.height {
+    @types.Auto => true
+    _ => false
+  }
+  let auto_min_height = match root.style.min_height {
+    @types.Auto => true
+    _ => false
+  }
+  let overflow_all_visible = match
+    (root.style.overflow_x, root.style.overflow_y) {
+    (@types.Overflow::Visible, @types.Overflow::Visible) => true
+    _ => false
+  }
+  auto_height && auto_min_height && overflow_all_visible
+}
+
+///|
+/// Create a recursive zero-sized layout for nodes that don't generate a box
+/// (e.g. display:none on root/body).
+fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
+  let children : Array[@types.Layout] = []
+  for i = 0; i < node.children.length(); i = i + 1 {
+    children.push(create_zero_layout_from_node(node.children[i]))
+  }
+  {
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width: 0.0,
+    height: 0.0,
+    margin: @types.Rect::zero(),
+    padding: @types.Rect::zero(),
+    border: @types.Rect::zero(),
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children,
+    text: node.text,
+  }
+}
+
+///|
 /// Render HTML string to Layout
 pub fn render(html : String, ctx : RenderContext) -> @types.Layout {
   render_with_external_css(html, ctx, [])
@@ -1256,6 +1402,18 @@ pub fn render_with_external_css(
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
 
+  // Resolve document root style once so root-level box suppression can be honored.
+  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_style = compute_element_style_indexed(
+    doc_root_selector,
+    doc.root.style,
+    indexed_stylesheets,
+    true,
+    ctx,
+    None,
+    css_vars,
+  )
+
   // Find body element, or use root if not found
   let render_root = match find_body(doc.root) {
     Some(body) => body
@@ -1263,14 +1421,37 @@ pub fn render_with_external_css(
   }
 
   // Convert to node tree with stylesheet styles applied
-  let root = element_to_node_with_styles(
-    render_root,
-    None,
-    ctx,
-    stylesheets,
-    indexed_stylesheets,
-    css_vars,
-  )
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    // Body is not the document root. Compute with html as parent so inheritable
+    // properties (e.g. writing-mode from :root) are preserved.
+    let body_selector = html_to_selector_element(
+      render_root,
+      Some(doc_root_selector),
+    )
+    element_to_node_with_styles_internal(
+      render_root,
+      body_selector,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      Some(doc_root_style),
+      css_vars,
+    )
+  } else {
+    element_to_node_with_styles(
+      render_root,
+      None,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      css_vars,
+    )
+  }
+  if doc_root_style.display == @types.Display::None ||
+    root.style.display == @types.Display::None {
+    return create_zero_layout_from_node(root)
+  }
   if render_root.tag.to_lower() == "body" {
     let root_zoom = resolve_document_root_zoom(
       doc.root,
@@ -1288,11 +1469,19 @@ pub fn render_with_external_css(
   let available_width = ctx.viewport_width -
     root_margin.left -
     root_margin.right
-  // Use None for available_height to allow content to grow naturally (scrollable)
-  // If we pass Some(viewport_height), the layout might constrain to viewport
+  // Root with explicit/% height should resolve against viewport; otherwise keep
+  // height unconstrained so content can grow naturally.
+  let root_available_height : Double? = if render_root.tag.to_lower() == "body" {
+    Some(ctx.viewport_height)
+  } else {
+    match root.style.height {
+      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
+      _ => None
+    }
+  }
   let layout_ctx : @types.LayoutContext = {
     available_width,
-    available_height: None,
+    available_height: root_available_height,
     sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
@@ -1310,10 +1499,21 @@ pub fn render_with_external_css(
   let scaled_layout = apply_zoom_and_scale(
     layout, root, 1.0, 1.0, 1.0, 0.0, 0.0,
   )
-
-  let scaled_layout = if root.id == "body" &&
-    scaled_layout.height < ctx.viewport_height {
-    { ..scaled_layout, height: ctx.viewport_height }
+  let scaled_layout = if should_clamp_body_to_viewport(root) {
+    // Body auto-height should be at least viewport-height, but still grow to
+    // include overflowing normal-flow descendants.
+    let min_viewport_height = if scaled_layout.height < ctx.viewport_height {
+      ctx.viewport_height
+    } else {
+      scaled_layout.height
+    }
+    let content_extent = calculate_content_extent(scaled_layout)
+    let final_height = if content_extent > min_viewport_height {
+      content_extent
+    } else {
+      min_viewport_height
+    }
+    { ..scaled_layout, height: final_height }
   } else {
     scaled_layout
   }
@@ -1386,6 +1586,17 @@ pub fn render_document_with_external_css(
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
 
+  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_style = compute_element_style_indexed(
+    doc_root_selector,
+    doc.root.style,
+    indexed_stylesheets,
+    true,
+    ctx,
+    None,
+    css_vars,
+  )
+
   // Find body element, or use root if not found
   let render_root = match find_body(doc.root) {
     Some(body) => body
@@ -1393,14 +1604,31 @@ pub fn render_document_with_external_css(
   }
 
   // Convert to node tree with stylesheet styles applied
-  let root = element_to_node_with_styles(
-    render_root,
-    None,
-    ctx,
-    stylesheets,
-    indexed_stylesheets,
-    css_vars,
-  )
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    let body_selector = html_to_selector_element(
+      render_root,
+      Some(doc_root_selector),
+    )
+    element_to_node_with_styles_internal(
+      render_root,
+      body_selector,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      Some(doc_root_style),
+      css_vars,
+    )
+  } else {
+    element_to_node_with_styles(
+      render_root,
+      None,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      css_vars,
+    )
+  }
   if render_root.tag.to_lower() == "body" {
     let root_zoom = resolve_document_root_zoom(
       doc.root,
@@ -1418,11 +1646,17 @@ pub fn render_document_with_external_css(
   let available_width = ctx.viewport_width -
     root_margin.left -
     root_margin.right
-  // Use None for available_height to allow content to grow naturally (scrollable)
-  // If we pass Some(viewport_height), the layout might constrain to viewport
+  let root_available_height : Double? = if render_root.tag.to_lower() == "body" {
+    Some(ctx.viewport_height)
+  } else {
+    match root.style.height {
+      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
+      _ => None
+    }
+  }
   let layout_ctx : @types.LayoutContext = {
     available_width,
-    available_height: None,
+    available_height: root_available_height,
     sizing_mode: @types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
@@ -1440,10 +1674,19 @@ pub fn render_document_with_external_css(
   let scaled_layout = apply_zoom_and_scale(
     layout, root, 1.0, 1.0, 1.0, 0.0, 0.0,
   )
-
-  let scaled_layout = if root.id == "body" &&
-    scaled_layout.height < ctx.viewport_height {
-    { ..scaled_layout, height: ctx.viewport_height }
+  let scaled_layout = if should_clamp_body_to_viewport(root) {
+    let min_viewport_height = if scaled_layout.height < ctx.viewport_height {
+      ctx.viewport_height
+    } else {
+      scaled_layout.height
+    }
+    let content_extent = calculate_content_extent(scaled_layout)
+    let final_height = if content_extent > min_viewport_height {
+      content_extent
+    } else {
+      min_viewport_height
+    }
+    { ..scaled_layout, height: final_height }
   } else {
     scaled_layout
   }
@@ -1698,28 +1941,74 @@ fn is_svg_element(tag : String) -> Bool {
 fn apply_svg_attributes_to_style(
   style : @style.Style,
   attrs : Map[String, String],
+  tag : String,
 ) -> @style.Style {
   let mut result = style
+  fn parse_svg_dimension(value : String) -> @types.Dimension? {
+    let trimmed = value.trim().to_string()
+    if trimmed.is_empty() {
+      return None
+    }
+    if trimmed.has_suffix("%") {
+      let percent_str = remove_suffix(trimmed, 1)
+      let percent = @strconv.parse_double(percent_str) catch {
+        _ => return None
+      }
+      return Some(@types.Percent(percent / 100.0))
+    }
+    let length = parse_svg_length(trimmed)
+    // Keep zero as a valid explicit length (e.g. width="0").
+    if length == 0.0 {
+      let raw = @strconv.parse_double(trimmed) catch { _ => return None }
+      return Some(@types.Length(raw))
+    }
+    Some(@types.Length(length))
+  }
+
+  let attr_width_for_ratio = match attrs.get("width") {
+    Some(w) => parse_svg_length(w)
+    None => 0.0
+  }
+  let attr_height_for_ratio = match attrs.get("height") {
+    Some(h) => parse_svg_length(h)
+    None => 0.0
+  }
+  if attr_width_for_ratio > 0.0 &&
+    attr_height_for_ratio > 0.0 &&
+    result.aspect_ratio is None {
+    result = {
+      ..result,
+      aspect_ratio: Some(attr_width_for_ratio / attr_height_for_ratio),
+    }
+  }
+
+  // Root <svg> width/height attributes behave as intrinsic dimensions.
+  // If CSS already specifies either dimension, keep attributes only as ratio hints.
+  let can_apply_svg_size_attrs = if tag == "svg" {
+    result.width == @types.Auto && result.height == @types.Auto
+  } else {
+    true
+  }
 
   // Get width from attribute
   match attrs.get("width") {
-    Some(w) => {
-      let width = parse_svg_length(w)
-      if width > 0.0 {
-        result = { ..result, width: @types.Length(width) }
+    Some(w) =>
+      match (can_apply_svg_size_attrs, result.width, parse_svg_dimension(w)) {
+        (false, _, _) => ()
+        (true, @types.Auto, Some(dim)) => result = { ..result, width: dim }
+        _ => ()
       }
-    }
     None => ()
   }
 
   // Get height from attribute
   match attrs.get("height") {
-    Some(h) => {
-      let height = parse_svg_length(h)
-      if height > 0.0 {
-        result = { ..result, height: @types.Length(height) }
+    Some(h) =>
+      match (can_apply_svg_size_attrs, result.height, parse_svg_dimension(h)) {
+        (false, _, _) => ()
+        (true, @types.Auto, Some(dim)) => result = { ..result, height: dim }
+        _ => ()
       }
-    }
     None => ()
   }
 
@@ -1961,13 +2250,7 @@ fn should_skip_element(tag : String) -> Bool {
     | "base"
     // Template and embedded content
     | "template"
-    | "iframe"
-    | "object"
-    | "embed"
     | "applet"
-    // Media elements (not yet supported)
-    | "video"
-    | "audio"
     // math is not yet supported
     | "math"
     // Other non-visual elements
@@ -2166,7 +2449,7 @@ fn element_to_node_with_styles_internal(
 
   // Handle SVG element size from attributes
   let style = if is_svg_element(cell_tag) {
-    apply_svg_attributes_to_style(style, elem.attributes)
+    apply_svg_attributes_to_style(style, elem.attributes, cell_tag)
   } else {
     style
   }
@@ -2237,6 +2520,11 @@ fn element_to_node_with_styles_internal(
       Some(t) => t.to_lower()
       None => "text"
     }
+    let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+    let char_width = font_size * 0.5
+    let control_line_height = font_size * 1.15
+    let control_extra_width = font_size * 0.75
+    let control_extra_height = font_size * 0.35
     // Get intrinsic dimensions based on input type
     // These are approximate browser defaults
     let (intrinsic_width, intrinsic_height) : (Double, Double) = match
@@ -2246,6 +2534,20 @@ fn element_to_node_with_styles_internal(
       "range" => (129.0, 21.0)
       "color" => (44.0, 23.0)
       "file" => (238.0, 21.0)
+      "text" | "password" | "search" | "email" | "url" | "tel" | "number" => {
+        let size_chars = match elem.attributes.get("size") {
+          Some(size_attr) =>
+            match parse_html_dimension(size_attr) {
+              Some(v) if v > 0.0 => v
+              _ => 20.0
+            }
+          None => 20.0
+        }
+        (
+          size_chars * char_width + control_extra_width,
+          control_line_height + control_extra_height,
+        )
+      }
       // text, password, email, url, tel, search, number, date, etc.
       _ => (150.0, 21.0)
     }
@@ -2264,6 +2566,48 @@ fn element_to_node_with_styles_internal(
       },
     }
     return @node.Node::with_measure(node_id, input_style, measure)
+  }
+  if tag_lower == "textarea" {
+    let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+    let char_width = font_size * 0.5
+    let control_line_height = if style.line_height > font_size * 1.15 {
+      style.line_height
+    } else {
+      font_size * 1.15
+    }
+    let cols = match elem.attributes.get("cols") {
+      Some(cols_attr) =>
+        match parse_html_dimension(cols_attr) {
+          Some(v) if v > 0.0 => v
+          _ => 20.0
+        }
+      None => 20.0
+    }
+    let rows = match elem.attributes.get("rows") {
+      Some(rows_attr) =>
+        match parse_html_dimension(rows_attr) {
+          Some(v) if v > 0.0 => v
+          _ => 2.0
+        }
+      None => 2.0
+    }
+    let intrinsic_width = cols * char_width + font_size * 1.1
+    let intrinsic_height = rows * control_line_height
+    let measure = create_input_measure(intrinsic_width, intrinsic_height)
+    let textarea_style : @style.Style = {
+      ..style,
+      width: if style.width == @types.Auto {
+        @types.Length(intrinsic_width)
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        @types.Length(intrinsic_height)
+      } else {
+        style.height
+      },
+    }
+    return @node.Node::with_measure(node_id, textarea_style, measure)
   }
   if tag_lower == "img" && children.is_empty() {
     // Get intrinsic dimensions from HTML attributes first
@@ -2289,6 +2633,15 @@ fn element_to_node_with_styles_internal(
         None => ()
       }
     }
+    // Data-SVG without intrinsic dimensions falls back to 300x150.
+    let has_svg_data_src = match elem.attributes.get("src") {
+      Some(src) => src.to_lower().has_prefix("data:image/svg+xml")
+      None => false
+    }
+    if intrinsic_width == 0.0 && intrinsic_height == 0.0 && has_svg_data_src {
+      intrinsic_width = 300.0
+      intrinsic_height = 150.0
+    }
 
     // Check if CSS dimensions are percentages - we need to handle these specially
     // even if intrinsic dimensions are 0
@@ -2300,76 +2653,61 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
-    let max_height_is_percent = match style.max_height {
-      @types.Percent(_) => true
-      _ => false
+    // Always treat <img> as replaced; unknown intrinsic size remains 0x0,
+    // but CSS sizing keywords/percentages still need replaced-element behavior.
+    let measure = create_image_measure(intrinsic_width, intrinsic_height)
+    // Get alt text for accessibility/placeholder display
+    let alt_text = elem.attributes.get("alt")
+
+    // Calculate intrinsic aspect ratio (width / height)
+    let intrinsic_aspect_ratio = if intrinsic_height > 0.0 &&
+      intrinsic_width > 0.0 {
+      Some(intrinsic_width / intrinsic_height)
+    } else {
+      None
     }
-    let max_width_is_percent = match style.max_width {
-      @types.Percent(_) => true
-      _ => false
-    }
 
-    // Handle img with intrinsic dimensions OR CSS percentage dimensions
-    if intrinsic_width > 0.0 ||
-      intrinsic_height > 0.0 ||
-      height_is_percent ||
-      width_is_percent ||
-      max_height_is_percent ||
-      max_width_is_percent {
-      let measure = create_image_measure(intrinsic_width, intrinsic_height)
-      // Get alt text for accessibility/placeholder display
-      let alt_text = elem.attributes.get("alt")
-
-      // Calculate intrinsic aspect ratio (width / height)
-      let intrinsic_aspect_ratio = if intrinsic_height > 0.0 &&
-        intrinsic_width > 0.0 {
-        Some(intrinsic_width / intrinsic_height)
-      } else {
-        None
-      }
-
-      // Build img style similar to canvas:
-      // - Use HTML attribute dimension as default when CSS is Auto
-      // - CSS dimensions (%, px, etc.) override HTML attributes
-      // - Set aspect ratio from intrinsic dimensions if not already set
-      // - If height is %, keep width as Auto so aspect_ratio can compute it
-      let img_style : @style.Style = {
-        ..style,
-        width: if style.width == @types.Auto {
-          // If height is %, keep width Auto to let aspect_ratio compute it
-          if height_is_percent {
-            @types.Auto
-          } else if intrinsic_width > 0.0 {
-            @types.Length(intrinsic_width)
-          } else {
-            style.width
-          }
+    // Build img style similar to canvas:
+    // - Use HTML attribute dimension as default when CSS is Auto
+    // - CSS dimensions (%, px, etc.) override HTML attributes
+    // - Set aspect ratio from intrinsic dimensions if not already set
+    // - If height is %, keep width as Auto so aspect_ratio can compute it
+    let img_style : @style.Style = {
+      ..style,
+      width: if style.width == @types.Auto {
+        // If height is %, keep width Auto to let aspect_ratio compute it
+        if height_is_percent {
+          @types.Auto
+        } else if intrinsic_width > 0.0 {
+          @types.Length(intrinsic_width)
         } else {
           style.width
-        },
-        height: if style.height == @types.Auto {
-          // If width is %, keep height Auto to let aspect_ratio compute it
-          if width_is_percent {
-            @types.Auto
-          } else if intrinsic_height > 0.0 {
-            @types.Length(intrinsic_height)
-          } else {
-            style.height
-          }
+        }
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        // If width is %, keep height Auto to let aspect_ratio compute it
+        if width_is_percent {
+          @types.Auto
+        } else if intrinsic_height > 0.0 {
+          @types.Length(intrinsic_height)
         } else {
           style.height
-        },
-        // Set aspect ratio from intrinsic dimensions (for % sizing)
-        aspect_ratio: match style.aspect_ratio {
-          Some(_) => style.aspect_ratio // Keep CSS-specified ratio
-          None => intrinsic_aspect_ratio // Use intrinsic ratio
-        },
-      }
-      return match alt_text {
-        Some(alt) =>
-          @node.Node::with_measure(node_id, img_style, measure, text=alt)
-        None => @node.Node::with_measure(node_id, img_style, measure)
-      }
+        }
+      } else {
+        style.height
+      },
+      // Set aspect ratio from intrinsic dimensions (for % sizing)
+      aspect_ratio: match style.aspect_ratio {
+        Some(_) => style.aspect_ratio // Keep CSS-specified ratio
+        None => intrinsic_aspect_ratio // Use intrinsic ratio
+      },
+    }
+    return match alt_text {
+      Some(alt) =>
+        @node.Node::with_measure(node_id, img_style, measure, text=alt)
+      None => @node.Node::with_measure(node_id, img_style, measure)
     }
   }
   // Handle canvas element with intrinsic sizing
@@ -2441,6 +2779,112 @@ fn element_to_node_with_styles_internal(
     // The layout algorithm will use CSS dimensions if specified
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
     return @node.Node::with_measure(node_id, canvas_style, measure)
+  }
+
+  // Handle iframe/object/embed as replaced elements with default intrinsic sizing
+  if (tag_lower == "iframe" || tag_lower == "object" || tag_lower == "embed") &&
+    children.is_empty() {
+    // HTML replaced elements default intrinsic size is 300x150
+    let default_width = 300.0
+    let default_height = 150.0
+    let intrinsic_width = match elem.attributes.get("width") {
+      Some(w) => parse_html_dimension(w).unwrap_or(default_width)
+      None => default_width
+    }
+    let intrinsic_height = match elem.attributes.get("height") {
+      Some(h) => parse_html_dimension(h).unwrap_or(default_height)
+      None => default_height
+    }
+    let intrinsic_aspect_ratio = if intrinsic_height > 0.0 {
+      Some(intrinsic_width / intrinsic_height)
+    } else {
+      None
+    }
+    let height_is_percent = match style.height {
+      @types.Percent(_) => true
+      _ => false
+    }
+    let width_is_percent = match style.width {
+      @types.Percent(_) => true
+      _ => false
+    }
+    let replaced_style : @style.Style = {
+      ..style,
+      width: if style.width == @types.Auto {
+        if height_is_percent {
+          @types.Auto
+        } else {
+          @types.Length(intrinsic_width)
+        }
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        if width_is_percent {
+          @types.Auto
+        } else {
+          @types.Length(intrinsic_height)
+        }
+      } else {
+        style.height
+      },
+      aspect_ratio: match style.aspect_ratio {
+        Some(_) => style.aspect_ratio
+        None => intrinsic_aspect_ratio
+      },
+    }
+    let measure = create_image_measure(intrinsic_width, intrinsic_height)
+    return @node.Node::with_measure(node_id, replaced_style, measure)
+  }
+
+  // Handle video/audio as replaced elements with fallback intrinsic size.
+  // These fallback sizes should not imply a concrete intrinsic aspect ratio.
+  if (tag_lower == "video" || tag_lower == "audio") && children.is_empty() {
+    let default_width = 300.0
+    let default_height = 150.0
+    let intrinsic_width = match elem.attributes.get("width") {
+      Some(w) => parse_html_dimension(w).unwrap_or(default_width)
+      None => default_width
+    }
+    let intrinsic_height = match elem.attributes.get("height") {
+      Some(h) => parse_html_dimension(h).unwrap_or(default_height)
+      None => default_height
+    }
+    let height_is_percent = match style.height {
+      @types.Percent(_) => true
+      _ => false
+    }
+    let width_is_percent = match style.width {
+      @types.Percent(_) => true
+      _ => false
+    }
+    let media_style : @style.Style = {
+      ..style,
+      width: if style.width == @types.Auto {
+        if height_is_percent {
+          @types.Auto
+        } else {
+          @types.Length(intrinsic_width)
+        }
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        if width_is_percent {
+          @types.Auto
+        } else {
+          @types.Length(intrinsic_height)
+        }
+      } else {
+        style.height
+      },
+      aspect_ratio: match style.aspect_ratio {
+        Some(_) => style.aspect_ratio
+        None => None
+      },
+    }
+    let measure = create_image_measure(intrinsic_width, intrinsic_height)
+    return @node.Node::with_measure(node_id, media_style, measure)
   }
 
   // Handle br element with line-height for height

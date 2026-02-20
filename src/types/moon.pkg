@@ -1,2 +1,2 @@
-import "wbtest" {
-}
+import {
+} for "wbtest"

@@ -346,7 +346,7 @@ pub fn compute(
     (ctx.stretch_width || (is_block_level && node.style.width == @types.Auto))
   let height_is_extrinsic_definite = is_definite_mode &&
     ctx.available_height is Some(_) &&
-    (ctx.stretch_height || (is_block_level && node.style.height == @types.Auto))
+    ctx.stretch_height
   compute_grid_layout_internal(
     node,
     ctx.available_width,
@@ -490,7 +490,8 @@ fn compute_grid_layout_internal(
       height_is_extrinsically_definite,
     )
   } else {
-    resolve_dimension(style.height, available_height, available_height)
+    // height:auto is content-based for non-stretched grid containers.
+    resolve_dimension(style.height, available_height, 0.0)
   }
 
   // Expand repeat() in templates early (needed for correct column/row counts)
@@ -584,7 +585,8 @@ fn compute_grid_layout_internal(
       height_is_extrinsically_definite,
     )
   } else {
-    resolve_dimension(style.height, available_height, available_height)
+    // height:auto is content-based for non-stretched grid containers.
+    resolve_dimension(style.height, available_height, 0.0)
   }
 
   // Get padding and border
@@ -2410,8 +2412,13 @@ fn calculate_item_intrinsic_sizes(
             | @types.MaxContent
             | @types.FitContent(_) => 1.0e10
           }
+          let measure_available_height = if container_height > 0.0 {
+            container_height
+          } else {
+            1.0e10
+          }
           let intrinsic = get_intrinsic_from_measure(
-            child, measure_available_width, container_width,
+            child, measure_available_width, measure_available_height,
           )
           (intrinsic.min_height, intrinsic.max_height)
         } else {
@@ -2430,8 +2437,13 @@ fn calculate_item_intrinsic_sizes(
             | @types.MaxContent
             | @types.FitContent(_) => 1.0e10
           }
+          let measure_available_height = if container_height > 0.0 {
+            container_height
+          } else {
+            1.0e10
+          }
           let intrinsic = get_intrinsic_from_measure(
-            child, measure_available_width, container_width,
+            child, measure_available_width, measure_available_height,
           )
           (intrinsic.min_height, intrinsic.max_height)
         } else {
@@ -2634,13 +2646,23 @@ fn calculate_item_intrinsic_sizes(
     // Note: padding+border (box_size) is the absolute minimum
     let style_min_height = match child.style.min_height {
       @types.Length(v) => v
-      @types.Percent(p) => p * container_width // percent height resolves against width
+      @types.Percent(p) =>
+        if container_height > 0.0 {
+          p * container_height
+        } else {
+          0.0
+        }
       @types.Auto => 0.0
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
     }
     let style_max_height = match child.style.max_height {
       @types.Length(v) => v
-      @types.Percent(p) => p * container_width
+      @types.Percent(p) =>
+        if container_height > 0.0 {
+          p * container_height
+        } else {
+          @double.infinity
+        }
       @types.Auto => 1.0e10
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         @double.infinity

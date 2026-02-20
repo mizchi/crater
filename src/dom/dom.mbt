@@ -424,7 +424,6 @@ pub fn DomTree::set_text_content(
           n.children.clear()
           let text_node = self.create_text(content)
           let _ = self.append_child(node, text_node)
-
         }
       }
       self.invalidate_layout(id)

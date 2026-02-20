@@ -389,7 +389,6 @@ fn TreeBuilder::generate_implied_end_tags(self : TreeBuilder) -> Unit {
           | "rt"
           | "rtc" => {
             let _ = self.open_elements.pop()
-
           }
           _ => break
         }
@@ -420,7 +419,6 @@ fn TreeBuilder::generate_implied_end_tags_except(
           | "rt"
           | "rtc" => {
             let _ = self.open_elements.pop()
-
           }
           _ => break
         }

@@ -15,5 +15,5 @@ import {
   "mizchi/crater/css/selector",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

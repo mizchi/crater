@@ -502,7 +502,6 @@ pub fn LayoutNode::from_html_element(
           @cascade.CascadedValues::new(),
         )
         let _ = node.add_child(child_node)
-
       }
       @html.Text(_) =>
         // Text nodes could be handled with MeasureFunc

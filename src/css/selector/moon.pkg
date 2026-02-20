@@ -3,5 +3,5 @@ import {
   "mizchi/crater/css/token",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

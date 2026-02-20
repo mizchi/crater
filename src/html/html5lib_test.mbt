@@ -42,7 +42,6 @@ test "html5lib/tests1_0" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -267,7 +266,6 @@ test "html5lib/tests1_35" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -276,7 +274,6 @@ test "html5lib/tests1_36" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -285,7 +282,6 @@ test "html5lib/tests1_37" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -294,7 +290,6 @@ test "html5lib/tests1_50" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -951,7 +946,6 @@ test "html5lib/tests2_0" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -996,7 +990,6 @@ test "html5lib/tests2_4" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1065,7 +1058,6 @@ test "html5lib/tests2_17" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1074,7 +1066,6 @@ test "html5lib/tests2_19" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1083,7 +1074,6 @@ test "html5lib/tests2_20" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1092,7 +1082,6 @@ test "html5lib/tests2_21" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1101,7 +1090,6 @@ test "html5lib/tests2_22" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1110,7 +1098,6 @@ test "html5lib/tests2_23" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1119,7 +1106,6 @@ test "html5lib/tests2_24" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }
 
 ///|
@@ -1188,5 +1174,4 @@ test "html5lib/tests2_30" {
   let result = @html.parse_fragment(html)
   // Body should have 1 children
   let _ = find_body(result)
-
 }

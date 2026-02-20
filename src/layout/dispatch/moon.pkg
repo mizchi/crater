@@ -8,5 +8,5 @@ import {
   "mizchi/crater/layout/table",
 }
 
-import "wbtest" {
-}
+import {
+} for "wbtest"

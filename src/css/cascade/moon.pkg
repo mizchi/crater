@@ -3,6 +3,6 @@ import {
   "mizchi/crater/css/media",
 }
 
-import "wbtest" {
+import {
   "mizchi/crater/css/parser",
-}
+} for "wbtest"

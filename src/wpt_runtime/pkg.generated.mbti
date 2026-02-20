@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/wpt_runtime"
+
+// Values
+pub fn renderHtmlToJsonForWpt(String, Int, Int) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

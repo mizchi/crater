@@ -421,7 +421,6 @@ test "benchmark: correctness after many updates" {
       None => ()
     }
     let _ = tree.compute_incremental()
-
   }
 
   // Mark everything clean and do fresh full

@@ -133,7 +133,6 @@ fn merge_node_records(records : Array[MutationRecord]) -> Array[MutationRecord] 
           match idx {
             Some(i) => {
               let _ = all_removed.remove(i)
-
             }
             None => all_added.push(n)
           }
@@ -144,7 +143,6 @@ fn merge_node_records(records : Array[MutationRecord]) -> Array[MutationRecord] 
           match idx {
             Some(i) => {
               let _ = all_added.remove(i)
-
             }
             None => all_removed.push(n)
           }
