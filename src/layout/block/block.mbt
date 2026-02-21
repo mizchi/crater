@@ -414,6 +414,14 @@ fn calculate_children_min_content_width(
     fn apply_intrinsic_inline_constraints(raw_width : Double) -> Double {
       let mut resolved = raw_width
       let width_is_inline_axis = not(child_style.writing_mode.is_vertical())
+      let intrinsic_min_width = calculate_children_min_content_width(
+          child, parent_width, parent_content_height,
+        ) +
+        child_min_box
+      let intrinsic_max_width = calculate_children_max_content_width(
+          child, parent_width,
+        ) +
+        child_min_box
       // For intrinsic min-content contribution, percentages are indefinite and
       // resolve to 0 for inline-size constraints.
       match child_style.max_width {
@@ -421,6 +429,14 @@ fn calculate_children_min_content_width(
         @types.Percent(_) =>
           if width_is_inline_axis && resolved > 0.0 {
             resolved = 0.0
+          }
+        @types.MinContent =>
+          if resolved > intrinsic_min_width {
+            resolved = intrinsic_min_width
+          }
+        @types.MaxContent | @types.FitContent(_) =>
+          if resolved > intrinsic_max_width {
+            resolved = intrinsic_max_width
           }
         _ => ()
       }
@@ -430,6 +446,14 @@ fn calculate_children_min_content_width(
         @types.Percent(_) =>
           if width_is_inline_axis && resolved < 0.0 {
             resolved = 0.0
+          }
+        @types.MinContent | @types.FitContent(_) =>
+          if resolved < intrinsic_min_width {
+            resolved = intrinsic_min_width
+          }
+        @types.MaxContent =>
+          if resolved < intrinsic_max_width {
+            resolved = intrinsic_max_width
           }
         _ => ()
       }
@@ -1403,15 +1427,22 @@ fn compute_with_collapse(
     @types.Auto => has_percent_sized_replaced_descendant(node)
     _ => false
   }
+  let supports_vertical_auto_fill = style.display == @types.Block ||
+    style.display == @types.FlowRoot ||
+    style.display == @types.Table
+  let is_empty_leaf_for_vertical_fill = supports_vertical_auto_fill &&
+    node.children.length() == 0 &&
+    node.measure is None
   let should_fill_from_percent_replaced = style.writing_mode.is_vertical() &&
     has_available_height &&
     auto_height_with_percent_replaced
   let fill_vertical_auto_height = style.writing_mode.is_vertical() &&
-    (ctx.stretch_height || should_fill_from_percent_replaced) &&
+    has_available_height &&
+    supports_vertical_auto_fill &&
     (
-      style.display == @types.Block ||
-      style.display == @types.FlowRoot ||
-      style.display == @types.Table
+      ctx.stretch_height ||
+      should_fill_from_percent_replaced ||
+      is_empty_leaf_for_vertical_fill
     )
 
   // Box width - depends on sizing mode and aspect_ratio
@@ -1657,7 +1688,8 @@ fn compute_with_collapse(
               // Compatibility: propagate a usable block-size through auto wrappers
               // when percent-sized descendants need it. The root body also
               // uses viewport-height as the percentage basis in practice.
-              Some(available_h) if node.id == "body" ||
+              Some(available_h) if style.writing_mode.is_vertical() ||
+                node.id == "body" ||
                 has_percent_sized_replaced_descendant(node) =>
                 Some(
                   @types.max(
@@ -1671,7 +1703,8 @@ fn compute_with_collapse(
       }
     @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       match ctx.available_height {
-        Some(available_h) if node.id == "body" ||
+        Some(available_h) if style.writing_mode.is_vertical() ||
+          node.id == "body" ||
           has_percent_sized_replaced_descendant(node) =>
           Some(
             @types.max(

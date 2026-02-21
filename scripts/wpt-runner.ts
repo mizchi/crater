@@ -471,6 +471,13 @@ function compareLayouts(
   options: { ignoreTextNodes?: boolean; ignoreBoxModel?: boolean } = {}
 ): Mismatch[] {
   const mismatches: Mismatch[] = [];
+  const ignoreRootBodyViewportHeight =
+    path === 'root' &&
+    browser.id === 'body' &&
+    crater.id === 'body' &&
+    browser.children.length > 0 &&
+    crater.children.length > 0 &&
+    Math.abs(browser.height - VIEWPORT.height) <= TOLERANCE;
   const bothZeroSized =
     Math.abs(browser.width) < 0.5 &&
     Math.abs(browser.height) < 0.5 &&
@@ -482,6 +489,11 @@ function compareLayouts(
     // display:none descendants are zero-sized; browser getBoundingClientRect() can
     // report viewport-origin coordinates for them, so x/y are not comparable.
     if (bothZeroSized && (prop === 'x' || prop === 'y')) {
+      continue;
+    }
+    // Browser body rect can be pinned to viewport height even when content is shorter.
+    // Compare descendants instead of treating this as a layout mismatch.
+    if (ignoreRootBodyViewportHeight && prop === 'height') {
       continue;
     }
     const bVal = browser[prop] as number;

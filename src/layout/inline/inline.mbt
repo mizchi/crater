@@ -412,8 +412,12 @@ pub fn compute_ifc(
         child.style.margin,
         available_width,
       )
+      let child_available_width = @types.max(
+        0.0,
+        available_width - child_margin.left - child_margin.right,
+      )
       let child_layout = compute_inline_child(
-        child, available_width, available_height, dispatch,
+        child, child_available_width, available_height, dispatch,
       )
       child_layout_cache[i] = child_layout
       child_margin_cache[i] = child_margin
@@ -554,10 +558,14 @@ pub fn compute_ifc(
 
     // Resolve child's box model
     let child_margin = @types.resolve_rect(child.style.margin, available_width)
+    let child_available_width = @types.max(
+      0.0,
+      available_width - child_margin.left - child_margin.right,
+    )
 
     // Compute child's intrinsic size
     let child_layout = compute_inline_child(
-      child, available_width, available_height, dispatch,
+      child, child_available_width, available_height, dispatch,
     )
 
     // Calculate baseline based on font metrics
@@ -787,10 +795,6 @@ fn compute_inline_child(
         @types.Length(_) | @types.Percent(_) => true
         _ => false
       }
-      let width_is_definite = match style.width {
-        @types.Length(_) | @types.Percent(_) => true
-        _ => false
-      }
 
       // Calculate height first (needed for aspect_ratio calculation)
       let initial_height : Double? = match style.height {
@@ -883,10 +887,9 @@ fn compute_inline_child(
         | @types.MinContent
         | @types.MaxContent
         | @types.FitContent(_) =>
-          // Check if we can derive height from aspect_ratio
-          match (style.aspect_ratio, width_is_definite) {
-            (Some(ratio), true) if ratio > 0.0 =>
-              // Derive height from width using aspect_ratio
+          match style.aspect_ratio {
+            Some(ratio) if ratio > 0.0 =>
+              // Derive auto-height from the used width for replaced-like inline leaves.
               if style.box_sizing == @types.BorderBox {
                 width / ratio
               } else {

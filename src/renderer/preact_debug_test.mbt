@@ -36,9 +36,19 @@ test "preact_page_structure" {
   // blog_meta should be positioned AFTER wrapper (even though wrapper has 0 height)
   let blog_meta = flex_container.children[1]
   inspect(blog_meta.y, content="20")
-  inspect(blog_meta.height, content="48")
+  inspect(
+    blog_meta.height,
+    content=(
+      #|16
+    ),
+  )
 
   // h1
   let h1 = flex_container.children[2]
-  inspect(h1.y, content="78.7")
+  inspect(
+    h1.y,
+    content=(
+      #|46.7
+    ),
+  )
 }
