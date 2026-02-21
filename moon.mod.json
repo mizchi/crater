@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
   "deps": {
     "mizchi/layout": "0.1.0"
