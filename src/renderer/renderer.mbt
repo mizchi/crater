@@ -1378,26 +1378,21 @@ fn resolve_document_root_zoom(
 }
 
 ///|
-/// Browser behavior: body often paints at least viewport height when its block-size
-/// is auto. Do not force this when author-specified height/min-height exists.
+/// Clamp body height only when author explicitly requests viewport-relative
+/// percentage sizing.
 fn should_clamp_body_to_viewport(root : @node.Node) -> Bool {
   if root.id != "body" {
     return false
   }
-  let auto_height = match root.style.height {
-    @types.Auto => true
-    _ => false
+  let has_viewport_height_request = match root.style.height {
+    @types.Percent(p) => p >= 1.0
+    _ =>
+      match root.style.min_height {
+        @types.Percent(p) => p >= 1.0
+        _ => false
+      }
   }
-  let auto_min_height = match root.style.min_height {
-    @types.Auto => true
-    _ => false
-  }
-  let overflow_all_visible = match
-    (root.style.overflow_x, root.style.overflow_y) {
-    (@types.Overflow::Visible, @types.Overflow::Visible) => true
-    _ => false
-  }
-  auto_height && auto_min_height && overflow_all_visible
+  has_viewport_height_request
 }
 
 ///|

@@ -100,6 +100,7 @@ priv struct StyleBuilder {
   mut margin_right : @types.Dimension
   mut margin_bottom : @types.Dimension
   mut margin_left : @types.Dimension
+  mut margin_trim : @style.MarginTrim
   mut padding_top : @types.Dimension
   mut padding_right : @types.Dimension
   mut padding_bottom : @types.Dimension
@@ -189,6 +190,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     margin_right: @types.Dimension::Length(0.0),
     margin_bottom: @types.Dimension::Length(0.0),
     margin_left: @types.Dimension::Length(0.0),
+    margin_trim: @style.MarginTrim::None,
     padding_top: @types.Dimension::Length(0.0),
     padding_right: @types.Dimension::Length(0.0),
     padding_bottom: @types.Dimension::Length(0.0),
@@ -268,6 +270,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     margin_right: style.margin.right,
     margin_bottom: style.margin.bottom,
     margin_left: style.margin.left,
+    margin_trim: style.margin_trim,
     padding_top: style.padding.top,
     padding_right: style.padding.right,
     padding_bottom: style.padding.bottom,
@@ -348,6 +351,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
       bottom: self.margin_bottom,
       left: self.margin_left,
     },
+    margin_trim: self.margin_trim,
     padding: {
       top: self.padding_top,
       right: self.padding_right,
@@ -510,6 +514,16 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "margin-right" => dimension_to_string(style.margin.right)
     "margin-bottom" => dimension_to_string(style.margin.bottom)
     "margin-left" => dimension_to_string(style.margin.left)
+    "margin-trim" =>
+      match style.margin_trim {
+        @style.MarginTrim::None => "none"
+        @style.MarginTrim::BlockStart => "block-start"
+        @style.MarginTrim::BlockEnd => "block-end"
+        @style.MarginTrim::Block => "block"
+        @style.MarginTrim::InlineStart => "inline-start"
+        @style.MarginTrim::InlineEnd => "inline-end"
+        @style.MarginTrim::Inline => "inline"
+      }
     "padding-top" => dimension_to_string(style.padding.top)
     "padding-right" => dimension_to_string(style.padding.right)
     "padding-bottom" => dimension_to_string(style.padding.bottom)
@@ -821,6 +835,7 @@ fn apply_property(
     }
     "margin-block-start" => builder.margin_top = resolve_dimension(value, ctx)
     "margin-block-end" => builder.margin_bottom = resolve_dimension(value, ctx)
+    "margin-trim" => builder.margin_trim = parse_margin_trim(value)
     "padding-top" => builder.padding_top = resolve_dimension(value, ctx)
     "padding-right" => builder.padding_right = resolve_dimension(value, ctx)
     "padding-bottom" => builder.padding_bottom = resolve_dimension(value, ctx)
@@ -1427,6 +1442,21 @@ fn parse_caption_side(value : String) -> @style.CaptionSide {
     "top" => @style.CaptionSide::Top
     "bottom" => @style.CaptionSide::Bottom
     _ => @style.CaptionSide::Top
+  }
+}
+
+///|
+/// Parse margin-trim value
+fn parse_margin_trim(value : String) -> @style.MarginTrim {
+  match value.trim().to_lower() {
+    "none" => @style.MarginTrim::None
+    "block-start" => @style.MarginTrim::BlockStart
+    "block-end" => @style.MarginTrim::BlockEnd
+    "block" => @style.MarginTrim::Block
+    "inline-start" => @style.MarginTrim::InlineStart
+    "inline-end" => @style.MarginTrim::InlineEnd
+    "inline" => @style.MarginTrim::Inline
+    _ => @style.MarginTrim::None
   }
 }
 

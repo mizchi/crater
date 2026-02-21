@@ -923,6 +923,39 @@ test "body_overflow_scroll_is_not_forced_to_viewport" {
 }
 
 ///|
+test "body_auto_height_follows_content_not_viewport" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<div style="height: 20px;"></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+
+  inspect(layout.id, content="body")
+  inspect(layout.height, content="20")
+}
+
+///|
+test "body_collapsed_top_margin_does_not_expand_body_box" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { margin-top: 10px; height: 50px; }
+    #|</style>
+    #|<div></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let child = layout.children[0]
+
+  inspect(layout.id, content="body")
+  inspect(layout.height, content="50")
+  inspect(child.y, content="0")
+}
+
+///|
 test "intrinsic_percent_replaced_nested_wrapper_quirks_like" {
   let html_str =
     #|<!-- quirks mode -->

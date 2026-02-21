@@ -81,6 +81,34 @@ pub(all) enum Visibility {
 } derive(Show, Eq)
 
 ///|
+/// CSS margin-trim property
+pub(all) enum MarginTrim {
+  None
+  BlockStart
+  BlockEnd
+  Block
+  InlineStart
+  InlineEnd
+  Inline
+} derive(Show, Eq)
+
+///|
+pub fn MarginTrim::trim_block_start(self : MarginTrim) -> Bool {
+  match self {
+    BlockStart | Block => true
+    None | BlockEnd | InlineStart | InlineEnd | Inline => false
+  }
+}
+
+///|
+pub fn MarginTrim::trim_block_end(self : MarginTrim) -> Bool {
+  match self {
+    BlockEnd | Block => true
+    None | BlockStart | InlineStart | InlineEnd | Inline => false
+  }
+}
+
+///|
 /// CSS z-index property
 pub(all) enum ZIndex {
   Auto // Stacking order determined by DOM order
@@ -227,6 +255,7 @@ pub(all) struct Style {
   mut margin : @types.Rect[@types.Dimension]
   mut padding : @types.Rect[@types.Dimension]
   mut border : @types.Rect[@types.Dimension]
+  mut margin_trim : MarginTrim
   // Flexbox
   mut flex_direction : @types.FlexDirection
   mut flex_wrap : @types.FlexWrap
@@ -329,6 +358,7 @@ pub fn Style::default() -> Style {
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
+    margin_trim: MarginTrim::None,
     flex_direction: @types.Row,
     flex_wrap: @types.NoWrap,
     justify_content: @types.Start,

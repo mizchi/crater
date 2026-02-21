@@ -63,6 +63,8 @@ WPT target selection is configured in `wpt.json`.
 - Expanded `includePrefixes` for additional overflow/alignment coverage
   (`scroll-`, `scrollbar-`, `scrollable-`, `text-overflow-`,
   `column-scroll-`, `targeted-column-scroll-`, `align-`, `place-`)
+- Excludes JS harness tests (`testharness.js`, `check-layout-th.js`, interpolation helpers)
+  from layout-tree comparison runs
 
 Check current enabled test counts:
 ```bash

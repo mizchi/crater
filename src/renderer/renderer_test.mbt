@@ -183,6 +183,46 @@ test "debug stylesheet cascading" {
 }
 
 ///|
+test "stylesheet margin-trim is applied" {
+  let css = "container { display: block; margin-trim: block; }"
+  let stylesheet = @parser.parse_stylesheet(css)
+  let elem = @selector.Element::new("container")
+
+  let cascaded = @cascade.cascade_element(elem, [stylesheet], [])
+  inspect(
+    cascaded.get_value("margin-trim"),
+    content=(
+      #|Some("block")
+    ),
+  )
+
+  let mut style = @style.Style::default()
+  for prop in cascaded.properties() {
+    match cascaded.get_value(prop) {
+      Some(value) =>
+        style = @renderer.apply_css_property_debug(style, prop, value)
+      None => ()
+    }
+  }
+  inspect(style.margin_trim, content="Block")
+}
+
+///|
+test "render_to_node applies margin-trim from stylesheet" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>container { display: block; margin-trim: block; }</style>
+    #|</head>
+    #|<body><container><item></item></container></body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let container = node.children[0]
+  inspect(container.id, content="container")
+  inspect(container.style.margin_trim, content="Block")
+}
+
+///|
 test "font-size cascading from stylesheet" {
   let css = "#div1 { font-size: 20px; width: 30px; }"
   let stylesheet = @parser.parse_stylesheet(css)

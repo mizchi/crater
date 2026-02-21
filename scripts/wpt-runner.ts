@@ -114,6 +114,18 @@ function isLayoutTest(filename: string): boolean {
   return INCLUDE_PREFIXES.some(prefix => filename.startsWith(prefix));
 }
 
+function isScriptHarnessTest(htmlPath: string): boolean {
+  try {
+    const source = fs.readFileSync(htmlPath, 'utf-8').toLowerCase();
+    return source.includes('/resources/testharness.js') ||
+      source.includes('/resources/testharnessreport.js') ||
+      source.includes('/resources/check-layout-th.js') ||
+      source.includes('/css/support/interpolation-testcommon.js');
+  } catch {
+    return false;
+  }
+}
+
 function collectHtmlFilesRecursive(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
 
@@ -148,12 +160,14 @@ function getTestFiles(moduleName: string): string[] {
   if (recursive) {
     return collectHtmlFilesRecursive(moduleDir)
       .filter(fullPath => isLayoutTest(path.basename(fullPath)))
+      .filter(fullPath => !isScriptHarnessTest(fullPath))
       .map(fullPath => path.relative(process.cwd(), fullPath));
   }
 
   return fs.readdirSync(moduleDir)
     .filter(isLayoutTest)
-    .map(f => path.join(moduleDir, f));
+    .map(f => path.join(moduleDir, f))
+    .filter(fullPath => !isScriptHarnessTest(fullPath));
 }
 
 /**

@@ -46,6 +46,7 @@ pub fn initial_value(property : String) -> String {
     | "margin-right"
     | "margin-bottom"
     | "margin-left" => "0"
+    "margin-trim" => "none"
     "padding"
     | "padding-top"
     | "padding-right"

@@ -1038,16 +1038,18 @@ fn compute_root_layout(
   let result = compute_with_collapse(node, ctx, warnings, dispatch)
   let layout = result.layout
 
-  // At root level, escaped margins position children and add to height
+  // Browser compatibility: body box metrics should remain content-based.
+  if node.id == "body" {
+    return layout
+  }
+
+  // For non-body roots, preserve escaped margin behavior used by internal layout tests.
   match result.collapsed.top {
     Some(escaped_margin) =>
-      // Adjust first child position and height
       if layout.children.length() > 0 {
-        // Need to adjust children positions by escaped margin
         let adjusted_children : Array[@types.Layout] = []
         for i = 0; i < layout.children.length(); i = i + 1 {
           let child = layout.children[i]
-          // All children: shift by escaped margin
           adjusted_children.push({
             id: child.id,
             x: child.x,
@@ -1065,7 +1067,6 @@ fn compute_root_layout(
             text: child.text,
           })
         }
-        // Calculate new height including escaped top margin
         let escaped_bottom = match result.collapsed.bottom {
           Some(m) => m
           None => 0.0
@@ -1091,7 +1092,6 @@ fn compute_root_layout(
         layout
       }
     None =>
-      // No escaped top margin, just handle bottom
       match result.collapsed.bottom {
         Some(escaped_margin) =>
           {
@@ -3023,6 +3023,8 @@ fn compute_with_collapse(
   let flow_y_positions : Array[Double] = []
   let mut current_pos = 0.0 // y in horizontal, x in vertical
   let mut prev_margin_end = 0.0
+  let mut leading_collapse_chain_active = false
+  let mut leading_chain_margin = 0.0
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
     let child_layout = child_result.layout
@@ -3089,9 +3091,11 @@ fn compute_with_collapse(
       if can_collapse_top {
         // First child margin escapes to parent
         if collapses_through {
-          escaped_top = Some(
-            collapse_margins(effective_margin_top, effective_margin_bottom),
+          leading_collapse_chain_active = true
+          leading_chain_margin = collapse_margins(
+            effective_margin_top, effective_margin_bottom,
           )
+          escaped_top = Some(leading_chain_margin)
           prev_margin_end = effective_margin_bottom
         } else {
           escaped_top = Some(effective_margin_top)
@@ -3110,16 +3114,33 @@ fn compute_with_collapse(
         current_pos = effective_margin_top
         effective_margin_top + padding.top + border.top
       }
+    } else if leading_collapse_chain_active {
+      // Leading self-collapsing chain keeps collapsing into parent block-start.
+      let collapsed_with_chain = collapse_margins(
+        leading_chain_margin, effective_margin_top,
+      )
+      if collapses_through {
+        leading_chain_margin = collapse_margins(
+          collapsed_with_chain, effective_margin_bottom,
+        )
+      } else {
+        leading_chain_margin = collapsed_with_chain
+      }
+      escaped_top = Some(leading_chain_margin)
+      prev_margin_end = effective_margin_bottom
+      padding.top + border.top
       // Sibling collapse
     } else if collapses_through {
       // Collapse-through: element positioned after collapsed margin gap
+      let collapsed_for_position = collapse_margins(
+        prev_margin_end, effective_margin_top,
+      )
       let all_collapsed = collapse_margins(
-        prev_margin_end,
-        collapse_margins(effective_margin_top, effective_margin_bottom),
+        collapsed_for_position, effective_margin_bottom,
       )
       prev_margin_end = all_collapsed
       // Position at the same y as where next sibling would be
-      current_pos + all_collapsed + padding.top + border.top
+      current_pos + collapsed_for_position + padding.top + border.top
     } else {
       let collapsed = collapse_margins(prev_margin_end, effective_margin_top)
       current_pos = current_pos + collapsed
@@ -3239,6 +3260,9 @@ fn compute_with_collapse(
       } else {
         current_pos = current_pos + effective_size
       }
+    }
+    if leading_collapse_chain_active && not(collapses_through) {
+      leading_collapse_chain_active = false
     }
 
     // Record y position after this flow child (for absolute static positioning)

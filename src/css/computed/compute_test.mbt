@@ -703,6 +703,20 @@ test "compute_inline border-collapse separate" {
 }
 
 ///|
+test "compute_inline margin-trim block" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("margin-trim: block", ctx)
+  inspect(style.margin_trim, content="Block")
+}
+
+///|
+test "compute_inline margin-trim block-start" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("margin-trim: block-start", ctx)
+  inspect(style.margin_trim, content="BlockStart")
+}
+
+///|
 test "compute_inline caption-side top" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("caption-side: top", ctx)
