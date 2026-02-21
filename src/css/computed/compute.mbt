@@ -1160,10 +1160,10 @@ fn apply_property(
           match parts.length() {
             1 =>
               if num_count == 1 {
-                // flex: <number> = <number> 1 0
+                // flex: <number> = <number> 1 0%
                 builder.flex_grow = parse_number(parts[0].to_string())
                 builder.flex_shrink = 1.0
-                builder.flex_basis = @types.Dimension::Length(0.0)
+                builder.flex_basis = @types.Dimension::Percent(0.0)
               } else if basis_found {
                 // flex: <basis> = 1 1 <basis>
                 builder.flex_grow = 1.0
@@ -1175,10 +1175,10 @@ fn apply_property(
               }
             2 =>
               if num_count == 2 {
-                // flex: <grow> <shrink> = <grow> <shrink> 0
+                // flex: <grow> <shrink> = <grow> <shrink> 0%
                 builder.flex_grow = parse_number(parts[0].to_string())
                 builder.flex_shrink = parse_number(parts[1].to_string())
-                builder.flex_basis = @types.Dimension::Length(0.0)
+                builder.flex_basis = @types.Dimension::Percent(0.0)
               } else if num_count == 1 && basis_found {
                 // flex: <grow> <basis>
                 builder.flex_grow = parse_number(parts[0].to_string())
@@ -1316,6 +1316,14 @@ fn apply_property(
     "grid-template-rows" =>
       builder.grid_template_rows = parse_grid_template_tracks(value)
     "grid-template" =>
+      match parse_grid_template_shorthand(value) {
+        Some((rows, cols)) => {
+          builder.grid_template_rows = rows
+          builder.grid_template_columns = cols
+        }
+        None => ()
+      }
+    "grid" =>
       match parse_grid_template_shorthand(value) {
         Some((rows, cols)) => {
           builder.grid_template_rows = rows

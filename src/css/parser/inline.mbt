@@ -538,9 +538,9 @@ fn parse_flex_shorthand(
   let final_basis = match basis {
     Some(b) => b
     None =>
-      // When only numbers are specified, basis defaults to 0
+      // CSS spec: when only numbers are specified, basis defaults to 0%.
       if numbers.length() >= 1 {
-        @types.Length(0.0)
+        @types.Percent(0.0)
       } else {
         @types.Auto
       }
@@ -1945,6 +1945,18 @@ fn apply_property(
   }
   // grid-template shorthand: <rows> / <columns>
   if property == "grid-template" {
+    match parse_grid_template_shorthand(value_tokens) {
+      Some((rows, cols)) =>
+        return {
+          ..style,
+          grid_template_rows: rows,
+          grid_template_columns: cols,
+        }
+      None => ()
+    }
+  }
+  // grid shorthand (partial): support template syntax `<rows> / <columns>`
+  if property == "grid" {
     match parse_grid_template_shorthand(value_tokens) {
       Some((rows, cols)) =>
         return {

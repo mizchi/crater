@@ -839,32 +839,64 @@ fn compute_grid_layout_internal(
   let width_is_definite = not(width_is_auto) || width_is_extrinsically_definite
   let height_is_definite = not(height_is_auto) ||
     height_is_extrinsically_definite
+  // In vertical writing-modes, template rows map to physical x/width and
+  // template columns map to physical y/height.
+  let column_available_size = if is_vertical_writing {
+    preliminary_content_height
+  } else {
+    preliminary_content_width
+  }
+  let row_available_size = if is_vertical_writing {
+    preliminary_content_width
+  } else {
+    preliminary_content_height
+  }
+  let column_size_is_definite = if is_vertical_writing {
+    height_is_definite
+  } else {
+    width_is_definite
+  }
+  let row_size_is_definite = if is_vertical_writing {
+    width_is_definite
+  } else {
+    height_is_definite
+  }
+  let column_use_min_content = if is_vertical_writing {
+    height_is_min_content
+  } else {
+    width_is_min_content
+  }
+  let row_use_min_content = if is_vertical_writing {
+    width_is_min_content
+  } else {
+    height_is_min_content
+  }
 
   // Resolve track sizes with implicit track handling
   // Note: Templates are already expanded at the start of compute_grid_layout
   let column_tracks = resolve_tracks_with_implicit(
     expanded_columns,
     style.grid_auto_columns,
-    preliminary_content_width,
+    column_available_size,
     column_gap,
     column_min_content,
     column_max_content,
     col_offset,
     total_column_count,
-    width_is_definite, // Distribute remaining space if width is definite
-    width_is_min_content, // Use min-content sizing (fr tracks = 0)
+    column_size_is_definite, // Distribute remaining space if axis is definite
+    column_use_min_content, // Use min-content sizing (fr tracks = 0)
   )
   let row_tracks = resolve_tracks_with_implicit(
     expanded_rows,
     style.grid_auto_rows,
-    preliminary_content_height,
+    row_available_size,
     row_gap,
     row_min_content,
     row_max_content_for_tracks,
     row_offset,
     total_row_count,
-    height_is_definite, // Distribute remaining space if height is definite
-    height_is_min_content, // Use min-content sizing (fr tracks = 0)
+    row_size_is_definite, // Distribute remaining space if axis is definite
+    row_use_min_content, // Use min-content sizing (fr tracks = 0)
   )
   if is_vertical_writing {
     let allow_block_content_expansion = width_is_auto
@@ -1017,33 +1049,49 @@ fn compute_grid_layout_internal(
     @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       @double.infinity
   }
+  let has_fit_content_percent_for_width = if is_vertical_writing {
+    has_fit_content_percent_rows
+  } else {
+    has_fit_content_percent_columns
+  }
+  let has_fit_content_percent_for_height = if is_vertical_writing {
+    has_fit_content_percent_columns
+  } else {
+    has_fit_content_percent_rows
+  }
+  let width_track_total = if is_vertical_writing {
+    calculate_total_track_size(row_tracks, row_gap)
+  } else {
+    calculate_total_track_size(column_tracks, column_gap)
+  }
+  let height_track_total = if is_vertical_writing {
+    calculate_total_track_size(column_tracks, column_gap)
+  } else {
+    calculate_total_track_size(row_tracks, row_gap)
+  }
   let resolved_min_height = match style.min_height {
     @types.Length(v) => max(v, min_height)
     @types.Percent(p) => max(p * available_height, min_height)
     @types.Auto => min_height
-    @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       // For intrinsic min-height, use track heights + padding + border
-      let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-      total_track_height +
+      height_track_total +
       padding_top +
       padding_bottom +
       border_top +
       border_bottom
-    }
   }
   let resolved_max_height = match style.max_height {
     @types.Length(v) => v
     @types.Percent(p) => p * available_height
     @types.Auto => 1.0e10
-    @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       // For intrinsic max-height, use track heights + padding + border
-      let total_track_height = calculate_total_track_size(row_tracks, row_gap)
-      total_track_height +
+      height_track_total +
       padding_top +
       padding_bottom +
       border_top +
       border_bottom
-    }
   }
   let container_width = if width_is_auto {
     // Block-level Grid in Definite sizing mode expands to fill available width
@@ -1063,11 +1111,10 @@ fn compute_grid_layout_internal(
       }
     } else {
       // Inline-level Grid or intrinsic sizing: content-based
-      let total_track_width = calculate_total_track_size(
-        column_tracks, column_gap,
-      )
+      let total_track_width = width_track_total
       let total_track_width_for_auto = if needs_intrinsic_gap_base &&
-        gapless_total_track_width > 0.0 {
+        gapless_total_track_width > 0.0 &&
+        not(is_vertical_writing) {
         gapless_total_track_width
       } else {
         total_track_width
@@ -1075,7 +1122,7 @@ fn compute_grid_layout_internal(
 
       // For percent tracks in indefinite containers, use content-based sizing
       let mut content_max_width = 0.0
-      if sizing_mode == @types.MaxContent && has_fit_content_percent_columns {
+      if sizing_mode == @types.MaxContent && has_fit_content_percent_for_width {
         for i = 0; i < children.length(); i = i + 1 {
           let child = children[i]
           if child.style.display == @types.Display::None {
@@ -1168,11 +1215,12 @@ fn compute_grid_layout_internal(
       }
       None => {
         // No aspect-ratio, use content-based sizing
-        let total_track_height = calculate_total_track_size(row_tracks, row_gap)
+        let total_track_height = height_track_total
 
         // For percent tracks in indefinite containers, use content-based sizing
         let mut content_max_height = 0.0
-        if sizing_mode == @types.MaxContent && has_fit_content_percent_rows {
+        if sizing_mode == @types.MaxContent &&
+          has_fit_content_percent_for_height {
           for i = 0; i < children.length(); i = i + 1 {
             let child = children[i]
             if child.style.display == @types.Display::None {
@@ -1248,51 +1296,99 @@ fn compute_grid_layout_internal(
       padding_right -
       border_left -
       border_right
-    let mut pos = 0.0
-    for i = 0; i < column_tracks.length(); i = i + 1 {
-      let explicit_index = i - col_offset
-      let template = if explicit_index >= 0 &&
-        explicit_index < expanded_columns.length() {
-        expanded_columns[explicit_index]
-      } else {
-        @types.TrackSizingFunction::Auto
-      }
-      let min_content = if i < column_min_content.length() {
-        column_min_content[i]
-      } else {
-        0.0
-      }
-      let max_content = if i < column_max_content.length() {
-        column_max_content[i]
-      } else {
-        0.0
-      }
-      let new_size = match template {
-        @types.TrackSizingFunction::Percent(p) => content_width * p
-        @types.MinMax(min_track, @types.MaxTrackSizing::Percent(p)) => {
-          // CSS spec: when min > max in minmax(), min wins
-          let percent_size = content_width * p
-          let min_size = resolve_min_track_size(
-            min_track,
-            content_width,
-            min_content,
-            max_content,
-            size_is_definite=true,
-          )
-          if min_size > percent_size {
-            min_size
-          } else {
-            percent_size
-          }
+    if is_vertical_writing {
+      let mut pos = 0.0
+      for i = 0; i < row_tracks.length(); i = i + 1 {
+        let explicit_index = i - row_offset
+        let template = if explicit_index >= 0 &&
+          explicit_index < expanded_rows.length() {
+          expanded_rows[explicit_index]
+        } else {
+          @types.TrackSizingFunction::Auto
         }
-        _ => column_tracks[i].size
+        let min_content = if i < row_min_content.length() {
+          row_min_content[i]
+        } else {
+          0.0
+        }
+        let max_content = if i < row_max_content.length() {
+          row_max_content[i]
+        } else {
+          0.0
+        }
+        let new_size = match template {
+          @types.TrackSizingFunction::Percent(p) => content_width * p
+          @types.MinMax(min_track, @types.MaxTrackSizing::Percent(p)) => {
+            let percent_size = content_width * p
+            let min_size = resolve_min_track_size(
+              min_track,
+              content_width,
+              min_content,
+              max_content,
+              size_is_definite=true,
+            )
+            if min_size > percent_size {
+              min_size
+            } else {
+              percent_size
+            }
+          }
+          _ => row_tracks[i].size
+        }
+        row_tracks[i] = {
+          position: pos,
+          size: new_size,
+          stretchable: row_tracks[i].stretchable,
+        }
+        pos = pos + new_size + row_gap
       }
-      column_tracks[i] = {
-        position: pos,
-        size: new_size,
-        stretchable: column_tracks[i].stretchable,
+    } else {
+      let mut pos = 0.0
+      for i = 0; i < column_tracks.length(); i = i + 1 {
+        let explicit_index = i - col_offset
+        let template = if explicit_index >= 0 &&
+          explicit_index < expanded_columns.length() {
+          expanded_columns[explicit_index]
+        } else {
+          @types.TrackSizingFunction::Auto
+        }
+        let min_content = if i < column_min_content.length() {
+          column_min_content[i]
+        } else {
+          0.0
+        }
+        let max_content = if i < column_max_content.length() {
+          column_max_content[i]
+        } else {
+          0.0
+        }
+        let new_size = match template {
+          @types.TrackSizingFunction::Percent(p) => content_width * p
+          @types.MinMax(min_track, @types.MaxTrackSizing::Percent(p)) => {
+            // CSS spec: when min > max in minmax(), min wins
+            let percent_size = content_width * p
+            let min_size = resolve_min_track_size(
+              min_track,
+              content_width,
+              min_content,
+              max_content,
+              size_is_definite=true,
+            )
+            if min_size > percent_size {
+              min_size
+            } else {
+              percent_size
+            }
+          }
+          _ => column_tracks[i].size
+        }
+        column_tracks[i] = {
+          position: pos,
+          size: new_size,
+          stretchable: column_tracks[i].stretchable,
+        }
+        pos = pos + new_size + column_gap
       }
-      pos = pos + new_size + column_gap
     }
   }
   if height_is_auto {
@@ -1301,51 +1397,99 @@ fn compute_grid_layout_internal(
       padding_bottom -
       border_top -
       border_bottom
-    let mut pos = 0.0
-    for i = 0; i < row_tracks.length(); i = i + 1 {
-      let explicit_index = i - row_offset
-      let template = if explicit_index >= 0 &&
-        explicit_index < expanded_rows.length() {
-        expanded_rows[explicit_index]
-      } else {
-        @types.TrackSizingFunction::Auto
-      }
-      let min_content = if i < row_min_content.length() {
-        row_min_content[i]
-      } else {
-        0.0
-      }
-      let max_content = if i < row_max_content.length() {
-        row_max_content[i]
-      } else {
-        0.0
-      }
-      let new_size = match template {
-        @types.TrackSizingFunction::Percent(p) => content_height * p
-        @types.MinMax(min_track, @types.MaxTrackSizing::Percent(p)) => {
-          // CSS spec: when min > max in minmax(), min wins
-          let percent_size = content_height * p
-          let min_size = resolve_min_track_size(
-            min_track,
-            content_height,
-            min_content,
-            max_content,
-            size_is_definite=true,
-          )
-          if min_size > percent_size {
-            min_size
-          } else {
-            percent_size
-          }
+    if is_vertical_writing {
+      let mut pos = 0.0
+      for i = 0; i < column_tracks.length(); i = i + 1 {
+        let explicit_index = i - col_offset
+        let template = if explicit_index >= 0 &&
+          explicit_index < expanded_columns.length() {
+          expanded_columns[explicit_index]
+        } else {
+          @types.TrackSizingFunction::Auto
         }
-        _ => row_tracks[i].size
+        let min_content = if i < column_min_content.length() {
+          column_min_content[i]
+        } else {
+          0.0
+        }
+        let max_content = if i < column_max_content.length() {
+          column_max_content[i]
+        } else {
+          0.0
+        }
+        let new_size = match template {
+          @types.TrackSizingFunction::Percent(p) => content_height * p
+          @types.MinMax(min_track, @types.MaxTrackSizing::Percent(p)) => {
+            let percent_size = content_height * p
+            let min_size = resolve_min_track_size(
+              min_track,
+              content_height,
+              min_content,
+              max_content,
+              size_is_definite=true,
+            )
+            if min_size > percent_size {
+              min_size
+            } else {
+              percent_size
+            }
+          }
+          _ => column_tracks[i].size
+        }
+        column_tracks[i] = {
+          position: pos,
+          size: new_size,
+          stretchable: column_tracks[i].stretchable,
+        }
+        pos = pos + new_size + column_gap
       }
-      row_tracks[i] = {
-        position: pos,
-        size: new_size,
-        stretchable: row_tracks[i].stretchable,
+    } else {
+      let mut pos = 0.0
+      for i = 0; i < row_tracks.length(); i = i + 1 {
+        let explicit_index = i - row_offset
+        let template = if explicit_index >= 0 &&
+          explicit_index < expanded_rows.length() {
+          expanded_rows[explicit_index]
+        } else {
+          @types.TrackSizingFunction::Auto
+        }
+        let min_content = if i < row_min_content.length() {
+          row_min_content[i]
+        } else {
+          0.0
+        }
+        let max_content = if i < row_max_content.length() {
+          row_max_content[i]
+        } else {
+          0.0
+        }
+        let new_size = match template {
+          @types.TrackSizingFunction::Percent(p) => content_height * p
+          @types.MinMax(min_track, @types.MaxTrackSizing::Percent(p)) => {
+            // CSS spec: when min > max in minmax(), min wins
+            let percent_size = content_height * p
+            let min_size = resolve_min_track_size(
+              min_track,
+              content_height,
+              min_content,
+              max_content,
+              size_is_definite=true,
+            )
+            if min_size > percent_size {
+              min_size
+            } else {
+              percent_size
+            }
+          }
+          _ => row_tracks[i].size
+        }
+        row_tracks[i] = {
+          position: pos,
+          size: new_size,
+          stretchable: row_tracks[i].stretchable,
+        }
+        pos = pos + new_size + row_gap
       }
-      pos = pos + new_size + row_gap
     }
   }
   let content_box_left = padding_left + border_left
@@ -1368,12 +1512,22 @@ fn compute_grid_layout_internal(
   let padding_box_height = container_height - border_top - border_bottom
 
   // Apply justify-content (horizontal) and align-content (vertical)
+  let column_alignment_size = if is_vertical_writing {
+    content_box_height
+  } else {
+    content_box_width
+  }
+  let row_alignment_size = if is_vertical_writing {
+    content_box_width
+  } else {
+    content_box_height
+  }
   apply_content_alignment(
     column_tracks,
-    content_box_width,
+    column_alignment_size,
     style.justify_content,
   )
-  apply_content_alignment(row_tracks, content_box_height, style.align_content)
+  apply_content_alignment(row_tracks, row_alignment_size, style.align_content)
 
   // First pass: compute all children's layouts and collect baseline info
   let preliminary_layouts : Array[@types.Layout] = []

@@ -90,7 +90,7 @@ test "parse_aspect_ratio_transferred_max_size_style" {
   inspect(item.style.max_height, content="Length(100)")
   inspect(item.style.flex_grow, content="1")
   inspect(item.style.flex_shrink, content="1")
-  inspect(item.style.flex_basis, content="Length(0)")
+  inspect(item.style.flex_basis, content="Percent(0)")
 
   let layout = @renderer.render(html_str, ctx)
   let flex_layout = layout.children[0]
@@ -422,6 +422,23 @@ test "wpt_table_flex_item_percent_width_does_not_override_used_size" {
   guard table.width >= 99.0 && table.width <= 101.0 else {
     fail("flex-assigned used width should win over table percentage width")
   }
+}
+
+///|
+test "wpt_table_percent_width_inside_flex_item_wrapper_uses_used_main_size" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; width:300px; border:1px solid black;">
+    #|  <div id="item">
+    #|    <div id="tbl" style="display:table; table-layout:fixed; width:100%; height:30px; border:1px solid blue; box-sizing:border-box;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  let table = item.children[0]
+  inspect(item.width, content="300")
+  inspect(table.width, content="300")
 }
 
 ///|
@@ -893,6 +910,39 @@ test "wpt_grid_align_start_item_uses_content_height" {
 }
 
 ///|
+test "wpt_grid_flex_item_vertical_lr_auto_row_keeps_zero_block_size" {
+  let html_str =
+    #|<!doctype html><div id="flex" style="display:flex;flex-direction:column;width:100px;height:100px;"><div id="grid" style="display:grid;grid-template-rows:auto;writing-mode:vertical-lr;"><div id="leaf"></div></div></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let flex = layout.children[0]
+  let grid = flex.children[0]
+  let leaf = grid.children[0]
+
+  inspect(grid.width, content="100")
+  inspect(grid.height, content="0")
+  inspect(leaf.width, content="100")
+  inspect(leaf.height, content="0")
+}
+
+///|
+test "wpt_grid_flex_item_column_percent_basis_indefinite_height_uses_content" {
+  let html_str =
+    #|<!doctype html><div id="target"><div id="flex" style="display:flex;flex-direction:column"><div id="grid" style="display:grid;height:0;flex:1;grid-template-rows:minmax(100px,200%);"><div id="leaf"></div></div></div></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let target = layout.children[0]
+  let flex = target.children[0]
+  let grid = flex.children[0]
+  let leaf = grid.children[0]
+
+  inspect(target.height, content="100")
+  inspect(flex.height, content="100")
+  inspect(grid.height, content="100")
+  inspect(leaf.height, content="100")
+}
+
+///|
 test "body_explicit_height_is_not_forced_to_viewport" {
   let html_str =
     #|<!DOCTYPE html>
@@ -982,6 +1032,145 @@ test "intrinsic_percent_replaced_nested_wrapper_quirks_like" {
 }
 
 ///|
+test "intrinsic_percent_replaced_004_like_flex_parent_percent_height_chain" {
+  let html_str =
+    #|<!-- quirks mode -->
+    #|<style>
+    #|#container { display: flex; height: 200px; }
+    #|#float { float: left; height: 50%; background: green; }
+    #|canvas { height: 100%; }
+    #|</style>
+    #|<p style="margin-top: 1em;">Test passes if there is a filled green square.</p>
+    #|<div id=container>
+    #|  <div id=float>
+    #|    <div>
+    #|      <canvas width=10 height=10></canvas>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let container = layout.children[1]
+  let float_div = container.children[0]
+  let inner = float_div.children[0]
+  let canvas = inner.children[0]
+
+  inspect(float_div.width, content="100")
+  inspect(float_div.height, content="100")
+  inspect(inner.width, content="100")
+  inspect(canvas.width, content="100")
+  inspect(canvas.height, content="100")
+}
+
+///|
+test "intrinsic_ratio_replaced_box_sizing_like_first_case" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|img {
+    #|  margin: 5px;
+    #|  border: 10px solid grey;
+    #|}
+    #|div {
+    #|  display: inline-block;
+    #|  margin: 10px;
+    #|  border: 1px solid black;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|}
+    #|</style>
+    #|<div>
+    #|  <img src="data:image/svg+xml;charset=UTF-8,<svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' fill='lime'/></svg>">
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let img = outer.children[0]
+
+  inspect(outer.width, content="102")
+  inspect(outer.height, content="102")
+  inspect(img.width, content="90")
+  inspect(img.height, content="90")
+}
+
+///|
+test "fit_content_item_001_like_column_flex_intrinsic_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|x-flexbox {
+    #|  display: flex;
+    #|  flex-direction: column;
+    #|}
+    #|x-item {
+    #|  display: block;
+    #|  background: red;
+    #|  align-self: start;
+    #|}
+    #|#mainSizeDependsOnCrossSize {
+    #|  padding-bottom: 50%;
+    #|  background: green;
+    #|}
+    #|#widthSetter {
+    #|  width: 100px;
+    #|  height: 50px;
+    #|  background: green;
+    #|}
+    #|</style>
+    #|<x-flexbox>
+    #|  <x-item>
+    #|    <div id=widthSetter></div>
+    #|    <div id=mainSizeDependsOnCrossSize></div>
+    #|  </x-item>
+    #|</x-flexbox>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flexbox = layout.children[0]
+  let item = flexbox.children[0]
+  let width_setter = item.children[0]
+  let depends = item.children[1]
+
+  inspect(width_setter.height, content="50")
+  inspect(depends.height, content="50")
+  inspect(item.height, content="100")
+  inspect(flexbox.height, content="100")
+}
+
+///|
+test "flex_item_transferred_sizes_padding_border_sizing_style_parse_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  .flexContainer {
+    #|    display: flex;
+    #|    flex-direction: column;
+    #|    float: left;
+    #|  }
+    #|  .item {
+    #|    background: green;
+    #|    padding-left: 25px;
+    #|    padding-right: 25px;
+    #|    box-sizing: border-box;
+    #|  }
+    #|</style>
+    #|<div class="flexContainer">
+    #|  <div class="item" style="min-height:100px; aspect-ratio: 1/1;"></div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let flex = root.children[0]
+  let item = flex.children[0]
+
+  inspect(flex.style.display, content="Flex")
+  inspect(flex.style.flex_direction, content="Column")
+  inspect(item.style.width, content="Auto")
+  inspect(item.style.height, content="Auto")
+  inspect(item.style.min_height, content="Length(100)")
+  inspect(item.style.aspect_ratio, content="Some(1)")
+  inspect(item.style.box_sizing, content="BorderBox")
+}
+
+///|
 test "wpt_intrinsic_percent_non_replaced_calc_mixed_static_layout" {
   let html_str =
     #|<!DOCTYPE html>
@@ -1043,4 +1232,161 @@ test "wpt_intrinsic_percent_replaced_dynamic_010_static_layout" {
   inspect(float_div.height, content="600")
   inspect(canvas.width, content="600")
   inspect(canvas.height, content="600")
+}
+
+///|
+test "wpt_flex_item_min_width_min_content_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; height: 100px; width: 0px;">
+    #|  <div style="min-width: min-content; flex-basis: 0; background: green; writing-mode: vertical-rl;">
+    #|    <div style="width: 100px;"></div>
+    #|  </div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let inner_node = root.children[0].children[0].children[0]
+  inspect(inner_node.style.writing_mode, content="VerticalRl")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  let inner = item.children[0]
+
+  inspect(item.width, content="100")
+  inspect(inner.height, content="100")
+}
+
+///|
+test "wpt_flex_item_min_height_min_content_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; flex-direction: column; width: 100px; height: 0px;">
+    #|  <div style="min-height: min-content; flex-basis: 0; background: green;">
+    #|    <div style="height: 100px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  inspect(item.height, content="100")
+}
+
+///|
+test "wpt_flex_item_max_height_min_content_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; flex-direction: column; width: 100px; height: 200px;">
+    #|  <div style="max-height: min-content; flex-basis: 200px; background: green;">
+    #|    <div style="height: 100px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  inspect(item.height, content="100")
+}
+
+///|
+test "wpt_flex_item_max_width_min_content_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; height: 100px; width: 200px;">
+    #|  <div style="max-width: min-content; flex-basis: 200px; background: green; writing-mode: vertical-rl;">
+    #|    <div style="width: 100px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  let inner = item.children[0]
+  inspect(item.width, content="100")
+  inspect(inner.height, content="100")
+}
+
+///|
+test "wpt_flex_item_max_width_min_content_002_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; flex-direction: column; width: 200px; height: 100px;">
+    #|  <div style="max-width: min-content; background: green;">
+    #|    <div style="float: left; width: 100px; height: 50px;"></div>
+    #|    <div style="float: left; width: 100px; height: 50px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  inspect(item.width, content="100")
+  inspect(item.height, content="100")
+}
+
+///|
+test "wpt_flex_item_content_min_width_max_content_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.flex { width: 0px; display: flex; font-family: monospace; font-size: 20px; line-height: 1.2; }
+    #|.flex_item { background: green; }
+    #|.content { min-width: max-content; color: transparent; }
+    #|</style>
+    #|<div class="flex">
+    #|  <div class="flex_item">
+    #|    <div class="content">X X X</div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let item = layout.children[0].children[0]
+  let content = item.children[0]
+  guard item.width > 40.0 else {
+    fail("min-width:max-content should prevent flex item from collapsing")
+  }
+  guard content.height < 40.0 else {
+    fail("min-width:max-content content should stay on a single line")
+  }
+}
+
+///|
+test "wpt_flex_child_percent_basis_resize_1_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|  .flex-container { display: flex; flex-direction: row; width: 100px; }
+    #|  .flex-item { flex: 1 0 auto; }
+    #|  .scroll-outer { overflow: hidden; height: 100%; max-height: 100px; }
+    #|  .scroll-inner { overflow: scroll; height: 100%; }
+    #|</style>
+    #|<div class="flex-container">
+    #|  <div class="flex-item">
+    #|    <div class="scroll-outer">
+    #|      <div class="scroll-inner">
+    #|        <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div>
+    #|        <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+    #|        <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div>
+    #|        <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+    #|      </div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let flex_item_node = root.children[0].children[0]
+  let scroll_outer_node = flex_item_node.children[0]
+  inspect(scroll_outer_node.style.height, content="Percent(1)")
+  inspect(scroll_outer_node.style.max_height, content="Length(100)")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let flex_item = container.children[0]
+  let scroll_outer = flex_item.children[0]
+  let scroll_inner = scroll_outer.children[0]
+  inspect(container.height, content="100")
+  inspect(flex_item.height, content="100")
+  inspect(scroll_outer.height, content="100")
+  inspect(scroll_inner.height, content="100")
 }

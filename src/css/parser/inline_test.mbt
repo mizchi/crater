@@ -125,6 +125,7 @@ test "flex shorthand" {
   let style = parse_inline_style("flex: 1")
   inspect(style.flex_grow, content="1")
   inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Percent(0)")
 }
 
 ///|
@@ -214,6 +215,16 @@ test "grid-template shorthand rows and columns" {
   inspect(style.grid_template_rows[0], content="Length(100)")
   inspect(style.grid_template_columns.length(), content="1")
   inspect(style.grid_template_columns[0], content="Length(200)")
+}
+
+///|
+test "grid shorthand template rows and columns" {
+  let style = parse_inline_style("display: grid; grid: 1fr 1fr / auto")
+  inspect(style.grid_template_rows.length(), content="2")
+  inspect(style.grid_template_rows[0], content="Fr(1)")
+  inspect(style.grid_template_rows[1], content="Fr(1)")
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(style.grid_template_columns[0], content="Auto")
 }
 
 ///|
