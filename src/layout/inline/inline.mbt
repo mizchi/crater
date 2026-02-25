@@ -1074,7 +1074,10 @@ fn compute_inline_child(
       let child_layout = compute_inline_child(
         child, available_width, available_height, dispatch,
       )
-      let child_margin = @types.resolve_rect(child.style.margin, available_width)
+      let child_margin = @types.resolve_rect(
+        child.style.margin,
+        available_width,
+      )
       let positioned_child : @types.Layout = {
         ..child_layout,
         x: inline_cursor_x + child_margin.left,

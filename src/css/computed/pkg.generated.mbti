@@ -54,6 +54,8 @@ pub fn parse_flex_wrap(String) -> @types.FlexWrap
 
 pub fn parse_float(String) -> @types.Float
 
+pub fn parse_grid_area_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement, @types.GridPlacement, @types.GridPlacement)
+
 pub fn parse_grid_auto_flow(String) -> @types.GridAutoFlow
 
 pub fn parse_grid_line_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement)

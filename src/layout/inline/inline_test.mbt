@@ -238,6 +238,72 @@ test "ifc_replaced_only_line_includes_strut_descent" {
 }
 
 ///|
+test "ifc_contain_size_replaced_auto_size_uses_border_box_only" {
+  let default_style = @style.Style::default()
+  let replaced_style = {
+    ..default_style,
+    display: @types.Inline,
+    contain: { ..default_style.contain, size: true },
+    border: {
+      top: @types.Length(3.0),
+      right: @types.Length(3.0),
+      bottom: @types.Length(3.0),
+      left: @types.Length(3.0),
+    },
+  }
+  let replaced_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
+  let result = compute_ifc(
+    [child],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts[0].width, content="6")
+  inspect(result.layouts[0].height, content="6")
+}
+
+///|
+test "ifc_contain_size_replaced_uses_explicit_aspect_ratio_for_auto_height" {
+  let default_style = @style.Style::default()
+  let replaced_style = {
+    ..default_style,
+    display: @types.Inline,
+    contain: { ..default_style.contain, size: true },
+    width: @types.Length(100.0),
+    height: @types.Auto,
+    aspect_ratio: Some(1.0),
+  }
+  let replaced_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 60.0, max_width: 60.0, min_height: 60.0, max_height: 60.0 }
+    },
+  }
+  let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
+  let result = compute_ifc(
+    [child],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts[0].width, content="100")
+  inspect(result.layouts[0].height, content="100")
+}
+
+///|
 test "ifc_content_offset" {
   // IFC with content offset (padding/border of container)
   let default_style = @style.Style::default()

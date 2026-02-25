@@ -71,6 +71,49 @@ Check current enabled test counts:
 npx tsx scripts/wpt-runner.ts --list
 ```
 
+#### WPT CI Maintenance (Parallel Shards)
+
+The CI workflow runs WPT compatibility checks with about 6 workers:
+
+- `wpt-css`: 4 shards (`wpt-css (shard-1..4)`)
+- `wpt-dom`: 1 job (`wpt-dom`, runs `--dom` and `--svg`)
+- `wpt-webdriver`: 1 job (`wpt-webdriver`, runs 3 BiDi targets)
+
+See the shard assignment in `.github/workflows/ci.yml` (`wpt-css-tests`, `wpt-dom-tests`, `wpt-webdriver-tests`).
+
+Each run also publishes two summaries:
+
+- `wpt-compat-summary`: compatibility totals/pass rate (`wpt-summary/wpt-compat-summary.md`)
+- `ci-timing-summary`: queue/run bottlenecks by job and group (`ci-timing/summary.md`)
+
+Use this checklist when maintaining shard balance:
+
+1. Open the latest GitHub Actions run and check `ci-timing-summary`.
+2. Compare `wpt-css (shard-*)` durations in "Slowest Jobs".
+3. If one shard is consistently slower (roughly >10s), move modules between shard definitions in `.github/workflows/ci.yml`.
+4. Keep each shard runtime close (current target is roughly 65-75s per CSS shard).
+5. Verify compatibility totals from `wpt-compat-summary` are not regressing.
+
+Optional local dry-run for summaries:
+
+```bash
+# Example: generate per-shard reports
+mkdir -p /tmp/wpt-reports
+npx tsx scripts/wpt-runner.ts css-overflow css-grid css-tables --workers 4 --json /tmp/wpt-reports/wpt-css-shard-1.json
+npx tsx scripts/wpt-dom-runner.ts --dom --json /tmp/wpt-reports/wpt-dom-dom.json
+npx tsx scripts/wpt-dom-runner.ts --svg --json /tmp/wpt-reports/wpt-dom-svg.json
+npx tsx scripts/wpt-webdriver-runner.ts "session/status" --json /tmp/wpt-reports/wpt-webdriver-session-status.json
+
+# Aggregate compatibility summary
+npx tsx scripts/wpt-ci-summary.ts --input /tmp/wpt-reports --json /tmp/wpt-summary.json --markdown /tmp/wpt-summary.md
+
+# Analyze CI run timing from GitHub Actions run jobs API output
+gh api repos/mizchi/crater/actions/runs/<RUN_ID>/jobs --paginate > /tmp/jobs.json
+npx tsx scripts/ci-timing-summary.ts --input /tmp/jobs.json --json /tmp/ci-timing-summary.json --markdown /tmp/ci-timing-summary.md
+```
+
+When compatibility improvement/regression should become the new baseline, update `tests/wpt-baseline.env` (used by `scripts/wpt-ci-summary.ts` for CSS baseline delta).
+
 ## Features
 
 ### Layout Modes

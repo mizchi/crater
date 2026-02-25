@@ -1796,3 +1796,206 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
   let max_layout = compute(root, max_ctx, default_dispatch())
   inspect(max_layout.height, content="100")
 }
+
+///|
+test "block_contain_size_auto_height_ignores_child_content" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      contain: { ..default_style.contain, size: true },
+      border: {
+        top: @types.Length(2.0),
+        right: @types.Length(2.0),
+        bottom: @types.Length(2.0),
+        left: @types.Length(2.0),
+      },
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  // Child layout is still produced, but auto height is sized as if empty.
+  inspect(layout.height, content="4")
+}
+
+///|
+test "inline_block_contain_size_ifc_auto_height_ignores_child_content" {
+  let default_style = @style.Style::default()
+  let text_measure : @types.MeasureFunc = {
+    func: fn(_w, _h) {
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+    },
+  }
+  let inline_child = @node.Node::with_measure(
+    "inline-child",
+    { ..default_style, display: @types.Inline },
+    text_measure,
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.InlineBlock,
+      contain: { ..default_style.contain, size: true },
+      border: {
+        top: @types.Length(2.0),
+        right: @types.Length(2.0),
+        bottom: @types.Length(2.0),
+        left: @types.Length(2.0),
+      },
+      overflow_x: @types.Scroll,
+      overflow_y: @types.Scroll,
+    },
+    [inline_child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="4")
+}
+
+///|
+test "block_ifc_contain_size_with_aspect_ratio_uses_width" {
+  let default_style = @style.Style::default()
+  let inline_measure : @types.MeasureFunc = {
+    func: fn(_w, _h) {
+      { min_width: 10.0, max_width: 10.0, min_height: 200.0, max_height: 200.0 }
+    },
+  }
+  let inline_child = @node.Node::with_measure(
+    "inline-child",
+    { ..default_style, display: @types.Inline },
+    inline_measure,
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      contain: { ..default_style.contain, size: true },
+      width: @types.Length(100.0),
+      aspect_ratio: Some(1.0),
+    },
+    [inline_child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="100")
+}
+
+///|
+test "block_leaf_measure_contain_size_min_content_uses_border_box_only" {
+  let default_style = @style.Style::default()
+  let measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let node = @node.Node::with_measure(
+    "img",
+    {
+      ..default_style,
+      display: @types.Block,
+      contain: { ..default_style.contain, size: true },
+      border: {
+        top: @types.Length(3.0),
+        right: @types.Length(3.0),
+        bottom: @types.Length(3.0),
+        left: @types.Length(3.0),
+      },
+      width: @types.MinContent,
+      height: @types.MinContent,
+    },
+    measure,
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(node, ctx, default_dispatch())
+  inspect(layout.width, content="6")
+  inspect(layout.height, content="6")
+}
+
+///|
+test "block_leaf_measure_contain_size_auto_uses_border_box_only" {
+  let default_style = @style.Style::default()
+  let measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let node = @node.Node::with_measure(
+    "video",
+    {
+      ..default_style,
+      display: @types.Block,
+      contain: { ..default_style.contain, size: true },
+      border: {
+        top: @types.Length(3.0),
+        right: @types.Length(3.0),
+        bottom: @types.Length(3.0),
+        left: @types.Length(3.0),
+      },
+      width: @types.Auto,
+      height: @types.Auto,
+    },
+    measure,
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(node, ctx, default_dispatch())
+  inspect(layout.width, content="6")
+  inspect(layout.height, content="6")
+}

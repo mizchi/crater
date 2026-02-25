@@ -80,3 +80,27 @@ test "wrapper_with_only_absolute_child_should_have_zero_height" {
   // Height should be 0 since only child is absolute positioned
   inspect(wrapper.height, content="0")
 }
+
+///|
+test "absolute_position_in_static_grid_parent_uses_grid_containing_block" {
+  let html =
+    #|<p style="margin: 0; line-height: 1.2;">lead</p>
+    #|<grid style="display: grid; min-height: 100px; grid-template-rows: auto;">
+    #|  <div style="position: absolute; width: 100px; height: 50px;"></div>
+    #|  <div style="width: 100px; height: 50px; align-self: end;"></div>
+    #|</grid>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 375.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  let grid = layout.children[1]
+  let absolute_child = grid.children[0]
+
+  inspect(grid.y, content="19.2")
+  inspect(absolute_child.y, content="0")
+  inspect(absolute_child.width, content="100")
+  inspect(absolute_child.height, content="50")
+}

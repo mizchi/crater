@@ -74,6 +74,59 @@ test "parse_alignment" {
 }
 
 ///|
+test "parse_align_self baseline variants" {
+  inspect(@computed.parse_align_self("baseline"), content="Baseline")
+  inspect(@computed.parse_align_self("first baseline"), content="Baseline")
+  inspect(@computed.parse_align_self("last baseline"), content="End")
+}
+
+///|
+test "compute_inline container-type size implies contain size and style" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("container-type: size", ctx)
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.inline_size, content="false")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "compute_inline container-type merges with contain" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "contain: paint; container-type: inline-size", ctx,
+  )
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "parse_grid_placement custom ident defaults to second line" {
+  inspect(@computed.parse_grid_placement("foo"), content="Line(2)")
+  inspect(@computed.parse_grid_placement("bar-baz"), content="Line(2)")
+}
+
+///|
+test "compute_inline grid-area shorthand sets row and column lines" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("grid-area: 1 / 2 / 3 / 4", ctx)
+  inspect(style.grid_row.start, content="Line(1)")
+  inspect(style.grid_column.start, content="Line(2)")
+  inspect(style.grid_row.end, content="Line(3)")
+  inspect(style.grid_column.end, content="Line(4)")
+}
+
+///|
+test "compute_inline grid-area custom idents place to implicit second track" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("grid-area: a / a / b / b", ctx)
+  inspect(style.grid_row.start, content="Line(2)")
+  inspect(style.grid_column.start, content="Line(2)")
+  inspect(style.grid_row.end, content="Line(2)")
+  inspect(style.grid_column.end, content="Line(2)")
+}
+
+///|
 test "parse_aspect_ratio" {
   inspect(@computed.parse_aspect_ratio("auto"), content="None")
   inspect(
@@ -105,6 +158,23 @@ test "compute_inline border shorthand" {
   inspect(style.border.right, content="Length(3)")
   inspect(style.border.bottom, content="Length(3)")
   inspect(style.border.left, content="Length(3)")
+}
+
+///|
+test "compute_inline border shorthand em uses context font-size" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 20.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline("border: 1em solid red", ctx)
+  inspect(style.border.top, content="Length(20)")
+  inspect(style.border.right, content="Length(20)")
+  inspect(style.border.bottom, content="Length(20)")
+  inspect(style.border.left, content="Length(20)")
 }
 
 ///|

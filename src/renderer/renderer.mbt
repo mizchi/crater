@@ -669,9 +669,7 @@ fn contains_block_child(
         let tag_lower = child_elem.tag.to_lower()
         // source/track/param are non-rendered by default and should not force
         // inline parents to become block containers.
-        if tag_lower == "source" ||
-          tag_lower == "track" ||
-          tag_lower == "param" {
+        if tag_lower == "source" || tag_lower == "track" || tag_lower == "param" {
           continue
         }
         if should_skip_element(tag_lower) {
@@ -2568,14 +2566,7 @@ fn element_to_node_with_styles_internal(
   let style = if style.display == @types.Inline &&
     not(is_replaced_element(cell_tag)) &&
     (style.contain.size || style.contain.inline_size) {
-    {
-      ..style,
-      contain: {
-        ..style.contain,
-        size: false,
-        inline_size: false,
-      },
-    }
+    { ..style, contain: { ..style.contain, size: false, inline_size: false } }
   } else {
     style
   }
@@ -2954,10 +2945,10 @@ fn element_to_node_with_styles_internal(
         None => false
       }
       if not(has_src) {
-        return @node.Node::leaf(
-          node_id,
-          { ..style, display: @types.Display::None },
-        )
+        return @node.Node::leaf(node_id, {
+          ..style,
+          display: @types.Display::None,
+        })
       }
     }
     // HTML replaced elements default intrinsic size is 300x150

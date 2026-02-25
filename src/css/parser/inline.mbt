@@ -1165,6 +1165,48 @@ fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
 }
 
 ///|
+fn merge_contain(
+  base : @style.Contain,
+  extra : @style.Contain,
+) -> @style.Contain {
+  let merged : @style.Contain = {
+    size: base.size || extra.size,
+    inline_size: base.inline_size || extra.inline_size,
+    layout: base.layout || extra.layout,
+    paint: base.paint || extra.paint,
+    style: base.style || extra.style,
+  }
+  if merged.size {
+    { ..merged, inline_size: false }
+  } else {
+    merged
+  }
+}
+
+///|
+/// Parse CSS container-type property into implied containment bits.
+/// Supported: normal | size | inline-size
+fn parse_container_type(tokens : ArrayView[@token.Token]) -> @style.Contain? {
+  let remaining = skip_whitespace(tokens)
+  if remaining.length() == 0 {
+    return None
+  }
+  match remaining[0] {
+    @token.Token::Ident(s) =>
+      if s == "normal" {
+        Some(@style.Contain::none())
+      } else if s == "size" {
+        Some({ ..@style.Contain::none(), size: true, style: true })
+      } else if s == "inline-size" {
+        Some({ ..@style.Contain::none(), inline_size: true, style: true })
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
 /// Parse CSS transform property
 /// Supports: translate(x, y), translateX(x), translateY(y), translate3d(x, y, z), none
 fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
@@ -1971,6 +2013,18 @@ fn apply_property(
   if property == "contain" {
     let contain = parse_contain(value_tokens)
     return { ..style, contain, }
+  }
+  // container-type
+  if property == "container-type" {
+    match parse_container_type(value_tokens) {
+      Some(implied) =>
+        if implied.has_containment() {
+          return { ..style, contain: merge_contain(style.contain, implied) }
+        } else {
+          return style
+        }
+      None => ()
+    }
   }
   // transform
   if property == "transform" {

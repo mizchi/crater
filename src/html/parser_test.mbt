@@ -318,7 +318,8 @@ test "parse_document preserves whitespace between inline siblings" {
       inspect(body.children.length(), content="3")
       match body.children[1] {
         @html.Node::Text(t) => inspect(t, content=" ")
-        _ => inspect(false, content="inline siblings should keep collapsed space")
+        _ =>
+          inspect(false, content="inline siblings should keep collapsed space")
       }
     }
     None => inspect(false, content="body should exist")

@@ -331,6 +331,77 @@ fn calculate_total_track_size(
 }
 
 ///|
+/// Expand flexible tracks (fr / minmax(..., fr)) to fill remaining space.
+/// Used when the used container size becomes definite after min/max constraints.
+fn expand_flexible_tracks_to_fill(
+  tracks : Array[GridTrack],
+  templates : Array[@types.TrackSizingFunction],
+  auto_templates : Array[@types.TrackSizingFunction],
+  explicit_offset : Int,
+  content_size : Double,
+  gap : Double,
+) -> Unit {
+  if tracks.length() == 0 {
+    return
+  }
+
+  let current_total = calculate_total_track_size(tracks, gap)
+  let remaining = content_size - current_total
+  if remaining <= 0.0 {
+    return
+  }
+
+  let explicit_count = templates.length()
+  let fr_values : Array[Double] = []
+  let mut total_fr = 0.0
+  for i = 0; i < tracks.length(); i = i + 1 {
+    let track_type = if i < explicit_offset {
+      let k = explicit_offset - i
+      get_auto_template_reverse(auto_templates, k)
+    } else if i < explicit_offset + explicit_count {
+      templates[i - explicit_offset]
+    } else {
+      get_auto_template(auto_templates, i - explicit_offset - explicit_count)
+    }
+    let fr = match track_type {
+      @types.TrackSizingFunction::Fr(v) => v
+      @types.MinMax(_, @types.MaxTrackSizing::Fr(v)) => v
+      _ => 0.0
+    }
+    fr_values.push(fr)
+    if fr > 0.0 {
+      total_fr = total_fr + fr
+    }
+  }
+
+  if total_fr <= 0.0 {
+    return
+  }
+
+  for i = 0; i < tracks.length(); i = i + 1 {
+    let fr = fr_values[i]
+    if fr > 0.0 {
+      tracks[i] = {
+        position: tracks[i].position,
+        size: tracks[i].size + remaining * fr / total_fr,
+        stretchable: tracks[i].stretchable,
+      }
+    }
+  }
+
+  // Recompute positions after resizing.
+  let mut pos = 0.0
+  for i = 0; i < tracks.length(); i = i + 1 {
+    tracks[i] = {
+      position: pos,
+      size: tracks[i].size,
+      stretchable: tracks[i].stretchable,
+    }
+    pos = pos + tracks[i].size + gap
+  }
+}
+
+///|
 /// Compute grid layout with LayoutContext interface (matches flex/block signature)
 pub fn compute(
   node : @node.Node,
@@ -450,6 +521,21 @@ fn compute_grid_layout_internal(
   let style = node.style
   let is_vertical_writing = style.writing_mode.is_vertical()
   let is_block_rtl = style.writing_mode.is_block_rtl()
+  // Containment contribution suppression (physical-axis behavior):
+  // - contain:size suppresses both width/height content contributions
+  // - contain:inline-size suppresses width-side content contributions
+  let suppress_width_intrinsic = style.contain.size || style.contain.inline_size
+  let suppress_height_intrinsic = style.contain.size
+  let suppress_column_intrinsic = if is_vertical_writing {
+    suppress_height_intrinsic
+  } else {
+    suppress_width_intrinsic
+  }
+  let suppress_row_intrinsic = if is_vertical_writing {
+    suppress_width_intrinsic
+  } else {
+    suppress_height_intrinsic
+  }
   let original_children = node.children
 
   // Flatten children for display: contents support
@@ -714,6 +800,7 @@ fn compute_grid_layout_internal(
       expanded_columns,
       style.grid_auto_columns,
       col_offset,
+      suppress_column_intrinsic,
       intrinsic_cache,
       dispatch,
     )
@@ -757,6 +844,7 @@ fn compute_grid_layout_internal(
     expanded_columns,
     style.grid_auto_columns,
     col_offset,
+    suppress_column_intrinsic,
     intrinsic_cache,
     dispatch,
   )
@@ -772,6 +860,7 @@ fn compute_grid_layout_internal(
     expanded_rows,
     style.grid_auto_rows,
     row_offset,
+    suppress_row_intrinsic,
     intrinsic_cache,
     dispatch,
   )
@@ -1122,33 +1211,35 @@ fn compute_grid_layout_internal(
 
       // For percent tracks in indefinite containers, use content-based sizing
       let mut content_max_width = 0.0
-      if sizing_mode == @types.MaxContent && has_fit_content_percent_for_width {
-        for i = 0; i < children.length(); i = i + 1 {
-          let child = children[i]
-          if child.style.display == @types.Display::None {
-            continue
+      if not(suppress_width_intrinsic) {
+        if sizing_mode == @types.MaxContent && has_fit_content_percent_for_width {
+          for i = 0; i < children.length(); i = i + 1 {
+            let child = children[i]
+            if child.style.display == @types.Display::None {
+              continue
+            }
+            let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
+              child, true, container_width_for_expansion, content_height_for_intrinsic,
+              margin_percent_base, intrinsic_cache, dispatch,
+            )
+            let contribution = max_content + margin_start + margin_end
+            if contribution > content_max_width {
+              content_max_width = contribution
+            }
           }
-          let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-            child, true, container_width_for_expansion, content_height_for_intrinsic,
-            margin_percent_base, intrinsic_cache, dispatch,
-          )
-          let contribution = max_content + margin_start + margin_end
-          if contribution > content_max_width {
-            content_max_width = contribution
-          }
-        }
-      } else {
-        for i = 0; i < children.length(); i = i + 1 {
-          let child = children[i]
-          if child.style.display == @types.Display::None {
-            continue
-          }
-          match child.style.width {
-            @types.Length(w) =>
-              if w > content_max_width {
-                content_max_width = w
-              }
-            _ => ()
+        } else {
+          for i = 0; i < children.length(); i = i + 1 {
+            let child = children[i]
+            if child.style.display == @types.Display::None {
+              continue
+            }
+            match child.style.width {
+              @types.Length(w) =>
+                if w > content_max_width {
+                  content_max_width = w
+                }
+              _ => ()
+            }
           }
         }
       }
@@ -1219,34 +1310,36 @@ fn compute_grid_layout_internal(
 
         // For percent tracks in indefinite containers, use content-based sizing
         let mut content_max_height = 0.0
-        if sizing_mode == @types.MaxContent &&
-          has_fit_content_percent_for_height {
-          for i = 0; i < children.length(); i = i + 1 {
-            let child = children[i]
-            if child.style.display == @types.Display::None {
-              continue
+        if not(suppress_height_intrinsic) {
+          if sizing_mode == @types.MaxContent &&
+            has_fit_content_percent_for_height {
+            for i = 0; i < children.length(); i = i + 1 {
+              let child = children[i]
+              if child.style.display == @types.Display::None {
+                continue
+              }
+              let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
+                child, false, container_width_for_expansion, content_height_for_intrinsic,
+                margin_percent_base, intrinsic_cache, dispatch,
+              )
+              let contribution = max_content + margin_start + margin_end
+              if contribution > content_max_height {
+                content_max_height = contribution
+              }
             }
-            let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-              child, false, container_width_for_expansion, content_height_for_intrinsic,
-              margin_percent_base, intrinsic_cache, dispatch,
-            )
-            let contribution = max_content + margin_start + margin_end
-            if contribution > content_max_height {
-              content_max_height = contribution
-            }
-          }
-        } else {
-          for i = 0; i < children.length(); i = i + 1 {
-            let child = children[i]
-            if child.style.display == @types.Display::None {
-              continue
-            }
-            match child.style.height {
-              @types.Length(h) =>
-                if h > content_max_height {
-                  content_max_height = h
-                }
-              _ => ()
+          } else {
+            for i = 0; i < children.length(); i = i + 1 {
+              let child = children[i]
+              if child.style.display == @types.Display::None {
+                continue
+              }
+              match child.style.height {
+                @types.Length(h) =>
+                  if h > content_max_height {
+                    content_max_height = h
+                  }
+                _ => ()
+              }
             }
           }
         }
@@ -1285,6 +1378,35 @@ fn compute_grid_layout_internal(
       min_height
     } else {
       clamped
+    }
+  }
+
+  // When auto-height grid is clamped by min/max into a definite used size,
+  // flex tracks should absorb remaining free space.
+  if height_is_auto {
+    let content_height = container_height -
+      padding_top -
+      padding_bottom -
+      border_top -
+      border_bottom
+    if is_vertical_writing {
+      expand_flexible_tracks_to_fill(
+        column_tracks,
+        expanded_columns,
+        style.grid_auto_columns,
+        col_offset,
+        content_height,
+        column_gap,
+      )
+    } else {
+      expand_flexible_tracks_to_fill(
+        row_tracks,
+        expanded_rows,
+        style.grid_auto_rows,
+        row_offset,
+        content_height,
+        row_gap,
+      )
     }
   }
 
@@ -1935,6 +2057,7 @@ fn calculate_track_intrinsic_sizes(
   templates : Array[@types.TrackSizingFunction], // Track templates for type-aware distribution
   auto_templates : Array[@types.TrackSizingFunction], // Auto track templates
   explicit_offset : Int, // Offset for explicit tracks
+  suppress_item_intrinsic : Bool, // Suppress item-driven intrinsic contributions
   cache : GridIntrinsicCache, // Cache for intrinsic size calculations
   dispatch : @node.DispatchFn,
 ) -> (Array[Double], Array[Double]) {
@@ -1992,10 +2115,14 @@ fn calculate_track_intrinsic_sizes(
     if span > max_span {
       max_span = span
     }
-    let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-      child, is_column, container_width, container_height, margin_percent_base, cache,
-      dispatch,
-    )
+    let (min_content, max_content, margin_start, margin_end) = if suppress_item_intrinsic {
+      (0.0, 0.0, 0.0, 0.0)
+    } else {
+      calculate_item_intrinsic_sizes(
+        child, is_column, container_width, container_height, margin_percent_base,
+        cache, dispatch,
+      )
+    }
     let min_content_contribution = min_content + margin_start + margin_end
     let max_contribution = max_content + margin_start + margin_end
 

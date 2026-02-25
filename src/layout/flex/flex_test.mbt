@@ -4262,3 +4262,88 @@ test "min_height_with_align_content_center_column" {
   inspect(layout.children[0].y, content="40")
   inspect(layout.children[0].height, content="20")
 }
+
+///|
+test "flex_contain_size_auto_height_ignores_child_content" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  })
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      contain: { ..default_style.contain, size: true },
+      border: {
+        top: @types.Length(2.0),
+        right: @types.Length(2.0),
+        bottom: @types.Length(2.0),
+        left: @types.Length(2.0),
+      },
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(container, ctx, default_dispatch())
+  inspect(layout.height, content="4")
+}
+
+///|
+test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
+  let default_style = @style.Style::default()
+  let measure : @types.MeasureFunc = {
+    func: fn(_w, _h) {
+      { min_width: 40.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
+    },
+  }
+  let item = @node.Node::with_measure(
+    "item",
+    {
+      ..default_style,
+      width: @types.Length(100.0),
+      height: @types.Length(100.0),
+    },
+    measure,
+  )
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      display: @types.InlineFlex,
+      flex_direction: @types.Row,
+      contain: { ..default_style.contain, size: true },
+      border: {
+        top: @types.Length(2.0),
+        right: @types.Length(2.0),
+        bottom: @types.Length(2.0),
+        left: @types.Length(2.0),
+      },
+    },
+    [item],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(container, ctx, default_dispatch())
+  inspect(layout.width, content="4")
+  inspect(layout.height, content="4")
+  inspect(layout.children[0].width, content="40")
+}

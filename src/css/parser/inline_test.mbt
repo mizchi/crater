@@ -328,6 +328,30 @@ test "contain: inline-size" {
 }
 
 ///|
+test "container-type: size implies contain size and style" {
+  let style = parse_inline_style("container-type: size")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.inline_size, content="false")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "container-type: inline-size implies contain inline-size and style" {
+  let style = parse_inline_style("container-type: inline-size")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "container-type merges with contain flags" {
+  let style = parse_inline_style("contain: paint; container-type: size")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
 test "parse width fit-content" {
   let style = parse_inline_style("width: fit-content")
   inspect(style.width, content="FitContent(10000000000)")

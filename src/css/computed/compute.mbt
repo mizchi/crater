@@ -935,17 +935,17 @@ fn apply_property(
     }
     "border" => {
       // Shorthand: border: [width] [style] [color]
-      // Extract width value from the shorthand (e.g., "solid 3px", "1px solid red")
-      let width = extract_border_width(value)
+      // Resolve width value from shorthand (e.g., "solid 3px", "1em solid red").
+      let width = resolve_border_width(value, ctx)
       builder.border_top = width
       builder.border_right = width
       builder.border_bottom = width
       builder.border_left = width
     }
-    "border-top" => builder.border_top = extract_border_width(value)
-    "border-right" => builder.border_right = extract_border_width(value)
-    "border-bottom" => builder.border_bottom = extract_border_width(value)
-    "border-left" => builder.border_left = extract_border_width(value)
+    "border-top" => builder.border_top = resolve_border_width(value, ctx)
+    "border-right" => builder.border_right = resolve_border_width(value, ctx)
+    "border-bottom" => builder.border_bottom = resolve_border_width(value, ctx)
+    "border-left" => builder.border_left = resolve_border_width(value, ctx)
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
     "border-bottom-width" =>
@@ -1019,7 +1019,7 @@ fn apply_property(
       }
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
-      let width = extract_border_width(value)
+      let width = resolve_border_width(value, ctx)
       builder.border_top = width
       builder.border_bottom = width
     }
@@ -1042,11 +1042,11 @@ fn apply_property(
       }
     }
     "border-block-start" | "border-block-start-width" =>
-      builder.border_top = extract_border_width(value)
+      builder.border_top = resolve_border_width(value, ctx)
     "border-block-end" | "border-block-end-width" =>
-      builder.border_bottom = extract_border_width(value)
+      builder.border_bottom = resolve_border_width(value, ctx)
     "border-inline" | "border-inline-width" => {
-      let width = extract_border_width(value)
+      let width = resolve_border_width(value, ctx)
       builder.border_left = width
       builder.border_right = width
     }
@@ -1069,9 +1069,9 @@ fn apply_property(
       }
     }
     "border-inline-start" | "border-inline-start-width" =>
-      builder.border_left = extract_border_width(value)
+      builder.border_left = resolve_border_width(value, ctx)
     "border-inline-end" | "border-inline-end-width" =>
-      builder.border_right = extract_border_width(value)
+      builder.border_right = resolve_border_width(value, ctx)
     // Flexbox container
     "flex-direction" => builder.flex_direction = parse_flex_direction(value)
     "flex-wrap" => builder.flex_wrap = parse_flex_wrap(value)
@@ -1347,6 +1347,15 @@ fn apply_property(
       builder.grid_row_start = start
       builder.grid_row_end = end
     }
+    "grid-area" => {
+      let (row_start, column_start, row_end, column_end) = parse_grid_area_shorthand(
+        value,
+      )
+      builder.grid_row_start = row_start
+      builder.grid_column_start = column_start
+      builder.grid_row_end = row_end
+      builder.grid_column_end = column_end
+    }
     // Font properties
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
@@ -1363,6 +1372,14 @@ fn apply_property(
     }
     // CSS Containment
     "contain" => builder.contain = parse_contain(value)
+    "container-type" =>
+      match parse_container_type(value) {
+        Some(implied) =>
+          if implied.has_containment() {
+            builder.contain = merge_contain(builder.contain, implied)
+          }
+        None => ()
+      }
     // Clip (legacy, deprecated but widely used for a11y)
     "clip" => builder.clip = parse_clip(value)
     // Paint properties (visual, not layout)
@@ -1431,6 +1448,66 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
 fn is_none_border_style(value : String) -> Bool {
   let v = value.trim().to_lower()
   v == "none" || v == "hidden"
+}
+
+///|
+/// Resolve border width from width/style/color shorthand tokens.
+/// Falls back to the existing default 1.5px for style-only shorthands.
+fn resolve_border_width(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Dimension {
+  let v = value.trim().to_lower()
+  if v == "none" || v == "hidden" || v == "0" {
+    return @types.Length(0.0)
+  }
+
+  let mut has_visible_style = false
+  let mut has_none_style = false
+
+  let parts = v
+    .split(" ")
+    .map(fn(part) { part.to_string().trim().to_string() })
+    .filter(fn(part) { not(part.is_empty()) })
+    .collect()
+
+  for part in parts {
+    match part {
+      "none" | "hidden" => {
+        has_none_style = true
+        continue
+      }
+      "thin" => return @types.Length(1.0)
+      "medium" => return @types.Length(3.0)
+      "thick" => return @types.Length(5.0)
+      "solid"
+      | "dotted"
+      | "dashed"
+      | "double"
+      | "groove"
+      | "ridge"
+      | "inset"
+      | "outset" => {
+        has_visible_style = true
+        continue
+      }
+      _ => ()
+    }
+
+    // Length-like token found in shorthand.
+    match resolve_dimension(part, ctx) {
+      @types.Length(px) => return @types.Length(px)
+      _ => ()
+    }
+  }
+
+  if has_none_style {
+    @types.Length(0.0)
+  } else if has_visible_style {
+    @types.Length(1.5)
+  } else {
+    @types.Length(0.0)
+  }
 }
 
 ///|
@@ -3029,6 +3106,38 @@ fn parse_contain(value : String) -> @style.Contain {
     }
   }
   result
+}
+
+///|
+fn merge_contain(
+  base : @style.Contain,
+  extra : @style.Contain,
+) -> @style.Contain {
+  let merged : @style.Contain = {
+    size: base.size || extra.size,
+    inline_size: base.inline_size || extra.inline_size,
+    layout: base.layout || extra.layout,
+    paint: base.paint || extra.paint,
+    style: base.style || extra.style,
+  }
+  if merged.size {
+    { ..merged, inline_size: false }
+  } else {
+    merged
+  }
+}
+
+///|
+/// Parse container-type into implied contain bits.
+/// Supported: normal | size | inline-size
+fn parse_container_type(value : String) -> @style.Contain? {
+  match value.trim().to_string() {
+    "normal" => Some(@style.Contain::none())
+    "size" => Some({ ..@style.Contain::none(), size: true, style: true })
+    "inline-size" =>
+      Some({ ..@style.Contain::none(), inline_size: true, style: true })
+    _ => None
+  }
 }
 
 // Paint Property Parsing

@@ -2473,6 +2473,9 @@ fn compute_internal(
     @types.Auto => true
     _ => false
   }
+  let suppress_auto_inline_size = style.contain.size ||
+    style.contain.inline_size
+  let suppress_auto_block_size = style.contain.size
 
   // For MaxContent sizing with auto size, check for MeasureFunc (leaf node with intrinsic size)
   // This applies when we have a flex container with no children but a MeasureFunc
@@ -2790,13 +2793,17 @@ fn compute_internal(
     // Row flex: main size is defined unless we're doing intrinsic sizing with auto width
     // For percentage gaps, treat intrinsic width as definite to allow shrink/grow.
     not(is_intrinsic_sizing && width_is_auto) ||
-    (is_intrinsic_sizing && width_is_auto && percent_gap_on_main)
+    (is_intrinsic_sizing && width_is_auto && percent_gap_on_main) ||
+    // Size/inline-size containment in intrinsic sizing behaves as empty content,
+    // so use the resolved content-box width (often 0) as a definite main size.
+    (is_intrinsic_sizing && width_is_auto && suppress_auto_inline_size)
   } else {
     // Column flex: main size is defined if height is explicit OR max-height is set (for wrap)
     // For percentage gaps, treat intrinsic height as definite to allow shrink/grow.
     content_height != None ||
     max_height_for_wrap != None ||
-    (is_intrinsic_sizing && content_height == None && percent_gap_on_main)
+    (is_intrinsic_sizing && content_height == None && percent_gap_on_main) ||
+    (is_intrinsic_sizing && content_height == None && suppress_auto_block_size)
   }
   let initial_main_size = if is_row {
     content_width
@@ -5611,7 +5618,9 @@ fn compute_internal(
             parent_height * p
           }
         @types.Auto =>
-          if is_row {
+          if suppress_auto_block_size {
+            padding.vertical_sum() + border.vertical_sum()
+          } else if is_row {
             // Row direction: cross size is height.
             // In vertical writing-modes, auto height corresponds to inline-size
             // and should use the available inline extent when definite.
@@ -5654,8 +5663,10 @@ fn compute_internal(
             total_main + padding.vertical_sum() + border.vertical_sum()
           }
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-          // Intrinsic sizing - use content height
-          if is_row {
+          if suppress_auto_block_size {
+            padding.vertical_sum() + border.vertical_sum()
+          } else if is_row {
+            // Intrinsic sizing - use content height
             total_lines_cross + padding.vertical_sum() + border.vertical_sum()
           } else {
             // Column direction: calculate total main size from items
@@ -6293,7 +6304,9 @@ fn compute_internal(
   // IMPORTANT: For block-level flex containers with Definite sizing, use the already-calculated
   // container_width (which is available_width - margins). Only calculate shrink-to-fit width
   // when in MaxContent sizing mode.
-  let final_width = if width_is_auto && child_layouts.length() > 0 {
+  let final_width = if width_is_auto &&
+    child_layouts.length() > 0 &&
+    not(suppress_auto_inline_size) {
     match ctx.sizing_mode {
       @types.Definite =>
         // Block-level flex container: use container_width (already includes margin subtraction)
