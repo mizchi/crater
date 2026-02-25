@@ -77,7 +77,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -129,7 +129,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -144,8 +144,26 @@ jobs:
         run: just wasm
 
   wpt-css-tests:
+    name: wpt-css (${{ matrix.module }})
     runs-on: ubuntu-latest
     needs: wasm-component
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - css-flexbox
+          - css-grid
+          - css-tables
+          - css-display
+          - css-box
+          - css-sizing
+          - css-align
+          - css-position
+          - css-overflow
+          - css-contain
+          - css-variables
+          - filter-effects
+          - compositing
 
     steps:
       - name: Checkout code
@@ -171,7 +189,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -185,12 +203,31 @@ jobs:
       - name: Build WASM
         run: just build-wasm && just transpile-wasm
 
-      - name: Run WPT CSS tests
-        run: just wpt-run-all
+      - name: Run WPT CSS shard
+        run: |
+          mkdir -p .wpt-reports
+          npx tsx scripts/wpt-runner.ts "${{ matrix.module }}" --workers 4 --json ".wpt-reports/wpt-css-${{ matrix.module }}.json"
         continue-on-error: true
 
+      - name: Upload WPT CSS shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-css-report-${{ matrix.module }}
+          path: .wpt-reports/wpt-css-${{ matrix.module }}.json
+          if-no-files-found: warn
+
   wpt-dom-tests:
+    name: wpt-dom (${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: dom
+            target: --dom
+          - name: svg
+            target: --svg
 
     steps:
       - name: Checkout code
@@ -209,7 +246,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -222,12 +259,83 @@ jobs:
           moon update
           moon update --manifest-path browser/moon.mod.json
 
-      - name: Run WPT DOM tests
-        run: just wpt-dom-all
+      - name: Run WPT DOM shard
+        run: |
+          mkdir -p .wpt-reports
+          npx tsx scripts/wpt-dom-runner.ts "${{ matrix.target }}" --json ".wpt-reports/wpt-dom-${{ matrix.name }}.json"
         continue-on-error: true
 
-  wpt-webdriver-tests:
+      - name: Upload WPT DOM shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-dom-report-${{ matrix.name }}
+          path: .wpt-reports/wpt-dom-${{ matrix.name }}.json
+          if-no-files-found: warn
+
+  wpt-compat-summary:
+    if: always()
     runs-on: ubuntu-latest
+    needs:
+      - wpt-css-tests
+      - wpt-dom-tests
+      - wpt-webdriver-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Download WPT shard reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wpt-*-report-*
+          path: .wpt-reports
+          merge-multiple: true
+
+      - name: Aggregate WPT compatibility summary
+        run: |
+          mkdir -p .wpt-summary
+          npx tsx scripts/wpt-ci-summary.ts \
+            --input .wpt-reports \
+            --json .wpt-summary/wpt-compat-summary.json \
+            --markdown .wpt-summary/wpt-compat-summary.md
+
+      - name: Publish WPT summary
+        run: cat .wpt-summary/wpt-compat-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload WPT compatibility summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-compat-summary
+          path: .wpt-summary/*
+          if-no-files-found: error
+
+  wpt-webdriver-tests:
+    name: wpt-webdriver (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: session-status
+            module: session/status
+          - name: browsing-context-get-tree
+            module: browsing_context/get_tree
+          - name: script-evaluate
+            module: script/evaluate
 
     steps:
       - name: Checkout code
@@ -246,7 +354,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -272,12 +380,19 @@ jobs:
       - name: Build BiDi server
         run: just build-bidi
 
-      - name: List WebDriver BiDi modules
-        run: just wpt-webdriver-list
-
-      - name: Run WebDriver BiDi session tests
-        run: just wpt-webdriver session/status
+      - name: Run WebDriver BiDi shard
+        run: |
+          mkdir -p .wpt-reports
+          npx tsx scripts/wpt-webdriver-runner.ts "${{ matrix.module }}" --json ".wpt-reports/wpt-webdriver-${{ matrix.name }}.json"
         continue-on-error: true
+
+      - name: Upload WPT WebDriver shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-webdriver-report-${{ matrix.name }}
+          path: .wpt-reports/wpt-webdriver-${{ matrix.name }}.json
+          if-no-files-found: warn
 
   playwright-bidi-tests:
     runs-on: ubuntu-latest

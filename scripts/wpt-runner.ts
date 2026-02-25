@@ -59,6 +59,25 @@ interface Mismatch {
   diff: number;
 }
 
+interface CliOptions {
+  args: string[];
+  workers: number;
+  jsonOutput?: string;
+}
+
+interface WptCompatShardReport {
+  schemaVersion: 1;
+  suite: 'wpt-css';
+  target: string;
+  passed: number;
+  failed: number;
+  errors: number;
+  total: number;
+  passRate: number;
+  generatedAt: string;
+  workers: number;
+}
+
 type RenderHtmlToJsonFn = (html: string, width: number, height: number) => string;
 
 let renderHtmlToJsonImpl: RenderHtmlToJsonFn | null = null;
@@ -95,6 +114,7 @@ async function initCraterRenderer(): Promise<void> {
 // Configuration
 const TOLERANCE = 15;
 const VIEWPORT = { width: 800, height: 600 };
+const DEFAULT_CONCURRENCY = 6;
 
 const CSS_RESET = `
 <style>
@@ -603,9 +623,78 @@ function printResult(result: TestResult): void {
   }
 }
 
-const CONCURRENCY = 6;
+function parseCliArgs(rawArgs: string[]): CliOptions {
+  const options: CliOptions = {
+    args: [],
+    workers: DEFAULT_CONCURRENCY,
+  };
 
-async function runTestsParallel(htmlFiles: string[]): Promise<{ passed: number; failed: number; results: TestResult[] }> {
+  for (let i = 0; i < rawArgs.length; i++) {
+    const arg = rawArgs[i];
+    if (arg === '--json') {
+      options.jsonOutput = rawArgs[++i];
+      continue;
+    }
+    if (arg.startsWith('--json=')) {
+      options.jsonOutput = arg.slice('--json='.length);
+      continue;
+    }
+    if (arg === '--workers') {
+      const raw = rawArgs[++i];
+      const workers = Number.parseInt(raw ?? '', 10);
+      if (!Number.isFinite(workers) || workers <= 0) {
+        throw new Error(`Invalid workers value: ${raw}`);
+      }
+      options.workers = workers;
+      continue;
+    }
+    if (arg.startsWith('--workers=')) {
+      const raw = arg.slice('--workers='.length);
+      const workers = Number.parseInt(raw, 10);
+      if (!Number.isFinite(workers) || workers <= 0) {
+        throw new Error(`Invalid workers value: ${raw}`);
+      }
+      options.workers = workers;
+      continue;
+    }
+    options.args.push(arg);
+  }
+
+  return options;
+}
+
+function writeShardReport(
+  jsonOutput: string | undefined,
+  args: string[],
+  workers: number,
+  passed: number,
+  failed: number
+): void {
+  if (!jsonOutput) return;
+  const total = passed + failed;
+  const target = args.length === 0 ? 'all' : args.join(' ');
+
+  const report: WptCompatShardReport = {
+    schemaVersion: 1,
+    suite: 'wpt-css',
+    target,
+    passed,
+    failed,
+    errors: 0,
+    total,
+    passRate: total > 0 ? passed / total : 0,
+    generatedAt: new Date().toISOString(),
+    workers,
+  };
+
+  fs.mkdirSync(path.dirname(jsonOutput), { recursive: true });
+  fs.writeFileSync(jsonOutput, JSON.stringify(report, null, 2), 'utf-8');
+}
+
+async function runTestsParallel(
+  htmlFiles: string[],
+  workers: number
+): Promise<{ passed: number; failed: number; results: TestResult[] }> {
   const results: TestResult[] = [];
   let passed = 0;
   let failed = 0;
@@ -646,7 +735,7 @@ async function runTestsParallel(htmlFiles: string[]): Promise<{ passed: number; 
   }
 
   const browsers = await Promise.all(
-    Array.from({ length: CONCURRENCY }, () => puppeteer.launch({ headless: true }))
+    Array.from({ length: workers }, () => puppeteer.launch({ headless: true }))
   );
 
   await Promise.all(browsers.map(browser => worker(browser)));
@@ -657,7 +746,8 @@ async function runTestsParallel(htmlFiles: string[]): Promise<{ passed: number; 
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  const cliOptions = parseCliArgs(process.argv.slice(2));
+  const args = cliOptions.args;
 
   await initCraterRenderer();
 
@@ -668,6 +758,8 @@ async function main(): Promise<void> {
     console.log('  npx tsx scripts/wpt-runner.ts <path/to/test.html>');
     console.log('  npx tsx scripts/wpt-runner.ts --all             # Run all modules');
     console.log('  npx tsx scripts/wpt-runner.ts --list            # List available modules');
+    console.log('  npx tsx scripts/wpt-runner.ts css-flexbox --json .wpt-reports/css-flexbox.json');
+    console.log(`  npx tsx scripts/wpt-runner.ts --all --workers ${DEFAULT_CONCURRENCY}`);
     console.log('\nModules:', CSS_MODULES.join(', '));
     return;
   }
@@ -711,12 +803,13 @@ async function main(): Promise<void> {
 
   if (htmlFiles.length === 0) {
     console.error('No test files found');
+    writeShardReport(cliOptions.jsonOutput, args, cliOptions.workers, 0, 0);
     process.exit(1);
   }
 
-  console.log(`Running ${htmlFiles.length} test(s) with ${CONCURRENCY} workers...\n`);
+  console.log(`Running ${htmlFiles.length} test(s) with ${cliOptions.workers} workers...\n`);
 
-  const { passed, failed, results } = await runTestsParallel(htmlFiles);
+  const { passed, failed, results } = await runTestsParallel(htmlFiles, cliOptions.workers);
 
   // Print failed tests details
   const failedResults = results.filter(r => r && !r.passed);
@@ -730,6 +823,7 @@ async function main(): Promise<void> {
     }
   }
 
+  writeShardReport(cliOptions.jsonOutput, args, cliOptions.workers, passed, failed);
   console.log(`Summary: ${passed} passed, ${failed} failed`);
   process.exit(failed > 0 ? 1 : 0);
 }
