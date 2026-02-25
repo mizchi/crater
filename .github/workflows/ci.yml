@@ -144,26 +144,22 @@ jobs:
         run: just wasm
 
   wpt-css-tests:
-    name: wpt-css (${{ matrix.module }})
+    name: wpt-css (${{ matrix.name }})
     runs-on: ubuntu-latest
     needs: wasm-component
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
-        module:
-          - css-flexbox
-          - css-grid
-          - css-tables
-          - css-display
-          - css-box
-          - css-sizing
-          - css-align
-          - css-position
-          - css-overflow
-          - css-contain
-          - css-variables
-          - filter-effects
-          - compositing
+        include:
+          - name: shard-1
+            modules: css-overflow css-grid css-tables
+          - name: shard-2
+            modules: css-contain css-display css-box
+          - name: shard-3
+            modules: css-flexbox css-position filter-effects
+          - name: shard-4
+            modules: css-sizing css-align css-variables compositing
 
     steps:
       - name: Checkout code
@@ -206,28 +202,20 @@ jobs:
       - name: Run WPT CSS shard
         run: |
           mkdir -p wpt-reports
-          npx tsx scripts/wpt-runner.ts "${{ matrix.module }}" --workers 4 --json "wpt-reports/wpt-css-${{ matrix.module }}.json"
+          npx tsx scripts/wpt-runner.ts ${{ matrix.modules }} --workers 4 --json "wpt-reports/wpt-css-${{ matrix.name }}.json"
         continue-on-error: true
 
       - name: Upload WPT CSS shard report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wpt-css-report-${{ matrix.module }}
-          path: wpt-reports/wpt-css-${{ matrix.module }}.json
+          name: wpt-css-report-${{ matrix.name }}
+          path: wpt-reports/wpt-css-${{ matrix.name }}.json
           if-no-files-found: warn
 
   wpt-dom-tests:
-    name: wpt-dom (${{ matrix.name }})
+    name: wpt-dom
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: dom
-            target: --dom
-          - name: svg
-            target: --svg
 
     steps:
       - name: Checkout code
@@ -262,15 +250,18 @@ jobs:
       - name: Run WPT DOM shard
         run: |
           mkdir -p wpt-reports
-          npx tsx scripts/wpt-dom-runner.ts "${{ matrix.target }}" --json "wpt-reports/wpt-dom-${{ matrix.name }}.json"
+          status=0
+          npx tsx scripts/wpt-dom-runner.ts --dom --json "wpt-reports/wpt-dom-dom.json" || status=1
+          npx tsx scripts/wpt-dom-runner.ts --svg --json "wpt-reports/wpt-dom-svg.json" || status=1
+          exit $status
         continue-on-error: true
 
       - name: Upload WPT DOM shard report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wpt-dom-report-${{ matrix.name }}
-          path: wpt-reports/wpt-dom-${{ matrix.name }}.json
+          name: wpt-dom-report-all
+          path: wpt-reports/wpt-dom-*.json
           if-no-files-found: warn
 
   wpt-compat-summary:
@@ -324,18 +315,8 @@ jobs:
           if-no-files-found: error
 
   wpt-webdriver-tests:
-    name: wpt-webdriver (${{ matrix.name }})
+    name: wpt-webdriver
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: session-status
-            module: session/status
-          - name: browsing-context-get-tree
-            module: browsing_context/get_tree
-          - name: script-evaluate
-            module: script/evaluate
 
     steps:
       - name: Checkout code
@@ -383,15 +364,19 @@ jobs:
       - name: Run WebDriver BiDi shard
         run: |
           mkdir -p wpt-reports
-          npx tsx scripts/wpt-webdriver-runner.ts "${{ matrix.module }}" --json "wpt-reports/wpt-webdriver-${{ matrix.name }}.json"
+          status=0
+          npx tsx scripts/wpt-webdriver-runner.ts "session/status" --json "wpt-reports/wpt-webdriver-session-status.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts "browsing_context/get_tree" --json "wpt-reports/wpt-webdriver-browsing-context-get-tree.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts "script/evaluate" --json "wpt-reports/wpt-webdriver-script-evaluate.json" || status=1
+          exit $status
         continue-on-error: true
 
       - name: Upload WPT WebDriver shard report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wpt-webdriver-report-${{ matrix.name }}
-          path: wpt-reports/wpt-webdriver-${{ matrix.name }}.json
+          name: wpt-webdriver-report-all
+          path: wpt-reports/wpt-webdriver-*.json
           if-no-files-found: warn
 
   playwright-bidi-tests:
