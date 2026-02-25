@@ -115,6 +115,7 @@ async function initCraterRenderer(): Promise<void> {
 const TOLERANCE = 15;
 const VIEWPORT = { width: 800, height: 600 };
 const DEFAULT_CONCURRENCY = 6;
+const CI_PUPPETEER_ARGS = ['--no-sandbox', '--disable-setuid-sandbox'];
 
 const CSS_RESET = `
 <style>
@@ -623,6 +624,11 @@ function printResult(result: TestResult): void {
   }
 }
 
+function launchBrowser(): Promise<puppeteer.Browser> {
+  const args = process.env.CI ? CI_PUPPETEER_ARGS : [];
+  return puppeteer.launch({ headless: true, args });
+}
+
 function parseCliArgs(rawArgs: string[]): CliOptions {
   const options: CliOptions = {
     args: [],
@@ -712,13 +718,13 @@ async function runTestsParallel(
 
       if (localCount > 0 && localCount % RESTART_INTERVAL === 0) {
         try { await browser.close(); } catch {}
-        browser = await puppeteer.launch({ headless: true });
+        browser = await launchBrowser();
       }
 
       let result = await runTest(browser, htmlFile);
       if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
         try { await browser.close(); } catch {}
-        browser = await puppeteer.launch({ headless: true });
+        browser = await launchBrowser();
         result = await runTest(browser, htmlFile);
       }
 
@@ -735,7 +741,7 @@ async function runTestsParallel(
   }
 
   const browsers = await Promise.all(
-    Array.from({ length: workers }, () => puppeteer.launch({ headless: true }))
+    Array.from({ length: workers }, () => launchBrowser())
   );
 
   await Promise.all(browsers.map(browser => worker(browser)));
@@ -809,7 +815,19 @@ async function main(): Promise<void> {
 
   console.log(`Running ${htmlFiles.length} test(s) with ${cliOptions.workers} workers...\n`);
 
-  const { passed, failed, results } = await runTestsParallel(htmlFiles, cliOptions.workers);
+  let passed = 0;
+  let failed = 0;
+  let results: TestResult[] = [];
+  try {
+    const runResult = await runTestsParallel(htmlFiles, cliOptions.workers);
+    passed = runResult.passed;
+    failed = runResult.failed;
+    results = runResult.results;
+  } catch (error) {
+    console.error(error);
+    writeShardReport(cliOptions.jsonOutput, args, cliOptions.workers, 0, 1);
+    process.exit(1);
+  }
 
   // Print failed tests details
   const failedResults = results.filter(r => r && !r.passed);

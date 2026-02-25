@@ -205,8 +205,8 @@ jobs:
 
       - name: Run WPT CSS shard
         run: |
-          mkdir -p .wpt-reports
-          npx tsx scripts/wpt-runner.ts "${{ matrix.module }}" --workers 4 --json ".wpt-reports/wpt-css-${{ matrix.module }}.json"
+          mkdir -p wpt-reports
+          npx tsx scripts/wpt-runner.ts "${{ matrix.module }}" --workers 4 --json "wpt-reports/wpt-css-${{ matrix.module }}.json"
         continue-on-error: true
 
       - name: Upload WPT CSS shard report
@@ -214,7 +214,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wpt-css-report-${{ matrix.module }}
-          path: .wpt-reports/wpt-css-${{ matrix.module }}.json
+          path: wpt-reports/wpt-css-${{ matrix.module }}.json
           if-no-files-found: warn
 
   wpt-dom-tests:
@@ -261,8 +261,8 @@ jobs:
 
       - name: Run WPT DOM shard
         run: |
-          mkdir -p .wpt-reports
-          npx tsx scripts/wpt-dom-runner.ts "${{ matrix.target }}" --json ".wpt-reports/wpt-dom-${{ matrix.name }}.json"
+          mkdir -p wpt-reports
+          npx tsx scripts/wpt-dom-runner.ts "${{ matrix.target }}" --json "wpt-reports/wpt-dom-${{ matrix.name }}.json"
         continue-on-error: true
 
       - name: Upload WPT DOM shard report
@@ -270,7 +270,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wpt-dom-report-${{ matrix.name }}
-          path: .wpt-reports/wpt-dom-${{ matrix.name }}.json
+          path: wpt-reports/wpt-dom-${{ matrix.name }}.json
           if-no-files-found: warn
 
   wpt-compat-summary:
@@ -302,25 +302,25 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: wpt-*-report-*
-          path: .wpt-reports
+          path: wpt-reports
           merge-multiple: true
 
       - name: Aggregate WPT compatibility summary
         run: |
-          mkdir -p .wpt-summary
+          mkdir -p wpt-summary
           npx tsx scripts/wpt-ci-summary.ts \
-            --input .wpt-reports \
-            --json .wpt-summary/wpt-compat-summary.json \
-            --markdown .wpt-summary/wpt-compat-summary.md
+            --input wpt-reports \
+            --json wpt-summary/wpt-compat-summary.json \
+            --markdown wpt-summary/wpt-compat-summary.md
 
       - name: Publish WPT summary
-        run: cat .wpt-summary/wpt-compat-summary.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat wpt-summary/wpt-compat-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload WPT compatibility summary
         uses: actions/upload-artifact@v4
         with:
           name: wpt-compat-summary
-          path: .wpt-summary/*
+          path: wpt-summary/*
           if-no-files-found: error
 
   wpt-webdriver-tests:
@@ -382,8 +382,8 @@ jobs:
 
       - name: Run WebDriver BiDi shard
         run: |
-          mkdir -p .wpt-reports
-          npx tsx scripts/wpt-webdriver-runner.ts "${{ matrix.module }}" --json ".wpt-reports/wpt-webdriver-${{ matrix.name }}.json"
+          mkdir -p wpt-reports
+          npx tsx scripts/wpt-webdriver-runner.ts "${{ matrix.module }}" --json "wpt-reports/wpt-webdriver-${{ matrix.name }}.json"
         continue-on-error: true
 
       - name: Upload WPT WebDriver shard report
@@ -391,7 +391,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wpt-webdriver-report-${{ matrix.name }}
-          path: .wpt-reports/wpt-webdriver-${{ matrix.name }}.json
+          path: wpt-reports/wpt-webdriver-${{ matrix.name }}.json
           if-no-files-found: warn
 
   playwright-bidi-tests:
