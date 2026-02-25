@@ -284,6 +284,13 @@ pub fn parse_display(value : String) -> @types.Display {
     "table-footer-group" => @types.Display::TableFooterGroup
     "table-column" => @types.Display::TableColumn
     "table-column-group" => @types.Display::TableColumnGroup
+    // Ruby internal display types are inline-level for layout-tree comparison.
+    // (Full ruby formatting context is not yet implemented.)
+    "ruby" => @types.Display::Inline
+    "ruby-base" => @types.Display::Inline
+    "ruby-base-container" => @types.Display::Inline
+    "ruby-text" => @types.Display::Inline
+    "ruby-text-container" => @types.Display::Inline
     _ => @types.Display::Block
   }
 }
@@ -361,7 +368,9 @@ pub fn parse_alignment(value : String) -> @types.Alignment {
     "space-around" => @types.Alignment::SpaceAround
     "space-evenly" => @types.Alignment::SpaceEvenly
     "stretch" => @types.Alignment::Stretch
-    "baseline" => @types.Alignment::Baseline
+    "baseline" | "first baseline" => @types.Alignment::Baseline
+    // Fallback alignment for last-baseline in axis alignment.
+    "last baseline" => @types.Alignment::End
     _ => @types.Alignment::FlexStart
   }
 }
@@ -375,7 +384,9 @@ pub fn parse_align_self(value : String) -> @types.AlignSelf {
     "flex-end" | "end" => @types.AlignSelf::End
     "center" => @types.AlignSelf::Center
     "stretch" => @types.AlignSelf::Stretch
-    "baseline" => @types.AlignSelf::Baseline
+    "baseline" | "first baseline" => @types.AlignSelf::Baseline
+    // Fallback alignment for last-baseline in self alignment.
+    "last baseline" => @types.AlignSelf::End
     _ => @types.AlignSelf::Auto
   }
 }
@@ -460,6 +471,10 @@ pub fn parse_grid_placement(value : String) -> @types.GridPlacement {
   let line = @strconv.parse_int(v.to_string()) catch { _ => 0 }
   if line != 0 {
     @types.GridPlacement::Line(line)
+  } else if is_basic_custom_ident(v) {
+    // Browser-compatible fallback: unresolved custom identifiers in placement
+    // create an implicit track before the item (equivalent to line 2 start).
+    @types.GridPlacement::Line(2)
   } else {
     @types.GridPlacement::Auto
   }
@@ -483,6 +498,84 @@ pub fn parse_grid_line_shorthand(
     let start = parse_grid_placement(v.to_string())
     (start, @types.GridPlacement::Auto)
   }
+}
+
+///|
+/// Parse grid-area shorthand:
+/// <row-start> / <column-start> / <row-end> / <column-end>
+pub fn parse_grid_area_shorthand(
+  value : String,
+) -> (
+  @types.GridPlacement,
+  @types.GridPlacement,
+  @types.GridPlacement,
+  @types.GridPlacement,
+) {
+  let v = value.trim()
+  let parts = v
+    .split("/")
+    .map(fn(s) { s.trim().to_string() })
+    .filter(fn(s) { not(s.is_empty()) })
+    .collect()
+  if parts.length() >= 4 {
+    (
+      parse_grid_placement(parts[0]),
+      parse_grid_placement(parts[1]),
+      parse_grid_placement(parts[2]),
+      parse_grid_placement(parts[3]),
+    )
+  } else if parts.length() == 3 {
+    (
+      parse_grid_placement(parts[0]),
+      parse_grid_placement(parts[1]),
+      parse_grid_placement(parts[2]),
+      @types.GridPlacement::Auto,
+    )
+  } else if parts.length() == 2 {
+    (
+      parse_grid_placement(parts[0]),
+      parse_grid_placement(parts[1]),
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+    )
+  } else if parts.length() == 1 {
+    let start = parse_grid_placement(parts[0])
+    (start, start, @types.GridPlacement::Auto, @types.GridPlacement::Auto)
+  } else {
+    (
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+    )
+  }
+}
+
+///|
+fn is_basic_custom_ident(value : StringView) -> Bool {
+  if value.length() == 0 {
+    return false
+  }
+  let first = value[0]
+  let first_ok = (first >= 'a' && first <= 'z') ||
+    (first >= 'A' && first <= 'Z') ||
+    first == '_' ||
+    first == '-'
+  if not(first_ok) {
+    return false
+  }
+  for i = 1; i < value.length(); i = i + 1 {
+    let c = value[i]
+    let ok = (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c == '_' ||
+      c == '-'
+    if not(ok) {
+      return false
+    }
+  }
+  true
 }
 
 ///|

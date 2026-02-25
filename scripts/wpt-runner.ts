@@ -14,6 +14,7 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { pathToFileURL } from 'url';
 
 // Load config from wpt.json
 const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
@@ -81,31 +82,30 @@ interface WptCompatShardReport {
 type RenderHtmlToJsonFn = (html: string, width: number, height: number) => string;
 
 let renderHtmlToJsonImpl: RenderHtmlToJsonFn | null = null;
+const LOCAL_WPT_RUNTIME = pathToFileURL(
+  path.join(process.cwd(), '_build/js/release/build/wpt_runtime/wpt_runtime.js')
+).href;
+const LOCAL_WASM_DIST = pathToFileURL(
+  path.join(process.cwd(), 'wasm/dist/crater.js')
+).href;
 
 async function initCraterRenderer(): Promise<void> {
   if (renderHtmlToJsonImpl) return;
 
-  try {
-    const mod = await import('../_build/js/release/build/wpt_runtime/wpt_runtime.js');
-    renderHtmlToJsonImpl = mod.renderHtmlToJsonForWpt as RenderHtmlToJsonFn;
-    return;
-  } catch {
-    // Try building lightweight local runtime first.
-  }
-
+  // Always refresh local runtime first so WPT reflects latest MoonBit changes.
   try {
     execSync('moon build src/wpt_runtime --target js --release --warn-list -27-29', {
       stdio: 'ignore',
       cwd: process.cwd(),
     });
-    const mod = await import('../_build/js/release/build/wpt_runtime/wpt_runtime.js');
+    const mod = await import(LOCAL_WPT_RUNTIME);
     renderHtmlToJsonImpl = mod.renderHtmlToJsonForWpt as RenderHtmlToJsonFn;
     return;
   } catch {
     // Fallback to committed wasm/dist runtime for environments where local build is unavailable.
   }
 
-  const mod = await import('../wasm/dist/crater.js');
+  const mod = await import(LOCAL_WASM_DIST);
   renderHtmlToJsonImpl = (html: string, width: number, height: number) => (
     mod.renderer.renderHtmlToJson(html, width, height)
   );
@@ -403,7 +403,6 @@ function prepareHtmlContent(htmlPath: string): string {
 
   const headOpenTag = /<head\b[^>]*>/i;
   const bodyOpenTag = /<body\b[^>]*>/i;
-
   if (headOpenTag.test(htmlContent)) {
     htmlContent = htmlContent.replace(headOpenTag, (m) => m + CSS_RESET);
   } else if (bodyOpenTag.test(htmlContent)) {

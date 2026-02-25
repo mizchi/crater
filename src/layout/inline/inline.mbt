@@ -295,6 +295,31 @@ fn is_replaced_strut_candidate(node : @node.Node) -> Bool {
   id_matches_tag(id, "img") ||
   id_matches_tag(id, "canvas") ||
   id_matches_tag(id, "video") ||
+  id_matches_tag(id, "audio") ||
+  id_matches_tag(id, "embed") ||
+  id_matches_tag(id, "object") ||
+  id_matches_tag(id, "iframe") ||
+  id_matches_tag(id, "svg") ||
+  id_matches_tag(id, "input") ||
+  id_matches_tag(id, "textarea")
+}
+
+///|
+fn is_replaced_intrinsic_candidate(node : @node.Node) -> Bool {
+  if node.text is Some(_) {
+    return false
+  }
+  match node.measure {
+    Some(_) => ()
+    None => return false
+  }
+  let id = node.id
+  id_matches_tag(id, "img") ||
+  id_matches_tag(id, "canvas") ||
+  id_matches_tag(id, "video") ||
+  id_matches_tag(id, "audio") ||
+  id_matches_tag(id, "embed") ||
+  id_matches_tag(id, "object") ||
   id_matches_tag(id, "iframe") ||
   id_matches_tag(id, "svg") ||
   id_matches_tag(id, "input") ||
@@ -787,6 +812,22 @@ fn compute_inline_child(
         @double.infinity,
         available_height.unwrap_or(0.0),
       )
+      let suppress_inline_intrinsic = style.contain.size ||
+        style.contain.inline_size
+      let suppress_block_intrinsic = style.contain.size
+      let use_intrinsic_ratio_fallback = is_replaced_intrinsic_candidate(node) &&
+        not(style.contain.size)
+      let intrinsic_ratio : Double? = if use_intrinsic_ratio_fallback &&
+        unconstrained.max_width > 0.0 &&
+        unconstrained.max_height > 0.0 {
+        Some(unconstrained.max_width / unconstrained.max_height)
+      } else {
+        None
+      }
+      let ratio_for_auto = match style.aspect_ratio {
+        Some(r) => Some(r)
+        None => intrinsic_ratio
+      }
 
       // Check if we should use aspect_ratio to derive dimensions
       // For replaced elements like canvas/img with aspect_ratio:
@@ -818,11 +859,21 @@ fn compute_inline_child(
           available_width * p -
           padding.horizontal_sum() -
           border.horizontal_sum()
-        @types.MinContent => unconstrained.min_width
-        @types.MaxContent => unconstrained.max_width
+        @types.MinContent =>
+          if suppress_inline_intrinsic {
+            0.0
+          } else {
+            unconstrained.min_width
+          }
+        @types.MaxContent =>
+          if suppress_inline_intrinsic {
+            0.0
+          } else {
+            unconstrained.max_width
+          }
         @types.FitContent(_) | @types.Auto =>
           // Check if we can derive width from aspect_ratio
-          match (style.aspect_ratio, initial_height, height_is_definite) {
+          match (ratio_for_auto, initial_height, height_is_definite) {
             (Some(ratio), Some(h), true) if ratio > 0.0 =>
               // Derive width from height using aspect_ratio
               // For content-box sizing, use content height
@@ -834,13 +885,19 @@ fn compute_inline_child(
                   border.vertical_sum()
                 if content_h > 0.0 {
                   content_h * ratio
+                } else if suppress_inline_intrinsic {
+                  0.0
                 } else {
                   unconstrained.max_width
                 }
               }
             _ => {
               // Fallback: use intrinsic width, constrained to available_width
-              let max_content = unconstrained.max_width
+              let max_content = if suppress_inline_intrinsic {
+                0.0
+              } else {
+                unconstrained.max_width
+              }
               let content_available = available_width -
                 padding.horizontal_sum() -
                 border.horizontal_sum()
@@ -863,6 +920,11 @@ fn compute_inline_child(
         content_width,
         available_height.unwrap_or(0.0),
       )
+      let intrinsic_height_for_auto = if suppress_block_intrinsic {
+        0.0
+      } else {
+        constrained.max_height
+      }
       let width = content_width +
         padding.horizontal_sum() +
         border.horizontal_sum()
@@ -875,10 +937,10 @@ fn compute_inline_child(
             Some(ah) => ah * p
             None =>
               // No definite parent height, fall back to intrinsic + aspect_ratio
-              match style.aspect_ratio {
+              match ratio_for_auto {
                 Some(ratio) if ratio > 0.0 => width / ratio
                 _ =>
-                  constrained.max_height +
+                  intrinsic_height_for_auto +
                   padding.vertical_sum() +
                   border.vertical_sum()
               }
@@ -887,7 +949,7 @@ fn compute_inline_child(
         | @types.MinContent
         | @types.MaxContent
         | @types.FitContent(_) =>
-          match style.aspect_ratio {
+          match ratio_for_auto {
             Some(ratio) if ratio > 0.0 =>
               // Derive auto-height from the used width for replaced-like inline leaves.
               if style.box_sizing == @types.BorderBox {
@@ -898,7 +960,7 @@ fn compute_inline_child(
                 border.vertical_sum()
               }
             _ =>
-              constrained.max_height +
+              intrinsic_height_for_auto +
               padding.vertical_sum() +
               border.vertical_sum()
           }
@@ -979,6 +1041,7 @@ fn compute_inline_child(
   let children : Array[@types.Layout] = []
   let mut content_width = 0.0
   let mut content_height = 0.0
+  let mut inline_cursor_x = 0.0
 
   // Process children - handle absolute positioned elements
   let absolute_entries : Array[(Int, @node.Node)] = []
@@ -1011,12 +1074,26 @@ fn compute_inline_child(
       let child_layout = compute_inline_child(
         child, available_width, available_height, dispatch,
       )
-      children.push(child_layout)
+      let child_margin = @types.resolve_rect(child.style.margin, available_width)
+      let positioned_child : @types.Layout = {
+        ..child_layout,
+        x: inline_cursor_x + child_margin.left,
+        y: child_margin.top,
+        margin: child_margin,
+      }
+      children.push(positioned_child)
       // Accumulate content size from flow children
       // For inline elements, children are laid out horizontally
-      content_width = content_width + child_layout.width
-      if child_layout.height > content_height {
-        content_height = child_layout.height
+      inline_cursor_x = inline_cursor_x +
+        child_margin.left +
+        child_layout.width +
+        child_margin.right
+      content_width = inline_cursor_x
+      let outer_height = child_margin.top +
+        child_layout.height +
+        child_margin.bottom
+      if outer_height > content_height {
+        content_height = outer_height
       }
     }
     // Block-level children in inline context are not supported (would need anonymous blocks)

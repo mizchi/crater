@@ -297,6 +297,147 @@ test "contain_size_replaced_004_fixture_keeps_first_div_layout_child" {
 }
 
 ///|
+test "contain_size_picture_uses_img_outer_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|img {
+    #|  border: 3px solid teal;
+    #|  contain: size;
+    #|  margin: 15px;
+    #|  width: auto;
+    #|  height: auto;
+    #|}
+    #|</style>
+    #|<picture><source srcset="support/blue-100x100.png"><img></picture>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  inspect(root.children[0].style.display, content="Inline")
+  inspect(root.children[0].children.length(), content="2")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let picture = layout.children[0]
+  guard picture.width >= 36.0 else {
+    fail("picture width should include img border+margin contribution")
+  }
+}
+
+///|
+test "contain_size_empty_embed_is_zero_sized" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|embed {
+    #|  border: 3px solid teal;
+    #|  contain: size;
+    #|  margin: 15px;
+    #|  width: auto;
+    #|  height: auto;
+    #|}
+    #|</style>
+    #|<embed><embed src="support/blue-100x100.png">
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("body should contain two embed entries")
+  }
+  guard layout.children[0].width == 0.0 else {
+    fail("embed without src should be zero-sized")
+  }
+  guard layout.children[0].height == 0.0 else {
+    fail("embed without src should be zero-sized")
+  }
+  guard layout.children[1].width == 6.0 else {
+    fail("embed with src should keep border-box size under contain:size")
+  }
+}
+
+///|
+test "contain_size_non_atomic_inline_span_is_preserved" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { overflow: hidden; }
+    #|span { contain: size; }
+    #|</style>
+    #|<div><span>PASS</span></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let div = layout.children[0]
+  guard div.children.length() > 0 else {
+    fail("div should keep span child under contain:size")
+  }
+  guard div.children[0].id == "span" else {
+    fail("span with contain:size should not be flattened to text")
+  }
+}
+
+///|
+test "contain_size_ruby_base_is_preserved" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { overflow: hidden; position: absolute; }
+    #|rb { contain: size; display: ruby-base; }
+    #|</style>
+    #|<div><ruby><rb>PASS</rb></ruby></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let div_node = root.children[0]
+  guard div_node.children.length() > 0 else {
+    fail("node div should contain ruby child")
+  }
+  guard div_node.children[0].id == "ruby" else {
+    fail("node div child should be ruby")
+  }
+  guard div_node.children[0].children.length() > 0 else {
+    fail("node ruby should contain rb child")
+  }
+  inspect(div_node.children[0].children[0].style.display, content="Inline")
+  inspect(div_node.children[0].children[0].children.length(), content="1")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let div = layout.children[0]
+  guard div.children.length() > 0 else { fail("div should contain ruby") }
+  let ruby = div.children[0]
+  guard ruby.children.length() > 0 else { fail("ruby should contain rb") }
+  guard ruby.children[0].id == "rb" else {
+    fail("rb with contain:size should be preserved")
+  }
+  guard ruby.children[0].width > 0.0 else {
+    fail("rb with contain:size should still keep intrinsic text width")
+  }
+}
+
+///|
+test "contain_size_ruby_base_container_is_preserved" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { overflow: hidden; position: absolute; }
+    #|rbc { contain: size; display: ruby-base-container; }
+    #|</style>
+    #|<div><ruby><rbc>PASS</rbc></ruby></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let div = layout.children[0]
+  guard div.children.length() > 0 else { fail("div should contain ruby") }
+  let ruby = div.children[0]
+  guard ruby.children.length() > 0 else { fail("ruby should contain rbc") }
+  guard ruby.children[0].id == "rbc" else {
+    fail("rbc with contain:size should be preserved")
+  }
+  guard ruby.children[0].width > 0.0 else {
+    fail("rbc with contain:size should still keep intrinsic text width")
+  }
+}
+
+///|
 test "contain_size_img_attr_ratio_keeps_auto_height" {
   // Mirrors css-contain/contain-size-replaced-007.html behavior.
   let html_str =

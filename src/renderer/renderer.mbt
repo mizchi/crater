@@ -323,8 +323,8 @@ fn is_inline_element_by_tag(tag : String) -> Bool {
   let inline_tags = [
     // Traditional inline elements
     "a", "abbr", "acronym", "b", "bdo", "big", "br", "cite", "code", "dfn", "em",
-    "font", "i", "img", "input", "kbd", "label", "q", "s", "samp", "select", "small",
-    "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
+    "font", "i", "img", "input", "kbd", "label", "picture", "q", "s", "samp", "select",
+    "small", "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
     // HTML5 semantic inline elements
      "time", "data", "mark", "bdi", "wbr", "ruby", "rb", "rt", "rtc", "rp", "meter",
     "progress", "output", "ins", "del",
@@ -464,6 +464,16 @@ fn should_preserve_inline_element(
   stylesheets : Array[@cascade.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
+  let tag_lower = elem.tag.to_lower()
+  if tag_lower == "ruby" ||
+    tag_lower == "rb" ||
+    tag_lower == "rbc" ||
+    tag_lower == "rtc" ||
+    tag_lower == "rt" ||
+    tag_lower == "rp" {
+    return true
+  }
+
   // Check inline style first
   match elem.style {
     Some(style) => {
@@ -486,6 +496,18 @@ fn should_preserve_inline_element(
       let has_perspective = style_lower.contains("perspective:")
       let perspective_none = style_lower.contains("perspective: none")
       if has_perspective && not(perspective_none) {
+        return true
+      }
+      let has_contain = style_lower.contains("contain:") ||
+        style_lower.contains("contain :")
+      let contain_none = style_lower.contains("contain: none") ||
+        style_lower.contains("contain : none")
+      if has_contain && not(contain_none) {
+        return true
+      }
+      let has_display = style_lower.contains("display:") ||
+        style_lower.contains("display :")
+      if has_display && style_lower.contains("ruby") {
         return true
       }
     }
@@ -519,6 +541,19 @@ fn should_preserve_inline_element(
     )
     match cascaded.get_value("position") {
       Some(value) => if value.to_lower().trim() != "static" { return true }
+      None => ()
+    }
+    match cascaded.get_value("contain") {
+      Some(value) => {
+        let lowered = value.to_lower().trim()
+        if lowered != "none" && lowered != "" {
+          return true
+        }
+      }
+      None => ()
+    }
+    match cascaded.get_value("display") {
+      Some(value) => if value.to_lower().contains("ruby") { return true }
       None => ()
     }
     match cascaded.get_value("filter") {
@@ -631,12 +666,22 @@ fn contains_block_child(
   for child in elem.children {
     match child {
       @html.Node::Element(child_elem) => {
+        let tag_lower = child_elem.tag.to_lower()
+        // source/track/param are non-rendered by default and should not force
+        // inline parents to become block containers.
+        if tag_lower == "source" ||
+          tag_lower == "track" ||
+          tag_lower == "param" {
+          continue
+        }
+        if should_skip_element(tag_lower) {
+          continue
+        }
         // Check if child has non-inline display
         if will_have_non_inline_display(child_elem, stylesheets, ctx) {
           return true
         }
         // Also check if child is a block-level element by default
-        let tag_lower = child_elem.tag.to_lower()
         if not(is_inline_element(child_elem)) &&
           not(is_replaced_element(tag_lower)) {
           return true
@@ -2248,7 +2293,7 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
     },
     aspect_ratio: match style.aspect_ratio {
       Some(_) => style.aspect_ratio
-      None => Some(2.0)
+      None => if style.contain.size { None } else { Some(2.0) }
     },
   }
 }
@@ -2311,6 +2356,8 @@ fn should_skip_element(tag : String) -> Bool {
     // Template and embedded content
     | "template"
     | "applet"
+    | "track"
+    | "param"
     // math is not yet supported
     | "math"
     // Other non-visual elements
@@ -2466,6 +2513,7 @@ fn element_to_node_with_styles_internal(
   // Also, if inline element contains block children (like <code><span class="line">),
   // treat it as block so children can be properly laid out
   let style = if computed_style.display == @types.Inline &&
+    elem.tag.to_lower() != "picture" &&
     contains_replaced_element(elem) {
     { ..computed_style, display: @types.InlineBlock }
   } else if computed_style.display == @types.Inline &&
@@ -2515,6 +2563,22 @@ fn element_to_node_with_styles_internal(
   }
 
   let style = apply_svg_intrinsic_size(style, cell_tag)
+  // CSS Containment: size/inline-size containment does not apply to non-atomic
+  // inline boxes (e.g. span/ruby internal boxes).
+  let style = if style.display == @types.Inline &&
+    not(is_replaced_element(cell_tag)) &&
+    (style.contain.size || style.contain.inline_size) {
+    {
+      ..style,
+      contain: {
+        ..style.contain,
+        size: false,
+        inline_size: false,
+      },
+    }
+  } else {
+    style
+  }
 
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
@@ -2738,6 +2802,9 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
+    let suppress_auto_inline_size = style.contain.size ||
+      style.contain.inline_size
+    let suppress_auto_block_size = style.contain.size
     // Always treat <img> as replaced; unknown intrinsic size remains 0x0,
     // but CSS sizing keywords/percentages still need replaced-element behavior.
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
@@ -2761,8 +2828,10 @@ fn element_to_node_with_styles_internal(
     let img_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
-        // If height is %, keep width Auto to let aspect_ratio compute it
-        if height_is_percent {
+        if suppress_auto_inline_size {
+          @types.Auto
+          // If height is %, keep width Auto to let aspect_ratio compute it
+        } else if height_is_percent {
           @types.Auto
         } else if attr_width > 0.0 {
           @types.Length(attr_width)
@@ -2773,8 +2842,10 @@ fn element_to_node_with_styles_internal(
         style.width
       },
       height: if style.height == @types.Auto {
-        // If width is %, keep height Auto to let aspect_ratio compute it
-        if width_is_percent {
+        if suppress_auto_block_size {
+          @types.Auto
+          // If width is %, keep height Auto to let aspect_ratio compute it
+        } else if width_is_percent {
           @types.Auto
         } else if attr_height > 0.0 {
           @types.Length(attr_height)
@@ -2832,11 +2903,16 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
+    let suppress_auto_inline_size = style.contain.size ||
+      style.contain.inline_size
+    let suppress_auto_block_size = style.contain.size
     let canvas_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
-        // If height is %, keep width Auto to let aspect_ratio compute it
-        if height_is_percent {
+        if suppress_auto_inline_size {
+          @types.Auto
+          // If height is %, keep width Auto to let aspect_ratio compute it
+        } else if height_is_percent {
           @types.Auto
         } else {
           @types.Length(intrinsic_width)
@@ -2845,8 +2921,10 @@ fn element_to_node_with_styles_internal(
         style.width
       },
       height: if style.height == @types.Auto {
-        // If width is %, keep height Auto to let aspect_ratio compute it
-        if width_is_percent {
+        if suppress_auto_block_size {
+          @types.Auto
+          // If width is %, keep height Auto to let aspect_ratio compute it
+        } else if width_is_percent {
           @types.Auto
         } else {
           @types.Length(intrinsic_height)
@@ -2857,7 +2935,7 @@ fn element_to_node_with_styles_internal(
       // Set aspect ratio from intrinsic dimensions (for % sizing)
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio // Keep CSS-specified ratio
-        None => intrinsic_aspect_ratio // Use intrinsic ratio
+        None => if style.contain.size { None } else { intrinsic_aspect_ratio }
       },
     }
 
@@ -2870,6 +2948,18 @@ fn element_to_node_with_styles_internal(
   // Handle iframe/object/embed as replaced elements with default intrinsic sizing
   if (tag_lower == "iframe" || tag_lower == "object" || tag_lower == "embed") &&
     children.is_empty() {
+    if tag_lower == "embed" {
+      let has_src = match elem.attributes.get("src") {
+        Some(src) => src.trim().length() > 0
+        None => false
+      }
+      if not(has_src) {
+        return @node.Node::leaf(
+          node_id,
+          { ..style, display: @types.Display::None },
+        )
+      }
+    }
     // HTML replaced elements default intrinsic size is 300x150
     let default_width = 300.0
     let default_height = 150.0
@@ -2894,10 +2984,15 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
+    let suppress_auto_inline_size = style.contain.size ||
+      style.contain.inline_size
+    let suppress_auto_block_size = style.contain.size
     let replaced_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
-        if height_is_percent {
+        if suppress_auto_inline_size {
+          @types.Auto
+        } else if height_is_percent {
           @types.Auto
         } else {
           @types.Length(intrinsic_width)
@@ -2906,7 +3001,9 @@ fn element_to_node_with_styles_internal(
         style.width
       },
       height: if style.height == @types.Auto {
-        if width_is_percent {
+        if suppress_auto_block_size {
+          @types.Auto
+        } else if width_is_percent {
           @types.Auto
         } else {
           @types.Length(intrinsic_height)
@@ -2916,7 +3013,7 @@ fn element_to_node_with_styles_internal(
       },
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio
-        None => intrinsic_aspect_ratio
+        None => if style.contain.size { None } else { intrinsic_aspect_ratio }
       },
     }
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
@@ -2944,10 +3041,15 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
+    let suppress_auto_inline_size = style.contain.size ||
+      style.contain.inline_size
+    let suppress_auto_block_size = style.contain.size
     let media_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
-        if height_is_percent {
+        if suppress_auto_inline_size {
+          @types.Auto
+        } else if height_is_percent {
           @types.Auto
         } else {
           @types.Length(intrinsic_width)
@@ -2956,7 +3058,9 @@ fn element_to_node_with_styles_internal(
         style.width
       },
       height: if style.height == @types.Auto {
-        if width_is_percent {
+        if suppress_auto_block_size {
+          @types.Auto
+        } else if width_is_percent {
           @types.Auto
         } else {
           @types.Length(intrinsic_height)
@@ -3229,6 +3333,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "q"
     | "time"
     | "data"
+    | "picture"
     | "ruby"
     | "rt"
     | "rp"
@@ -3284,8 +3389,16 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     "col" => { ..default_style, display: @types.TableColumn }
     "colgroup" => { ..default_style, display: @types.TableColumnGroup }
     // Hidden elements - display: none by default
-    "template" | "script" | "style" | "head" | "meta" | "link" | "title" =>
-      { ..default_style, display: @types.Display::None }
+    "template"
+    | "script"
+    | "style"
+    | "head"
+    | "meta"
+    | "link"
+    | "title"
+    | "source"
+    | "track"
+    | "param" => { ..default_style, display: @types.Display::None }
     _ => default_style
   }
 }
@@ -3875,7 +3988,12 @@ fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
     @types.Static => false
     _ => true
   }
+  let layout_container = match style.display {
+    @types.Grid | @types.InlineGrid | @types.Flex | @types.InlineFlex => true
+    _ => false
+  }
   positioned ||
+  layout_container ||
   style.contain.paint ||
   style.contain.layout ||
   not(style.transform.is_none()) ||

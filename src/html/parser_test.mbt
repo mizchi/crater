@@ -255,3 +255,72 @@ test "parse numeric html entities" {
     None => inspect(false, content="should parse")
   }
 }
+
+///|
+test "parse_document preserves ruby internal elements" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|rb { contain: size; display: ruby-base; }
+    #|</style>
+    #|<div><ruby><rb>PASS</rb></ruby></div>
+  let doc = @html.parse_document(html)
+  inspect(doc.root.tag, content="html")
+  let mut body_opt : @html.Element? = None
+  for child in doc.root.children {
+    match child {
+      @html.Node::Element(e) => if e.tag == "body" { body_opt = Some(e) }
+      _ => ()
+    }
+  }
+  match body_opt {
+    Some(body) => {
+      inspect(body.children.length(), content="1")
+      match body.children[0] {
+        @html.Node::Element(div) => {
+          inspect(div.tag, content="div")
+          inspect(div.children.length(), content="1")
+          match div.children[0] {
+            @html.Node::Element(ruby) => {
+              inspect(ruby.tag, content="ruby")
+              inspect(ruby.children.length(), content="1")
+              match ruby.children[0] {
+                @html.Node::Element(rb) => inspect(rb.tag, content="rb")
+                _ => inspect(false, content="ruby child should be rb")
+              }
+            }
+            _ => inspect(false, content="div child should be ruby")
+          }
+        }
+        _ => inspect(false, content="body child should be div")
+      }
+    }
+    None => inspect(false, content="body should exist")
+  }
+}
+
+///|
+test "parse_document preserves whitespace between inline siblings" {
+  let html =
+    #|<!doctype html>
+    #|<body><video></video>
+    #|<video></video></body>
+  let doc = @html.parse_document(html)
+  let mut body_opt : @html.Element? = None
+  for child in doc.root.children {
+    match child {
+      @html.Node::Element(e) => if e.tag == "body" { body_opt = Some(e) }
+      _ => ()
+    }
+  }
+  match body_opt {
+    Some(body) => {
+      inspect(body.children.length(), content="3")
+      match body.children[1] {
+        @html.Node::Text(t) => inspect(t, content=" ")
+        _ => inspect(false, content="inline siblings should keep collapsed space")
+      }
+    }
+    None => inspect(false, content="body should exist")
+  }
+}

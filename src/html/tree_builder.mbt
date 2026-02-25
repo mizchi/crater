@@ -164,7 +164,7 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
 /// Insert element at appropriate place
 fn TreeBuilder::insert_element(self : TreeBuilder, element : Element) -> Unit {
   // Flush any pending text before inserting element
-  self.flush_pending_text()
+  self.flush_pending_text(next_tag=Some(element.tag))
   if self.foster_parenting && is_table_context(self.current_node()) {
     self.foster_parent_element(element)
   } else {
@@ -207,7 +207,10 @@ fn TreeBuilder::insert_characters(self : TreeBuilder, s : String) -> Unit {
 
 ///|
 /// Flush pending text buffer to current element
-fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
+fn TreeBuilder::flush_pending_text(
+  self : TreeBuilder,
+  next_tag? : String? = None,
+) -> Unit {
   if self.pending_text.is_empty() {
     return
   }
@@ -231,11 +234,56 @@ fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
       // Skip whitespace-only text nodes between elements
       // (inter-element whitespace is usually insignificant)
       if is_whitespace_only(text) {
+        if should_preserve_inline_inter_element_whitespace(current, next_tag) {
+          current.children.push(Node::Text(" "))
+        }
         return
       }
       current.children.push(Node::Text(text))
     }
     None => ()
+  }
+}
+
+///|
+/// Keep a single collapsed whitespace when it appears between inline-level siblings.
+fn should_preserve_inline_inter_element_whitespace(
+  current : Element,
+  next_tag : String?,
+) -> Bool {
+  let prev_len = current.children.length()
+  if prev_len == 0 {
+    return false
+  }
+  let next_inline = match next_tag {
+    Some(tag) => is_gap_sensitive_replaced_tag(tag)
+    None => false
+  }
+  if not(next_inline) {
+    return false
+  }
+  let prev_inline = match current.children[prev_len - 1] {
+    Node::Element(prev_elem) => is_gap_sensitive_replaced_tag(prev_elem.tag)
+    Node::Text(_) => false
+  }
+  prev_inline
+}
+
+///|
+/// Replaced-like inline tags where inter-element whitespace commonly affects layout.
+fn is_gap_sensitive_replaced_tag(tag : String) -> Bool {
+  match tag.to_lower() {
+    "video"
+    | "audio"
+    | "img"
+    | "canvas"
+    | "embed"
+    | "iframe"
+    | "object"
+    | "picture"
+    | "svg"
+    | "source" => true
+    _ => false
   }
 }
 
