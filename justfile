@@ -157,6 +157,10 @@ wpt-compositing:
 wpt-ci-summary input json markdown:
     npx tsx scripts/wpt-ci-summary.ts --input {{input}} --json {{json}} --markdown {{markdown}}
 
+# Aggregate CI job timing report from GitHub run jobs JSON
+ci-timing-summary input json markdown:
+    npx tsx scripts/ci-timing-summary.ts --input {{input}} --json {{json}} --markdown {{markdown}}
+
 # === WebDriver BiDi Server ===
 
 # Build BiDi server
