@@ -75,6 +75,250 @@ test "img_intrinsic_src_keeps_auto_size_for_flex_aspect_ratio_constraints" {
 }
 
 ///|
+test "contain_size_object_auto_with_padding_uses_empty_intrinsic" {
+  // Mirrors css-contain/contain-size-replaced-001.html behavior.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|object {
+    #|  padding: 50px;
+    #|  contain: size;
+    #|}
+    #|</style>
+    #|<object></object>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let object_layout = layout.children[0]
+  inspect(object_layout.width, content="100")
+  inspect(object_layout.height, content="100")
+}
+
+///|
+test "contain_size_video_auto_size_collapses_to_border_box" {
+  // Mirrors css-contain/contain-size-replaced-003a.html behavior.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|video {
+    #|  border: 3px solid teal;
+    #|  contain: size;
+    #|  width: auto;
+    #|  height: auto;
+    #|}
+    #|</style>
+    #|<video></video>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let video_layout = layout.children[0]
+  inspect(video_layout.width, content="6")
+  inspect(video_layout.height, content="6")
+}
+
+///|
+test "replaced_video_iframe_are_preserved_in_layout_tree" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="a"></div><video id="v"></video><iframe id="f"></iframe><img id="i" src="broken">
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+
+  let mut has_video = false
+  let mut has_iframe = false
+  for child in layout.children {
+    if child.id == "video#v" {
+      has_video = true
+    }
+    if child.id == "iframe#f" {
+      has_iframe = true
+    }
+  }
+
+  guard has_video else {
+    fail("video element should exist in body layout children")
+  }
+  guard has_iframe else {
+    fail("iframe element should exist in body layout children")
+  }
+}
+
+///|
+test "contain_size_float_replaced_elements_are_not_dropped" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|body > div, video, audio, img, canvas, svg, iframe {
+    #|  border: 3px solid orange;
+    #|  contain: size;
+    #|  margin-bottom: 15px;
+    #|  width: min-content;
+    #|  height: min-content;
+    #|  float: left;
+    #|  clear: both;
+    #|}
+    #|</style>
+    #|<div id="d">abc</div>
+    #|<video id="v"></video><br>
+    #|<video id="v2" controls></video><br>
+    #|<img id="i" src="broken"><br>
+    #|<picture>
+    #|<source srcset="support/60x60-green.png">
+    #|  <img id="pi">
+    #|</picture><br>
+    #|<canvas id="c"></canvas><br>
+    #|<svg id="s"></svg><br>
+    #|<iframe id="f"></iframe>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let mut node_has_div = false
+  let mut node_has_video = false
+  let mut node_has_video2 = false
+  let mut node_has_img = false
+  let mut node_has_canvas = false
+  let mut node_has_svg = false
+  let mut node_has_iframe = false
+  for child in root.children {
+    if child.id == "div#d" {
+      node_has_div = true
+    } else if child.id == "video#v" {
+      node_has_video = true
+    } else if child.id == "video#v2" {
+      node_has_video2 = true
+    } else if child.id == "img#i" {
+      node_has_img = true
+    } else if child.id == "canvas#c" {
+      node_has_canvas = true
+    } else if child.id == "svg#s" {
+      node_has_svg = true
+    } else if child.id == "iframe#f" {
+      node_has_iframe = true
+    }
+  }
+  guard node_has_div else { fail("node tree should include float+contain div") }
+  guard node_has_video else {
+    fail("node tree should include float+contain video")
+  }
+  guard node_has_video2 else {
+    fail("node tree should include float+contain second video")
+  }
+  guard node_has_img else { fail("node tree should include float+contain img") }
+  guard node_has_canvas else {
+    fail("node tree should include float+contain canvas")
+  }
+  guard node_has_svg else { fail("node tree should include float+contain svg") }
+  guard node_has_iframe else {
+    fail("node tree should include float+contain iframe")
+  }
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+
+  let mut has_div = false
+  let mut has_video = false
+  let mut has_video2 = false
+  let mut has_img = false
+  let mut has_canvas = false
+  let mut has_svg = false
+  let mut has_iframe = false
+  for child in layout.children {
+    if child.id == "div#d" {
+      has_div = true
+    } else if child.id == "video#v" {
+      has_video = true
+    } else if child.id == "video#v2" {
+      has_video2 = true
+    } else if child.id == "img#i" {
+      has_img = true
+    } else if child.id == "canvas#c" {
+      has_canvas = true
+    } else if child.id == "svg#s" {
+      has_svg = true
+    } else if child.id == "iframe#f" {
+      has_iframe = true
+    }
+  }
+
+  guard has_div else { fail("float+contain div should exist in body children") }
+  guard has_video else {
+    fail("float+contain video should exist in body children")
+  }
+  guard has_video2 else {
+    fail("float+contain second video should exist in body children")
+  }
+  guard has_img else { fail("float+contain img should exist in body children") }
+  guard has_canvas else {
+    fail("float+contain canvas should exist in body children")
+  }
+  guard has_svg else { fail("float+contain svg should exist in body children") }
+  guard has_iframe else {
+    fail("float+contain iframe should exist in body children")
+  }
+}
+
+///|
+test "contain_size_replaced_004_fixture_keeps_first_div_layout_child" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<meta charset="utf-8">
+    #|<title>CSS Containment Test: Size containment replaced elements intrinsic size</title>
+    #|<link rel="help" href="https://drafts.csswg.org/css-contain-1/#containment-size">
+    #|<link rel="match" href="contain-size-replaced-004-ref.html">
+    #|<meta name=assert content="This test checks that intrinsic size of replaced elements with 'contain: size' is zero.">
+    #|<style>
+    #|  body > div, video, audio, img, canvas, svg, iframe {
+    #|    border: 3px solid orange;
+    #|    contain: size;
+    #|    margin-bottom: 15px;
+    #|    width: min-content;
+    #|    height: min-content;
+    #|    float: left;
+    #|    clear: both;
+    #|  }
+    #|</style>
+    #|<div>abc</div>
+    #|<video></video><br>
+    #|<video controls></video><br>
+    #|<img src="support/60x60-green.png"><br>
+    #|<picture>
+    #|<source srcset="support/60x60-green.png">
+    #|    <img>
+    #|</picture><br>
+    #|<canvas></canvas><br>
+    #|<svg></svg><br>
+    #|<iframe></iframe>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() > 0 else {
+    fail("body should contain rendered children")
+  }
+  guard layout.children[0].id == "div" else {
+    fail("first body child should be floated div for contain-size-replaced-004")
+  }
+}
+
+///|
+test "contain_size_img_attr_ratio_keeps_auto_height" {
+  // Mirrors css-contain/contain-size-replaced-007.html behavior.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<img width="60" height="60" style="width: 100px; height: auto; contain: size;">
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let img_node = root.children[0]
+  inspect(img_node.style.width, content="Length(100)")
+  inspect(img_node.style.height, content="Auto")
+  inspect(img_node.style.aspect_ratio, content="Some(1)")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let img_layout = layout.children[0]
+  inspect(img_layout.width, content="100")
+  inspect(img_layout.height, content="100")
+}
+
+///|
 test "parse_aspect_ratio_transferred_max_size_style" {
   let html_str =
     #|<!DOCTYPE html>
