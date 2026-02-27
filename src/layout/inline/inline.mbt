@@ -612,8 +612,9 @@ pub fn compute_ifc(
       child_layout.padding.top +
       child_layout.border.top
     } else {
-      // Non-text element: baseline is at bottom (last baseline of content)
-      child_layout.height
+      // Non-text inline elements should use synthesized content baseline
+      // instead of always falling back to bottom.
+      @baseline.compute_node_baseline(child, child_layout.height)
     }
 
     // <br> always forces a line break after itself.
@@ -901,15 +902,12 @@ fn compute_inline_child(
               let content_available = available_width -
                 padding.horizontal_sum() -
                 border.horizontal_sum()
-              let clamped_available = if content_available > 0.0 {
-                content_available
-              } else {
-                0.0
-              }
-              if max_content < clamped_available {
+              if content_available <= 0.0 {
+                max_content
+              } else if max_content < content_available {
                 max_content
               } else {
-                clamped_available
+                content_available
               }
             }
           }
@@ -1069,6 +1067,90 @@ fn compute_inline_child(
         absolute_entries.push((child_index, child))
       }
       // Absolute children don't contribute to inline element's size
+    } else if child.style.display == @types.Contents {
+      // display: contents does not generate its own box, but its inline descendants
+      // still participate in line layout and the wrapper node is kept for tree parity.
+      let child_margin = @types.resolve_rect(
+        child.style.margin,
+        available_width,
+      )
+      let contents_children : Array[@types.Layout] = []
+      let mut contents_cursor_x = 0.0
+      let mut contents_height = 0.0
+      for grand_child in child.children {
+        if grand_child.style.display == @types.Display::None {
+          contents_children.push(create_zero_layout(grand_child))
+        } else if grand_child.style.position == @types.Absolute ||
+          grand_child.style.position == @types.Fixed {
+          let child_ctx : @types.LayoutContext = {
+            available_width,
+            available_height,
+            sizing_mode: @types.MaxContent,
+            viewport_width: available_width,
+            viewport_height: available_height.unwrap_or(0.0),
+            stretch_width: false,
+            stretch_height: false,
+          }
+          let @node.DispatchFn(dispatch_fn) = dispatch
+          let grand_layout = dispatch_fn(grand_child, child_ctx, dispatch)
+          contents_children.push(grand_layout)
+          // Out-of-flow children don't contribute to inline progression
+        } else if grand_child.style.display == @types.Contents ||
+          is_inline_level(grand_child.style.display) {
+          let grand_layout = compute_inline_child(
+            grand_child, available_width, available_height, dispatch,
+          )
+          let grand_margin = @types.resolve_rect(
+            grand_child.style.margin,
+            available_width,
+          )
+          let positioned_grand : @types.Layout = {
+            ..grand_layout,
+            x: contents_cursor_x + grand_margin.left,
+            y: grand_margin.top,
+            margin: grand_margin,
+          }
+          contents_children.push(positioned_grand)
+          contents_cursor_x = contents_cursor_x +
+            grand_margin.left +
+            grand_layout.width +
+            grand_margin.right
+          let outer_height = grand_margin.top +
+            grand_layout.height +
+            grand_margin.bottom
+          if outer_height > contents_height {
+            contents_height = outer_height
+          }
+        }
+      }
+      let positioned_contents : @types.Layout = {
+        id: child.id,
+        x: inline_cursor_x + child_margin.left,
+        y: child_margin.top,
+        width: 0.0,
+        height: 0.0,
+        margin: child_margin,
+        padding: @types.Rect::zero(),
+        border: @types.Rect::zero(),
+        overflow_x: @types.Visible,
+        overflow_y: @types.Visible,
+        scroll_width: 0.0,
+        scroll_height: 0.0,
+        children: contents_children,
+        text: child.text,
+      }
+      children.push(positioned_contents)
+      inline_cursor_x = inline_cursor_x +
+        child_margin.left +
+        contents_cursor_x +
+        child_margin.right
+      content_width = inline_cursor_x
+      let outer_height = child_margin.top +
+        contents_height +
+        child_margin.bottom
+      if outer_height > content_height {
+        content_height = outer_height
+      }
     } else if is_inline_level(child.style.display) {
       // Recursively process inline children
       let child_layout = compute_inline_child(
@@ -1234,6 +1316,10 @@ pub fn should_establish_ifc(children : Array[@node.Node]) -> Bool {
     }
     // Skip display:none
     if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.id == "br" || child.id.has_prefix("#text") {
+      has_inline = true
       continue
     }
     if is_inline_level(child.style.display) {

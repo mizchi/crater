@@ -44,7 +44,8 @@ fn infer_baseline_height(node : @node.Node, fallback_height : Double) -> Double 
       } else if node.style.display == @types.Inline ||
         node.style.display == @types.InlineBlock ||
         node.style.display == @types.InlineFlex ||
-        node.style.display == @types.InlineGrid {
+        node.style.display == @types.InlineGrid ||
+        node.style.display == @types.Contents {
         if node.style.line_height > 0.0 {
           node.style.line_height
         } else {
@@ -183,6 +184,13 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
       }
     @types.Inline =>
       // Inline containers participate in baseline from their first line box.
+      match first_in_flow_child_baseline(children, node_height) {
+        Some(child_baseline) => child_baseline
+        None => text_baseline_from_style(style)
+      }
+    @types.Contents =>
+      // display: contents participates through descendants; do not synthesize
+      // baseline from its aggregate box height.
       match first_in_flow_child_baseline(children, node_height) {
         Some(child_baseline) => child_baseline
         None => text_baseline_from_style(style)

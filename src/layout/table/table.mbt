@@ -107,6 +107,15 @@ priv struct RowspanCellInfo {
 }
 
 ///|
+/// A row-level flow item used to reorder table header/footer groups visually.
+priv struct TableRowFlowItem {
+  indices : Array[Int]
+  base_y : Double
+  advance : Double
+  bucket : Int // 0: header, 1: body, 2: footer
+}
+
+///|
 /// Build an occupancy grid for the table
 /// Returns: (grid, num_columns) where grid maps (row, col) -> CellOccupancy
 fn build_occupancy_grid(
@@ -230,11 +239,9 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
     }
     if child.style.display == @types.TableHeaderGroup {
       // Found thead, return first row
-      for row in child.children {
-        if row.style.display != @types.Display::None &&
-          is_table_row(row.style.display) {
-          return Some(row)
-        }
+      let rows = normalize_row_group_rows(child)
+      if rows.length() > 0 {
+        return Some(rows[0])
       }
     }
   }
@@ -247,11 +254,9 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
       return Some(child)
     }
     if child.style.display == @types.TableRowGroup {
-      for row in child.children {
-        if row.style.display != @types.Display::None &&
-          is_table_row(row.style.display) {
-          return Some(row)
-        }
+      let rows = normalize_row_group_rows(child)
+      if rows.length() > 0 {
+        return Some(rows[0])
       }
     }
   }
@@ -261,11 +266,9 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
       continue
     }
     if child.style.display == @types.TableFooterGroup {
-      for row in child.children {
-        if row.style.display != @types.Display::None &&
-          is_table_row(row.style.display) {
-          return Some(row)
-        }
+      let rows = normalize_row_group_rows(child)
+      if rows.length() > 0 {
+        return Some(rows[0])
       }
     }
   }
@@ -309,12 +312,10 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
       pending_cells.push(child)
     } else if is_table_row_group(child.style.display) {
       flush_pending_cells()
-      // Collect rows from row group
-      for row in child.children {
-        if row.style.display != @types.Display::None &&
-          is_table_row(row.style.display) {
-          rows.push(row)
-        }
+      // Collect rows from row group, synthesizing anonymous rows for
+      // non-row children per table model rules.
+      for row in normalize_row_group_rows(child) {
+        rows.push(row)
       }
     }
     // Ignore caption, col, colgroup for now
@@ -324,9 +325,78 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
 }
 
 ///|
+/// Normalize row-group children into table rows.
+/// Non-row children are wrapped into anonymous row/cell structures.
+fn normalize_row_group_rows(row_group : @node.Node) -> Array[@node.Node] {
+  let rows : Array[@node.Node] = []
+  let mut pending_non_rows : Array[@node.Node] = []
+  let mut anon_row_index = 0
+  fn flush_pending_non_rows() -> Unit {
+    if pending_non_rows.length() == 0 {
+      return ()
+    }
+    let anon_cell_style : @style.Style = {
+      ..@style.Style::default(),
+      display: @types.TableCell,
+    }
+    let anon_row_style : @style.Style = {
+      ..@style.Style::default(),
+      display: @types.TableRow,
+    }
+    let anon_cells : Array[@node.Node] = []
+    anon_cells.push(
+      @node.Node::new(
+        "__anon-table-cell-rowgrp-" + anon_row_index.to_string(),
+        anon_cell_style,
+        pending_non_rows,
+      ),
+    )
+    rows.push(
+      @node.Node::new(
+        "__anon-table-rowgrp-row-" + anon_row_index.to_string(),
+        anon_row_style,
+        anon_cells,
+      ),
+    )
+    pending_non_rows = []
+    anon_row_index = anon_row_index + 1
+  }
+  for child in row_group.children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if is_table_row(child.style.display) {
+      flush_pending_non_rows()
+      rows.push(child)
+    } else {
+      pending_non_rows.push(child)
+    }
+  }
+  flush_pending_non_rows()
+  rows
+}
+
+///|
 fn is_inline_intrinsic_child(node : @node.Node) -> Bool {
   if node.id == "br" || node.id.has_prefix("#text") {
     return true
+  }
+  if node.style.display == @types.Contents {
+    let mut has_in_flow_child = false
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      match child.style.float {
+        @types.Float::Left | @types.Float::Right => return false
+        @types.Float::None => ()
+      }
+      has_in_flow_child = true
+      if not(is_inline_intrinsic_child(child)) {
+        return false
+      }
+    }
+    return has_in_flow_child
   }
   match node.style.display {
     @types.Inline
@@ -381,24 +451,56 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
     _ => ()
   }
 
-  // Measure children's intrinsic width
-  let mut max_child_width = 0.0
+  fn child_intrinsic_width(child : @node.Node) -> Double {
+    match child.measure {
+      Some(mf) => {
+        let intrinsic = (mf.func)(10000.0, 10000.0)
+        intrinsic.max_width
+      }
+      None => measure_node_intrinsic_width(child)
+    }
+  }
+
+  let mut has_inline_flow = false
+  let mut inline_only = true
   for child in cell.children {
     if child.style.display == @types.Display::None {
       continue
     }
-    // Check if child has measure function (text node)
-    match child.measure {
-      Some(mf) => {
-        // Use large available width to get max-content width
-        let intrinsic = (mf.func)(10000.0, 10000.0)
-        max_child_width = max(max_child_width, intrinsic.max_width)
+    has_inline_flow = true
+    if not(is_inline_intrinsic_child(child)) {
+      inline_only = false
+      break
+    }
+  }
+
+  let mut max_child_width = 0.0
+  if inline_only && has_inline_flow {
+    let mut current_line_width = 0.0
+    for child in cell.children {
+      if child.style.display == @types.Display::None {
+        continue
       }
-      None => {
-        // Recursively measure child
-        let child_width = measure_node_intrinsic_width(child)
-        max_child_width = max(max_child_width, child_width)
+      if child.id == "br" {
+        if current_line_width > max_child_width {
+          max_child_width = current_line_width
+        }
+        current_line_width = 0.0
+      } else {
+        current_line_width = current_line_width + child_intrinsic_width(child)
       }
+    }
+    if current_line_width > max_child_width {
+      max_child_width = current_line_width
+    }
+  } else {
+    // Non-inline content: use max child contribution as before.
+    for child in cell.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      let child_width = child_intrinsic_width(child)
+      max_child_width = max(max_child_width, child_width)
     }
   }
   max_child_width + box_extra
@@ -446,6 +548,40 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
       }
     }
     return total_columns_width + current_column_width + box_extra
+  }
+  let mut has_horizontal_inline_flow = false
+  let mut is_horizontal_inline_only = true
+  for child in node.children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    has_horizontal_inline_flow = true
+    if not(is_inline_intrinsic_child(child)) {
+      is_horizontal_inline_only = false
+      break
+    }
+  }
+  if is_horizontal_inline_only && has_horizontal_inline_flow {
+    let mut max_line_width = 0.0
+    let mut current_line_width = 0.0
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      if child.id == "br" {
+        if current_line_width > max_line_width {
+          max_line_width = current_line_width
+        }
+        current_line_width = 0.0
+      } else {
+        current_line_width = current_line_width +
+          measure_node_intrinsic_width(child)
+      }
+    }
+    if current_line_width > max_line_width {
+      max_line_width = current_line_width
+    }
+    return max_line_width + box_extra
   }
   let mut max_width = 0.0
   for child in node.children {
@@ -756,13 +892,6 @@ fn layout_cell(
 ) -> @types.Layout {
   let style = cell.style
   let parent_width = ctx.available_width
-  let resolve_inset = fn(inset : @types.Dimension, base : Double) -> Double? {
-    match inset {
-      @types.Length(v) => Some(v)
-      @types.Percent(p) => Some(base * p)
-      _ => None
-    }
-  }
   let margin = @types.resolve_rect(style.margin, parent_width)
   let padding = @types.resolve_rect(style.padding, parent_width)
   // In border-collapse mode, borders are included in cell dimensions (like border-box)
@@ -790,96 +919,55 @@ fn layout_cell(
     stretch_height: false,
   }
 
-  // Layout children and calculate content height
+  // Layout cell contents through an anonymous block to preserve inline flow.
+  let zero_dim_rect : @types.Rect[@types.Dimension] = @types.Rect::new(
+    @types.Length(0.0),
+    @types.Length(0.0),
+    @types.Length(0.0),
+    @types.Length(0.0),
+  )
+  let anon_content_style : @style.Style = {
+    ..style,
+    display: @types.Block,
+    width: @types.Auto,
+    height: @types.Auto,
+    margin: zero_dim_rect,
+    padding: zero_dim_rect,
+    border: zero_dim_rect,
+    float: @types.Float::None,
+    position: @types.Static,
+  }
+  let anon_content = @node.Node::new(
+    "__anon-table-cell-content",
+    anon_content_style,
+    cell.children,
+  )
+  let @node.DispatchFn(dispatch_fn) = dispatch
+  let content_layout = dispatch_fn(anon_content, child_ctx, dispatch)
   let child_layouts : Array[@types.Layout] = []
-  let mut content_height = 0.0
-  // Note: In border-collapse mode, border is already 0
-  let mut y_offset = border.top
-  for child in cell.children {
-    if child.style.display == @types.Display::None {
-      child_layouts.push(create_zero_layout(child))
-      continue
-    }
-    let child_is_abs = child.style.position == @types.Absolute ||
-      child.style.position == @types.Fixed
-    let @node.DispatchFn(dispatch_fn) = dispatch
-    let child_layout = dispatch_fn(child, child_ctx, dispatch)
-    let treat_as_abs = child_is_abs ||
-      (child.style.position != @types.Relative && child_layout.y < 0.0)
-    if treat_as_abs {
-      // Table-cell establishes layout flow for in-flow descendants only.
-      // Absolutely positioned descendants are out-of-flow and should not
-      // advance cell content height.
-      let cb_width = content_width
-      let cb_height = ctx.available_height.unwrap_or(content_height)
-      let inset_left = resolve_inset(child.style.inset.left, cb_width)
-      let inset_right = resolve_inset(child.style.inset.right, cb_width)
-      let inset_top = resolve_inset(child.style.inset.top, cb_height)
-      let inset_bottom = resolve_inset(child.style.inset.bottom, cb_height)
-      let abs_width = match child.style.width {
-        @types.Length(w) => w
-        @types.Percent(p) => cb_width * p
-        _ =>
-          match (inset_left, inset_right) {
-            (Some(l), Some(r)) => max(0.0, cb_width - l - r)
-            _ => child_layout.width
-          }
-      }
-      let abs_height = match child.style.height {
-        @types.Length(h) => h
-        @types.Percent(p) => cb_height * p
-        _ =>
-          match (inset_top, inset_bottom) {
-            (Some(t), Some(b)) => max(0.0, cb_height - t - b)
-            _ => child_layout.height
-          }
-      }
-      let abs_x = match inset_left {
-        Some(l) => padding.left + border.left + l
-        None =>
-          match inset_right {
-            Some(r) =>
-              padding.left + border.left + max(0.0, cb_width - abs_width - r)
-            None => padding.left + border.left
-          }
-      }
-      let abs_y = border.top
-      child_layouts.push({
-        ..child_layout,
-        x: abs_x,
-        y: abs_y,
-        width: abs_width,
-        height: abs_height,
-      })
-      continue
-    }
-    let mut child_x = padding.left + border.left + child_layout.x
-    if style.writing_mode.is_vertical() {
-      // Vertical table-cells in browsers center in-flow block content
-      // across the horizontal (physical x) axis.
+  for child_layout in content_layout.children {
+    let centered_x = if style.writing_mode.is_vertical() {
       let free_space = content_width - child_layout.width
       if free_space > 0.0 {
-        child_x = child_x + free_space / 2.0
+        child_layout.x + free_space / 2.0
+      } else {
+        child_layout.x
       }
+    } else {
+      child_layout.x
     }
-    let positioned_layout = {
-      ..child_layout
-      // Preserve child-local offset and apply table-cell alignment.
-      ,
-      x: child_x,
-      y: y_offset + child_layout.margin.top,
-    }
-    y_offset = y_offset +
-      child_layout.height +
-      child_layout.margin.top +
-      child_layout.margin.bottom
-    content_height = max(content_height, y_offset)
-    child_layouts.push(positioned_layout)
+    child_layouts.push({
+      ..child_layout,
+      x: centered_x + padding.left + border.left,
+      y: child_layout.y + padding.top + border.top,
+    })
   }
 
-  // Add padding/border to height
-  // Note: In border-collapse mode, border is already 0
-  let total_height = content_height + padding.bottom + border.bottom
+  // Add padding/border to height.
+  // Note: In border-collapse mode, border is already 0.
+  let total_height = content_layout.height +
+    padding.vertical_sum() +
+    border.vertical_sum()
 
   // Resolve explicit height if set
   // In border-collapse mode, the style.height was adjusted by adjust_for_box_sizing
@@ -1055,17 +1143,9 @@ fn layout_row(
     x_offset = x_offset + cell_width + border_spacing
     // Advance by colspan columns
     col_index = col_index + colspan
-    if child.id.has_prefix("__anon-table-cell-") {
-      for anon_child in positioned_cell.children {
-        cell_layouts.push({
-          ..anon_child,
-          x: positioned_cell.x + anon_child.x,
-          y: positioned_cell.y + anon_child.y,
-        })
-      }
-    } else {
-      cell_layouts.push(positioned_cell)
-    }
+    // Keep anonymous cells until row height normalization is done.
+    // Flattening too early makes descendants inherit row height incorrectly.
+    cell_layouts.push(positioned_cell)
   }
 
   // Calculate row width
@@ -1125,6 +1205,20 @@ fn layout_row(
   for layout in cell_layouts {
     final_cell_layouts.push({ ..layout, height: row_content_height })
   }
+  let row_children : Array[@types.Layout] = []
+  for layout in final_cell_layouts {
+    if layout.id.has_prefix("__anon-table-cell-") {
+      for anon_child in layout.children {
+        row_children.push({
+          ..anon_child,
+          x: layout.x + anon_child.x,
+          y: layout.y + anon_child.y,
+        })
+      }
+    } else {
+      row_children.push(layout)
+    }
+  }
   {
     id: row.id,
     x: 0.0, // Will be positioned by table layout
@@ -1138,7 +1232,7 @@ fn layout_row(
     overflow_y: style.overflow_y,
     scroll_width: 0.0,
     scroll_height: 0.0,
-    children: final_cell_layouts,
+    children: row_children,
     text: row.text,
   }
 }
@@ -1357,21 +1451,53 @@ fn compute_cell_height_for_row(
         h
       }
     _ => {
-      // Measure children's intrinsic height
-      let mut total_height = 0.0
+      fn child_intrinsic_height(child : @node.Node) -> Double {
+        match child.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(10000.0, 10000.0)
+            intrinsic.max_height
+          }
+          None => measure_node_intrinsic_height(child)
+        }
+      }
+
+      let mut has_inline_flow = false
+      let mut inline_only = true
       for child in cell.children {
         if child.style.display == @types.Display::None {
           continue
         }
-        match child.measure {
-          Some(mf) => {
-            let intrinsic = (mf.func)(10000.0, 10000.0)
-            total_height = total_height + intrinsic.max_height
+        has_inline_flow = true
+        if not(is_inline_intrinsic_child(child)) {
+          inline_only = false
+          break
+        }
+      }
+
+      let mut total_height = 0.0
+      if inline_only && has_inline_flow {
+        let mut current_line_height = 0.0
+        for child in cell.children {
+          if child.style.display == @types.Display::None {
+            continue
           }
-          None => {
-            let child_height = measure_node_intrinsic_height(child)
-            total_height = total_height + child_height
+          if child.id == "br" {
+            total_height = total_height + current_line_height
+            current_line_height = 0.0
+          } else {
+            let child_height = child_intrinsic_height(child)
+            if child_height > current_line_height {
+              current_line_height = child_height
+            }
           }
+        }
+        total_height = total_height + current_line_height
+      } else {
+        for child in cell.children {
+          if child.style.display == @types.Display::None {
+            continue
+          }
+          total_height = total_height + child_intrinsic_height(child)
         }
       }
       total_height + box_extra
@@ -1457,22 +1583,52 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
     _ => ()
   }
 
-  // Measure children's intrinsic height
-  let mut total_height = 0.0
+  fn child_intrinsic_height(child : @node.Node) -> Double {
+    match child.measure {
+      Some(mf) => {
+        let intrinsic = (mf.func)(10000.0, 10000.0)
+        intrinsic.max_height
+      }
+      None => measure_node_intrinsic_height(child)
+    }
+  }
+  let mut has_inline_flow = false
+  let mut inline_only = true
   for child in cell.children {
     if child.style.display == @types.Display::None {
       continue
     }
-    // Check if child has measure function (text node)
-    match child.measure {
-      Some(mf) => {
-        let intrinsic = (mf.func)(10000.0, 10000.0)
-        total_height = total_height + intrinsic.max_height
+    has_inline_flow = true
+    if not(is_inline_intrinsic_child(child)) {
+      inline_only = false
+      break
+    }
+  }
+
+  let mut total_height = 0.0
+  if inline_only && has_inline_flow {
+    let mut current_line_height = 0.0
+    for child in cell.children {
+      if child.style.display == @types.Display::None {
+        continue
       }
-      None => {
-        let child_height = measure_node_intrinsic_height(child)
-        total_height = total_height + child_height
+      if child.id == "br" {
+        total_height = total_height + current_line_height
+        current_line_height = 0.0
+      } else {
+        let child_height = child_intrinsic_height(child)
+        if child_height > current_line_height {
+          current_line_height = child_height
+        }
       }
+    }
+    total_height = total_height + current_line_height
+  } else {
+    for child in cell.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      total_height = total_height + child_intrinsic_height(child)
     }
   }
   total_height + box_extra
@@ -1519,6 +1675,38 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
       }
     }
     return max(max_column_height, current_column_height) + box_extra
+  }
+  let mut has_horizontal_inline_flow = false
+  let mut inline_only = true
+  for child in node.children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    has_horizontal_inline_flow = true
+    if not(is_inline_intrinsic_child(child)) {
+      inline_only = false
+      break
+    }
+  }
+  if inline_only && has_horizontal_inline_flow {
+    let mut total_lines_height = 0.0
+    let mut current_line_height = 0.0
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      if child.id == "br" {
+        total_lines_height = total_lines_height + current_line_height
+        current_line_height = 0.0
+      } else {
+        let child_height = measure_node_intrinsic_height(child)
+        if child_height > current_line_height {
+          current_line_height = child_height
+        }
+      }
+    }
+    total_lines_height = total_lines_height + current_line_height
+    return total_lines_height + box_extra
   }
   let mut total_height = 0.0
   for child in node.children {
@@ -1935,6 +2123,7 @@ pub fn compute(
 
   // Add border-spacing before rows
   y_offset = y_offset + border_spacing
+  let row_flow_start_y = y_offset
 
   // x position for rows includes left edge spacing
   let row_x_offset = padding.left + border.left + border_spacing
@@ -1942,6 +2131,7 @@ pub fn compute(
   // Track global row index (matching order in collect_table_rows)
   let mut global_row_idx = 0
   let mut has_anon_flow_children = false
+  let row_flow_items : Array[TableRowFlowItem] = []
 
   // Second: layout rows and row groups
   if row_count == 0 {
@@ -1996,10 +2186,12 @@ pub fn compute(
     }
   } else {
     let mut pending_direct_cells : Array[(@node.Node, Int)] = []
+    let mut first_footer_bucket_taken = false
     fn flush_pending_direct_cells() -> Unit {
       if pending_direct_cells.length() == 0 {
         return ()
       }
+      let base_y = y_offset
       // Consecutive direct table-cell children belong to the same anonymous row.
       let anon_row_style : @style.Style = {
         ..@style.Style::default(),
@@ -2028,8 +2220,10 @@ pub fn compute(
         anon_row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
         grid, dispatch,
       )
+      let run_indices : Array[Int] = []
       for i = 0; i < pending_direct_cells.length(); i = i + 1 {
         let (cell, idx) = pending_direct_cells[i]
+        run_indices.push(idx)
         if i < row_layout.children.length() {
           let cell_layout = row_layout.children[i]
           let (rel_x, rel_y) = calculate_relative_offset(
@@ -2046,7 +2240,9 @@ pub fn compute(
           layout_map[idx] = create_zero_layout(cell)
         }
       }
+      let advance = row_layout.height + border_spacing
       y_offset = y_offset + row_layout.height + border_spacing
+      row_flow_items.push({ indices: run_indices, base_y, advance, bucket: 1 })
       global_row_idx = global_row_idx + 1
       pending_direct_cells = []
     }
@@ -2062,6 +2258,7 @@ pub fn compute(
         pending_direct_cells.push((child, idx))
       } else if is_table_row(child.style.display) {
         flush_pending_direct_cells()
+        let base_y = y_offset
         // Direct row - use pre-calculated row height
         let row_height = if global_row_idx < row_heights.length() {
           Some(row_heights[global_row_idx])
@@ -2087,11 +2284,15 @@ pub fn compute(
           x: row_x_offset + rel_x,
           y: y_offset + rel_y,
         }
+        let indices : Array[Int] = [idx]
+        let advance = row_layout.height + border_spacing
         y_offset = y_offset + row_layout.height + border_spacing
         layout_map[idx] = positioned_row
+        row_flow_items.push({ indices, base_y, advance, bucket: 1 })
         global_row_idx = global_row_idx + 1
       } else if is_table_row_group(child.style.display) {
         flush_pending_direct_cells()
+        let base_y = y_offset
         // Row group (thead, tbody, tfoot)
         let group_layouts : Array[@types.Layout] = []
         let mut group_y = 0.0
@@ -2103,45 +2304,47 @@ pub fn compute(
           parent_width,
         )
         let group_border = @types.resolve_rect(group_style.border, parent_width)
-        for row in child.children {
-          if row.style.display == @types.Display::None {
-            group_layouts.push(create_zero_layout(row))
-            continue
-          }
-          if is_table_row(row.style.display) {
-            // Use pre-calculated row height for rows in row groups
-            let row_height = if global_row_idx < row_heights.length() {
-              Some(row_heights[global_row_idx])
-            } else {
-              None
-            }
-            let row_ctx : @types.LayoutContext = {
-              ..base_child_ctx,
-              available_height: row_height,
-            }
-            let row_layout = layout_row(
-              row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
-              grid, dispatch,
-            )
-            // Apply position: relative offset for rows inside groups
-            let (rel_x, rel_y) = calculate_relative_offset(
-              row.style,
-              row_layout.width,
-              row_layout.height,
-            )
-            let positioned_row = {
-              ..row_layout,
-              x: group_padding.left + group_border.left + rel_x,
-              y: group_y + group_padding.top + group_border.top + rel_y,
-            }
-            group_y = group_y + row_layout.height + border_spacing
-            // Track max row width for consistent group width
-            max_row_width = max(max_row_width, row_layout.width)
-            group_layouts.push(positioned_row)
-            global_row_idx = global_row_idx + 1
+        for row in normalize_row_group_rows(child) {
+          // Use pre-calculated row height for rows in row groups
+          let row_height = if global_row_idx < row_heights.length() {
+            Some(row_heights[global_row_idx])
           } else {
-            group_layouts.push(create_zero_layout(row))
+            None
           }
+          let row_ctx : @types.LayoutContext = {
+            ..base_child_ctx,
+            available_height: row_height,
+          }
+          let row_layout = layout_row(
+            row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+            grid, dispatch,
+          )
+          // Apply position: relative offset for rows inside groups
+          let (rel_x, rel_y) = calculate_relative_offset(
+            row.style,
+            row_layout.width,
+            row_layout.height,
+          )
+          let positioned_row = {
+            ..row_layout,
+            x: group_padding.left + group_border.left + rel_x,
+            y: group_y + group_padding.top + group_border.top + rel_y,
+          }
+          group_y = group_y + row_layout.height + border_spacing
+          // Track max row width for consistent group width
+          max_row_width = max(max_row_width, row_layout.width)
+          if row.id.has_prefix("__anon-table-rowgrp-row-") {
+            for anon_child in row_layout.children {
+              group_layouts.push({
+                ..anon_child,
+                x: positioned_row.x + anon_child.x,
+                y: positioned_row.y + anon_child.y,
+              })
+            }
+          } else {
+            group_layouts.push(positioned_row)
+          }
+          global_row_idx = global_row_idx + 1
         }
         // Group height excludes trailing border-spacing
         let group_height = if group_y > 0.0 {
@@ -2180,8 +2383,22 @@ pub fn compute(
           children: group_layouts,
           text: child.text,
         }
+        let bucket = match child.style.display {
+          @types.TableHeaderGroup => 0
+          @types.TableFooterGroup =>
+            if not(first_footer_bucket_taken) {
+              first_footer_bucket_taken = true
+              2
+            } else {
+              1
+            }
+          _ => 1
+        }
+        let indices : Array[Int] = [idx]
+        let advance = group_height + border_spacing
         y_offset = y_offset + group_height + border_spacing
         layout_map[idx] = group_layout
+        row_flow_items.push({ indices, base_y, advance, bucket })
       } else if is_table_column_group(child.style.display) {
         flush_pending_direct_cells()
         // Colgroup: layout with column widths, positioned later
@@ -2269,6 +2486,47 @@ pub fn compute(
       }
     }
     flush_pending_direct_cells()
+
+    // Visual ordering for row groups: headers first, footers last.
+    if row_flow_items.length() > 0 {
+      let header_items : Array[TableRowFlowItem] = []
+      let body_items : Array[TableRowFlowItem] = []
+      let footer_items : Array[TableRowFlowItem] = []
+      for item in row_flow_items {
+        if item.bucket == 0 {
+          header_items.push(item)
+        } else if item.bucket == 2 {
+          footer_items.push(item)
+        } else {
+          body_items.push(item)
+        }
+      }
+      let visual_items : Array[TableRowFlowItem] = []
+      for item in header_items {
+        visual_items.push(item)
+      }
+      for item in body_items {
+        visual_items.push(item)
+      }
+      for i = footer_items.length(); i > 0; i = i - 1 {
+        visual_items.push(footer_items[i - 1])
+      }
+
+      let mut next_y = row_flow_start_y
+      for item in visual_items {
+        let delta = next_y - item.base_y
+        if delta != 0.0 {
+          for idx in item.indices {
+            match layout_map.get(idx) {
+              Some(layout) =>
+                layout_map[idx] = { ..layout, y: layout.y + delta }
+              None => ()
+            }
+          }
+        }
+        next_y = next_y + item.advance
+      }
+    }
   }
 
   // Third: layout bottom captions
@@ -2327,11 +2585,10 @@ pub fn compute(
   // Also update colgroup/col heights now that we know the table content height
   let final_child_layouts : Array[@types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
+    let original_child = node.children[i]
     match layout_map.get(i) {
       Some(layout) =>
-        // Check if this is a colgroup by looking at its children which might be cols
-        // Colgroups/cols have height=0.0 as placeholder
-        if layout.height == 0.0 && layout.children.length() > 0 {
+        if is_table_column_group(original_child.style.display) {
           // This might be a colgroup - update its height and children's heights
           let updated_col_children : Array[@types.Layout] = []
           for col_layout in layout.children {
@@ -2350,7 +2607,7 @@ pub fn compute(
             height: row_content_height,
             children: updated_col_children,
           })
-        } else if layout.height == 0.0 && layout.width > 0.0 {
+        } else if is_table_column(original_child.style.display) {
           // Standalone col element
           final_child_layouts.push({ ..layout, height: row_content_height })
         } else {

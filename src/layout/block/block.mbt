@@ -153,6 +153,261 @@ priv enum FlowChildGroup {
 }
 
 ///|
+/// A flattened table child with its display:contents wrapper path.
+priv struct FlattenedTableChild {
+  child : @node.Node
+  wrappers : Array[@node.Node]
+}
+
+///|
+/// Deferred override for anonymous table runs in block flow.
+priv struct AnonymousTableRunOverride {
+  flow_indices : Array[Int]
+  layouts : Array[@types.Layout]
+}
+
+///|
+/// Check if a display type is table-internal.
+fn is_table_internal_display(display : @types.Display) -> Bool {
+  match display {
+    @types.TableRow
+    | @types.TableCell
+    | @types.TableCaption
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => true
+    _ => false
+  }
+}
+
+///|
+/// Whether a subtree contains any table-internal node.
+fn has_table_internal_descendant(node : @node.Node) -> Bool {
+  if is_table_internal_display(node.style.display) {
+    return true
+  }
+  for child in node.children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if has_table_internal_descendant(child) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Whether this flow node participates in anonymous table wrapper synthesis.
+fn is_table_internal_flow_node(node : @node.Node) -> Bool {
+  if is_table_internal_display(node.style.display) {
+    return true
+  }
+  node.style.display == @types.Contents && has_table_internal_descendant(node)
+}
+
+///|
+/// Clone wrapper path with one additional wrapper.
+fn push_wrapper_path(
+  wrappers : Array[@node.Node],
+  wrapper : @node.Node,
+) -> Array[@node.Node] {
+  let next : Array[@node.Node] = []
+  for existing in wrappers {
+    next.push(existing)
+  }
+  next.push(wrapper)
+  next
+}
+
+///|
+/// Find the first table-internal leaf under a table flow node.
+fn flatten_first_table_child(
+  node : @node.Node,
+  wrappers : Array[@node.Node],
+) -> FlattenedTableChild? {
+  if node.style.display == @types.Display::None {
+    return None
+  }
+  if is_table_internal_display(node.style.display) {
+    return Some({ child: node, wrappers })
+  }
+  if node.style.display != @types.Contents {
+    return None
+  }
+  let next_wrappers = push_wrapper_path(wrappers, node)
+  for child in node.children {
+    match flatten_first_table_child(child, next_wrappers) {
+      Some(flattened) => return Some(flattened)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn zero_rect() -> @types.Rect[Double] {
+  { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+}
+
+///|
+/// Wrap a table child layout with display:contents wrappers.
+fn wrap_table_child_layout_with_contents(
+  child_layout : @types.Layout,
+  wrappers : Array[@node.Node],
+) -> @types.Layout {
+  let mut wrapped = child_layout
+  for i = wrappers.length(); i > 0; i = i - 1 {
+    let wrapper = wrappers[i - 1]
+    let children : Array[@types.Layout] = []
+    children.push(wrapped)
+    wrapped = {
+      id: wrapper.id,
+      x: 0.0,
+      y: 0.0,
+      width: 0.0,
+      height: 0.0,
+      margin: zero_rect(),
+      padding: zero_rect(),
+      border: zero_rect(),
+      overflow_x: wrapper.style.overflow_x,
+      overflow_y: wrapper.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children,
+      text: wrapper.text,
+    }
+  }
+  wrapped
+}
+
+///|
+/// Compute an anonymous table for a contiguous table-internal run.
+fn compute_anonymous_table_run(
+  run_nodes : Array[@node.Node],
+  run_indices : Array[Int],
+  available_width : Double,
+  available_height : Double?,
+  writing_mode : @style.WritingMode,
+  viewport_width : Double,
+  viewport_height : Double,
+  dispatch : @node.DispatchFn,
+) -> (LayoutWithCollapse, AnonymousTableRunOverride) {
+  let flattened_children : Array[FlattenedTableChild] = []
+  let table_children : Array[@node.Node] = []
+  for child in run_nodes {
+    match flatten_first_table_child(child, []) {
+      Some(flattened) => {
+        flattened_children.push(flattened)
+        table_children.push(flattened.child)
+      }
+      None => {
+        flattened_children.push({ child, wrappers: [] })
+        table_children.push(child)
+      }
+    }
+  }
+
+  let anon_table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    writing_mode,
+  }
+  let anon_table_node = @node.Node::new(
+    "__anon-table-run", anon_table_style, table_children,
+  )
+  let table_ctx : @types.LayoutContext = {
+    available_width,
+    available_height,
+    sizing_mode: @types.Definite,
+    viewport_width,
+    viewport_height,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let @node.DispatchFn(dispatch_fn) = dispatch
+  let table_layout = dispatch_fn(anon_table_node, table_ctx, dispatch)
+
+  let projected_layouts : Array[@types.Layout] = []
+  for i = 0; i < flattened_children.length(); i = i + 1 {
+    let flattened = flattened_children[i]
+    let child_layout = if i < table_layout.children.length() {
+      table_layout.children[i]
+    } else {
+      create_zero_layout(run_nodes[i])
+    }
+    projected_layouts.push(
+      wrap_table_child_layout_with_contents(child_layout, flattened.wrappers),
+    )
+  }
+
+  let placeholder_layout : @types.Layout = if run_nodes.length() > 0 &&
+    run_nodes[0].style.display == @types.Contents {
+    let size_probe_children : Array[@types.Layout] = []
+    size_probe_children.push({
+      id: "__anon-table-size-probe",
+      x: 0.0,
+      y: 0.0,
+      width: table_layout.width,
+      height: table_layout.height,
+      margin: zero_rect(),
+      padding: zero_rect(),
+      border: zero_rect(),
+      overflow_x: @types.Visible,
+      overflow_y: @types.Visible,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: [],
+      text: None,
+    })
+    {
+      id: run_nodes[0].id,
+      x: 0.0,
+      y: 0.0,
+      width: table_layout.width,
+      height: 0.0,
+      margin: zero_rect(),
+      padding: zero_rect(),
+      border: zero_rect(),
+      overflow_x: @types.Visible,
+      overflow_y: @types.Visible,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: size_probe_children,
+      text: run_nodes[0].text,
+    }
+  } else {
+    {
+      id: if run_nodes.length() > 0 {
+        run_nodes[0].id
+      } else {
+        "__anon-table-run"
+      },
+      x: 0.0,
+      y: 0.0,
+      width: table_layout.width,
+      height: table_layout.height,
+      margin: zero_rect(),
+      padding: zero_rect(),
+      border: zero_rect(),
+      overflow_x: @types.Visible,
+      overflow_y: @types.Visible,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: [],
+      text: None,
+    }
+  }
+
+  (
+    { layout: placeholder_layout, collapsed: { top: None, bottom: None } },
+    { flow_indices: run_indices, layouts: projected_layouts },
+  )
+}
+
+///|
 /// Check if element can collapse through (zero height, no border/padding)
 fn can_collapse_through(
   height : Double,
@@ -799,6 +1054,76 @@ fn has_mixed_inline_block_content(flow_nodes : Array[@node.Node]) -> Bool {
 }
 
 ///|
+fn contents_is_inline_flow(node : @node.Node) -> Bool {
+  let mut has_inline = false
+  for child in node.children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.id == "br" || child.id.has_prefix("#text") {
+      has_inline = true
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => return false
+      @types.Float::None => ()
+    }
+    if child.style.display == @types.Contents {
+      if not(contents_is_inline_flow(child)) {
+        return false
+      }
+      has_inline = true
+    } else if @inline.is_inline_level(child.style.display) {
+      has_inline = true
+    } else {
+      return false
+    }
+  }
+  has_inline
+}
+
+///|
+fn should_establish_ifc_with_contents(children : Array[@node.Node]) -> Bool {
+  if children.length() == 0 {
+    return false
+  }
+  let mut has_inline = false
+  for child in children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.id == "br" || child.id.has_prefix("#text") {
+      has_inline = true
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
+    }
+    if @inline.is_inline_level(child.style.display) {
+      has_inline = true
+    } else if child.style.display == @types.Contents {
+      if contents_is_inline_flow(child) {
+        has_inline = true
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
+  }
+  has_inline
+}
+
+///|
 /// Group contiguous inline elements together for anonymous block box processing
 /// Block elements become individual BlockChild entries
 /// Contiguous inline elements are grouped into InlineGroup entries
@@ -1174,6 +1499,58 @@ fn compute_with_collapse(
 
   // Handle display: contents - element doesn't generate a box but children do
   if style.display == @types.Contents {
+    // Inline-only contents should participate in IFC, not block stacking.
+    let flow_inline_nodes : Array[@node.Node] = []
+    let mut has_out_of_flow = false
+    for child in node.children {
+      if child.style.display == @types.Display::None {
+        continue
+      }
+      if child.style.position == @types.Absolute ||
+        child.style.position == @types.Fixed {
+        has_out_of_flow = true
+        break
+      }
+      match child.style.float {
+        @types.Float::Left | @types.Float::Right => {
+          has_out_of_flow = true
+          break
+        }
+        @types.Float::None => ()
+      }
+      flow_inline_nodes.push(child)
+    }
+    if not(has_out_of_flow) && @inline.should_establish_ifc(flow_inline_nodes) {
+      let ifc_result = @inline.compute_ifc(
+        flow_inline_nodes,
+        ctx.available_width,
+        ctx.available_height,
+        0.0,
+        0.0,
+        dispatch,
+        container_writing_mode=style.writing_mode,
+      )
+      return {
+        layout: {
+          id: node.id,
+          x: 0.0,
+          y: 0.0,
+          width: 0.0,
+          height: 0.0,
+          margin: @types.Rect::zero(),
+          padding: @types.Rect::zero(),
+          border: @types.Rect::zero(),
+          overflow_x: @types.Visible,
+          overflow_y: @types.Visible,
+          scroll_width: 0.0,
+          scroll_height: 0.0,
+          children: ifc_result.layouts,
+          text: node.text,
+        },
+        collapsed: { top: None, bottom: None },
+      }
+    }
+
     // Compute children layouts using parent context
     // Position children as if they were direct children of the parent
     let children_layouts : Array[@types.Layout] = []
@@ -2153,6 +2530,47 @@ fn compute_with_collapse(
                   None =>
                     if child.children.length() == 0 {
                       child_min_box // Leaf nodes with no content have padding+border as minimum
+                    } else if child_style.display == @types.Contents {
+                      if has_table_internal_descendant(child) {
+                        // Measure contiguous table-internal descendants as one
+                        // anonymous table run so intrinsic width is not fragmented.
+                        let run_nodes : Array[@node.Node] = []
+                        let run_indices : Array[Int] = []
+                        let mut run_index = 0
+                        let mut j = i
+                        while j < flow_nodes.length() {
+                          let run_child = flow_nodes[j]
+                          if not(is_table_internal_flow_node(run_child)) {
+                            break
+                          }
+                          run_nodes.push(run_child)
+                          run_indices.push(run_index)
+                          run_index = run_index + 1
+                          j = j + 1
+                        }
+                        if run_nodes.length() > 0 {
+                          let (run_result, _) = compute_anonymous_table_run(
+                            run_nodes,
+                            run_indices,
+                            parent_width,
+                            child_available_height,
+                            style.writing_mode,
+                            ctx.viewport_width,
+                            ctx.viewport_height,
+                            dispatch,
+                          )
+                          @types.max(run_result.layout.width, child_min_box)
+                        } else {
+                          child_min_box
+                        }
+                      } else {
+                        // display: contents has no own box, but its descendants
+                        // still contribute to intrinsic width.
+                        let recursive_w = calculate_children_max_content_width(
+                          child, parent_width,
+                        )
+                        @types.max(recursive_w, child_min_box)
+                      }
                     } else {
                       // Recursively compute child's max-content width.
                       // Grid/Flex/Table children must be dispatched to their own
@@ -2288,12 +2706,7 @@ fn compute_with_collapse(
           }
           let @node.DispatchFn(dispatch_fn) = dispatch
           match child_style.display {
-            @types.Flex
-            | @types.InlineFlex
-            | @types.Grid
-            | @types.InlineGrid
-            | @types.Table
-            | @types.InlineTable =>
+            @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
               dispatch_fn(intrinsic_child, intrinsic_ctx, dispatch).width
             _ =>
               compute_with_collapse(
@@ -2480,7 +2893,10 @@ fn compute_with_collapse(
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
   // Floats require float-context placement and cannot be handled by pure IFC path.
-  let use_ifc = @inline.should_establish_ifc(flow_nodes) &&
+  let use_ifc = (
+      @inline.should_establish_ifc(flow_nodes) ||
+      should_establish_ifc_with_contents(flow_nodes)
+    ) &&
     float_nodes.length() == 0
   // Check for mixed inline/block content (needs anonymous block boxes)
   let has_mixed = has_mixed_inline_block_content(flow_nodes)
@@ -2499,8 +2915,23 @@ fn compute_with_collapse(
     // Store IFC layouts with original indices
     for i = 0; i < flow_indices.length(); i = i + 1 {
       if i < ifc_result.layouts.length() {
+        let flow_node = flow_nodes[i]
+        let ifc_layout = ifc_result.layouts[i]
+        let normalized_layout = if flow_node.style.display == @types.Contents {
+          {
+            ..ifc_layout,
+            width: 0.0,
+            height: 0.0,
+            padding: @types.Rect::zero(),
+            border: @types.Rect::zero(),
+            scroll_width: 0.0,
+            scroll_height: 0.0,
+          }
+        } else {
+          ifc_layout
+        }
         layout_map[flow_indices[i]] = adjust_inline_span_float_quirk(
-          ifc_result.layouts[i],
+          normalized_layout,
           style.writing_mode.is_vertical(),
         )
       }
@@ -2883,8 +3314,43 @@ fn compute_with_collapse(
 
   // Now compute children's actual layout with the resolved width (BFC path)
   let flow_children : Array[LayoutWithCollapse] = []
-  for i = 0; i < flow_nodes.length(); i = i + 1 {
-    let child = flow_nodes[i]
+  let table_run_overrides : Array[AnonymousTableRunOverride] = []
+  let mut flow_i = 0
+  while flow_i < flow_nodes.length() {
+    let child = flow_nodes[flow_i]
+    if is_table_internal_flow_node(child) {
+      // Consecutive table-internal/table-contents siblings form one anonymous table.
+      let run_nodes : Array[@node.Node] = []
+      let run_indices : Array[Int] = []
+      let mut run_end = flow_i
+      while run_end < flow_nodes.length() &&
+            is_table_internal_flow_node(flow_nodes[run_end]) {
+        run_nodes.push(flow_nodes[run_end])
+        run_indices.push(flow_indices[run_end])
+        run_end = run_end + 1
+      }
+      let (first_result, run_override) = compute_anonymous_table_run(
+        run_nodes,
+        run_indices,
+        actual_child_available_width,
+        child_available_height,
+        style.writing_mode,
+        ctx.viewport_width,
+        ctx.viewport_height,
+        dispatch,
+      )
+      flow_children.push(first_result)
+      table_run_overrides.push(run_override)
+      for j = flow_i + 1; j < run_end; j = j + 1 {
+        flow_children.push({
+          layout: create_zero_layout(flow_nodes[j]),
+          collapsed: { top: None, bottom: None },
+        })
+      }
+      flow_i = run_end
+      continue
+    }
+
     // Flex, Grid, Table, and InlineBlock containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
     let child_result = match child.style.display {
@@ -2935,6 +3401,7 @@ fn compute_with_collapse(
       }
     }
     flow_children.push(child_result)
+    flow_i = flow_i + 1
   }
 
   // Layout float elements
@@ -3020,12 +3487,7 @@ fn compute_with_collapse(
         stretch_height: false,
       }
       match keyword_style.display {
-        @types.Flex
-        | @types.InlineFlex
-        | @types.Grid
-        | @types.InlineGrid
-        | @types.Table
-        | @types.InlineTable =>
+        @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
           keyword_dispatch_fn(keyword_child, keyword_ctx, dispatch).width
         _ =>
           compute_with_collapse(keyword_child, keyword_ctx, warnings, dispatch).layout.width
@@ -3431,6 +3893,33 @@ fn compute_with_collapse(
     // Handle last child's bottom margin escape
     if is_last && can_collapse_bottom {
       escaped_bottom = Some(prev_margin_end)
+    }
+  }
+
+  // Replace anonymous-table placeholders with projected original children.
+  for run_override in table_run_overrides {
+    if run_override.flow_indices.length() == 0 {
+      continue
+    }
+    let anchor_index = run_override.flow_indices[0]
+    match layout_map.get(anchor_index) {
+      Some(anchor_layout) =>
+        for i = 0; i < run_override.flow_indices.length(); i = i + 1 {
+          let child_index = run_override.flow_indices[i]
+          if i < run_override.layouts.length() {
+            let projected = run_override.layouts[i]
+            layout_map[child_index] = {
+              ..projected,
+              x: anchor_layout.x + projected.x,
+              y: anchor_layout.y + projected.y,
+            }
+          } else {
+            layout_map[child_index] = create_zero_layout(
+              node.children[child_index],
+            )
+          }
+        }
+      None => ()
     }
   }
 
