@@ -1970,6 +1970,10 @@ pub fn compute(
       continue
     }
     if child.style.display == @types.TableCaption {
+      if child.style.position == @types.Absolute ||
+        child.style.position == @types.Fixed {
+        continue
+      }
       let caption_layout = dispatch_fn(child, caption_measure_ctx, dispatch)
       caption_intrinsic_total = caption_intrinsic_total + caption_layout.height
     }
@@ -2150,6 +2154,17 @@ pub fn compute(
     let (child, idx) = entry
     if child.style.display == @types.Display::None {
       layout_map[idx] = create_zero_layout(child)
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      let out_of_flow_caption_ctx : @types.LayoutContext = {
+        ..caption_child_ctx,
+        available_width: 0.0,
+        sizing_mode: @types.MaxContent,
+      }
+      let caption_layout = dispatch_fn(child, out_of_flow_caption_ctx, dispatch)
+      layout_map[idx] = caption_layout
       continue
     }
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
@@ -2602,6 +2617,17 @@ pub fn compute(
     let (child, idx) = entry
     if child.style.display == @types.Display::None {
       layout_map[idx] = create_zero_layout(child)
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      let out_of_flow_caption_ctx : @types.LayoutContext = {
+        ..caption_child_ctx,
+        available_width: 0.0,
+        sizing_mode: @types.MaxContent,
+      }
+      let caption_layout = dispatch_fn(child, out_of_flow_caption_ctx, dispatch)
+      layout_map[idx] = caption_layout
       continue
     }
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)

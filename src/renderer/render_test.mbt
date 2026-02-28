@@ -624,6 +624,36 @@ test "contain_size_table_row_group_with_text_does_not_crash" {
 }
 
 ///|
+test "fixed_table_caption_keeps_intrinsic_width" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|caption {
+    #|  position: fixed;
+    #|}
+    #|th {
+    #|  padding-left: 50px;
+    #|}
+    #|</style>
+    #|<table>
+    #|  <caption>PASS</caption>
+    #|  <tr><th>&emsp;</th></tr>
+    #|</table>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should keep table")
+  }
+  let table = layout.children[0]
+  guard table.children.length() >= 1 else {
+    fail("table should keep caption")
+  }
+  let caption = table.children[0]
+  guard caption.width == 32.0 else {
+    fail("fixed caption width should use intrinsic text width")
+  }
+}
+
+///|
 test "rt_ua_default_font_size_is_half_of_parent" {
   let html_str =
     #|<!DOCTYPE html>

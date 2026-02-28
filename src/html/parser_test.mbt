@@ -257,6 +257,19 @@ test "parse numeric html entities" {
 }
 
 ///|
+test "parse emsp html entity" {
+  let html = "<p>A&emsp;B</p>"
+  match @html.parse(html) {
+    Some(e) =>
+      match e.children[0] {
+        @html.Node::Text(t) => inspect(t, content="A B")
+        _ => inspect(false, content="should be text")
+      }
+    None => inspect(false, content="should parse")
+  }
+}
+
+///|
 test "parse_document preserves ruby internal elements" {
   let html =
     #|<!doctype html>
