@@ -1833,6 +1833,37 @@ pub fn compute(
       anon_flow_intrinsic_width = float_total_width
     }
   }
+  let @node.DispatchFn(dispatch_fn) = dispatch
+  let caption_intrinsic_width_ctx : @types.LayoutContext = {
+    available_width: 0.0,
+    available_height: None,
+    sizing_mode: @types.MaxContent,
+    viewport_width: ctx.viewport_width,
+    viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let mut caption_intrinsic_max_width = 0.0
+  if num_columns == 0 {
+    for child in node.children {
+      if child.style.display == @types.Display::None ||
+        child.style.display != @types.TableCaption {
+        continue
+      }
+      if child.style.position == @types.Absolute ||
+        child.style.position == @types.Fixed {
+        continue
+      }
+      let caption_layout = dispatch_fn(
+        child,
+        caption_intrinsic_width_ctx,
+        dispatch,
+      )
+      if caption_layout.width > caption_intrinsic_max_width {
+        caption_intrinsic_max_width = caption_layout.width
+      }
+    }
+  }
   let intrinsic_content_width = if num_columns > 0 {
     let mut total = 0.0
     for w in intrinsic_col_widths {
@@ -1841,7 +1872,11 @@ pub fn compute(
     // Total spacing = (num_columns - 1) between + 2 for edges = num_columns + 1
     total + border_spacing * (num_columns + 1).to_double()
   } else {
-    anon_flow_intrinsic_width
+    if caption_intrinsic_max_width > anon_flow_intrinsic_width {
+      caption_intrinsic_max_width
+    } else {
+      anon_flow_intrinsic_width
+    }
   }
 
   // Calculate table width: shrink-to-fit for auto, unless in stretch context
@@ -1954,7 +1989,6 @@ pub fn compute(
     )
   }
 
-  let @node.DispatchFn(dispatch_fn) = dispatch
   let caption_measure_ctx : @types.LayoutContext = {
     available_width: table_width,
     available_height: None,

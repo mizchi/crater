@@ -654,6 +654,30 @@ test "fixed_table_caption_keeps_intrinsic_width" {
 }
 
 ///|
+test "size_contained_caption_contributes_border_width_to_empty_table" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.contain { contain: size; }
+    #|.innerContents { height: 100px; width: 100px; color: transparent; }
+    #|caption { border: 1em solid green; }
+    #|</style>
+    #|<table>
+    #|  <caption class="contain">
+    #|    <div class="innerContents">inner</div>
+    #|  </caption>
+    #|</table>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should keep table")
+  }
+  let table = layout.children[0]
+  guard table.width == 32.0 else {
+    fail("empty table should still include caption border width")
+  }
+}
+
+///|
 test "rt_ua_default_font_size_is_half_of_parent" {
   let html_str =
     #|<!DOCTYPE html>
