@@ -93,6 +93,27 @@ pub(all) enum MarginTrim {
 } derive(Show, Eq)
 
 ///|
+/// CSS multi-column column-fill property.
+pub(all) enum ColumnFill {
+  Balance
+  Auto
+} derive(Show, Eq)
+
+///|
+/// CSS break-before property (minimum subset for multicol tests).
+pub(all) enum BreakBefore {
+  Auto
+  Column
+} derive(Show, Eq)
+
+///|
+/// CSS column-span property.
+pub(all) enum ColumnSpan {
+  None
+  All
+} derive(Show, Eq)
+
+///|
 pub fn MarginTrim::trim_block_start(self : MarginTrim) -> Bool {
   match self {
     BlockStart | Block => true
@@ -265,6 +286,23 @@ pub fn Style::contained_intrinsic_height_fallback(self : Style) -> Double {
 }
 
 ///|
+/// Whether this style enables CSS multi-column layout.
+pub fn Style::has_multicol(self : Style) -> Bool {
+  match self.column_count {
+    Some(v) => v > 1
+    None =>
+      match self.column_width {
+        @types.Length(v) => v > 0.0
+        @types.Percent(v) => v > 0.0
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => false
+      }
+  }
+}
+
+///|
 /// Vertical alignment for inline elements
 pub(all) enum VerticalAlign {
   Baseline // Align baseline (default, simplified to bottom for now)
@@ -316,6 +354,11 @@ pub(all) struct Style {
   // Gap
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
+  mut column_gap_is_normal : Bool
+  // Multi-column layout
+  mut column_count : Int? // None = auto
+  mut column_width : @types.Dimension // auto or fixed width
+  mut column_fill : ColumnFill
   // Aspect ratio (width / height)
   mut aspect_ratio : Double?
   // Inset for position: absolute (left, right, top, bottom)
@@ -356,6 +399,9 @@ pub(all) struct Style {
   mut background_color : @types.Color // Background color (not inherited)
   // Containment (for layout optimization)
   mut contain : Contain
+  // Fragmentation
+  mut break_before : BreakBefore
+  mut column_span : ColumnSpan
   // contain-intrinsic-* fallback sizes (content-box lengths in px)
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?
@@ -420,6 +466,10 @@ pub fn Style::default() -> Style {
     order: 0,
     row_gap: @types.Length(0.0),
     column_gap: @types.Length(0.0),
+    column_gap_is_normal: true,
+    column_count: None,
+    column_width: @types.Auto,
+    column_fill: Balance,
     aspect_ratio: None,
     inset: {
       left: @types.Auto,
@@ -451,6 +501,8 @@ pub fn Style::default() -> Style {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
+    break_before: BreakBefore::Auto,
+    column_span: ColumnSpan::None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
     transform: Transform::none(),

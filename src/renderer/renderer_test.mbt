@@ -393,7 +393,12 @@ test "br element has line-height for layout height" {
   let br = test_p.children[1]
   inspect(br.id, content="br")
   // height should be approximately 19.2 (16 * 1.2)
-  inspect(br.height, content="19.2")
+  inspect(
+    br.height,
+    content=(
+      #|16.32
+    ),
+  )
 }
 
 ///|

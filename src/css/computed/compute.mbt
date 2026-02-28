@@ -123,6 +123,10 @@ priv struct StyleBuilder {
   mut order : Int
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
+  mut column_gap_is_normal : Bool
+  mut column_count : Int?
+  mut column_width : @types.Dimension
+  mut column_fill : @style.ColumnFill
   mut aspect_ratio : Double?
   mut inset_top : @types.Dimension
   mut inset_right : @types.Dimension
@@ -156,6 +160,9 @@ priv struct StyleBuilder {
   mut background_color : @types.Color
   // Containment
   mut contain : @style.Contain
+  // Fragmentation
+  mut break_before : @style.BreakBefore
+  mut column_span : @style.ColumnSpan
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?
   // Transform
@@ -215,6 +222,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     order: 0,
     row_gap: @types.Dimension::Length(0.0),
     column_gap: @types.Dimension::Length(0.0),
+    column_gap_is_normal: true,
+    column_count: None,
+    column_width: @types.Dimension::Auto,
+    column_fill: @style.ColumnFill::Balance,
     aspect_ratio: None,
     inset_top: @types.Dimension::Auto,
     inset_right: @types.Dimension::Auto,
@@ -240,6 +251,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
+    break_before: @style.BreakBefore::Auto,
+    column_span: @style.ColumnSpan::None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
     transform: @style.Transform::none(),
@@ -297,6 +310,10 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     order: style.order,
     row_gap: style.row_gap,
     column_gap: style.column_gap,
+    column_gap_is_normal: style.column_gap_is_normal,
+    column_count: style.column_count,
+    column_width: style.column_width,
+    column_fill: style.column_fill,
     aspect_ratio: style.aspect_ratio,
     inset_top: style.inset.top,
     inset_right: style.inset.right,
@@ -322,6 +339,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     color: style.color,
     background_color: style.background_color,
     contain: style.contain,
+    break_before: style.break_before,
+    column_span: style.column_span,
     contain_intrinsic_inline_size: style.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: style.contain_intrinsic_block_size,
     transform: style.transform,
@@ -382,6 +401,10 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     order: self.order,
     row_gap: self.row_gap,
     column_gap: self.column_gap,
+    column_gap_is_normal: self.column_gap_is_normal,
+    column_count: self.column_count,
+    column_width: self.column_width,
+    column_fill: self.column_fill,
     aspect_ratio: self.aspect_ratio,
     inset: {
       top: self.inset_top,
@@ -413,6 +436,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     color: self.color,
     background_color: self.background_color,
     contain: self.contain,
+    break_before: self.break_before,
+    column_span: self.column_span,
     contain_intrinsic_inline_size: self.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: self.contain_intrinsic_block_size,
     transform: self.transform,
@@ -536,6 +561,27 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "padding-right" => dimension_to_string(style.padding.right)
     "padding-bottom" => dimension_to_string(style.padding.bottom)
     "padding-left" => dimension_to_string(style.padding.left)
+    "column-count" =>
+      match style.column_count {
+        Some(v) => v.to_string()
+        None => "auto"
+      }
+    "column-width" => dimension_to_string(style.column_width)
+    "column-fill" =>
+      match style.column_fill {
+        @style.ColumnFill::Balance => "balance"
+        @style.ColumnFill::Auto => "auto"
+      }
+    "break-before" =>
+      match style.break_before {
+        @style.BreakBefore::Auto => "auto"
+        @style.BreakBefore::Column => "column"
+      }
+    "column-span" =>
+      match style.column_span {
+        @style.ColumnSpan::None => "none"
+        @style.ColumnSpan::All => "all"
+      }
     "flex-grow" => style.flex_grow.to_string()
     "flex-shrink" => style.flex_shrink.to_string()
     "flex-basis" => dimension_to_string(style.flex_basis)
@@ -1306,6 +1352,7 @@ fn apply_property(
         .split(" ")
         .filter(fn(s) { not(s.is_empty()) })
         .collect()
+      builder.column_gap_is_normal = false
       match parts.length() {
         1 => {
           let dim = resolve_dimension_with_calc_percent_fallback(
@@ -1334,10 +1381,26 @@ fn apply_property(
     }
     "row-gap" | "grid-row-gap" =>
       builder.row_gap = resolve_dimension_with_calc_percent_fallback(value, ctx)
-    "column-gap" | "grid-column-gap" =>
+    "column-gap" | "grid-column-gap" => {
       builder.column_gap = resolve_dimension_with_calc_percent_fallback(
         value, ctx,
       )
+      builder.column_gap_is_normal = false
+    }
+    // Multi-column
+    "column-count" => builder.column_count = parse_column_count(value)
+    "column-width" => builder.column_width = parse_column_width(value, ctx)
+    "column-fill" => builder.column_fill = parse_column_fill(value)
+    "columns" =>
+      match parse_columns_shorthand(value, ctx) {
+        Some((count, width)) => {
+          builder.column_count = count
+          builder.column_width = width
+        }
+        None => ()
+      }
+    "break-before" => builder.break_before = parse_break_before(value)
+    "column-span" => builder.column_span = parse_column_span(value)
     // Inset
     "top" => builder.inset_top = resolve_dimension(value, ctx)
     "right" => builder.inset_right = resolve_dimension(value, ctx)
@@ -3164,6 +3227,117 @@ fn parse_font_shorthand(
     }
   }
   (font_size, line_height)
+}
+
+// =============================================================================
+// Multi-column / Fragmentation Parsing
+// =============================================================================
+
+///|
+fn parse_column_count(value : String) -> Int? {
+  let trimmed = value.trim().to_string()
+  if trimmed.is_empty() || trimmed == "auto" {
+    return None
+  }
+  try {
+    let parsed = @strconv.parse_int(trimmed)
+    if parsed >= 1 {
+      Some(parsed)
+    } else {
+      None
+    }
+  } catch {
+    _ => None
+  }
+}
+
+///|
+fn parse_column_width(value : String, ctx : ComputeContext) -> @types.Dimension {
+  let trimmed = value.trim().to_string()
+  if trimmed.is_empty() || trimmed == "auto" {
+    return @types.Dimension::Auto
+  }
+  let dim = resolve_dimension_with_calc_percent_fallback(trimmed, ctx)
+  match dim {
+    @types.Dimension::Length(v) =>
+      if v > 0.0 {
+        @types.Dimension::Length(v)
+      } else {
+        @types.Dimension::Auto
+      }
+    @types.Dimension::Percent(v) =>
+      if v > 0.0 {
+        @types.Dimension::Percent(v)
+      } else {
+        @types.Dimension::Auto
+      }
+    @types.Dimension::Auto
+    | @types.Dimension::MinContent
+    | @types.Dimension::MaxContent
+    | @types.Dimension::FitContent(_) => @types.Dimension::Auto
+  }
+}
+
+///|
+fn parse_column_fill(value : String) -> @style.ColumnFill {
+  match value.trim().to_string() {
+    "auto" => @style.ColumnFill::Auto
+    _ => @style.ColumnFill::Balance
+  }
+}
+
+///|
+fn parse_break_before(value : String) -> @style.BreakBefore {
+  match value.trim().to_string() {
+    "column" => @style.BreakBefore::Column
+    _ => @style.BreakBefore::Auto
+  }
+}
+
+///|
+fn parse_column_span(value : String) -> @style.ColumnSpan {
+  match value.trim().to_string() {
+    "all" => @style.ColumnSpan::All
+    _ => @style.ColumnSpan::None
+  }
+}
+
+///|
+fn parse_columns_shorthand(
+  value : String,
+  ctx : ComputeContext,
+) -> (Int?, @types.Dimension)? {
+  let parts : Array[StringView] = value
+    .trim()
+    .split(" ")
+    .filter(fn(s) { not(s.is_empty()) })
+    .collect()
+  if parts.length() == 0 {
+    return None
+  }
+  let mut count : Int? = None
+  let mut width = @types.Dimension::Auto
+  for part in parts {
+    let token = part.to_string()
+    if token == "auto" {
+      continue
+    }
+    if count is None {
+      match parse_column_count(token) {
+        Some(v) => {
+          count = Some(v)
+          continue
+        }
+        None => ()
+      }
+    }
+    let parsed_width = parse_column_width(token, ctx)
+    match parsed_width {
+      @types.Dimension::Auto => ()
+      _ => width = parsed_width
+    }
+  }
+  Some((count, width))
 }
 
 // =============================================================================

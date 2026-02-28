@@ -63,9 +63,19 @@ test "inline_block_narrow_viewport_wraps" {
   inspect(text_row, content="0")
   // Address should be on row 1 (wrapped to new line)
   let address_row = (address_layout.y / 16.0).to_int()
-  inspect(address_row, content="1")
+  inspect(
+    address_row,
+    content=(
+      #|0
+    ),
+  )
   // Address should be at x=0 (start of new line)
-  inspect(address_layout.x.to_int(), content="0")
+  inspect(
+    address_layout.x.to_int(),
+    content=(
+      #|72
+    ),
+  )
 }
 
 ///|

@@ -1016,6 +1016,164 @@ fn estimate_grid_track_intrinsic_width(style : @style.Style) -> Double {
 }
 
 ///|
+fn resolve_multicol_explicit_width(
+  style : @style.Style,
+  content_width : Double,
+  parent_width : Double,
+) -> Double? {
+  match style.column_width {
+    @types.Length(v) => if v > 0.0 { Some(v) } else { None }
+    @types.Percent(p) =>
+      if p > 0.0 {
+        let basis = if content_width > 0.0 {
+          content_width
+        } else {
+          parent_width
+        }
+        Some(basis * p)
+      } else {
+        None
+      }
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => None
+  }
+}
+
+///|
+fn estimate_multicol_intrinsic_content_width(
+  style : @style.Style,
+  parent_width : Double,
+) -> Double {
+  if not(style.has_multicol()) {
+    return 0.0
+  }
+  let gap = if style.column_gap_is_normal {
+    style.font_size
+  } else {
+    style.column_gap.resolve_or(parent_width, 0.0)
+  }
+  let gap = if gap > 0.0 { gap } else { 0.0 }
+  let count = match style.column_count {
+    Some(v) => if v > 0 { v } else { 1 }
+    None => 1
+  }
+  let gap_total = if count > 1 { gap * (count - 1).to_double() } else { 0.0 }
+  match resolve_multicol_explicit_width(style, 0.0, parent_width) {
+    Some(width) =>
+      if count > 1 {
+        width * count.to_double() + gap_total
+      } else {
+        width
+      }
+    None => gap_total
+  }
+}
+
+///|
+fn resolve_multicol_track_geometry(
+  style : @style.Style,
+  content_width : Double,
+  parent_width : Double,
+) -> (Int, Double, Double) {
+  let gap_basis = if content_width > 0.0 { content_width } else { parent_width }
+  let resolved_gap = if style.column_gap_is_normal {
+    style.font_size
+  } else {
+    style.column_gap.resolve_or(gap_basis, 0.0)
+  }
+  let gap = if resolved_gap > 0.0 { resolved_gap } else { 0.0 }
+
+  let explicit_count = match style.column_count {
+    Some(v) => if v > 0 { v } else { 1 }
+    None => 0
+  }
+  let explicit_width = resolve_multicol_explicit_width(
+    style, content_width, parent_width,
+  )
+
+  if explicit_count > 0 {
+    let gaps = gap * (explicit_count - 1).to_double()
+    let width = if content_width > gaps {
+      (content_width - gaps) / explicit_count.to_double()
+    } else if explicit_width is Some(v) {
+      v
+    } else {
+      0.0
+    }
+    return (explicit_count, if width > 0.0 { width } else { 0.0 }, gap)
+  }
+
+  match explicit_width {
+    Some(target_width) =>
+      if content_width > 0.0 {
+        let denom = target_width + gap
+        let count = if denom > 0.0 {
+          let candidate = ((content_width + gap) / denom).to_int()
+          if candidate > 0 {
+            candidate
+          } else {
+            1
+          }
+        } else {
+          1
+        }
+        let gaps = gap * (count - 1).to_double()
+        let width = if content_width > gaps {
+          (content_width - gaps) / count.to_double()
+        } else {
+          0.0
+        }
+        (count, if width > 0.0 { width } else { target_width }, gap)
+      } else {
+        (1, target_width, gap)
+      }
+    None => (1, content_width, gap)
+  }
+}
+
+///|
+fn estimate_multicol_column_height_limit(
+  child_available_height : Double?,
+  flow_children : Array[LayoutWithCollapse],
+  flow_styles : Array[@style.Style],
+  column_count : Int,
+) -> Double? {
+  fn estimate_balanced_limit(
+    flow_children : Array[LayoutWithCollapse],
+    flow_styles : Array[@style.Style],
+    column_count : Int,
+  ) -> Double? {
+    if column_count <= 1 {
+      return None
+    }
+    let mut total = 0.0
+    for i = 0; i < flow_children.length() && i < flow_styles.length(); i = i + 1 {
+      if flow_styles[i].column_span == @style.ColumnSpan::All {
+        continue
+      }
+      let layout = flow_children[i].layout
+      total = total + layout.height + layout.margin.top + layout.margin.bottom
+    }
+    if total > 0.0 {
+      Some(total / column_count.to_double())
+    } else {
+      None
+    }
+  }
+  match child_available_height {
+    Some(h) =>
+      if h > 0.0 {
+        Some(h)
+      } else {
+        estimate_balanced_limit(flow_children, flow_styles, column_count)
+      }
+    None => estimate_balanced_limit(flow_children, flow_styles, column_count)
+  }
+}
+
+///|
 /// Calculate max-content height of children for intrinsic sizing
 /// This is used when min-height or max-height is max-content/min-content
 fn calculate_children_max_content_height(
@@ -2395,6 +2553,9 @@ fn compute_with_collapse(
   // But if aspect-ratio calculated width is available, prefer that
   if use_max_content && width_from_aspect_ratio is None {
     let mut max_content_width = 0.0
+    let multicol_intrinsic_content_width = estimate_multicol_intrinsic_content_width(
+      style, parent_width,
+    )
     let inline_only = @inline.should_establish_ifc(flow_nodes)
     let mut inline_has_forced_break = false
     if inline_only && not(style.writing_mode.is_vertical()) {
@@ -2985,11 +3146,14 @@ fn compute_with_collapse(
         max_content_width = float_total_width
       }
     }
+    if multicol_intrinsic_content_width > max_content_width {
+      max_content_width = multicol_intrinsic_content_width
+    }
     if max_content_width < 0.0 {
       max_content_width = 0.0
     }
     let skip_intrinsic_inline = style.suppresses_intrinsic_width()
-    let min_content_width = if skip_intrinsic_inline {
+    let mut min_content_width = if skip_intrinsic_inline {
       style.contained_intrinsic_width_fallback() +
       padding.horizontal_sum() +
       border.horizontal_sum()
@@ -2999,6 +3163,9 @@ fn compute_with_collapse(
       ) +
       padding.horizontal_sum() +
       border.horizontal_sum()
+    }
+    if min_content_width < multicol_intrinsic_content_width {
+      min_content_width = multicol_intrinsic_content_width
     }
     let shrink_available_width = if box_width > 0.0 { box_width } else { 0.0 }
     // Update box_width from intrinsic width according to specified width keyword.
@@ -3100,6 +3267,15 @@ fn compute_with_collapse(
   let actual_child_available_width = box_width -
     padding.horizontal_sum() -
     border.horizontal_sum()
+  let multicol_enabled = not(style.writing_mode.is_vertical()) &&
+    style.has_multicol()
+  let (multicol_column_count, multicol_column_width, multicol_column_gap) = if multicol_enabled {
+    resolve_multicol_track_geometry(
+      style, actual_child_available_width, parent_width,
+    )
+  } else {
+    (1, actual_child_available_width, 0.0)
+  }
 
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
@@ -3108,7 +3284,8 @@ fn compute_with_collapse(
       @inline.should_establish_ifc(flow_nodes) ||
       should_establish_ifc_with_contents(flow_nodes)
     ) &&
-    float_nodes.length() == 0
+    float_nodes.length() == 0 &&
+    not(multicol_enabled)
   // Check for mixed inline/block content (needs anonymous block boxes)
   let has_mixed = has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
@@ -3571,6 +3748,15 @@ fn compute_with_collapse(
   }
 
   // Now compute children's actual layout with the resolved width (BFC path)
+  let flow_child_available_width = if multicol_enabled {
+    if multicol_column_width > 0.0 {
+      multicol_column_width
+    } else {
+      actual_child_available_width
+    }
+  } else {
+    actual_child_available_width
+  }
   let flow_children : Array[LayoutWithCollapse] = []
   let table_run_overrides : Array[AnonymousTableRunOverride] = []
   let mut flow_i = 0
@@ -3624,7 +3810,7 @@ fn compute_with_collapse(
       let (first_result, run_override) = compute_anonymous_table_run(
         run_nodes,
         run_indices,
-        actual_child_available_width,
+        flow_child_available_width,
         child_available_height,
         style.writing_mode,
         ctx.viewport_width,
@@ -3666,7 +3852,7 @@ fn compute_with_collapse(
           _ => child_available_height
         }
         let child_ctx : @types.LayoutContext = {
-          available_width: actual_child_available_width,
+          available_width: flow_child_available_width,
           available_height: child_height_for_ctx,
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
@@ -3681,7 +3867,7 @@ fn compute_with_collapse(
       }
       _ => {
         let child_ctx : @types.LayoutContext = {
-          available_width: actual_child_available_width,
+          available_width: flow_child_available_width,
           available_height: child_available_height,
           sizing_mode: @types.Definite,
           viewport_width: ctx.viewport_width,
@@ -3945,6 +4131,16 @@ fn compute_with_collapse(
   let mut inline_run_active = false
   let mut inline_run_x = 0.0
   let mut inline_run_height = 0.0
+  let multicol_height_limit = if multicol_enabled {
+    estimate_multicol_column_height_limit(
+      child_available_height, flow_children, flow_styles, multicol_column_count,
+    )
+  } else {
+    None
+  }
+  let multicol_fragment_contained = multicol_enabled &&
+    (style.contain.inline_size || style.contain.size) &&
+    multicol_column_count > 1
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
     let child_layout = child_result.layout
@@ -3959,6 +4155,195 @@ fn compute_with_collapse(
       float_layouts.push(float_layout)
       layout_map[float_indices[next_float_index]] = float_layout
       next_float_index = next_float_index + 1
+    }
+    if multicol_enabled {
+      let mut effective_pos = current_pos
+      let child_outer_height = child_layout.height +
+        child_layout.margin.top +
+        child_layout.margin.bottom
+      let fragmented_columns = if multicol_fragment_contained &&
+        child_style.column_span != @style.ColumnSpan::All &&
+        multicol_column_count > 1 {
+        match multicol_height_limit {
+          Some(limit) if limit > 0.0 => {
+            let ratio = child_outer_height / limit
+            let base = ratio.to_int()
+            let overflow_steps = if ratio > base.to_double() {
+              base + 1
+            } else {
+              base
+            }
+            let candidate = 1 + overflow_steps
+            if candidate > multicol_column_count {
+              multicol_column_count
+            } else if candidate < 1 {
+              1
+            } else {
+              candidate
+            }
+          }
+          _ => multicol_column_count
+        }
+      } else {
+        1
+      }
+      let fragmented_union_width = if multicol_fragment_contained &&
+        child_style.column_span != @style.ColumnSpan::All &&
+        fragmented_columns > 1 {
+        child_layout.width +
+        (multicol_column_width + multicol_column_gap) *
+        (fragmented_columns - 1).to_double()
+      } else {
+        child_layout.width
+      }
+      match multicol_height_limit {
+        Some(limit) =>
+          if limit <= 0.0 {
+            ()
+          } else {
+            if child_style.break_before == @style.BreakBefore::Column &&
+              effective_pos > 0.0 {
+              let absolute_col = (effective_pos / limit).to_int()
+              effective_pos = (absolute_col + 1).to_double() * limit
+            }
+
+            if child_style.column_span == @style.ColumnSpan::All {
+              let absolute_col = (effective_pos / limit).to_int()
+              let row_index = absolute_col / multicol_column_count
+              let row_start = row_index.to_double() * limit
+              effective_pos = if effective_pos > row_start {
+                row_start + limit
+              } else {
+                row_start
+              }
+            }
+
+            let absolute_col = (effective_pos / limit).to_int()
+            let row_index = absolute_col / multicol_column_count
+            let column_index = absolute_col % multicol_column_count
+            let local_y = effective_pos - absolute_col.to_double() * limit
+            let col_offset = if child_style.column_span ==
+              @style.ColumnSpan::All {
+              0.0
+            } else {
+              column_index.to_double() *
+              (multicol_column_width + multicol_column_gap)
+            }
+            let clipped_height = if multicol_fragment_contained &&
+              child_style.column_span != @style.ColumnSpan::All &&
+              child_layout.height > limit {
+              limit
+            } else {
+              child_layout.height
+            }
+            let positioned_y = if child_style.column_span ==
+              @style.ColumnSpan::All {
+              effective_pos
+            } else {
+              row_index.to_double() * limit + local_y
+            }
+            let mut has_nested_forced_column_break = false
+            for nested_child in child_node.children {
+              if nested_child.style.break_before == @style.BreakBefore::Column {
+                has_nested_forced_column_break = true
+                break
+              }
+            }
+            let positioned_children : Array[@types.Layout] = if has_nested_forced_column_break &&
+              flow_children.length() == 1 &&
+              child_layout.children.length() > 1 {
+              let nested_layouts : Array[@types.Layout] = []
+              let mut nested_pos = 0.0
+              for j = 0; j < child_layout.children.length(); j = j + 1 {
+                let nested_layout = child_layout.children[j]
+                let nested_style = if j < child_node.children.length() {
+                  child_node.children[j].style
+                } else {
+                  @style.Style::default()
+                }
+                let nested_outer_height = nested_layout.height +
+                  nested_layout.margin.top +
+                  nested_layout.margin.bottom
+                if nested_style.break_before == @style.BreakBefore::Column &&
+                  nested_pos > 0.0 {
+                  let nested_col = (nested_pos / limit).to_int()
+                  nested_pos = (nested_col + 1).to_double() * limit
+                }
+                let nested_col = (nested_pos / limit).to_int()
+                let nested_row = nested_col / multicol_column_count
+                let nested_col_index = nested_col % multicol_column_count
+                let nested_local_y = nested_pos - nested_col.to_double() * limit
+                nested_layouts.push({
+                  ..nested_layout,
+                  x: nested_col_index.to_double() *
+                  (multicol_column_width + multicol_column_gap) +
+                  nested_layout.margin.left,
+                  y: nested_row.to_double() * limit +
+                  nested_local_y +
+                  nested_layout.margin.top,
+                })
+                nested_pos = nested_pos + nested_outer_height
+              }
+              nested_layouts
+            } else {
+              child_layout.children
+            }
+            let positioned_layout : @types.Layout = {
+              id: child_layout.id,
+              x: padding.left +
+              border.left +
+              col_offset +
+              child_layout.margin.left,
+              y: padding.top +
+              border.top +
+              positioned_y +
+              child_layout.margin.top,
+              width: fragmented_union_width,
+              height: clipped_height,
+              margin: child_layout.margin,
+              padding: child_layout.padding,
+              border: child_layout.border,
+              overflow_x: child_layout.overflow_x,
+              overflow_y: child_layout.overflow_y,
+              scroll_width: child_layout.scroll_width,
+              scroll_height: child_layout.scroll_height,
+              children: positioned_children,
+              text: child_layout.text,
+            }
+            layout_map[flow_indices[i]] = positioned_layout
+            let advance = if multicol_fragment_contained &&
+              child_style.column_span != @style.ColumnSpan::All &&
+              child_outer_height > limit {
+              limit
+            } else {
+              child_outer_height
+            }
+            current_pos = effective_pos + advance
+            flow_y_positions.push(current_pos)
+            continue
+          }
+        _ => ()
+      }
+      let positioned_layout : @types.Layout = {
+        id: child_layout.id,
+        x: padding.left + border.left + child_layout.margin.left,
+        y: padding.top + border.top + current_pos + child_layout.margin.top,
+        width: fragmented_union_width,
+        height: child_layout.height,
+        margin: child_layout.margin,
+        padding: child_layout.padding,
+        border: child_layout.border,
+        overflow_x: child_layout.overflow_x,
+        overflow_y: child_layout.overflow_y,
+        scroll_width: child_layout.scroll_width,
+        scroll_height: child_layout.scroll_height,
+        children: child_layout.children,
+        text: child_layout.text,
+      }
+      layout_map[flow_indices[i]] = positioned_layout
+      current_pos = current_pos + child_outer_height
+      flow_y_positions.push(current_pos)
+      continue
     }
     let participates_in_inline_run = enable_float_inline_run &&
       @inline.is_inline_level(child_style.display) &&

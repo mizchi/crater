@@ -169,6 +169,56 @@ fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
 }
 
 ///|
+/// Estimate multi-column intrinsic inline-size contribution that remains
+/// even when content contribution is suppressed by contain:size/inline-size.
+fn estimate_multicol_intrinsic_inline_width(
+  style : @style.Style,
+  parent_width : Double,
+) -> Double {
+  if not(style.has_multicol()) {
+    return 0.0
+  }
+  let gap = if style.column_gap_is_normal {
+    style.font_size
+  } else {
+    style.column_gap.resolve_or(parent_width, 0.0)
+  }
+  let gap = if gap > 0.0 { gap } else { 0.0 }
+  let count = match style.column_count {
+    Some(v) => if v > 0 { v } else { 1 }
+    None => 1
+  }
+  let gap_total = if count > 1 { gap * (count - 1).to_double() } else { 0.0 }
+  match style.column_width {
+    @types.Length(v) =>
+      if v > 0.0 {
+        if count > 1 {
+          v * count.to_double() + gap_total
+        } else {
+          v
+        }
+      } else {
+        gap_total
+      }
+    @types.Percent(p) =>
+      if p > 0.0 {
+        let width = parent_width * p
+        if count > 1 {
+          width * count.to_double() + gap_total
+        } else {
+          width
+        }
+      } else {
+        gap_total
+      }
+    @types.Auto
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => gap_total
+  }
+}
+
+///|
 /// Calculate max-content width of children for intrinsic sizing
 /// This is used when min-width or max-width is max-content/min-content
 fn calculate_children_max_content_width(
@@ -702,10 +752,14 @@ fn compute_intrinsic_main_size(
     }
     let padding = @types.resolve_rect(style.padding, available_width)
     let border = @types.resolve_rect(style.border, available_width)
-    let result = if is_row {
+    let mut result = if is_row {
       padding.horizontal_sum() + border.horizontal_sum()
     } else {
       padding.vertical_sum() + border.vertical_sum()
+    }
+    if is_row {
+      result = result +
+        estimate_multicol_intrinsic_inline_width(style, available_width)
     }
     cache.set(node.uid, is_row, result)
     return result

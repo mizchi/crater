@@ -527,6 +527,135 @@ test "contain_inline_size_fit_content_keeps_inline_children_single_line" {
 }
 
 ///|
+test "wpt_contain_layout_breaks_forced_column_break_stays_in_multicol" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|article {
+    #|  columns: 2 1ch;
+    #|  column-gap: 0;
+    #|  font-family: monospace;
+    #|  line-height: 1;
+    #|  height: 4em;
+    #|  column-fill: auto;
+    #|}
+    #|#forced { break-before: column; }
+    #|</style>
+    #|<article>
+    #|  <div>
+    #|    <div id="first">A<br>A</div>
+    #|    <div id="forced">A<br>A</div>
+    #|  </div>
+    #|</article>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let article = layout.children[0]
+  let wrapper = article.children[0]
+  let first = wrapper.children[0]
+  let forced = wrapper.children[1]
+  guard forced.x > first.x else {
+    fail("break-before:column child should move to the next column")
+  }
+  inspect(forced.y, content="0")
+}
+
+///|
+test "wpt_contain_inline_size_multicol_spanner_balances_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="outer" style="columns:4; column-gap:0; contain:inline-size; width:fit-content; border:solid green; border-width:0 50px;">
+    #|  <div id="tall" style="width:25px; height:200px;"></div>
+    #|  <div id="spanner" style="column-span:all; width:400px; height:50px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let tall = outer.children[0]
+  let spanner = outer.children[1]
+  inspect(outer.height, content="100")
+  inspect(tall.height, content="50")
+  inspect(spanner.y, content="50")
+}
+
+///|
+test "contain_size_multicol_fragment_union_matches_browser_rects" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.contain {
+    #|  contain: size;
+    #|  border: 1em solid green;
+    #|  background: red;
+    #|  column-count: 3;
+    #|}
+    #|.inner {
+    #|  color: transparent;
+    #|  width: 50px;
+    #|  height: 50px;
+    #|}
+    #|</style>
+    #|<div id="contain" class="contain"><div id="inner" class="inner">inner</div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let contain = layout.children[0]
+  let inner = contain.children[0]
+  inspect(contain.width, content="800")
+  inspect(contain.height, content="32")
+  guard inner.width > 560.0 else {
+    fail("fragmented union width should span later columns")
+  }
+  guard inner.height < 30.0 else {
+    fail("fragmented union height should collapse to one fragment band")
+  }
+}
+
+///|
+test "contain_size_multicol_intrinsic_width_in_flex_includes_gaps" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.flexBaselineCheck { display: flex; align-items: baseline; }
+    #|.contain {
+    #|  contain: size;
+    #|  border: 1em solid green;
+    #|  background: red;
+    #|  column-count: 3;
+    #|}
+    #|.inner {
+    #|  color: transparent;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|}
+    #|</style>
+    #|<div class="flexBaselineCheck">
+    #|  outside before
+    #|  <div id="contain" class="contain"><div id="inner" class="inner">inner</div></div>
+    #|  outside after
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  let contain = flex.children[1]
+  let inner = contain.children[0]
+  inspect(
+    contain.width,
+    content=(
+      #|64
+    ),
+  )
+  inspect(contain.height, content="32")
+  inspect(
+    inner.width,
+    content=(
+      #|132
+    ),
+  )
+  guard inner.height > 30.0 && inner.height < 36.0 else {
+    fail("contain:size multicol child should clip to one balanced fragment")
+  }
+}
+
+///|
 test "contain_inline_size_fieldset_uses_ua_defaults_and_legend_overlay" {
   // Mirrors css-contain/contain-inline-size-fieldset.html behavior.
   let html_str =

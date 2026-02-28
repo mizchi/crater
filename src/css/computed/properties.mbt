@@ -75,6 +75,10 @@ pub fn initial_value(property : String) -> String {
     | "grid-gap"
     | "grid-row-gap"
     | "grid-column-gap" => "0"
+    "columns" | "column-count" | "column-width" => "auto"
+    "column-fill" => "balance"
+    "break-before" => "auto"
+    "column-span" => "none"
     // Aspect ratio
     "aspect-ratio" => "auto"
     // Inset

@@ -118,6 +118,25 @@ test "compute_inline contain-intrinsic-size shorthand sets both axes" {
 }
 
 ///|
+test "compute_inline columns shorthand parses count and width" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("columns: 2 40px; column-gap: 20px", ctx)
+  inspect(style.column_count, content="Some(2)")
+  inspect(style.column_width, content="Length(40)")
+  inspect(style.column_gap, content="Length(20)")
+}
+
+///|
+test "compute_inline break-before and column-span parse values" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "break-before: column; column-span: all", ctx,
+  )
+  inspect(style.break_before, content="Column")
+  inspect(style.column_span, content="All")
+}
+
+///|
 test "parse_grid_placement custom ident defaults to second line" {
   inspect(@computed.parse_grid_placement("foo"), content="Line(2)")
   inspect(@computed.parse_grid_placement("bar-baz"), content="Line(2)")
