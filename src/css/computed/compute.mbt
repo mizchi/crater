@@ -162,6 +162,7 @@ priv struct StyleBuilder {
   mut contain : @style.Contain
   // Fragmentation
   mut break_before : @style.BreakBefore
+  mut break_after : @style.BreakBefore
   mut column_span : @style.ColumnSpan
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?
@@ -252,6 +253,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
     break_before: @style.BreakBefore::Auto,
+    break_after: @style.BreakBefore::Auto,
     column_span: @style.ColumnSpan::None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
@@ -340,6 +342,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     background_color: style.background_color,
     contain: style.contain,
     break_before: style.break_before,
+    break_after: style.break_after,
     column_span: style.column_span,
     contain_intrinsic_inline_size: style.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: style.contain_intrinsic_block_size,
@@ -437,6 +440,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     background_color: self.background_color,
     contain: self.contain,
     break_before: self.break_before,
+    break_after: self.break_after,
     column_span: self.column_span,
     contain_intrinsic_inline_size: self.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: self.contain_intrinsic_block_size,
@@ -574,6 +578,11 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       }
     "break-before" =>
       match style.break_before {
+        @style.BreakBefore::Auto => "auto"
+        @style.BreakBefore::Column => "column"
+      }
+    "break-after" =>
+      match style.break_after {
         @style.BreakBefore::Auto => "auto"
         @style.BreakBefore::Column => "column"
       }
@@ -1400,6 +1409,7 @@ fn apply_property(
         None => ()
       }
     "break-before" => builder.break_before = parse_break_before(value)
+    "break-after" => builder.break_after = parse_break_before(value)
     "column-span" => builder.column_span = parse_column_span(value)
     // Inset
     "top" => builder.inset_top = resolve_dimension(value, ctx)
@@ -3026,20 +3036,21 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
 fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   let v = value.trim()
 
+  // Handle rem units (relative to root font-size) first.
+  // "1rem" also ends with "em", so ordering matters.
+  match v.strip_suffix("rem") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      return n * ctx.root_font_size
+    }
+    None => ()
+  }
+
   // Handle em units (relative to parent font-size)
   match v.strip_suffix("em") {
     Some(num_str) => {
       let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
       return n * ctx.font_size
-    }
-    None => ()
-  }
-
-  // Handle rem units (relative to root font-size)
-  match v.strip_suffix("rem") {
-    Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
-      return n * ctx.root_font_size
     }
     None => ()
   }

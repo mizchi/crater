@@ -77,7 +77,7 @@ pub fn initial_value(property : String) -> String {
     | "grid-column-gap" => "0"
     "columns" | "column-count" | "column-width" => "auto"
     "column-fill" => "balance"
-    "break-before" => "auto"
+    "break-before" | "break-after" => "auto"
     "column-span" => "none"
     // Aspect ratio
     "aspect-ratio" => "auto"

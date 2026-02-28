@@ -137,6 +137,24 @@ test "compute_inline break-before and column-span parse values" {
 }
 
 ///|
+test "compute_inline break-after parses column value" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("break-after: column", ctx)
+  inspect(style.break_after, content="Column")
+}
+
+///|
+test "compute_inline font-size rem resolves against root font size" {
+  let ctx = {
+    ..@computed.ComputeContext::new(),
+    root_font_size: 16.0,
+    font_size: 8.0,
+  }
+  let style = @computed.compute_inline("font-size: 1rem", ctx)
+  inspect(style.font_size, content="16")
+}
+
+///|
 test "parse_grid_placement custom ident defaults to second line" {
   inspect(@computed.parse_grid_placement("foo"), content="Line(2)")
   inspect(@computed.parse_grid_placement("bar-baz"), content="Line(2)")

@@ -4201,8 +4201,13 @@ fn compute_with_collapse(
           if limit <= 0.0 {
             ()
           } else {
-            if child_style.break_before == @style.BreakBefore::Column &&
-              effective_pos > 0.0 {
+            let force_column_break_before = child_style.break_before ==
+              @style.BreakBefore::Column ||
+              (
+                i > 0 &&
+                flow_styles[i - 1].break_after == @style.BreakBefore::Column
+              )
+            if force_column_break_before && effective_pos > 0.0 {
               let absolute_col = (effective_pos / limit).to_int()
               effective_pos = (absolute_col + 1).to_double() * limit
             }
@@ -4244,7 +4249,8 @@ fn compute_with_collapse(
             }
             let mut has_nested_forced_column_break = false
             for nested_child in child_node.children {
-              if nested_child.style.break_before == @style.BreakBefore::Column {
+              if nested_child.style.break_before == @style.BreakBefore::Column ||
+                nested_child.style.break_after == @style.BreakBefore::Column {
                 has_nested_forced_column_break = true
                 break
               }
@@ -4264,6 +4270,19 @@ fn compute_with_collapse(
                 let nested_outer_height = nested_layout.height +
                   nested_layout.margin.top +
                   nested_layout.margin.bottom
+                if j > 0 {
+                  let prev_nested_style = if j - 1 <
+                    child_node.children.length() {
+                    child_node.children[j - 1].style
+                  } else {
+                    @style.Style::default()
+                  }
+                  if prev_nested_style.break_after == @style.BreakBefore::Column &&
+                    nested_pos > 0.0 {
+                    let nested_col = (nested_pos / limit).to_int()
+                    nested_pos = (nested_col + 1).to_double() * limit
+                  }
+                }
                 if nested_style.break_before == @style.BreakBefore::Column &&
                   nested_pos > 0.0 {
                   let nested_col = (nested_pos / limit).to_int()

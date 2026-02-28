@@ -142,6 +142,7 @@ pub(all) struct Style {
   mut background_color : @types.Color
   mut contain : Contain
   mut break_before : BreakBefore
+  mut break_after : BreakBefore
   mut column_span : ColumnSpan
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?

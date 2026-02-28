@@ -567,6 +567,42 @@ fn is_whitespace_only_text(text : String) -> Bool {
 }
 
 ///|
+fn is_collapsible_whitespace_char(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+}
+
+///|
+fn has_line_break_char(text : String) -> Bool {
+  for c in text.iter() {
+    if c == '\n' || c == '\r' {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn trim_trailing_collapsible_whitespace(text : String) -> String {
+  let chars : Array[Char] = []
+  for c in text.iter() {
+    chars.push(c)
+  }
+  while not(chars.is_empty()) {
+    let last = chars[chars.length() - 1]
+    if is_collapsible_whitespace_char(last) {
+      let _ = chars.pop()
+    } else {
+      break
+    }
+  }
+  let buf = StringBuilder::new()
+  for c in chars {
+    buf.write_char(c)
+  }
+  buf.to_string()
+}
+
+///|
 /// Keep collapsed whitespace text between inline-participating element siblings.
 fn should_preserve_inter_element_whitespace(
   siblings : Array[@html.Node],
@@ -1118,7 +1154,13 @@ fn collect_inline_content(
 ///|
 /// Create a node for text content with inherited font properties
 fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
-  let trimmed = text.trim()
+  let normalized_text = if parent_style.display == @types.TableCell &&
+    has_line_break_char(text) {
+    trim_trailing_collapsible_whitespace(text)
+  } else {
+    text
+  }
+  let trimmed = normalized_text.trim()
   let font_size = parent_style.font_size
   let text_line_height = parent_style.line_height
   let white_space = parent_style.white_space
@@ -1171,7 +1213,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       "#text",
       text_style,
       create_text_measure(
-        text, font_size, text_line_height, white_space, writing_mode,
+        normalized_text, font_size, text_line_height, white_space, writing_mode,
       ),
       trimmed.to_string(),
     )
@@ -4056,9 +4098,19 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     // br is inline with no width
     "br" => { ..default_style, display: @types.Inline }
     // Table elements
-    "table" => { ..default_style, display: @types.Table }
+    "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
     "tr" => { ..default_style, display: @types.TableRow }
-    "td" | "th" => { ..default_style, display: @types.TableCell }
+    "td" | "th" =>
+      {
+        ..default_style,
+        display: @types.TableCell,
+        padding: {
+          left: @types.Length(1.0),
+          right: @types.Length(1.0),
+          top: @types.Length(1.0),
+          bottom: @types.Length(1.0),
+        },
+      }
     "thead" => { ..default_style, display: @types.TableHeaderGroup }
     "tbody" => { ..default_style, display: @types.TableRowGroup }
     "tfoot" => { ..default_style, display: @types.TableFooterGroup }
@@ -4144,6 +4196,11 @@ fn compute_element_style_indexed(
   style = { ..style, display: ua_style.display }
   style = { ..style, box_sizing: ua_style.box_sizing }
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
+  style = {
+    ..style,
+    border_spacing: ua_style.border_spacing,
+    border_collapse: ua_style.border_collapse,
+  }
   style = { ..style, min_height: ua_style.min_height }
   if selector_elem.tag_name.to_lower() == "rt" {
     let inherited_font_size = match parent_style {

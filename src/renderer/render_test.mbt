@@ -1449,6 +1449,60 @@ test "rt_ua_default_font_size_is_half_of_parent" {
 }
 
 ///|
+test "rt_explicit_font_size_overrides_ua_half_size_default" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>rt { font-size: 1rem; }</style>
+    #|<ruby><rt>PASS</rt></ruby>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let ruby = root.children[0]
+  let rt = ruby.children[0]
+  inspect(rt.style.font_size, content="16")
+}
+
+///|
+test "rt_inline_font_size_1rem_applies" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<ruby><rt style="font-size: 1rem">PASS</rt></ruby>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let ruby = root.children[0]
+  let rt = ruby.children[0]
+  inspect(rt.style.font_size, content="16")
+}
+
+///|
+test "contain_size_on_rt_is_ignored_for_intrinsic_width" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { overflow: hidden; position: absolute; }
+    #|rt {
+    #|  contain: size;
+    #|  display: ruby-text;
+    #|  font-size: 1rem;
+    #|}
+    #|</style>
+    #|<div><ruby><rt>PASS</rt></ruby></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let div = layout.children[0]
+  guard div.children.length() > 0 else { fail("div should include ruby child") }
+  let ruby = div.children[0]
+  guard ruby.children.length() > 0 else { fail("ruby should include rt child") }
+  let rt = ruby.children[0]
+  guard rt.width >= 30.0 else {
+    fail("rt width should reflect 1rem text width, not size-contained collapse")
+  }
+}
+
+///|
 test "flex_item_with_contain_layout_uses_synthesized_baseline" {
   let html_str =
     #|<!DOCTYPE html>
@@ -2109,6 +2163,38 @@ test "table cells keep nbsp text when td end tags are omitted" {
   }
   guard row1.children[0].children.length() > 0 else {
     fail("second row first cell should keep nbsp text")
+  }
+}
+
+///|
+test "table omitted td end tags do not double last cell width with trailing indentation" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|table { border-spacing: 0; }
+    #|td {
+    #|  contain: size;
+    #|  font-size: 50px;
+    #|}
+    #|</style>
+    #|<table>
+    #|  <tr>
+    #|    <td>5<td>6<td>7<td>8
+    #|</table>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let table = layout.children[0]
+  let tbody = table.children[0]
+  let row = tbody.children[0]
+  guard row.children.length() == 4 else {
+    fail("row should keep four cells with omitted td end tags")
+  }
+  let first_width = row.children[0].width
+  let last_width = row.children[3].width
+  guard last_width <= first_width + 1.0 else {
+    fail(
+      "last cell should not include trailing indentation as extra text width",
+    )
   }
 }
 

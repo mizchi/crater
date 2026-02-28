@@ -401,6 +401,7 @@ pub(all) struct Style {
   mut contain : Contain
   // Fragmentation
   mut break_before : BreakBefore
+  mut break_after : BreakBefore
   mut column_span : ColumnSpan
   // contain-intrinsic-* fallback sizes (content-box lengths in px)
   mut contain_intrinsic_inline_size : Double?
@@ -502,6 +503,7 @@ pub fn Style::default() -> Style {
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
     break_before: BreakBefore::Auto,
+    break_after: BreakBefore::Auto,
     column_span: ColumnSpan::None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
