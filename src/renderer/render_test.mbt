@@ -144,6 +144,150 @@ test "contain_size_inline_block_img_uses_broken_alt_fallback_size" {
 }
 
 ///|
+test "contain_size_svg_leaf_collapses_to_border_box" {
+  // Regression for css-contain/contain-size-replaced-003a{b,c}.html:
+  // inline svg should stay replaced and keep contain:size suppression.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|svg { border: 3px solid teal; contain: size; margin: 15px; width: auto; height: auto; }
+    #|</style>
+    #|<svg></svg>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let svg = root.children[0]
+  inspect(svg.style.contain.size, content="true")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let svg_layout = layout.children[0]
+  inspect(svg_layout.width, content="6")
+  inspect(svg_layout.height, content="6")
+}
+
+///|
+test "whitespace_between_inline_replaced_media_nodes_is_preserved" {
+  // Regression for css-contain/contain-size-replaced-003a{b,c}.html:
+  // collapsed whitespace between inline replaced siblings contributes inline advance.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|video { border: 3px solid teal; contain: size; margin: 15px; width: auto; height: auto; }
+    #|</style>
+    #|<video></video> <video></video>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let videos : Array[@types.Layout] = []
+  for child in layout.children {
+    if child.id == "video" {
+      videos.push(child)
+    }
+  }
+  guard videos.length() >= 2 else {
+    fail("layout should include at least two video nodes")
+  }
+  let first = videos[0]
+  let second = videos[1]
+  inspect(first.x, content="15")
+  inspect(second.x, content="59")
+}
+
+///|
+test "whitespace_adjacent_to_br_is_not_preserved_between_replaced_nodes" {
+  // Regression for css-contain/contain-size-replaced-003a:
+  // whitespace immediately after <br> should not indent the next replaced element.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|video { border: 3px solid teal; contain: size; margin: 15px; width: auto; height: auto; }
+    #|</style>
+    #|<video id="v1"></video><br> <video id="v2"></video>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let mut second_x = -1.0
+  for child in layout.children {
+    if child.id == "video#v2" {
+      second_x = child.x
+    }
+  }
+  guard second_x >= 0.0 else { fail("layout should include second video node") }
+  inspect(second_x, content="15")
+}
+
+///|
+test "contain_size_replaced_line_break_baseline_matches_browser_like_offset" {
+  // Regression for css-contain/contain-size-replaced-003a:
+  // <br> after inline replaced sequence should align with the lower text baseline band.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|video { border: 3px solid teal; contain: size; margin: 15px; width: auto; height: auto; }
+    #|</style>
+    #|<video></video>
+    #|<video></video>
+    #|<video></video>
+    #|<video></video>
+    #|<video></video>
+    #|<video></video>
+    #|<br>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let mut br_y = -1.0
+  for child in layout.children {
+    if child.id == "br" {
+      br_y = child.y
+      break
+    }
+  }
+  guard br_y >= 0.0 else {
+    fail("layout should include br node after video sequence")
+  }
+  guard br_y >= 20.0 else {
+    fail("br y should be on browser-like lower baseline band")
+  }
+}
+
+///|
+test "contain_size_picture_source_has_inline_line_box_height" {
+  // Regression for css-contain/contain-size-replaced-003a:
+  // picture/source should keep inline line-box height instead of collapsing to 0.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|img {
+    #|  border: 3px solid teal;
+    #|  contain: size;
+    #|  margin: 15px;
+    #|  width: auto;
+    #|  height: auto;
+    #|}
+    #|</style>
+    #|<img src="broken"><picture><source srcset="support/blue-100x100.png"><img></picture>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("layout should include img and picture nodes")
+  }
+  let picture = layout.children[1]
+  guard picture.id == "picture" else { fail("second node should be picture") }
+  guard picture.height <= 20.0 else {
+    fail("picture inline box height should stay near text line-box height")
+  }
+  guard picture.children.length() >= 1 else {
+    fail("picture should keep source/img child nodes")
+  }
+  let source = picture.children[0]
+  guard source.id == "source" else {
+    fail("picture first child should be source")
+  }
+  guard source.height >= 15.0 else {
+    fail("source should retain inline line-box height contribution")
+  }
+}
+
+///|
 test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback" {
   // Mirrors css-contain/contain-inline-size-intrinsic.html behavior.
   let html_str =

@@ -804,19 +804,24 @@ pub fn compute_ifc(
       let br_baseline = if raw > 0.0 { raw } else { 0.0 }
       br_baseline + child_layout.padding.top + child_layout.border.top
     } else if child.id.has_prefix("#text") {
-      // Text node: use font metrics
-      let font_size = child.style.font_size
-      let ascender_ratio = 0.8 // Standard approximation
-      font_size * ascender_ratio +
-      child_layout.padding.top +
-      child_layout.border.top
+      // Text node: use baseline synthesis that includes half-leading.
+      @baseline.compute_node_baseline(child, child_layout.height)
+    } else if child.style.contain.size &&
+      is_replaced_strut_candidate(child) &&
+      child.text is None {
+      // Browser-like quirk for contain:size replaced inlines:
+      // baseline sits near margin-box bottom, which keeps following whitespace
+      // and <br> on the lower line band in mixed replaced/text runs.
+      child_layout.height + child_margin.bottom
     } else if child.style.contain.size &&
       child.text is Some(_) &&
       id_matches_tag(child.id, "img") {
       // For contain:size replaced inlines, preserve additional baseline depth
       // contributed by suppressed intrinsic content so mixed inline lines don't
       // collapse too short.
-      child_layout.height + child_layout.padding.bottom + child_layout.border.bottom
+      child_layout.height +
+      child_layout.padding.bottom +
+      child_layout.border.bottom
     } else {
       // Non-text inline elements should use synthesized content baseline
       // instead of always falling back to bottom.
@@ -1368,7 +1373,7 @@ fn compute_inline_child(
           let positioned_grand : @types.Layout = {
             ..grand_layout,
             x: contents_cursor_x + grand_margin.left,
-            y: grand_margin.top,
+            y: 0.0,
             margin: grand_margin,
           }
           contents_children.push(positioned_grand)
@@ -1376,18 +1381,15 @@ fn compute_inline_child(
             grand_margin.left +
             grand_layout.width +
             grand_margin.right
-          let outer_height = grand_margin.top +
-            grand_layout.height +
-            grand_margin.bottom
-          if outer_height > contents_height {
-            contents_height = outer_height
+          if grand_layout.height > contents_height {
+            contents_height = grand_layout.height
           }
         }
       }
       let positioned_contents : @types.Layout = {
         id: child.id,
         x: inline_cursor_x + child_margin.left,
-        y: child_margin.top,
+        y: 0.0,
         width: 0.0,
         height: 0.0,
         margin: child_margin,
@@ -1406,11 +1408,8 @@ fn compute_inline_child(
         contents_cursor_x +
         child_margin.right
       content_width = inline_cursor_x
-      let outer_height = child_margin.top +
-        contents_height +
-        child_margin.bottom
-      if outer_height > content_height {
-        content_height = outer_height
+      if contents_height > content_height {
+        content_height = contents_height
       }
     } else if is_inline_level(child.style.display) {
       // Recursively process inline children
@@ -1424,7 +1423,7 @@ fn compute_inline_child(
       let positioned_child : @types.Layout = {
         ..child_layout,
         x: inline_cursor_x + child_margin.left,
-        y: child_margin.top,
+        y: 0.0,
         margin: child_margin,
       }
       children.push(positioned_child)
@@ -1435,11 +1434,8 @@ fn compute_inline_child(
         child_layout.width +
         child_margin.right
       content_width = inline_cursor_x
-      let outer_height = child_margin.top +
-        child_layout.height +
-        child_margin.bottom
-      if outer_height > content_height {
-        content_height = outer_height
+      if child_layout.height > content_height {
+        content_height = child_layout.height
       }
     }
     // Block-level children in inline context are not supported (would need anonymous blocks)
@@ -1474,6 +1470,9 @@ fn compute_inline_child(
     if has_ruby_text_child {
       final_height = if style.font_size > 0.0 { style.font_size } else { 16.0 }
     }
+  }
+  if final_height == 0.0 && id_matches_tag(node.id, "source") {
+    final_height = text_glyph_height_from_style(style)
   }
 
   // Resolve absolute child positions against this inline element's content box

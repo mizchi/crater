@@ -341,7 +341,8 @@ fn is_inline_element_by_tag(tag : String) -> Bool {
     // Traditional inline elements
     "a", "abbr", "acronym", "b", "bdo", "big", "br", "cite", "code", "dfn", "em",
     "font", "i", "img", "input", "kbd", "label", "picture", "q", "s", "samp", "select",
-    "small", "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
+    "video", "audio", "canvas", "svg", "iframe", "object", "embed", "small", "span",
+    "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
     // HTML5 semantic inline elements
      "time", "data", "mark", "bdi", "wbr", "ruby", "rb", "rbc", "rt", "rtc", "rp",
     "meter", "progress", "output", "ins", "del",
@@ -574,6 +575,17 @@ fn should_preserve_inter_element_whitespace(
     _ => return false
   }
   if not(is_whitespace_only_text(text)) {
+    return false
+  }
+  let prev_is_br = match siblings[index - 1] {
+    @html.Node::Element(prev_elem) => prev_elem.tag.to_lower() == "br"
+    _ => false
+  }
+  let next_is_br = match siblings[index + 1] {
+    @html.Node::Element(next_elem) => next_elem.tag.to_lower() == "br"
+    _ => false
+  }
+  if prev_is_br || next_is_br {
     return false
   }
   let prev_inline = match siblings[index - 1] {
@@ -990,6 +1002,7 @@ fn is_replaced_element(tag : String) -> Bool {
     | "video"
     | "audio"
     | "canvas"
+    | "svg"
     | "iframe"
     | "object"
     | "embed" => true
@@ -3788,6 +3801,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "time"
     | "data"
     | "picture"
+    | "source"
     | "ruby"
     | "rt"
     | "rp"
@@ -3854,7 +3868,6 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "meta"
     | "link"
     | "title"
-    | "source"
     | "track"
     | "param" => { ..default_style, display: @types.Display::None }
     _ => default_style
