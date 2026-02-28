@@ -128,6 +128,82 @@ pub fn RenderContext::default() -> RenderContext {
 }
 
 ///|
+/// Text metrics provider hook for integrating external font engines.
+pub struct TextMetricsProvider {
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc
+}
+
+///|
+pub fn TextMetricsProvider::new(
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc,
+) -> TextMetricsProvider {
+  { func, }
+}
+
+///|
+let text_metrics_provider_override : Ref[TextMetricsProvider?] = { val: None }
+
+///|
+pub fn set_text_metrics_provider(provider : TextMetricsProvider) -> Unit {
+  text_metrics_provider_override.val = Some(provider)
+}
+
+///|
+pub fn clear_text_metrics_provider() -> Unit {
+  text_metrics_provider_override.val = None
+}
+
+///|
+/// Image intrinsic-size provider hook for integrating external image metadata resolvers.
+pub struct ImageIntrinsicSizeProvider {
+  func : (String) -> (Double, Double)?
+}
+
+///|
+pub fn ImageIntrinsicSizeProvider::new(
+  func : (String) -> (Double, Double)?,
+) -> ImageIntrinsicSizeProvider {
+  { func, }
+}
+
+///|
+let image_intrinsic_size_provider_override : Ref[ImageIntrinsicSizeProvider?] = {
+  val: None,
+}
+
+///|
+pub fn set_image_intrinsic_size_provider(
+  provider : ImageIntrinsicSizeProvider,
+) -> Unit {
+  image_intrinsic_size_provider_override.val = Some(provider)
+}
+
+///|
+pub fn clear_image_intrinsic_size_provider() -> Unit {
+  image_intrinsic_size_provider_override.val = None
+}
+
+///|
+fn create_text_measure_with_provider(
+  text : String,
+  font_size : Double,
+  text_line_height : Double,
+  white_space : @style.WhiteSpace,
+  writing_mode : @style.WritingMode,
+) -> @types.MeasureFunc {
+  match text_metrics_provider_override.val {
+    Some(provider) =>
+      (provider.func)(
+        text, font_size, text_line_height, white_space, writing_mode,
+      )
+    None =>
+      create_text_measure(
+        text, font_size, text_line_height, white_space, writing_mode,
+      )
+  }
+}
+
+///|
 /// Create a MeasureFunc for text content with font metrics
 /// Calculates text dimensions based on monospace character width
 /// Accounts for East Asian Wide characters (CJK) which take 2 columns
@@ -1248,7 +1324,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       @node.Node::text(
         "#text",
         text_style,
-        create_text_measure(
+        create_text_measure_with_provider(
           collapsed, font_size, text_line_height, white_space, writing_mode,
         ),
         collapsed,
@@ -1259,7 +1335,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     @node.Node::text(
       "#text",
       text_style,
-      create_text_measure(
+      create_text_measure_with_provider(
         normalized_text, font_size, text_line_height, white_space, writing_mode,
       ),
       trimmed.to_string(),
@@ -1718,7 +1794,7 @@ fn parse_png_data_uri(src : String) -> (Double, Double)? {
 
 ///|
 /// Get intrinsic size from image src attribute
-fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
+fn get_image_intrinsic_size_default(src : String) -> (Double, Double)? {
   // Restrict to data URI parsing to avoid filesystem/network side-effects.
   // SVG/GIF/PNG support compact intrinsic extraction.
   match parse_svg_data_uri(src) {
@@ -1728,6 +1804,19 @@ fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
         Some(size) => Some(size)
         None => parse_png_data_uri(src)
       }
+  }
+}
+
+///|
+/// Get intrinsic size from image src attribute, optionally using an external provider.
+fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
+  match image_intrinsic_size_provider_override.val {
+    Some(provider) =>
+      match (provider.func)(src) {
+        Some(size) => Some(size)
+        None => get_image_intrinsic_size_default(src)
+      }
+    None => get_image_intrinsic_size_default(src)
   }
 }
 

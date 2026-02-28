@@ -81,7 +81,34 @@ interface WptCompatShardReport {
 
 type RenderHtmlToJsonFn = (html: string, width: number, height: number) => string;
 
+type ExternalTextIntrinsicResult =
+  | { minWidth?: number; maxWidth?: number; minHeight?: number; maxHeight?: number; min_width?: number; max_width?: number; min_height?: number; max_height?: number }
+  | [number, number, number, number]
+  | null
+  | undefined;
+type ExternalImageIntrinsicResult =
+  | { width?: number; height?: number; w?: number; h?: number }
+  | [number, number]
+  | null
+  | undefined;
+type ExternalTextIntrinsicFn = (
+  text: string,
+  fontSize: number,
+  lineHeight: number,
+  whiteSpace: string,
+  writingMode: string,
+  availableWidth: number,
+  availableHeight: number,
+) => ExternalTextIntrinsicResult;
+type ExternalImageIntrinsicFn = (src: string) => ExternalImageIntrinsicResult;
+
+declare global {
+  var __craterMeasureTextIntrinsic: ExternalTextIntrinsicFn | undefined;
+  var __craterResolveImageIntrinsicSize: ExternalImageIntrinsicFn | undefined;
+}
+
 let renderHtmlToJsonImpl: RenderHtmlToJsonFn | null = null;
+let currentCraterHtmlPath: string | null = null;
 const LOCAL_WPT_RUNTIME = pathToFileURL(
   path.join(process.cwd(), '_build/js/release/build/wpt_runtime/wpt_runtime.js')
 ).href;
@@ -89,8 +116,366 @@ const LOCAL_WASM_DIST = pathToFileURL(
   path.join(process.cwd(), 'wasm/dist/crater.js')
 ).href;
 
+function hasFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function resolveFontFixturePath(): string | null {
+  const candidates = [
+    process.env.CRATER_TEXT_FONT_PATH,
+    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/fixtures/NotoSansMono-Regular.ttf'),
+  ].filter((v): v is string => Boolean(v));
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function createTextIntrinsicFnFromMeasureText(
+  measureText: (text: string, fontSize: number) => number,
+): ExternalTextIntrinsicFn {
+  let loadedFont = false;
+  return (
+    text: string,
+    fontSize: number,
+    lineHeight: number,
+    whiteSpace: string,
+    writingMode: string,
+    availableWidth: number,
+    _availableHeight: number,
+  ) => {
+    const effectiveLineHeight = lineHeight > 0 ? lineHeight : (fontSize > 0 ? fontSize : 16);
+    const measure = (s: string): number => {
+      const measured = measureText(s, fontSize);
+      if (hasFiniteNumber(measured) && measured >= 0) return measured;
+      return s.length * (fontSize > 0 ? fontSize * 0.5 : 8);
+    };
+    const explicitLines = text.split('\n');
+    const maxWidth = explicitLines.reduce((acc, line) => Math.max(acc, measure(line)), 0);
+    const minWordWidth = explicitLines.reduce((acc, line) => {
+      const words = line.split(/\s+/).filter(Boolean);
+      if (words.length === 0) return acc;
+      return Math.max(acc, ...words.map(word => measure(word)));
+    }, 0);
+    const noWrap = whiteSpace.toLowerCase().includes('nowrap');
+    const spaceWidth = measure(' ');
+    let wrappedLines = 0;
+    for (const line of explicitLines) {
+      if (noWrap || availableWidth <= 0) {
+        wrappedLines += 1;
+        continue;
+      }
+      const words = line.trim().split(/\s+/).filter(Boolean);
+      if (words.length === 0) {
+        wrappedLines += 1;
+        continue;
+      }
+      let current = 0;
+      for (const word of words) {
+        const width = measure(word);
+        if (current === 0) {
+          current = width;
+          continue;
+        }
+        const next = current + spaceWidth + width;
+        if (next <= availableWidth) {
+          current = next;
+        } else {
+          wrappedLines += 1;
+          current = width;
+        }
+      }
+      wrappedLines += 1;
+    }
+    const minHeight = Math.max(explicitLines.length, 1) * effectiveLineHeight;
+    const maxHeight = Math.max(wrappedLines, 1) * effectiveLineHeight;
+    const isVertical = writingMode.toLowerCase().includes('vertical');
+    if (isVertical) {
+      return {
+        minWidth: minHeight,
+        maxWidth: maxHeight,
+        minHeight: minWordWidth,
+        maxHeight: maxWidth,
+      };
+    }
+    return {
+      minWidth: minWordWidth,
+      maxWidth,
+      minHeight,
+      maxHeight,
+    };
+  };
+}
+
+function maybeLoadFontIntoModule(mod: Record<string, unknown>): void {
+  if (typeof mod.loadFont !== 'function') return;
+  const fontPath = resolveFontFixturePath();
+  if (!fontPath) return;
+  try {
+    const bytes = new Uint8Array(fs.readFileSync(fontPath));
+    (mod.loadFont as (bytes: Uint8Array) => unknown)(bytes);
+  } catch (err) {
+    console.warn(`[wpt-runner] failed to load font fixture: ${fontPath}`, err);
+  }
+}
+
+function parsePngSize(bytes: Uint8Array): [number, number] | null {
+  if (bytes.length < 24) return null;
+  const signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+  for (let i = 0; i < signature.length; i++) {
+    if (bytes[i] !== signature[i]) return null;
+  }
+  const width =
+    ((bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]) >>> 0;
+  const height =
+    ((bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]) >>> 0;
+  if (width === 0 || height === 0) return null;
+  return [width, height];
+}
+
+function parseGifSize(bytes: Uint8Array): [number, number] | null {
+  if (bytes.length < 10) return null;
+  if (bytes[0] !== 0x47 || bytes[1] !== 0x49 || bytes[2] !== 0x46) return null;
+  const width = bytes[6] | (bytes[7] << 8);
+  const height = bytes[8] | (bytes[9] << 8);
+  if (width === 0 || height === 0) return null;
+  return [width, height];
+}
+
+function parseJpegSize(bytes: Uint8Array): [number, number] | null {
+  if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) return null;
+  let i = 2;
+  while (i + 9 < bytes.length) {
+    if (bytes[i] !== 0xFF) {
+      i += 1;
+      continue;
+    }
+    const marker = bytes[i + 1];
+    if (marker === 0xD8 || marker === 0xD9) {
+      i += 2;
+      continue;
+    }
+    if (marker === 0xDA) break;
+    const len = (bytes[i + 2] << 8) | bytes[i + 3];
+    if (len < 2 || i + 1 + len >= bytes.length) break;
+    const isSofMarker =
+      (marker >= 0xC0 && marker <= 0xC3) ||
+      (marker >= 0xC5 && marker <= 0xC7) ||
+      (marker >= 0xC9 && marker <= 0xCB) ||
+      (marker >= 0xCD && marker <= 0xCF);
+    if (isSofMarker) {
+      const height = (bytes[i + 5] << 8) | bytes[i + 6];
+      const width = (bytes[i + 7] << 8) | bytes[i + 8];
+      if (width > 0 && height > 0) return [width, height];
+      return null;
+    }
+    i += 2 + len;
+  }
+  return null;
+}
+
+function parseSvgLength(value: string | undefined): number | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const match = /^([0-9]*\.?[0-9]+)/.exec(trimmed);
+  if (!match) return null;
+  const n = Number(match[1]);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
+function parseSvgSize(source: string): [number, number] | null {
+  const widthMatch = /(?:^|\s)width\s*=\s*["']([^"']+)["']/i.exec(source);
+  const heightMatch = /(?:^|\s)height\s*=\s*["']([^"']+)["']/i.exec(source);
+  const width = parseSvgLength(widthMatch?.[1]);
+  const height = parseSvgLength(heightMatch?.[1]);
+  if (width && height) return [width, height];
+
+  const viewBoxMatch = /(?:^|\s)viewBox\s*=\s*["']([^"']+)["']/i.exec(source);
+  if (viewBoxMatch) {
+    const parts = viewBoxMatch[1].trim().split(/[\s,]+/);
+    if (parts.length >= 4) {
+      const vbWidth = Number(parts[2]);
+      const vbHeight = Number(parts[3]);
+      if (Number.isFinite(vbWidth) && vbWidth > 0 && Number.isFinite(vbHeight) && vbHeight > 0) {
+        if (width) return [width, width * (vbHeight / vbWidth)];
+        if (height) return [height * (vbWidth / vbHeight), height];
+        return [vbWidth, vbHeight];
+      }
+    }
+  }
+  if (width && !height) return [width, width];
+  if (height && !width) return [height, height];
+  return null;
+}
+
+function createFileBackedImageIntrinsicResolver(): ExternalImageIntrinsicFn {
+  return (src: string) => {
+    if (!src || isExternalResourceUrl(src)) return null;
+    const htmlPath = currentCraterHtmlPath;
+    if (!htmlPath) return null;
+    const resolved = resolveLocalResourcePath(path.dirname(htmlPath), src);
+    if (!resolved || !fs.existsSync(resolved)) return null;
+
+    try {
+      const bytes = new Uint8Array(fs.readFileSync(resolved));
+      const ext = path.extname(stripQueryAndHash(src)).toLowerCase();
+      let size: [number, number] | null = null;
+      if (ext === '.png') {
+        size = parsePngSize(bytes);
+      } else if (ext === '.gif') {
+        size = parseGifSize(bytes);
+      } else if (ext === '.jpg' || ext === '.jpeg') {
+        size = parseJpegSize(bytes);
+      } else if (ext === '.svg') {
+        size = parseSvgSize(Buffer.from(bytes).toString('utf-8'));
+      } else {
+        size = parsePngSize(bytes) ?? parseGifSize(bytes) ?? parseJpegSize(bytes);
+      }
+      if (!size) return null;
+      return { width: size[0], height: size[1] };
+    } catch {
+      return null;
+    }
+  };
+}
+
+function isModuleNotFoundError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = 'code' in err ? String((err as { code?: unknown }).code ?? '') : '';
+  if (code === 'ERR_MODULE_NOT_FOUND') return true;
+  const message = 'message' in err ? String((err as { message?: unknown }).message ?? '') : '';
+  return message.includes('Cannot find package') || message.includes('Cannot find module');
+}
+
+async function importFirstAvailable(specifiers: string[]): Promise<unknown | null> {
+  for (const specifier of specifiers) {
+    try {
+      const moduleId =
+        fs.existsSync(specifier)
+          ? pathToFileURL(path.resolve(specifier)).href
+          : specifier;
+      return await import(moduleId);
+    } catch (err) {
+      if (!isModuleNotFoundError(err)) {
+        console.warn(`[wpt-runner] failed to import "${specifier}":`, err);
+      }
+    }
+  }
+  return null;
+}
+
+function resolveTextIntrinsicFn(mod: unknown): ExternalTextIntrinsicFn | null {
+  if (!mod || typeof mod !== 'object') return null;
+  const rec = mod as Record<string, unknown>;
+  const direct = rec.measureTextIntrinsic ?? rec.measureText ?? rec.default;
+  if (typeof direct === 'function') return direct as ExternalTextIntrinsicFn;
+  if (typeof rec.measureText === 'function') {
+    maybeLoadFontIntoModule(rec);
+    return createTextIntrinsicFnFromMeasureText(
+      rec.measureText as (text: string, fontSize: number) => number,
+    );
+  }
+  if (rec.default && typeof rec.default === 'object') {
+    const nested = rec.default as Record<string, unknown>;
+    if (typeof nested.measureText === 'function') {
+      maybeLoadFontIntoModule(nested);
+      return createTextIntrinsicFnFromMeasureText(
+        nested.measureText as (text: string, fontSize: number) => number,
+      );
+    }
+  }
+  const factory = rec.createTextMeasurer;
+  if (typeof factory === 'function') {
+    try {
+      const built = (factory as () => unknown)();
+      if (typeof built === 'function') {
+        return built as ExternalTextIntrinsicFn;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function resolveImageIntrinsicFn(mod: unknown): ExternalImageIntrinsicFn | null {
+  if (!mod || typeof mod !== 'object') return null;
+  const rec = mod as Record<string, unknown>;
+  const direct =
+    rec.resolveImageIntrinsicSize ??
+    rec.resolveIntrinsicSize ??
+    rec.imageIntrinsicSize ??
+    rec.default;
+  if (typeof direct === 'function') return direct as ExternalImageIntrinsicFn;
+  const factory = rec.createImageIntrinsicResolver;
+  if (typeof factory === 'function') {
+    try {
+      const built = (factory as () => unknown)();
+      if (typeof built === 'function') {
+        return built as ExternalImageIntrinsicFn;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function configureExternalIntrinsicProviders(): Promise<void> {
+  const localFontSpecifiers = [
+    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/_build/js/release/build/js/js.js'),
+    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/_build/js/debug/build/js/js.js'),
+    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/target/js/release/build/js/js.js'),
+  ];
+  const textSpecifiers = [
+    process.env.CRATER_TEXT_MODULE,
+    'mizchi/text',
+    '@mizchi/text',
+    ...localFontSpecifiers,
+  ].filter((v): v is string => Boolean(v));
+  const imageSpecifiers = [
+    process.env.CRATER_IMAGE_MODULE,
+    'mizchi/image',
+    '@mizchi/image',
+  ].filter((v): v is string => Boolean(v));
+  const enableFileImageResolver = ['1', 'true', 'yes'].includes(
+    String(process.env.CRATER_IMAGE_FILE_RESOLVE ?? '').toLowerCase(),
+  );
+
+  const textModule = await importFirstAvailable(textSpecifiers);
+  const textFn = resolveTextIntrinsicFn(textModule);
+  if (textFn) {
+    globalThis.__craterMeasureTextIntrinsic = textFn;
+  } else {
+    delete globalThis.__craterMeasureTextIntrinsic;
+  }
+
+  const imageModule = await importFirstAvailable(imageSpecifiers);
+  const imageFn = resolveImageIntrinsicFn(imageModule);
+  const fallbackImageFn = createFileBackedImageIntrinsicResolver();
+  if (imageFn) {
+    if (enableFileImageResolver) {
+      globalThis.__craterResolveImageIntrinsicSize = (src: string) => {
+        const fromModule = imageFn(src);
+        if (fromModule) return fromModule;
+        return fallbackImageFn(src);
+      };
+    } else {
+      globalThis.__craterResolveImageIntrinsicSize = imageFn;
+    }
+  } else if (enableFileImageResolver) {
+    globalThis.__craterResolveImageIntrinsicSize = fallbackImageFn;
+  } else {
+    delete globalThis.__craterResolveImageIntrinsicSize;
+  }
+}
+
 async function initCraterRenderer(): Promise<void> {
   if (renderHtmlToJsonImpl) return;
+  await configureExternalIntrinsicProviders();
 
   // Always refresh local runtime first so WPT reflects latest MoonBit changes.
   try {
@@ -468,7 +853,14 @@ function getCraterLayout(htmlPath: string): LayoutNode {
   }
 
   const htmlContent = prepareHtmlContent(htmlPath);
-  const result = renderHtmlToJsonImpl(htmlContent, 800, 600);
+  const resolvedHtmlPath = path.resolve(htmlPath);
+  currentCraterHtmlPath = resolvedHtmlPath;
+  let result = '';
+  try {
+    result = renderHtmlToJsonImpl(htmlContent, 800, 600);
+  } finally {
+    currentCraterHtmlPath = null;
+  }
   let layout = JSON.parse(result) as LayoutNode;
 
   if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {

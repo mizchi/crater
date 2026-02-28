@@ -63,6 +63,23 @@ npm run wpt:run-all    # Run all WPT tests
 
 WPT target selection is configured in `wpt.json`.
 
+Optional: external intrinsic providers for text/image in WPT runner:
+
+```bash
+# Text module (mizchi/text-compatible or measureText(text, fontSize) module)
+CRATER_TEXT_MODULE=/abs/path/to/text-module.js \
+CRATER_TEXT_FONT_PATH=/abs/path/to/font.ttf \
+npx tsx scripts/wpt-runner.ts css-overflow
+
+# Image module (resolveImageIntrinsicSize(src) -> {width,height} or [w,h])
+CRATER_IMAGE_MODULE=/abs/path/to/image-module.js \
+npx tsx scripts/wpt-runner.ts css-contain
+
+# Optional local file resolver fallback for images (off by default)
+CRATER_IMAGE_FILE_RESOLVE=1 \
+npx tsx scripts/wpt-runner.ts wpt/css/css-contain/contain-size-021.html
+```
+
 - Added recursive module scan for `css-align` and `css-box` via `recursiveModules`
 - Expanded `includePrefixes` for additional overflow/alignment coverage
   (`scroll-`, `scrollbar-`, `scrollable-`, `text-overflow-`,

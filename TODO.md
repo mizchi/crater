@@ -26,6 +26,11 @@
   - `css-align` の残件（`26 failed`）
   - `css-tables` の残件（`17 failed`）
 
+- WPT 用の外部 intrinsic provider フックを追加:
+  - text: `set_text_metrics_provider`（`wpt-runner` は `CRATER_TEXT_MODULE` または `mizchi/text` を自動探索）
+  - image: `set_image_intrinsic_size_provider`（`CRATER_IMAGE_MODULE` または `mizchi/image`）
+  - 画像ローカル寸法解決フォールバックは `CRATER_IMAGE_FILE_RESOLVE=1` のときのみ有効
+
 ## css-flexbox WPT 進捗（2026-02-21, 履歴）
 
 - 現在: `278 / 289 passed`（`11 failed`）
