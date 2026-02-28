@@ -58,6 +58,8 @@
   - `253 / 303 passed`（`50 failed`）→ `254 / 303 passed`（`49 failed`）
   - `254 / 303 passed`（`49 failed`）→ `255 / 303 passed`（`48 failed`）
   - `255 / 303 passed`（`48 failed`）→ `256 / 303 passed`（`47 failed`）
+  - `256 / 303 passed`（`47 failed`）→ `264 / 303 passed`（`39 failed`）
+  - `264 / 303 passed`（`39 failed`）→ `269 / 303 passed`（`34 failed`）
   - 改善済み:
     - `contain-inline-size-intrinsic.html`
     - `contain-inline-size-vertical-rl-.html`
@@ -113,6 +115,9 @@
     - `contain-size-021.html`
     - `contain-size-025.html`
     - `contain-size-042.html`
+    - `contain-size-063.html`
+    - `contain-size-fieldset-002.html`
+    - `contain-size-fieldset-004.html`
     - `contain-size-table-caption-001.html`
     - `contain-inline-size-removed.html`
     - `contain-size-removed.html`
@@ -125,8 +130,9 @@
     - `contain-html-t-o-003.html`
     - `contain-html-t-o-004.html`
   - 次の有力クラスター:
-    - `contain-layout-baseline-004.html`（font/Ahem 計測差）
     - `contain-layout-breaks-{001,002}.html`（multicol + forced break 未実装）
+    - `contain-size-{breaks-001,multicol-001,multicol-002,multicol-003}`（multicol 未実装）
+    - `contain-style-counters-*` / `contain-style-ol-ordinal*`（counter 系）
 
 ### css-overflow（次点）
 

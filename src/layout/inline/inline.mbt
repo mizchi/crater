@@ -524,16 +524,20 @@ fn LineBox::ensure_line_strut(
   }
   let mut replaced_like_count = 0
   let mut has_text_item = false
+  let mut has_br_item = false
   for item in self.items {
     let child = children[item.index]
     if child.text is Some(_) {
       has_text_item = true
     }
+    if child.id == "br" {
+      has_br_item = true
+    }
     if is_replaced_strut_candidate(child) {
       replaced_like_count = replaced_like_count + 1
     }
   }
-  if has_text_item || replaced_like_count == 0 {
+  if has_text_item || (replaced_like_count == 0 && not(has_br_item)) {
     return ()
   }
   let first_item = self.items[0]
@@ -545,7 +549,16 @@ fn LineBox::ensure_line_strut(
     font_size
   }
   let ascender_ratio = 0.8
-  let strut_baseline = font_size * ascender_ratio
+  let leading = if line_height > font_size {
+    line_height - font_size
+  } else {
+    0.0
+  }
+  let strut_baseline = if has_br_item {
+    font_size * ascender_ratio + leading * 0.5
+  } else {
+    font_size * ascender_ratio
+  }
   let strut_below = if line_height > strut_baseline {
     line_height - strut_baseline
   } else {
@@ -790,18 +803,10 @@ pub fn compute_ifc(
       // <br> participates in line boxes but its baseline should align with text baseline,
       // not with its full line-height box bottom.
       let font_size = child.style.font_size
-      let line_height = if child.style.line_height > 0.0 {
-        child.style.line_height
-      } else {
-        font_size
-      }
-      let leading = if line_height > font_size {
-        line_height - font_size
-      } else {
-        0.0
-      }
       let ascender_ratio = 0.8
-      let raw = font_size * ascender_ratio - leading * 0.5
+      // Keep br close to glyph ascent; subtracting half-leading pushes br
+      // too far down under tall line-height.
+      let raw = font_size * ascender_ratio
       let br_baseline = if raw > 0.0 { raw } else { 0.0 }
       br_baseline + child_layout.padding.top + child_layout.border.top
     } else if child.id.has_prefix("#text") {
@@ -957,10 +962,15 @@ pub fn compute_ifc(
         let prev_item = line.items[item_index - 1]
         let prev_child = children[prev_item.index]
         if prev_child.id.has_prefix("#text") {
-          match estimate_wrapped_text_metrics(prev_child, available_width) {
-            Some(metrics) if metrics.line_count > 1 =>
-              match layout_map.get(prev_item.index) {
-                Some(prev_layout) => {
+          match layout_map.get(prev_item.index) {
+            Some(prev_layout) => {
+              let wrap_width = if prev_layout.width > 0.0 {
+                prev_layout.width
+              } else {
+                available_width
+              }
+              match estimate_wrapped_text_metrics(prev_child, wrap_width) {
+                Some(metrics) if metrics.line_count > 1 => {
                   let line_height = if prev_child.style.line_height > 0.0 {
                     prev_child.style.line_height
                   } else {
@@ -971,14 +981,19 @@ pub fn compute_ifc(
                   if last_line_width <= 0.0 {
                     last_line_width = fallback_last_width
                   }
-                  let max_x = content_offset_x + available_width
                   let raw_x = prev_layout.x + last_line_width
-                  positioned_x = if raw_x > max_x { max_x } else { raw_x }
+                  if available_width > 0.0 {
+                    let max_x = content_offset_x + available_width
+                    positioned_x = if raw_x > max_x { max_x } else { raw_x }
+                  } else {
+                    positioned_x = raw_x
+                  }
                   positioned_y = prev_layout.y +
                     (metrics.line_count - 1).to_double() * line_height
                 }
                 _ => ()
               }
+            }
             _ => ()
           }
         }
@@ -1166,11 +1181,16 @@ fn compute_inline_child(
               } else {
                 unconstrained.max_width
               }
+              let min_content = if suppress_inline_intrinsic {
+                style.contained_intrinsic_width_fallback()
+              } else {
+                unconstrained.min_width
+              }
               let content_available = available_width -
                 padding.horizontal_sum() -
                 border.horizontal_sum()
               if content_available <= 0.0 {
-                max_content
+                min_content
               } else if max_content < content_available {
                 max_content
               } else {

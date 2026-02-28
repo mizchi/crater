@@ -572,6 +572,118 @@ test "contain_inline_size_legend_respects_fieldset_ua_defaults" {
 }
 
 ///|
+test "contain_size_fieldset_uses_empty_intrinsic_width" {
+  // Regression for css-contain/contain-size-fieldset-002.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|#border { border: 1px solid black; width: min-content; }
+    #|fieldset { contain: size; visibility: hidden; height: 1px; }
+    #|</style>
+    #|<p>This test passes if it has the same output as the reference.</p>
+    #|<div id="border">
+    #|  <fieldset>
+    #|    <legend>legend</legend>
+    #|    Fieldset contents are here.
+    #|  </fieldset>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("body should contain paragraph and border wrapper")
+  }
+  let border_box = layout.children[1]
+  let fieldset = border_box.children[0]
+  guard border_box.id == "div#border" else {
+    fail("second body child should be border wrapper")
+  }
+  guard fieldset.id == "fieldset" else {
+    fail("fieldset should remain in layout tree")
+  }
+  guard border_box.width <= 40.0 else {
+    fail("contain:size fieldset wrapper should not grow from legend text")
+  }
+  guard fieldset.width <= 32.0 else {
+    fail("contain:size fieldset should use empty intrinsic width")
+  }
+}
+
+///|
+test "contain_size_fieldset_in_flex_keeps_baseline_sized_line" {
+  // Regression for css-contain/contain-size-fieldset-004.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.contain {
+    #|  contain: size;
+    #|  border: none;
+    #|  color: transparent;
+    #|  visibility: hidden;
+    #|}
+    #|.innerContents { height: 50px; width: 50px; }
+    #|.flexBaselineCheck { display: flex; align-items: baseline; }
+    #|</style>
+    #|<div id="row" class="flexBaselineCheck">
+    #|  outside before
+    #|  <fieldset class="contain">
+    #|    <legend>legend</legend>
+    #|    <div class="innerContents">inner</div>
+    #|  </fieldset>
+    #|  outside after
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let row = layout.children[0]
+  guard row.id == "div#row" else {
+    fail("first body child should be baseline flex row")
+  }
+  guard row.height >= 40.0 else {
+    fail(
+      "contain:size fieldset in baseline flex row should keep taller baseline line",
+    )
+  }
+}
+
+///|
+test "contain_size_zero_width_wrapper_wraps_text_before_br" {
+  // Regression for css-contain/contain-size-063.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.abs { position: absolute; }
+    #|.contained { contain: size; color: transparent; }
+    #|</style>
+    #|<div class="abs"><div class="contained">Arbitrary content content<br>that takes up size.<br>Block Layout</div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should include abs wrapper")
+  }
+  let wrapper = layout.children[0]
+  guard wrapper.children.length() >= 1 else {
+    fail("abs wrapper should include contained child")
+  }
+  let contained = wrapper.children[0]
+  let mut first_br_x = -1.0
+  let mut first_br_y = -1.0
+  for child in contained.children {
+    if child.id == "br" {
+      first_br_x = child.x
+      first_br_y = child.y
+      break
+    }
+  }
+  guard first_br_x >= 0.0 else { fail("contained node should include br") }
+  guard first_br_x <= 80.0 else {
+    fail("contain:size text should wrap before br in zero-width wrapper")
+  }
+  guard first_br_y >= 30.0 else {
+    fail("wrapped lines should push br down in zero-width wrapper")
+  }
+}
+
+///|
 test "replaced_video_iframe_are_preserved_in_layout_tree" {
   let html_str =
     #|<!DOCTYPE html>
@@ -2156,6 +2268,54 @@ test "inline_span_uses_tighter_glyph_box_under_larger_line_height" {
   }
   inspect(span.height, content="104.5")
   inspect(span.x, content="200")
+}
+
+///|
+test "contain_layout_br_keeps_browser_like_baseline_offset" {
+  // Regression for css-contain/contain-layout-ink-overflow-014.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#outer {
+    #|  font-family: monospace;
+    #|  font-size: 100px;
+    #|  line-height: 1.5;
+    #|  width: 4ch;
+    #|  height: 2.8ch;
+    #|  overflow: scroll;
+    #|}
+    #|#inner {
+    #|  contain: layout;
+    #|  height: 0;
+    #|}
+    #|</style>
+    #|<div id="outer"><div id="inner">&nbsp;<br>FAIL</div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should include outer wrapper")
+  }
+  let outer = layout.children[0]
+  guard outer.id == "div#outer" else {
+    fail("first body child should be outer wrapper")
+  }
+  guard outer.children.length() >= 1 else {
+    fail("outer wrapper should include contain:layout child")
+  }
+  let inner = outer.children[0]
+  let mut br_y = -1.0
+  for child in inner.children {
+    if child.id == "br" {
+      br_y = child.y
+      break
+    }
+  }
+  guard br_y >= 0.0 else { fail("inner should include br node") }
+  guard br_y <= 30.0 else {
+    fail(
+      "br should stay near browser-like baseline offset under tall line-height",
+    )
+  }
 }
 
 ///|

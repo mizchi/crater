@@ -559,6 +559,7 @@ fn calculate_children_max_content_width(
   // Calculate max-content width from children
   for child in flow_children {
     let child_style = child.style
+    let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width()
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
     let child_margin_right = resolve_dimension_intrinsic(
@@ -593,28 +594,36 @@ fn calculate_children_max_content_width(
           child_min_box
         }
       @types.Auto =>
-        match child.measure {
-          Some(mf) => {
-            let intrinsic = (mf.func)(0.0, 0.0)
-            @types.max(intrinsic.max_width + child_min_box, child_min_box)
-          }
-          None => {
-            let recursive_width = calculate_children_max_content_width(
-              child, parent_width,
-            )
-            let grid_track_width = estimate_grid_track_intrinsic_width(
-              child_style,
-            )
-            let content_width = if grid_track_width > recursive_width {
-              grid_track_width
-            } else {
-              recursive_width
+        if child_suppress_intrinsic_inline {
+          child_style.contained_intrinsic_width_fallback() + child_min_box
+        } else {
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              @types.max(intrinsic.max_width + child_min_box, child_min_box)
             }
-            content_width + child_min_box
+            None => {
+              let recursive_width = calculate_children_max_content_width(
+                child, parent_width,
+              )
+              let grid_track_width = estimate_grid_track_intrinsic_width(
+                child_style,
+              )
+              let content_width = if grid_track_width > recursive_width {
+                grid_track_width
+              } else {
+                recursive_width
+              }
+              content_width + child_min_box
+            }
           }
         }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-        child_min_box
+        if child_suppress_intrinsic_inline {
+          child_style.contained_intrinsic_width_fallback() + child_min_box
+        } else {
+          child_min_box
+        }
     }
     let child_contribution = child_intrinsic_width + child_margin_sum
     if is_vertical_writing {
@@ -700,6 +709,7 @@ fn calculate_children_min_content_width(
   // Calculate min-content width from children
   for child in flow_children {
     let child_style = child.style
+    let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width()
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
     let child_margin_right = resolve_dimension_intrinsic(
@@ -747,6 +757,9 @@ fn calculate_children_min_content_width(
       }
     }
     fn fallback_auto_min_width() -> Double {
+      if child_suppress_intrinsic_inline {
+        return child_style.contained_intrinsic_width_fallback() + child_min_box
+      }
       match child.measure {
         Some(mf) => {
           let intrinsic = (mf.func)(0.0, 0.0)
@@ -763,14 +776,20 @@ fn calculate_children_min_content_width(
     fn apply_intrinsic_inline_constraints(raw_width : Double) -> Double {
       let mut resolved = raw_width
       let width_is_inline_axis = not(child_style.writing_mode.is_vertical())
-      let intrinsic_min_width = calculate_children_min_content_width(
+      let intrinsic_min_width = if child_suppress_intrinsic_inline {
+        child_style.contained_intrinsic_width_fallback() + child_min_box
+      } else {
+        calculate_children_min_content_width(
           child, parent_width, parent_content_height,
         ) +
         child_min_box
-      let intrinsic_max_width = calculate_children_max_content_width(
-          child, parent_width,
-        ) +
+      }
+      let intrinsic_max_width = if child_suppress_intrinsic_inline {
+        child_style.contained_intrinsic_width_fallback() + child_min_box
+      } else {
+        calculate_children_max_content_width(child, parent_width) +
         child_min_box
+      }
       // For intrinsic min-content contribution, percentages are indefinite and
       // resolve to 0 for inline-size constraints.
       match child_style.max_width {
@@ -892,20 +911,26 @@ fn calculate_children_min_content_width(
           }
           _ => fallback_auto_min_width()
         }
-      @types.MinContent | @types.FitContent(_) => {
-        let recursive_width = calculate_children_min_content_width(
-          child,
-          parent_width,
-          None,
-        )
-        recursive_width + child_min_box
-      }
-      @types.MaxContent => {
-        let recursive_width = calculate_children_max_content_width(
-          child, parent_width,
-        )
-        recursive_width + child_min_box
-      }
+      @types.MinContent | @types.FitContent(_) =>
+        if child_suppress_intrinsic_inline {
+          child_style.contained_intrinsic_width_fallback() + child_min_box
+        } else {
+          let recursive_width = calculate_children_min_content_width(
+            child,
+            parent_width,
+            None,
+          )
+          recursive_width + child_min_box
+        }
+      @types.MaxContent =>
+        if child_suppress_intrinsic_inline {
+          child_style.contained_intrinsic_width_fallback() + child_min_box
+        } else {
+          let recursive_width = calculate_children_max_content_width(
+            child, parent_width,
+          )
+          recursive_width + child_min_box
+        }
     }
     let child_intrinsic_width = apply_intrinsic_inline_constraints(
       child_intrinsic_width_raw,
@@ -3000,6 +3025,26 @@ fn compute_with_collapse(
       _ =>
         max_content_width + padding.horizontal_sum() + border.horizontal_sum()
     }
+    let intrinsic_max_width_for_constraints = if skip_intrinsic_inline {
+      style.contained_intrinsic_width_fallback() +
+      padding.horizontal_sum() +
+      border.horizontal_sum()
+    } else {
+      calculate_children_max_content_width(node, parent_width) +
+      padding.horizontal_sum() +
+      border.horizontal_sum()
+    }
+    let intrinsic_min_width_for_constraints = if skip_intrinsic_inline {
+      style.contained_intrinsic_width_fallback() +
+      padding.horizontal_sum() +
+      border.horizontal_sum()
+    } else {
+      calculate_children_min_content_width(
+        node, parent_width, child_available_height,
+      ) +
+      padding.horizontal_sum() +
+      border.horizontal_sum()
+    }
     // Re-apply min/max constraints (max first, then min for precedence)
     match style.max_width {
       @types.Length(max_w) => if box_width > max_w { box_width = max_w }
@@ -3010,22 +3055,13 @@ fn compute_with_collapse(
         }
       }
       @types.MaxContent | @types.FitContent(_) => {
-        // Calculate intrinsic max-content width of children
-        let intrinsic_width = calculate_children_max_content_width(
-            node, parent_width,
-          ) +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
+        let intrinsic_width = intrinsic_max_width_for_constraints
         if box_width > intrinsic_width {
           box_width = intrinsic_width
         }
       }
       @types.MinContent => {
-        let intrinsic_width = calculate_children_min_content_width(
-            node, parent_width, child_available_height,
-          ) +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
+        let intrinsic_width = intrinsic_min_width_for_constraints
         if box_width > intrinsic_width {
           box_width = intrinsic_width
         }
@@ -3041,22 +3077,13 @@ fn compute_with_collapse(
         }
       }
       @types.MaxContent => {
-        // Calculate intrinsic max-content width of children
-        let intrinsic_width = calculate_children_max_content_width(
-            node, parent_width,
-          ) +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
+        let intrinsic_width = intrinsic_max_width_for_constraints
         if box_width < intrinsic_width {
           box_width = intrinsic_width
         }
       }
       @types.MinContent | @types.FitContent(_) => {
-        let intrinsic_width = calculate_children_min_content_width(
-            node, parent_width, child_available_height,
-          ) +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
+        let intrinsic_width = intrinsic_min_width_for_constraints
         if box_width < intrinsic_width {
           box_width = intrinsic_width
         }
