@@ -3669,11 +3669,13 @@ fn compute_with_collapse(
     flow_i = flow_i + 1
   }
 
-  // Layout float elements
-  // Float elements are positioned using the float context
+  // Layout float elements in source order as flow advances.
   let float_layouts : Array[@types.Layout] = []
-  for i = 0; i < float_nodes.length(); i = i + 1 {
-    let child = float_nodes[i]
+  fn place_float_layout(
+    float_index : Int,
+    start_pos : Double,
+  ) -> @types.Layout {
+    let child = float_nodes[float_index]
     let child_style = child.style
 
     // Resolve child's box model
@@ -3875,9 +3877,9 @@ fn compute_with_collapse(
       child_margin.right,
       child_margin.top,
       child_margin.bottom,
-      0.0, // Start from top
+      start_pos,
     )
-    let float_layout : @types.Layout = {
+    {
       id: child.id,
       x: float_x,
       y: float_y,
@@ -3893,8 +3895,6 @@ fn compute_with_collapse(
       children: child_inner.children,
       text: child.text,
     }
-    float_layouts.push(float_layout)
-    layout_map[float_indices[i]] = float_layout
   }
 
   // Track escaped margins for parent
@@ -3912,6 +3912,12 @@ fn compute_with_collapse(
   let mut prev_margin_end = 0.0
   let mut leading_collapse_chain_active = false
   let mut leading_chain_margin = 0.0
+  let mut next_float_index = 0
+  let enable_float_inline_run = not(is_vertical_writing) &&
+    float_nodes.length() > 0
+  let mut inline_run_active = false
+  let mut inline_run_x = 0.0
+  let mut inline_run_height = 0.0
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
     let child_layout = child_result.layout
@@ -3919,12 +3925,37 @@ fn compute_with_collapse(
     let is_first = i == 0
     let is_last = i == flow_children.length() - 1
     let child_style = flow_styles[i]
+    let child_node = flow_nodes[i]
+    while next_float_index < float_nodes.length() &&
+          float_indices[next_float_index] < flow_indices[i] {
+      let float_layout = place_float_layout(next_float_index, current_pos)
+      float_layouts.push(float_layout)
+      layout_map[float_indices[next_float_index]] = float_layout
+      next_float_index = next_float_index + 1
+    }
+    let participates_in_inline_run = enable_float_inline_run &&
+      @inline.is_inline_level(child_style.display) &&
+      child_style.position != @types.Absolute &&
+      child_style.position != @types.Fixed
+    if not(participates_in_inline_run) && inline_run_active {
+      current_pos = current_pos + inline_run_height
+      inline_run_active = false
+      inline_run_x = 0.0
+      inline_run_height = 0.0
+      prev_margin_end = 0.0
+    }
 
+    let mut deferred_clear_y = current_pos
+    let defer_inline_clear = child_node.id == "br" &&
+      child_style.display == @types.Inline &&
+      child_style.clear != @types.Clear::None
     // Handle clear property - move current_pos below cleared floats
     match child_style.clear {
       @types.Clear::Left | @types.Clear::Right | @types.Clear::Both => {
         let clear_y = float_ctx.get_clear_y(child_style.clear, current_pos)
-        if clear_y > current_pos {
+        if defer_inline_clear {
+          deferred_clear_y = clear_y
+        } else if clear_y > current_pos {
           current_pos = clear_y
           prev_margin_end = 0.0 // Reset margin collapse after clear
         }
@@ -4005,7 +4036,9 @@ fn compute_with_collapse(
     }
 
     // Calculate position and track escaping margins
-    let child_y : Double = if is_first {
+    let child_y : Double = if participates_in_inline_run {
+      current_pos + padding.top + border.top
+    } else if is_first {
       if can_collapse_top {
         // First child margin escapes to parent
         if collapses_through {
@@ -4070,6 +4103,35 @@ fn compute_with_collapse(
     }
 
     // Calculate x position considering margin auto
+    let float_inline_offset = if not(is_vertical_writing) &&
+      float_ctx.has_floats() &&
+      @inline.is_inline_level(child_style.display) &&
+      child_style.position != @types.Absolute &&
+      child_style.position != @types.Fixed {
+      let probe_height = if child_layout.height > 0.0 {
+        child_layout.height
+      } else if style.line_height > 0.0 {
+        style.line_height
+      } else {
+        1.0
+      }
+      let probe_y = child_y - padding.top - border.top
+      let probe_y = if probe_y > 0.0 { probe_y } else { 0.0 }
+      let (left_edge, _) = float_ctx.get_available_space(probe_y, probe_height)
+      let base_left = padding.left + border.left
+      if left_edge > base_left {
+        left_edge - base_left
+      } else {
+        0.0
+      }
+    } else {
+      0.0
+    }
+    let inline_run_offset = if participates_in_inline_run {
+      inline_run_x
+    } else {
+      0.0
+    }
     let child_x = {
       let margin_left_auto = match child_style.margin.left {
         @types.Auto => true
@@ -4087,20 +4149,32 @@ fn compute_with_collapse(
       if margin_left_auto && margin_right_auto {
         // Both auto: center
         let auto_margin = if available > 0.0 { available / 2.0 } else { 0.0 }
-        auto_margin + padding.left + border.left
+        auto_margin +
+        padding.left +
+        border.left +
+        float_inline_offset +
+        inline_run_offset
       } else if margin_left_auto {
         // Only left auto: push to right
         let auto_margin = if available > 0.0 { available } else { 0.0 }
-        auto_margin + padding.left + border.left
+        auto_margin +
+        padding.left +
+        border.left +
+        float_inline_offset +
+        inline_run_offset
       } else {
         // No auto or only right auto: use left margin
-        child_layout.margin.left + padding.left + border.left
+        child_layout.margin.left +
+        padding.left +
+        border.left +
+        float_inline_offset +
+        inline_run_offset
       }
     }
 
     // Apply inset offset for non-absolute positioned children
     // (Static and Relative both apply inset as offset from flow position)
-    let (final_x, final_y) = if child_style.position != @types.Absolute &&
+    let (raw_final_x, raw_final_y) = if child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed {
       let height_context = match child_available_height {
         Some(h) => Some(h + padding.vertical_sum() + border.vertical_sum())
@@ -4115,6 +4189,15 @@ fn compute_with_collapse(
     } else {
       (child_x, child_y + float_clearance_offset)
     }
+    let inline_br_offset = if participates_in_inline_run &&
+      child_node.id == "br" &&
+      inline_run_height > child_layout.height {
+      inline_run_height - child_layout.height
+    } else {
+      0.0
+    }
+    let final_x = raw_final_x
+    let final_y = raw_final_y + inline_br_offset
 
     // Position child and store in map with original index
     // In vertical writing mode, swap x/y positioning
@@ -4184,7 +4267,6 @@ fn compute_with_collapse(
       { ..child_layout, x: positioned_x },
       is_vertical_writing,
     )
-    let child_node = flow_nodes[i]
     let no_principal = is_no_principal_table_internal_display(
       child_style.display,
     )
@@ -4238,37 +4320,70 @@ fn compute_with_collapse(
     }
     layout_map[flow_indices[i]] = positioned_layout
 
-    // Update current_pos (only if not collapsing through)
-    if not(collapses_through) {
-      // For display: contents, use children's total height instead of element's height (which is 0)
-      // In vertical mode, we advance by width instead of height
-      let effective_size = if child_style.display == @types.Contents {
-        if is_vertical_writing {
-          get_children_total_width(child_layout.children)
+    if participates_in_inline_run {
+      let inline_item_height = child_layout.height +
+        child_layout.margin.top +
+        child_layout.margin.bottom
+      if child_node.id == "br" {
+        let line_height = if inline_run_height > inline_item_height {
+          inline_run_height
         } else {
-          get_children_total_height(child_layout.children)
+          inline_item_height
         }
-      } else if is_vertical_writing {
-        child_layout.width
+        if line_height > 0.0 {
+          current_pos = current_pos + line_height
+        }
+        inline_run_active = false
+        inline_run_x = 0.0
+        inline_run_height = 0.0
+        prev_margin_end = 0.0
       } else {
-        child_layout.height
+        let inline_advance = child_layout.width +
+          child_layout.margin.left +
+          child_layout.margin.right
+        inline_run_x = inline_run_x + inline_advance
+        if inline_item_height > inline_run_height {
+          inline_run_height = inline_item_height
+        }
+        inline_run_active = true
       }
-      if is_first && can_collapse_top {
-        current_pos = effective_size
-      } else if is_first {
-        current_pos = effective_margin_top + effective_size
-      } else {
-        current_pos = current_pos + effective_size
+    } else {
+      // Update current_pos (only if not collapsing through)
+      if not(collapses_through) {
+        // For display: contents, use children's total height instead of element's height (which is 0)
+        // In vertical mode, we advance by width instead of height
+        let effective_size = if child_style.display == @types.Contents {
+          if is_vertical_writing {
+            get_children_total_width(child_layout.children)
+          } else {
+            get_children_total_height(child_layout.children)
+          }
+        } else if is_vertical_writing {
+          child_layout.width
+        } else {
+          child_layout.height
+        }
+        if is_first && can_collapse_top {
+          current_pos = effective_size
+        } else if is_first {
+          current_pos = effective_margin_top + effective_size
+        } else {
+          current_pos = current_pos + effective_size
+        }
       }
-    }
-    if leading_collapse_chain_active && not(collapses_through) {
-      leading_collapse_chain_active = false
+      if leading_collapse_chain_active && not(collapses_through) {
+        leading_collapse_chain_active = false
+      }
     }
 
     // Float clearance shifts the flow cursor even when the element collapses
     // through and contributes no own block-size.
     if float_clearance_offset > 0.0 {
       current_pos = current_pos + float_clearance_offset
+    }
+    if defer_inline_clear && deferred_clear_y > current_pos {
+      current_pos = deferred_clear_y
+      prev_margin_end = 0.0
     }
 
     // Record y position after this flow child (for absolute static positioning)
@@ -4278,6 +4393,19 @@ fn compute_with_collapse(
     if is_last && can_collapse_bottom {
       escaped_bottom = Some(prev_margin_end)
     }
+  }
+  if inline_run_active {
+    current_pos = current_pos + inline_run_height
+    inline_run_active = false
+    inline_run_x = 0.0
+    inline_run_height = 0.0
+    prev_margin_end = 0.0
+  }
+  while next_float_index < float_nodes.length() {
+    let float_layout = place_float_layout(next_float_index, current_pos)
+    float_layouts.push(float_layout)
+    layout_map[float_indices[next_float_index]] = float_layout
+    next_float_index = next_float_index + 1
   }
 
   // Replace anonymous-table placeholders with projected original children.

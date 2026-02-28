@@ -288,6 +288,191 @@ test "contain_size_picture_source_has_inline_line_box_height" {
 }
 
 ///|
+test "contain_size_select_single_uses_empty_control_metrics" {
+  // Regression for css-contain/contain-size-select-001.html:
+  // single-line select with contain:size should ignore option text for sizing.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|select { contain: size; color: transparent; background: white; }
+    #|</style>
+    #|<select id="s"><option>AVeryLongOption</option><option>Another Option</option></select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("layout should include select node")
+  }
+  let select = layout.children[0]
+  guard select.id == "select#s" else {
+    fail("first body child should be select")
+  }
+  guard select.width >= 20.0 else {
+    fail("single select width should keep empty-control intrinsic width")
+  }
+  guard select.height >= 18.0 else {
+    fail("single select height should keep empty-control intrinsic height")
+  }
+  guard select.children.length() >= 2 else {
+    fail("select should include option children for tree parity")
+  }
+  let mut option0_found = false
+  let mut option0 = select.children[0]
+  for child in select.children {
+    if child.id == "option" ||
+      child.id.has_prefix("option#") ||
+      child.id.has_prefix("option.") {
+      option0 = child
+      option0_found = true
+      break
+    }
+  }
+  guard option0_found else { fail("select should include option layout child") }
+  guard option0.width <= 1.0 else {
+    fail("single select option should not contribute inline width")
+  }
+  guard option0.height <= 1.0 else {
+    fail("single select option should not contribute block height")
+  }
+}
+
+///|
+test "contain_size_select_multiple_clamps_visible_option_rows" {
+  // Regression for css-contain/contain-size-select-elem-003.html:
+  // multiple select with contain:size should use empty listbox metrics.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|select { contain: size; color: transparent; }
+    #|.w { width: 100px; }
+    #|</style>
+    #|<select id="s" multiple class="w"><option>Very very long option text should not blow up row height</option><option>a</option></select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let select = layout.children[0]
+  guard select.id == "select#s" else {
+    fail("first body child should be multiple select")
+  }
+  inspect(select.width, content="100")
+  guard select.height >= 50.0 else {
+    fail("multiple select should keep listbox-like default height")
+  }
+  guard select.children.length() >= 2 else {
+    fail("multiple select should keep option children")
+  }
+  let mut option0_found = false
+  let mut option0 = select.children[0]
+  for child in select.children {
+    if child.id == "option" ||
+      child.id.has_prefix("option#") ||
+      child.id.has_prefix("option.") {
+      option0 = child
+      option0_found = true
+      break
+    }
+  }
+  guard option0_found else {
+    fail("multiple select should include option row layout")
+  }
+  guard option0.height <= 40.0 else {
+    fail("option row height should not expand from long option text")
+  }
+}
+
+///|
+test "contain_size_select_multiple_size_one_uses_single_row_height" {
+  // Regression for css-contain/contain-size-select-elem-005.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|select { contain: size; color: transparent; }
+    #|</style>
+    #|<select id="s" multiple size="1"><option>X</option></select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let select = layout.children[0]
+  guard select.id == "select#s" else {
+    fail("first body child should be select")
+  }
+  guard select.width <= 4.0 else {
+    fail("multiple select width:auto should stay border-box narrow")
+  }
+  guard select.height >= 16.0 && select.height <= 22.0 else {
+    fail("multiple+size=1 should use single-row listbox height")
+  }
+}
+
+///|
+test "select_without_contain_size_uses_option_text_for_auto_width" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|select {
+    #|  color: transparent;
+    #|  background: white;
+    #|}
+    #|</style>
+    #|<select id="target">
+    #|  <option>AVeryLongOption</option>
+    #|  <option>Another Option</option>
+    #|</select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() > 0 else {
+    fail("layout should include select node")
+  }
+  let select = layout.children[0]
+  guard select.id == "select#target" else {
+    fail("first body child should be target select")
+  }
+  guard select.width >= 100.0 else {
+    fail("auto-width select without contain:size should reflect option text")
+  }
+}
+
+///|
+test "float_after_br_starts_after_inline_select_line" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|select { color: transparent; }
+    #|.floatL { float: left; }
+    #|</style>
+    #|<select id="lead">
+    #|  <option>a</option>
+    #|</select>
+    #|<br id="linebreak">
+    #|<select id="tail" class="floatL">
+    #|  <option>a</option>
+    #|</select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let mut lead_x = -1.0
+  let mut br_x = -1.0
+  let mut tail_y = -1.0
+  for child in layout.children {
+    if child.id == "select#lead" {
+      lead_x = child.x
+    } else if child.id == "br#linebreak" {
+      br_x = child.x
+    } else if child.id == "select#tail" {
+      tail_y = child.y
+    }
+  }
+  guard lead_x >= 0.0 else { fail("layout should include lead select") }
+  guard br_x >= 0.0 else { fail("layout should include linebreak br") }
+  guard tail_y >= 0.0 else { fail("layout should include tail float select") }
+  guard lead_x <= 1.0 else {
+    fail("leading inline select should not be shifted by later float")
+  }
+  guard br_x >= 20.0 else {
+    fail("br should keep inline advance from leading select width")
+  }
+  guard tail_y >= 18.0 else {
+    fail("float placed after br should start on a later line")
+  }
+}
+
+///|
 test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback" {
   // Mirrors css-contain/contain-inline-size-intrinsic.html behavior.
   let html_str =

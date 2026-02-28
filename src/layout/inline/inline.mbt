@@ -456,6 +456,7 @@ fn is_replaced_strut_candidate(node : @node.Node) -> Bool {
   id_matches_tag(id, "iframe") ||
   id_matches_tag(id, "svg") ||
   id_matches_tag(id, "input") ||
+  id_matches_tag(id, "select") ||
   id_matches_tag(id, "textarea")
 }
 

@@ -351,6 +351,13 @@ fn is_inline_element_by_tag(tag : String) -> Bool {
 }
 
 ///|
+fn node_id_is_tag(node_id : String, tag : String) -> Bool {
+  node_id == tag ||
+  node_id.has_prefix(tag + "#") ||
+  node_id.has_prefix(tag + ".")
+}
+
+///|
 /// Check if an element has block display in its inline style
 fn has_block_display_in_style(elem : @html.Element) -> Bool {
   match elem.style {
@@ -999,6 +1006,7 @@ fn is_replaced_element(tag : String) -> Bool {
   match tag.to_lower() {
     "img"
     | "input"
+    | "select"
     | "video"
     | "audio"
     | "canvas"
@@ -3119,6 +3127,200 @@ fn element_to_node_with_styles_internal(
       },
     }
     return @node.Node::with_measure(node_id, textarea_style, measure)
+  }
+  if tag_lower == "select" {
+    fn border_is_zero_length(dim : @types.Dimension) -> Bool {
+      match dim {
+        @types.Length(v) => v == 0.0
+        _ => false
+      }
+    }
+    let has_ua_border = not(
+      border_is_zero_length(style.border.top) &&
+      border_is_zero_length(style.border.right) &&
+      border_is_zero_length(style.border.bottom) &&
+      border_is_zero_length(style.border.left),
+    )
+    let select_size = match elem.attributes.get("size") {
+      Some(size_attr) =>
+        match parse_html_dimension(size_attr) {
+          Some(v) if v > 0.0 => v.to_int()
+          _ => 0
+        }
+      None => 0
+    }
+    let has_multiple = elem.attributes.contains("multiple")
+    let is_listbox = has_multiple || select_size > 1
+    let visible_rows = if select_size > 0 {
+      select_size
+    } else if is_listbox {
+      4
+    } else {
+      1
+    }
+    let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+    let char_width = font_size * 0.5
+    let suppress_intrinsic_width = style.suppresses_intrinsic_width()
+    fn collect_html_text(node : @html.Node) -> String {
+      match node {
+        @html.Node::Text(text) => text
+        @html.Node::Element(child_elem) => {
+          let mut text = ""
+          for grand_child in child_elem.children {
+            text = text + collect_html_text(grand_child)
+          }
+          text
+        }
+      }
+    }
+    let mut max_option_cols = 0
+    if not(suppress_intrinsic_width) {
+      for child in elem.children {
+        match child {
+          @html.Node::Element(child_elem) =>
+            if child_elem.tag.to_lower() == "option" {
+              let mut option_text = ""
+              for option_child in child_elem.children {
+                option_text = option_text + collect_html_text(option_child)
+              }
+              let mut cols = 0
+              for c in option_text.iter() {
+                cols = cols + char_display_width(c)
+              }
+              if cols > max_option_cols {
+                max_option_cols = cols
+              }
+            }
+          _ => ()
+        }
+      }
+    }
+    let content_based_width = if max_option_cols > 0 {
+      max_option_cols.to_double() * char_width + font_size * 0.375
+    } else {
+      0.0
+    }
+    let single_default_width = @types.max(22.0, content_based_width)
+    let listbox_default_width = if suppress_intrinsic_width {
+      2.0
+    } else if max_option_cols > 0 {
+      @types.max(2.0, content_based_width)
+    } else {
+      2.0
+    }
+    let default_width = if is_listbox {
+      listbox_default_width
+    } else if suppress_intrinsic_width {
+      22.0
+    } else {
+      single_default_width
+    }
+    let default_height = if is_listbox {
+      if visible_rows <= 1 {
+        17.5
+      } else if visible_rows == 4 {
+        if font_size <= 12.0 {
+          48.0
+        } else {
+          64.0
+        }
+      } else {
+        let row_height = if font_size <= 12.0 { 11.5 } else { 15.5 }
+        2.0 + visible_rows.to_double() * row_height
+      }
+    } else {
+      19.0
+    }
+    let default_line_height = if style.line_height > 0.0 {
+      style.line_height
+    } else {
+      font_size * 1.2
+    }
+    let default_border : @types.Rect[@types.Dimension] = @types.Rect::new(
+      @types.Length(1.0),
+      @types.Length(1.0),
+      @types.Length(1.0),
+      @types.Length(1.0),
+    )
+    let zero_dim_rect : @types.Rect[@types.Dimension] = @types.Rect::new(
+      @types.Length(0.0),
+      @types.Length(0.0),
+      @types.Length(0.0),
+      @types.Length(0.0),
+    )
+
+    let normalized_children : Array[@node.Node] = []
+    let mut option_index = 0
+    for child in children {
+      let is_option = node_id_is_tag(child.id, "option")
+      if is_option {
+        let option_style = if is_listbox {
+          let option_font_size = if child.style.font_size > 0.0 {
+            child.style.font_size
+          } else {
+            font_size
+          }
+          let option_row_height = option_font_size * 1.15 + 1.0
+          {
+            ..child.style,
+            display: @types.Block,
+            height: @types.Length(option_row_height),
+          }
+        } else {
+          let top_offset = if option_index == 0 {
+            -default_line_height
+          } else {
+            0.0
+          }
+          {
+            ..child.style,
+            display: @types.Block,
+            width: @types.Length(0.0),
+            height: @types.Length(0.0),
+            margin: @types.Rect::new(
+              @types.Length(top_offset),
+              @types.Length(0.0),
+              @types.Length(0.0),
+              @types.Length(0.0),
+            ),
+            padding: zero_dim_rect,
+            border: zero_dim_rect,
+          }
+        }
+        normalized_children.push(
+          @node.Node::with_uid_and_measure(
+            child.id,
+            child.uid,
+            option_style,
+            child.children,
+            child.measure,
+            child.text,
+          ),
+        )
+        option_index = option_index + 1
+      } else {
+        normalized_children.push(child)
+      }
+    }
+    let select_style : @style.Style = {
+      ..style,
+      border: if has_ua_border {
+        style.border
+      } else {
+        default_border
+      },
+      width: if style.width == @types.Auto {
+        @types.Length(default_width)
+      } else {
+        style.width
+      },
+      height: if style.height == @types.Auto {
+        @types.Length(default_height)
+      } else {
+        style.height
+      },
+    }
+    return @node.Node::new(node_id, select_style, normalized_children)
   }
   if tag_lower == "svg" && children.is_empty() {
     // Root SVG behaves as a replaced element with default object size 300x150.
