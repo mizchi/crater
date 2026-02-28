@@ -93,6 +93,9 @@ pub fn initial_value(property : String) -> String {
     "writing-mode" => "horizontal-tb"
     // Containment
     "contain" => "none"
+    "contain-intrinsic-size"
+    | "contain-intrinsic-inline-size"
+    | "contain-intrinsic-block-size" => "none"
     // Table properties
     "caption-side" => "top"
     "border-collapse" => "separate"

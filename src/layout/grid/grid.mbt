@@ -521,11 +521,9 @@ fn compute_grid_layout_internal(
   let style = node.style
   let is_vertical_writing = style.writing_mode.is_vertical()
   let is_block_rtl = style.writing_mode.is_block_rtl()
-  // Containment contribution suppression (physical-axis behavior):
-  // - contain:size suppresses both width/height content contributions
-  // - contain:inline-size suppresses width-side content contributions
-  let suppress_width_intrinsic = style.contain.size || style.contain.inline_size
-  let suppress_height_intrinsic = style.contain.size
+  // Containment contribution suppression on physical axes.
+  let suppress_width_intrinsic = style.suppresses_intrinsic_width()
+  let suppress_height_intrinsic = style.suppresses_intrinsic_height()
   let suppress_column_intrinsic = if is_vertical_writing {
     suppress_height_intrinsic
   } else {
@@ -4171,6 +4169,22 @@ fn adjust_block_tracks_for_measured_items(
       None => continue
       Some(_) => ()
     }
+    // Replaced/intrinsic-based block-axis growth only applies when
+    // the item's block size is auto. Definite block size must win.
+    let child_block_size_is_auto = if is_vertical_writing {
+      match child.style.width {
+        @types.Auto => true
+        _ => false
+      }
+    } else {
+      match child.style.height {
+        @types.Auto => true
+        _ => false
+      }
+    }
+    if not(child_block_size_is_auto) {
+      continue
+    }
     let placement = placements[i]
     let block_start = if is_vertical_writing {
       placement.column_start
@@ -5161,6 +5175,11 @@ fn apply_alignment(
 /// For blocks without children, baseline is at the bottom
 /// For blocks with children, baseline is the first child's baseline
 fn calculate_baseline(node : @node.Node, layout : @types.Layout) -> Double {
+  if node.style.contain.layout {
+    // contain:layout items suppress baseline participation and synthesize
+    // baseline from their border box.
+    return layout.height
+  }
   if node.children.length() > 0 && layout.children.length() > 0 {
     // Baseline is the first child's baseline, offset by the child's position
     let first_child = node.children[0]

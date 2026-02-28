@@ -968,3 +968,80 @@ test "link default color is blue" {
     None => fail("No link node found!")
   }
 }
+
+///|
+test "display_contents keeps inline parent shrink-to-fit and preserves child span" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<meta charset="utf-8">
+    #|<style>
+    #|#contents {
+    #|  display: contents;
+    #|}
+    #|</style>
+    #|<p>You should see the word PASS and no red below.</p>
+    #|<span>
+    #|  P<div id="contents">A<span>S</span></div>S
+    #|</span>
+  let ctx = @renderer.RenderContext::default()
+  let node_tree = @renderer.render_to_node(html, ctx)
+  let span_node = node_tree.children[1]
+  inspect(span_node.id, content="span")
+  inspect(span_node.children.length(), content="3")
+  inspect(span_node.children[1].id, content="div#contents")
+  inspect(span_node.children[1].children.length(), content="2")
+  inspect(span_node.children[1].children[1].id, content="span")
+
+  let layout = @renderer.render(html, ctx)
+
+  let inline_parent = layout.children[1]
+  inspect(inline_parent.id, content="span")
+  inspect(inline_parent.width < 200.0, content="true")
+
+  fn find_child(
+    children : Array[@types.Layout],
+    id : String,
+  ) -> @types.Layout? {
+    for child in children {
+      if child.id == id {
+        return Some(child)
+      }
+    }
+    None
+  }
+
+  match find_child(inline_parent.children, "div#contents") {
+    Some(contents_layout) => {
+      inspect(contents_layout.width, content="0")
+      inspect(contents_layout.height, content="0")
+      inspect(contents_layout.children.length(), content="2")
+      inspect(contents_layout.children[1].id, content="span")
+    }
+    None => fail("div#contents layout not found")
+  }
+}
+
+///|
+test "display_contents text contributes to flex item intrinsic width" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  .flex { display: flex; }
+    #|  .inline { display: inline; }
+    #|  .contents { display: contents; }
+    #|</style>
+    #|<div class="flex">
+    #|  <div class="inline"><div class="contents">4</div></div>
+    #|  <div><div class="contents">5a</div></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html, ctx)
+
+  let flex = layout.children[0]
+  inspect(flex.id, content="div.flex")
+  inspect(flex.children.length(), content="2")
+  inspect(flex.children[0].id, content="div.inline")
+  inspect(flex.children[1].id, content="div")
+  inspect(flex.children[0].width, content="8")
+  inspect(flex.children[1].width, content="16")
+}

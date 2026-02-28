@@ -360,10 +360,14 @@ test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
   )
 
   if result.total_height <= 150.0 {
-    fail("mixed inline line with contain:size image should not collapse to 150px")
+    fail(
+      "mixed inline line with contain:size image should not collapse to 150px",
+    )
   }
   if result.layouts[2].y <= 40.0 {
-    fail("following inline image should be pushed down by contain:size baseline behavior")
+    fail(
+      "following inline image should be pushed down by contain:size baseline behavior",
+    )
   }
 }
 

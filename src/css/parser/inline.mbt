@@ -1207,6 +1207,76 @@ fn parse_container_type(tokens : ArrayView[@token.Token]) -> @style.Contain? {
 }
 
 ///|
+/// Parse contain-intrinsic-inline-size / contain-intrinsic-block-size.
+/// Returns a content-box fallback length in px, or None for none/auto.
+fn parse_contain_intrinsic_axis(tokens : ArrayView[@token.Token]) -> Double? {
+  let remaining = skip_whitespace(tokens)
+  if remaining.length() == 0 {
+    return None
+  }
+  match remaining[0] {
+    @token.Token::Ident(s) =>
+      if s == "none" || s == "auto" {
+        None
+      } else {
+        match parse_dimension(remaining) {
+          Some(@types.Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
+          _ => None
+        }
+      }
+    _ =>
+      match parse_dimension(remaining) {
+        Some(@types.Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
+        _ => None
+      }
+  }
+}
+
+///|
+/// Parse contain-intrinsic-size shorthand.
+/// One value applies to both inline/block axes; two values map to inline then block.
+fn parse_contain_intrinsic_size(
+  tokens : ArrayView[@token.Token],
+) -> (Double?, Double?)? {
+  let mut remaining = skip_whitespace(tokens)
+  let axis_values : Array[Double?] = []
+  while remaining.length() > 0 {
+    match remaining[0] {
+      @token.Token::Whitespace => remaining = skip_whitespace(remaining[1:])
+      @token.Token::Ident(s) =>
+        if s == "auto" {
+          remaining = skip_whitespace(remaining[1:])
+        } else if s == "none" {
+          axis_values.push(None)
+          remaining = skip_whitespace(remaining[1:])
+        } else {
+          match parse_dimension(remaining) {
+            Some(@types.Length(v)) =>
+              axis_values.push(Some(if v > 0.0 { v } else { 0.0 }))
+            _ => ()
+          }
+          remaining = skip_whitespace(remaining[1:])
+        }
+      _ => {
+        match parse_dimension(remaining) {
+          Some(@types.Length(v)) =>
+            axis_values.push(Some(if v > 0.0 { v } else { 0.0 }))
+          _ => ()
+        }
+        remaining = skip_whitespace(remaining[1:])
+      }
+    }
+  }
+  if axis_values.length() == 0 {
+    None
+  } else if axis_values.length() == 1 {
+    Some((axis_values[0], axis_values[0]))
+  } else {
+    Some((axis_values[0], axis_values[1]))
+  }
+}
+
+///|
 /// Parse CSS transform property
 /// Supports: translate(x, y), translateX(x), translateY(y), translate3d(x, y, z), none
 fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
@@ -2022,6 +2092,32 @@ fn apply_property(
           return { ..style, contain: merge_contain(style.contain, implied) }
         } else {
           return style
+        }
+      None => ()
+    }
+  }
+  // contain-intrinsic-inline-size
+  if property == "contain-intrinsic-inline-size" {
+    let contain_intrinsic_inline_size = parse_contain_intrinsic_axis(
+      value_tokens,
+    )
+    return { ..style, contain_intrinsic_inline_size, }
+  }
+  // contain-intrinsic-block-size
+  if property == "contain-intrinsic-block-size" {
+    let contain_intrinsic_block_size = parse_contain_intrinsic_axis(
+      value_tokens,
+    )
+    return { ..style, contain_intrinsic_block_size, }
+  }
+  // contain-intrinsic-size
+  if property == "contain-intrinsic-size" {
+    match parse_contain_intrinsic_size(value_tokens) {
+      Some((contain_intrinsic_inline_size, contain_intrinsic_block_size)) =>
+        return {
+          ..style,
+          contain_intrinsic_inline_size,
+          contain_intrinsic_block_size,
         }
       None => ()
     }

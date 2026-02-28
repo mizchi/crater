@@ -156,6 +156,8 @@ priv struct StyleBuilder {
   mut background_color : @types.Color
   // Containment
   mut contain : @style.Contain
+  mut contain_intrinsic_inline_size : Double?
+  mut contain_intrinsic_block_size : Double?
   // Transform
   mut transform : @style.Transform
   // Zoom (affects layout scaling)
@@ -238,6 +240,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
+    contain_intrinsic_inline_size: None,
+    contain_intrinsic_block_size: None,
     transform: @style.Transform::none(),
     zoom: 1.0,
     border_spacing: 0.0,
@@ -318,6 +322,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     color: style.color,
     background_color: style.background_color,
     contain: style.contain,
+    contain_intrinsic_inline_size: style.contain_intrinsic_inline_size,
+    contain_intrinsic_block_size: style.contain_intrinsic_block_size,
     transform: style.transform,
     zoom: style.zoom,
     border_spacing: style.border_spacing,
@@ -407,6 +413,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     color: self.color,
     background_color: self.background_color,
     contain: self.contain,
+    contain_intrinsic_inline_size: self.contain_intrinsic_inline_size,
+    contain_intrinsic_block_size: self.contain_intrinsic_block_size,
     transform: self.transform,
     zoom: self.zoom,
     border_spacing: self.border_spacing,
@@ -555,6 +563,16 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.Direction::Ltr => "ltr"
         @style.Direction::Rtl => "rtl"
       }
+    "contain-intrinsic-inline-size" =>
+      match style.contain_intrinsic_inline_size {
+        Some(v) => v.to_string() + "px"
+        None => "none"
+      }
+    "contain-intrinsic-block-size" =>
+      match style.contain_intrinsic_block_size {
+        Some(v) => v.to_string() + "px"
+        None => "none"
+      }
     _ => initial_value(property)
   }
 }
@@ -604,14 +622,16 @@ pub fn compute(
   // Seed writing-mode before applying logical properties.
   // Logical sizing must follow the element's effective writing mode.
   seed_writing_mode(builder, cascaded, ctx)
+  // Seed font metrics before resolving em/ch/ex units in other properties.
+  let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
   // Second pass: apply regular properties with var() resolution
   for prop in props {
-    if not(prop.has_prefix("--")) {
+    if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
       match cascaded.get(prop) {
         Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, ctx)
-          apply_property(builder, prop, value, ctx)
+          let value = resolve_keyword(prop, decl.value, font_ctx)
+          apply_property(builder, prop, value, font_ctx)
         }
         None => ()
       }
@@ -648,14 +668,15 @@ pub fn compute_with_vars(
 
   // Seed writing-mode before applying logical properties.
   seed_writing_mode(builder, cascaded, ctx)
+  let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
   // Second pass: apply regular properties
   for prop in props {
-    if not(prop.has_prefix("--")) {
+    if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
       match cascaded.get(prop) {
         Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, ctx)
-          apply_property(builder, prop, value, ctx)
+          let value = resolve_keyword(prop, decl.value, font_ctx)
+          apply_property(builder, prop, value, font_ctx)
         }
         None => ()
       }
@@ -688,6 +709,51 @@ fn seed_writing_mode(
     }
     None => ()
   }
+}
+
+///|
+fn is_preseeded_font_property(property : String) -> Bool {
+  property == "font" || property == "font-size" || property == "line-height"
+}
+
+///|
+/// Seed font-size/line-height ahead of general property application so
+/// em/ch/ex units in width/height and gaps resolve against the element's font.
+fn seed_font_metrics(
+  builder : StyleBuilder,
+  cascaded : @cascade.CascadedValues,
+  ctx : ComputeContext,
+) -> ComputeContext {
+  let mut seeded_font_size = ctx.font_size
+  let mut seeded_line_height = ctx.font_size
+
+  match cascaded.get("font") {
+    Some(decl) => {
+      let value = resolve_keyword("font", decl.value, ctx)
+      let (font_size, line_height) = parse_font_shorthand(value, ctx)
+      seeded_font_size = font_size
+      seeded_line_height = line_height
+    }
+    None => ()
+  }
+  match cascaded.get("font-size") {
+    Some(decl) => {
+      let value = resolve_keyword("font-size", decl.value, ctx)
+      seeded_font_size = parse_font_size(value, ctx)
+    }
+    None => ()
+  }
+  match cascaded.get("line-height") {
+    Some(decl) => {
+      let value = resolve_keyword("line-height", decl.value, ctx)
+      seeded_line_height = parse_line_height(value, seeded_font_size)
+    }
+    None => ()
+  }
+
+  builder.font_size = seeded_font_size
+  builder.line_height = seeded_line_height
+  { ..ctx, font_size: seeded_font_size }
 }
 
 ///|
@@ -1378,6 +1444,22 @@ fn apply_property(
           if implied.has_containment() {
             builder.contain = merge_contain(builder.contain, implied)
           }
+        None => ()
+      }
+    "contain-intrinsic-inline-size" =>
+      builder.contain_intrinsic_inline_size = parse_contain_intrinsic_axis(
+        value, ctx,
+      )
+    "contain-intrinsic-block-size" =>
+      builder.contain_intrinsic_block_size = parse_contain_intrinsic_axis(
+        value, ctx,
+      )
+    "contain-intrinsic-size" =>
+      match parse_contain_intrinsic_size(value, ctx) {
+        Some((inline_size, block_size)) => {
+          builder.contain_intrinsic_inline_size = inline_size
+          builder.contain_intrinsic_block_size = block_size
+        }
         None => ()
       }
     // Clip (legacy, deprecated but widely used for a11y)
@@ -2201,10 +2283,22 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
 }
 
 ///|
+fn strip_css_ascii_whitespace(value : String) -> String {
+  let sb = StringBuilder::new()
+  for c in value.iter() {
+    if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '\u000C' {
+      sb.write_char(c)
+    }
+  }
+  sb.to_string()
+}
+
+///|
 /// Resolve dimension with relative unit conversion
 fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // First resolve any var() functions
-  let v = resolve_all_vars(value, ctx).trim()
+  let raw_v = resolve_all_vars(value, ctx).trim()
+  let v = strip_css_ascii_whitespace(raw_v.to_string())
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
   }
@@ -2222,16 +2316,18 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   }
 
   // Handle calc() expressions
-  if v.has_prefix("calc(") {
-    match parse_calc_string(v.to_string(), ctx) {
+  if raw_v.has_prefix("calc(") {
+    match parse_calc_string(raw_v.to_string(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex calc
     }
   }
 
   // Handle min(), max(), clamp() CSS math functions
-  if v.has_prefix("min(") || v.has_prefix("max(") || v.has_prefix("clamp(") {
-    match parse_css_math_function(v.to_string(), ctx) {
+  if raw_v.has_prefix("min(") ||
+    raw_v.has_prefix("max(") ||
+    raw_v.has_prefix("clamp(") {
+    match parse_css_math_function(raw_v.to_string(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex expressions
     }
@@ -3073,6 +3169,59 @@ fn parse_font_shorthand(
 // =============================================================================
 // Containment Parsing
 // =============================================================================
+
+///|
+/// Parse contain-intrinsic-inline-size / contain-intrinsic-block-size.
+/// Returns a content-box fallback length in px, or None for none/auto.
+fn parse_contain_intrinsic_axis(
+  value : String,
+  ctx : ComputeContext,
+) -> Double? {
+  let v = resolve_all_vars(value, ctx).trim().to_string()
+  if v.is_empty() || v == "none" || v == "auto" {
+    return None
+  }
+  match resolve_dimension(v, ctx) {
+    @types.Length(length) => if length > 0.0 { Some(length) } else { Some(0.0) }
+    _ => None
+  }
+}
+
+///|
+/// Parse contain-intrinsic-size shorthand.
+/// One value applies to both inline/block axes; two values map to inline then block.
+fn parse_contain_intrinsic_size(
+  value : String,
+  ctx : ComputeContext,
+) -> (Double?, Double?)? {
+  let v = resolve_all_vars(value, ctx).trim().to_string()
+  if v.is_empty() {
+    return None
+  }
+  let axis_values : Array[Double?] = []
+  let parts = v.split(" ")
+  for part in parts {
+    let p = part.to_string().trim().to_string()
+    if p.is_empty() || p == "auto" {
+      continue
+    }
+    if p == "none" {
+      axis_values.push(None)
+      continue
+    }
+    match parse_contain_intrinsic_axis(p, ctx) {
+      Some(length) => axis_values.push(Some(length))
+      None => ()
+    }
+  }
+  if axis_values.length() == 0 {
+    None
+  } else if axis_values.length() == 1 {
+    Some((axis_values[0], axis_values[0]))
+  } else {
+    Some((axis_values[0], axis_values[1]))
+  }
+}
 
 ///|
 /// Parse contain property

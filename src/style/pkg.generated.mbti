@@ -116,6 +116,8 @@ pub(all) struct Style {
   mut color : @types.Color
   mut background_color : @types.Color
   mut contain : Contain
+  mut contain_intrinsic_inline_size : Double?
+  mut contain_intrinsic_block_size : Double?
   mut transform : Transform
   mut zoom : Double
   mut border_spacing : Double
@@ -125,7 +127,11 @@ pub(all) struct Style {
   mut rowspan : Int
   mut colspan : Int
 }
+pub fn Style::contained_intrinsic_height_fallback(Self) -> Double
+pub fn Style::contained_intrinsic_width_fallback(Self) -> Double
 pub fn Style::default() -> Self
+pub fn Style::suppresses_intrinsic_height(Self) -> Bool
+pub fn Style::suppresses_intrinsic_width(Self) -> Bool
 
 pub(all) enum TableLayout {
   Auto

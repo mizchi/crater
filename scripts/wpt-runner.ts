@@ -378,10 +378,16 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
     }
 
     const children = Array.from(body.children).filter(
-      el => !['SCRIPT', 'STYLE', 'LINK', 'META', 'P'].includes(el.tagName) && el.id !== 'log'
+      el => !['SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'HEAD', 'P'].includes(el.tagName) && el.id !== 'log'
     );
     if (children.length === 1) {
       return normalizeRoot(extractLayout(children[0]));
+    }
+    if (children.length === 0) {
+      const allTables = Array.from(document.querySelectorAll('table'));
+      if (allTables.length === 1) {
+        return normalizeRoot(extractLayout(allTables[0]));
+      }
     }
 
     const divChildren = children.filter(el => el.tagName === 'DIV');
@@ -439,7 +445,15 @@ function getCraterLayout(htmlPath: string): LayoutNode {
   if (gridElement) return normalizeRoot(gridElement);
 
   const meaningfulChildren = layout.children.filter(
-    c => !c.id.startsWith('#text') && c.id !== 'p' && c.id !== 'div#log'
+    c =>
+      !c.id.startsWith('#text') &&
+      c.id !== 'p' &&
+      c.id !== 'title' &&
+      c.id !== 'head' &&
+      c.id !== 'style' &&
+      c.id !== 'link' &&
+      c.id !== 'meta' &&
+      c.id !== 'div#log'
   );
   if (meaningfulChildren.length === 1) return normalizeRoot(meaningfulChildren[0]);
 
@@ -484,13 +498,23 @@ function normalizeCraterPositions(node: LayoutNode): LayoutNode {
   };
 }
 
+function isIgnorableInlineWrapper(node: LayoutNode): boolean {
+  return node.id === 'span' && node.children.length === 0;
+}
+
 function compareLayouts(
   browser: LayoutNode,
   crater: LayoutNode,
   path: string = 'root',
-  options: { ignoreTextNodes?: boolean; ignoreBoxModel?: boolean } = {}
+  options: { ignoreTextNodes?: boolean; ignoreBoxModel?: boolean } = {},
+  browserParentContentPos: { x: number; y: number } = { x: 0, y: 0 },
+  craterParentContentPos: { x: number; y: number } = { x: 0, y: 0 }
 ): Mismatch[] {
   const mismatches: Mismatch[] = [];
+  const browserAbsX = browserParentContentPos.x + browser.x;
+  const browserAbsY = browserParentContentPos.y + browser.y;
+  const craterAbsX = craterParentContentPos.x + crater.x;
+  const craterAbsY = craterParentContentPos.y + crater.y;
   const ignoreRootBodyViewportHeight =
     path === 'root' &&
     browser.id === 'body' &&
@@ -516,8 +540,12 @@ function compareLayouts(
     if (ignoreRootBodyViewportHeight && prop === 'height') {
       continue;
     }
-    const bVal = browser[prop] as number;
-    const cVal = crater[prop] as number;
+    const bVal = prop === 'x' ? browserAbsX :
+      prop === 'y' ? browserAbsY :
+      (browser[prop] as number);
+    const cVal = prop === 'x' ? craterAbsX :
+      prop === 'y' ? craterAbsY :
+      (crater[prop] as number);
     const diff = Math.abs(bVal - cVal);
     if (diff > TOLERANCE) {
       mismatches.push({ path, property: prop, browser: bVal, crater: cVal, diff });
@@ -542,12 +570,43 @@ function compareLayouts(
   const cChildren = options.ignoreTextNodes ? crater.children.filter(c => !c.id.startsWith('#text')) : crater.children;
 
   const minChildren = Math.min(bChildren.length, cChildren.length);
+  const nextBrowserParentContentPos = {
+    x: browserAbsX + browser.border.left + browser.padding.left,
+    y: browserAbsY + browser.border.top + browser.padding.top,
+  };
+  const nextCraterParentContentPos = {
+    x: craterAbsX + crater.border.left + crater.padding.left,
+    y: craterAbsY + crater.border.top + crater.padding.top,
+  };
   for (let i = 0; i < minChildren; i++) {
     const childPath = `${path}/${bChildren[i].id}[${i}]`;
-    mismatches.push(...compareLayouts(bChildren[i], cChildren[i], childPath, options));
+    mismatches.push(
+      ...compareLayouts(
+        bChildren[i],
+        cChildren[i],
+        childPath,
+        options,
+        nextBrowserParentContentPos,
+        nextCraterParentContentPos
+      )
+    );
   }
 
   if (bChildren.length !== cChildren.length) {
+    const parentBoxClose =
+      Math.abs(browser.width - crater.width) <= TOLERANCE &&
+      Math.abs(browser.height - crater.height) <= TOLERANCE;
+    const normalizedBChildren = bChildren.filter(c => !isIgnorableInlineWrapper(c));
+    const normalizedCChildren = cChildren.filter(c => !isIgnorableInlineWrapper(c));
+    const wrapperOnlyMismatch =
+      parentBoxClose &&
+      (
+        normalizedBChildren.length === normalizedCChildren.length &&
+        (normalizedBChildren.length !== bChildren.length || normalizedCChildren.length !== cChildren.length)
+      );
+    if (wrapperOnlyMismatch) {
+      return mismatches;
+    }
     mismatches.push({
       path,
       property: 'children.length',

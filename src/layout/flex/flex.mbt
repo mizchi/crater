@@ -357,6 +357,104 @@ fn create_contents_layout(
 }
 
 ///|
+priv enum ContentsTreeEntry {
+  Leaf(layout~ : @types.Layout)
+  Wrapper(ancestor~ : @node.Node, children~ : Array[ContentsTreeEntry])
+}
+
+///|
+fn insert_contents_tree(
+  entries : Array[ContentsTreeEntry],
+  ancestors : Array[@node.Node],
+  depth : Int,
+  start_index : Int,
+  layout : @types.Layout,
+) -> Array[ContentsTreeEntry] {
+  let path_index = start_index + depth
+  let next_entries = entries.copy()
+  if path_index >= ancestors.length() {
+    next_entries.push(ContentsTreeEntry::Leaf(layout~))
+    return next_entries
+  }
+
+  let ancestor = ancestors[path_index]
+  for i = 0; i < next_entries.length(); i = i + 1 {
+    match next_entries[i] {
+      ContentsTreeEntry::Wrapper(
+        ancestor=existing_ancestor,
+        children=existing_children
+      ) =>
+        if existing_ancestor.uid == ancestor.uid {
+          let updated_children = insert_contents_tree(
+            existing_children,
+            ancestors,
+            depth + 1,
+            start_index,
+            layout,
+          )
+          next_entries[i] = ContentsTreeEntry::Wrapper(
+            ancestor=existing_ancestor,
+            children=updated_children,
+          )
+          return next_entries
+        }
+      _ => ()
+    }
+  }
+
+  let new_children = insert_contents_tree(
+    [],
+    ancestors,
+    depth + 1,
+    start_index,
+    layout,
+  )
+  next_entries.push(
+    ContentsTreeEntry::Wrapper(ancestor~, children=new_children),
+  )
+  next_entries
+}
+
+///|
+fn contents_tree_entries_to_layouts(
+  entries : Array[ContentsTreeEntry],
+) -> Array[@types.Layout] {
+  let layouts : Array[@types.Layout] = []
+  for entry in entries {
+    match entry {
+      ContentsTreeEntry::Leaf(layout~) => layouts.push(layout)
+      ContentsTreeEntry::Wrapper(ancestor~, children~) => {
+        let nested_children = contents_tree_entries_to_layouts(children)
+        layouts.push(create_contents_layout(ancestor, nested_children))
+      }
+    }
+  }
+  layouts
+}
+
+///|
+fn build_contents_tree_layout(
+  root_contents_node : @node.Node,
+  layouts_with_ancestors : Array[(@types.Layout, Array[@node.Node])],
+) -> @types.Layout {
+  let mut tree_entries : Array[ContentsTreeEntry] = []
+  for pair in layouts_with_ancestors {
+    let (layout, ancestors) = pair
+    let start_index = if ancestors.length() > 0 &&
+      ancestors[0].uid == root_contents_node.uid {
+      1
+    } else {
+      0
+    }
+    tree_entries = insert_contents_tree(
+      tree_entries, ancestors, 0, start_index, layout,
+    )
+  }
+  let nested_layouts = contents_tree_entries_to_layouts(tree_entries)
+  create_contents_layout(root_contents_node, nested_layouts)
+}
+
+///|
 /// Compute a baseline distance on flex column cross axis (horizontal).
 /// Uses first in-flow descendant baseline so nested grid/table wrappers don't
 /// fallback to their full width.
@@ -590,10 +688,14 @@ fn compute_intrinsic_main_size(
   let style = node.style
   let children = node.children
 
-  // CSS Containment: contain: size makes intrinsic size 0 in both axes
-  // contain: inline-size makes intrinsic size 0 only in inline (horizontal) axis
-  // Note: padding and border are still included, only content contribution is 0
-  if style.contain.size || (style.contain.inline_size && is_row) {
+  // CSS containment intrinsic suppression on the current physical main axis.
+  // Padding and border are still included; only content contribution is replaced.
+  let suppress_main_intrinsic = if is_row {
+    style.suppresses_intrinsic_width()
+  } else {
+    style.suppresses_intrinsic_height()
+  }
+  if suppress_main_intrinsic {
     let available_width = match available_cross {
       Some(w) if not(is_row) => w
       _ => 0.0
@@ -938,6 +1040,16 @@ fn compute_intrinsic_main_size(
         compute_intrinsic_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
+      @types.Contents =>
+        if is_row {
+          // display: contents contributes inline-size from descendants, but should
+          // not force block-size expansion from wrapper-only intrinsic estimates.
+          compute_intrinsic_block_main_size(
+            node, true, available_cross, cache, dispatch,
+          )
+        } else {
+          0.0
+        }
       @types.Grid | @types.InlineGrid =>
         compute_intrinsic_grid_main_size(
           node, is_row, available_cross, dispatch,
@@ -984,9 +1096,12 @@ fn compute_min_content_main_size(
   let style = node.style
   let children = node.children
 
-  // CSS Containment: contain: size makes intrinsic size 0 in both axes
-  // contain: inline-size makes intrinsic size 0 only in inline (horizontal) axis
-  if style.contain.size || (style.contain.inline_size && is_row) {
+  let suppress_main_intrinsic = if is_row {
+    style.suppresses_intrinsic_width()
+  } else {
+    style.suppresses_intrinsic_height()
+  }
+  if suppress_main_intrinsic {
     let available_width = match available_cross {
       Some(w) if not(is_row) => w
       _ => 0.0
@@ -1061,6 +1176,14 @@ fn compute_min_content_main_size(
         compute_min_content_block_main_size(
           node, is_row, available_cross, cache, dispatch,
         )
+      @types.Contents =>
+        if is_row {
+          compute_min_content_block_main_size(
+            node, true, available_cross, cache, dispatch,
+          )
+        } else {
+          0.0
+        }
       @types.Grid | @types.InlineGrid =>
         compute_min_content_grid_main_size(
           node, is_row, available_cross, dispatch,
@@ -2211,6 +2334,69 @@ fn compute_intrinsic_block_main_size(
           border.left +
           border.right
       }
+    } else {
+      // Horizontal writing-mode inline flow advances on x-axis.
+      // For inline-only children, intrinsic width is the max line advance.
+      let mut has_flow_child = false
+      let mut only_inline_flow = true
+      let mut max_line_width = 0.0
+      let mut current_line_width = 0.0
+      for i = 0; i < children.length(); i = i + 1 {
+        let child = children[i]
+        let child_style = child.style
+        if child_style.display == @types.Display::None {
+          continue
+        }
+        if child_style.position == @types.Absolute ||
+          child_style.position == @types.Fixed {
+          continue
+        }
+        match child_style.float {
+          @types.Float::Left | @types.Float::Right => continue
+          @types.Float::None => ()
+        }
+        has_flow_child = true
+        if child.id == "br" {
+          if current_line_width > max_line_width {
+            max_line_width = current_line_width
+          }
+          current_line_width = 0.0
+          continue
+        }
+        if child_style.display != @types.Contents &&
+          not(@inline.is_inline_level(child_style.display)) {
+          only_inline_flow = false
+          break
+        }
+        let child_resolved = get_resolved_rects(
+          child_style,
+          child.uid,
+          available_width,
+        )
+        let child_margin = child_resolved.margin
+        let child_width = match child_style.width {
+          @types.Length(w) => w + child_margin.left + child_margin.right
+          _ =>
+            compute_intrinsic_main_size(
+              child, true, intrinsic_cross_for_children, cache, dispatch,
+            ) +
+            child_margin.left +
+            child_margin.right
+        }
+        current_line_width = current_line_width + child_width
+      }
+      if has_flow_child && only_inline_flow {
+        let content_width = if current_line_width > max_line_width {
+          current_line_width
+        } else {
+          max_line_width
+        }
+        return content_width +
+          padding.left +
+          padding.right +
+          border.left +
+          border.right
+      }
     }
     // Compute intrinsic width
     let mut max_width = 0.0
@@ -2473,9 +2659,8 @@ fn compute_internal(
     @types.Auto => true
     _ => false
   }
-  let suppress_auto_inline_size = style.contain.size ||
-    style.contain.inline_size
-  let suppress_auto_block_size = style.contain.size
+  let suppress_auto_inline_size = style.suppresses_intrinsic_width()
+  let suppress_auto_block_size = style.suppresses_intrinsic_height()
 
   // For MaxContent sizing with auto size, check for MeasureFunc (leaf node with intrinsic size)
   // This applies when we have a flex container with no children but a MeasureFunc
@@ -6268,14 +6453,10 @@ fn compute_internal(
     if child_style.display == @types.Contents {
       match contents_layouts.get(i) {
         Some(layouts_with_ancestors) => {
-          // Build the contents tree structure
-          // For simple case (single level of contents), just wrap the layouts
-          let inner_layouts : Array[@types.Layout] = []
-          for pair in layouts_with_ancestors {
-            let (layout, _ancestors) = pair
-            inner_layouts.push(layout)
-          }
-          let contents_layout = create_contents_layout(child, inner_layouts)
+          // Rebuild nested display:contents wrappers using ancestor paths.
+          let contents_layout = build_contents_tree_layout(
+            child, layouts_with_ancestors,
+          )
           indexed_layouts.push({ dom_index: i, layout: contents_layout })
         }
         None =>

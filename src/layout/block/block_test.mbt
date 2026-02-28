@@ -498,6 +498,38 @@ test "block_percentage_margin_vertical" {
 }
 
 ///|
+test "block_bfc_with_single_collapse_through_child_counts_collapsed_margin_once" {
+  let default_style = @style.Style::default()
+  let collapse_child_style = {
+    ..default_style,
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(30.0),
+      bottom: @types.Length(30.0),
+    },
+  }
+  let collapse_child = @node.Node::leaf("collapse-child", collapse_child_style)
+  let root_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    contain: @style.Contain::content(),
+  }
+  let root = @node.Node::new("root", root_style, [collapse_child])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="30")
+}
+
+///|
 test "block_float_supported" {
   // Float is now supported - no warnings should be emitted
   let default_style = @style.Style::default()
@@ -527,6 +559,106 @@ test "block_float_supported" {
 
   // No warnings for supported float
   inspect(result.warnings.length(), content="0")
+}
+
+///|
+test "block_flow_root_is_pushed_below_float_stack_when_tall" {
+  let default_style = @style.Style::default()
+  let float1_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let float2_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(250.0),
+    height: @types.Length(100.0),
+  }
+  let float3_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(300.0),
+    height: @types.Length(100.0),
+  }
+  let flow_root_style = {
+    ..default_style,
+    display: @types.FlowRoot,
+    width: @types.Length(0.0),
+    height: @types.Length(170.0),
+  }
+  let float1 = @node.Node::leaf("float1", float1_style)
+  let float2 = @node.Node::leaf("float2", float2_style)
+  let float3 = @node.Node::leaf("float3", float3_style)
+  let flow_root = @node.Node::leaf("flow-root", flow_root_style)
+  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root = @node.Node::new("root", root_style, [
+    float1, float2, float3, flow_root,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let flow_root_layout = layout.children[3]
+  inspect(flow_root_layout.y, content="200")
+  inspect(layout.height, content="370")
+}
+
+///|
+test "block_flow_root_stays_at_top_when_short_enough_between_floats" {
+  let default_style = @style.Style::default()
+  let float1_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let float2_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(250.0),
+    height: @types.Length(100.0),
+  }
+  let float3_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(300.0),
+    height: @types.Length(100.0),
+  }
+  let flow_root_style = {
+    ..default_style,
+    display: @types.FlowRoot,
+    width: @types.Length(0.0),
+    height: @types.Length(24.0),
+  }
+  let float1 = @node.Node::leaf("float1", float1_style)
+  let float2 = @node.Node::leaf("float2", float2_style)
+  let float3 = @node.Node::leaf("float3", float3_style)
+  let flow_root = @node.Node::leaf("flow-root", flow_root_style)
+  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root = @node.Node::new("root", root_style, [
+    float1, float2, float3, flow_root,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let flow_root_layout = layout.children[3]
+  inspect(flow_root_layout.y, content="0")
+  inspect(layout.height, content="24")
 }
 
 ///|

@@ -1360,6 +1360,59 @@ test "grid_contain_size_min_height_expands_fr_track_for_alignment" {
   assert_eq(layout.children[1].y, 50.0)
 }
 
+///|
+test "grid_inline_baseline_with_definite_height_replaced_item_keeps_auto_row_content_height" {
+  let default_style = @style.Style::default()
+  let canvas_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let canvas = @node.Node::with_measure(
+    "canvas",
+    {
+      ..default_style,
+      width: @types.Length(50.0),
+      height: @types.Length(100.0),
+    },
+    canvas_measure,
+  )
+  let item = @node.Node::leaf("item", {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(100.0),
+    contain: { ..default_style.contain, layout: true },
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.InlineGrid,
+      align_items: @types.Baseline,
+      grid_auto_flow: @types.Column,
+    },
+    [canvas, item],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  assert_eq(layout.height, 100.0)
+  assert_eq(layout.children[0].height, 100.0)
+  assert_eq(layout.children[1].height, 100.0)
+}
+
 // =============================================================================
 // Taffy Ported Tests - span
 // =============================================================================

@@ -232,7 +232,7 @@ fn TreeBuilder::flush_pending_text(
         }
       }
       // Skip whitespace-only text nodes between elements
-      // (inter-element whitespace is usually insignificant)
+      // while preserving one collapsed space for later layout decisions.
       if is_whitespace_only(text) {
         if should_preserve_inline_inter_element_whitespace(current, next_tag) {
           current.children.push(Node::Text(" "))
@@ -246,7 +246,8 @@ fn TreeBuilder::flush_pending_text(
 }
 
 ///|
-/// Keep a single collapsed whitespace when it appears between inline-level siblings.
+/// Keep a single collapsed whitespace when it appears between element siblings.
+/// Whether it contributes to layout is decided later from computed display values.
 fn should_preserve_inline_inter_element_whitespace(
   current : Element,
   next_tag : String?,
@@ -255,35 +256,16 @@ fn should_preserve_inline_inter_element_whitespace(
   if prev_len == 0 {
     return false
   }
-  let next_inline = match next_tag {
-    Some(tag) => is_gap_sensitive_replaced_tag(tag)
+  let has_next_element = match next_tag {
+    Some(_) => true
     None => false
   }
-  if not(next_inline) {
+  if not(has_next_element) {
     return false
   }
-  let prev_inline = match current.children[prev_len - 1] {
-    Node::Element(prev_elem) => is_gap_sensitive_replaced_tag(prev_elem.tag)
+  match current.children[prev_len - 1] {
+    Node::Element(_) => true
     Node::Text(_) => false
-  }
-  prev_inline
-}
-
-///|
-/// Replaced-like inline tags where inter-element whitespace commonly affects layout.
-fn is_gap_sensitive_replaced_tag(tag : String) -> Bool {
-  match tag.to_lower() {
-    "video"
-    | "audio"
-    | "img"
-    | "canvas"
-    | "embed"
-    | "iframe"
-    | "object"
-    | "picture"
-    | "svg"
-    | "source" => true
-    _ => false
   }
 }
 

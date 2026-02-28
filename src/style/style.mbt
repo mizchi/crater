@@ -219,6 +219,52 @@ pub fn Contain::has_containment(self : Contain) -> Bool {
 }
 
 ///|
+/// Whether containment suppresses intrinsic contribution on physical width.
+pub fn Style::suppresses_intrinsic_width(self : Style) -> Bool {
+  self.contain.size ||
+  (self.contain.inline_size && not(self.writing_mode.is_vertical()))
+}
+
+///|
+/// Whether containment suppresses intrinsic contribution on physical height.
+pub fn Style::suppresses_intrinsic_height(self : Style) -> Bool {
+  self.contain.size ||
+  (self.contain.inline_size && self.writing_mode.is_vertical())
+}
+
+///|
+/// Fallback intrinsic contribution on physical width from contain-intrinsic-size.
+pub fn Style::contained_intrinsic_width_fallback(self : Style) -> Double {
+  if self.writing_mode.is_vertical() {
+    match self.contain_intrinsic_block_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  } else {
+    match self.contain_intrinsic_inline_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  }
+}
+
+///|
+/// Fallback intrinsic contribution on physical height from contain-intrinsic-size.
+pub fn Style::contained_intrinsic_height_fallback(self : Style) -> Double {
+  if self.writing_mode.is_vertical() {
+    match self.contain_intrinsic_inline_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  } else {
+    match self.contain_intrinsic_block_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  }
+}
+
+///|
 /// Vertical alignment for inline elements
 pub(all) enum VerticalAlign {
   Baseline // Align baseline (default, simplified to bottom for now)
@@ -310,6 +356,9 @@ pub(all) struct Style {
   mut background_color : @types.Color // Background color (not inherited)
   // Containment (for layout optimization)
   mut contain : Contain
+  // contain-intrinsic-* fallback sizes (content-box lengths in px)
+  mut contain_intrinsic_inline_size : Double?
+  mut contain_intrinsic_block_size : Double?
   // CSS transform (visual offset, applied in paint phase)
   mut transform : Transform
   // CSS zoom (affects layout scaling, inherited)
@@ -402,6 +451,8 @@ pub fn Style::default() -> Style {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
+    contain_intrinsic_inline_size: None,
+    contain_intrinsic_block_size: None,
     transform: Transform::none(),
     zoom: 1.0,
     border_spacing: 0.0,

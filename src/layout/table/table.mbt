@@ -1855,9 +1855,7 @@ pub fn compute(
         continue
       }
       let caption_layout = dispatch_fn(
-        child,
-        caption_intrinsic_width_ctx,
-        dispatch,
+        child, caption_intrinsic_width_ctx, dispatch,
       )
       if caption_layout.width > caption_intrinsic_max_width {
         caption_intrinsic_max_width = caption_layout.width
@@ -1871,12 +1869,10 @@ pub fn compute(
     }
     // Total spacing = (num_columns - 1) between + 2 for edges = num_columns + 1
     total + border_spacing * (num_columns + 1).to_double()
+  } else if caption_intrinsic_max_width > anon_flow_intrinsic_width {
+    caption_intrinsic_max_width
   } else {
-    if caption_intrinsic_max_width > anon_flow_intrinsic_width {
-      caption_intrinsic_max_width
-    } else {
-      anon_flow_intrinsic_width
-    }
+    anon_flow_intrinsic_width
   }
 
   // Calculate table width: shrink-to-fit for auto, unless in stretch context

@@ -352,6 +352,19 @@ test "container-type merges with contain flags" {
 }
 
 ///|
+test "contain-intrinsic-inline-size parses length" {
+  let style = parse_inline_style("contain-intrinsic-inline-size: 100px")
+  inspect(style.contain_intrinsic_inline_size, content="Some(100)")
+}
+
+///|
+test "contain-intrinsic-size shorthand sets inline and block" {
+  let style = parse_inline_style("contain-intrinsic-size: 80px 40px")
+  inspect(style.contain_intrinsic_inline_size, content="Some(80)")
+  inspect(style.contain_intrinsic_block_size, content="Some(40)")
+}
+
+///|
 test "parse width fit-content" {
   let style = parse_inline_style("width: fit-content")
   inspect(style.width, content="FitContent(10000000000)")

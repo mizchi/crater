@@ -101,6 +101,23 @@ test "compute_inline container-type merges with contain" {
 }
 
 ///|
+test "compute_inline contain-intrinsic-inline-size parses length" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "contain-intrinsic-inline-size: 120px", ctx,
+  )
+  inspect(style.contain_intrinsic_inline_size, content="Some(120)")
+}
+
+///|
+test "compute_inline contain-intrinsic-size shorthand sets both axes" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("contain-intrinsic-size: 90px 45px", ctx)
+  inspect(style.contain_intrinsic_inline_size, content="Some(90)")
+  inspect(style.contain_intrinsic_block_size, content="Some(45)")
+}
+
+///|
 test "parse_grid_placement custom ident defaults to second line" {
   inspect(@computed.parse_grid_placement("foo"), content="Line(2)")
   inspect(@computed.parse_grid_placement("bar-baz"), content="Line(2)")
@@ -411,6 +428,15 @@ test "font shorthand parsing" {
   let style3 = @computed.compute_inline("font: 16px Arial", ctx)
   inspect(style3.font_size, content="16")
   inspect(style3.line_height, content="16") // default 1:1 ratio
+}
+
+///|
+test "em_dimensions_use_seeded_element_font_metrics" {
+  let ctx = @computed.ComputeContext::new()
+  let style1 = @computed.compute_inline("font: 25px/1 Ahem; width: 15em", ctx)
+  inspect(style1.width, content="Length(375)")
+  let style2 = @computed.compute_inline("width: 15em; font: 25px/1 Ahem", ctx)
+  inspect(style2.width, content="Length(375)")
 }
 
 ///|

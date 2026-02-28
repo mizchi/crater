@@ -1209,6 +1209,9 @@ fn TreeBuilder::clear_active_formatting_to_marker(self : TreeBuilder) -> Unit {
 ///|
 /// Helper: close cell
 fn TreeBuilder::close_cell(self : TreeBuilder) -> Unit {
+  // Preserve pending text (e.g. &nbsp;) inside the current cell
+  // before implicit td/th closing via table insertion modes.
+  self.flush_pending_text()
   self.generate_implied_end_tags()
   // Pop until td or th
   while not(self.open_elements.is_empty()) {
