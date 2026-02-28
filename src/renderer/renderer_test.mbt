@@ -975,6 +975,26 @@ test "link default color is blue" {
 }
 
 ///|
+test "ua_list_defaults_use_block_margin_and_inline_start_padding" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<ol><li></li></ol>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let ol = node.children[0]
+  let li = ol.children[0]
+  inspect(ol.id, content="ol")
+  inspect(ol.style.margin.top, content="Length(16)")
+  inspect(ol.style.margin.bottom, content="Length(16)")
+  inspect(ol.style.margin.left, content="Length(0)")
+  inspect(ol.style.padding.left, content="Length(40)")
+  inspect(ol.style.padding.bottom, content="Length(0)")
+  inspect(li.id, content="li")
+  inspect(li.style.min_height, content="Length(19.2)")
+}
+
+///|
 test "display_contents keeps inline parent shrink-to-fit and preserves child span" {
   let html =
     #|<!DOCTYPE html>

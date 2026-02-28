@@ -3886,28 +3886,31 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Auto,
         ),
       }
-    "ul" | "ol" => {
-      // Lists have 1em margin and 40px padding-left
-      let mut s = default_style
-      s = {
-        ..s,
-        margin: @types.Rect::new(
-          @types.Length(16.0),
-          @types.Auto,
-          @types.Length(16.0),
-          @types.Auto,
-        ),
-      }
+    "ul" | "ol" =>
+      // Lists: margin-block 1em; padding-inline-start 40px.
+      // Use named fields because Rect::new ordering is (left, right, top, bottom).
       {
-        ..s,
-        padding: @types.Rect::new(
-          @types.Length(0.0),
-          @types.Length(0.0),
-          @types.Length(0.0),
-          @types.Length(40.0),
-        ),
+        ..default_style,
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(16.0),
+          bottom: @types.Length(16.0),
+        },
+        padding: {
+          left: @types.Length(40.0),
+          right: @types.Length(0.0),
+          top: @types.Length(0.0),
+          bottom: @types.Length(0.0),
+        },
       }
-    }
+    "li" =>
+      {
+        ..default_style
+        // Empty list items still occupy one line box in browsers.
+        ,
+        min_height: @types.Length(19.2),
+      }
     "blockquote" =>
       {
         // blockquote has 1em margin and 40px horizontal margins
@@ -4141,6 +4144,7 @@ fn compute_element_style_indexed(
   style = { ..style, display: ua_style.display }
   style = { ..style, box_sizing: ua_style.box_sizing }
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
+  style = { ..style, min_height: ua_style.min_height }
   if selector_elem.tag_name.to_lower() == "rt" {
     let inherited_font_size = match parent_style {
       Some(ps) => ps.font_size
@@ -4202,6 +4206,11 @@ fn compute_element_style_indexed(
     if not(is_table_display(style.display)) {
       style = { ..style, display: ua_style.display }
     }
+  }
+  // Size containment does not apply to table-cell elements, while
+  // layout/paint/style containment still can.
+  if style.display == @types.TableCell && style.contain.size {
+    style = { ..style, contain: { ..style.contain, size: false } }
   }
 
   // Apply inline styles
