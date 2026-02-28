@@ -115,6 +115,35 @@ test "contain_size_video_auto_size_collapses_to_border_box" {
 }
 
 ///|
+test "contain_size_inline_block_img_uses_broken_alt_fallback_size" {
+  // Mirrors css-contain/contain-size-021.html behavior under WPT runner setup
+  // where non-data image URLs are unresolved and alt fallback metrics are used.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|#inline-block-blue-test {
+    #|  background-color: blue;
+    #|  contain: size;
+    #|  display: inline-block;
+    #|  padding: 50px;
+    #|}
+    #|</style>
+    #|<div>
+    #|  <div id="inline-block-blue-test"><img src="support/blue50wBy46h.png" alt="Image download support must be enabled"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let blue = outer.children[0]
+  let img = blue.children[0]
+  inspect(blue.width, content="100")
+  inspect(blue.height, content="100")
+  inspect(img.width, content="64")
+  inspect(img.height, content="96")
+}
+
+///|
 test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback" {
   // Mirrors css-contain/contain-inline-size-intrinsic.html behavior.
   let html_str =

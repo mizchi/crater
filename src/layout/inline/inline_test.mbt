@@ -304,6 +304,70 @@ test "ifc_contain_size_replaced_uses_explicit_aspect_ratio_for_auto_height" {
 }
 
 ///|
+test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 16.0,
+    line_height: 19.2,
+  }
+  let contain_img_style = {
+    ..inline_style,
+    contain: { ..default_style.contain, size: true },
+    padding: {
+      top: @types.Length(50.0),
+      right: @types.Length(50.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(50.0),
+    },
+  }
+  let image_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 100.0,
+        max_height: 100.0,
+      }
+    },
+  }
+  let space_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 8.0, max_width: 8.0, min_height: 19.2, max_height: 19.2 }
+    },
+  }
+  let blue = @node.Node::with_measure(
+    "img#blue-test",
+    contain_img_style,
+    image_measure,
+    text="Image download support must be enabled",
+  )
+  let space = @node.Node::text("#text", inline_style, space_measure, " ")
+  let orange = @node.Node::with_measure(
+    "img#orange-reference",
+    inline_style,
+    image_measure,
+    text="Image download support must be enabled",
+  )
+  let result = compute_ifc(
+    [blue, space, orange],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+
+  if result.total_height <= 150.0 {
+    fail("mixed inline line with contain:size image should not collapse to 150px")
+  }
+  if result.layouts[2].y <= 40.0 {
+    fail("following inline image should be pushed down by contain:size baseline behavior")
+  }
+}
+
+///|
 test "ifc_content_offset" {
   // IFC with content offset (padding/border of container)
   let default_style = @style.Style::default()

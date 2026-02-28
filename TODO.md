@@ -55,6 +55,9 @@
   - `249 / 303 passed`（`54 failed`）→ `250 / 303 passed`（`53 failed`）
   - `250 / 303 passed`（`53 failed`）→ `252 / 303 passed`（`51 failed`）
   - `252 / 303 passed`（`51 failed`）→ `253 / 303 passed`（`50 failed`）
+  - `253 / 303 passed`（`50 failed`）→ `254 / 303 passed`（`49 failed`）
+  - `254 / 303 passed`（`49 failed`）→ `255 / 303 passed`（`48 failed`）
+  - `255 / 303 passed`（`48 failed`）→ `256 / 303 passed`（`47 failed`）
   - 改善済み:
     - `contain-inline-size-intrinsic.html`
     - `contain-inline-size-vertical-rl-.html`
@@ -107,6 +110,9 @@
     - `contain-size-007.html`
     - `contain-size-008.html`
     - `contain-size-009.html`
+    - `contain-size-021.html`
+    - `contain-size-025.html`
+    - `contain-size-042.html`
     - `contain-size-table-caption-001.html`
     - `contain-inline-size-removed.html`
     - `contain-size-removed.html`

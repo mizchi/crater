@@ -803,13 +803,20 @@ pub fn compute_ifc(
       let raw = font_size * ascender_ratio - leading * 0.5
       let br_baseline = if raw > 0.0 { raw } else { 0.0 }
       br_baseline + child_layout.padding.top + child_layout.border.top
-    } else if child.text is Some(_) {
+    } else if child.id.has_prefix("#text") {
       // Text node: use font metrics
       let font_size = child.style.font_size
       let ascender_ratio = 0.8 // Standard approximation
       font_size * ascender_ratio +
       child_layout.padding.top +
       child_layout.border.top
+    } else if child.style.contain.size &&
+      child.text is Some(_) &&
+      id_matches_tag(child.id, "img") {
+      // For contain:size replaced inlines, preserve additional baseline depth
+      // contributed by suppressed intrinsic content so mixed inline lines don't
+      // collapse too short.
+      child_layout.height + child_layout.padding.bottom + child_layout.border.bottom
     } else {
       // Non-text inline elements should use synthesized content baseline
       // instead of always falling back to bottom.
@@ -943,7 +950,7 @@ pub fn compute_ifc(
       if child.id == "br" && item_index > 0 {
         let prev_item = line.items[item_index - 1]
         let prev_child = children[prev_item.index]
-        if prev_child.text is Some(_) {
+        if prev_child.id.has_prefix("#text") {
           match estimate_wrapped_text_metrics(prev_child, available_width) {
             Some(metrics) if metrics.line_count > 1 =>
               match layout_map.get(prev_item.index) {

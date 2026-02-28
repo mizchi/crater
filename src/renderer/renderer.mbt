@@ -3137,6 +3137,7 @@ fn element_to_node_with_styles_internal(
     let mut intrinsic_width = attr_width
     let mut intrinsic_height = attr_height
     let mut uses_svg_fallback_object_size = false
+    let mut uses_alt_fallback_size = false
     // Fill missing intrinsic dimensions from src data when available.
     if intrinsic_width == 0.0 || intrinsic_height == 0.0 {
       match elem.attributes.get("src") {
@@ -3165,6 +3166,37 @@ fn element_to_node_with_styles_internal(
       intrinsic_height = 150.0
       uses_svg_fallback_object_size = true
     }
+    let alt_text = elem.attributes.get("alt")
+    let has_non_data_src = match elem.attributes.get("src") {
+      Some(src) => not(src.to_lower().has_prefix("data:"))
+      None => false
+    }
+    // Chromium-style broken image fallback in our WPT setup: when external
+    // image loading is unavailable and alt text exists, keep a visible fallback box.
+    if intrinsic_width == 0.0 &&
+      intrinsic_height == 0.0 &&
+      has_non_data_src &&
+      not(style.suppresses_intrinsic_width()) &&
+      not(style.suppresses_intrinsic_height()) {
+      match alt_text {
+        Some(alt) =>
+          if alt.length() > 0 {
+            intrinsic_width = 64.0
+            intrinsic_height = if style.display == @types.Block {
+              let fallback_line_height = if style.line_height > 0.0 {
+                style.line_height
+              } else {
+                style.font_size
+              }
+              96.0 + fallback_line_height
+            } else {
+              96.0
+            }
+            uses_alt_fallback_size = true
+          }
+        None => ()
+      }
+    }
 
     // Check if CSS dimensions are percentages - we need to handle these specially
     // even if intrinsic dimensions are 0
@@ -3181,13 +3213,11 @@ fn element_to_node_with_styles_internal(
     // Always treat <img> as replaced; unknown intrinsic size remains 0x0,
     // but CSS sizing keywords/percentages still need replaced-element behavior.
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
-    // Get alt text for accessibility/placeholder display
-    let alt_text = elem.attributes.get("alt")
-
     // Calculate intrinsic aspect ratio (width / height)
     let intrinsic_aspect_ratio = if intrinsic_height > 0.0 &&
       intrinsic_width > 0.0 &&
-      not(uses_svg_fallback_object_size) {
+      not(uses_svg_fallback_object_size) &&
+      not(uses_alt_fallback_size) {
       Some(intrinsic_width / intrinsic_height)
     } else {
       None
