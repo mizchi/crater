@@ -76,6 +76,31 @@
 moon bench -p bench
 ```
 
+## Regression Check (2026-02-28)
+
+Compared current HEAD (`a14526d`) with pre-`display:contents` table fix commit (`1d6d0c1`)
+using repeated `--release` runs and median values.
+
+Command examples:
+```bash
+moon bench -p bench -f render_bench.mbt --release -i 4-8
+moon bench -p bench -f render_bench.mbt --release -i 9-11
+moon bench -p bench -f render_bench.mbt --release -i 22-24
+```
+
+| Benchmark | base median | current median | delta |
+|-----------|-------------|----------------|-------|
+| render_nest_50 | 400.51 µs | 398.87 µs | -0.4% |
+| render_flex_row_50 | 510.71 µs | 511.79 µs | +0.2% |
+| render_flex_col_100 | 1.25 ms | 1.27 ms | +1.6% |
+| render_flex_wrap | 1.18 ms | 1.26 ms | +6.8% |
+| render_flex_d5 | 4.57 ms | 4.84 ms | +5.9% |
+| render_flex_d6 | 14.51 ms | 14.79 ms | +1.9% |
+| render_table_30x6 | 2.30 ms | 2.20 ms | -4.3% |
+| render_table_50x8 | 5.17 ms | 4.91 ms | -5.0% |
+
+Conclusion: no high-confidence performance regression found in the current changes.
+
 ---
 
 # Optimization Results (2025-01-12)
