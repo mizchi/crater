@@ -115,6 +115,105 @@ test "contain_size_video_auto_size_collapses_to_border_box" {
 }
 
 ///|
+test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback" {
+  // Mirrors css-contain/contain-inline-size-intrinsic.html behavior.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<div style="background:green; contain:inline-size; height:50px; width:fit-content; contain-intrinsic-inline-size:100px">
+    #|  <div style="display:inline-block; width:75px;"></div>
+    #|  <div style="display:inline-block; width:75px;"></div>
+    #|</div>
+    #|<div style="background:green; contain:inline-size; height:fit-content; width:100px; contain-intrinsic-inline-size:50px; writing-mode: vertical-rl;">
+    #|  <div style="display:inline-block; height:35px;"></div>
+    #|  <div style="display:inline-block; height:35px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("body should include two contain:inline-size children")
+  }
+  let first = layout.children[0]
+  let second = layout.children[1]
+  inspect(first.width, content="100")
+  inspect(first.height, content="50")
+  inspect(second.width, content="100")
+  inspect(second.height, content="50")
+}
+
+///|
+test "contain_inline_size_fit_content_keeps_inline_children_single_line" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|</style>
+    #|<div id="outer" style="background:green; contain:inline-size; height:50px; width:fit-content; contain-intrinsic-inline-size:100px">
+    #|  <div id="a" style="display:inline-block; width:75px;"></div>
+    #|  <div id="b" style="display:inline-block; width:75px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let first_child = outer.children[0]
+  let second_child = outer.children[1]
+  inspect(outer.width, content="100")
+  inspect(first_child.x, content="0")
+  inspect(second_child.x, content="0")
+  guard second_child.y <= 14.9 else {
+    fail(
+      "inline-size contained fit-content inline-block should not wrap to next line",
+    )
+  }
+}
+
+///|
+test "contain_inline_size_fieldset_uses_ua_defaults_and_legend_overlay" {
+  // Mirrors css-contain/contain-inline-size-fieldset.html behavior.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|</style>
+    #|<p>The fieldset below has inline-size containment.</p>
+    #|<fieldset style="contain:inline-size; border:20px solid; width:fit-content;">
+    #|  <legend><div style="width:200px; height:2px; background:blue;"></div></legend>
+    #|  <div style="width:100px; height:100px; background:hotpink;"></div>
+    #|</fieldset>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let fieldset = layout.children[1]
+  let legend = fieldset.children[0]
+  inspect(fieldset.width, content="64")
+  inspect(legend.width, content="204")
+  inspect(legend.y, content="9")
+}
+
+///|
+test "contain_inline_size_legend_respects_fieldset_ua_defaults" {
+  // Mirrors css-contain/contain-inline-size-legend.html behavior.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|</style>
+    #|<p>Legend containment</p>
+    #|<fieldset style="width:fit-content; min-width:0;">
+    #|  <legend style="contain:inline-size; border:solid blue; border-width:0 50px; padding:0; background:red;">
+    #|    <div style="width:500px; height:100px;"></div>
+    #|  </legend>
+    #|  <div style="height:100px; background:yellow;"></div>
+    #|</fieldset>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let fieldset = layout.children[1]
+  let legend = fieldset.children[0]
+  inspect(fieldset.width, content="124")
+  inspect(legend.width, content="100")
+}
+
+///|
 test "replaced_video_iframe_are_preserved_in_layout_tree" {
   let html_str =
     #|<!DOCTYPE html>
@@ -375,6 +474,256 @@ test "contain_size_non_atomic_inline_span_is_preserved" {
 }
 
 ///|
+test "contain_layout_inline_sibling_with_id_is_preserved" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#pa { contain: layout; }
+    #|#ss { vertical-align: bottom; }
+    #|</style>
+    #|<div><span id="pa">PA</span><span id="ss">SS</span></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let div = layout.children[0]
+  inspect(div.children.length(), content="2")
+  inspect(div.children[0].id, content="span#pa")
+  inspect(div.children[1].id, content="span#ss")
+}
+
+///|
+test "contain_layout_table_row_group_has_no_principal_box" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#wrapper {
+    #|  position: relative;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  padding: 25px;
+    #|  box-sizing: border-box;
+    #|}
+    #|#table-row-group {
+    #|  display: table-row-group;
+    #|  contain: layout;
+    #|}
+    #|#abspos {
+    #|  position: absolute;
+    #|  font: 100px/1 monospace;
+    #|  top: 0;
+    #|  left: 0;
+    #|}
+    #|</style>
+    #|<div id="wrapper">
+    #|  <div id="table-row-group">
+    #|    <div id="abspos">X</div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let row_group = layout.children[0].children[0]
+  guard row_group.width == 0.0 else {
+    fail("table-row-group should not generate a principal box width")
+  }
+  guard row_group.height == 0.0 else {
+    fail("table-row-group should not generate a principal box height")
+  }
+  guard row_group.children.length() > 0 else {
+    fail("absolute descendant should remain in layout tree")
+  }
+  let abs = row_group.children[0]
+  guard abs.x < 0.0 && abs.y < 0.0 else {
+    fail("absolute descendant should ignore no-principal ancestor offset")
+  }
+  guard abs.width >= 60.0 else {
+    fail("absolute descendant should keep intrinsic inline size")
+  }
+}
+
+///|
+test "contain_paint_table_row_group_static_abs_keeps_static_position" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|div {
+    #|  display: table-row-group;
+    #|  contain: paint;
+    #|}
+    #|span {
+    #|  position: absolute;
+    #|}
+    #|</style>
+    #|<p>Test passes if there is the word "PASS" below.</p>
+    #|<div><span>PASS</span></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("body should keep paragraph and table-row-group children")
+  }
+  let row_group = layout.children[1]
+  guard row_group.children.length() == 1 else {
+    fail("table-row-group should keep absolute descendant")
+  }
+  let abs = row_group.children[0]
+  guard abs.y >= -0.5 && abs.y <= 0.5 else {
+    fail("static-positioned absolute child should stay aligned with row-group")
+  }
+}
+
+///|
+test "contain_paint_table_cell_abs_does_not_contribute_intrinsic_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|div {
+    #|  display: table-cell;
+    #|  contain: paint;
+    #|}
+    #|span {
+    #|  position: absolute;
+    #|}
+    #|</style>
+    #|<p>There should be nothing below.</p>
+    #|<div><span>FAIL</span></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("body should keep paragraph and table-cell children")
+  }
+  let cell = layout.children[1]
+  guard cell.width == 0.0 else {
+    fail("table-cell with only abspos content should keep zero intrinsic width")
+  }
+  guard cell.height == 0.0 else {
+    fail(
+      "table-cell with only abspos content should keep zero intrinsic height",
+    )
+  }
+}
+
+///|
+test "contain_size_table_row_group_with_text_does_not_crash" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|div {
+    #|  display: table-row-group;
+    #|  contain: size;
+    #|}
+    #|section {
+    #|  overflow: hidden;
+    #|}
+    #|</style>
+    #|<p>Test passes if there is the word "PASS" below.</p>
+    #|<section><div>PASS</div></section>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 2 else {
+    fail("body should keep paragraph and section")
+  }
+  let section = layout.children[1]
+  guard section.children.length() == 1 else {
+    fail("section should keep the row-group child")
+  }
+}
+
+///|
+test "rt_ua_default_font_size_is_half_of_parent" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<ruby><rt>FAIL</rt></ruby>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let ruby = root.children[0]
+  let rt = ruby.children[0]
+  inspect(ruby.style.font_size, content="16")
+  inspect(rt.style.font_size, content="8")
+}
+
+///|
+test "flex_item_with_contain_layout_uses_synthesized_baseline" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#flex {
+    #|  display: inline-flex;
+    #|  align-items: baseline;
+    #|}
+    #|canvas {
+    #|  width: 50px;
+    #|  height: 100px;
+    #|}
+    #|#item {
+    #|  contain: layout;
+    #|  width: 50px;
+    #|  height: 100px;
+    #|}
+    #|</style>
+    #|<div id="flex"><canvas></canvas><div id="item">item</div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  guard flex.height == 100.0 else {
+    fail("baseline-synthesized flex line should keep 100px cross size")
+  }
+  let item = flex.children[1]
+  guard item.y == 0.0 else {
+    fail("contain:layout flex item should align with synthesized baseline")
+  }
+}
+
+///|
+test "whitespace_between_css_inline_blocks_is_preserved" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-size: 16px; line-height: 1; }
+    #|.inline-block { display: inline-block; width: 10px; height: 10px; }
+    #|</style>
+    #|<div>
+    #|  <div class="inline-block"></div>
+    #|  <div class="inline-block"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let wrapper = layout.children[0]
+  let inline_blocks : Array[@types.Layout] = []
+  for child in wrapper.children {
+    if not(child.id.has_prefix("#text")) {
+      inline_blocks.push(child)
+    }
+  }
+  guard inline_blocks.length() == 2 else {
+    fail("wrapper should have two inline-block children")
+  }
+  let first = inline_blocks[0]
+  let second = inline_blocks[1]
+  guard first.x == 0.0 else { fail("first inline-block should start at x=0") }
+  guard second.x == 18.0 else {
+    fail(
+      "collapsed inter-element space should create 8px gap at 16px font size",
+    )
+  }
+}
+
+///|
+test "orthogonal_block_auto_margin_centers_in_vertical_parent" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html { writing-mode: vertical-lr; width: 100vw; height: 100vh; overflow: hidden; }
+    #|body { margin: 0; border-top: 100px solid red; border-bottom: 100px solid green; width: 100vw; height: 100vh; contain: layout; }
+    #|p { margin: auto; padding: 150px 0; writing-mode: horizontal-tb; direction: ltr; }
+    #|</style>
+    #|<p>Test passes if there is no red.</p>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let p = layout.children[0]
+  guard p.width < 400.0 else {
+    fail("orthogonal auto-width block should not fill full viewport width")
+  }
+  guard p.y > 200.0 else {
+    fail("vertical parent with auto margins should center orthogonal child")
+  }
+}
+
+///|
 test "contain_size_ruby_base_is_preserved" {
   let html_str =
     #|<!DOCTYPE html>
@@ -424,6 +773,18 @@ test "contain_size_ruby_base_container_is_preserved" {
     #|rbc { contain: size; display: ruby-base-container; }
     #|</style>
     #|<div><ruby><rbc>PASS</rbc></ruby></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let div_node = root.children[0]
+  guard div_node.children.length() > 0 else {
+    fail("node div should contain ruby child")
+  }
+  let ruby_node = div_node.children[0]
+  inspect(ruby_node.id, content="ruby")
+  inspect(ruby_node.style.display, content="Inline")
+
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let div = layout.children[0]
   guard div.children.length() > 0 else { fail("div should contain ruby") }
@@ -434,6 +795,22 @@ test "contain_size_ruby_base_container_is_preserved" {
   }
   guard ruby.children[0].width > 0.0 else {
     fail("rbc with contain:size should still keep intrinsic text width")
+  }
+}
+
+///|
+test "empty_ruby_with_rt_has_non_zero_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|rt { contain: layout; display: ruby-text; font: 100px/1 monospace; }
+    #|</style>
+    #|<div><ruby><rt></rt></ruby></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let ruby = layout.children[0].children[0]
+  guard ruby.height > 0.0 else {
+    fail("ruby with rt child should reserve strut-like height")
   }
 }
 
@@ -696,6 +1073,107 @@ test "form_controls_max_content_intrinsic_size_wpt_like" {
 }
 
 ///|
+test "wpt_contain_layout_button_002_border_box_min_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|button {
+    #|  border: 5px solid green;
+    #|  padding: 10px;
+    #|  color: transparent;
+    #|  width: 20px;
+    #|  height: 20px;
+    #|}
+    #|</style>
+    #|<button id="a"></button><button id="b" style="contain: layout"></button>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let button_a = layout.children[0]
+  let button_b = layout.children[1]
+  inspect(button_a.width, content="30")
+  inspect(button_a.height, content="30")
+  inspect(button_b.width, content="30")
+  inspect(button_b.height, content="30")
+}
+
+///|
+test "wpt_contain_layout_ifc_002_inline_block_keeps_vertical_margins" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|.wrapper { border: solid thick; margin: 1em; }
+    #|</style>
+    #|<p>Test passes if it has the same output than the reference.</p>
+    #|<div class="wrapper">
+    #|  <span style="display: inline-block; margin: 1em 0; vertical-align: top; contain: layout;">
+    #|    <div style="margin: 1em 0;">This text should have 2em top and bottom margins (margins do not collapse).</div>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let wrapper = layout.children[1]
+  let span = wrapper.children[0]
+  let inner = span.children[0]
+  inspect(wrapper.height, content="93.2")
+  inspect(span.y, content="21")
+  inspect(span.height, content="51.2")
+  inspect(inner.y, content="16")
+}
+
+///|
+test "wpt_contain_layout_ifc_003_inline_ignores_layout_containment" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|.wrapper { border: solid thick; margin: 1em; }
+    #|</style>
+    #|<p>Test passes if it has the same output than the reference.</p>
+    #|<div class="wrapper">
+    #|  <span style="margin: 1em 0; contain: layout;">
+    #|    <div style="margin: 1em 0;">This text should have 1em top and bottom margins.</div>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let wrapper = layout.children[1]
+  let span = wrapper.children[0]
+  let inner = span.children[0]
+  inspect(wrapper.height, content="61.2")
+  inspect(span.y, content="21")
+  inspect(span.height, content="19.2")
+  inspect(inner.y, content="0")
+}
+
+///|
+test "input_button_like_intrinsic_width_uses_value_length" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.row { display: flex; border: 1px solid black; }
+    #|.row > * {
+    #|  contain: layout;
+    #|  border: 2px solid teal;
+    #|  align-self: baseline;
+    #|  margin: 2px;
+    #|}
+    #|</style>
+    #|<div class="row"><input id="btn" type="button" value="i-btn"><input id="sub" type="submit" value="i-sub"></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let row = layout.children[0]
+  let input_btn = row.children[0]
+  let input_sub = row.children[1]
+  guard input_btn.width > 30.0 && input_btn.width < 60.0 else {
+    fail("button-like input intrinsic width should track value text length")
+  }
+  guard input_sub.width > 30.0 && input_sub.width < 60.0 else {
+    fail("submit-like input intrinsic width should track value text length")
+  }
+}
+
+///|
 test "vertical writing table keeps intrinsic max-width in computed style" {
   let html =
     #|<!doctype html>
@@ -788,6 +1266,39 @@ test "wpt_table_flex_item_auto_width_uses_flex_used_size" {
   let table = layout.children[0].children[0]
   guard table.width >= 99.0 else {
     fail("table flex item with auto width should use flex-assigned main size")
+  }
+}
+
+///|
+test "table cells keep nbsp text when td end tags are omitted" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|table { border-spacing: 0; }
+    #|</style>
+    #|<table>
+    #|  <tr><td>&nbsp;<td>&nbsp;
+    #|  <tr><td>&nbsp;<td>x
+    #|</table>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let table = root.children[0]
+  let tbody = table.children[0]
+  let row0 = tbody.children[0]
+  let row1 = tbody.children[1]
+  assert_eq(row0.children.length(), 2)
+  assert_eq(row1.children.length(), 2)
+  guard row0.children[0].children.length() > 0 else {
+    fail("first row first cell should keep nbsp text")
+  }
+  guard row0.children[1].children.length() > 0 else {
+    fail("first row second cell should keep nbsp text")
+  }
+  guard row1.children[0].children.length() > 0 else {
+    fail("second row first cell should keep nbsp text")
   }
 }
 
@@ -992,6 +1503,128 @@ test "inline_filter_preserves_abspos_descendant_wpt_like" {
   let abs = cb.children[1]
   inspect(abs.id, content="span#abs")
   inspect(abs.style.position, content="Absolute")
+}
+
+///|
+test "inline_span_with_out_of_flow_block_child_stays_inline_wpt_like" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#cb { position: relative; width: 100px; height: 100px; }
+    #|#inline { contain: paint; }
+    #|#abs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #|#fixed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+    #|</style>
+    #|<div id="cb"><span id="inline"><div id="abs"></div><div id="fixed"></div></span></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let cb = layout.children[0]
+  let inline = cb.children[0]
+  inspect(inline.id, content="span#inline")
+  inspect(inline.width, content="0")
+  inspect(inline.height, content="0")
+  let abs = inline.children[0]
+  inspect(abs.id, content="div#abs")
+  inspect(abs.x, content="0")
+  inspect(abs.y, content="0")
+}
+
+///|
+test "inline_span_with_background_from_stylesheet_is_preserved" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|div { font-family: monospace; font-size: 100px; width: 4ch; }
+    #|span { background-color: red; color: yellow; }
+    #|</style>
+    #|<div>PASS<span>FAIL</span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let container = root.children[0]
+  inspect(container.id, content="div")
+  inspect(container.children.length(), content="2")
+  inspect(container.children[0].id, content="#text")
+  inspect(container.children[1].id, content="span")
+}
+
+///|
+test "inline_text_and_span_without_space_stay_on_same_line" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { font-family: monospace; font-size: 100px; width: 4ch; contain: paint; }
+    #|span { background-color: red; color: yellow; }
+    #|</style>
+    #|<div>PASS<span>FAIL</span></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let container = layout.children[0]
+  let text = container.children[0]
+  let span = container.children[1]
+  inspect(container.height, content="100")
+  inspect(text.y, content="0")
+  inspect(span.x, content="200")
+  inspect(span.y, content="0")
+}
+
+///|
+test "inline_span_uses_tighter_glyph_box_under_larger_line_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|div { color: green; contain: paint; font-family: monospace; font-size: 100px; width: 4ch; }
+    #|span { background-color: red; color: yellow; }
+    #|</style>
+    #|<div>PASS<span>FAIL</span></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let span = container.children[1]
+  guard container.height >= 120.0 else {
+    fail("contain:paint line box should remain at least one full line-height")
+  }
+  inspect(span.height, content="104.5")
+  inspect(span.x, content="200")
+}
+
+///|
+test "table_cell_defaults_to_normal_line_height_metrics" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|table {
+    #|  border-spacing: 0;
+    #|  font-family: monospace;
+    #|  font-size: 100px;
+    #|  table-layout: fixed;
+    #|  width: 4ch;
+    #|}
+    #|td { padding: 0; }
+    #|col#middle-column { width: 4ch; }
+    #|span { background-color: red; color: yellow; }
+    #|</style>
+    #|<table>
+    #|  <col><col id="middle-column"><col>
+    #|  <tr><td><td><td>
+    #|  <tr><td><td id="test">PASS<span>FAIL</span><td>
+    #|  <tr><td><td><td>
+    #|</table>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let table = layout.children[0]
+  let tbody = table.children[1]
+  let target_row = tbody.children[1]
+  let target_cell = target_row.children[1]
+  let span = target_cell.children[1]
+  inspect(target_cell.id, content="td#test")
+  guard target_cell.height <= 110.0 else {
+    fail("table cell height should stay close to normal line-height metrics")
+  }
+  inspect(span.height, content="104.5")
+  inspect(span.y, content="0")
 }
 
 ///|

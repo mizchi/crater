@@ -183,6 +183,26 @@ fn is_table_internal_display(display : @types.Display) -> Bool {
 }
 
 ///|
+/// Table-internal displays that do not generate a principal box in block flow.
+fn is_no_principal_table_internal_display(display : @types.Display) -> Bool {
+  match display {
+    @types.TableRow
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => true
+    _ => false
+  }
+}
+
+///|
+/// Containment effects only apply when the element generates a principal box.
+fn containment_applies(display : @types.Display) -> Bool {
+  not(is_no_principal_table_internal_display(display))
+}
+
+///|
 /// Whether a subtree contains any table-internal node.
 fn has_table_internal_descendant(node : @node.Node) -> Bool {
   if is_table_internal_display(node.style.display) {
@@ -250,6 +270,50 @@ fn flatten_first_table_child(
 ///|
 fn zero_rect() -> @types.Rect[Double] {
   { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+}
+
+///|
+fn shift_layout_subtree(
+  layout : @types.Layout,
+  dx : Double,
+  dy : Double,
+) -> @types.Layout {
+  let shifted_children : Array[@types.Layout] = []
+  for child in layout.children {
+    shifted_children.push(shift_layout_subtree(child, dx, dy))
+  }
+  { ..layout, x: layout.x + dx, y: layout.y + dy, children: shifted_children }
+}
+
+///|
+/// No-principal ancestors should not offset positioned descendants.
+fn offset_out_of_flow_descendants(
+  layout : @types.Layout,
+  node : @node.Node,
+  dx : Double,
+  dy : Double,
+) -> @types.Layout {
+  let shifted_children : Array[@types.Layout] = []
+  let min_len = if layout.children.length() < node.children.length() {
+    layout.children.length()
+  } else {
+    node.children.length()
+  }
+  for i = 0; i < min_len; i = i + 1 {
+    let child_layout = layout.children[i]
+    let child_node = node.children[i]
+    let shifted = if child_node.style.position == @types.Absolute ||
+      child_node.style.position == @types.Fixed {
+      shift_layout_subtree(child_layout, dx, dy)
+    } else {
+      offset_out_of_flow_descendants(child_layout, child_node, dx, dy)
+    }
+    shifted_children.push(shifted)
+  }
+  for i = min_len; i < layout.children.length(); i = i + 1 {
+    shifted_children.push(layout.children[i])
+  }
+  { ..layout, children: shifted_children }
 }
 
 ///|
@@ -1497,8 +1561,13 @@ fn compute_with_collapse(
 ) -> LayoutWithCollapse {
   let style = node.style
 
-  // Handle display: contents - element doesn't generate a box but children do
-  if style.display == @types.Contents {
+  // Handle no-principal-box displays (display: contents and table-internal no-principal
+  // values) - element doesn't generate a box but children do.
+  if style.display == @types.Contents ||
+    is_no_principal_table_internal_display(style.display) {
+    let keep_intrinsic_size = is_no_principal_table_internal_display(
+      style.display,
+    )
     // Inline-only contents should participate in IFC, not block stacking.
     let flow_inline_nodes : Array[@node.Node] = []
     let mut has_out_of_flow = false
@@ -1530,13 +1599,30 @@ fn compute_with_collapse(
         dispatch,
         container_writing_mode=style.writing_mode,
       )
+      let mut inline_width = 0.0
+      let mut inline_height = 0.0
+      if keep_intrinsic_size {
+        for child_layout in ifc_result.layouts {
+          let right = child_layout.x + child_layout.width
+          if right > inline_width {
+            inline_width = right
+          }
+          let bottom = child_layout.y + child_layout.height
+          if bottom > inline_height {
+            inline_height = bottom
+          }
+        }
+        if inline_height > 0.0 && style.line_height > inline_height {
+          inline_height = style.line_height
+        }
+      }
       return {
         layout: {
           id: node.id,
           x: 0.0,
           y: 0.0,
-          width: 0.0,
-          height: 0.0,
+          width: inline_width,
+          height: inline_height,
           margin: @types.Rect::zero(),
           padding: @types.Rect::zero(),
           border: @types.Rect::zero(),
@@ -1555,10 +1641,47 @@ fn compute_with_collapse(
     // Position children as if they were direct children of the parent
     let children_layouts : Array[@types.Layout] = []
     let mut current_pos = 0.0
+    let mut max_in_flow_width = 0.0
+    let mut max_in_flow_height = 0.0
     let mut prev_margin_end = 0.0
     let mut first_child_margin_top : Double? = None
     for i = 0; i < node.children.length(); i = i + 1 {
       let child = node.children[i]
+      if child.style.position == @types.Absolute {
+        let abs_layout_raw = layout_absolute_child(
+          child,
+          ctx.available_width,
+          ctx.available_height.unwrap_or(0.0),
+          @types.Rect::zero(),
+          current_pos,
+          warnings,
+          dispatch,
+        )
+        let abs_layout = if child.style.width == @types.Auto &&
+          abs_layout_raw.height > 0.0 {
+          let min_width_from_font = abs_layout_raw.height * 0.6
+          if abs_layout_raw.width < min_width_from_font {
+            { ..abs_layout_raw, width: min_width_from_font }
+          } else {
+            abs_layout_raw
+          }
+        } else {
+          abs_layout_raw
+        }
+        children_layouts.push(abs_layout)
+        continue
+      }
+      if child.style.position == @types.Fixed {
+        let fixed_layout = layout_fixed_child(
+          child,
+          ctx.viewport_width,
+          ctx.viewport_height,
+          warnings,
+          dispatch,
+        )
+        children_layouts.push(fixed_layout)
+        continue
+      }
       let child_result = compute_with_collapse(child, ctx, warnings, dispatch)
       let child_layout = child_result.layout
       // Get child's margins
@@ -1593,16 +1716,45 @@ fn compute_with_collapse(
         text: child_layout.text,
       }
       children_layouts.push(positioned_child)
+      if keep_intrinsic_size {
+        let child_right = positioned_child.x + positioned_child.width
+        if child_right > max_in_flow_width {
+          max_in_flow_width = child_right
+        }
+        let child_bottom = positioned_child.y + positioned_child.height
+        if child_bottom > max_in_flow_height {
+          max_in_flow_height = child_bottom
+        }
+      }
       current_pos = current_pos + child_layout.height
       prev_margin_end = child_margin_bottom
+    }
+    let collapsed_bottom = match first_child_margin_top {
+      Some(_) => Some(prev_margin_end)
+      None => None
+    }
+    let intrinsic_width = if keep_intrinsic_size {
+      max_in_flow_width
+    } else {
+      0.0
+    }
+    let mut intrinsic_height = if keep_intrinsic_size {
+      max_in_flow_height
+    } else {
+      0.0
+    }
+    if keep_intrinsic_size &&
+      intrinsic_height > 0.0 &&
+      style.line_height > intrinsic_height {
+      intrinsic_height = style.line_height
     }
     return {
       layout: {
         id: node.id,
         x: 0.0,
         y: 0.0,
-        width: 0.0,
-        height: 0.0,
+        width: intrinsic_width,
+        height: intrinsic_height,
         margin: @types.Rect::zero(),
         padding: @types.Rect::zero(),
         border: @types.Rect::zero(),
@@ -1614,7 +1766,7 @@ fn compute_with_collapse(
         text: node.text,
       },
       // Pass through the first child's margin for collapse with siblings
-      collapsed: { top: first_child_margin_top, bottom: Some(prev_margin_end) },
+      collapsed: { top: first_child_margin_top, bottom: collapsed_bottom },
     }
   }
 
@@ -1633,16 +1785,15 @@ fn compute_with_collapse(
         let border = @types.resolve_rect(style.border, parent_width)
         let available_h = ctx.available_height.unwrap_or(0.0)
         let intrinsic = (mf.func)(parent_width, available_h)
-        let suppress_inline_intrinsic = style.contain.size ||
-          style.contain.inline_size
-        let suppress_block_intrinsic = style.contain.size
+        let suppress_inline_intrinsic = style.suppresses_intrinsic_width()
+        let suppress_block_intrinsic = style.suppresses_intrinsic_height()
         let intrinsic_width = if suppress_inline_intrinsic {
-          0.0
+          style.contained_intrinsic_width_fallback()
         } else {
           intrinsic.max_width
         }
         let intrinsic_height = if suppress_block_intrinsic {
-          0.0
+          style.contained_intrinsic_height_fallback()
         } else {
           intrinsic.max_height
         }
@@ -1825,12 +1976,12 @@ fn compute_with_collapse(
     @types.Float::None => false
     _ => true
   }
+  let containment_establishes_bfc = containment_applies(style.display) &&
+    (style.contain.layout || style.contain.paint || style.contain.size)
   let establishes_bfc = overflow_blocks ||
     is_float_container ||
     style.display == @types.FlowRoot ||
-    style.contain.layout ||
-    style.contain.paint ||
-    style.contain.size
+    containment_establishes_bfc
   let can_collapse_top = border.top == 0.0 &&
     padding.top == 0.0 &&
     not(establishes_bfc)
@@ -2201,9 +2352,10 @@ fn compute_with_collapse(
     }
     let mut current_inline_line_width = 0.0
     // CSS Containment: contain: inline-size means intrinsic width is 0 (no content contribution)
-    let skip_content_contribution = style.contain.inline_size ||
-      style.contain.size
-    if not(skip_content_contribution) {
+    let skip_content_contribution = style.suppresses_intrinsic_width()
+    if skip_content_contribution {
+      max_content_width = style.contained_intrinsic_width_fallback()
+    } else {
       // Check if root itself has MeasureFunc (leaf node with intrinsic size)
       match node.measure {
         Some(mf) => {
@@ -2781,9 +2933,11 @@ fn compute_with_collapse(
     if max_content_width < 0.0 {
       max_content_width = 0.0
     }
-    let skip_intrinsic_inline = style.contain.inline_size || style.contain.size
+    let skip_intrinsic_inline = style.suppresses_intrinsic_width()
     let min_content_width = if skip_intrinsic_inline {
-      padding.horizontal_sum() + border.horizontal_sum()
+      style.contained_intrinsic_width_fallback() +
+      padding.horizontal_sum() +
+      border.horizontal_sum()
     } else {
       calculate_children_min_content_width(
         node, parent_width, child_available_height,
@@ -2901,10 +3055,31 @@ fn compute_with_collapse(
   // Check for mixed inline/block content (needs anonymous block boxes)
   let has_mixed = has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
+    let width_is_fit_content = match style.width {
+      @types.FitContent(_) => true
+      _ => false
+    }
+    let suppress_ifc_inline_progress = style.contain.inline_size &&
+      not(style.writing_mode.is_vertical()) &&
+      width_is_fit_content
+    let ifc_available_width = if style.contain.inline_size &&
+      not(style.writing_mode.is_vertical()) {
+      match style.width {
+        @types.FitContent(_) =>
+          if parent_width > actual_child_available_width {
+            parent_width
+          } else {
+            actual_child_available_width
+          }
+        _ => actual_child_available_width
+      }
+    } else {
+      actual_child_available_width
+    }
     // Use IFC for inline layout
     let ifc_result = @inline.compute_ifc(
       flow_nodes,
-      actual_child_available_width,
+      ifc_available_width,
       child_available_height,
       padding.left + border.left,
       padding.top + border.top,
@@ -2929,6 +3104,14 @@ fn compute_with_collapse(
           }
         } else {
           ifc_layout
+        }
+        let normalized_layout = if suppress_ifc_inline_progress {
+          {
+            ..normalized_layout,
+            x: padding.left + border.left + normalized_layout.margin.left,
+          }
+        } else {
+          normalized_layout
         }
         layout_map[flow_indices[i]] = adjust_inline_span_float_quirk(
           normalized_layout,
@@ -2963,8 +3146,8 @@ fn compute_with_collapse(
         content_height = ifc_descendant_extent
       }
     }
-    let content_height_for_auto = if style.contain.size {
-      0.0
+    let content_height_for_auto = if style.suppresses_intrinsic_height() {
+      style.contained_intrinsic_height_fallback()
     } else {
       content_height
     }
@@ -3014,7 +3197,7 @@ fn compute_with_collapse(
     match style.min_height {
       @types.Length(min_h) => if box_height < min_h { box_height = min_h }
       @types.MaxContent | @types.MinContent => {
-        let intrinsic_height = if style.contain.size {
+        let intrinsic_height = if style.suppresses_intrinsic_height() {
           content_height_for_auto +
           padding.vertical_sum() +
           border.vertical_sum()
@@ -3032,7 +3215,7 @@ fn compute_with_collapse(
     match style.max_height {
       @types.Length(max_h) => if box_height > max_h { box_height = max_h }
       @types.MaxContent | @types.MinContent => {
-        let intrinsic_height = if style.contain.size {
+        let intrinsic_height = if style.suppresses_intrinsic_height() {
           content_height_for_auto +
           padding.vertical_sum() +
           border.vertical_sum()
@@ -3130,6 +3313,24 @@ fn compute_with_collapse(
       dispatch,
       writing_mode=style.writing_mode,
     )
+    // fieldset legend overlays the top border line instead of participating in
+    // normal block-flow vertical positioning.
+    if not(style.writing_mode.is_vertical()) && node.id.has_prefix("fieldset") {
+      for i = 0; i < node.children.length(); i = i + 1 {
+        let child = node.children[i]
+        if child.id.has_prefix("legend") {
+          match layout_map.get(i) {
+            Some(legend_layout) => {
+              let overlay = (border.top - legend_layout.height) / 2.0
+              let legend_y = if overlay > 0.0 { overlay } else { 0.0 }
+              layout_map[i] = { ..legend_layout, y: legend_y }
+            }
+            None => ()
+          }
+          break
+        }
+      }
+    }
     // Calculate box height from mixed content
     let mut content_height = mixed_result.content_height
     if establishes_bfc {
@@ -3157,8 +3358,8 @@ fn compute_with_collapse(
         content_height = mixed_descendant_extent
       }
     }
-    let content_height_for_auto = if style.contain.size {
-      0.0
+    let content_height_for_auto = if style.suppresses_intrinsic_height() {
+      style.contained_intrinsic_height_fallback()
     } else {
       content_height
     }
@@ -3207,7 +3408,7 @@ fn compute_with_collapse(
     match style.min_height {
       @types.Length(min_h) => if box_height < min_h { box_height = min_h }
       @types.MaxContent | @types.MinContent => {
-        let intrinsic_height = if style.contain.size {
+        let intrinsic_height = if style.suppresses_intrinsic_height() {
           content_height_for_auto +
           padding.vertical_sum() +
           border.vertical_sum()
@@ -3225,7 +3426,7 @@ fn compute_with_collapse(
     match style.max_height {
       @types.Length(max_h) => if box_height > max_h { box_height = max_h }
       @types.MaxContent | @types.MinContent => {
-        let intrinsic_height = if style.contain.size {
+        let intrinsic_height = if style.suppresses_intrinsic_height() {
           content_height_for_auto +
           padding.vertical_sum() +
           border.vertical_sum()
@@ -3318,7 +3519,41 @@ fn compute_with_collapse(
   let mut flow_i = 0
   while flow_i < flow_nodes.length() {
     let child = flow_nodes[flow_i]
-    if is_table_internal_flow_node(child) {
+    let child_is_orthogonal = child.style.writing_mode.is_vertical() !=
+      style.writing_mode.is_vertical()
+    let child_has_auto_margin = match
+      (
+        child.style.margin.top,
+        child.style.margin.right,
+        child.style.margin.bottom,
+        child.style.margin.left,
+      ) {
+      (@types.Auto, _, _, _)
+      | (_, @types.Auto, _, _)
+      | (_, _, @types.Auto, _)
+      | (_, _, _, @types.Auto) => true
+      _ => false
+    }
+    let child_for_layout = if child_is_orthogonal &&
+      child_has_auto_margin &&
+      child.style.width == @types.Auto {
+      // Orthogonal-flow auto inline-size behaves closer to fit-content than
+      // fill-available for these WPT containment cases.
+      @node.Node::with_uid_and_measure(
+        child.id,
+        child.uid,
+        { ..child.style, width: @types.MaxContent },
+        child.children,
+        child.measure,
+        child.text,
+      )
+    } else {
+      child
+    }
+    let skip_anonymous_table_run = is_no_principal_table_internal_display(
+      child.style.display,
+    )
+    if is_table_internal_flow_node(child) && not(skip_anonymous_table_run) {
       // Consecutive table-internal/table-contents siblings form one anonymous table.
       let run_nodes : Array[@node.Node] = []
       let run_indices : Array[Int] = []
@@ -3384,7 +3619,7 @@ fn compute_with_collapse(
         }
         // Use dispatch for flex/grid/table containers
         let @node.DispatchFn(dispatch_fn) = dispatch
-        let layout = dispatch_fn(child, child_ctx, dispatch)
+        let layout = dispatch_fn(child_for_layout, child_ctx, dispatch)
         { layout, collapsed: { top: None, bottom: None } }
       }
       _ => {
@@ -3397,7 +3632,7 @@ fn compute_with_collapse(
           stretch_width: false,
           stretch_height: false,
         }
-        compute_with_collapse(child, child_ctx, warnings, dispatch)
+        compute_with_collapse(child_for_layout, child_ctx, warnings, dispatch)
       }
     }
     flow_children.push(child_result)
@@ -3684,11 +3919,17 @@ fn compute_with_collapse(
       (@types.Overflow::Visible, @types.Overflow::Visible) => false
       _ => true
     }
+    let child_containment_establishes_bfc = containment_applies(
+        child_style.display,
+      ) &&
+      (
+        child_style.contain.layout ||
+        child_style.contain.paint ||
+        child_style.contain.size
+      )
     let child_establishes_bfc = child_overflow_blocks ||
       child_style.display == @types.FlowRoot ||
-      child_style.contain.layout ||
-      child_style.contain.paint ||
-      child_style.contain.size
+      child_containment_establishes_bfc
     let child_has_aspect_ratio = match child_style.aspect_ratio {
       Some(_) => true
       None => false
@@ -3707,6 +3948,31 @@ fn compute_with_collapse(
       ) &&
       not(child_establishes_bfc) &&
       not(child_has_aspect_ratio)
+
+    // BFC-establishing normal-flow blocks are shifted downward until their
+    // margin box can fit alongside preceding floats.
+    let mut float_clearance_offset = 0.0
+    if not(is_vertical_writing) &&
+      child_establishes_bfc &&
+      float_ctx.has_floats() &&
+      child_style.position != @types.Absolute &&
+      child_style.position != @types.Fixed {
+      let required_width = child_layout.width +
+        child_layout.margin.left +
+        child_layout.margin.right
+      let required_height = child_layout.height +
+        effective_margin_top +
+        effective_margin_bottom
+      let start_y = @types.max(0.0, current_pos)
+      let clear_to_y = float_ctx.find_y_with_space(
+        start_y,
+        @types.max(0.0, required_width),
+        @types.max(0.0, required_height),
+      )
+      if clear_to_y > start_y {
+        float_clearance_offset = clear_to_y - start_y
+      }
+    }
 
     // Calculate position and track escaping margins
     let child_y : Double = if is_first {
@@ -3727,13 +3993,16 @@ fn compute_with_collapse(
       } else {
         // Margin blocked by border/padding
         if collapses_through {
+          // Empty first child with collapsing margins contributes only the
+          // collapsed margin amount, not top+bottom separately.
           prev_margin_end = collapse_margins(
             effective_margin_top, effective_margin_bottom,
           )
+          current_pos = 0.0
         } else {
           prev_margin_end = effective_margin_bottom
+          current_pos = effective_margin_top
         }
-        current_pos = effective_margin_top
         effective_margin_top + padding.top + border.top
       }
     } else if leading_collapse_chain_active {
@@ -3812,9 +4081,9 @@ fn compute_with_collapse(
         box_width,
         height_context,
       )
-      (child_x + x_offset, child_y + y_offset)
+      (child_x + x_offset, child_y + y_offset + float_clearance_offset)
     } else {
-      (child_x, child_y)
+      (child_x, child_y + float_clearance_offset)
     }
 
     // Position child and store in map with original index
@@ -3834,29 +4103,86 @@ fn compute_with_collapse(
         // For vertical-lr: position from left side (normal)
         x_from_left
       }
-      (final_x_pos, child_layout.margin.top + padding.top + border.top)
+      let margin_top_auto = match child_style.margin.top {
+        @types.Auto => true
+        _ => false
+      }
+      let margin_bottom_auto = match child_style.margin.bottom {
+        @types.Auto => true
+        _ => false
+      }
+      let parent_cross_size = match child_available_height {
+        Some(h) => h
+        None => 0.0
+      }
+      let mut cross_y = child_layout.margin.top + padding.top + border.top
+      if margin_top_auto || margin_bottom_auto {
+        let free_cross = parent_cross_size -
+          child_layout.height -
+          child_layout.margin.top -
+          child_layout.margin.bottom
+        if free_cross > 0.0 {
+          let extra_top = if margin_top_auto && margin_bottom_auto {
+            free_cross / 2.0
+          } else if margin_top_auto {
+            free_cross
+          } else {
+            0.0
+          }
+          cross_y = cross_y + extra_top
+        }
+      }
+      (final_x_pos, cross_y)
     } else {
       (final_x, final_y)
+    }
+    let is_first_legend_in_fieldset = not(is_vertical_writing) &&
+      i == 0 &&
+      node.id.has_prefix("fieldset") &&
+      child_layout.id.has_prefix("legend")
+    let legend_border_overlay_y = if is_first_legend_in_fieldset {
+      let overlay = (border.top - child_layout.height) / 2.0
+      if overlay > 0.0 {
+        overlay
+      } else {
+        0.0
+      }
+    } else {
+      positioned_y
     }
     let adjusted_layout = adjust_inline_span_float_quirk(
       { ..child_layout, x: positioned_x },
       is_vertical_writing,
     )
+    let child_node = flow_nodes[i]
+    let adjusted_for_no_principal = if is_no_principal_table_internal_display(
+        child_style.display,
+      ) &&
+      (positioned_x != 0.0 || legend_border_overlay_y != 0.0) {
+      offset_out_of_flow_descendants(
+        adjusted_layout,
+        child_node,
+        -positioned_x,
+        -legend_border_overlay_y,
+      )
+    } else {
+      adjusted_layout
+    }
     let positioned_layout : @types.Layout = {
-      id: adjusted_layout.id,
-      x: adjusted_layout.x,
-      y: positioned_y,
-      width: adjusted_layout.width,
-      height: adjusted_layout.height,
-      margin: adjusted_layout.margin,
-      padding: adjusted_layout.padding,
-      border: adjusted_layout.border,
-      overflow_x: adjusted_layout.overflow_x,
-      overflow_y: adjusted_layout.overflow_y,
-      scroll_width: adjusted_layout.scroll_width,
-      scroll_height: adjusted_layout.scroll_height,
-      children: adjusted_layout.children,
-      text: adjusted_layout.text,
+      id: adjusted_for_no_principal.id,
+      x: adjusted_for_no_principal.x,
+      y: legend_border_overlay_y,
+      width: adjusted_for_no_principal.width,
+      height: adjusted_for_no_principal.height,
+      margin: adjusted_for_no_principal.margin,
+      padding: adjusted_for_no_principal.padding,
+      border: adjusted_for_no_principal.border,
+      overflow_x: adjusted_for_no_principal.overflow_x,
+      overflow_y: adjusted_for_no_principal.overflow_y,
+      scroll_width: adjusted_for_no_principal.scroll_width,
+      scroll_height: adjusted_for_no_principal.scroll_height,
+      children: adjusted_for_no_principal.children,
+      text: adjusted_for_no_principal.text,
     }
     layout_map[flow_indices[i]] = positioned_layout
 
@@ -3885,6 +4211,12 @@ fn compute_with_collapse(
     }
     if leading_collapse_chain_active && not(collapses_through) {
       leading_collapse_chain_active = false
+    }
+
+    // Float clearance shifts the flow cursor even when the element collapses
+    // through and contributes no own block-size.
+    if float_clearance_offset > 0.0 {
+      current_pos = current_pos + float_clearance_offset
     }
 
     // Record y position after this flow child (for absolute static positioning)
@@ -3941,9 +4273,9 @@ fn compute_with_collapse(
   let content_height = @types.max(flow_content_height, float_height)
   let mut content_height_for_auto = content_height
 
-  if style.contain.size {
+  if style.suppresses_intrinsic_height() {
     // Size containment: auto/intrinsic sizing behaves as if the box were empty.
-    content_height_for_auto = 0.0
+    content_height_for_auto = style.contained_intrinsic_height_fallback()
   } else if is_vertical_writing {
     // In vertical writing mode, block-flow accumulates on x while auto height
     // should use the inline-axis extent (max cross-size of in-flow children).
@@ -4261,7 +4593,9 @@ fn resolve_fixed_inset_offset(
 
 ///|
 fn establishes_fixed_containing_block(style : @style.Style) -> Bool {
-  style.contain.paint || style.contain.layout || not(style.transform.is_none())
+  let containment_establishes_cb = containment_applies(style.display) &&
+    (style.contain.paint || style.contain.layout)
+  containment_establishes_cb || not(style.transform.is_none())
 }
 
 ///|

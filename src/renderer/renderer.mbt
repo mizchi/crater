@@ -12,6 +12,10 @@ let char_width_ratio : Double = 0.5 // Conservative ratio for text fitting
 let chars_per_line : Int = 80 // Default wrap width in characters (single-width)
 
 ///|
+/// UA default "normal" line-height approximation used for table internals.
+let normal_line_height_ratio : Double = 1.045
+
+///|
 /// Check if a character is East Asian Wide (CJK characters that take 2 columns)
 fn is_wide_char(c : Char) -> Bool {
   let cp = c.to_int()
@@ -129,10 +133,23 @@ fn create_text_measure(
   writing_mode : @style.WritingMode,
 ) -> @types.MeasureFunc {
   let raw_trimmed = text.trim()
-  let trimmed = if raw_trimmed.is_empty() && not(text.is_empty()) {
+  let mut trimmed = if raw_trimmed.is_empty() && not(text.is_empty()) {
     " "
   } else {
     raw_trimmed.to_string()
+  }
+  if not(raw_trimmed.is_empty()) {
+    let mut ends_with_ws = false
+    for c in text.iter() {
+      ends_with_ws = c == ' ' ||
+        c == '\t' ||
+        c == '\n' ||
+        c == '\r' ||
+        c == '\u000C'
+    }
+    if ends_with_ws {
+      trimmed = trimmed + " "
+    }
   }
   let char_width = font_size * char_width_ratio
 
@@ -326,8 +343,8 @@ fn is_inline_element_by_tag(tag : String) -> Bool {
     "font", "i", "img", "input", "kbd", "label", "picture", "q", "s", "samp", "select",
     "small", "span", "strike", "strong", "sub", "sup", "textarea", "tt", "u", "var",
     // HTML5 semantic inline elements
-     "time", "data", "mark", "bdi", "wbr", "ruby", "rb", "rt", "rtc", "rp", "meter",
-    "progress", "output", "ins", "del",
+     "time", "data", "mark", "bdi", "wbr", "ruby", "rb", "rbc", "rt", "rtc", "rp",
+    "meter", "progress", "output", "ins", "del",
   ]
   inline_tags.contains(tag.to_lower())
 }
@@ -456,6 +473,171 @@ fn will_have_non_inline_display(
 }
 
 ///|
+fn is_inline_participating_display(display : @types.Display) -> Bool {
+  match display {
+    @types.Inline
+    | @types.InlineBlock
+    | @types.InlineFlex
+    | @types.InlineGrid
+    | @types.InlineTable
+    | @types.Contents => true
+    _ => false
+  }
+}
+
+///|
+fn get_inline_style_display(elem : @html.Element) -> @types.Display? {
+  match elem.style {
+    Some(style_str) => {
+      let style_lower = style_str.to_lower()
+      if style_lower.contains("display:") || style_lower.contains("display :") {
+        let parsed = @parser.parse_inline_style(style_str)
+        Some(parsed.display)
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// Check if an element participates in inline formatting context in the current style cascade.
+fn has_inline_participating_display(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  match get_inline_style_display(elem) {
+    Some(display) => return is_inline_participating_display(display)
+    None => ()
+  }
+  if stylesheets.length() > 0 {
+    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    match elem.id {
+      Some(id) => selector_elem = selector_elem.set_id(id)
+      None => ()
+    }
+    for cls in elem.classes {
+      selector_elem = selector_elem.add_class(cls)
+    }
+    for attr in elem.attributes {
+      let (name, value) = attr
+      selector_elem = selector_elem.set_attribute(name, value)
+    }
+    let media_env = @media.MediaEnvironment::with_color_scheme(
+      ctx.viewport_width,
+      ctx.viewport_height,
+      ctx.color_scheme,
+    )
+    let cascaded = @cascade.cascade_element_with_media(
+      selector_elem,
+      stylesheets,
+      [],
+      Some(media_env),
+    )
+    match cascaded.get_value("display") {
+      Some(value) => {
+        let value_lower = value.to_lower().trim()
+        if value_lower == "contents" || value_lower.has_prefix("inline") {
+          return true
+        }
+        return false
+      }
+      None => ()
+    }
+  }
+  is_inline_element(elem)
+}
+
+///|
+fn is_whitespace_only_text(text : String) -> Bool {
+  if text.is_empty() {
+    return false
+  }
+  text.trim().is_empty()
+}
+
+///|
+/// Keep collapsed whitespace text between inline-participating element siblings.
+fn should_preserve_inter_element_whitespace(
+  siblings : Array[@html.Node],
+  index : Int,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  if index <= 0 || index >= siblings.length() - 1 {
+    return false
+  }
+  let text = match siblings[index] {
+    @html.Node::Text(t) => t
+    _ => return false
+  }
+  if not(is_whitespace_only_text(text)) {
+    return false
+  }
+  let prev_inline = match siblings[index - 1] {
+    @html.Node::Element(prev_elem) =>
+      has_inline_participating_display(prev_elem, stylesheets, ctx)
+    _ => false
+  }
+  let next_inline = match siblings[index + 1] {
+    @html.Node::Element(next_elem) =>
+      has_inline_participating_display(next_elem, stylesheets, ctx)
+    _ => false
+  }
+  prev_inline && next_inline
+}
+
+///|
+/// Check if an element is styled with display: contents.
+fn has_display_contents(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  match elem.style {
+    Some(style_str) => {
+      let parsed = @parser.parse_inline_style(style_str)
+      if parsed.display == @types.Contents {
+        return true
+      }
+    }
+    None => ()
+  }
+  if stylesheets.length() > 0 {
+    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    match elem.id {
+      Some(id) => selector_elem = selector_elem.set_id(id)
+      None => ()
+    }
+    for cls in elem.classes {
+      selector_elem = selector_elem.add_class(cls)
+    }
+    for attr in elem.attributes {
+      let (name, value) = attr
+      selector_elem = selector_elem.set_attribute(name, value)
+    }
+    let media_env = @media.MediaEnvironment::with_color_scheme(
+      ctx.viewport_width,
+      ctx.viewport_height,
+      ctx.color_scheme,
+    )
+    let cascaded = @cascade.cascade_element_with_media(
+      selector_elem,
+      stylesheets,
+      [],
+      Some(media_env),
+    )
+    match cascaded.get_value("display") {
+      Some(value) => if value.to_lower().trim() == "contents" { return true }
+      None => ()
+    }
+  }
+  false
+}
+
+///|
 /// Check whether an inline element must be preserved as a node
 /// (instead of being merged into surrounding text).
 /// This is needed for containing-block / positioning behaviors.
@@ -465,6 +647,13 @@ fn should_preserve_inline_element(
   ctx : RenderContext,
 ) -> Bool {
   let tag_lower = elem.tag.to_lower()
+  match elem.id {
+    Some(_) => return true
+    None => ()
+  }
+  if elem.classes.length() > 0 {
+    return true
+  }
   if tag_lower == "ruby" ||
     tag_lower == "rb" ||
     tag_lower == "rbc" ||
@@ -503,6 +692,19 @@ fn should_preserve_inline_element(
       let contain_none = style_lower.contains("contain: none") ||
         style_lower.contains("contain : none")
       if has_contain && not(contain_none) {
+        return true
+      }
+      let has_background = style_lower.contains("background:") ||
+        style_lower.contains("background :") ||
+        style_lower.contains("background-color:") ||
+        style_lower.contains("background-color :")
+      let transparent_background = style_lower.contains(
+          "background: transparent",
+        ) ||
+        style_lower.contains("background : transparent") ||
+        style_lower.contains("background-color: transparent") ||
+        style_lower.contains("background-color : transparent")
+      if has_background && not(transparent_background) {
         return true
       }
       let has_display = style_lower.contains("display:") ||
@@ -552,6 +754,14 @@ fn should_preserve_inline_element(
       }
       None => ()
     }
+    match cascaded.get_value("background-color") {
+      Some(value) => if has_nontrivial_background_value(value) { return true }
+      None => ()
+    }
+    match cascaded.get_value("background") {
+      Some(value) => if has_nontrivial_background_value(value) { return true }
+      None => ()
+    }
     match cascaded.get_value("display") {
       Some(value) => if value.to_lower().contains("ruby") { return true }
       None => ()
@@ -582,6 +792,16 @@ fn should_preserve_inline_element(
 }
 
 ///|
+fn has_nontrivial_background_value(value : String) -> Bool {
+  let lowered = value.to_lower().trim()
+  lowered != "" &&
+  lowered != "none" &&
+  lowered != "transparent" &&
+  lowered != "rgba(0,0,0,0)" &&
+  lowered != "rgba(0, 0, 0, 0)"
+}
+
+///|
 /// Check recursively whether an element contains any inline descendants
 /// that should be preserved for layout semantics.
 fn contains_preserved_inline_descendant(
@@ -592,6 +812,9 @@ fn contains_preserved_inline_descendant(
   for child in elem.children {
     match child {
       @html.Node::Element(child_elem) => {
+        if has_display_contents(child_elem, stylesheets, ctx) {
+          return true
+        }
         if should_preserve_inline_element(child_elem, stylesheets, ctx) {
           return true
         }
@@ -675,6 +898,19 @@ fn contains_block_child(
         if should_skip_element(tag_lower) {
           continue
         }
+        // Out-of-flow positioned descendants do not force inline parents to
+        // become block containers.
+        if is_out_of_flow_positioned(child_elem, stylesheets, ctx) {
+          continue
+        }
+        // display: contents is a transparent wrapper and should not by itself
+        // force inline parents to become block containers.
+        if has_display_contents(child_elem, stylesheets, ctx) {
+          if contains_block_child(child_elem, stylesheets, ctx) {
+            return true
+          }
+          continue
+        }
         // Check if child has non-inline display
         if will_have_non_inline_display(child_elem, stylesheets, ctx) {
           return true
@@ -689,6 +925,59 @@ fn contains_block_child(
     }
   }
   false
+}
+
+///|
+fn is_out_of_flow_positioned(
+  elem : @html.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  ctx : RenderContext,
+) -> Bool {
+  match elem.style {
+    Some(style) => {
+      let lowered = style.to_lower()
+      if lowered.contains("position:absolute") ||
+        lowered.contains("position: absolute") ||
+        lowered.contains("position:fixed") ||
+        lowered.contains("position: fixed") {
+        return true
+      }
+    }
+    None => ()
+  }
+  if stylesheets.length() == 0 {
+    return false
+  }
+  let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+  match elem.id {
+    Some(id) => selector_elem = selector_elem.set_id(id)
+    None => ()
+  }
+  for cls in elem.classes {
+    selector_elem = selector_elem.add_class(cls)
+  }
+  for attr in elem.attributes {
+    let (name, value) = attr
+    selector_elem = selector_elem.set_attribute(name, value)
+  }
+  let media_env = @media.MediaEnvironment::with_color_scheme(
+    ctx.viewport_width,
+    ctx.viewport_height,
+    ctx.color_scheme,
+  )
+  let cascaded = @cascade.cascade_element_with_media(
+    selector_elem,
+    stylesheets,
+    [],
+    Some(media_env),
+  )
+  match cascaded.get_value("position") {
+    Some(value) => {
+      let positioned = value.to_lower().trim()
+      positioned == "absolute" || positioned == "fixed"
+    }
+    None => false
+  }
 }
 
 ///|
@@ -829,6 +1118,22 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     if text.is_empty() {
       @node.Node::leaf("#text", @style.Style::default())
     } else {
+      // Indentation-only whitespace in block formatting contexts should not
+      // create measurable text runs. Keep whitespace for inline/flex/grid/
+      // contents contexts where it can participate in layout.
+      let keep_ws = match parent_style.display {
+        @types.Inline
+        | @types.InlineBlock
+        | @types.Flex
+        | @types.InlineFlex
+        | @types.Grid
+        | @types.InlineGrid
+        | @types.Contents => true
+        _ => false
+      }
+      if not(keep_ws) {
+        return @node.Node::leaf("#text", @style.Style::default())
+      }
       let collapsed = " "
       @node.Node::text(
         "#text",
@@ -907,9 +1212,21 @@ fn create_input_measure(
 /// In vertical writing-mode, br advances one line on x-axis.
 fn create_br_measure(
   line_height : Double,
+  font_size : Double,
   writing_mode : @style.WritingMode,
 ) -> @types.MeasureFunc {
   let is_vertical = writing_mode.is_vertical()
+  let leading = if line_height > font_size {
+    line_height - font_size
+  } else {
+    0.0
+  }
+  let base_advance = if font_size > 0.0 {
+    font_size + leading * 0.1
+  } else {
+    line_height
+  }
+  let advance = if base_advance > 0.0 { base_advance } else { 0.0 }
   {
     func: fn(
       _available_width : Double,
@@ -918,8 +1235,8 @@ fn create_br_measure(
       if is_vertical {
         // Vertical flow: br occupies one column advance.
         {
-          min_width: line_height,
-          max_width: line_height,
+          min_width: advance,
+          max_width: advance,
           min_height: 0.0,
           max_height: 0.0,
         }
@@ -928,8 +1245,8 @@ fn create_br_measure(
         {
           min_width: 0.0,
           max_width: 0.0,
-          min_height: line_height,
-          max_height: line_height,
+          min_height: advance,
+          max_height: advance,
         }
       }
     },
@@ -2469,7 +2786,20 @@ fn element_to_node_with_styles(
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
         if not(text.is_empty()) {
-          let text_node = create_text_node(text, style)
+          let preserve_ws = should_preserve_inter_element_whitespace(
+              remaining_children, i, stylesheets, ctx,
+            ) &&
+            not(style.writing_mode.is_vertical()) &&
+            not(style.suppresses_intrinsic_width())
+          if is_whitespace_only_text(text) && not(preserve_ws) {
+            continue
+          }
+          let text_parent_style = if preserve_ws {
+            { ..style, display: @types.Inline }
+          } else {
+            style
+          }
+          let text_node = create_text_node(text, text_parent_style)
           children.push(text_node)
         }
     }
@@ -2505,6 +2835,27 @@ fn element_to_node_with_styles_internal(
     parent_style,
     css_vars,
   )
+  let computed_style = if computed_style.display == @types.Inline &&
+    not(is_replaced_element(elem.tag.to_lower())) &&
+    (
+      computed_style.contain.layout ||
+      computed_style.contain.paint ||
+      computed_style.contain.size ||
+      computed_style.contain.inline_size
+    ) {
+    {
+      ..computed_style,
+      contain: {
+        ..computed_style.contain,
+        layout: false,
+        paint: false,
+        size: false,
+        inline_size: false,
+      },
+    }
+  } else {
+    computed_style
+  }
 
   // If this is an inline element containing replaced elements (like <a><img></a>),
   // treat it as inline-block so it gets proper sizing from its content
@@ -2561,22 +2912,24 @@ fn element_to_node_with_styles_internal(
   }
 
   let style = apply_svg_intrinsic_size(style, cell_tag)
-  // CSS Containment: size/inline-size containment does not apply to non-atomic
-  // inline boxes (e.g. span/ruby internal boxes).
-  let style = if style.display == @types.Inline &&
-    not(is_replaced_element(cell_tag)) &&
-    (style.contain.size || style.contain.inline_size) {
-    { ..style, contain: { ..style.contain, size: false, inline_size: false } }
-  } else {
-    style
-  }
-
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []
-  let preserve_inline_elements = match style.display {
-    @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
-    _ => false
+  let parent_is_contents = match parent_style {
+    Some(ps) => ps.display == @types.Contents
+    None => false
+  }
+  let preserve_inline_elements = if parent_is_contents {
+    true
+  } else {
+    match style.display {
+      @types.Flex
+      | @types.InlineFlex
+      | @types.Grid
+      | @types.InlineGrid
+      | @types.Contents => true
+      _ => false
+    }
   }
   let (inline_text, remaining_children) = collect_inline_content(
     elem.children,
@@ -2620,7 +2973,19 @@ fn element_to_node_with_styles_internal(
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
         if not(text.is_empty()) {
-          let text_node = create_text_node(text, style)
+          let preserve_ws = should_preserve_inter_element_whitespace(
+              remaining_children, i, stylesheets, ctx,
+            ) &&
+            not(style.writing_mode.is_vertical())
+          if is_whitespace_only_text(text) && not(preserve_ws) {
+            continue
+          }
+          let text_parent_style = if preserve_ws {
+            { ..style, display: @types.Inline }
+          } else {
+            style
+          }
+          let text_node = create_text_node(text, text_parent_style)
           children.push(text_node)
         }
     }
@@ -2645,7 +3010,25 @@ fn element_to_node_with_styles_internal(
     let (intrinsic_width, intrinsic_height) : (Double, Double) = match
       input_type {
       "radio" | "checkbox" => (13.0, 13.0)
-      "button" | "submit" | "reset" => (80.0, 21.0)
+      "button" | "submit" | "reset" => {
+        let label = match elem.attributes.get("value") {
+          Some(v) if not(v.is_empty()) => v
+          _ =>
+            match input_type {
+              "submit" => "Submit"
+              "reset" => "Reset"
+              _ => ""
+            }
+        }
+        let mut label_cols = 0
+        for c in label.iter() {
+          label_cols = label_cols + char_display_width(c)
+        }
+        let label_width = label_cols.to_double() * char_width * 0.85
+        let min_width = font_size * 1.75
+        let intrinsic_w = @types.max(min_width, label_width + font_size * 0.3)
+        (intrinsic_w, 21.0)
+      }
       "range" => (129.0, 21.0)
       "color" => (44.0, 23.0)
       "file" => (238.0, 21.0)
@@ -2793,9 +3176,8 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
-    let suppress_auto_inline_size = style.contain.size ||
-      style.contain.inline_size
-    let suppress_auto_block_size = style.contain.size
+    let suppress_auto_inline_size = style.suppresses_intrinsic_width()
+    let suppress_auto_block_size = style.suppresses_intrinsic_height()
     // Always treat <img> as replaced; unknown intrinsic size remains 0x0,
     // but CSS sizing keywords/percentages still need replaced-element behavior.
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
@@ -2894,9 +3276,8 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
-    let suppress_auto_inline_size = style.contain.size ||
-      style.contain.inline_size
-    let suppress_auto_block_size = style.contain.size
+    let suppress_auto_inline_size = style.suppresses_intrinsic_width()
+    let suppress_auto_block_size = style.suppresses_intrinsic_height()
     let canvas_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
@@ -2975,9 +3356,8 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
-    let suppress_auto_inline_size = style.contain.size ||
-      style.contain.inline_size
-    let suppress_auto_block_size = style.contain.size
+    let suppress_auto_inline_size = style.suppresses_intrinsic_width()
+    let suppress_auto_block_size = style.suppresses_intrinsic_height()
     let replaced_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
@@ -3032,9 +3412,8 @@ fn element_to_node_with_styles_internal(
       @types.Percent(_) => true
       _ => false
     }
-    let suppress_auto_inline_size = style.contain.size ||
-      style.contain.inline_size
-    let suppress_auto_block_size = style.contain.size
+    let suppress_auto_inline_size = style.suppresses_intrinsic_width()
+    let suppress_auto_block_size = style.suppresses_intrinsic_height()
     let media_style : @style.Style = {
       ..style,
       width: if style.width == @types.Auto {
@@ -3072,7 +3451,11 @@ fn element_to_node_with_styles_internal(
   if tag_lower == "br" {
     // br elements have zero width but take up line-height vertically
     // line_height is already computed as absolute pixel value
-    let measure = create_br_measure(style.line_height, style.writing_mode)
+    let measure = create_br_measure(
+      style.line_height,
+      style.font_size,
+      style.writing_mode,
+    )
     return @node.Node::with_measure(node_id, style, measure)
   }
   if children.is_empty() {
@@ -3183,6 +3566,19 @@ fn is_table_display(display : @types.Display) -> Bool {
 }
 
 ///|
+fn is_no_principal_table_internal_display(display : @types.Display) -> Bool {
+  match display {
+    @types.TableRow
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => true
+    _ => false
+  }
+}
+
+///|
 /// Get user-agent default style for an element tag
 fn get_ua_default_style(tag : String) -> @style.Style {
   let default_style = @style.Style::default()
@@ -3278,6 +3674,43 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Length(40.0),
         ),
       }
+    "fieldset" =>
+      {
+        ..default_style,
+        margin: {
+          left: @types.Length(2.0),
+          right: @types.Length(2.0),
+          top: @types.Length(0.0),
+          bottom: @types.Length(0.0),
+        },
+        padding: {
+          left: @types.Length(12.0),
+          right: @types.Length(12.0),
+          top: @types.Length(5.6),
+          bottom: @types.Length(10.0),
+        },
+        border: {
+          left: @types.Length(2.0),
+          right: @types.Length(2.0),
+          top: @types.Length(2.0),
+          bottom: @types.Length(2.0),
+        },
+        min_width: @types.MinContent,
+      }
+    "legend" =>
+      {
+        ..default_style
+        // Browsers render legend with shrink-wrap-like sizing behavior.
+        // InlineBlock approximates that without a dedicated fieldset algorithm.
+        ,
+        display: @types.InlineBlock,
+        padding: {
+          left: @types.Length(2.0),
+          right: @types.Length(2.0),
+          top: @types.Length(0.0),
+          bottom: @types.Length(0.0),
+        },
+      }
     // Pre element - preserve formatting, prevent wrapping
     "pre" =>
       {
@@ -3363,9 +3796,13 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "stop"
     | "image"
     | "foreignObject" => { ..default_style, display: @types.InlineBlock }
-    // Form elements - inline-block by default
+    // Form elements - inline-block and border-box by default
     "input" | "button" | "select" | "textarea" =>
-      { ..default_style, display: @types.InlineBlock }
+      {
+        ..default_style,
+        display: @types.InlineBlock,
+        box_sizing: @types.BorderBox,
+      }
     "label" => { ..default_style, display: @types.Inline }
     // br is inline with no width
     "br" => { ..default_style, display: @types.Inline }
@@ -3391,6 +3828,15 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "track"
     | "param" => { ..default_style, display: @types.Display::None }
     _ => default_style
+  }
+}
+
+///|
+fn uses_table_normal_line_height(tag : String) -> Bool {
+  match tag.to_lower() {
+    "table" | "thead" | "tbody" | "tfoot" | "tr" | "td" | "th" | "caption" =>
+      true
+    _ => false
   }
 }
 
@@ -3448,10 +3894,48 @@ fn compute_element_style_indexed(
     style = { ..style, color: ua_style.color }
   }
   style = { ..style, display: ua_style.display }
+  style = { ..style, box_sizing: ua_style.box_sizing }
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
+  if selector_elem.tag_name.to_lower() == "rt" {
+    let inherited_font_size = match parent_style {
+      Some(ps) => ps.font_size
+      None => style.font_size
+    }
+    let rt_font_size = inherited_font_size * 0.5
+    style = {
+      ..style,
+      font_size: rt_font_size,
+      line_height: rt_font_size * 1.2,
+    }
+  }
+  if uses_table_normal_line_height(selector_elem.tag_name) {
+    style = { ..style, line_height: style.font_size * normal_line_height_ratio }
+  }
 
-  // Apply cascaded values
+  // Apply font metrics first so em/ch/ex units in later properties
+  // (width/height/gap/etc.) resolve against the element's own font.
+  let font_props = ["font", "font-size", "line-height"]
+  for prop in font_props {
+    match cascaded.get_value(prop) {
+      Some(value) =>
+        style = apply_css_property_with_viewport(
+          style,
+          prop,
+          value,
+          ctx.viewport_width,
+          ctx.viewport_height,
+          css_vars,
+          parent_style,
+        )
+      None => ()
+    }
+  }
+
+  // Apply remaining cascaded values
   for prop in cascaded.properties() {
+    if prop == "font" || prop == "font-size" || prop == "line-height" {
+      continue
+    }
     match cascaded.get_value(prop) {
       Some(value) =>
         style = apply_css_property_with_viewport(
@@ -3653,7 +4137,95 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
 /// The layout engine expects outer dimensions (border-box), so we adjust here.
 fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
   match style.box_sizing {
-    @types.BorderBox => style // No adjustment needed
+    @types.BorderBox => {
+      let padding_h = resolve_dimension_to_px(style.padding.left) +
+        resolve_dimension_to_px(style.padding.right)
+      let padding_v = resolve_dimension_to_px(style.padding.top) +
+        resolve_dimension_to_px(style.padding.bottom)
+      let border_h = resolve_dimension_to_px(style.border.left) +
+        resolve_dimension_to_px(style.border.right)
+      let border_v = resolve_dimension_to_px(style.border.top) +
+        resolve_dimension_to_px(style.border.bottom)
+      let min_outer_width = padding_h + border_h
+      let min_outer_height = padding_v + border_v
+
+      let clamped_width = match style.width {
+        @types.Length(w) =>
+          @types.Dimension::Length(
+            if w < min_outer_width {
+              min_outer_width
+            } else {
+              w
+            },
+          )
+        other => other
+      }
+      let clamped_height = match style.height {
+        @types.Length(h) =>
+          @types.Dimension::Length(
+            if h < min_outer_height {
+              min_outer_height
+            } else {
+              h
+            },
+          )
+        other => other
+      }
+      let clamped_min_width = match style.min_width {
+        @types.Length(w) =>
+          @types.Dimension::Length(
+            if w < min_outer_width {
+              min_outer_width
+            } else {
+              w
+            },
+          )
+        other => other
+      }
+      let clamped_min_height = match style.min_height {
+        @types.Length(h) =>
+          @types.Dimension::Length(
+            if h < min_outer_height {
+              min_outer_height
+            } else {
+              h
+            },
+          )
+        other => other
+      }
+      let clamped_max_width = match style.max_width {
+        @types.Length(w) =>
+          @types.Dimension::Length(
+            if w < min_outer_width {
+              min_outer_width
+            } else {
+              w
+            },
+          )
+        other => other
+      }
+      let clamped_max_height = match style.max_height {
+        @types.Length(h) =>
+          @types.Dimension::Length(
+            if h < min_outer_height {
+              min_outer_height
+            } else {
+              h
+            },
+          )
+        other => other
+      }
+
+      {
+        ..style,
+        width: clamped_width,
+        height: clamped_height,
+        min_width: clamped_min_width,
+        min_height: clamped_min_height,
+        max_width: clamped_max_width,
+        max_height: clamped_max_height,
+      }
+    }
     @types.ContentBox => {
       // Calculate padding and border sums
       let padding_h = resolve_dimension_to_px(style.padding.left) +
@@ -3975,6 +4547,11 @@ fn is_svg_container_id(id : String) -> Bool {
 ///|
 fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
   let style = node.style
+  let containment_applies = not(
+    is_no_principal_table_internal_display(style.display),
+  )
+  let containment_establishes_cb = containment_applies &&
+    (style.contain.paint || style.contain.layout)
   let positioned = match style.position {
     @types.Static => false
     _ => true
@@ -3985,10 +4562,25 @@ fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
   }
   positioned ||
   layout_container ||
-  style.contain.paint ||
-  style.contain.layout ||
+  containment_establishes_cb ||
   not(style.transform.is_none()) ||
   is_svg_container_id(node.id)
+}
+
+///|
+fn is_auto_inset(dim : @types.Dimension) -> Bool {
+  match dim {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+}
+
+///|
+fn has_all_auto_insets(style : @style.Style) -> Bool {
+  is_auto_inset(style.inset.left) &&
+  is_auto_inset(style.inset.right) &&
+  is_auto_inset(style.inset.top) &&
+  is_auto_inset(style.inset.bottom)
 }
 
 ///|
@@ -4073,11 +4665,22 @@ fn apply_zoom_and_scale(
     if child_node.style.position == @types.Absolute &&
       not(has_abs_containing_block) {
       // Absolute descendants without a containing block are viewport-relative.
-      scaled_children.push({
-        ..scaled_child,
-        x: scaled_child.x - global_x,
-        y: scaled_child.y - global_y,
-      })
+      if is_no_principal_table_internal_display(node.style.display) &&
+        has_all_auto_insets(child_node.style) {
+        // Static-positioned abs descendants under no-principal table-internal
+        // ancestors were already shifted during block flow placement.
+        scaled_children.push({
+          ..scaled_child,
+          x: scaled_child.x + scaled_x,
+          y: scaled_child.y + scaled_y,
+        })
+      } else {
+        scaled_children.push({
+          ..scaled_child,
+          x: scaled_child.x - global_x,
+          y: scaled_child.y - global_y,
+        })
+      }
     } else {
       scaled_children.push(scaled_child)
     }
