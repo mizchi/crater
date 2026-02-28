@@ -203,6 +203,23 @@ fn containment_applies(display : @types.Display) -> Bool {
 }
 
 ///|
+/// Whether this box establishes containing block for absolute descendants.
+fn establishes_abs_containing_block(
+  style : @style.Style,
+  display : @types.Display,
+) -> Bool {
+  match style.position {
+    @types.Absolute | @types.Fixed | @types.Relative => true
+    @types.Static =>
+      (
+        containment_applies(display) &&
+        (style.contain.layout || style.contain.paint)
+      ) ||
+      not(style.transform.is_none())
+  }
+}
+
+///|
 /// Whether a subtree contains any table-internal node.
 fn has_table_internal_descendant(node : @node.Node) -> Bool {
   if is_table_internal_display(node.style.display) {
@@ -286,12 +303,15 @@ fn shift_layout_subtree(
 }
 
 ///|
-/// No-principal ancestors should not offset positioned descendants.
-fn offset_out_of_flow_descendants(
+/// Shift out-of-flow descendants by ancestry offset.
+/// Stop propagation when a descendant establishes its own containing block.
+fn shift_out_of_flow_descendants(
   layout : @types.Layout,
   node : @node.Node,
   dx : Double,
   dy : Double,
+  shift_absolute : Bool,
+  shift_fixed : Bool,
 ) -> @types.Layout {
   let shifted_children : Array[@types.Layout] = []
   let min_len = if layout.children.length() < node.children.length() {
@@ -302,11 +322,21 @@ fn offset_out_of_flow_descendants(
   for i = 0; i < min_len; i = i + 1 {
     let child_layout = layout.children[i]
     let child_node = node.children[i]
-    let shifted = if child_node.style.position == @types.Absolute ||
-      child_node.style.position == @types.Fixed {
+    let child_establishes_abs_cb = establishes_abs_containing_block(
+      child_node.style,
+      child_node.style.display,
+    )
+    let shifted = if shift_absolute &&
+      child_node.style.position == @types.Absolute {
       shift_layout_subtree(child_layout, dx, dy)
+    } else if shift_fixed && child_node.style.position == @types.Fixed {
+      shift_layout_subtree(child_layout, dx, dy)
+    } else if child_establishes_abs_cb {
+      child_layout
     } else {
-      offset_out_of_flow_descendants(child_layout, child_node, dx, dy)
+      shift_out_of_flow_descendants(
+        child_layout, child_node, dx, dy, shift_absolute, shift_fixed,
+      )
     }
     shifted_children.push(shifted)
   }
@@ -4155,15 +4185,37 @@ fn compute_with_collapse(
       is_vertical_writing,
     )
     let child_node = flow_nodes[i]
-    let adjusted_for_no_principal = if is_no_principal_table_internal_display(
-        child_style.display,
-      ) &&
-      (positioned_x != 0.0 || legend_border_overlay_y != 0.0) {
-      offset_out_of_flow_descendants(
+    let no_principal = is_no_principal_table_internal_display(
+      child_style.display,
+    )
+    let parent_containment_abs_cb = containment_applies(style.display) &&
+      (style.contain.layout || style.contain.paint)
+    let establishes_abs_cb = establishes_abs_containing_block(
+      child_style,
+      child_style.display,
+    )
+    let should_offset_no_principal = no_principal &&
+      (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
+    let should_offset_for_containment = parent_containment_abs_cb &&
+      not(establishes_abs_cb) &&
+      (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
+    let adjusted_for_no_principal = if should_offset_no_principal {
+      shift_out_of_flow_descendants(
         adjusted_layout,
         child_node,
         -positioned_x,
         -legend_border_overlay_y,
+        true,
+        true,
+      )
+    } else if should_offset_for_containment {
+      shift_out_of_flow_descendants(
+        adjusted_layout,
+        child_node,
+        -positioned_x,
+        -legend_border_overlay_y,
+        true,
+        false,
       )
     } else {
       adjusted_layout

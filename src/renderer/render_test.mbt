@@ -599,6 +599,67 @@ test "contain_paint_table_cell_abs_does_not_contribute_intrinsic_size" {
 }
 
 ///|
+test "contain_paint_clip_abs_descendants_keep_outer_padding_box_reference" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|p { margin: 0; }
+    #|.root {
+    #|  contain: paint;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  margin: 25px;
+    #|  padding: 25px;
+    #|}
+    #|.a { width: 100px; height: 200px; }
+    #|.background {
+    #|  position: absolute;
+    #|  top: 0;
+    #|  left: 0;
+    #|  width: 200px;
+    #|  height: 200px;
+    #|}
+    #|.foreground {
+    #|  position: absolute;
+    #|  top: -25px;
+    #|  left: -25px;
+    #|  width: 150px;
+    #|  height: 150px;
+    #|  border: 25px solid red;
+    #|}
+    #|</style>
+    #|<div class="root">
+    #|  <div class="a">
+    #|    <div class="background"></div>
+    #|    <div class="foreground"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should keep contain:paint root")
+  }
+  let root = layout.children[0]
+  guard root.children.length() == 1 else { fail("root should keep flow child") }
+  let flow_child = root.children[0]
+  guard flow_child.children.length() == 2 else {
+    fail("flow child should keep absolute descendants")
+  }
+  let background = flow_child.children[0]
+  let foreground = flow_child.children[1]
+  guard background.x == -25.0 && background.y == -25.0 else {
+    fail(
+      "absolute child with top/left:0 should stay anchored to contain:paint padding box",
+    )
+  }
+  guard foreground.x == -50.0 && foreground.y == -50.0 else {
+    fail(
+      "offset absolute child should preserve containing block offset through static wrapper",
+    )
+  }
+}
+
+///|
 test "contain_paint_inline_block_after_text_wrap_keeps_inline_offset_large_font" {
   let html_str =
     #|<!DOCTYPE html>
