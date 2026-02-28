@@ -599,6 +599,108 @@ test "contain_paint_table_cell_abs_does_not_contribute_intrinsic_size" {
 }
 
 ///|
+test "contain_paint_inline_block_after_text_wrap_keeps_inline_offset_large_font" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#outer {
+    #|  font-family: monospace;
+    #|  font-size: 100px;
+    #|  line-height: 1;
+    #|  width: 2em;
+    #|  height: 2em;
+    #|}
+    #|#containing-block {
+    #|  contain: paint;
+    #|  display: inline-block;
+    #|  width: 1em;
+    #|  height: 1em;
+    #|}
+    #|#abspos {
+    #|  position: absolute;
+    #|  left: 0;
+    #|  top: 0;
+    #|  width: 1em;
+    #|  height: 1em;
+    #|}
+    #|</style>
+    #|<div id="outer">AB C<div id="containing-block"><div id="abspos"></div></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should keep outer block")
+  }
+  let outer = layout.children[0]
+  guard outer.children.length() >= 2 else {
+    fail("outer should keep text and inline containing block")
+  }
+  let containing_block = outer.children[1]
+  guard containing_block.x > 0.0 else {
+    fail(
+      "inline containing block should keep carry-over inline offset on wrapped line",
+    )
+  }
+  guard containing_block.children.length() == 1 else {
+    fail("containing block should keep absolute child")
+  }
+  let abspos = containing_block.children[0]
+  guard abspos.x == 0.0 else {
+    fail("absolute child should stay at left edge of containing block")
+  }
+}
+
+///|
+test "contain_paint_inline_block_after_text_wrap_keeps_inline_offset_small_font" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#outer {
+    #|  font-family: monospace;
+    #|  font-size: 50px;
+    #|  line-height: 1;
+    #|  width: 2em;
+    #|  height: 2em;
+    #|}
+    #|#containing-block {
+    #|  contain: paint;
+    #|  display: inline-block;
+    #|  width: 50%;
+    #|  height: 50%;
+    #|}
+    #|#abspos {
+    #|  position: absolute;
+    #|  left: 0;
+    #|  top: 0;
+    #|  width: 50px;
+    #|  height: 50px;
+    #|}
+    #|</style>
+    #|<div id="outer">AB C<div id="containing-block"><div id="abspos"></div></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() >= 1 else {
+    fail("body should keep outer block")
+  }
+  let outer = layout.children[0]
+  guard outer.children.length() >= 2 else {
+    fail("outer should keep text and inline containing block")
+  }
+  let containing_block = outer.children[1]
+  guard containing_block.x > 0.0 else {
+    fail(
+      "inline containing block should keep carry-over inline offset on wrapped line",
+    )
+  }
+  guard containing_block.children.length() == 1 else {
+    fail("containing block should keep absolute child")
+  }
+  let abspos = containing_block.children[0]
+  guard abspos.x == 0.0 else {
+    fail("absolute child should stay at left edge of containing block")
+  }
+}
+
+///|
 test "contain_size_table_row_group_with_text_does_not_crash" {
   let html_str =
     #|<!DOCTYPE html>
@@ -640,13 +742,9 @@ test "fixed_table_caption_keeps_intrinsic_width" {
     #|  <tr><th>&emsp;</th></tr>
     #|</table>
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
-  guard layout.children.length() >= 1 else {
-    fail("body should keep table")
-  }
+  guard layout.children.length() >= 1 else { fail("body should keep table") }
   let table = layout.children[0]
-  guard table.children.length() >= 1 else {
-    fail("table should keep caption")
-  }
+  guard table.children.length() >= 1 else { fail("table should keep caption") }
   let caption = table.children[0]
   guard caption.width == 32.0 else {
     fail("fixed caption width should use intrinsic text width")
@@ -668,9 +766,7 @@ test "size_contained_caption_contributes_border_width_to_empty_table" {
     #|  </caption>
     #|</table>
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
-  guard layout.children.length() >= 1 else {
-    fail("body should keep table")
-  }
+  guard layout.children.length() >= 1 else { fail("body should keep table") }
   let table = layout.children[0]
   guard table.width == 32.0 else {
     fail("empty table should still include caption border width")

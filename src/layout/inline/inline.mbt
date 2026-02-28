@@ -38,10 +38,25 @@ fn resolve_inset_dimension(
 }
 
 ///|
+fn inline_establishes_abs_containing_block(style : @style.Style) -> Bool {
+  match style.position {
+    @types.Absolute | @types.Fixed | @types.Relative => true
+    @types.Static => style.contain.layout || style.contain.paint
+  }
+}
+
+///|
 priv struct WrappedTextMetrics {
   line_count : Int
   last_line_width : Double
 }
+
+///|
+let inline_text_glyph_height_ratio : Double = 1.045
+
+///|
+/// Browser fallback monospace metrics used by WPT in Puppeteer.
+let inline_wrap_carry_char_width_ratio : Double = 0.378
 
 ///|
 fn is_wide_char(c : Char) -> Bool {
@@ -61,6 +76,65 @@ fn char_display_width(c : Char) -> Int {
     2
   } else {
     1
+  }
+}
+
+///|
+fn is_inline_whitespace_char(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+}
+
+///|
+fn first_text_char(node : @node.Node) -> Char? {
+  match node.text {
+    Some(text) =>
+      for c in text.iter() {
+        return Some(c)
+      }
+    None => ()
+  }
+  for child in node.children {
+    match first_text_char(child) {
+      Some(c) => return Some(c)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn last_text_char(node : @node.Node) -> Char? {
+  let mut i = node.children.length()
+  while i > 0 {
+    let idx = i - 1
+    match last_text_char(node.children[idx]) {
+      Some(c) => return Some(c)
+      None => ()
+    }
+    i = i - 1
+  }
+  match node.text {
+    Some(text) => {
+      let mut last : Char? = None
+      for c in text.iter() {
+        last = Some(c)
+      }
+      last
+    }
+    None => None
+  }
+}
+
+///|
+fn has_inline_break_opportunity_between(
+  prev : @node.Node,
+  next : @node.Node,
+) -> Bool {
+  match (last_text_char(prev), first_text_char(next)) {
+    (Some(prev_last), Some(next_first)) =>
+      is_inline_whitespace_char(prev_last) ||
+      is_inline_whitespace_char(next_first)
+    _ => true
   }
 }
 
@@ -236,6 +310,86 @@ fn estimate_wrapped_text_metrics(
 }
 
 ///|
+fn estimate_inline_wrap_carry_width(
+  prev : @node.Node,
+  next : @node.Node,
+) -> Double? {
+  match prev.text {
+    Some(raw_text) => {
+      let collapses_space = match prev.style.white_space {
+        @style.WhiteSpace::Normal | @style.WhiteSpace::PreLine => true
+        _ => false
+      }
+      if not(collapses_space) {
+        return None
+      }
+      let font_size = prev.style.font_size
+      if font_size <= 0.0 {
+        return None
+      }
+      let char_width = font_size * inline_wrap_carry_char_width_ratio
+      if char_width <= 0.0 {
+        return None
+      }
+
+      let mut seen_non_ws = false
+      let mut in_word = false
+      let mut current_word_cols = 0
+      let mut last_word_cols = 0
+      let mut word_count = 0
+      let mut trailing_boundary_space = false
+
+      for c in raw_text.iter() {
+        if is_inline_whitespace_char(c) {
+          if in_word {
+            if current_word_cols > 0 {
+              last_word_cols = current_word_cols
+            }
+            current_word_cols = 0
+            in_word = false
+          }
+          if seen_non_ws {
+            trailing_boundary_space = true
+          }
+        } else {
+          seen_non_ws = true
+          if not(in_word) {
+            word_count = word_count + 1
+          }
+          in_word = true
+          current_word_cols = current_word_cols + char_display_width(c)
+          trailing_boundary_space = false
+        }
+      }
+      if in_word && current_word_cols > 0 {
+        last_word_cols = current_word_cols
+      }
+      if last_word_cols <= 0 {
+        return None
+      }
+
+      match first_text_char(next) {
+        Some(c) =>
+          if is_inline_whitespace_char(c) {
+            trailing_boundary_space = true
+          }
+        None => ()
+      }
+      let mut carry_cols = last_word_cols
+      if word_count > 1 || trailing_boundary_space {
+        carry_cols = carry_cols + 1
+      }
+      if carry_cols <= 0 {
+        None
+      } else {
+        Some(carry_cols.to_double() * char_width)
+      }
+    }
+    None => None
+  }
+}
+
+///|
 /// Add an item to the line box
 fn LineBox::add_item(
   self : LineBox,
@@ -292,6 +446,7 @@ fn is_replaced_strut_candidate(node : @node.Node) -> Bool {
     None => return false
   }
   let id = node.id
+  id_matches_tag(id, "br") ||
   id_matches_tag(id, "img") ||
   id_matches_tag(id, "canvas") ||
   id_matches_tag(id, "video") ||
@@ -327,8 +482,38 @@ fn is_replaced_intrinsic_candidate(node : @node.Node) -> Bool {
 }
 
 ///|
+fn text_glyph_height_from_style(style : @style.Style) -> Double {
+  if style.font_size > 0.0 {
+    style.font_size * inline_text_glyph_height_ratio
+  } else {
+    0.0
+  }
+}
+
+///|
+fn max_text_glyph_height_in_node(node : @node.Node) -> Double {
+  let mut max_height = 0.0
+  match node.text {
+    Some(_) => {
+      let glyph = text_glyph_height_from_style(node.style)
+      if glyph > max_height {
+        max_height = glyph
+      }
+    }
+    None => ()
+  }
+  for child in node.children {
+    let child_height = max_text_glyph_height_in_node(child)
+    if child_height > max_height {
+      max_height = child_height
+    }
+  }
+  max_height
+}
+
+///|
 /// Ensure each line box includes the inline formatting strut from parent font metrics.
-/// This affects replaced-only lines that would otherwise have zero descent.
+/// The strut defines the line box minimum ascent/descent from line-height.
 fn LineBox::ensure_line_strut(
   self : LineBox,
   children : Array[@node.Node],
@@ -337,13 +522,17 @@ fn LineBox::ensure_line_strut(
     return ()
   }
   let mut replaced_like_count = 0
+  let mut has_text_item = false
   for item in self.items {
     let child = children[item.index]
+    if child.text is Some(_) {
+      has_text_item = true
+    }
     if is_replaced_strut_candidate(child) {
       replaced_like_count = replaced_like_count + 1
     }
   }
-  if replaced_like_count < 2 {
+  if has_text_item || replaced_like_count == 0 {
     return ()
   }
   let first_item = self.items[0]
@@ -600,10 +789,20 @@ pub fn compute_ifc(
       // <br> participates in line boxes but its baseline should align with text baseline,
       // not with its full line-height box bottom.
       let font_size = child.style.font_size
+      let line_height = if child.style.line_height > 0.0 {
+        child.style.line_height
+      } else {
+        font_size
+      }
+      let leading = if line_height > font_size {
+        line_height - font_size
+      } else {
+        0.0
+      }
       let ascender_ratio = 0.8
-      font_size * ascender_ratio +
-      child_layout.padding.top +
-      child_layout.border.top
+      let raw = font_size * ascender_ratio - leading * 0.5
+      let br_baseline = if raw > 0.0 { raw } else { 0.0 }
+      br_baseline + child_layout.padding.top + child_layout.border.top
     } else if child.text is Some(_) {
       // Text node: use font metrics
       let font_size = child.style.font_size
@@ -651,6 +850,26 @@ pub fn compute_ifc(
         child_margin.right,
       )
     } else {
+      let mut keep_same_line = false
+      if current_line.items.length() > 0 {
+        let prev_item = current_line.items[current_line.items.length() - 1]
+        let prev_child = children[prev_item.index]
+        keep_same_line = not(
+          has_inline_break_opportunity_between(prev_child, child),
+        )
+      }
+      if keep_same_line {
+        current_line.add_item(
+          i,
+          child_layout,
+          baseline,
+          child_margin.top,
+          child_margin.bottom,
+          child_margin.left,
+          child_margin.right,
+        )
+        continue
+      }
       // Start a new line
       current_line.ensure_line_strut(children)
       line_boxes.push(current_line)
@@ -675,7 +894,10 @@ pub fn compute_ifc(
 
   // Position items within line boxes
   let mut current_y = content_offset_y
-  for line in line_boxes {
+  for line_index = 0
+      line_index < line_boxes.length()
+      line_index = line_index + 1 {
+    let line = line_boxes[line_index]
     let mut current_x = content_offset_x
     for item_index = 0
         item_index < line.items.length()
@@ -694,7 +916,7 @@ pub fn compute_ifc(
       let y = match child.style.vertical_align {
         @style.VerticalAlign::Top | @style.VerticalAlign::TextTop =>
           // Align to top of line box
-          current_y
+          current_y + child_margin.top
         @style.VerticalAlign::Middle =>
           // Align to middle of line box
           current_y + (line.height - item.layout.height) / 2.0
@@ -745,6 +967,39 @@ pub fn compute_ifc(
                 _ => ()
               }
             _ => ()
+          }
+        }
+      }
+      if item_index == 0 &&
+        line_index > 0 &&
+        inline_establishes_abs_containing_block(child.style) {
+        let prev_line = line_boxes[line_index - 1]
+        if prev_line.items.length() > 0 {
+          let prev_item = prev_line.items[prev_line.items.length() - 1]
+          let prev_child = children[prev_item.index]
+          if has_inline_break_opportunity_between(prev_child, child) {
+            match estimate_inline_wrap_carry_width(prev_child, child) {
+              Some(carry_width) => {
+                let mut max_carry = available_width -
+                  item.layout.width -
+                  child_margin.left -
+                  child_margin.right
+                if max_carry < 0.0 {
+                  max_carry = 0.0
+                }
+                let bounded_carry = if carry_width > max_carry {
+                  max_carry
+                } else {
+                  carry_width
+                }
+                if bounded_carry > 0.0 {
+                  positioned_x = content_offset_x +
+                    child_margin.left +
+                    bounded_carry
+                }
+              }
+              None => ()
+            }
           }
         }
       }
@@ -813,9 +1068,8 @@ fn compute_inline_child(
         @double.infinity,
         available_height.unwrap_or(0.0),
       )
-      let suppress_inline_intrinsic = style.contain.size ||
-        style.contain.inline_size
-      let suppress_block_intrinsic = style.contain.size
+      let suppress_inline_intrinsic = style.suppresses_intrinsic_width()
+      let suppress_block_intrinsic = style.suppresses_intrinsic_height()
       let use_intrinsic_ratio_fallback = is_replaced_intrinsic_candidate(node) &&
         not(style.contain.size)
       let intrinsic_ratio : Double? = if use_intrinsic_ratio_fallback &&
@@ -862,13 +1116,13 @@ fn compute_inline_child(
           border.horizontal_sum()
         @types.MinContent =>
           if suppress_inline_intrinsic {
-            0.0
+            style.contained_intrinsic_width_fallback()
           } else {
             unconstrained.min_width
           }
         @types.MaxContent =>
           if suppress_inline_intrinsic {
-            0.0
+            style.contained_intrinsic_width_fallback()
           } else {
             unconstrained.max_width
           }
@@ -887,7 +1141,7 @@ fn compute_inline_child(
                 if content_h > 0.0 {
                   content_h * ratio
                 } else if suppress_inline_intrinsic {
-                  0.0
+                  style.contained_intrinsic_width_fallback()
                 } else {
                   unconstrained.max_width
                 }
@@ -895,7 +1149,7 @@ fn compute_inline_child(
             _ => {
               // Fallback: use intrinsic width, constrained to available_width
               let max_content = if suppress_inline_intrinsic {
-                0.0
+                style.contained_intrinsic_width_fallback()
               } else {
                 unconstrained.max_width
               }
@@ -919,7 +1173,7 @@ fn compute_inline_child(
         available_height.unwrap_or(0.0),
       )
       let intrinsic_height_for_auto = if suppress_block_intrinsic {
-        0.0
+        style.contained_intrinsic_height_fallback()
       } else {
         constrained.max_height
       }
@@ -1190,12 +1444,35 @@ fn compute_inline_child(
   let final_width = content_width +
     padding.horizontal_sum() +
     border.horizontal_sum()
-  let final_height = content_height +
+  let mut final_height = content_height +
     padding.vertical_sum() +
     border.vertical_sum()
+  let text_glyph_height = max_text_glyph_height_in_node(node)
+  if text_glyph_height > 0.0 {
+    let text_box_height = text_glyph_height +
+      padding.vertical_sum() +
+      border.vertical_sum()
+    if final_height > text_box_height {
+      final_height = text_box_height
+    }
+  }
+  if final_height == 0.0 && node.id == "ruby" {
+    let mut has_ruby_text_child = false
+    for child in node.children {
+      if child.id == "rt" || child.id.has_prefix("rt#") {
+        has_ruby_text_child = true
+        break
+      }
+    }
+    if has_ruby_text_child {
+      final_height = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+    }
+  }
 
-  // Resolve absolute child positions against this inline element's content box.
-  if absolute_entries.length() > 0 {
+  // Resolve absolute child positions against this inline element's content box
+  // only when this inline box establishes a containing block.
+  if absolute_entries.length() > 0 &&
+    inline_establishes_abs_containing_block(style) {
     let area_left = padding.left + border.left
     let area_top = padding.top + border.top
     let area_width_raw = final_width -

@@ -53,6 +53,7 @@
   - `243 / 303 passed`（`60 failed`）→ `247 / 303 passed`（`56 failed`）
   - `247 / 303 passed`（`56 failed`）→ `249 / 303 passed`（`54 failed`）
   - `249 / 303 passed`（`54 failed`）→ `250 / 303 passed`（`53 failed`）
+  - `250 / 303 passed`（`53 failed`）→ `252 / 303 passed`（`51 failed`）
   - 改善済み:
     - `contain-inline-size-intrinsic.html`
     - `contain-inline-size-vertical-rl-.html`
@@ -94,6 +95,8 @@
     - `contain-paint-016.html`
     - `contain-paint-017.html`
     - `contain-paint-018.html`
+    - `contain-paint-022.html`
+    - `contain-paint-023.html`
     - `contain-paint-047.html`
     - `contain-paint-cell-001.html`
     - `contain-paint-cell-002.html`
