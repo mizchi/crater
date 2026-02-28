@@ -203,6 +203,21 @@ fn containment_applies(display : @types.Display) -> Bool {
 }
 
 ///|
+fn id_matches_tag(node_id : String, tag : String) -> Bool {
+  node_id == tag ||
+  node_id.has_prefix(tag + "#") ||
+  node_id.has_prefix(tag + ".")
+}
+
+///|
+fn is_ruby_internal_id(node_id : String) -> Bool {
+  id_matches_tag(node_id, "rb") ||
+  id_matches_tag(node_id, "rbc") ||
+  id_matches_tag(node_id, "rt") ||
+  id_matches_tag(node_id, "rtc")
+}
+
+///|
 /// Whether this box establishes containing block for absolute descendants.
 fn establishes_abs_containing_block(
   style : @style.Style,
@@ -537,7 +552,8 @@ fn calculate_children_max_content_width(
     }
     flow_children.push(child)
   }
-  let inline_only = @inline.should_establish_ifc(flow_children)
+  let inline_only = @inline.should_establish_ifc(flow_children) ||
+    is_ruby_internal_id(node.id)
   let mut inline_has_forced_break = false
   if inline_only && not(is_vertical_writing) {
     for child in flow_children {
@@ -559,7 +575,8 @@ fn calculate_children_max_content_width(
   // Calculate max-content width from children
   for child in flow_children {
     let child_style = child.style
-    let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width()
+    let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width() &&
+      not(is_ruby_internal_id(child.id))
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
     let child_margin_right = resolve_dimension_intrinsic(
@@ -681,7 +698,8 @@ fn calculate_children_min_content_width(
     }
     flow_children.push(child)
   }
-  let inline_only = @inline.should_establish_ifc(flow_children)
+  let inline_only = @inline.should_establish_ifc(flow_children) ||
+    is_ruby_internal_id(node.id)
   let mut inline_needs_line_width = false
   if inline_only && not(is_vertical_writing) {
     for child in flow_children {
@@ -709,7 +727,8 @@ fn calculate_children_min_content_width(
   // Calculate min-content width from children
   for child in flow_children {
     let child_style = child.style
-    let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width()
+    let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width() &&
+      not(is_ruby_internal_id(child.id))
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
     let child_margin_right = resolve_dimension_intrinsic(
@@ -2556,7 +2575,8 @@ fn compute_with_collapse(
     let multicol_intrinsic_content_width = estimate_multicol_intrinsic_content_width(
       style, parent_width,
     )
-    let inline_only = @inline.should_establish_ifc(flow_nodes)
+    let inline_only = @inline.should_establish_ifc(flow_nodes) ||
+      is_ruby_internal_id(node.id)
     let mut inline_has_forced_break = false
     if inline_only && not(style.writing_mode.is_vertical()) {
       for child in flow_nodes {
@@ -2717,7 +2737,7 @@ fn compute_with_collapse(
               compute_with_collapse(child, intrinsic_ctx, warnings, dispatch).layout.width
           }
         }
-        let child_intrinsic_width : Double = match child_style.width {
+        let mut child_intrinsic_width : Double = match child_style.width {
           @types.Length(w) =>
             match child_recursive_intrinsic_width {
               Some(recursive_w) => recursive_w
@@ -2955,6 +2975,15 @@ fn compute_with_collapse(
               let recursive_w = compute_recursive_child_width()
               @types.max(recursive_w, child_min_box)
             }
+        }
+        if is_ruby_internal_id(child.id) {
+          let ruby_internal_width = calculate_children_max_content_width(
+              child, parent_width,
+            ) +
+            child_min_box
+          if ruby_internal_width > child_intrinsic_width {
+            child_intrinsic_width = ruby_internal_width
+          }
         }
         let child_contribution = child_intrinsic_width + child_margin_sum
         if style.writing_mode.is_vertical() {
@@ -3362,7 +3391,12 @@ fn compute_with_collapse(
       for i = 0; i < flow_indices.length(); i = i + 1 {
         match layout_map.get(flow_indices[i]) {
           Some(layout) => {
-            let descendant_h = get_children_total_height(layout.children)
+            let descendant_h = if i < flow_nodes.length() &&
+              id_matches_tag(flow_nodes[i].id, "ruby") {
+              0.0
+            } else {
+              get_children_total_height(layout.children)
+            }
             let child_block = if layout.height > descendant_h {
               layout.height
             } else {
@@ -3574,7 +3608,11 @@ fn compute_with_collapse(
       for i = 0; i < node.children.length(); i = i + 1 {
         match layout_map.get(i) {
           Some(layout) => {
-            let descendant_h = get_children_total_height(layout.children)
+            let descendant_h = if id_matches_tag(node.children[i].id, "ruby") {
+              0.0
+            } else {
+              get_children_total_height(layout.children)
+            }
             let child_block = if layout.height > descendant_h {
               layout.height
             } else {
@@ -4534,7 +4572,9 @@ fn compute_with_collapse(
     }
 
     // Calculate x position considering margin auto
-    let float_inline_offset = if not(is_vertical_writing) &&
+    let (float_inline_offset, float_inline_constrained) = if not(
+        is_vertical_writing,
+      ) &&
       float_ctx.has_floats() &&
       @inline.is_inline_level(child_style.display) &&
       child_style.position != @types.Absolute &&
@@ -4548,15 +4588,20 @@ fn compute_with_collapse(
       }
       let probe_y = child_y - padding.top - border.top
       let probe_y = if probe_y > 0.0 { probe_y } else { 0.0 }
-      let (left_edge, _) = float_ctx.get_available_space(probe_y, probe_height)
+      let (left_edge, right_edge) = float_ctx.get_available_space(
+        probe_y, probe_height,
+      )
       let base_left = padding.left + border.left
-      if left_edge > base_left {
+      let base_right = base_left + child_available_width
+      let constrained = left_edge > base_left || right_edge < base_right
+      let inline_offset = if left_edge > base_left {
         left_edge - base_left
       } else {
         0.0
       }
+      (inline_offset, constrained)
     } else {
-      0.0
+      (0.0, false)
     }
     let inline_run_offset = if participates_in_inline_run {
       inline_run_x
@@ -4620,9 +4665,21 @@ fn compute_with_collapse(
     } else {
       (child_x, child_y + float_clearance_offset)
     }
+    let inline_br_prefers_baseline_offset = if participates_in_inline_run &&
+      child_node.id == "br" &&
+      i > 0 {
+      let prev_style = flow_styles[i - 1]
+      match prev_style.vertical_align {
+        @style.VerticalAlign::Top | @style.VerticalAlign::TextTop => false
+        _ => true
+      }
+    } else {
+      false
+    }
     let inline_br_offset = if participates_in_inline_run &&
       child_node.id == "br" &&
-      inline_run_height > child_layout.height {
+      inline_run_height > child_layout.height &&
+      (float_inline_constrained || inline_br_prefers_baseline_offset) {
       inline_run_height - child_layout.height
     } else {
       0.0
@@ -4698,6 +4755,7 @@ fn compute_with_collapse(
       { ..child_layout, x: positioned_x },
       is_vertical_writing,
     )
+    let is_display_contents = child_style.display == @types.Contents
     let no_principal = is_no_principal_table_internal_display(
       child_style.display,
     )
@@ -4712,7 +4770,16 @@ fn compute_with_collapse(
     let should_offset_for_containment = parent_containment_abs_cb &&
       not(establishes_abs_cb) &&
       (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
-    let adjusted_for_no_principal = if should_offset_no_principal {
+    let adjusted_for_no_principal = if is_display_contents &&
+      (positioned_x != 0.0 || legend_border_overlay_y != 0.0) {
+      let shifted_children : Array[@types.Layout] = []
+      for grand_child in adjusted_layout.children {
+        shifted_children.push(
+          shift_layout_subtree(grand_child, positioned_x, adjusted_layout.y),
+        )
+      }
+      { ..adjusted_layout, children: shifted_children }
+    } else if should_offset_no_principal {
       shift_out_of_flow_descendants(
         adjusted_layout,
         child_node,

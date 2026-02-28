@@ -396,6 +396,7 @@ fn LineBox::add_item(
   index : Int,
   layout : @types.Layout,
   baseline : Double,
+  line_height : Double,
   margin_top : Double,
   margin_bottom : Double,
   margin_left : Double,
@@ -409,7 +410,7 @@ fn LineBox::add_item(
   // - max distance from top to baseline (above baseline)
   // - max distance from baseline to bottom (below baseline)
   let above_baseline = baseline + margin_top
-  let below_baseline = layout.height - baseline + margin_bottom
+  let below_baseline = line_height - baseline + margin_bottom
   if self.items.length() == 1 {
     // First item sets the initial baseline
     self.baseline = above_baseline
@@ -434,6 +435,130 @@ fn id_matches_tag(node_id : String, tag : String) -> Bool {
   node_id == tag ||
   node_id.has_prefix(tag + "#") ||
   node_id.has_prefix(tag + ".")
+}
+
+///|
+fn is_whitespace_text_node(node : @node.Node) -> Bool {
+  if not(node.id.has_prefix("#text")) {
+    return false
+  }
+  match node.text {
+    Some(text) => text.trim().is_empty()
+    None => true
+  }
+}
+
+///|
+fn ruby_annotation_only_should_collapse(node : @node.Node) -> Bool {
+  let mut has_annotation_child = false
+  for child in node.children {
+    if id_matches_tag(child.id, "rt") {
+      if not(child.style.contain.size) && not(child.style.contain.paint) {
+        return false
+      }
+      has_annotation_child = true
+      for grand_child in child.children {
+        if not(grand_child.id.has_prefix("#text")) {
+          return false
+        }
+      }
+      continue
+    }
+    if id_matches_tag(child.id, "rp") {
+      continue
+    }
+    if is_whitespace_text_node(child) {
+      continue
+    }
+    return false
+  }
+  has_annotation_child
+}
+
+///|
+fn ruby_has_rt_child(node : @node.Node) -> Bool {
+  for child in node.children {
+    if id_matches_tag(child.id, "rt") {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn ruby_has_base_child(node : @node.Node) -> Bool {
+  for child in node.children {
+    if id_matches_tag(child.id, "rb") || id_matches_tag(child.id, "rbc") {
+      return true
+    }
+    if id_matches_tag(child.id, "rt") ||
+      id_matches_tag(child.id, "rtc") ||
+      id_matches_tag(child.id, "rp") {
+      continue
+    }
+    if is_whitespace_text_node(child) {
+      continue
+    }
+    return true
+  }
+  false
+}
+
+///|
+fn ruby_annotation_only(node : @node.Node) -> Bool {
+  id_matches_tag(node.id, "ruby") &&
+  ruby_has_rt_child(node) &&
+  not(ruby_has_base_child(node))
+}
+
+///|
+fn is_ruby_annotation_child(parent : @node.Node, child : @node.Node) -> Bool {
+  id_matches_tag(parent.id, "ruby") && id_matches_tag(child.id, "rt")
+}
+
+///|
+fn ruby_annotation_band_height(layout : @types.Layout) -> Double {
+  let mut max_height = 0.0
+  for child in layout.children {
+    if id_matches_tag(child.id, "rt") || id_matches_tag(child.id, "rtc") {
+      let child_height = child.height + child.margin.top + child.margin.bottom
+      if child_height > max_height {
+        max_height = child_height
+      }
+    }
+  }
+  max_height
+}
+
+///|
+fn line_height_from_style(style : @style.Style) -> Double {
+  if style.line_height > 0.0 {
+    style.line_height
+  } else if style.font_size > 0.0 {
+    style.font_size
+  } else {
+    16.0
+  }
+}
+
+///|
+fn strut_baseline_from_style(style : @style.Style) -> Double {
+  let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+  let line_height = line_height_from_style(style)
+  let leading = if line_height > font_size {
+    line_height - font_size
+  } else {
+    0.0
+  }
+  font_size * 0.8 + leading * 0.5
+}
+
+///|
+fn is_ruby_internal_container(node_id : String) -> Bool {
+  id_matches_tag(node_id, "rb") ||
+  id_matches_tag(node_id, "rbc") ||
+  id_matches_tag(node_id, "rt") ||
+  id_matches_tag(node_id, "rtc")
 }
 
 ///|
@@ -799,13 +924,13 @@ pub fn compute_ifc(
     // Calculate baseline based on font metrics
     // For text nodes, baseline is at font_size * ascender_ratio from top
     // Typical ascender ratio is ~0.8 (80% of font height is above baseline)
-    let baseline = if child.id == "br" {
+    let mut baseline = if child.id == "br" {
       // <br> participates in line boxes but its baseline should align with text baseline,
       // not with its full line-height box bottom.
       let font_size = child.style.font_size
+      // Use text ascent-like baseline for br so tall line-height runs don't
+      // sink the break position too far down.
       let ascender_ratio = 0.8
-      // Keep br close to glyph ascent; subtracting half-leading pushes br
-      // too far down under tall line-height.
       let raw = font_size * ascender_ratio
       let br_baseline = if raw > 0.0 { raw } else { 0.0 }
       br_baseline + child_layout.padding.top + child_layout.border.top
@@ -833,13 +958,28 @@ pub fn compute_ifc(
       // instead of always falling back to bottom.
       @baseline.compute_node_baseline(child, child_layout.height)
     }
+    let mut line_metrics_height = child_layout.height
+    if ruby_annotation_only(child) {
+      let annotation_height = ruby_annotation_band_height(child_layout)
+      if annotation_height > 0.0 {
+        line_metrics_height = annotation_height +
+          line_height_from_style(child.style)
+        baseline = annotation_height + strut_baseline_from_style(child.style)
+      }
+    }
+    let line_metrics_baseline = match child.style.vertical_align {
+      // Top-aligned inline-level boxes should not pull the line baseline down.
+      @style.VerticalAlign::Top | @style.VerticalAlign::TextTop => 0.0
+      _ => baseline
+    }
 
     // <br> always forces a line break after itself.
     if child.id == "br" {
       current_line.add_item(
         i,
         child_layout,
-        baseline,
+        line_metrics_baseline,
+        line_metrics_height,
         child_margin.top,
         child_margin.bottom,
         child_margin.left,
@@ -861,7 +1001,8 @@ pub fn compute_ifc(
       current_line.add_item(
         i,
         child_layout,
-        baseline,
+        line_metrics_baseline,
+        line_metrics_height,
         child_margin.top,
         child_margin.bottom,
         child_margin.left,
@@ -880,7 +1021,8 @@ pub fn compute_ifc(
         current_line.add_item(
           i,
           child_layout,
-          baseline,
+          line_metrics_baseline,
+          line_metrics_height,
           child_margin.top,
           child_margin.bottom,
           child_margin.left,
@@ -895,7 +1037,8 @@ pub fn compute_ifc(
       current_line.add_item(
         i,
         child_layout,
-        baseline,
+        line_metrics_baseline,
+        line_metrics_height,
         child_margin.top,
         child_margin.bottom,
         child_margin.left,
@@ -1042,6 +1185,45 @@ pub fn compute_ifc(
           // After x-mirroring for vertical-rl, compensate the consumed advance.
           positioned_x = positioned_x + item.layout.width * 2.0
         }
+      }
+      if ruby_annotation_only(child) &&
+        not(ruby_annotation_only_should_collapse(child)) {
+        let annotation_height = ruby_annotation_band_height(item.layout)
+        if annotation_height > 0.0 {
+          positioned_y = positioned_y + annotation_height
+        }
+      }
+      if child.style.position == @types.Relative {
+        let rel_left = resolve_inset_dimension(
+          child.style.inset.left,
+          available_width,
+        )
+        let rel_right = resolve_inset_dimension(
+          child.style.inset.right,
+          available_width,
+        )
+        let rel_top = resolve_inset_dimension(
+          child.style.inset.top,
+          line.height,
+        )
+        let rel_bottom = resolve_inset_dimension(
+          child.style.inset.bottom,
+          line.height,
+        )
+        let x_offset = match (rel_left, rel_right) {
+          (Some(l), Some(r)) => l - r
+          (Some(l), None) => l
+          (None, Some(r)) => -r
+          _ => 0.0
+        }
+        let y_offset = match (rel_top, rel_bottom) {
+          (Some(t), Some(b)) => t - b
+          (Some(t), None) => t
+          (None, Some(b)) => -b
+          _ => 0.0
+        }
+        positioned_x = positioned_x + x_offset
+        positioned_y = positioned_y + y_offset
       }
       let positioned : @types.Layout = {
         id: item.layout.id,
@@ -1402,7 +1584,8 @@ fn compute_inline_child(
             grand_margin.left +
             grand_layout.width +
             grand_margin.right
-          if grand_layout.height > contents_height {
+          if grand_layout.height > contents_height &&
+            not(is_ruby_annotation_child(node, grand_child)) {
             contents_height = grand_layout.height
           }
         }
@@ -1441,10 +1624,44 @@ fn compute_inline_child(
         child.style.margin,
         available_width,
       )
+      let mut child_x = inline_cursor_x + child_margin.left
+      let mut child_y = 0.0
+      if child.style.position == @types.Relative {
+        let rel_left = resolve_inset_dimension(
+          child.style.inset.left,
+          available_width,
+        )
+        let rel_right = resolve_inset_dimension(
+          child.style.inset.right,
+          available_width,
+        )
+        let rel_top = resolve_inset_dimension(
+          child.style.inset.top,
+          available_height.unwrap_or(0.0),
+        )
+        let rel_bottom = resolve_inset_dimension(
+          child.style.inset.bottom,
+          available_height.unwrap_or(0.0),
+        )
+        let x_offset = match (rel_left, rel_right) {
+          (Some(l), Some(r)) => l - r
+          (Some(l), None) => l
+          (None, Some(r)) => -r
+          _ => 0.0
+        }
+        let y_offset = match (rel_top, rel_bottom) {
+          (Some(t), Some(b)) => t - b
+          (Some(t), None) => t
+          (None, Some(b)) => -b
+          _ => 0.0
+        }
+        child_x = child_x + x_offset
+        child_y = child_y + y_offset
+      }
       let positioned_child : @types.Layout = {
         ..child_layout,
-        x: inline_cursor_x + child_margin.left,
-        y: 0.0,
+        x: child_x,
+        y: child_y,
         margin: child_margin,
       }
       children.push(positioned_child)
@@ -1455,7 +1672,76 @@ fn compute_inline_child(
         child_layout.width +
         child_margin.right
       content_width = inline_cursor_x
-      if child_layout.height > content_height {
+      if child_layout.height > content_height &&
+        not(is_ruby_annotation_child(node, child)) {
+        content_height = child_layout.height
+      }
+    } else if is_ruby_internal_container(node.id) {
+      // Ruby internal boxes can contain non-inline descendants in WPT fixtures.
+      // Keep them in-flow as inline contributions instead of dropping them.
+      let child_ctx : @types.LayoutContext = {
+        available_width,
+        available_height,
+        sizing_mode: @types.MaxContent,
+        viewport_width: available_width,
+        viewport_height: available_height.unwrap_or(0.0),
+        stretch_width: false,
+        stretch_height: false,
+      }
+      let @node.DispatchFn(dispatch_fn) = dispatch
+      let child_layout = dispatch_fn(child, child_ctx, dispatch)
+      let child_margin = @types.resolve_rect(
+        child.style.margin,
+        available_width,
+      )
+      let mut child_x = inline_cursor_x + child_margin.left
+      let mut child_y = 0.0
+      if child.style.position == @types.Relative {
+        let rel_left = resolve_inset_dimension(
+          child.style.inset.left,
+          available_width,
+        )
+        let rel_right = resolve_inset_dimension(
+          child.style.inset.right,
+          available_width,
+        )
+        let rel_top = resolve_inset_dimension(
+          child.style.inset.top,
+          available_height.unwrap_or(0.0),
+        )
+        let rel_bottom = resolve_inset_dimension(
+          child.style.inset.bottom,
+          available_height.unwrap_or(0.0),
+        )
+        let x_offset = match (rel_left, rel_right) {
+          (Some(l), Some(r)) => l - r
+          (Some(l), None) => l
+          (None, Some(r)) => -r
+          _ => 0.0
+        }
+        let y_offset = match (rel_top, rel_bottom) {
+          (Some(t), Some(b)) => t - b
+          (Some(t), None) => t
+          (None, Some(b)) => -b
+          _ => 0.0
+        }
+        child_x = child_x + x_offset
+        child_y = child_y + y_offset
+      }
+      let positioned_child : @types.Layout = {
+        ..child_layout,
+        x: child_x,
+        y: child_y,
+        margin: child_margin,
+      }
+      children.push(positioned_child)
+      inline_cursor_x = inline_cursor_x +
+        child_margin.left +
+        child_layout.width +
+        child_margin.right
+      content_width = inline_cursor_x
+      if child_layout.height > content_height &&
+        not(is_ruby_annotation_child(node, child)) {
         content_height = child_layout.height
       }
     }
@@ -1465,7 +1751,7 @@ fn compute_inline_child(
   // Calculate final width and height
   // For inline elements, content width is the sum of children widths
   // Content height is the maximum child height
-  let final_width = content_width +
+  let mut final_width = content_width +
     padding.horizontal_sum() +
     border.horizontal_sum()
   let mut final_height = content_height +
@@ -1480,17 +1766,20 @@ fn compute_inline_child(
       final_height = text_box_height
     }
   }
-  if final_height == 0.0 && node.id == "ruby" {
-    let mut has_ruby_text_child = false
-    for child in node.children {
-      if child.id == "rt" || child.id.has_prefix("rt#") {
-        has_ruby_text_child = true
-        break
-      }
-    }
-    if has_ruby_text_child {
-      final_height = if style.font_size > 0.0 { style.font_size } else { 16.0 }
-    }
+  let ruby_annotation_only_box = ruby_annotation_only(node)
+  let ruby_collapsed = id_matches_tag(node.id, "ruby") &&
+    ruby_annotation_only_should_collapse(node)
+  if ruby_collapsed {
+    final_width = padding.horizontal_sum() + border.horizontal_sum()
+    final_height = padding.vertical_sum() + border.vertical_sum()
+  } else if ruby_annotation_only_box {
+    final_height = line_height_from_style(style) +
+      padding.vertical_sum() +
+      border.vertical_sum()
+  } else if final_height == 0.0 &&
+    id_matches_tag(node.id, "ruby") &&
+    ruby_has_rt_child(node) {
+    final_height = if style.font_size > 0.0 { style.font_size } else { 16.0 }
   }
   if final_height == 0.0 && id_matches_tag(node.id, "source") {
     final_height = text_glyph_height_from_style(style)
@@ -1541,6 +1830,18 @@ fn compute_inline_child(
         (None, None) => abs_layout.y
       }
       children[idx] = { ..abs_layout, x, y }
+    }
+  }
+  if ruby_annotation_only_box && not(ruby_collapsed) {
+    for i = 0; i < children.length(); i = i + 1 {
+      let child_layout = children[i]
+      if id_matches_tag(child_layout.id, "rt") ||
+        id_matches_tag(child_layout.id, "rtc") {
+        children[i] = {
+          ..child_layout,
+          y: child_layout.y - child_layout.height,
+        }
+      }
     }
   }
 

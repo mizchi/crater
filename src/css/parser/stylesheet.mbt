@@ -386,9 +386,73 @@ fn parse_selector_list_text(
 fn split_by_comma(s : String) -> Array[String] {
   let result : Array[String] = []
   let current = StringBuilder::new()
+  let mut paren_depth = 0
+  let mut bracket_depth = 0
+  let mut in_single_quote = false
+  let mut in_double_quote = false
+  let mut escaped = false
   for i = 0; i < s.length(); i = i + 1 {
     let c = s[i].to_int().unsafe_to_char()
-    if c == ',' {
+    if escaped {
+      current.write_char(c)
+      escaped = false
+      continue
+    }
+    if c == '\\' && (in_single_quote || in_double_quote) {
+      current.write_char(c)
+      escaped = true
+      continue
+    }
+    if in_single_quote {
+      current.write_char(c)
+      if c == '\'' {
+        in_single_quote = false
+      }
+      continue
+    }
+    if in_double_quote {
+      current.write_char(c)
+      if c == '"' {
+        in_double_quote = false
+      }
+      continue
+    }
+
+    if c == '\'' {
+      in_single_quote = true
+      current.write_char(c)
+      continue
+    }
+    if c == '"' {
+      in_double_quote = true
+      current.write_char(c)
+      continue
+    }
+    if c == '(' {
+      paren_depth += 1
+      current.write_char(c)
+      continue
+    }
+    if c == ')' {
+      if paren_depth > 0 {
+        paren_depth -= 1
+      }
+      current.write_char(c)
+      continue
+    }
+    if c == '[' {
+      bracket_depth += 1
+      current.write_char(c)
+      continue
+    }
+    if c == ']' {
+      if bracket_depth > 0 {
+        bracket_depth -= 1
+      }
+      current.write_char(c)
+      continue
+    }
+    if c == ',' && paren_depth == 0 && bracket_depth == 0 {
       result.push(current.to_string())
       current.reset()
     } else {

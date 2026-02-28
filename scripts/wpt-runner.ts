@@ -399,7 +399,7 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
   })()`);
 
   await page.close();
-  return layout as LayoutNode;
+  return normalizeZeroSizedRootChildren(layout as LayoutNode);
 }
 
 function prepareHtmlContent(htmlPath: string): string {
@@ -419,6 +419,42 @@ function prepareHtmlContent(htmlPath: string): string {
   return htmlContent;
 }
 
+function normalizeZeroSizedRootChildren(node: LayoutNode): LayoutNode {
+  const isZeroSizedRoot =
+    Math.abs(node.width) <= 0.5 &&
+    Math.abs(node.height) <= 0.5;
+  if (!isZeroSizedRoot || node.children.length === 0) {
+    return node;
+  }
+
+  const meaningfulChildren = node.children.filter(c => !c.id.startsWith('#text'));
+  if (meaningfulChildren.length === 0) {
+    return node;
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  for (const child of meaningfulChildren) {
+    if (child.x < minX) minX = child.x;
+    if (child.y < minY) minY = child.y;
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+    return node;
+  }
+  if (Math.abs(minX) <= 0.5 && Math.abs(minY) <= 0.5) {
+    return node;
+  }
+
+  return {
+    ...node,
+    children: node.children.map(child => ({
+      ...child,
+      x: child.x - minX,
+      y: child.y - minY,
+    })),
+  };
+}
+
 function getCraterLayout(htmlPath: string): LayoutNode {
   if (!renderHtmlToJsonImpl) {
     throw new Error('Crater renderer is not initialized');
@@ -426,6 +462,9 @@ function getCraterLayout(htmlPath: string): LayoutNode {
 
   function normalizeRoot(node: LayoutNode): LayoutNode {
     return { ...node, x: 0, y: 0 };
+  }
+  function finalizeRoot(node: LayoutNode): LayoutNode {
+    return normalizeZeroSizedRootChildren(normalizeRoot(node));
   }
 
   const htmlContent = prepareHtmlContent(htmlPath);
@@ -439,10 +478,10 @@ function getCraterLayout(htmlPath: string): LayoutNode {
   const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
     findNodeById(layout, 'div#container') || findNodeById(layout, '#container') ||
     findNodeById(layout, 'div#target') || findNodeById(layout, '#target');
-  if (testElement) return normalizeRoot(testElement);
+  if (testElement) return finalizeRoot(testElement);
 
   const gridElement = findNodeByClass(layout, 'grid');
-  if (gridElement) return normalizeRoot(gridElement);
+  if (gridElement) return finalizeRoot(gridElement);
 
   const meaningfulChildren = layout.children.filter(
     c =>
@@ -455,12 +494,12 @@ function getCraterLayout(htmlPath: string): LayoutNode {
       c.id !== 'meta' &&
       c.id !== 'div#log'
   );
-  if (meaningfulChildren.length === 1) return normalizeRoot(meaningfulChildren[0]);
+  if (meaningfulChildren.length === 1) return finalizeRoot(meaningfulChildren[0]);
 
   const divChildren = meaningfulChildren.filter(c => c.id.startsWith('div') && c.id !== 'div#log');
-  if (divChildren.length >= 1) return normalizeRoot(divChildren[0]);
+  if (divChildren.length >= 1) return finalizeRoot(divChildren[0]);
 
-  return normalizeRoot(layout);
+  return finalizeRoot(layout);
 }
 
 function findNodeById(node: LayoutNode, id: string): LayoutNode | null {

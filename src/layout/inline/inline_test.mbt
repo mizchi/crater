@@ -729,3 +729,50 @@ test "br_after_wrapped_text_uses_last_visual_line_position" {
   inspect(result.layouts[1].x, content="24")
   inspect(result.layouts[1].y, content="19.2")
 }
+
+///|
+test "br_after_vertical_align_top_tall_inline_block_stays_near_line_top" {
+  let default_style = @style.Style::default()
+  let button_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(38.0),
+    height: @types.Length(50.0),
+    vertical_align: @style.VerticalAlign::Top,
+    contain: { ..default_style.contain, size: true },
+  }
+  let button_node = @node.Node::leaf("button", button_style)
+
+  let br_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 14.0,
+    line_height: 16.1,
+  }
+  let br_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      { min_width: 0.0, max_width: 0.0, min_height: 16.1, max_height: 16.1 }
+    },
+  }
+  let br_node = @node.Node::with_measure("br", br_style, br_measure)
+
+  let result = compute_ifc(
+    [button_node, br_node],
+    600.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].y, content="0")
+  if result.layouts[1].y >= 20.0 {
+    fail(
+      "br should stay near line top for vertical-align: top tall inline-block",
+    )
+  }
+}

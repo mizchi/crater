@@ -85,6 +85,26 @@ fn is_name_char(c : Char) -> Bool {
 }
 
 ///|
+fn is_hex_digit(c : Char) -> Bool {
+  let code = c.to_int()
+  (code >= '0'.to_int() && code <= '9'.to_int()) ||
+  (code >= 'a'.to_int() && code <= 'f'.to_int()) ||
+  (code >= 'A'.to_int() && code <= 'F'.to_int())
+}
+
+///|
+fn hex_digit_to_int(c : Char) -> Int {
+  let code = c.to_int()
+  if code >= '0'.to_int() && code <= '9'.to_int() {
+    code - '0'.to_int()
+  } else if code >= 'a'.to_int() && code <= 'f'.to_int() {
+    code - 'a'.to_int() + 10
+  } else {
+    code - 'A'.to_int() + 10
+  }
+}
+
+///|
 /// Consume whitespace
 fn Tokenizer::consume_whitespace(self : Tokenizer) -> Unit {
   while not(self.is_eof()) {
@@ -218,6 +238,31 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
           Some('\n') => {
             let _ = self.consume()
             // Line continuation
+          }
+          Some(c) if is_hex_digit(c) => {
+            let mut codepoint = 0
+            let mut count = 0
+            while not(self.is_eof()) && count < 6 {
+              match self.peek() {
+                Some(h) if is_hex_digit(h) => {
+                  codepoint = codepoint * 16 + hex_digit_to_int(h)
+                  let _ = self.consume()
+                  count += 1
+                }
+                _ => break
+              }
+            }
+            if not(self.is_eof()) {
+              match self.peek() {
+                Some(ws) if is_whitespace(ws) => {
+                  let _ = self.consume()
+                }
+                _ => ()
+              }
+            }
+            if codepoint > 0 {
+              buf.write_char(codepoint.unsafe_to_char())
+            }
           }
           Some(c) => {
             let _ = self.consume()
