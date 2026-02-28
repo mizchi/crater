@@ -1225,15 +1225,32 @@ pub fn compute_ifc(
         positioned_x = positioned_x + x_offset
         positioned_y = positioned_y + y_offset
       }
+      let is_contents_child = child.style.display == @types.Contents
       let positioned : @types.Layout = {
         id: item.layout.id,
         x: positioned_x,
         y: positioned_y,
-        width: item.layout.width,
-        height: item.layout.height,
+        width: if is_contents_child {
+          0.0
+        } else {
+          item.layout.width
+        },
+        height: if is_contents_child {
+          0.0
+        } else {
+          item.layout.height
+        },
         margin: child_margin,
-        padding: item.layout.padding,
-        border: item.layout.border,
+        padding: if is_contents_child {
+          @types.Rect::zero()
+        } else {
+          item.layout.padding
+        },
+        border: if is_contents_child {
+          @types.Rect::zero()
+        } else {
+          item.layout.border
+        },
         overflow_x: item.layout.overflow_x,
         overflow_y: item.layout.overflow_y,
         scroll_width: item.layout.scroll_width,
@@ -1267,8 +1284,17 @@ fn compute_inline_child(
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = node.style
-  let padding = @types.resolve_rect(style.padding, available_width)
-  let border = @types.resolve_rect(style.border, available_width)
+  let is_contents_display = style.display == @types.Contents
+  let padding = if is_contents_display {
+    @types.Rect::zero()
+  } else {
+    @types.resolve_rect(style.padding, available_width)
+  }
+  let border = if is_contents_display {
+    @types.Rect::zero()
+  } else {
+    @types.resolve_rect(style.border, available_width)
+  }
 
   // Handle leaf nodes with MeasureFunc (e.g., text nodes, replaced elements)
   match node.measure {

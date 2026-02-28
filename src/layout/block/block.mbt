@@ -300,6 +300,29 @@ fn flatten_first_table_child(
 }
 
 ///|
+fn is_table_run_whitespace_char(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+}
+
+///|
+fn is_whitespace_only_table_run_text(node : @node.Node) -> Bool {
+  if not(node.id.has_prefix("#text")) {
+    return false
+  }
+  match node.text {
+    Some(text) => {
+      for c in text.iter() {
+        if not(is_table_run_whitespace_char(c)) {
+          return false
+        }
+      }
+      true
+    }
+    None => true
+  }
+}
+
+///|
 fn zero_rect() -> @types.Rect[Double] {
   { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
 }
@@ -1343,6 +1366,16 @@ fn has_mixed_inline_block_content(flow_nodes : Array[@node.Node]) -> Bool {
       has_block = true
     }
     if has_inline && has_block {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn has_table_internal_flow_content(flow_nodes : Array[@node.Node]) -> Bool {
+  for node in flow_nodes {
+    if is_table_internal_flow_node(node) {
       return true
     }
   }
@@ -2928,13 +2961,18 @@ fn compute_with_collapse(
                         let mut j = i
                         while j < flow_nodes.length() {
                           let run_child = flow_nodes[j]
-                          if not(is_table_internal_flow_node(run_child)) {
-                            break
+                          if is_table_internal_flow_node(run_child) {
+                            run_nodes.push(run_child)
+                            run_indices.push(run_index)
+                            run_index = run_index + 1
+                            j = j + 1
+                            continue
                           }
-                          run_nodes.push(run_child)
-                          run_indices.push(run_index)
-                          run_index = run_index + 1
-                          j = j + 1
+                          if is_whitespace_only_table_run_text(run_child) {
+                            j = j + 1
+                            continue
+                          }
+                          break
                         }
                         if run_nodes.length() > 0 {
                           let (run_result, _) = compute_anonymous_table_run(
@@ -3309,14 +3347,17 @@ fn compute_with_collapse(
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
   // Floats require float-context placement and cannot be handled by pure IFC path.
+  let has_table_internal_flow = has_table_internal_flow_content(flow_nodes)
   let use_ifc = (
       @inline.should_establish_ifc(flow_nodes) ||
       should_establish_ifc_with_contents(flow_nodes)
     ) &&
     float_nodes.length() == 0 &&
-    not(multicol_enabled)
+    not(multicol_enabled) &&
+    not(has_table_internal_flow)
   // Check for mixed inline/block content (needs anonymous block boxes)
-  let has_mixed = has_mixed_inline_block_content(flow_nodes)
+  let has_mixed = not(has_table_internal_flow) &&
+    has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
     let width_is_fit_content = match style.width {
       @types.FitContent(_) => true
@@ -3840,9 +3881,15 @@ fn compute_with_collapse(
       let run_indices : Array[Int] = []
       let mut run_end = flow_i
       while run_end < flow_nodes.length() &&
-            is_table_internal_flow_node(flow_nodes[run_end]) {
-        run_nodes.push(flow_nodes[run_end])
-        run_indices.push(flow_indices[run_end])
+            (
+              is_table_internal_flow_node(flow_nodes[run_end]) ||
+              is_whitespace_only_table_run_text(flow_nodes[run_end])
+            ) {
+        let run_child = flow_nodes[run_end]
+        if is_table_internal_flow_node(run_child) {
+          run_nodes.push(run_child)
+          run_indices.push(flow_indices[run_end])
+        }
         run_end = run_end + 1
       }
       let (first_result, run_override) = compute_anonymous_table_run(
@@ -3979,7 +4026,12 @@ fn compute_with_collapse(
         keyword_padding.horizontal_sum() -
         keyword_border.horizontal_sum()
       let keyword_height_for_ctx : Double? = match keyword_style.display {
-        @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
+        @types.Flex
+        | @types.InlineFlex
+        | @types.Grid
+        | @types.InlineGrid
+        | @types.Table
+        | @types.InlineTable =>
           match keyword_style.height {
             @types.Auto =>
               if keyword_style.writing_mode.is_vertical() {
@@ -4005,7 +4057,12 @@ fn compute_with_collapse(
         stretch_height: false,
       }
       match keyword_style.display {
-        @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
+        @types.Flex
+        | @types.InlineFlex
+        | @types.Grid
+        | @types.InlineGrid
+        | @types.Table
+        | @types.InlineTable =>
           keyword_dispatch_fn(keyword_child, keyword_ctx, dispatch).width
         _ =>
           compute_with_collapse(keyword_child, keyword_ctx, warnings, dispatch).layout.width
@@ -4077,11 +4134,16 @@ fn compute_with_collapse(
         )
       _ => child
     }
-    // For BFC-establishing children (flex/grid) with auto height, don't pass available_height
+    // For BFC-establishing children (flex/grid/table) with auto height, don't pass available_height
     // This allows them to size to their content rather than stretching
     // Use float_available_height which accounts for float's own explicit height
     let child_height_for_ctx : Double? = match child_style.display {
-      @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
+      @types.Flex
+      | @types.InlineFlex
+      | @types.Grid
+      | @types.InlineGrid
+      | @types.Table
+      | @types.InlineTable =>
         match child_style.height {
           @types.Auto =>
             if child_style.writing_mode.is_vertical() {
@@ -4106,11 +4168,15 @@ fn compute_with_collapse(
       stretch_width: false,
       stretch_height: false,
     }
-    // Use dispatch for flex/grid elements, block layout for others
+    // Use dispatch for flex/grid/table elements, block layout for others
     let @node.DispatchFn(dispatch_fn) = dispatch
     let child_inner = match child_style.display {
-      @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-        dispatch_fn(child_for_layout, child_ctx, dispatch)
+      @types.Flex
+      | @types.InlineFlex
+      | @types.Grid
+      | @types.InlineGrid
+      | @types.Table
+      | @types.InlineTable => dispatch_fn(child_for_layout, child_ctx, dispatch)
       _ =>
         compute_with_collapse(child_for_layout, child_ctx, warnings, dispatch).layout
     }
@@ -4770,15 +4836,10 @@ fn compute_with_collapse(
     let should_offset_for_containment = parent_containment_abs_cb &&
       not(establishes_abs_cb) &&
       (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
-    let adjusted_for_no_principal = if is_display_contents &&
-      (positioned_x != 0.0 || legend_border_overlay_y != 0.0) {
-      let shifted_children : Array[@types.Layout] = []
-      for grand_child in adjusted_layout.children {
-        shifted_children.push(
-          shift_layout_subtree(grand_child, positioned_x, adjusted_layout.y),
-        )
-      }
-      { ..adjusted_layout, children: shifted_children }
+    let adjusted_for_no_principal = if is_display_contents {
+      // display: contents descendants are already laid out in the local flow
+      // coordinate space; additional subtree shifting double-counts offsets.
+      adjusted_layout
     } else if should_offset_no_principal {
       shift_out_of_flow_descendants(
         adjusted_layout,

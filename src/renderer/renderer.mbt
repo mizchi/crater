@@ -3521,8 +3521,27 @@ fn element_to_node_with_styles(
     css_vars,
   )
 
-  // Handle table cell rowspan/colspan attributes
   let cell_tag = elem.tag.to_lower()
+  // Handle table attributes that affect table formatting context.
+  let style = if cell_tag == "table" {
+    let border_spacing = match elem.attributes.get("cellspacing") {
+      Some(val) => {
+        let n = @strconv.parse_double(val) catch {
+          _ => computed_style.border_spacing
+        }
+        if n >= 0.0 {
+          n
+        } else {
+          computed_style.border_spacing
+        }
+      }
+      None => computed_style.border_spacing
+    }
+    { ..computed_style, border_spacing, }
+  } else {
+    computed_style
+  }
+  // Handle table cell rowspan/colspan attributes
   let style = if cell_tag == "td" || cell_tag == "th" {
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
@@ -3546,9 +3565,9 @@ fn element_to_node_with_styles(
       }
       None => 1
     }
-    { ..computed_style, rowspan, colspan }
+    { ..style, rowspan, colspan }
   } else {
-    computed_style
+    style
   }
   let own_counters = compute_element_own_counters(
     incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
@@ -3783,8 +3802,25 @@ fn element_to_node_with_styles_internal(
     computed_style
   }
 
-  // Handle table cell rowspan/colspan attributes
   let cell_tag = elem.tag.to_lower()
+  // Handle table attributes that affect table formatting context.
+  let style = if cell_tag == "table" {
+    let border_spacing = match elem.attributes.get("cellspacing") {
+      Some(val) => {
+        let n = @strconv.parse_double(val) catch { _ => style.border_spacing }
+        if n >= 0.0 {
+          n
+        } else {
+          style.border_spacing
+        }
+      }
+      None => style.border_spacing
+    }
+    { ..style, border_spacing, }
+  } else {
+    style
+  }
+  // Handle table cell rowspan/colspan attributes
   let style = if cell_tag == "td" || cell_tag == "th" {
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
@@ -5205,7 +5241,9 @@ fn compute_element_style_indexed(
   // Preserve table layout
   let tag = selector_elem.tag_name
   if is_table_element(tag) {
-    if not(is_table_display(style.display)) {
+    let keeps_non_table_display = style.display == @types.Contents ||
+      style.display == @types.Display::None
+    if not(is_table_display(style.display)) && not(keeps_non_table_display) {
       style = { ..style, display: ua_style.display }
     }
   }

@@ -116,6 +116,139 @@ priv struct TableRowFlowItem {
 }
 
 ///|
+/// A table child flattened through display:contents wrappers.
+priv struct FlattenedContentsChild {
+  child : @node.Node
+  wrappers : Array[@node.Node]
+}
+
+///|
+/// Entry for table child processing and mapping back to original index.
+priv struct TableChildEntry {
+  child : @node.Node
+  index : Int
+  wrappers : Array[@node.Node]
+}
+
+///|
+/// Clone wrapper path with one additional display:contents wrapper.
+fn push_table_wrapper_path(
+  wrappers : Array[@node.Node],
+  wrapper : @node.Node,
+) -> Array[@node.Node] {
+  let next : Array[@node.Node] = []
+  for existing in wrappers {
+    next.push(existing)
+  }
+  next.push(wrapper)
+  next
+}
+
+///|
+/// Flatten to the first non-display:none descendant through display:contents.
+fn flatten_first_non_none_contents_child(
+  node : @node.Node,
+  wrappers : Array[@node.Node],
+) -> FlattenedContentsChild? {
+  if node.style.display == @types.Display::None {
+    return None
+  }
+  if node.style.display != @types.Contents {
+    if is_ignorable_table_text_node(node) {
+      return None
+    }
+    return Some({ child: node, wrappers })
+  }
+  let next_wrappers = push_table_wrapper_path(wrappers, node)
+  for child in node.children {
+    match flatten_first_non_none_contents_child(child, next_wrappers) {
+      Some(flattened) => return Some(flattened)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+/// Append children with display:contents descendants flattened in place.
+fn append_table_effective_children(
+  node : @node.Node,
+  out : Array[@node.Node],
+) -> Unit {
+  if node.style.display == @types.Display::None {
+    return ()
+  }
+  if node.style.display == @types.Contents {
+    for child in node.children {
+      append_table_effective_children(child, out)
+    }
+    return ()
+  }
+  out.push(node)
+}
+
+///|
+/// Flatten one container level for table model processing.
+fn collect_table_effective_children(node : @node.Node) -> Array[@node.Node] {
+  let children : Array[@node.Node] = []
+  for child in node.children {
+    append_table_effective_children(child, children)
+  }
+  children
+}
+
+///|
+fn is_table_whitespace_char(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+}
+
+///|
+fn is_whitespace_only_table_text(text : String) -> Bool {
+  for c in text.iter() {
+    if not(is_table_whitespace_char(c)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn zero_layout_rect() -> @types.Rect[Double] {
+  { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+}
+
+///|
+/// Wrap a computed layout with display:contents wrapper nodes.
+fn wrap_layout_with_contents_wrappers(
+  child_layout : @types.Layout,
+  wrappers : Array[@node.Node],
+) -> @types.Layout {
+  let mut wrapped = child_layout
+  for i = wrappers.length(); i > 0; i = i - 1 {
+    let wrapper = wrappers[i - 1]
+    let children : Array[@types.Layout] = []
+    children.push(wrapped)
+    wrapped = {
+      id: wrapper.id,
+      x: 0.0,
+      y: 0.0,
+      width: 0.0,
+      height: 0.0,
+      margin: zero_layout_rect(),
+      padding: zero_layout_rect(),
+      border: zero_layout_rect(),
+      overflow_x: wrapper.style.overflow_x,
+      overflow_y: wrapper.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children,
+      text: wrapper.text,
+    }
+  }
+  wrapped
+}
+
+///|
 /// Build an occupancy grid for the table
 /// Returns: (grid, num_columns) where grid maps (row, col) -> CellOccupancy
 fn build_occupancy_grid(
@@ -193,16 +326,10 @@ fn collect_column_widths(
   parent_width : Double,
 ) -> Array[Double?] {
   let widths : Array[Double?] = []
-  for child in table_node.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
+  for child in collect_table_effective_children(table_node) {
     if is_table_column_group(child.style.display) {
       // Collect columns from colgroup
-      for col in child.children {
-        if col.style.display == @types.Display::None {
-          continue
-        }
+      for col in collect_table_effective_children(child) {
         if is_table_column(col.style.display) {
           let col_width = resolve_col_width(col, parent_width)
           widths.push(col_width)
@@ -247,12 +374,10 @@ fn column_start_x(
 /// Get the first row in visual order (thead > tbody > tfoot > direct rows)
 /// This is used for table-layout: fixed
 fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
+  let effective_children = collect_table_effective_children(table_node)
   // Priority: thead > direct rows > tbody > tfoot
   // First check for thead
-  for child in table_node.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
+  for child in effective_children {
     if child.style.display == @types.TableHeaderGroup {
       // Found thead, return first row
       let rows = normalize_row_group_rows(child)
@@ -262,10 +387,7 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
     }
   }
   // Check for direct rows or tbody
-  for child in table_node.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
+  for child in effective_children {
     if is_table_row(child.style.display) {
       return Some(child)
     }
@@ -277,10 +399,7 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
     }
   }
   // Check for tfoot
-  for child in table_node.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
+  for child in effective_children {
     if child.style.display == @types.TableFooterGroup {
       let rows = normalize_row_group_rows(child)
       if rows.length() > 0 {
@@ -294,7 +413,13 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
 ///|
 /// Table row model ignores direct whitespace text children.
 fn is_ignorable_table_text_node(node : @node.Node) -> Bool {
-  node.id.has_prefix("#text")
+  if not(node.id.has_prefix("#text")) {
+    return false
+  }
+  match node.text {
+    Some(text) => is_whitespace_only_table_text(text)
+    None => true
+  }
 }
 
 ///|
@@ -322,10 +447,7 @@ fn collect_table_rows(table_node : @node.Node) -> Array[@node.Node] {
     pending_cells = []
     anon_row_index = anon_row_index + 1
   }
-  for child in table_node.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
+  for child in collect_table_effective_children(table_node) {
     if is_ignorable_table_text_node(child) {
       continue
     }
@@ -360,36 +482,21 @@ fn normalize_row_group_rows(row_group : @node.Node) -> Array[@node.Node] {
     if pending_non_rows.length() == 0 {
       return ()
     }
-    let anon_cell_style : @style.Style = {
-      ..@style.Style::default(),
-      display: @types.TableCell,
-    }
     let anon_row_style : @style.Style = {
       ..@style.Style::default(),
       display: @types.TableRow,
     }
-    let anon_cells : Array[@node.Node] = []
-    anon_cells.push(
-      @node.Node::new(
-        "__anon-table-cell-rowgrp-" + anon_row_index.to_string(),
-        anon_cell_style,
-        pending_non_rows,
-      ),
-    )
     rows.push(
       @node.Node::new(
         "__anon-table-rowgrp-row-" + anon_row_index.to_string(),
         anon_row_style,
-        anon_cells,
+        pending_non_rows,
       ),
     )
     pending_non_rows = []
     anon_row_index = anon_row_index + 1
   }
   for child in row_group.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
     if is_ignorable_table_text_node(child) {
       continue
     }
@@ -476,9 +583,13 @@ fn is_in_flow_intrinsic_child(child : @node.Node) -> Bool {
 /// Measure intrinsic width of a cell's content
 fn measure_cell_content_width(cell : @node.Node) -> Double {
   let style = cell.style
-  let padding = @types.resolve_rect_intrinsic(style.padding)
-  let border = @types.resolve_rect_intrinsic(style.border)
-  let box_extra = padding.horizontal_sum() + border.horizontal_sum()
+  let box_extra = if style.display == @types.Contents {
+    0.0
+  } else {
+    let padding = @types.resolve_rect_intrinsic(style.padding)
+    let border = @types.resolve_rect_intrinsic(style.border)
+    padding.horizontal_sum() + border.horizontal_sum()
+  }
 
   // If cell has explicit width, use it
   match style.width {
@@ -562,9 +673,13 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
   }
 
   // Measure children
-  let padding = @types.resolve_rect_intrinsic(style.padding)
-  let border = @types.resolve_rect_intrinsic(style.border)
-  let box_extra = padding.horizontal_sum() + border.horizontal_sum()
+  let box_extra = if style.display == @types.Contents {
+    0.0
+  } else {
+    let padding = @types.resolve_rect_intrinsic(style.padding)
+    let border = @types.resolve_rect_intrinsic(style.border)
+    padding.horizontal_sum() + border.horizontal_sum()
+  }
   if style.writing_mode.is_vertical() &&
     has_vertical_inline_flow_children(node.children) {
     let mut total_columns_width = 0.0
@@ -655,15 +770,26 @@ fn normalize_row_cells(row : @node.Node) -> Array[@node.Node] {
     anon_cell_index = anon_cell_index + 1
   }
   for child in row.children {
-    if child.style.display == @types.Display::None {
-      continue
-    }
     if is_ignorable_table_text_node(child) {
       continue
     }
     if is_table_cell(child.style.display) {
       flush_pending_non_cells()
       cells.push(child)
+    } else if child.style.display == @types.Contents {
+      match flatten_first_non_none_contents_child(child, []) {
+        Some(flattened) =>
+          if is_table_cell(flattened.child.style.display) {
+            // Keep display:contents wrapper in the output tree, but treat each
+            // wrapped table-cell branch as its own anonymous cell boundary.
+            flush_pending_non_cells()
+            pending_non_cells.push(child)
+            flush_pending_non_cells()
+          } else {
+            pending_non_cells.push(child)
+          }
+        None => pending_non_cells.push(child)
+      }
     } else {
       pending_non_cells.push(child)
     }
@@ -2152,23 +2278,39 @@ pub fn compute(
   // Collect captions and other children separately for caption-side ordering
   // caption-side: top captions go before rows, bottom captions go after
   // Table's caption-side is inherited by captions
-  let top_captions : Array[(@node.Node, Int)] = [] // (node, original_index)
-  let bottom_captions : Array[(@node.Node, Int)] = []
-  let row_children : Array[(@node.Node, Int)] = [] // rows, row groups, cols
+  let top_captions : Array[TableChildEntry] = []
+  let bottom_captions : Array[TableChildEntry] = []
+  let row_children : Array[TableChildEntry] = [] // rows, row groups, cols
+  let effective_child_by_index : Map[Int, @node.Node] = {}
   for i = 0; i < node.children.length(); i = i + 1 {
-    let child = node.children[i]
-    if child.style.display == @types.TableCaption {
-      // Use caption's own caption-side, or inherit from table
-      let caption_side = child.style.caption_side
-      // Note: CSS cascade handles inheritance, so if caption has its own value, use it
-      // Otherwise it inherits from table (which is already computed)
-      if caption_side == @style.CaptionSide::Bottom {
-        bottom_captions.push((child, i))
-      } else {
-        top_captions.push((child, i))
+    let original_child = node.children[i]
+    match flatten_first_non_none_contents_child(original_child, []) {
+      Some(flattened) => {
+        let child = flattened.child
+        let entry : TableChildEntry = {
+          child,
+          index: i,
+          wrappers: flattened.wrappers,
+        }
+        effective_child_by_index[i] = child
+        if child.style.display == @types.TableCaption {
+          // Use caption's own caption-side, or inherit from table
+          let caption_side = child.style.caption_side
+          // Note: CSS cascade handles inheritance, so if caption has its own value, use it
+          // Otherwise it inherits from table (which is already computed)
+          if caption_side == @style.CaptionSide::Bottom {
+            bottom_captions.push(entry)
+          } else {
+            top_captions.push(entry)
+          }
+        } else {
+          row_children.push(entry)
+        }
       }
-    } else {
-      row_children.push((child, i))
+      None => {
+        effective_child_by_index[i] = original_child
+        row_children.push({ child: original_child, index: i, wrappers: [] })
+      }
     }
   }
 
@@ -2181,9 +2323,13 @@ pub fn compute(
 
   // First: layout top captions
   for entry in top_captions {
-    let (child, idx) = entry
+    let child = entry.child
+    let idx = entry.index
     if child.style.display == @types.Display::None {
-      layout_map[idx] = create_zero_layout(child)
+      layout_map[idx] = wrap_layout_with_contents_wrappers(
+        create_zero_layout(child),
+        entry.wrappers,
+      )
       continue
     }
     if child.style.position == @types.Absolute ||
@@ -2194,7 +2340,10 @@ pub fn compute(
         sizing_mode: @types.MaxContent,
       }
       let caption_layout = dispatch_fn(child, out_of_flow_caption_ctx, dispatch)
-      layout_map[idx] = caption_layout
+      layout_map[idx] = wrap_layout_with_contents_wrappers(
+        caption_layout,
+        entry.wrappers,
+      )
       continue
     }
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
@@ -2204,7 +2353,10 @@ pub fn compute(
       y: y_offset,
     }
     y_offset = y_offset + caption_layout.height
-    layout_map[idx] = positioned_caption
+    layout_map[idx] = wrap_layout_with_contents_wrappers(
+      positioned_caption,
+      entry.wrappers,
+    )
   }
 
   // Add border-spacing before rows
@@ -2223,20 +2375,34 @@ pub fn compute(
   if row_count == 0 {
     // No table rows: lay out non-table children as an anonymous block flow.
     let anon_children : Array[@node.Node] = []
-    let anon_indices : Array[Int] = []
+    let anon_entries : Array[TableChildEntry] = []
     for entry in row_children {
-      let (child, idx) = entry
+      let child = entry.child
+      let idx = entry.index
+      if is_ignorable_table_text_node(child) {
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          create_zero_layout(child),
+          entry.wrappers,
+        )
+        continue
+      }
       if child.style.display == @types.Display::None {
-        layout_map[idx] = create_zero_layout(child)
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          create_zero_layout(child),
+          entry.wrappers,
+        )
         continue
       }
       if is_table_column_group(child.style.display) ||
         is_table_column(child.style.display) {
-        layout_map[idx] = create_zero_layout(child)
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          create_zero_layout(child),
+          entry.wrappers,
+        )
         continue
       }
       anon_children.push(child)
-      anon_indices.push(idx)
+      anon_entries.push(entry)
     }
     if anon_children.length() > 0 {
       has_anon_flow_children = true
@@ -2258,20 +2424,29 @@ pub fn compute(
         stretch_height: false,
       }
       let anon_layout = dispatch_fn(anon_node, anon_ctx, dispatch)
-      for i = 0; i < anon_indices.length(); i = i + 1 {
+      for i = 0; i < anon_entries.length(); i = i + 1 {
+        let entry = anon_entries[i]
         if i < anon_layout.children.length() {
           let child_layout = anon_layout.children[i]
-          layout_map[anon_indices[i]] = {
-            ..child_layout,
-            x: row_x_offset + child_layout.x,
-            y: y_offset + child_layout.y,
-          }
+          layout_map[entry.index] = wrap_layout_with_contents_wrappers(
+            {
+              ..child_layout,
+              x: row_x_offset + child_layout.x,
+              y: y_offset + child_layout.y,
+            },
+            entry.wrappers,
+          )
+        } else {
+          layout_map[entry.index] = wrap_layout_with_contents_wrappers(
+            create_zero_layout(entry.child),
+            entry.wrappers,
+          )
         }
       }
       y_offset = y_offset + anon_layout.height
     }
   } else {
-    let mut pending_direct_cells : Array[(@node.Node, Int)] = []
+    let mut pending_direct_cells : Array[(@node.Node, Int, Array[@node.Node])] = []
     let mut first_footer_bucket_taken = false
     let mut table_col_idx = 0
     fn flush_pending_direct_cells() -> Unit {
@@ -2286,7 +2461,7 @@ pub fn compute(
       }
       let anon_row_children : Array[@node.Node] = []
       for entry in pending_direct_cells {
-        let (cell, _) = entry
+        let (cell, _, _) = entry
         anon_row_children.push(cell)
       }
       let anon_row = @node.Node::new(
@@ -2309,7 +2484,7 @@ pub fn compute(
       )
       let run_indices : Array[Int] = []
       for i = 0; i < pending_direct_cells.length(); i = i + 1 {
-        let (cell, idx) = pending_direct_cells[i]
+        let (cell, idx, wrappers) = pending_direct_cells[i]
         run_indices.push(idx)
         if i < row_layout.children.length() {
           let cell_layout = row_layout.children[i]
@@ -2318,13 +2493,19 @@ pub fn compute(
             cell_layout.width,
             cell_layout.height,
           )
-          layout_map[idx] = {
-            ..cell_layout,
-            x: row_x_offset + cell_layout.x + rel_x,
-            y: y_offset + cell_layout.y + rel_y,
-          }
+          layout_map[idx] = wrap_layout_with_contents_wrappers(
+            {
+              ..cell_layout,
+              x: row_x_offset + cell_layout.x + rel_x,
+              y: y_offset + cell_layout.y + rel_y,
+            },
+            wrappers,
+          )
         } else {
-          layout_map[idx] = create_zero_layout(cell)
+          layout_map[idx] = wrap_layout_with_contents_wrappers(
+            create_zero_layout(cell),
+            wrappers,
+          )
         }
       }
       let advance = row_layout.height + border_spacing
@@ -2335,14 +2516,25 @@ pub fn compute(
     }
 
     for entry in row_children {
-      let (child, idx) = entry
+      let child = entry.child
+      let idx = entry.index
+      if is_ignorable_table_text_node(child) {
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          create_zero_layout(child),
+          entry.wrappers,
+        )
+        continue
+      }
       if child.style.display == @types.Display::None {
         flush_pending_direct_cells()
-        layout_map[idx] = create_zero_layout(child)
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          create_zero_layout(child),
+          entry.wrappers,
+        )
         continue
       }
       if is_table_cell(child.style.display) {
-        pending_direct_cells.push((child, idx))
+        pending_direct_cells.push((child, idx, entry.wrappers))
       } else if is_table_row(child.style.display) {
         flush_pending_direct_cells()
         let base_y = y_offset
@@ -2374,7 +2566,10 @@ pub fn compute(
         let indices : Array[Int] = [idx]
         let advance = row_layout.height + border_spacing
         y_offset = y_offset + row_layout.height + border_spacing
-        layout_map[idx] = positioned_row
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          positioned_row,
+          entry.wrappers,
+        )
         row_flow_items.push({ indices, base_y, advance, bucket: 1 })
         global_row_idx = global_row_idx + 1
       } else if is_table_row_group(child.style.display) {
@@ -2484,7 +2679,10 @@ pub fn compute(
         let indices : Array[Int] = [idx]
         let advance = group_height + border_spacing
         y_offset = y_offset + group_height + border_spacing
-        layout_map[idx] = group_layout
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          group_layout,
+          entry.wrappers,
+        )
         row_flow_items.push({ indices, base_y, advance, bucket })
       } else if is_table_column_group(child.style.display) {
         flush_pending_direct_cells()
@@ -2492,11 +2690,7 @@ pub fn compute(
         // These are placeholder layouts that will be updated after we know table height
         let col_layouts : Array[@types.Layout] = []
         let mut col_x = 0.0
-        for col in child.children {
-          if col.style.display == @types.Display::None {
-            col_layouts.push(create_zero_layout(col))
-            continue
-          }
+        for col in collect_table_effective_children(child) {
           if is_table_column(col.style.display) {
             let col_width = if table_col_idx < column_widths.length() {
               column_widths[table_col_idx]
@@ -2560,7 +2754,10 @@ pub fn compute(
           children: col_layouts,
           text: child.text,
         }
-        layout_map[idx] = colgroup_layout
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          colgroup_layout,
+          entry.wrappers,
+        )
       } else if is_table_column(child.style.display) {
         flush_pending_direct_cells()
         // Standalone col element (outside colgroup)
@@ -2575,27 +2772,33 @@ pub fn compute(
           top: 0.0,
           bottom: 0.0,
         }
-        layout_map[idx] = {
-          id: child.id,
-          x: column_start_x(column_widths, table_col_idx, border_spacing),
-          y: 0.0,
-          width: col_width,
-          height: 0.0,
-          margin: zero_rect,
-          padding: zero_rect,
-          border: zero_rect,
-          overflow_x: @types.Visible,
-          overflow_y: @types.Visible,
-          scroll_width: 0.0,
-          scroll_height: 0.0,
-          children: [],
-          text: child.text,
-        }
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          {
+            id: child.id,
+            x: column_start_x(column_widths, table_col_idx, border_spacing),
+            y: 0.0,
+            width: col_width,
+            height: 0.0,
+            margin: zero_rect,
+            padding: zero_rect,
+            border: zero_rect,
+            overflow_x: @types.Visible,
+            overflow_y: @types.Visible,
+            scroll_width: 0.0,
+            scroll_height: 0.0,
+            children: [],
+            text: child.text,
+          },
+          entry.wrappers,
+        )
         table_col_idx = table_col_idx + 1
       } else {
         flush_pending_direct_cells()
         // Other children: create zero layout
-        layout_map[idx] = create_zero_layout(child)
+        layout_map[idx] = wrap_layout_with_contents_wrappers(
+          create_zero_layout(child),
+          entry.wrappers,
+        )
       }
     }
     flush_pending_direct_cells()
@@ -2644,9 +2847,13 @@ pub fn compute(
 
   // Third: layout bottom captions
   for entry in bottom_captions {
-    let (child, idx) = entry
+    let child = entry.child
+    let idx = entry.index
     if child.style.display == @types.Display::None {
-      layout_map[idx] = create_zero_layout(child)
+      layout_map[idx] = wrap_layout_with_contents_wrappers(
+        create_zero_layout(child),
+        entry.wrappers,
+      )
       continue
     }
     if child.style.position == @types.Absolute ||
@@ -2657,7 +2864,10 @@ pub fn compute(
         sizing_mode: @types.MaxContent,
       }
       let caption_layout = dispatch_fn(child, out_of_flow_caption_ctx, dispatch)
-      layout_map[idx] = caption_layout
+      layout_map[idx] = wrap_layout_with_contents_wrappers(
+        caption_layout,
+        entry.wrappers,
+      )
       continue
     }
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
@@ -2667,7 +2877,10 @@ pub fn compute(
       y: y_offset,
     }
     y_offset = y_offset + caption_layout.height
-    layout_map[idx] = positioned_caption
+    layout_map[idx] = wrap_layout_with_contents_wrappers(
+      positioned_caption,
+      entry.wrappers,
+    )
   }
 
   // Calculate table height
@@ -2709,10 +2922,13 @@ pub fn compute(
   // Also update colgroup/col heights now that we know the table content height
   let final_child_layouts : Array[@types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
-    let original_child = node.children[i]
+    let effective_child = match effective_child_by_index.get(i) {
+      Some(child) => child
+      None => node.children[i]
+    }
     match layout_map.get(i) {
       Some(layout) =>
-        if is_table_column_group(original_child.style.display) {
+        if is_table_column_group(effective_child.style.display) {
           // This might be a colgroup - update its height and children's heights
           let updated_col_children : Array[@types.Layout] = []
           for col_layout in layout.children {
@@ -2731,7 +2947,7 @@ pub fn compute(
             height: row_content_height,
             children: updated_col_children,
           })
-        } else if is_table_column(original_child.style.display) {
+        } else if is_table_column(effective_child.style.display) {
           // Standalone col element
           final_child_layouts.push({ ..layout, height: row_content_height })
         } else {
