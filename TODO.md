@@ -1,6 +1,32 @@
 # TODO
 
-## css-flexbox WPT 進捗（2026-02-21）
+## WPT サポート状況（2026-02-28）
+
+- 実測コマンド: `npx tsx scripts/update-wpt-readme.ts`
+- 全体: `1217 / 1446 passed`（`84.2%`）
+- 主要モジュール:
+  - `css-contain`: `303 / 303`（`100.0%`）
+  - `css-display`: `58 / 79`（`73.4%`）
+  - `css-flexbox`: `271 / 289`（`93.8%`）
+  - `css-overflow`: `143 / 243`（`58.8%`）
+  - `css-align`: `18 / 44`（`40.9%`）
+  - `css-tables`: `15 / 32`（`46.9%`）
+
+### 今回反映した対応
+
+- `display-contents` の table クラスターは pass:
+  - `display-contents-dynamic-table-001-inline.html`
+  - `display-contents-dynamic-table-001-none.html`
+  - `display-contents-dynamic-table-002-inline.html`
+  - `display-contents-dynamic-table-002-none.html`
+  - `display-contents-table-001.html`
+  - `display-contents-table-002.html`
+- 直近の優先候補:
+  - `css-overflow` の残件（`100 failed`）
+  - `css-align` の残件（`26 failed`）
+  - `css-tables` の残件（`17 failed`）
+
+## css-flexbox WPT 進捗（2026-02-21, 履歴）
 
 - 現在: `278 / 289 passed`（`11 failed`）
 - 今回の更新: `270 / 289` → `278 / 289`（+8）
@@ -28,7 +54,9 @@
 - [ ] `table-with-infinite-max-intrinsic-width.html`
 - [ ] `text-overflow-on-flexbox-001.html`
 
-## WPT 伸び代メモ（2026-02-27）
+## WPT 伸び代メモ（2026-02-27, 履歴）
+
+- 注: この時点では `css-contain` を次ターゲットとしていたが、2026-02-28 時点で `303 / 303 passed` まで到達済み。
 
 - 全体: `1064 / 1446 passed`（`382 failed`）
 - 失敗上位モジュール:
