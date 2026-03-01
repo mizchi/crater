@@ -644,6 +644,51 @@ test "contain_size_multicol_fragment_union_matches_browser_rects" {
 }
 
 ///|
+test "wpt_column_scroll_marker_004_fieldset_multicol_fragments" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  #container {
+    #|    overflow: hidden;
+    #|    columns: 3;
+    #|    column-fill: auto;
+    #|    gap: 0;
+    #|    height: 50px;
+    #|    margin: 0;
+    #|    border: 15px solid green;
+    #|    padding: 0;
+    #|    scroll-marker-group: before;
+    #|    background: red;
+    #|  }
+    #|  #container::scroll-marker-group {
+    #|    display: flex;
+    #|    height: 20px;
+    #|    background: red;
+    #|  }
+    #|  #container::column::scroll-marker {
+    #|    display: flex;
+    #|    width: 20px;
+    #|    height: 100%;
+    #|    background: green;
+    #|    content: "";
+    #|  }
+    #|</style>
+    #|<div style="width:100px; height:100px; background:red;">
+    #|  <fieldset id="container">
+    #|    <legend style="width:50px; height:15px; background:green;"></legend>
+    #|    <div style="height:210px; background:green;"></div>
+    #|  </fieldset>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let wrapper = layout.children[0]
+  let container = wrapper.children[0]
+  let content = container.children[1]
+  inspect(container.id, content="fieldset#container")
+  inspect(content.width, content="116.66666666666666")
+  inspect(content.height, content="50")
+}
+
+///|
 test "contain_size_multicol_intrinsic_width_in_flex_includes_gaps" {
   let html_str =
     #|<!DOCTYPE html>

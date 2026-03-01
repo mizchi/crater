@@ -2336,12 +2336,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
       _available_width : Double,
       _available_height : Double,
     ) -> @types.IntrinsicSize {
-      {
-        min_width: 96.0,
-        max_width: 96.0,
-        min_height: 20.0,
-        max_height: 20.0,
-      }
+      { min_width: 96.0, max_width: 96.0, min_height: 20.0, max_height: 20.0 }
     },
   }
   let text_b_measure : @types.MeasureFunc = {
@@ -2349,12 +2344,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
       _available_width : Double,
       _available_height : Double,
     ) -> @types.IntrinsicSize {
-      {
-        min_width: 104.0,
-        max_width: 104.0,
-        min_height: 20.0,
-        max_height: 20.0,
-      }
+      { min_width: 104.0, max_width: 104.0, min_height: 20.0, max_height: 20.0 }
     },
   }
   let br_measure : @types.MeasureFunc = {
@@ -2362,12 +2352,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
       _available_width : Double,
       _available_height : Double,
     ) -> @types.IntrinsicSize {
-      {
-        min_width: 0.0,
-        max_width: 0.0,
-        min_height: 20.0,
-        max_height: 20.0,
-      }
+      { min_width: 0.0, max_width: 0.0, min_height: 20.0, max_height: 20.0 }
     },
   }
 
@@ -2409,4 +2394,52 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
   inspect(layout.children[1].y, content="0")
   inspect(layout.children[6].x, content="0")
   inspect(layout.children[6].y, content="0")
+}
+
+///|
+test "fieldset_multicol_fragments_non_legend_child" {
+  let default_style = @style.Style::default()
+  let legend = @node.Node::leaf("legend", {
+    ..default_style,
+    width: @types.Length(54.0),
+    height: @types.Length(15.0),
+  })
+  let content = @node.Node::leaf("div", {
+    ..default_style,
+    height: @types.Length(210.0),
+  })
+  let root = @node.Node::new(
+    "fieldset#container",
+    {
+      ..default_style,
+      width: @types.Length(100.0),
+      height: @types.Length(80.0),
+      box_sizing: @types.BorderBox,
+      border: {
+        top: @types.Length(15.0),
+        right: @types.Length(15.0),
+        bottom: @types.Length(15.0),
+        left: @types.Length(15.0),
+      },
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      column_count: Some(3),
+      column_gap: @types.Length(0.0),
+      column_gap_is_normal: false,
+      column_fill: @style.ColumnFill::Auto,
+    },
+    [legend, content],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(100.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 100.0,
+    viewport_height: 100.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[1].width, content="116.66666666666666")
+  inspect(layout.children[1].height, content="50")
 }

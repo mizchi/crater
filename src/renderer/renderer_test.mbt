@@ -344,6 +344,96 @@ test "font-size with nested selectors like WPT" {
 }
 
 ///|
+test "fieldset_columns_shorthand_applies_in_wpt_like_case" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  #container {
+    #|    overflow: hidden;
+    #|    columns: 3;
+    #|    column-fill: auto;
+    #|    gap: 0;
+    #|    height: 50px;
+    #|    margin: 0;
+    #|    border: 15px solid green;
+    #|    padding: 0;
+    #|    scroll-marker-group: before;
+    #|    background: red;
+    #|  }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|<div style="width:100px; height:100px; background:red;">
+    #|  <fieldset id="container">
+    #|    <legend style="width:50px; height:15px; background:green;"></legend>
+    #|    <div style="height:210px; background:green;"></div>
+    #|  </fieldset>
+    #|</div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let wrapper = node.children[0]
+  let container = wrapper.children[0]
+  inspect(container.id, content="fieldset#container")
+  inspect(container.style.column_count, content="Some(3)")
+  inspect(container.style.box_sizing, content="BorderBox")
+  inspect(container.style.height, content="Length(80)")
+  inspect(container.style.column_gap, content="Length(0)")
+  inspect(container.style.column_gap_is_normal, content="false")
+}
+
+///|
+test "fieldset_columns_shorthand_survives_following_column_scroll_marker_rule" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  #container {
+    #|    overflow: hidden;
+    #|    columns: 3;
+    #|    column-fill: auto;
+    #|    gap: 0;
+    #|    height: 50px;
+    #|    margin: 0;
+    #|    border: 15px solid green;
+    #|    padding: 0;
+    #|    scroll-marker-group: before;
+    #|    background: red;
+    #|  }
+    #|  #container::scroll-marker-group {
+    #|    display: flex;
+    #|    height: 20px;
+    #|    background: red;
+    #|  }
+    #|  #container::column::scroll-marker {
+    #|    display: flex;
+    #|    width: 20px;
+    #|    height: 100%;
+    #|    background: green;
+    #|    content: "";
+    #|  }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|<div style="width:100px; height:100px; background:red;">
+    #|  <fieldset id="container">
+    #|    <legend style="width:50px; height:15px; background:green;"></legend>
+    #|    <div style="height:210px; background:green;"></div>
+    #|  </fieldset>
+    #|</div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let wrapper = node.children[0]
+  let container = wrapper.children[0]
+  inspect(container.id, content="fieldset#container")
+  inspect(container.style.column_count, content="Some(3)")
+  inspect(container.style.box_sizing, content="BorderBox")
+  inspect(container.style.height, content="Length(80)")
+  inspect(container.style.column_gap, content="Length(0)")
+  inspect(container.style.column_gap_is_normal, content="false")
+}
+
+///|
 test "br element preserved as separate node with line-height" {
   let html =
     #|<!doctype html>

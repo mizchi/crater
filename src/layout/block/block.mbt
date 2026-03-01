@@ -4029,7 +4029,7 @@ fn compute_with_collapse(
       text: node.text,
     }
     return { layout, collapsed: { top: None, bottom: None } }
-  } else if has_mixed && float_nodes.length() == 0 {
+  } else if has_mixed && float_nodes.length() == 0 && not(multicol_enabled) {
     // Mixed inline/block content - use anonymous block boxes
     let groups = group_flow_children_for_anonymous_blocks(
       flow_nodes, flow_indices,
@@ -4729,12 +4729,7 @@ fn compute_with_collapse(
               needed
             }
           }
-          _ =>
-            if multicol_column_count > 0 {
-              multicol_column_count
-            } else {
-              1
-            }
+          _ => if multicol_column_count > 0 { multicol_column_count } else { 1 }
         }
       } else {
         1
