@@ -75,6 +75,63 @@ fn calculate_scroll_dimensions(
 }
 
 ///|
+/// Content bounds for initial overflow alignment.
+priv struct AlignmentContentBounds {
+  min_x : Double
+  max_x : Double
+  min_y : Double
+  max_y : Double
+}
+
+///|
+/// Calculate content bounds including negative overflow.
+/// Used for initial overflow alignment where pre-positioned children can start
+/// from negative coordinates in vertical/rtl writing modes.
+fn calculate_alignment_content_bounds(
+  container_width : Double,
+  container_height : Double,
+  padding : @types.Rect[Double],
+  children : Array[@types.Layout],
+) -> AlignmentContentBounds {
+  let mut min_left = 0.0
+  let mut min_top = 0.0
+  let mut max_right = container_width - padding.left - padding.right
+  let mut max_bottom = container_height - padding.top - padding.bottom
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let child_left = child.x - child.margin.left
+    let child_top = child.y - child.margin.top
+    let child_right = child.x + child.width + child.margin.right
+    let child_bottom = child.y + child.height + child.margin.bottom
+    if child_left < min_left {
+      min_left = child_left
+    }
+    if child_top < min_top {
+      min_top = child_top
+    }
+    if child_right > max_right {
+      max_right = child_right
+    }
+    if child_bottom > max_bottom {
+      max_bottom = child_bottom
+    }
+    if child.scroll_width > child.width {
+      let nested_right = child.x + child.scroll_width + child.margin.right
+      if nested_right > max_right {
+        max_right = nested_right
+      }
+    }
+    if child.scroll_height > child.height {
+      let nested_bottom = child.y + child.scroll_height + child.margin.bottom
+      if nested_bottom > max_bottom {
+        max_bottom = nested_bottom
+      }
+    }
+  }
+  { min_x: min_left, max_x: max_right, min_y: min_top, max_y: max_bottom }
+}
+
+///|
 fn should_apply_overflow_content_alignment(style : @style.Style) -> Bool {
   style.justify_content != @types.Alignment::Start ||
   style.align_content != @types.Alignment::Stretch
@@ -105,25 +162,46 @@ fn logical_start_is_physical_min_block(
 ///|
 fn compute_overflow_alignment_offset(
   alignment : @types.Alignment,
-  free_space : Double,
+  is_unsafe : Bool,
+  available : Double,
+  content_size : Double,
+  current_min : Double,
   start_is_min : Bool,
 ) -> Double {
-  match alignment {
-    @types.Alignment::Start | @types.Alignment::FlexStart =>
-      if start_is_min {
-        0.0
-      } else {
-        free_space
-      }
-    @types.Alignment::End | @types.Alignment::FlexEnd =>
-      if start_is_min {
-        free_space
-      } else {
-        0.0
-      }
-    @types.Alignment::Center => free_space / 2.0
-    _ => 0.0
+  let free_space = available - content_size
+  let fallback_to_start = fn() -> Double {
+    if start_is_min {
+      0.0
+    } else {
+      free_space
+    }
   }
+  let align_to_end = fn() -> Double {
+    if start_is_min {
+      free_space
+    } else {
+      0.0
+    }
+  }
+  let target_min = match alignment {
+    @types.Alignment::Start | @types.Alignment::FlexStart => fallback_to_start()
+    @types.Alignment::End | @types.Alignment::FlexEnd =>
+      if free_space < 0.0 && not(is_unsafe) {
+        fallback_to_start()
+      } else {
+        align_to_end()
+      }
+    @types.Alignment::Center =>
+      if free_space < 0.0 && not(is_unsafe) {
+        fallback_to_start()
+      } else {
+        free_space / 2.0
+      }
+    // Distribution/baseline/stretch values are not position anchors when overflowing.
+    // Initial scroll position falls back to content-distribution start side.
+    _ => fallback_to_start()
+  }
+  target_min - current_min
 }
 
 ///|
@@ -175,27 +253,52 @@ fn apply_initial_overflow_content_alignment(
     content_box_height
   }
 
-  let (content_extent_x, content_extent_y) = calculate_scroll_dimensions(
+  let content_bounds = calculate_alignment_content_bounds(
     layout.width,
     layout.height,
     layout.padding,
     layout.children,
   )
-  let inline_content = if style.writing_mode.is_vertical() {
-    content_extent_y
+  let inline_min = if style.writing_mode.is_vertical() {
+    content_bounds.min_y
   } else {
-    content_extent_x
+    content_bounds.min_x
   }
-  let block_content = if style.writing_mode.is_vertical() {
-    content_extent_x
+  let inline_max = if style.writing_mode.is_vertical() {
+    content_bounds.max_y
   } else {
-    content_extent_y
+    content_bounds.max_x
+  }
+  let block_min = if style.writing_mode.is_vertical() {
+    content_bounds.min_x
+  } else {
+    content_bounds.min_y
+  }
+  let block_max = if style.writing_mode.is_vertical() {
+    content_bounds.max_x
+  } else {
+    content_bounds.max_y
+  }
+  let inline_content = if inline_max > inline_min {
+    inline_max - inline_min
+  } else {
+    0.0
+  }
+  let block_content = if block_max > block_min {
+    block_max - block_min
+  } else {
+    0.0
   }
 
+  // Block containers use content distribution on the block axis.
+  // Inline-axis initial scroll position falls back to logical start.
   let inline_offset = if inline_scrollable {
     compute_overflow_alignment_offset(
-      style.justify_content,
-      inline_available - inline_content,
+      @types.Alignment::Start,
+      false,
+      inline_available,
+      inline_content,
+      inline_min,
       logical_start_is_physical_min_inline(style.writing_mode, style.direction),
     )
   } else {
@@ -204,7 +307,10 @@ fn apply_initial_overflow_content_alignment(
   let block_offset = if block_scrollable {
     compute_overflow_alignment_offset(
       style.align_content,
-      block_available - block_content,
+      style.align_content_unsafe,
+      block_available,
+      block_content,
+      block_min,
       logical_start_is_physical_min_block(style.writing_mode),
     )
   } else {
@@ -2545,12 +2651,17 @@ fn compute_with_collapse(
     is_float_container ||
     style.display == @types.FlowRoot ||
     containment_establishes_bfc
+  // TODO: logical-block-axis margin collapse in vertical writing mode.
+  // For now keep vertical flow non-collapsing to avoid double-applying
+  // escaped margins during coordinate remapping.
+  let collapse_with_children = not(style.writing_mode.is_vertical()) &&
+    not(establishes_bfc)
   let can_collapse_top = border.top == 0.0 &&
     padding.top == 0.0 &&
-    not(establishes_bfc)
+    collapse_with_children
   let can_collapse_bottom = border.bottom == 0.0 &&
     padding.bottom == 0.0 &&
-    not(establishes_bfc)
+    collapse_with_children
   let has_available_height = match ctx.available_height {
     Some(_) => true
     None => false

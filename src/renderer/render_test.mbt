@@ -2247,6 +2247,74 @@ test "wpt_gap_vertical_rl_wrap_progression_is_mirrored" {
 }
 
 ///|
+test "wpt_overflow_alignment_flex_item_negative_margin_child_vertical_rl" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.test {
+    #|  display: flex;
+    #|  flex-flow: row wrap;
+    #|  width: 24px;
+    #|  height: 24px;
+    #|  overflow: hidden;
+    #|  writing-mode: vertical-rl;
+    #|}
+    #|.container { width: 24px; height: 24px; flex: none; }
+    #|.child {
+    #|  width: 72px;
+    #|  height: 72px;
+    #|  margin: -24px;
+    #|  writing-mode: horizontal-tb;
+    #|  direction: ltr;
+    #|}
+    #|</style>
+    #|<div class="test"><div class="container"><div class="child"></div></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let test_box = layout.children[0]
+  let container = test_box.children[0]
+  let child = container.children[0]
+  inspect(container.x, content="0")
+  inspect(container.y, content="0")
+  inspect(child.x, content="-24")
+  inspect(child.y, content="-24")
+}
+
+///|
+test "wpt_overflow_alignment_flex_item_negative_margin_child_vertical_lr" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.test {
+    #|  display: flex;
+    #|  flex-flow: row wrap;
+    #|  width: 24px;
+    #|  height: 24px;
+    #|  overflow: hidden;
+    #|  writing-mode: vertical-lr;
+    #|}
+    #|.container { width: 24px; height: 24px; flex: none; }
+    #|.child {
+    #|  width: 72px;
+    #|  height: 72px;
+    #|  margin: -24px;
+    #|  writing-mode: horizontal-tb;
+    #|  direction: ltr;
+    #|}
+    #|</style>
+    #|<div class="test"><div class="container"><div class="child"></div></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let test_box = layout.children[0]
+  let container = test_box.children[0]
+  let child = container.children[0]
+  inspect(container.x, content="0")
+  inspect(container.y, content="0")
+  inspect(child.x, content="-24")
+  inspect(child.y, content="-24")
+}
+
+///|
 test "svg_default_intrinsic_size_wpt_like" {
   // Mirrors WPT-like behavior: <svg> without width/height defaults to 300x150.
   let html_str =
