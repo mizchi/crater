@@ -72,6 +72,8 @@ pub fn parse_number(String) -> Double
 
 pub fn parse_overflow(String) -> @types.Overflow
 
+pub fn parse_place_content(String) -> (@types.Alignment, @types.Alignment)?
+
 pub fn parse_position(String) -> @types.Position
 
 pub fn parse_scroll_snap_align(String) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign)

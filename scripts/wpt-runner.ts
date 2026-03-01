@@ -945,6 +945,134 @@ function normalizeCraterPositions(node: LayoutNode): LayoutNode {
   };
 }
 
+function zeroRect(): Rect {
+  return { top: 0, right: 0, bottom: 0, left: 0 };
+}
+
+function cloneLayoutNode(node: LayoutNode): LayoutNode {
+  return {
+    ...node,
+    margin: { ...node.margin },
+    padding: { ...node.padding },
+    border: { ...node.border },
+    children: node.children.map(cloneLayoutNode),
+  };
+}
+
+interface FocusedNodeCandidate {
+  node: LayoutNode;
+  absX: number;
+  absY: number;
+}
+
+function collectFocusedNodeCandidates(
+  node: LayoutNode,
+  targetNodeId: string,
+  parentContentPos: { x: number; y: number } = { x: 0, y: 0 },
+  out: FocusedNodeCandidate[] = [],
+): FocusedNodeCandidate[] {
+  const absX = parentContentPos.x + node.x;
+  const absY = parentContentPos.y + node.y;
+  if (node.id === targetNodeId) {
+    out.push({ node, absX, absY });
+  }
+
+  const nextParentContentPos = {
+    x: absX + node.border.left + node.padding.left,
+    y: absY + node.border.top + node.padding.top,
+  };
+  for (const child of node.children) {
+    collectFocusedNodeCandidates(child, targetNodeId, nextParentContentPos, out);
+  }
+  return out;
+}
+
+export function createFocusedComparisonRoot(
+  layout: LayoutNode,
+  targetNodeId: string,
+  options: { reflowAsSequence?: boolean } = {},
+): LayoutNode | null {
+  if (!targetNodeId) return null;
+
+  const candidates = collectFocusedNodeCandidates(layout, targetNodeId);
+  if (candidates.length === 0) return null;
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  const children = candidates.map(({ node, absX, absY }) => {
+    if (absX < minX) minX = absX;
+    if (absY < minY) minY = absY;
+    if (absX + node.width > maxX) maxX = absX + node.width;
+    if (absY + node.height > maxY) maxY = absY + node.height;
+
+    const cloned = cloneLayoutNode(node);
+    cloned.x = absX;
+    cloned.y = absY;
+    return cloned;
+  });
+
+  if (
+    !Number.isFinite(minX) ||
+    !Number.isFinite(minY) ||
+    !Number.isFinite(maxX) ||
+    !Number.isFinite(maxY)
+  ) {
+    return null;
+  }
+
+  if (options.reflowAsSequence) {
+    let cursorY = 0;
+    let maxWidth = 0;
+    for (const child of children) {
+      child.x = 0;
+      child.y = cursorY;
+      cursorY += child.height + 1;
+      if (child.width > maxWidth) {
+        maxWidth = child.width;
+      }
+    }
+    return {
+      id: 'focused-root',
+      x: 0,
+      y: 0,
+      width: Math.max(0, maxWidth),
+      height: Math.max(0, cursorY - 1),
+      margin: zeroRect(),
+      padding: zeroRect(),
+      border: zeroRect(),
+      children,
+    };
+  }
+
+  for (const child of children) {
+    child.x -= minX;
+    child.y -= minY;
+  }
+
+  return {
+    id: 'focused-root',
+    x: 0,
+    y: 0,
+    width: Math.max(0, maxX - minX),
+    height: Math.max(0, maxY - minY),
+    margin: zeroRect(),
+    padding: zeroRect(),
+    border: zeroRect(),
+    children,
+  };
+}
+
+export function resolveFocusedComparisonNodeId(htmlPath: string): string | null {
+  const filename = path.basename(htmlPath).toLowerCase();
+  if (filename.startsWith('overflow-alignment-')) {
+    return 'div.test';
+  }
+  return null;
+}
+
 function isIgnorableInlineWrapper(node: LayoutNode): boolean {
   return node.id === 'span' && node.children.length === 0;
 }
@@ -1110,8 +1238,26 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
     const browserLayout = await getBrowserLayout(browser, htmlPath);
     const craterLayout = getCraterLayout(htmlPath);
     const normalizedCraterLayout = normalizeCraterPositions(craterLayout);
+    const targetNodeId = resolveFocusedComparisonNodeId(htmlPath);
+    const focusOptions = targetNodeId === 'div.test'
+      ? { reflowAsSequence: true }
+      : undefined;
 
-    const mismatches = compareLayouts(browserLayout, normalizedCraterLayout, 'root', {
+    const focusedBrowserLayout = targetNodeId
+      ? createFocusedComparisonRoot(browserLayout, targetNodeId, focusOptions)
+      : null;
+    const focusedCraterLayout = targetNodeId
+      ? createFocusedComparisonRoot(normalizedCraterLayout, targetNodeId, focusOptions)
+      : null;
+
+    const browserComparable = focusedBrowserLayout && focusedCraterLayout
+      ? focusedBrowserLayout
+      : browserLayout;
+    const craterComparable = focusedBrowserLayout && focusedCraterLayout
+      ? focusedCraterLayout
+      : normalizedCraterLayout;
+
+    const mismatches = compareLayouts(browserComparable, craterComparable, 'root', {
       ignoreTextNodes: true,
       ignoreBoxModel: true,
     });

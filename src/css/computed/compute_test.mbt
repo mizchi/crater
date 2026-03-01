@@ -71,6 +71,27 @@ test "parse_alignment" {
   inspect(@computed.parse_alignment("center"), content="Center")
   inspect(@computed.parse_alignment("space-between"), content="SpaceBetween")
   inspect(@computed.parse_alignment("stretch"), content="Stretch")
+  inspect(@computed.parse_alignment("safe center"), content="Start")
+  inspect(@computed.parse_alignment("safe end"), content="Start")
+  inspect(@computed.parse_alignment("unsafe center"), content="Center")
+  inspect(@computed.parse_alignment("unsafe end"), content="End")
+}
+
+///|
+test "compute_inline place-content shorthand" {
+  let ctx = @computed.ComputeContext::new()
+
+  let safe_center = @computed.compute_inline("place-content: safe center", ctx)
+  inspect(safe_center.align_content, content="Start")
+  inspect(safe_center.justify_content, content="Start")
+
+  let unsafe_end = @computed.compute_inline("place-content: unsafe end", ctx)
+  inspect(unsafe_end.align_content, content="End")
+  inspect(unsafe_end.justify_content, content="End")
+
+  let mixed = @computed.compute_inline("place-content: end center", ctx)
+  inspect(mixed.align_content, content="End")
+  inspect(mixed.justify_content, content="Center")
 }
 
 ///|

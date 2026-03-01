@@ -365,11 +365,19 @@ pub fn parse_flex_wrap(value : String) -> @types.FlexWrap {
 }
 
 ///|
-/// Parse alignment value (justify-content, align-items, align-content)
-/// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
-///       start/end are physical/logical (not affected by wrap-reverse)
-pub fn parse_alignment(value : String) -> @types.Alignment {
-  match value.trim().to_lower() {
+fn tokenize_alignment_value(value : String) -> Array[String] {
+  value
+  .trim()
+  .to_lower()
+  .split(" ")
+  .map(fn(part) { part.to_string().trim().to_string() })
+  .filter(fn(part) { not(part.is_empty()) })
+  .collect()
+}
+
+///|
+fn parse_alignment_keyword(value : String) -> @types.Alignment {
+  match value {
     "flex-start" => @types.Alignment::FlexStart
     "flex-end" => @types.Alignment::FlexEnd
     "start" => @types.Alignment::Start
@@ -383,6 +391,89 @@ pub fn parse_alignment(value : String) -> @types.Alignment {
     // Fallback alignment for last-baseline in axis alignment.
     "last baseline" => @types.Alignment::End
     _ => @types.Alignment::FlexStart
+  }
+}
+
+///|
+fn parse_alignment_segment(
+  tokens : Array[String],
+  start : Int,
+) -> (String, Int)? {
+  if start >= tokens.length() {
+    return None
+  }
+  let head = tokens[start]
+  if start + 1 < tokens.length() {
+    let next = tokens[start + 1]
+    if head == "safe" ||
+      head == "unsafe" ||
+      ((head == "first" || head == "last") && next == "baseline") {
+      return Some((head + " " + next, start + 2))
+    }
+  }
+  Some((head, start + 1))
+}
+
+///|
+/// Parse alignment value (justify-content, align-items, align-content)
+/// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
+///       start/end are physical/logical (not affected by wrap-reverse)
+pub fn parse_alignment(value : String) -> @types.Alignment {
+  let tokens = tokenize_alignment_value(value)
+  if tokens.is_empty() {
+    return @types.Alignment::FlexStart
+  }
+  let mut offset = 0
+  let mut is_safe = false
+  if tokens[0] == "safe" || tokens[0] == "unsafe" {
+    is_safe = tokens[0] == "safe"
+    offset = 1
+  }
+  if offset >= tokens.length() {
+    return @types.Alignment::FlexStart
+  }
+  let keyword = if offset + 1 < tokens.length() &&
+    tokens[offset + 1] == "baseline" &&
+    (tokens[offset] == "first" || tokens[offset] == "last") {
+    tokens[offset] + " baseline"
+  } else {
+    tokens[offset]
+  }
+  let parsed = parse_alignment_keyword(keyword)
+  if is_safe {
+    match parsed {
+      @types.Alignment::Center
+      | @types.Alignment::End
+      | @types.Alignment::FlexEnd => @types.Alignment::Start
+      _ => parsed
+    }
+  } else {
+    parsed
+  }
+}
+
+///|
+/// Parse place-content shorthand.
+/// Returns (align_content, justify_content).
+pub fn parse_place_content(
+  value : String,
+) -> (@types.Alignment, @types.Alignment)? {
+  let tokens = tokenize_alignment_value(value)
+  if tokens.is_empty() {
+    return None
+  }
+  match parse_alignment_segment(tokens, 0) {
+    Some((first, next_index)) => {
+      let align_content = parse_alignment(first)
+      if next_index >= tokens.length() {
+        return Some((align_content, align_content))
+      }
+      match parse_alignment_segment(tokens, next_index) {
+        Some((second, _)) => Some((align_content, parse_alignment(second)))
+        None => Some((align_content, align_content))
+      }
+    }
+    None => None
   }
 }
 

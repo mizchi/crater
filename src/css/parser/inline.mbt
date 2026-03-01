@@ -346,37 +346,118 @@ fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @types.FlexWrap? {
 }
 
 ///|
-/// Parse alignment property (justify-content, align-items, etc.)
-fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
-  if tokens.length() == 0 {
+fn parse_alignment_keyword(value : String) -> @types.Alignment? {
+  if value == "flex-start" {
+    Some(@types.Alignment::FlexStart)
+  } else if value == "start" {
+    Some(@types.Alignment::Start)
+  } else if value == "flex-end" {
+    Some(@types.Alignment::FlexEnd)
+  } else if value == "end" {
+    Some(@types.Alignment::End)
+  } else if value == "center" {
+    Some(@types.Alignment::Center)
+  } else if value == "space-between" {
+    Some(@types.SpaceBetween)
+  } else if value == "space-around" {
+    Some(@types.SpaceAround)
+  } else if value == "space-evenly" {
+    Some(@types.SpaceEvenly)
+  } else if value == "stretch" {
+    Some(@types.Alignment::Stretch)
+  } else if value == "baseline" || value == "first baseline" {
+    Some(@types.Alignment::Baseline)
+  } else if value == "last baseline" {
+    Some(@types.Alignment::End)
+  } else {
+    None
+  }
+}
+
+///|
+fn collect_alignment_parts(tokens : ArrayView[@token.Token]) -> Array[String] {
+  let parts : Array[String] = []
+  for i = 0; i < tokens.length(); i = i + 1 {
+    match tokens[i] {
+      @token.Token::Ident(s) => parts.push(s)
+      _ => ()
+    }
+  }
+  parts
+}
+
+///|
+fn parse_alignment_segment(
+  parts : Array[String],
+  start : Int,
+) -> (@types.Alignment, Int)? {
+  if start >= parts.length() {
     return None
   }
-  match tokens[0] {
-    @token.Token::Ident(s) =>
-      if s == "flex-start" {
-        Some(@types.Alignment::FlexStart)
-      } else if s == "start" {
-        Some(@types.Alignment::Start)
-      } else if s == "flex-end" {
-        Some(@types.Alignment::FlexEnd)
-      } else if s == "end" {
-        Some(@types.Alignment::End)
-      } else if s == "center" {
-        Some(@types.Alignment::Center)
-      } else if s == "space-between" {
-        Some(@types.SpaceBetween)
-      } else if s == "space-around" {
-        Some(@types.SpaceAround)
-      } else if s == "space-evenly" {
-        Some(@types.SpaceEvenly)
-      } else if s == "stretch" {
-        Some(@types.Alignment::Stretch)
-      } else if s == "baseline" {
-        Some(@types.Alignment::Baseline)
+
+  let mut idx = start
+  let mut is_safe = false
+  if parts[idx] == "safe" || parts[idx] == "unsafe" {
+    is_safe = parts[idx] == "safe"
+    idx = idx + 1
+  }
+  if idx >= parts.length() {
+    return None
+  }
+
+  let keyword = if idx + 1 < parts.length() &&
+    parts[idx + 1] == "baseline" &&
+    (parts[idx] == "first" || parts[idx] == "last") {
+    parts[idx] + " baseline"
+  } else {
+    parts[idx]
+  }
+  let next_index = if keyword == parts[idx] { idx + 1 } else { idx + 2 }
+
+  match parse_alignment_keyword(keyword) {
+    Some(parsed) =>
+      if is_safe {
+        match parsed {
+          @types.Alignment::Center
+          | @types.Alignment::End
+          | @types.Alignment::FlexEnd =>
+            Some((@types.Alignment::Start, next_index))
+          _ => Some((parsed, next_index))
+        }
       } else {
-        None
+        Some((parsed, next_index))
       }
-    _ => None
+    None => None
+  }
+}
+
+///|
+/// Parse alignment property (justify-content, align-items, etc.)
+fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
+  let parts = collect_alignment_parts(tokens)
+  match parse_alignment_segment(parts, 0) {
+    Some((alignment, _)) => Some(alignment)
+    None => None
+  }
+}
+
+///|
+/// Parse place-content shorthand.
+fn parse_place_content(
+  tokens : ArrayView[@token.Token],
+) -> (@types.Alignment, @types.Alignment)? {
+  let parts = collect_alignment_parts(tokens)
+  match parse_alignment_segment(parts, 0) {
+    Some((align_content, next_index)) =>
+      if next_index >= parts.length() {
+        Some((align_content, align_content))
+      } else {
+        match parse_alignment_segment(parts, next_index) {
+          Some((justify_content, _)) => Some((align_content, justify_content))
+          None => Some((align_content, align_content))
+        }
+      }
+    None => None
   }
 }
 
@@ -1663,6 +1744,14 @@ fn apply_property(
   if property == "align-content" {
     match parse_alignment(value_tokens) {
       Some(v) => return { ..style, align_content: v }
+      None => ()
+    }
+  }
+  // place-content
+  if property == "place-content" {
+    match parse_place_content(value_tokens) {
+      Some((align_content, justify_content)) =>
+        return { ..style, align_content, justify_content }
       None => ()
     }
   }

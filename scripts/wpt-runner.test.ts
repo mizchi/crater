@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
+  resolveFocusedComparisonNodeId,
   resolveTextIntrinsicFn,
 } from "./wpt-runner.ts";
 
@@ -56,5 +58,161 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
     );
     expect(result).not.toBeNull();
     expect((result as { maxHeight?: number }).maxHeight).toBeGreaterThan(19.2);
+  });
+});
+
+describe("resolveFocusedComparisonNodeId", () => {
+  it("targets overflow-alignment tests to compare only .test boxes", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/overflow-alignment-block-001.html",
+      ),
+    ).toBe("div.test");
+  });
+
+  it("does not change comparison target for other tests", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/column-scroll-marker-001.html",
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("createFocusedComparisonRoot", () => {
+  const rect = { top: 0, right: 0, bottom: 0, left: 0 };
+
+  it("extracts and normalizes matching nodes into a synthetic root", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 200,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [
+        {
+          id: "section",
+          x: 100,
+          y: 30,
+          width: 150,
+          height: 80,
+          margin: rect,
+          padding: rect,
+          border: rect,
+          children: [
+            {
+              id: "div.test",
+              x: 20,
+              y: 10,
+              width: 24,
+              height: 24,
+              margin: rect,
+              padding: rect,
+              border: rect,
+              children: [],
+            },
+          ],
+        },
+        {
+          id: "aside",
+          x: 10,
+          y: 80,
+          width: 80,
+          height: 40,
+          margin: rect,
+          padding: rect,
+          border: rect,
+          children: [
+            {
+              id: "div.test",
+              x: 5,
+              y: 3,
+              width: 24,
+              height: 24,
+              margin: rect,
+              padding: rect,
+              border: rect,
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const focused = createFocusedComparisonRoot(layout, "div.test");
+    expect(focused).not.toBeNull();
+    expect(focused?.id).toBe("focused-root");
+    expect(focused?.children).toHaveLength(2);
+
+    expect(focused?.children[0]?.x).toBe(105);
+    expect(focused?.children[0]?.y).toBe(0);
+    expect(focused?.children[1]?.x).toBe(0);
+    expect(focused?.children[1]?.y).toBe(43);
+  });
+
+  it("returns null when target nodes are not found", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [],
+    };
+
+    expect(createFocusedComparisonRoot(layout, "div.test")).toBeNull();
+  });
+
+  it("supports sequence normalization for position-insensitive comparison", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 200,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [
+        {
+          id: "div.test",
+          x: 120,
+          y: 40,
+          width: 24,
+          height: 24,
+          margin: rect,
+          padding: rect,
+          border: rect,
+          children: [],
+        },
+        {
+          id: "div.test",
+          x: 20,
+          y: 100,
+          width: 24,
+          height: 24,
+          margin: rect,
+          padding: rect,
+          border: rect,
+          children: [],
+        },
+      ],
+    };
+
+    const focused = createFocusedComparisonRoot(layout, "div.test", {
+      reflowAsSequence: true,
+    });
+
+    expect(focused).not.toBeNull();
+    expect(focused?.children[0]?.x).toBe(0);
+    expect(focused?.children[0]?.y).toBe(0);
+    expect(focused?.children[1]?.x).toBe(0);
+    expect(focused?.children[1]?.y).toBe(25);
   });
 });

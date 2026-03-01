@@ -75,11 +75,164 @@ fn calculate_scroll_dimensions(
 }
 
 ///|
+fn should_apply_overflow_content_alignment(style : @style.Style) -> Bool {
+  style.justify_content != @types.Alignment::Start ||
+  style.align_content != @types.Alignment::Stretch
+}
+
+///|
+fn logical_start_is_physical_min_inline(
+  writing_mode : @style.WritingMode,
+  direction : @style.Direction,
+) -> Bool {
+  if writing_mode.is_vertical() {
+    direction == @style.Direction::Ltr
+  } else {
+    direction == @style.Direction::Ltr
+  }
+}
+
+///|
+fn logical_start_is_physical_min_block(
+  writing_mode : @style.WritingMode,
+) -> Bool {
+  match writing_mode {
+    @style.WritingMode::VerticalRl => false
+    @style.WritingMode::HorizontalTb | @style.WritingMode::VerticalLr => true
+  }
+}
+
+///|
+fn compute_overflow_alignment_offset(
+  alignment : @types.Alignment,
+  free_space : Double,
+  start_is_min : Bool,
+) -> Double {
+  match alignment {
+    @types.Alignment::Start | @types.Alignment::FlexStart =>
+      if start_is_min {
+        0.0
+      } else {
+        free_space
+      }
+    @types.Alignment::End | @types.Alignment::FlexEnd =>
+      if start_is_min {
+        free_space
+      } else {
+        0.0
+      }
+    @types.Alignment::Center => free_space / 2.0
+    _ => 0.0
+  }
+}
+
+///|
+fn apply_initial_overflow_content_alignment(
+  node : @node.Node,
+  layout : @types.Layout,
+) -> @types.Layout {
+  if layout.children.is_empty() {
+    return layout
+  }
+  let style = node.style
+  if not(should_apply_overflow_content_alignment(style)) {
+    return layout
+  }
+
+  let inline_scrollable = if style.writing_mode.is_vertical() {
+    overflow_creates_scroll_container(style.overflow_y)
+  } else {
+    overflow_creates_scroll_container(style.overflow_x)
+  }
+  let block_scrollable = if style.writing_mode.is_vertical() {
+    overflow_creates_scroll_container(style.overflow_x)
+  } else {
+    overflow_creates_scroll_container(style.overflow_y)
+  }
+  if not(inline_scrollable) && not(block_scrollable) {
+    return layout
+  }
+
+  let content_box_width = if layout.width > layout.padding.horizontal_sum() {
+    layout.width - layout.padding.horizontal_sum()
+  } else {
+    0.0
+  }
+  let content_box_height = if layout.height > layout.padding.vertical_sum() {
+    layout.height - layout.padding.vertical_sum()
+  } else {
+    0.0
+  }
+
+  let inline_available = if style.writing_mode.is_vertical() {
+    content_box_height
+  } else {
+    content_box_width
+  }
+  let block_available = if style.writing_mode.is_vertical() {
+    content_box_width
+  } else {
+    content_box_height
+  }
+
+  let (content_extent_x, content_extent_y) = calculate_scroll_dimensions(
+    layout.width,
+    layout.height,
+    layout.padding,
+    layout.children,
+  )
+  let inline_content = if style.writing_mode.is_vertical() {
+    content_extent_y
+  } else {
+    content_extent_x
+  }
+  let block_content = if style.writing_mode.is_vertical() {
+    content_extent_x
+  } else {
+    content_extent_y
+  }
+
+  let inline_offset = if inline_scrollable {
+    compute_overflow_alignment_offset(
+      style.justify_content,
+      inline_available - inline_content,
+      logical_start_is_physical_min_inline(style.writing_mode, style.direction),
+    )
+  } else {
+    0.0
+  }
+  let block_offset = if block_scrollable {
+    compute_overflow_alignment_offset(
+      style.align_content,
+      block_available - block_content,
+      logical_start_is_physical_min_block(style.writing_mode),
+    )
+  } else {
+    0.0
+  }
+
+  let (offset_x, offset_y) = if style.writing_mode.is_vertical() {
+    (block_offset, inline_offset)
+  } else {
+    (inline_offset, block_offset)
+  }
+  if offset_x.abs() <= 0.0001 && offset_y.abs() <= 0.0001 {
+    return layout
+  }
+
+  let shifted_children = layout.children.map(fn(child) {
+    { ..child, x: child.x + offset_x, y: child.y + offset_y }
+  })
+  { ..layout, children: shifted_children }
+}
+
+///|
 /// Apply initial scroll-snap offset for mandatory center snapping.
 fn apply_initial_scroll_snap(
   node : @node.Node,
   layout : @types.Layout,
 ) -> @types.Layout {
+  let layout = apply_initial_overflow_content_alignment(node, layout)
   if layout.children.is_empty() {
     return layout
   }

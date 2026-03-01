@@ -2131,3 +2131,76 @@ test "block_leaf_measure_contain_size_auto_uses_border_box_only" {
   inspect(layout.width, content="6")
   inspect(layout.height, content="6")
 }
+
+///|
+test "block_overflow_alignment_start_in_rtl_shifts_inline_to_right_edge" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(24.0),
+      height: @types.Length(24.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      justify_content: @types.Start,
+      align_content: @types.Start,
+      direction: @style.Direction::Rtl,
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+  inspect(layout.children[0].y, content="0")
+}
+
+///|
+test "block_overflow_alignment_start_in_vertical_rl_rtl_shifts_both_axes" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(24.0),
+      height: @types.Length(24.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      justify_content: @types.Start,
+      align_content: @types.Start,
+      writing_mode: @style.WritingMode::VerticalRl,
+      direction: @style.Direction::Rtl,
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+  inspect(layout.children[0].y, content="-48")
+}

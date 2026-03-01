@@ -713,6 +713,20 @@ test "parse align-content space-between" {
 }
 
 ///|
+test "parse place-content safe center" {
+  let style = parse_inline_style("place-content: safe center")
+  inspect(style.align_content, content="Start")
+  inspect(style.justify_content, content="Start")
+}
+
+///|
+test "parse place-content end center" {
+  let style = parse_inline_style("place-content: end center")
+  inspect(style.align_content, content="End")
+  inspect(style.justify_content, content="Center")
+}
+
+///|
 test "parse logical property padding-block" {
   let style = parse_inline_style("padding-block: 20px")
   inspect(style.padding.top, content="Length(20)")

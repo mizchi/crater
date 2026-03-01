@@ -1219,6 +1219,14 @@ fn apply_property(
     "justify-content" => builder.justify_content = parse_alignment(value)
     "align-items" => builder.align_items = parse_alignment(value)
     "align-content" => builder.align_content = parse_alignment(value)
+    "place-content" =>
+      match parse_place_content(value) {
+        Some((align_content, justify_content)) => {
+          builder.align_content = align_content
+          builder.justify_content = justify_content
+        }
+        None => ()
+      }
     // Flexbox/Grid item alignment
     "align-self" => builder.align_self = parse_align_self(value)
     "justify-self" => builder.justify_self = parse_align_self(value)
