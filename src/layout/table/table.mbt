@@ -591,10 +591,9 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
     padding.horizontal_sum() + border.horizontal_sum()
   }
 
-  // If cell has explicit width, use it
-  match style.width {
-    @types.Length(w) => return w
-    _ => ()
+  let explicit_width = match style.width {
+    @types.Length(w) => Some(w)
+    _ => None
   }
 
   fn child_intrinsic_width(child : @node.Node) -> Double {
@@ -649,7 +648,30 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
       max_child_width = max(max_child_width, child_width)
     }
   }
-  max_child_width + box_extra
+  let mut intrinsic_width = match explicit_width {
+    Some(w) => w
+    None => max_child_width + box_extra
+  }
+  // Table-cell intrinsic contribution should respect explicit min/max bounds.
+  match style.max_width {
+    @types.Length(max_w) =>
+      if intrinsic_width > max_w {
+        intrinsic_width = max_w
+      }
+    _ => ()
+  }
+  match style.min_width {
+    @types.Length(min_w) =>
+      if intrinsic_width < min_w {
+        intrinsic_width = min_w
+      }
+    _ => ()
+  }
+  if intrinsic_width < box_extra {
+    box_extra
+  } else {
+    intrinsic_width
+  }
 }
 
 ///|
@@ -1114,10 +1136,30 @@ fn layout_cell(
     cell_width - padding.horizontal_sum() - border.horizontal_sum(),
   )
 
+  // Resolve a definite content-box height for percentage descendants in the
+  // anonymous cell content wrapper.
+  let style_border = @types.resolve_rect(style.border, parent_width)
+  let resolved_cell_border_box_height : Double? = match style.height {
+    @types.Length(h) =>
+      Some(if border_collapse { h - style_border.vertical_sum() } else { h })
+    @types.Percent(p) =>
+      match ctx.available_height {
+        Some(parent_h) => Some(parent_h * p)
+        None => None
+      }
+    _ => ctx.available_height
+  }
+  let content_height_for_percent : Double? = match
+    resolved_cell_border_box_height {
+    Some(h) =>
+      Some(max(0.0, h - padding.vertical_sum() - border.vertical_sum()))
+    None => None
+  }
+
   // Layout children with available width
   let child_ctx : @types.LayoutContext = {
     available_width: content_width,
-    available_height: ctx.available_height,
+    available_height: content_height_for_percent,
     sizing_mode: ctx.sizing_mode,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
@@ -1136,7 +1178,10 @@ fn layout_cell(
     ..style,
     display: @types.Block,
     width: @types.Auto,
-    height: @types.Auto,
+    height: match content_height_for_percent {
+      Some(h) => @types.Length(h)
+      None => @types.Auto
+    },
     margin: zero_dim_rect,
     padding: zero_dim_rect,
     border: zero_dim_rect,
@@ -1178,7 +1223,6 @@ fn layout_cell(
   // Resolve explicit height if set
   // In border-collapse mode, the style.height was adjusted by adjust_for_box_sizing
   // (border added). We need to subtract the border back.
-  let style_border = @types.resolve_rect(style.border, parent_width)
   let final_height = match style.height {
     @types.Length(h) => {
       let adjusted_h = if border_collapse {
@@ -1652,6 +1696,22 @@ fn compute_cell_height_for_row(
     _ => None
   }
   fn child_intrinsic_height(child : @node.Node) -> Double {
+    match (child.style.height, explicit_height) {
+      (@types.Percent(p), Some(cell_h)) if p > 0.0 => {
+        let child_padding = @types.resolve_rect_intrinsic(child.style.padding)
+        let child_border = @types.resolve_rect_intrinsic(child.style.border)
+        if child.style.box_sizing == @types.BorderBox {
+          return @types.max(0.0, cell_h * p)
+        }
+        return @types.max(
+          0.0,
+          cell_h * p +
+          child_padding.vertical_sum() +
+          child_border.vertical_sum(),
+        )
+      }
+      _ => ()
+    }
     match child.measure {
       Some(mf) => {
         let intrinsic = (mf.func)(10000.0, 10000.0)
@@ -1789,6 +1849,22 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   }
 
   fn child_intrinsic_height(child : @node.Node) -> Double {
+    match (child.style.height, explicit_height) {
+      (@types.Percent(p), Some(cell_h)) if p > 0.0 => {
+        let child_padding = @types.resolve_rect_intrinsic(child.style.padding)
+        let child_border = @types.resolve_rect_intrinsic(child.style.border)
+        if child.style.box_sizing == @types.BorderBox {
+          return @types.max(0.0, cell_h * p)
+        }
+        return @types.max(
+          0.0,
+          cell_h * p +
+          child_padding.vertical_sum() +
+          child_border.vertical_sum(),
+        )
+      }
+      _ => ()
+    }
     match child.measure {
       Some(mf) => {
         let intrinsic = (mf.func)(10000.0, 10000.0)

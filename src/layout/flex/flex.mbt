@@ -5540,32 +5540,30 @@ fn compute_internal(
   let effective_align_content_for_position = if cross_free_space < 0.0 {
     match effective_align_content_for_position {
       @types.SpaceBetween => @types.Alignment::FlexStart
-      @types.SpaceAround
-      | @types.SpaceEvenly => @types.Alignment::Start
+      @types.SpaceAround | @types.SpaceEvenly => @types.Alignment::Start
       other => other
     }
   } else {
     effective_align_content_for_position
   }
-  let (effective_align_content_for_position, align_content_is_physical) =
-    match effective_align_content_for_position {
-      @types.Left => (@types.Alignment::Start, true)
-      @types.Right => (@types.Alignment::End, true)
-      other => (other, false)
-    }
+  let (effective_align_content_for_position, align_content_is_physical) = match
+    effective_align_content_for_position {
+    @types.Left => (@types.Alignment::Start, true)
+    @types.Right => (@types.Alignment::End, true)
+    other => (other, false)
+  }
   let logical_start_is_min_cross = if direction_is_row {
     // Row containers align lines on the block axis.
     match style.writing_mode {
       @style.WritingMode::VerticalRl => false
-      @style.WritingMode::HorizontalTb | @style.WritingMode::VerticalLr =>
-        true
+      @style.WritingMode::HorizontalTb | @style.WritingMode::VerticalLr => true
     }
   } else {
     // Column containers align lines on the inline axis.
     style.direction == @style.Direction::Ltr
   }
-  let effective_align_content_for_position = if
-    logical_start_is_min_cross || align_content_is_physical {
+  let effective_align_content_for_position = if logical_start_is_min_cross ||
+    align_content_is_physical {
     effective_align_content_for_position
   } else {
     match effective_align_content_for_position {
@@ -5576,8 +5574,8 @@ fn compute_internal(
   }
   // In vertical-rl row containers, the cross axis physical min/max are mirrored
   // relative to flex-relative start/end. Flip only flex-relative keywords here.
-  let effective_align_content_for_position = if
-    direction_is_row && style.writing_mode == @style.WritingMode::VerticalRl {
+  let effective_align_content_for_position = if direction_is_row &&
+    style.writing_mode == @style.WritingMode::VerticalRl {
     match effective_align_content_for_position {
       @types.FlexStart => @types.Alignment::FlexEnd
       @types.FlexEnd => @types.Alignment::FlexStart
@@ -5617,11 +5615,8 @@ fn compute_internal(
     | @types.SpaceBetween
     | @types.SpaceAround
     | @types.SpaceEvenly => true
-    @types.Start
-    | @types.End
-    | @types.Left
-    | @types.Right
-    | @types.Baseline => false
+    @types.Start | @types.End | @types.Left | @types.Right | @types.Baseline =>
+      false
   }
   let uses_reversed_position = is_wrap_reverse && is_flex_relative_align
   let mut cross_pos = if uses_reversed_position {
@@ -5719,7 +5714,8 @@ fn compute_internal(
     // - Row axis: treat as physical side on the inline axis.
     // - Column axis: treat as physical side only on horizontal axes;
     //   on vertical block-axis columns they fallback to logical start.
-    let (normalized_justify, justify_is_physical) = match style.justify_content {
+    let (normalized_justify, justify_is_physical) = match
+      style.justify_content {
       @types.Stretch | @types.Baseline => (@types.Alignment::FlexStart, false)
       @types.Left =>
         if direction_is_row || is_row {
@@ -5738,8 +5734,7 @@ fn compute_internal(
     let overflow_fallback_justify = if line_free_space < 0.0 {
       match normalized_justify {
         @types.SpaceBetween => @types.Alignment::FlexStart
-        @types.SpaceAround
-        | @types.SpaceEvenly => @types.Alignment::Start
+        @types.SpaceAround | @types.SpaceEvenly => @types.Alignment::Start
         other => other
       }
     } else {

@@ -8,10 +8,7 @@ test "Style::default" {
 
 ///|
 test "Style::has_multicol_true_for_column_count_one" {
-  let style = {
-    ..Style::default(),
-    column_count: Some(1),
-  }
+  let style = { ..Style::default(), column_count: Some(1) }
   assert_true(style.has_multicol())
 }
 

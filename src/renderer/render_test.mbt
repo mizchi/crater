@@ -2805,6 +2805,51 @@ test "wpt_table_intrinsic_size_004_vertical_max_inline_size_floor" {
 }
 
 ///|
+test "wpt_table_cell_overflow_auto_respects_max_width" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="width: 100px; height: 100px; border: solid;">
+    #|  <div id="cell" style="display: table-cell; max-width: 100px; height: 100px; background: green; overflow-x: auto; vertical-align: top;">
+    #|    <div style="width: 120px; height: 50px; background: hotpink;"></div>
+    #|  </div>
+    #|</div>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let wrapper = node.children[0]
+  let cell = wrapper.children[0]
+  inspect(cell.style.display, content="TableCell")
+  inspect(cell.style.max_width, content="Length(100)")
+  inspect(cell.style.height, content="Length(100)")
+
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let laid_out_cell = container.children[0]
+  inspect(laid_out_cell.width, content="100")
+}
+
+///|
+test "wpt_table_cell_child_overflow_measure_keeps_explicit_height" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="cell" style="width: 100px; height: 100px; display: table-cell; background: green;">
+    #|  <div id="scroller" style="overflow: auto; height: 100%;">
+    #|    <div style="height: 200px;"></div>
+    #|  </div>
+    #|</div>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let cell = node.children[0]
+  inspect(cell.style.display, content="TableCell")
+  inspect(cell.style.height, content="Length(100)")
+
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let laid_out_cell = layout.children[0]
+  let scroller = laid_out_cell.children[0]
+  inspect(laid_out_cell.height, content="100")
+  inspect(scroller.height, content="100")
+}
+
+///|
 test "wpt_table_flex_item_auto_width_uses_flex_used_size" {
   let html =
     #|<!DOCTYPE html>

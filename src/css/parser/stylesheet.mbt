@@ -35,10 +35,7 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
               stylesheet.add_rule(selector_text, selector, declarations.copy())
             }
             let nested_rules = extract_ampersand_nested_rules(
-              tokens,
-              pos,
-              new_pos,
-              selectors,
+              tokens, pos, new_pos, selectors,
             )
             for nested_rule in nested_rules {
               stylesheet.add_rule(
@@ -226,12 +223,11 @@ fn parse_style_rule(
         break
       }
       @token.Token::EOF => break
-      @token.Token::Delim('&') => {
+      @token.Token::Delim('&') =>
         match skip_nested_rule_block(tokens, pos) {
           Some(next_pos) => pos = next_pos
           None => pos = pos + 1
         }
-      }
       _ =>
         // Parse declaration
         match parse_rule_declaration(tokens, pos) {
@@ -369,19 +365,15 @@ fn find_matching_right_brace(
 
 ///|
 /// Skip a nested ampersand rule block like `&::foo { ... }`.
-fn skip_nested_rule_block(
-  tokens : Array[@token.Token],
-  start : Int,
-) -> Int? {
+fn skip_nested_rule_block(tokens : Array[@token.Token], start : Int) -> Int? {
   let mut pos = start
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::LeftBrace => {
+      @token.Token::LeftBrace =>
         match find_matching_right_brace(tokens, pos, tokens.length()) {
           Some(close) => return Some(close + 1)
           None => return None
         }
-      }
       @token.Token::RightBrace | @token.Token::EOF => return None
       _ => pos = pos + 1
     }
@@ -414,7 +406,9 @@ fn extract_ampersand_nested_rules(
   rule_end : Int,
   selectors : Array[(String, @selector.ComplexSelector)],
 ) -> Array[(String, @selector.ComplexSelector, Array[@cascade.Declaration])] {
-  let rules : Array[(String, @selector.ComplexSelector, Array[@cascade.Declaration])] = []
+  let rules : Array[
+    (String, @selector.ComplexSelector, Array[@cascade.Declaration]),
+  ] = []
   let mut body_start = -1
   let mut i = rule_start
   while i < rule_end {
@@ -441,7 +435,9 @@ fn extract_ampersand_nested_rules(
         let nested_selector_start = pos
         while pos < rule_end - 1 {
           match tokens[pos] {
-            @token.Token::LeftBrace | @token.Token::RightBrace | @token.Token::EOF => break
+            @token.Token::LeftBrace
+            | @token.Token::RightBrace
+            | @token.Token::EOF => break
             _ => pos = pos + 1
           }
         }
@@ -451,10 +447,8 @@ fn extract_ampersand_nested_rules(
         match tokens[pos] {
           @token.Token::LeftBrace => {
             let nested_selector_text = tokens_to_string(
-              tokens,
-              nested_selector_start,
-              pos,
-            )
+                tokens, nested_selector_start, pos,
+              )
               .trim()
               .to_string()
             match find_matching_right_brace(tokens, pos, rule_end) {
@@ -502,8 +496,7 @@ fn extract_ampersand_nested_rules(
                         continue
                       }
                       let expanded = replace_ampersand(
-                        nested_trim,
-                        parent_selector,
+                        nested_trim, parent_selector,
                       )
                       match @selector.parse_selector_text(expanded) {
                         Some(sel) =>
@@ -522,12 +515,11 @@ fn extract_ampersand_nested_rules(
           _ => pos = pos + 1
         }
       }
-      @token.Token::LeftBrace => {
+      @token.Token::LeftBrace =>
         match find_matching_right_brace(tokens, pos, rule_end) {
           Some(close) => pos = close + 1
           None => break
         }
-      }
       @token.Token::RightBrace | @token.Token::EOF => break
       _ => pos = pos + 1
     }

@@ -626,42 +626,47 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_rl" {
     float: @types.Float::Left,
   }
   let tile_right = { ..tile_left, float: @types.Float::Right }
-  let tile_left_clear = {
-    ..tile_left,
-    clear: @types.Clear::Both,
-  }
-  let indicator = @node.Node::new("indicator", {
-    ..default_style,
-    width: @types.Length(72.0),
-    height: @types.Length(72.0),
-    margin: {
-      top: @types.Length(-24.0),
-      right: @types.Length(-24.0),
-      bottom: @types.Length(-24.0),
-      left: @types.Length(-24.0),
+  let tile_left_clear = { ..tile_left, clear: @types.Clear::Both }
+  let indicator = @node.Node::new(
+    "indicator",
+    {
+      ..default_style,
+      width: @types.Length(72.0),
+      height: @types.Length(72.0),
+      margin: {
+        top: @types.Length(-24.0),
+        right: @types.Length(-24.0),
+        bottom: @types.Length(-24.0),
+        left: @types.Length(-24.0),
+      },
+      writing_mode: @style.WritingMode::HorizontalTb,
+      direction: @style.Direction::Ltr,
     },
-    writing_mode: @style.WritingMode::HorizontalTb,
-    direction: @style.Direction::Ltr,
-  }, [
-    @node.Node::leaf("a", tile_left),
-    @node.Node::leaf("b", tile_left),
-    @node.Node::leaf("c", tile_right),
-    @node.Node::leaf("d", tile_left_clear),
-    @node.Node::leaf("e", tile_left),
-    @node.Node::leaf("f", tile_right),
-    @node.Node::leaf("g", tile_left_clear),
-    @node.Node::leaf("h", tile_left),
-    @node.Node::leaf("i", tile_right),
-  ])
-  let container = @node.Node::new("container", {
-    ..default_style,
-    width: @types.Length(24.0),
-    height: @types.Length(24.0),
-    flex_grow: 0.0,
-    flex_shrink: 0.0,
-    writing_mode: @style.WritingMode::VerticalRl,
-    direction: @style.Direction::Ltr,
-  }, [indicator])
+    [
+      @node.Node::leaf("a", tile_left),
+      @node.Node::leaf("b", tile_left),
+      @node.Node::leaf("c", tile_right),
+      @node.Node::leaf("d", tile_left_clear),
+      @node.Node::leaf("e", tile_left),
+      @node.Node::leaf("f", tile_right),
+      @node.Node::leaf("g", tile_left_clear),
+      @node.Node::leaf("h", tile_left),
+      @node.Node::leaf("i", tile_right),
+    ],
+  )
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      width: @types.Length(24.0),
+      height: @types.Length(24.0),
+      flex_grow: 0.0,
+      flex_shrink: 0.0,
+      writing_mode: @style.WritingMode::VerticalRl,
+      direction: @style.Direction::Ltr,
+    },
+    [indicator],
+  )
   let root_style = {
     ..default_style,
     display: @types.Flex,
@@ -700,42 +705,47 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_lr" {
     float: @types.Float::Left,
   }
   let tile_right = { ..tile_left, float: @types.Float::Right }
-  let tile_left_clear = {
-    ..tile_left,
-    clear: @types.Clear::Both,
-  }
-  let indicator = @node.Node::new("indicator", {
-    ..default_style,
-    width: @types.Length(72.0),
-    height: @types.Length(72.0),
-    margin: {
-      top: @types.Length(-24.0),
-      right: @types.Length(-24.0),
-      bottom: @types.Length(-24.0),
-      left: @types.Length(-24.0),
+  let tile_left_clear = { ..tile_left, clear: @types.Clear::Both }
+  let indicator = @node.Node::new(
+    "indicator",
+    {
+      ..default_style,
+      width: @types.Length(72.0),
+      height: @types.Length(72.0),
+      margin: {
+        top: @types.Length(-24.0),
+        right: @types.Length(-24.0),
+        bottom: @types.Length(-24.0),
+        left: @types.Length(-24.0),
+      },
+      writing_mode: @style.WritingMode::HorizontalTb,
+      direction: @style.Direction::Ltr,
     },
-    writing_mode: @style.WritingMode::HorizontalTb,
-    direction: @style.Direction::Ltr,
-  }, [
-    @node.Node::leaf("a", tile_left),
-    @node.Node::leaf("b", tile_left),
-    @node.Node::leaf("c", tile_right),
-    @node.Node::leaf("d", tile_left_clear),
-    @node.Node::leaf("e", tile_left),
-    @node.Node::leaf("f", tile_right),
-    @node.Node::leaf("g", tile_left_clear),
-    @node.Node::leaf("h", tile_left),
-    @node.Node::leaf("i", tile_right),
-  ])
-  let container = @node.Node::new("container", {
-    ..default_style,
-    width: @types.Length(24.0),
-    height: @types.Length(24.0),
-    flex_grow: 0.0,
-    flex_shrink: 0.0,
-    writing_mode: @style.WritingMode::VerticalLr,
-    direction: @style.Direction::Ltr,
-  }, [indicator])
+    [
+      @node.Node::leaf("a", tile_left),
+      @node.Node::leaf("b", tile_left),
+      @node.Node::leaf("c", tile_right),
+      @node.Node::leaf("d", tile_left_clear),
+      @node.Node::leaf("e", tile_left),
+      @node.Node::leaf("f", tile_right),
+      @node.Node::leaf("g", tile_left_clear),
+      @node.Node::leaf("h", tile_left),
+      @node.Node::leaf("i", tile_right),
+    ],
+  )
+  let container = @node.Node::new(
+    "container",
+    {
+      ..default_style,
+      width: @types.Length(24.0),
+      height: @types.Length(24.0),
+      flex_grow: 0.0,
+      flex_shrink: 0.0,
+      writing_mode: @style.WritingMode::VerticalLr,
+      direction: @style.Direction::Ltr,
+    },
+    [indicator],
+  )
   let root_style = {
     ..default_style,
     display: @types.Flex,
