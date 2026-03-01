@@ -1645,68 +1645,70 @@ fn compute_cell_height_for_row(
   let padding = @types.resolve_rect_intrinsic(style.padding)
   let border = @types.resolve_rect_intrinsic(style.border)
   let box_extra = padding.vertical_sum() + border.vertical_sum()
-
-  // If cell has explicit height
-  match style.height {
+  let explicit_height = match style.height {
     @types.Length(h) =>
-      // In border-collapse mode, explicit height includes border, so subtract it
-      if border_collapse {
-        h - border.vertical_sum()
-      } else {
-        h
+      // In border-collapse mode, explicit height includes border, so subtract it.
+      Some(if border_collapse { h - border.vertical_sum() } else { h })
+    _ => None
+  }
+  fn child_intrinsic_height(child : @node.Node) -> Double {
+    match child.measure {
+      Some(mf) => {
+        let intrinsic = (mf.func)(10000.0, 10000.0)
+        intrinsic.max_height
       }
-    _ => {
-      fn child_intrinsic_height(child : @node.Node) -> Double {
-        match child.measure {
-          Some(mf) => {
-            let intrinsic = (mf.func)(10000.0, 10000.0)
-            intrinsic.max_height
-          }
-          None => measure_node_intrinsic_height(child)
-        }
-      }
-
-      let mut has_inline_flow = false
-      let mut inline_only = true
-      for child in cell.children {
-        if not(is_in_flow_intrinsic_child(child)) {
-          continue
-        }
-        has_inline_flow = true
-        if not(is_inline_intrinsic_child(child)) {
-          inline_only = false
-          break
-        }
-      }
-
-      let mut total_height = 0.0
-      if inline_only && has_inline_flow {
-        let mut current_line_height = 0.0
-        for child in cell.children {
-          if not(is_in_flow_intrinsic_child(child)) {
-            continue
-          }
-          if child.id == "br" {
-            total_height = total_height + current_line_height
-            current_line_height = 0.0
-          } else {
-            let child_height = child_intrinsic_height(child)
-            if child_height > current_line_height {
-              current_line_height = child_height
-            }
-          }
-        }
-        total_height = total_height + current_line_height
-      } else {
-        for child in cell.children {
-          if not(is_in_flow_intrinsic_child(child)) {
-            continue
-          }
-          total_height = total_height + child_intrinsic_height(child)
-        }
-      }
-      total_height + box_extra
+      None => measure_node_intrinsic_height(child)
     }
+  }
+
+  let mut has_inline_flow = false
+  let mut inline_only = true
+  for child in cell.children {
+    if not(is_in_flow_intrinsic_child(child)) {
+      continue
+    }
+    has_inline_flow = true
+    if not(is_inline_intrinsic_child(child)) {
+      inline_only = false
+      break
+    }
+  }
+
+  let mut total_height = 0.0
+  if inline_only && has_inline_flow {
+    let mut current_line_height = 0.0
+    for child in cell.children {
+      if not(is_in_flow_intrinsic_child(child)) {
+        continue
+      }
+      if child.id == "br" {
+        total_height = total_height + current_line_height
+        current_line_height = 0.0
+      } else {
+        let child_height = child_intrinsic_height(child)
+        if child_height > current_line_height {
+          current_line_height = child_height
+        }
+      }
+    }
+    total_height = total_height + current_line_height
+  } else {
+    for child in cell.children {
+      if not(is_in_flow_intrinsic_child(child)) {
+        continue
+      }
+      total_height = total_height + child_intrinsic_height(child)
+    }
+  }
+  let content_intrinsic_height = total_height + box_extra
+  match explicit_height {
+    Some(h) =>
+      if h > content_intrinsic_height {
+        h
+      } else {
+        content_intrinsic_height
+      }
+    None => content_intrinsic_height
   }
 }
 
@@ -1781,11 +1783,9 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   let padding = @types.resolve_rect_intrinsic(style.padding)
   let border = @types.resolve_rect_intrinsic(style.border)
   let box_extra = padding.vertical_sum() + border.vertical_sum()
-
-  // If cell has explicit height, use it directly (already adjusted)
-  match style.height {
-    @types.Length(h) => return h
-    _ => ()
+  let explicit_height = match style.height {
+    @types.Length(h) => Some(h)
+    _ => None
   }
 
   fn child_intrinsic_height(child : @node.Node) -> Double {
@@ -1836,7 +1836,16 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
       total_height = total_height + child_intrinsic_height(child)
     }
   }
-  total_height + box_extra
+  let content_intrinsic_height = total_height + box_extra
+  match explicit_height {
+    Some(h) =>
+      if h > content_intrinsic_height {
+        h
+      } else {
+        content_intrinsic_height
+      }
+    None => content_intrinsic_height
+  }
 }
 
 ///|
@@ -2108,15 +2117,13 @@ pub fn compute(
   }
   if not(ctx.stretch_width) {
     let should_enforce_intrinsic_min_width = match style.max_width {
-      @types.Length(max_w) => max_w >= intrinsic_table_width
-      @types.Percent(p) => parent_width * p >= intrinsic_table_width
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         not(ignore_intrinsic_max_width_constraint(style))
-      @types.Auto => true
+      _ => true
     }
     let is_fixed_layout = style.table_layout == @style.TableLayout::Fixed
     // Auto-layout tables cannot be narrower than their intrinsic minimum width,
-    // except when an explicit max-width is tighter than the intrinsic minimum.
+    // even when max-width is tighter than the intrinsic minimum.
     if not(is_fixed_layout) &&
       should_enforce_intrinsic_min_width &&
       table_width < intrinsic_table_width {
@@ -2949,10 +2956,20 @@ pub fn compute(
     padding.vertical_sum() + border.vertical_sum()
   }
   let clamped_min_height = max(raw_table_height, resolved_min_table_height)
-  let table_height = if clamped_min_height > resolved_max_table_height {
+  let mut table_height = if clamped_min_height > resolved_max_table_height {
     resolved_max_table_height
   } else {
     clamped_min_height
+  }
+  // In vertical writing modes, physical height is inline-size.
+  // Auto-layout tables should not shrink below intrinsic inline minimum size.
+  if style.writing_mode.is_vertical() &&
+    not(ctx.stretch_height) &&
+    not(is_fixed_layout) {
+    let intrinsic_inline_height = compute_intrinsic_size(node, false)
+    if table_height < intrinsic_inline_height {
+      table_height = intrinsic_inline_height
+    }
   }
 
   // Calculate row content height for colgroup/col height

@@ -1209,8 +1209,13 @@ fn apply_property(
       builder.border_bottom = resolve_border_width(value, ctx)
     "border-inline" | "border-inline-width" => {
       let width = resolve_border_width(value, ctx)
-      builder.border_left = width
-      builder.border_right = width
+      if builder.writing_mode.is_vertical() {
+        builder.border_top = width
+        builder.border_bottom = width
+      } else {
+        builder.border_left = width
+        builder.border_right = width
+      }
     }
     "border-inline-style" => {
       let raw_parts = value.trim().to_lower().split(" ")
@@ -1221,19 +1226,38 @@ fn apply_property(
           parts.push(p)
         }
       }
-      if parts.length() > 0 && is_none_border_style(parts[0]) {
-        builder.border_left = @types.Length(0.0)
-      }
-      if parts.length() > 1 && is_none_border_style(parts[1]) {
-        builder.border_right = @types.Length(0.0)
-      } else if parts.length() == 1 && is_none_border_style(parts[0]) {
-        builder.border_right = @types.Length(0.0)
+      if builder.writing_mode.is_vertical() {
+        if parts.length() > 0 && is_none_border_style(parts[0]) {
+          builder.border_top = @types.Length(0.0)
+        }
+        if parts.length() > 1 && is_none_border_style(parts[1]) {
+          builder.border_bottom = @types.Length(0.0)
+        } else if parts.length() == 1 && is_none_border_style(parts[0]) {
+          builder.border_bottom = @types.Length(0.0)
+        }
+      } else {
+        if parts.length() > 0 && is_none_border_style(parts[0]) {
+          builder.border_left = @types.Length(0.0)
+        }
+        if parts.length() > 1 && is_none_border_style(parts[1]) {
+          builder.border_right = @types.Length(0.0)
+        } else if parts.length() == 1 && is_none_border_style(parts[0]) {
+          builder.border_right = @types.Length(0.0)
+        }
       }
     }
     "border-inline-start" | "border-inline-start-width" =>
-      builder.border_left = resolve_border_width(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.border_top = resolve_border_width(value, ctx)
+      } else {
+        builder.border_left = resolve_border_width(value, ctx)
+      }
     "border-inline-end" | "border-inline-end-width" =>
-      builder.border_right = resolve_border_width(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.border_bottom = resolve_border_width(value, ctx)
+      } else {
+        builder.border_right = resolve_border_width(value, ctx)
+      }
     // Flexbox container
     "flex-direction" => builder.flex_direction = parse_flex_direction(value)
     "flex-wrap" => builder.flex_wrap = parse_flex_wrap(value)

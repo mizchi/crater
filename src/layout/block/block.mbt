@@ -591,6 +591,14 @@ fn is_no_principal_table_internal_display(display : @types.Display) -> Bool {
 }
 
 ///|
+fn is_table_principal_display(display : @types.Display) -> Bool {
+  match display {
+    @types.Table | @types.InlineTable => true
+    _ => false
+  }
+}
+
+///|
 /// Containment effects only apply when the element generates a principal box.
 fn containment_applies(display : @types.Display) -> Bool {
   not(is_no_principal_table_internal_display(display))
@@ -1212,6 +1220,7 @@ fn calculate_children_min_content_width(
     fn apply_intrinsic_inline_constraints(raw_width : Double) -> Double {
       let mut resolved = raw_width
       let width_is_inline_axis = not(child_style.writing_mode.is_vertical())
+      let is_table_principal = is_table_principal_display(child_style.display)
       let intrinsic_min_width = if child_suppress_intrinsic_inline {
         child_style.contained_intrinsic_width_fallback() + child_min_box
       } else {
@@ -1260,6 +1269,9 @@ fn calculate_children_min_content_width(
             resolved = intrinsic_max_width
           }
         _ => ()
+      }
+      if is_table_principal && resolved < intrinsic_min_width {
+        resolved = intrinsic_min_width
       }
       if resolved < child_min_box {
         child_min_box

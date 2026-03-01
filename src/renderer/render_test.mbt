@@ -2705,6 +2705,106 @@ test "wpt_table_as_flex_item_fixed_min_width_floor" {
 }
 
 ///|
+test "wpt_table_intrinsic_size_001_inline_size_floor" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer { width: min-content; background: green; }
+    #|.table {
+    #|  display: table;
+    #|  inline-size: 30px;
+    #|  block-size: 100px;
+    #|  border-inline: 10px solid green;
+    #|  margin-inline: 10px;
+    #|}
+    #|.content { inline-size: 60px; block-size: 100px; }
+    #|</style>
+    #|<div class="outer"><div class="table"><div class="content"></div></div></div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let table = outer.children[0]
+  inspect(outer.width, content="100")
+  inspect(table.width, content="80")
+}
+
+///|
+test "wpt_table_intrinsic_size_002_max_inline_size_floor" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer { width: min-content; background: green; }
+    #|.table {
+    #|  display: table;
+    #|  max-inline-size: 30px;
+    #|  block-size: 100px;
+    #|  border-inline: 10px solid green;
+    #|  margin-inline: 10px;
+    #|}
+    #|.content { inline-size: 60px; block-size: 100px; }
+    #|</style>
+    #|<div class="outer"><div class="table"><div class="content"></div></div></div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let table = outer.children[0]
+  inspect(outer.width, content="100")
+  inspect(table.width, content="80")
+}
+
+///|
+test "wpt_table_intrinsic_size_003_vertical_inline_size_floor" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer { width: min-content; background: green; }
+    #|.table {
+    #|  writing-mode: vertical-rl;
+    #|  display: table;
+    #|  inline-size: 30px;
+    #|  block-size: 100px;
+    #|  border-inline: 10px solid green;
+    #|}
+    #|.content { inline-size: 80px; block-size: 100px; }
+    #|</style>
+    #|<div class="outer"><div class="table"><div class="content"></div></div></div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let table = outer.children[0]
+  inspect(outer.width, content="100")
+  inspect(outer.height, content="100")
+  inspect(table.width, content="100")
+  inspect(table.height, content="100")
+}
+
+///|
+test "wpt_table_intrinsic_size_004_vertical_max_inline_size_floor" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer { width: min-content; background: green; }
+    #|.table {
+    #|  writing-mode: vertical-rl;
+    #|  display: table;
+    #|  max-inline-size: 30px;
+    #|  block-size: 100px;
+    #|  border-inline: 10px solid green;
+    #|}
+    #|.content { inline-size: 80px; block-size: 100px; }
+    #|</style>
+    #|<div class="outer"><div class="table"><div class="content"></div></div></div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let table = outer.children[0]
+  inspect(outer.width, content="100")
+  inspect(outer.height, content="100")
+  inspect(table.width, content="100")
+  inspect(table.height, content="100")
+}
+
+///|
 test "wpt_table_flex_item_auto_width_uses_flex_used_size" {
   let html =
     #|<!DOCTYPE html>

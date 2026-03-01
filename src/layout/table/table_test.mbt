@@ -257,6 +257,7 @@ test "table_max_width_percent_constraint" {
   let table_style : @style.Style = {
     ..@style.Style::default(),
     display: @types.Table,
+    border_spacing: 0.0,
     max_width: @types.Percent(0.5),
   }
   let cell = @node.Node::new("cell", cell_style, [])
@@ -273,8 +274,9 @@ test "table_max_width_percent_constraint" {
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
-  // Explicit max-width can clamp below intrinsic minimum width.
-  inspect(layout.width, content="50")
+  // Auto-layout tables must not shrink below their intrinsic minimum width,
+  // even if max-width is tighter.
+  inspect(layout.width, content="60")
 }
 
 ///|
