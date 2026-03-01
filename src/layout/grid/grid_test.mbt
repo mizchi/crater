@@ -1937,6 +1937,74 @@ test "grid_fr_sum_less_than_one" {
 }
 
 ///|
+test "grid_overflow_alignment_center_offsets_single_item" {
+  let default_style = @style.Style::default()
+  let indicator = @node.Node::leaf("indicator", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+    justify_content: @types.Center,
+    align_content: @types.Center,
+  }
+  let root = @node.Node::new("root", root_style, [indicator])
+  let ctx : @types.LayoutContext = {
+    available_width: 300.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 300.0,
+    viewport_height: 200.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  assert_eq(layout.children[0].x, -24.0)
+  assert_eq(layout.children[0].y, -24.0)
+}
+
+///|
+test "grid_overflow_alignment_start_vertical_rl_rtl_offsets_both_axes" {
+  let default_style = @style.Style::default()
+  let indicator = @node.Node::leaf("indicator", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+    justify_content: @types.Start,
+    align_content: @types.Start,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Rtl,
+  }
+  let root = @node.Node::new("root", root_style, [indicator])
+  let ctx : @types.LayoutContext = {
+    available_width: 300.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 300.0,
+    viewport_height: 200.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  assert_eq(layout.children[0].x, -48.0)
+  assert_eq(layout.children[0].y, -48.0)
+}
+
+///|
 /// Test table inside grid with stretch alignment
 /// Table with width:auto should stretch to fill the grid cell when
 /// justify-items is Stretch (default)
