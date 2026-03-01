@@ -1512,11 +1512,41 @@ fn apply_property(
     "bottom" => builder.inset_bottom = resolve_dimension(value, ctx)
     "left" => builder.inset_left = resolve_dimension(value, ctx)
     "inset" => {
-      let dim = resolve_dimension(value, ctx)
-      builder.inset_top = dim
-      builder.inset_right = dim
-      builder.inset_bottom = dim
-      builder.inset_left = dim
+      let parts : Array[StringView] = value
+        .split(" ")
+        .filter(fn(s) { not(s.is_empty()) })
+        .collect()
+      match parts.length() {
+        1 => {
+          let dim = resolve_dimension(parts[0].to_string(), ctx)
+          builder.inset_top = dim
+          builder.inset_right = dim
+          builder.inset_bottom = dim
+          builder.inset_left = dim
+        }
+        2 => {
+          let tb = resolve_dimension(parts[0].to_string(), ctx)
+          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          builder.inset_top = tb
+          builder.inset_bottom = tb
+          builder.inset_left = lr
+          builder.inset_right = lr
+        }
+        3 => {
+          builder.inset_top = resolve_dimension(parts[0].to_string(), ctx)
+          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          builder.inset_left = lr
+          builder.inset_right = lr
+          builder.inset_bottom = resolve_dimension(parts[2].to_string(), ctx)
+        }
+        4 => {
+          builder.inset_top = resolve_dimension(parts[0].to_string(), ctx)
+          builder.inset_right = resolve_dimension(parts[1].to_string(), ctx)
+          builder.inset_bottom = resolve_dimension(parts[2].to_string(), ctx)
+          builder.inset_left = resolve_dimension(parts[3].to_string(), ctx)
+        }
+        _ => ()
+      }
     }
     // Logical inset properties (LTR horizontal-tb writing mode)
     "inset-inline" => {

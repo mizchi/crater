@@ -1,30 +1,35 @@
 # TODO
 
-## WPT サポート状況（2026-02-28）
+## WPT サポート状況（2026-03-01）
 
 - 実測コマンド: `npx tsx scripts/update-wpt-readme.ts`
-- 全体: `1217 / 1446 passed`（`84.2%`）
+- 全体: `1258 / 1446 passed`（`87.0%`）
 - 主要モジュール:
-  - `css-contain`: `303 / 303`（`100.0%`）
-  - `css-display`: `58 / 79`（`73.4%`）
-  - `css-flexbox`: `271 / 289`（`93.8%`）
-  - `css-overflow`: `143 / 243`（`58.8%`）
-  - `css-align`: `18 / 44`（`40.9%`）
-  - `css-tables`: `15 / 32`（`46.9%`）
+  - `css-display`: `54 / 79`（`68.4%`）
+  - `css-align`: `27 / 44`（`61.4%`）
+  - `css-overflow`: `218 / 243`（`89.7%`）
+  - `css-flexbox`: `265 / 289`（`91.7%`）
+  - `css-contain`: `269 / 303`（`88.8%`）
+  - `css-tables`: `29 / 32`（`90.6%`）
 
 ### 今回反映した対応
 
-- `display-contents` の table クラスターは pass:
-  - `display-contents-dynamic-table-001-inline.html`
-  - `display-contents-dynamic-table-001-none.html`
-  - `display-contents-dynamic-table-002-inline.html`
-  - `display-contents-dynamic-table-002-none.html`
-  - `display-contents-table-001.html`
-  - `display-contents-table-002.html`
+- `css-display`:
+  - `display-contents-inline-flex-001.html` を含む `display-contents` の `inline-flex/flex` クラスターを改善
+  - 現在 `54 / 79`（`25 failed`）
+- `css-align`:
+  - `align-self/justify-self stretch auto-margins` クラスター（aspect-ratio 含む）を pass 化
+  - 現在 `27 / 44`（`17 failed`）
+- パーサ/レイアウト基盤:
+  - `inset` shorthand の `1-4 値` 対応を inline parser / computed style の両方で実装
+  - abspos の `align-self/justify-self: stretch` を `inset` 解決時に反映
 - 直近の優先候補:
-  - `css-overflow` の残件（`100 failed`）
-  - `css-align` の残件（`26 failed`）
-  - `css-tables` の残件（`17 failed`）
+  - `css-display` の残件（`25 failed`）
+  - `css-align` の残件（`17 failed`）
+  - `css-tables` の残件（`3 failed`）
+
+- 完了:
+  - `css-tables` は `32 / 32` で全件 pass
 
 - WPT 用の外部 intrinsic provider フックを追加:
   - text: `set_text_metrics_provider`（`wpt-runner` は `CRATER_TEXT_MODULE` または `mizchi/text` を自動探索）

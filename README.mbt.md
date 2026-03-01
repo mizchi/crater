@@ -40,20 +40,20 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| css-flexbox | 271 | 289 | 93.8% |
-| css-grid | 32 | 33 | 97.0% |
-| css-tables | 15 | 32 | 46.9% |
-| css-display | 58 | 79 | 73.4% |
-| css-box | 28 | 30 | 93.3% |
-| css-sizing | 88 | 94 | 93.6% |
-| css-align | 18 | 44 | 40.9% |
-| css-position | 59 | 84 | 70.2% |
-| css-overflow | 143 | 243 | 58.8% |
-| css-contain | 303 | 303 | 100.0% |
-| css-variables | 100 | 107 | 93.5% |
-| filter-effects | 100 | 106 | 94.3% |
+| css-flexbox | 265 | 289 | 91.7% |
+| css-grid | 31 | 33 | 93.9% |
+| css-tables | 29 | 32 | 90.6% |
+| css-display | 54 | 79 | 68.4% |
+| css-box | 30 | 30 | 100.0% |
+| css-sizing | 87 | 94 | 92.6% |
+| css-align | 27 | 44 | 61.4% |
+| css-position | 60 | 84 | 71.4% |
+| css-overflow | 218 | 243 | 89.7% |
+| css-contain | 269 | 303 | 88.8% |
+| css-variables | 99 | 107 | 92.5% |
+| filter-effects | 87 | 106 | 82.1% |
 | compositing | 2 | 2 | 100.0% |
-| **Total** | **1217** | **1446** | **84.2%** |
+| **Total** | **1258** | **1446** | **87.0%** |
 
 Run WPT tests:
 ```bash

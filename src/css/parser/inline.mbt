@@ -2131,12 +2131,36 @@ fn apply_property(
       None => ()
     }
   }
-  // inset (top, right, bottom, left - single value for now)
+  // inset (supports 1, 2, 3, or 4 values like margin/padding)
   if property == "inset" {
-    match parse_dimension(value_tokens) {
-      Some(v) =>
-        return { ..style, inset: { left: v, right: v, top: v, bottom: v } }
-      None => ()
+    let dims = parse_multi_dimensions(value_tokens, 4)
+    match dims.length() {
+      1 => {
+        let v = dims[0]
+        return { ..style, inset: { top: v, right: v, bottom: v, left: v } }
+      }
+      2 => {
+        let tb = dims[0]
+        let lr = dims[1]
+        return { ..style, inset: { top: tb, right: lr, bottom: tb, left: lr } }
+      }
+      3 => {
+        let t = dims[0]
+        let lr = dims[1]
+        let b = dims[2]
+        return { ..style, inset: { top: t, right: lr, bottom: b, left: lr } }
+      }
+      4 =>
+        return {
+          ..style,
+          inset: {
+            top: dims[0],
+            right: dims[1],
+            bottom: dims[2],
+            left: dims[3],
+          },
+        }
+      _ => ()
     }
   }
   // top

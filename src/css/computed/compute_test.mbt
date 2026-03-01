@@ -427,6 +427,16 @@ test "compute_inline margin auto" {
 }
 
 ///|
+test "compute_inline inset shorthand with 4 values including auto" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("inset: 50px auto 50px 50px", ctx)
+  inspect(style.inset.top, content="Length(50)")
+  inspect(style.inset.right, content="Auto")
+  inspect(style.inset.bottom, content="Length(50)")
+  inspect(style.inset.left, content="Length(50)")
+}
+
+///|
 test "is_inherited" {
   // Inherited properties
   inspect(@computed.is_inherited("color"), content="true")

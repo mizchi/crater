@@ -1657,13 +1657,27 @@ fn compute_inline_child(
           // Out-of-flow children don't contribute to inline progression
         } else if grand_child.style.display == @types.Contents ||
           is_inline_level(grand_child.style.display) {
-          let grand_layout = compute_inline_child(
+          let raw_grand_layout = compute_inline_child(
             grand_child, available_width, available_height, dispatch,
           )
           let grand_margin = @types.resolve_rect(
             grand_child.style.margin,
             available_width,
           )
+          let is_contents_grand = grand_child.style.display == @types.Contents
+          let grand_layout = if is_contents_grand {
+            {
+              ..raw_grand_layout,
+              width: 0.0,
+              height: 0.0,
+              padding: @types.Rect::zero(),
+              border: @types.Rect::zero(),
+              scroll_width: 0.0,
+              scroll_height: 0.0,
+            }
+          } else {
+            raw_grand_layout
+          }
           let positioned_grand : @types.Layout = {
             ..grand_layout,
             x: contents_cursor_x + grand_margin.left,
@@ -1673,11 +1687,11 @@ fn compute_inline_child(
           contents_children.push(positioned_grand)
           contents_cursor_x = contents_cursor_x +
             grand_margin.left +
-            grand_layout.width +
+            raw_grand_layout.width +
             grand_margin.right
-          if grand_layout.height > contents_height &&
+          if raw_grand_layout.height > contents_height &&
             not(is_ruby_annotation_child(node, grand_child)) {
-            contents_height = grand_layout.height
+            contents_height = raw_grand_layout.height
           }
         }
       }

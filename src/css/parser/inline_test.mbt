@@ -537,6 +537,17 @@ test "parse inset shorthand" {
 }
 
 ///|
+test "parse inset shorthand with 4 values including auto" {
+  let style = parse_inline_style(
+    "position: absolute; inset: 50px auto 50px 50px",
+  )
+  inspect(style.inset.top, content="Length(50)")
+  inspect(style.inset.right, content="Auto")
+  inspect(style.inset.bottom, content="Length(50)")
+  inspect(style.inset.left, content="Length(50)")
+}
+
+///|
 test "parse margin with 2 values" {
   let style = parse_inline_style("margin: 10px 20px")
   inspect(style.margin.top, content="Length(10)")

@@ -89,6 +89,7 @@ pub fn compute_size_params(
   // Check if margins are auto (for centering behavior)
   let margin_left_is_auto = is_margin_auto(style.margin.left)
   let margin_right_is_auto = is_margin_auto(style.margin.right)
+  let justify_self_stretch = style.justify_self == @types.AlignSelf::Stretch
 
   // Calculate initial width
   // When both insets are specified and both margins are auto,
@@ -99,9 +100,13 @@ pub fn compute_size_params(
     @types.Auto =>
       match (inset_left, inset_right) {
         (Some(l), Some(r)) =>
-          // If both margins are auto, use shrink-to-fit (intrinsic) sizing
-          // so the element can be centered
-          if margin_left_is_auto && margin_right_is_auto {
+          // justify-self:stretch with definite insets uses the available span.
+          if justify_self_stretch {
+            let w = area_width - l - r - margin_left - margin_right
+            Some(if w > 0.0 { w } else { 0.0 })
+            // If both margins are auto, use shrink-to-fit (intrinsic) sizing
+            // so the element can be centered.
+          } else if margin_left_is_auto && margin_right_is_auto {
             None
           } else {
             let w = area_width - l - r - margin_left - margin_right
@@ -117,6 +122,7 @@ pub fn compute_size_params(
   // Check if vertical margins are auto (for vertical centering)
   let margin_top_is_auto = is_margin_auto(style.margin.top)
   let margin_bottom_is_auto = is_margin_auto(style.margin.bottom)
+  let align_self_stretch = style.align_self == @types.AlignSelf::Stretch
 
   // Calculate initial height
   // When both insets are specified and both margins are auto,
@@ -127,9 +133,13 @@ pub fn compute_size_params(
     @types.Auto =>
       match (inset_top, inset_bottom) {
         (Some(t), Some(b)) =>
-          // If both margins are auto, use shrink-to-fit (intrinsic) sizing
-          // so the element can be centered
-          if margin_top_is_auto && margin_bottom_is_auto {
+          // align-self:stretch with definite insets uses the available span.
+          if align_self_stretch {
+            let h = area_height - t - b - margin_top - margin_bottom
+            Some(if h > 0.0 { h } else { 0.0 })
+            // If both margins are auto, use shrink-to-fit (intrinsic) sizing
+            // so the element can be centered.
+          } else if margin_top_is_auto && margin_bottom_is_auto {
             None
           } else {
             let h = area_height - t - b - margin_top - margin_bottom

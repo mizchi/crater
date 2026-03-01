@@ -2443,3 +2443,125 @@ test "fieldset_multicol_fragments_non_legend_child" {
   inspect(layout.children[1].width, content="116.66666666666666")
   inspect(layout.children[1].height, content="50")
 }
+
+///|
+test "multicol_display_contents_uses_descendant_height_for_column_flow" {
+  let default_style = @style.Style::default()
+  let inner_block = @node.Node::leaf("div", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(48.0),
+  })
+  let contents_wrapper = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [inner_block],
+  )
+  let item2 = @node.Node::leaf("div", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(20.0),
+  })
+  let item3 = @node.Node::leaf("div", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(20.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(200.0),
+      height: @types.Length(64.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      column_count: Some(2),
+      column_gap: @types.Length(0.0),
+      column_gap_is_normal: false,
+      column_fill: @style.ColumnFill::Auto,
+    },
+    [contents_wrapper, item2, item3],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(120.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 200.0,
+    viewport_height: 120.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[1].y, content="48")
+  inspect(layout.children[2].x, content="100")
+  inspect(layout.children[2].y, content="4")
+}
+
+///|
+test "multicol_balance_moves_third_display_contents_item_to_next_column" {
+  let default_style = @style.Style::default()
+  let first_leaf = @node.Node::leaf("div", {
+    ..default_style,
+    width: @types.Length(392.0),
+    height: @types.Length(16.0),
+  })
+  let first_inner_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [first_leaf],
+  )
+  let first_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [first_inner_contents],
+  )
+  let second_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [
+      @node.Node::leaf("div", {
+        ..default_style,
+        width: @types.Length(392.0),
+        height: @types.Length(16.0),
+      }),
+    ],
+  )
+  let third_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [
+      @node.Node::leaf("div", {
+        ..default_style,
+        width: @types.Length(392.0),
+        height: @types.Length(16.0),
+      }),
+    ],
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(800.0),
+      height: @types.Length(64.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      column_count: Some(2),
+      column_fill: @style.ColumnFill::Balance,
+    },
+    [first_contents, second_contents, third_contents],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(120.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 120.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[1].x, content="0")
+  inspect(layout.children[2].x, content="408")
+  inspect(layout.children[2].y, content="8")
+}
