@@ -29,6 +29,234 @@ fn calculate_scroll_dimensions(
   (max_right, max_bottom)
 }
 
+///|
+fn logical_start_is_physical_min_inline(
+  writing_mode : @style.WritingMode,
+  direction : @style.Direction,
+) -> Bool {
+  if writing_mode.is_vertical() {
+    direction == @style.Direction::Ltr
+  } else {
+    direction == @style.Direction::Ltr
+  }
+}
+
+///|
+fn logical_start_is_physical_min_block(
+  writing_mode : @style.WritingMode,
+) -> Bool {
+  match writing_mode {
+    @style.WritingMode::VerticalRl => false
+    @style.WritingMode::HorizontalTb | @style.WritingMode::VerticalLr => true
+  }
+}
+
+///|
+fn overflow_alignment_track_offset(
+  alignment : @types.Alignment,
+  _is_unsafe : Bool,
+  available : Double,
+  content_size : Double,
+  current_min : Double,
+  start_is_min : Bool,
+  is_inline_axis : Bool,
+) -> Double {
+  let free_space = available - content_size
+  if free_space >= 0.0 {
+    return 0.0
+  }
+  let target_start = if start_is_min { 0.0 } else { free_space }
+  let target_end = if start_is_min { free_space } else { 0.0 }
+  let target_min = match alignment {
+    @types.Alignment::Start | @types.Alignment::FlexStart => target_start
+    @types.Alignment::End | @types.Alignment::FlexEnd => target_end
+    @types.Alignment::Center => free_space / 2.0
+    @types.Alignment::Left => if is_inline_axis { 0.0 } else { target_start }
+    @types.Alignment::Right =>
+      if is_inline_axis {
+        free_space
+      } else {
+        target_end
+      }
+    // Distribution/baseline/stretch fall back to content-distribution start.
+    _ => target_start
+  }
+  target_min - current_min
+}
+
+///|
+priv struct AlignmentContentBounds {
+  min_x : Double
+  max_x : Double
+  min_y : Double
+  max_y : Double
+}
+
+///|
+fn calculate_alignment_content_bounds(
+  container_width : Double,
+  container_height : Double,
+  padding : @types.Rect[Double],
+  children : Array[@types.Layout],
+) -> AlignmentContentBounds {
+  let mut min_left = 0.0
+  let mut min_top = 0.0
+  let mut max_right = container_width - padding.left - padding.right
+  let mut max_bottom = container_height - padding.top - padding.bottom
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let child_left = child.x - child.margin.left
+    let child_top = child.y - child.margin.top
+    let child_right = child.x + child.width + child.margin.right
+    let child_bottom = child.y + child.height + child.margin.bottom
+    if child_left < min_left {
+      min_left = child_left
+    }
+    if child_top < min_top {
+      min_top = child_top
+    }
+    if child_right > max_right {
+      max_right = child_right
+    }
+    if child_bottom > max_bottom {
+      max_bottom = child_bottom
+    }
+    if child.scroll_width > child.width {
+      let nested_right = child.x + child.scroll_width + child.margin.right
+      if nested_right > max_right {
+        max_right = nested_right
+      }
+    }
+    if child.scroll_height > child.height {
+      let nested_bottom = child.y + child.scroll_height + child.margin.bottom
+      if nested_bottom > max_bottom {
+        max_bottom = nested_bottom
+      }
+    }
+  }
+  { min_x: min_left, max_x: max_right, min_y: min_top, max_y: max_bottom }
+}
+
+///|
+fn overflow_creates_scroll_container(overflow : @types.Overflow) -> Bool {
+  match overflow {
+    @types.Visible | @types.Clip => false
+    @types.Hidden | @types.Scroll | @types.Auto => true
+  }
+}
+
+///|
+fn apply_initial_overflow_content_alignment(
+  style : @style.Style,
+  container_width : Double,
+  container_height : Double,
+  padding : @types.Rect[Double],
+  children : Array[@types.Layout],
+) -> Array[@types.Layout] {
+  if children.is_empty() {
+    return children
+  }
+  let content_box_width = container_width - padding.left - padding.right
+  let content_box_height = container_height - padding.top - padding.bottom
+  let inline_available = if style.writing_mode.is_vertical() {
+    content_box_height
+  } else {
+    content_box_width
+  }
+  let block_available = if style.writing_mode.is_vertical() {
+    content_box_width
+  } else {
+    content_box_height
+  }
+  let bounds = calculate_alignment_content_bounds(
+    container_width, container_height, padding, children,
+  )
+  let inline_min = if style.writing_mode.is_vertical() {
+    bounds.min_y
+  } else {
+    bounds.min_x
+  }
+  let inline_max = if style.writing_mode.is_vertical() {
+    bounds.max_y
+  } else {
+    bounds.max_x
+  }
+  let block_min = if style.writing_mode.is_vertical() {
+    bounds.min_x
+  } else {
+    bounds.min_y
+  }
+  let block_max = if style.writing_mode.is_vertical() {
+    bounds.max_x
+  } else {
+    bounds.max_y
+  }
+  let inline_content = if inline_max > inline_min {
+    inline_max - inline_min
+  } else {
+    0.0
+  }
+  let block_content = if block_max > block_min {
+    block_max - block_min
+  } else {
+    0.0
+  }
+  let inline_scrollable = if style.writing_mode.is_vertical() {
+    overflow_creates_scroll_container(style.overflow_y) &&
+    inline_content > inline_available
+  } else {
+    overflow_creates_scroll_container(style.overflow_x) &&
+    inline_content > inline_available
+  }
+  let block_scrollable = if style.writing_mode.is_vertical() {
+    overflow_creates_scroll_container(style.overflow_x) &&
+    block_content > block_available
+  } else {
+    overflow_creates_scroll_container(style.overflow_y) &&
+    block_content > block_available
+  }
+  if not(inline_scrollable) && not(block_scrollable) {
+    return children
+  }
+  let inline_offset = if inline_scrollable {
+    overflow_alignment_track_offset(
+      style.justify_content,
+      style.justify_content_unsafe,
+      inline_available,
+      inline_content,
+      inline_min,
+      logical_start_is_physical_min_inline(style.writing_mode, style.direction),
+      true,
+    )
+  } else {
+    0.0
+  }
+  let block_offset = if block_scrollable {
+    overflow_alignment_track_offset(
+      style.align_content,
+      style.align_content_unsafe,
+      block_available,
+      block_content,
+      block_min,
+      logical_start_is_physical_min_block(style.writing_mode),
+      false,
+    )
+  } else {
+    0.0
+  }
+  let (offset_x, offset_y) = if style.writing_mode.is_vertical() {
+    (block_offset, inline_offset)
+  } else {
+    (inline_offset, block_offset)
+  }
+  if offset_x.abs() <= 0.0001 && offset_y.abs() <= 0.0001 {
+    return children
+  }
+  children.map(fn(child) {
+    { ..child, x: child.x + offset_x, y: child.y + offset_y }
+  })
+}
+
 // =============================================================================
 // Intrinsic Size Cache for Grid
 // =============================================================================
@@ -331,6 +559,77 @@ fn calculate_total_track_size(
 }
 
 ///|
+/// Expand flexible tracks (fr / minmax(..., fr)) to fill remaining space.
+/// Used when the used container size becomes definite after min/max constraints.
+fn expand_flexible_tracks_to_fill(
+  tracks : Array[GridTrack],
+  templates : Array[@types.TrackSizingFunction],
+  auto_templates : Array[@types.TrackSizingFunction],
+  explicit_offset : Int,
+  content_size : Double,
+  gap : Double,
+) -> Unit {
+  if tracks.length() == 0 {
+    return
+  }
+
+  let current_total = calculate_total_track_size(tracks, gap)
+  let remaining = content_size - current_total
+  if remaining <= 0.0 {
+    return
+  }
+
+  let explicit_count = templates.length()
+  let fr_values : Array[Double] = []
+  let mut total_fr = 0.0
+  for i = 0; i < tracks.length(); i = i + 1 {
+    let track_type = if i < explicit_offset {
+      let k = explicit_offset - i
+      get_auto_template_reverse(auto_templates, k)
+    } else if i < explicit_offset + explicit_count {
+      templates[i - explicit_offset]
+    } else {
+      get_auto_template(auto_templates, i - explicit_offset - explicit_count)
+    }
+    let fr = match track_type {
+      @types.TrackSizingFunction::Fr(v) => v
+      @types.MinMax(_, @types.MaxTrackSizing::Fr(v)) => v
+      _ => 0.0
+    }
+    fr_values.push(fr)
+    if fr > 0.0 {
+      total_fr = total_fr + fr
+    }
+  }
+
+  if total_fr <= 0.0 {
+    return
+  }
+
+  for i = 0; i < tracks.length(); i = i + 1 {
+    let fr = fr_values[i]
+    if fr > 0.0 {
+      tracks[i] = {
+        position: tracks[i].position,
+        size: tracks[i].size + remaining * fr / total_fr,
+        stretchable: tracks[i].stretchable,
+      }
+    }
+  }
+
+  // Recompute positions after resizing.
+  let mut pos = 0.0
+  for i = 0; i < tracks.length(); i = i + 1 {
+    tracks[i] = {
+      position: pos,
+      size: tracks[i].size,
+      stretchable: tracks[i].stretchable,
+    }
+    pos = pos + tracks[i].size + gap
+  }
+}
+
+///|
 /// Compute grid layout with LayoutContext interface (matches flex/block signature)
 pub fn compute(
   node : @node.Node,
@@ -450,6 +749,9 @@ fn compute_grid_layout_internal(
   let style = node.style
   let is_vertical_writing = style.writing_mode.is_vertical()
   let is_block_rtl = style.writing_mode.is_block_rtl()
+  // Containment contribution suppression on physical axes.
+  let suppress_width_intrinsic = style.suppresses_intrinsic_width()
+  let suppress_height_intrinsic = style.suppresses_intrinsic_height()
   let original_children = node.children
 
   // Flatten children for display: contents support
@@ -714,6 +1016,7 @@ fn compute_grid_layout_internal(
       expanded_columns,
       style.grid_auto_columns,
       col_offset,
+      false,
       intrinsic_cache,
       dispatch,
     )
@@ -757,6 +1060,7 @@ fn compute_grid_layout_internal(
     expanded_columns,
     style.grid_auto_columns,
     col_offset,
+    false,
     intrinsic_cache,
     dispatch,
   )
@@ -772,6 +1076,7 @@ fn compute_grid_layout_internal(
     expanded_rows,
     style.grid_auto_rows,
     row_offset,
+    false,
     intrinsic_cache,
     dispatch,
   )
@@ -1069,6 +1374,102 @@ fn compute_grid_layout_internal(
   } else {
     calculate_total_track_size(row_tracks, row_gap)
   }
+  fn suppressed_track_base(
+    track : @types.TrackSizingFunction,
+    percent_base : Double,
+  ) -> Double {
+    match track {
+      @types.TrackSizingFunction::Length(v) => if v > 0.0 { v } else { 0.0 }
+      @types.TrackSizingFunction::Percent(p) =>
+        if percent_base > 0.0 && p > 0.0 {
+          percent_base * p
+        } else {
+          0.0
+        }
+      @types.TrackSizingFunction::FitContentLength(v) =>
+        if v > 0.0 {
+          v
+        } else {
+          0.0
+        }
+      @types.TrackSizingFunction::FitContentPercent(p) =>
+        if percent_base > 0.0 && p > 0.0 {
+          percent_base * p
+        } else {
+          0.0
+        }
+      @types.TrackSizingFunction::MinMax(min_track, _max_track) =>
+        match min_track {
+          @types.MinTrackSizing::Length(v) => if v > 0.0 { v } else { 0.0 }
+          @types.MinTrackSizing::Percent(p) =>
+            if percent_base > 0.0 && p > 0.0 {
+              percent_base * p
+            } else {
+              0.0
+            }
+          _ => 0.0
+        }
+      _ => 0.0
+    }
+  }
+  fn calculate_suppressed_track_total(
+    templates : Array[@types.TrackSizingFunction],
+    auto_templates : Array[@types.TrackSizingFunction],
+    explicit_offset : Int,
+    track_count : Int,
+    gap : Double,
+    percent_base : Double,
+  ) -> Double {
+    if track_count <= 0 {
+      return 0.0
+    }
+    let mut total = 0.0
+    for i = 0; i < track_count; i = i + 1 {
+      let track = get_track_template_for_index(
+        templates, auto_templates, explicit_offset, i,
+      )
+      total = total + suppressed_track_base(track, percent_base)
+    }
+    total + gap * (track_count - 1).to_double()
+  }
+  let suppressed_width_track_total = if is_vertical_writing {
+    calculate_suppressed_track_total(
+      expanded_rows,
+      style.grid_auto_rows,
+      row_offset,
+      total_row_count,
+      row_gap,
+      content_height_for_intrinsic,
+    )
+  } else {
+    calculate_suppressed_track_total(
+      expanded_columns,
+      style.grid_auto_columns,
+      col_offset,
+      total_column_count,
+      column_gap,
+      content_width_for_intrinsic,
+    )
+  }
+  let suppressed_height_track_total = if is_vertical_writing {
+    calculate_suppressed_track_total(
+      expanded_columns,
+      style.grid_auto_columns,
+      col_offset,
+      total_column_count,
+      column_gap,
+      content_width_for_intrinsic,
+    )
+  } else {
+    calculate_suppressed_track_total(
+      expanded_rows,
+      style.grid_auto_rows,
+      row_offset,
+      total_row_count,
+      row_gap,
+      content_height_for_intrinsic,
+    )
+  }
   let resolved_min_height = match style.min_height {
     @types.Length(v) => max(v, min_height)
     @types.Percent(p) => max(p * available_height, min_height)
@@ -1122,39 +1523,45 @@ fn compute_grid_layout_internal(
 
       // For percent tracks in indefinite containers, use content-based sizing
       let mut content_max_width = 0.0
-      if sizing_mode == @types.MaxContent && has_fit_content_percent_for_width {
-        for i = 0; i < children.length(); i = i + 1 {
-          let child = children[i]
-          if child.style.display == @types.Display::None {
-            continue
+      if not(suppress_width_intrinsic) {
+        if sizing_mode == @types.MaxContent && has_fit_content_percent_for_width {
+          for i = 0; i < children.length(); i = i + 1 {
+            let child = children[i]
+            if child.style.display == @types.Display::None {
+              continue
+            }
+            let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
+              child, true, container_width_for_expansion, content_height_for_intrinsic,
+              margin_percent_base, intrinsic_cache, dispatch,
+            )
+            let contribution = max_content + margin_start + margin_end
+            if contribution > content_max_width {
+              content_max_width = contribution
+            }
           }
-          let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-            child, true, container_width_for_expansion, content_height_for_intrinsic,
-            margin_percent_base, intrinsic_cache, dispatch,
-          )
-          let contribution = max_content + margin_start + margin_end
-          if contribution > content_max_width {
-            content_max_width = contribution
-          }
-        }
-      } else {
-        for i = 0; i < children.length(); i = i + 1 {
-          let child = children[i]
-          if child.style.display == @types.Display::None {
-            continue
-          }
-          match child.style.width {
-            @types.Length(w) =>
-              if w > content_max_width {
-                content_max_width = w
-              }
-            _ => ()
+        } else {
+          for i = 0; i < children.length(); i = i + 1 {
+            let child = children[i]
+            if child.style.display == @types.Display::None {
+              continue
+            }
+            match child.style.width {
+              @types.Length(w) =>
+                if w > content_max_width {
+                  content_max_width = w
+                }
+              _ => ()
+            }
           }
         }
       }
 
       // Use max of track-based and content-based size
-      let effective_width = max(total_track_width_for_auto, content_max_width)
+      let effective_width = if suppress_width_intrinsic {
+        suppressed_width_track_total
+      } else {
+        max(total_track_width_for_auto, content_max_width)
+      }
       let raw_width = effective_width +
         padding_left +
         padding_right +
@@ -1219,40 +1626,46 @@ fn compute_grid_layout_internal(
 
         // For percent tracks in indefinite containers, use content-based sizing
         let mut content_max_height = 0.0
-        if sizing_mode == @types.MaxContent &&
-          has_fit_content_percent_for_height {
-          for i = 0; i < children.length(); i = i + 1 {
-            let child = children[i]
-            if child.style.display == @types.Display::None {
-              continue
+        if not(suppress_height_intrinsic) {
+          if sizing_mode == @types.MaxContent &&
+            has_fit_content_percent_for_height {
+            for i = 0; i < children.length(); i = i + 1 {
+              let child = children[i]
+              if child.style.display == @types.Display::None {
+                continue
+              }
+              let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
+                child, false, container_width_for_expansion, content_height_for_intrinsic,
+                margin_percent_base, intrinsic_cache, dispatch,
+              )
+              let contribution = max_content + margin_start + margin_end
+              if contribution > content_max_height {
+                content_max_height = contribution
+              }
             }
-            let (_min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-              child, false, container_width_for_expansion, content_height_for_intrinsic,
-              margin_percent_base, intrinsic_cache, dispatch,
-            )
-            let contribution = max_content + margin_start + margin_end
-            if contribution > content_max_height {
-              content_max_height = contribution
-            }
-          }
-        } else {
-          for i = 0; i < children.length(); i = i + 1 {
-            let child = children[i]
-            if child.style.display == @types.Display::None {
-              continue
-            }
-            match child.style.height {
-              @types.Length(h) =>
-                if h > content_max_height {
-                  content_max_height = h
-                }
-              _ => ()
+          } else {
+            for i = 0; i < children.length(); i = i + 1 {
+              let child = children[i]
+              if child.style.display == @types.Display::None {
+                continue
+              }
+              match child.style.height {
+                @types.Length(h) =>
+                  if h > content_max_height {
+                    content_max_height = h
+                  }
+                _ => ()
+              }
             }
           }
         }
 
         // Use max of track-based and content-based size
-        let effective_height = max(total_track_height, content_max_height)
+        let effective_height = if suppress_height_intrinsic {
+          suppressed_height_track_total
+        } else {
+          max(total_track_height, content_max_height)
+        }
         let raw_height = effective_height +
           padding_top +
           padding_bottom +
@@ -1285,6 +1698,35 @@ fn compute_grid_layout_internal(
       min_height
     } else {
       clamped
+    }
+  }
+
+  // When auto-height grid is clamped by min/max into a definite used size,
+  // flex tracks should absorb remaining free space.
+  if height_is_auto {
+    let content_height = container_height -
+      padding_top -
+      padding_bottom -
+      border_top -
+      border_bottom
+    if is_vertical_writing {
+      expand_flexible_tracks_to_fill(
+        column_tracks,
+        expanded_columns,
+        style.grid_auto_columns,
+        col_offset,
+        content_height,
+        column_gap,
+      )
+    } else {
+      expand_flexible_tracks_to_fill(
+        row_tracks,
+        expanded_rows,
+        style.grid_auto_rows,
+        row_offset,
+        content_height,
+        row_gap,
+      )
     }
   }
 
@@ -1832,8 +2274,11 @@ fn compute_grid_layout_internal(
     top: padding_top,
     bottom: padding_bottom,
   }
+  let aligned_children = apply_initial_overflow_content_alignment(
+    style, container_width, container_height, padding, final_children,
+  )
   let (scroll_width, scroll_height) = calculate_scroll_dimensions(
-    container_width, container_height, padding, final_children,
+    container_width, container_height, padding, aligned_children,
   )
   {
     id: node.id,
@@ -1853,7 +2298,7 @@ fn compute_grid_layout_internal(
     overflow_y: style.overflow_y,
     scroll_width,
     scroll_height,
-    children: final_children,
+    children: aligned_children,
     text: node.text,
   }
 }
@@ -1935,6 +2380,7 @@ fn calculate_track_intrinsic_sizes(
   templates : Array[@types.TrackSizingFunction], // Track templates for type-aware distribution
   auto_templates : Array[@types.TrackSizingFunction], // Auto track templates
   explicit_offset : Int, // Offset for explicit tracks
+  suppress_item_intrinsic : Bool, // Suppress item-driven intrinsic contributions
   cache : GridIntrinsicCache, // Cache for intrinsic size calculations
   dispatch : @node.DispatchFn,
 ) -> (Array[Double], Array[Double]) {
@@ -1992,10 +2438,14 @@ fn calculate_track_intrinsic_sizes(
     if span > max_span {
       max_span = span
     }
-    let (min_content, max_content, margin_start, margin_end) = calculate_item_intrinsic_sizes(
-      child, is_column, container_width, container_height, margin_percent_base, cache,
-      dispatch,
-    )
+    let (min_content, max_content, margin_start, margin_end) = if suppress_item_intrinsic {
+      (0.0, 0.0, 0.0, 0.0)
+    } else {
+      calculate_item_intrinsic_sizes(
+        child, is_column, container_width, container_height, margin_percent_base,
+        cache, dispatch,
+      )
+    }
     let min_content_contribution = min_content + margin_start + margin_end
     let max_contribution = max_content + margin_start + margin_end
 
@@ -4044,6 +4494,22 @@ fn adjust_block_tracks_for_measured_items(
       None => continue
       Some(_) => ()
     }
+    // Replaced/intrinsic-based block-axis growth only applies when
+    // the item's block size is auto. Definite block size must win.
+    let child_block_size_is_auto = if is_vertical_writing {
+      match child.style.width {
+        @types.Auto => true
+        _ => false
+      }
+    } else {
+      match child.style.height {
+        @types.Auto => true
+        _ => false
+      }
+    }
+    if not(child_block_size_is_auto) {
+      continue
+    }
     let placement = placements[i]
     let block_start = if is_vertical_writing {
       placement.column_start
@@ -4081,16 +4547,18 @@ fn adjust_block_tracks_for_measured_items(
     let (_, inline_size) = get_span_bounds(
       inline_tracks, inline_start, inline_end,
     )
-    if inline_size <= 0.0 {
-      continue
-    }
     let intrinsic = get_intrinsic_from_measure(child, 0.0, 0.0)
     if intrinsic.max_width <= 0.0 || intrinsic.max_height <= 0.0 {
       continue
     }
-    let scaled_height = if inline_size < intrinsic.max_width {
+    let effective_inline_size = if inline_size <= 0.0 {
+      intrinsic.max_width
+    } else {
+      inline_size
+    }
+    let scaled_height = if effective_inline_size < intrinsic.max_width {
       let area = intrinsic.max_width * intrinsic.max_height
-      let scaled = area / inline_size
+      let scaled = area / effective_inline_size
       if scaled < intrinsic.min_height {
         intrinsic.min_height
       } else {
@@ -4101,13 +4569,13 @@ fn adjust_block_tracks_for_measured_items(
     }
     let (margin_start, margin_end) = if is_vertical_writing {
       (
-        resolve_dimension(child.style.margin.left, inline_size, 0.0),
-        resolve_dimension(child.style.margin.right, inline_size, 0.0),
+        resolve_dimension(child.style.margin.left, effective_inline_size, 0.0),
+        resolve_dimension(child.style.margin.right, effective_inline_size, 0.0),
       )
     } else {
       (
-        resolve_dimension(child.style.margin.top, inline_size, 0.0),
-        resolve_dimension(child.style.margin.bottom, inline_size, 0.0),
+        resolve_dimension(child.style.margin.top, effective_inline_size, 0.0),
+        resolve_dimension(child.style.margin.bottom, effective_inline_size, 0.0),
       )
     }
     let required = scaled_height + margin_start + margin_end
@@ -4204,27 +4672,32 @@ fn adjust_block_tracks_for_content_items(
     let (_, inline_size) = get_span_bounds(
       inline_tracks, inline_start, inline_end,
     )
-    if inline_size <= 0.0 {
-      continue
+    let mut effective_inline_size = inline_size
+    if effective_inline_size <= 0.0 {
+      let intrinsic = get_intrinsic_from_measure(child, 0.0, 0.0)
+      if intrinsic.max_width <= 0.0 {
+        continue
+      }
+      effective_inline_size = intrinsic.max_width
     }
     let content_layout = compute_child_layout(
       child,
-      inline_size,
+      effective_inline_size,
       1.0e10,
       dispatch,
       stretch_width=false,
       stretch_height=false,
-      percent_base_width=inline_size,
+      percent_base_width=effective_inline_size,
     )
     let (margin_start, margin_end) = if is_vertical_writing {
       (
-        resolve_dimension(child.style.margin.left, inline_size, 0.0),
-        resolve_dimension(child.style.margin.right, inline_size, 0.0),
+        resolve_dimension(child.style.margin.left, effective_inline_size, 0.0),
+        resolve_dimension(child.style.margin.right, effective_inline_size, 0.0),
       )
     } else {
       (
-        resolve_dimension(child.style.margin.top, inline_size, 0.0),
-        resolve_dimension(child.style.margin.bottom, inline_size, 0.0),
+        resolve_dimension(child.style.margin.top, effective_inline_size, 0.0),
+        resolve_dimension(child.style.margin.bottom, effective_inline_size, 0.0),
       )
     }
     let required = content_layout.height + margin_start + margin_end
@@ -5034,6 +5507,11 @@ fn apply_alignment(
 /// For blocks without children, baseline is at the bottom
 /// For blocks with children, baseline is the first child's baseline
 fn calculate_baseline(node : @node.Node, layout : @types.Layout) -> Double {
+  if node.style.contain.layout {
+    // contain:layout items suppress baseline participation and synthesize
+    // baseline from their border box.
+    return layout.height
+  }
   if node.children.length() > 0 && layout.children.length() > 0 {
     // Baseline is the first child's baseline, offset by the child's position
     let first_child = node.children[0]

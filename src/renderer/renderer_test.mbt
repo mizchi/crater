@@ -344,6 +344,96 @@ test "font-size with nested selectors like WPT" {
 }
 
 ///|
+test "fieldset_columns_shorthand_applies_in_wpt_like_case" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  #container {
+    #|    overflow: hidden;
+    #|    columns: 3;
+    #|    column-fill: auto;
+    #|    gap: 0;
+    #|    height: 50px;
+    #|    margin: 0;
+    #|    border: 15px solid green;
+    #|    padding: 0;
+    #|    scroll-marker-group: before;
+    #|    background: red;
+    #|  }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|<div style="width:100px; height:100px; background:red;">
+    #|  <fieldset id="container">
+    #|    <legend style="width:50px; height:15px; background:green;"></legend>
+    #|    <div style="height:210px; background:green;"></div>
+    #|  </fieldset>
+    #|</div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let wrapper = node.children[0]
+  let container = wrapper.children[0]
+  inspect(container.id, content="fieldset#container")
+  inspect(container.style.column_count, content="Some(3)")
+  inspect(container.style.box_sizing, content="BorderBox")
+  inspect(container.style.height, content="Length(80)")
+  inspect(container.style.column_gap, content="Length(0)")
+  inspect(container.style.column_gap_is_normal, content="false")
+}
+
+///|
+test "fieldset_columns_shorthand_survives_following_column_scroll_marker_rule" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  #container {
+    #|    overflow: hidden;
+    #|    columns: 3;
+    #|    column-fill: auto;
+    #|    gap: 0;
+    #|    height: 50px;
+    #|    margin: 0;
+    #|    border: 15px solid green;
+    #|    padding: 0;
+    #|    scroll-marker-group: before;
+    #|    background: red;
+    #|  }
+    #|  #container::scroll-marker-group {
+    #|    display: flex;
+    #|    height: 20px;
+    #|    background: red;
+    #|  }
+    #|  #container::column::scroll-marker {
+    #|    display: flex;
+    #|    width: 20px;
+    #|    height: 100%;
+    #|    background: green;
+    #|    content: "";
+    #|  }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|<div style="width:100px; height:100px; background:red;">
+    #|  <fieldset id="container">
+    #|    <legend style="width:50px; height:15px; background:green;"></legend>
+    #|    <div style="height:210px; background:green;"></div>
+    #|  </fieldset>
+    #|</div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let wrapper = node.children[0]
+  let container = wrapper.children[0]
+  inspect(container.id, content="fieldset#container")
+  inspect(container.style.column_count, content="Some(3)")
+  inspect(container.style.box_sizing, content="BorderBox")
+  inspect(container.style.height, content="Length(80)")
+  inspect(container.style.column_gap, content="Length(0)")
+  inspect(container.style.column_gap_is_normal, content="false")
+}
+
+///|
 test "br element preserved as separate node with line-height" {
   let html =
     #|<!doctype html>
@@ -393,7 +483,176 @@ test "br element has line-height for layout height" {
   let br = test_p.children[1]
   inspect(br.id, content="br")
   // height should be approximately 19.2 (16 * 1.2)
-  inspect(br.height, content="19.2")
+  inspect(
+    br.height,
+    content=(
+      #|16.32
+    ),
+  )
+}
+
+///|
+test "custom text metrics provider overrides text measurement" {
+  @renderer.clear_text_metrics_provider()
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="test">abc</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let default_node = @renderer.render_to_node(html, ctx)
+  let default_text = default_node.children[0].children[0]
+  inspect(default_text.id, content="#text")
+  let default_intrinsic = match default_text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(default_intrinsic.max_width == 24.0, content="true")
+
+  let provider = @renderer.TextMetricsProvider::new(fn(
+    _text : String,
+    _font_size : Double,
+    _line_height : Double,
+    _white_space : @style.WhiteSpace,
+    _writing_mode : @style.WritingMode,
+  ) -> @types.MeasureFunc {
+    {
+      func: fn(
+        _available_width : Double,
+        _available_height : Double,
+      ) -> @types.IntrinsicSize {
+        {
+          min_width: 123.0,
+          max_width: 123.0,
+          min_height: 45.0,
+          max_height: 45.0,
+        }
+      },
+    }
+  })
+  @renderer.set_text_metrics_provider(provider)
+
+  let overridden_node = @renderer.render_to_node(html, ctx)
+  let overridden_text = overridden_node.children[0].children[0]
+  let overridden_intrinsic = match overridden_text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(overridden_intrinsic.max_width, content="123")
+  inspect(overridden_intrinsic.max_height, content="45")
+  @renderer.clear_text_metrics_provider()
+}
+
+///|
+test "clear text metrics provider restores default text measurement" {
+  @renderer.clear_text_metrics_provider()
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="test">abc</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+
+  let provider = @renderer.TextMetricsProvider::new(fn(
+    _text : String,
+    _font_size : Double,
+    _line_height : Double,
+    _white_space : @style.WhiteSpace,
+    _writing_mode : @style.WritingMode,
+  ) -> @types.MeasureFunc {
+    {
+      func: fn(
+        _available_width : Double,
+        _available_height : Double,
+      ) -> @types.IntrinsicSize {
+        {
+          min_width: 321.0,
+          max_width: 321.0,
+          min_height: 65.0,
+          max_height: 65.0,
+        }
+      },
+    }
+  })
+  @renderer.set_text_metrics_provider(provider)
+  @renderer.clear_text_metrics_provider()
+
+  let restored_node = @renderer.render_to_node(html, ctx)
+  let restored_text = restored_node.children[0].children[0]
+  let restored_intrinsic = match restored_text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(restored_intrinsic.max_width == 24.0, content="true")
+}
+
+///|
+test "custom image intrinsic size provider overrides unresolved src size" {
+  @renderer.clear_image_intrinsic_size_provider()
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<img id="target" src="https://example.com/a.png">
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let default_node = @renderer.render_to_node(html, ctx)
+  let default_img = default_node.children[0]
+  inspect(default_img.id, content="img#target")
+  let default_intrinsic = match default_img.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(default_intrinsic.max_width == 0.0, content="true")
+  inspect(default_intrinsic.max_height == 0.0, content="true")
+
+  let provider = @renderer.ImageIntrinsicSizeProvider::new(fn(
+    src : String,
+  ) -> (Double, Double)? {
+    if src.contains("example.com") {
+      Some((77.0, 33.0))
+    } else {
+      None
+    }
+  })
+  @renderer.set_image_intrinsic_size_provider(provider)
+
+  let overridden_node = @renderer.render_to_node(html, ctx)
+  let overridden_img = overridden_node.children[0]
+  let overridden_intrinsic = match overridden_img.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(overridden_intrinsic.max_width, content="77")
+  inspect(overridden_intrinsic.max_height, content="33")
+  @renderer.clear_image_intrinsic_size_provider()
+}
+
+///|
+test "clear image intrinsic size provider restores default unresolved src size" {
+  @renderer.clear_image_intrinsic_size_provider()
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<img id="target" src="https://example.com/a.png">
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+
+  let provider = @renderer.ImageIntrinsicSizeProvider::new(fn(
+    _src : String,
+  ) -> (Double, Double)? {
+    Some((91.0, 52.0))
+  })
+  @renderer.set_image_intrinsic_size_provider(provider)
+  @renderer.clear_image_intrinsic_size_provider()
+
+  let restored_node = @renderer.render_to_node(html, ctx)
+  let restored_img = restored_node.children[0]
+  let restored_intrinsic = match restored_img.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(restored_intrinsic.max_width == 0.0, content="true")
+  inspect(restored_intrinsic.max_height == 0.0, content="true")
 }
 
 ///|
@@ -967,4 +1226,101 @@ test "link default color is blue" {
     }
     None => fail("No link node found!")
   }
+}
+
+///|
+test "ua_list_defaults_use_block_margin_and_inline_start_padding" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<ol><li></li></ol>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let ol = node.children[0]
+  let li = ol.children[0]
+  inspect(ol.id, content="ol")
+  inspect(ol.style.margin.top, content="Length(16)")
+  inspect(ol.style.margin.bottom, content="Length(16)")
+  inspect(ol.style.margin.left, content="Length(0)")
+  inspect(ol.style.padding.left, content="Length(40)")
+  inspect(ol.style.padding.bottom, content="Length(0)")
+  inspect(li.id, content="li")
+  inspect(li.style.min_height, content="Length(19.2)")
+}
+
+///|
+test "display_contents keeps inline parent shrink-to-fit and preserves child span" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<meta charset="utf-8">
+    #|<style>
+    #|#contents {
+    #|  display: contents;
+    #|}
+    #|</style>
+    #|<p>You should see the word PASS and no red below.</p>
+    #|<span>
+    #|  P<div id="contents">A<span>S</span></div>S
+    #|</span>
+  let ctx = @renderer.RenderContext::default()
+  let node_tree = @renderer.render_to_node(html, ctx)
+  let span_node = node_tree.children[1]
+  inspect(span_node.id, content="span")
+  inspect(span_node.children.length(), content="3")
+  inspect(span_node.children[1].id, content="div#contents")
+  inspect(span_node.children[1].children.length(), content="2")
+  inspect(span_node.children[1].children[1].id, content="span")
+
+  let layout = @renderer.render(html, ctx)
+
+  let inline_parent = layout.children[1]
+  inspect(inline_parent.id, content="span")
+  inspect(inline_parent.width < 200.0, content="true")
+
+  fn find_child(
+    children : Array[@types.Layout],
+    id : String,
+  ) -> @types.Layout? {
+    for child in children {
+      if child.id == id {
+        return Some(child)
+      }
+    }
+    None
+  }
+
+  match find_child(inline_parent.children, "div#contents") {
+    Some(contents_layout) => {
+      inspect(contents_layout.width, content="0")
+      inspect(contents_layout.height, content="0")
+      inspect(contents_layout.children.length(), content="2")
+      inspect(contents_layout.children[1].id, content="span")
+    }
+    None => fail("div#contents layout not found")
+  }
+}
+
+///|
+test "display_contents text contributes to flex item intrinsic width" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  .flex { display: flex; }
+    #|  .inline { display: inline; }
+    #|  .contents { display: contents; }
+    #|</style>
+    #|<div class="flex">
+    #|  <div class="inline"><div class="contents">4</div></div>
+    #|  <div><div class="contents">5a</div></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html, ctx)
+
+  let flex = layout.children[0]
+  inspect(flex.id, content="div.flex")
+  inspect(flex.children.length(), content="2")
+  inspect(flex.children[0].id, content="div.inline")
+  inspect(flex.children[1].id, content="div")
+  inspect(flex.children[0].width, content="8")
+  inspect(flex.children[1].width, content="16")
 }

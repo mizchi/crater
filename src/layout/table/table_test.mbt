@@ -147,6 +147,102 @@ test "table equal column widths" {
 }
 
 ///|
+test "table intrinsic width respects colspan distribution" {
+  let wide_cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(48.0),
+    colspan: 2,
+  }
+  let narrow_cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(24.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_spacing: 0.0,
+  }
+
+  let span_cell = @node.Node::new("span", wide_cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [span_cell])
+  let cell_a = @node.Node::new("a", narrow_cell_style, [])
+  let cell_b = @node.Node::new("b", narrow_cell_style, [])
+  let row2 = @node.Node::new("row2", row_style, [cell_a, cell_b])
+  let table = @node.Node::new("table", table_style, [row1, row2])
+
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  assert_eq(layout.children.length(), 2)
+  let row2_layout = layout.children[1]
+  assert_eq(row2_layout.children.length(), 2)
+
+  // Colspan width should be distributed across 2 columns (24 + 24),
+  // instead of inflating only the first column.
+  inspect(row2_layout.children[0].width, content="24")
+  inspect(row2_layout.children[1].x, content="24")
+}
+
+///|
+test "table row ignores direct text nodes between cells" {
+  let text_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Inline,
+  }
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    width: @types.Length(200.0),
+  }
+  let cell1 = @node.Node::new("cell1", cell_style, [])
+  let text = @node.Node::leaf("#text", text_style)
+  let cell2 = @node.Node::new("cell2", cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell1, text, cell2])
+  let table = @node.Node::new("table", table_style, [row1])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  assert_eq(layout.children.length(), 1)
+  let row_layout = layout.children[0]
+  assert_eq(row_layout.children.length(), 2)
+  assert_true(row_layout.children[0].width > 90.0)
+  assert_true(row_layout.children[1].width > 90.0)
+}
+
+///|
 test "table_max_width_percent_constraint" {
   let cell_style : @style.Style = {
     ..@style.Style::default(),
@@ -161,6 +257,7 @@ test "table_max_width_percent_constraint" {
   let table_style : @style.Style = {
     ..@style.Style::default(),
     display: @types.Table,
+    border_spacing: 0.0,
     max_width: @types.Percent(0.5),
   }
   let cell = @node.Node::new("cell", cell_style, [])
@@ -177,8 +274,9 @@ test "table_max_width_percent_constraint" {
   }
   @dispatch.setup()
   let layout = @dispatch.compute_layout(table, ctx)
-  // Explicit max-width can clamp below intrinsic minimum width.
-  inspect(layout.width, content="50")
+  // Auto-layout tables must not shrink below their intrinsic minimum width,
+  // even if max-width is tighter.
+  inspect(layout.width, content="60")
 }
 
 ///|
@@ -550,6 +648,103 @@ test "table-layout fixed with explicit width" {
 }
 
 ///|
+test "table-layout fixed keeps explicit width below intrinsic content" {
+  let text_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Inline,
+  }
+  let wide_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 400.0, max_width: 400.0, min_height: 20.0, max_height: 20.0 }
+    },
+  }
+  let wide_text = @node.Node::with_measure("text", text_style, wide_measure)
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    table_layout: @style.TableLayout::Fixed,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell = @node.Node::new("cell", cell_style, [wide_text])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  inspect(layout.width, content="200")
+}
+
+///|
+test "table-layout fixed standalone table-column boxes use resolved widths" {
+  let col_auto_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableColumn,
+  }
+  let col_fixed_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableColumn,
+    width: @types.Length(200.0),
+  }
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    table_layout: @style.TableLayout::Fixed,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let col1 = @node.Node::new("col1", col_auto_style, [])
+  let col2 = @node.Node::new("col2", col_fixed_style, [])
+  let col3 = @node.Node::new("col3", col_auto_style, [])
+  let td1 = @node.Node::new("td1", cell_style, [])
+  let td2 = @node.Node::new("td2", cell_style, [])
+  let td3 = @node.Node::new("td3", cell_style, [])
+  let row = @node.Node::new("row", row_style, [td1, td2, td3])
+  let table = @node.Node::new("table", table_style, [col1, col2, col3, row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  inspect(layout.width, content="200")
+  inspect(layout.children[0].width, content="0")
+  inspect(layout.children[1].x, content="0")
+  inspect(layout.children[1].width, content="200")
+  inspect(layout.children[2].x, content="200")
+  inspect(layout.children[2].width, content="0")
+}
+
+///|
 /// Test rowspan - cell spanning multiple rows
 test "table rowspan" {
   // Row 0: Cell A (rowspan=2, 100px wide), Cell B (100px wide)
@@ -891,4 +1086,48 @@ test "table cell centers block child in vertical writing mode" {
   let layout = @dispatch.compute_layout(table, ctx)
   let block_layout = layout.children[0].children[0].children[0]
   assert_true(block_layout.x > 35.0)
+}
+
+///|
+test "table preserves negative descendant offsets inside cell scroll container" {
+  let default_style = @style.Style::default()
+  let indicator_style : @style.Style = {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  }
+  let scroller_style : @style.Style = {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    justify_content: @types.Alignment::Center,
+    align_content: @types.Alignment::Center,
+    align_content_unsafe: true,
+  }
+  let cell_style : @style.Style = { ..default_style, display: @types.TableCell }
+  let row_style : @style.Style = { ..default_style, display: @types.TableRow }
+  let table_style : @style.Style = { ..default_style, display: @types.Table }
+
+  let indicator = @node.Node::leaf("div.indicator", indicator_style)
+  let scroller = @node.Node::new("div.test", scroller_style, [indicator])
+  let cell = @node.Node::new("td", cell_style, [scroller])
+  let row = @node.Node::new("tr", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  let scroller_layout = layout.children[0].children[0].children[0]
+  let indicator_layout = scroller_layout.children[0]
+  inspect(indicator_layout.x, content="0")
+  inspect(indicator_layout.y, content="-24")
 }

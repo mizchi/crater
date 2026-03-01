@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double, @node.DispatchFn, container_writing_mode? : @style.WritingMode) -> InlineLayoutResult
+pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double, @node.DispatchFn, container_writing_mode? : @style.WritingMode, container_direction? : @style.Direction, container_text_align? : @style.TextAlign, container_white_space? : @style.WhiteSpace) -> InlineLayoutResult
 
 pub fn is_inline_level(@types.Display) -> Bool
 

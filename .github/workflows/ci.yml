@@ -77,7 +77,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -129,7 +129,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -144,8 +144,22 @@ jobs:
         run: just wasm
 
   wpt-css-tests:
+    name: wpt-css (${{ matrix.name }})
     runs-on: ubuntu-latest
     needs: wasm-component
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - name: shard-1
+            modules: css-overflow css-grid css-tables
+          - name: shard-2
+            modules: css-contain css-display css-box
+          - name: shard-3
+            modules: css-flexbox css-position filter-effects
+          - name: shard-4
+            modules: css-sizing css-align css-variables compositing
 
     steps:
       - name: Checkout code
@@ -171,7 +185,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -185,11 +199,22 @@ jobs:
       - name: Build WASM
         run: just build-wasm && just transpile-wasm
 
-      - name: Run WPT CSS tests
-        run: just wpt-run-all
+      - name: Run WPT CSS shard
+        run: |
+          mkdir -p wpt-reports
+          npx tsx scripts/wpt-runner.ts ${{ matrix.modules }} --workers 4 --json "wpt-reports/wpt-css-${{ matrix.name }}.json"
         continue-on-error: true
 
+      - name: Upload WPT CSS shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-css-report-${{ matrix.name }}
+          path: wpt-reports/wpt-css-${{ matrix.name }}.json
+          if-no-files-found: warn
+
   wpt-dom-tests:
+    name: wpt-dom
     runs-on: ubuntu-latest
 
     steps:
@@ -209,7 +234,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -222,11 +247,75 @@ jobs:
           moon update
           moon update --manifest-path browser/moon.mod.json
 
-      - name: Run WPT DOM tests
-        run: just wpt-dom-all
+      - name: Run WPT DOM shard
+        run: |
+          mkdir -p wpt-reports
+          status=0
+          npx tsx scripts/wpt-dom-runner.ts --dom --json "wpt-reports/wpt-dom-dom.json" || status=1
+          npx tsx scripts/wpt-dom-runner.ts --svg --json "wpt-reports/wpt-dom-svg.json" || status=1
+          exit $status
         continue-on-error: true
 
+      - name: Upload WPT DOM shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-dom-report-all
+          path: wpt-reports/wpt-dom-*.json
+          if-no-files-found: warn
+
+  wpt-compat-summary:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - wpt-css-tests
+      - wpt-dom-tests
+      - wpt-webdriver-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Download WPT shard reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wpt-*-report-*
+          path: wpt-reports
+          merge-multiple: true
+
+      - name: Aggregate WPT compatibility summary
+        run: |
+          mkdir -p wpt-summary
+          npx tsx scripts/wpt-ci-summary.ts \
+            --input wpt-reports \
+            --json wpt-summary/wpt-compat-summary.json \
+            --markdown wpt-summary/wpt-compat-summary.md
+
+      - name: Publish WPT summary
+        run: cat wpt-summary/wpt-compat-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload WPT compatibility summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-compat-summary
+          path: wpt-summary/*
+          if-no-files-found: error
+
   wpt-webdriver-tests:
+    name: wpt-webdriver
     runs-on: ubuntu-latest
 
     steps:
@@ -246,7 +335,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -272,12 +361,23 @@ jobs:
       - name: Build BiDi server
         run: just build-bidi
 
-      - name: List WebDriver BiDi modules
-        run: just wpt-webdriver-list
-
-      - name: Run WebDriver BiDi session tests
-        run: just wpt-webdriver session/status
+      - name: Run WebDriver BiDi shard
+        run: |
+          mkdir -p wpt-reports
+          status=0
+          npx tsx scripts/wpt-webdriver-runner.ts "session/status" --json "wpt-reports/wpt-webdriver-session-status.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts "browsing_context/get_tree" --json "wpt-reports/wpt-webdriver-browsing-context-get-tree.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts "script/evaluate" --json "wpt-reports/wpt-webdriver-script-evaluate.json" || status=1
+          exit $status
         continue-on-error: true
+
+      - name: Upload WPT WebDriver shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-webdriver-report-all
+          path: wpt-reports/wpt-webdriver-*.json
+          if-no-files-found: warn
 
   playwright-bidi-tests:
     runs-on: ubuntu-latest
@@ -330,3 +430,70 @@ jobs:
 
       - name: Run website loading tests
         run: just test-website
+
+  ci-timing-summary:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - js-package
+      - wasm-component
+      - wpt-css-tests
+      - wpt-dom-tests
+      - wpt-webdriver-tests
+      - wpt-compat-summary
+      - playwright-bidi-tests
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Collect CI job timings
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("node:fs");
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              per_page: 100,
+            });
+            const filtered = jobs.filter((job) => job.name !== "ci-timing-summary");
+            fs.mkdirSync("ci-timing", { recursive: true });
+            fs.writeFileSync(
+              "ci-timing/jobs.json",
+              JSON.stringify({ run_id: context.runId, jobs: filtered }, null, 2),
+              "utf-8",
+            );
+
+      - name: Build CI timing summary
+        run: |
+          npx tsx scripts/ci-timing-summary.ts \
+            --input ci-timing/jobs.json \
+            --json ci-timing/summary.json \
+            --markdown ci-timing/summary.md
+
+      - name: Publish CI timing summary
+        run: cat ci-timing/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CI timing summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-timing-summary
+          path: ci-timing/*
+          if-no-files-found: error

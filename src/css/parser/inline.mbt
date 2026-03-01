@@ -346,37 +346,148 @@ fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @types.FlexWrap? {
 }
 
 ///|
-/// Parse alignment property (justify-content, align-items, etc.)
-fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
-  if tokens.length() == 0 {
+fn parse_alignment_keyword(value : String) -> @types.Alignment? {
+  if value == "flex-start" {
+    Some(@types.Alignment::FlexStart)
+  } else if value == "start" {
+    Some(@types.Alignment::Start)
+  } else if value == "flex-end" {
+    Some(@types.Alignment::FlexEnd)
+  } else if value == "end" {
+    Some(@types.Alignment::End)
+  } else if value == "left" {
+    Some(@types.Alignment::Left)
+  } else if value == "right" {
+    Some(@types.Alignment::Right)
+  } else if value == "center" {
+    Some(@types.Alignment::Center)
+  } else if value == "space-between" {
+    Some(@types.SpaceBetween)
+  } else if value == "space-around" {
+    Some(@types.SpaceAround)
+  } else if value == "space-evenly" {
+    Some(@types.SpaceEvenly)
+  } else if value == "stretch" {
+    Some(@types.Alignment::Stretch)
+  } else if value == "baseline" || value == "first baseline" {
+    Some(@types.Alignment::Baseline)
+  } else if value == "last baseline" {
+    Some(@types.Alignment::End)
+  } else {
+    None
+  }
+}
+
+///|
+fn collect_alignment_parts(tokens : ArrayView[@token.Token]) -> Array[String] {
+  let parts : Array[String] = []
+  for i = 0; i < tokens.length(); i = i + 1 {
+    match tokens[i] {
+      @token.Token::Ident(s) => parts.push(s)
+      _ => ()
+    }
+  }
+  parts
+}
+
+///|
+fn parse_alignment_segment_with_overflow(
+  parts : Array[String],
+  start : Int,
+) -> ((@types.Alignment, Bool), Int)? {
+  if start >= parts.length() {
     return None
   }
-  match tokens[0] {
-    @token.Token::Ident(s) =>
-      if s == "flex-start" {
-        Some(@types.Alignment::FlexStart)
-      } else if s == "start" {
-        Some(@types.Alignment::Start)
-      } else if s == "flex-end" {
-        Some(@types.Alignment::FlexEnd)
-      } else if s == "end" {
-        Some(@types.Alignment::End)
-      } else if s == "center" {
-        Some(@types.Alignment::Center)
-      } else if s == "space-between" {
-        Some(@types.SpaceBetween)
-      } else if s == "space-around" {
-        Some(@types.SpaceAround)
-      } else if s == "space-evenly" {
-        Some(@types.SpaceEvenly)
-      } else if s == "stretch" {
-        Some(@types.Alignment::Stretch)
-      } else if s == "baseline" {
-        Some(@types.Alignment::Baseline)
+
+  let mut idx = start
+  let mut is_safe = false
+  let mut is_unsafe = false
+  if parts[idx] == "safe" {
+    is_safe = true
+    idx = idx + 1
+  } else if parts[idx] == "unsafe" {
+    is_unsafe = true
+    idx = idx + 1
+  }
+  if idx >= parts.length() {
+    return None
+  }
+
+  let keyword = if idx + 1 < parts.length() &&
+    parts[idx + 1] == "baseline" &&
+    (parts[idx] == "first" || parts[idx] == "last") {
+    parts[idx] + " baseline"
+  } else {
+    parts[idx]
+  }
+  let next_index = if keyword == parts[idx] { idx + 1 } else { idx + 2 }
+
+  match parse_alignment_keyword(keyword) {
+    Some(parsed) => {
+      let alignment = if is_safe {
+        match parsed {
+          @types.Alignment::Center
+          | @types.Alignment::End
+          | @types.Alignment::FlexEnd => @types.Alignment::Start
+          _ => parsed
+        }
       } else {
-        None
+        parsed
       }
-    _ => None
+      Some(((alignment, is_unsafe), next_index))
+    }
+    None => None
+  }
+}
+
+///|
+fn parse_alignment_segment(
+  parts : Array[String],
+  start : Int,
+) -> (@types.Alignment, Int)? {
+  match parse_alignment_segment_with_overflow(parts, start) {
+    Some(((alignment, _), next_index)) => Some((alignment, next_index))
+    None => None
+  }
+}
+
+///|
+fn parse_alignment_with_overflow(
+  tokens : ArrayView[@token.Token],
+) -> (@types.Alignment, Bool)? {
+  let parts = collect_alignment_parts(tokens)
+  match parse_alignment_segment_with_overflow(parts, 0) {
+    Some(((alignment, is_unsafe), _)) => Some((alignment, is_unsafe))
+    None => None
+  }
+}
+
+///|
+/// Parse alignment property (justify-content, align-items, etc.)
+fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
+  let parts = collect_alignment_parts(tokens)
+  match parse_alignment_segment(parts, 0) {
+    Some((alignment, _)) => Some(alignment)
+    None => None
+  }
+}
+
+///|
+fn parse_place_content_with_overflow(
+  tokens : ArrayView[@token.Token],
+) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))? {
+  let parts = collect_alignment_parts(tokens)
+  match parse_alignment_segment_with_overflow(parts, 0) {
+    Some((align_content, next_index)) =>
+      if next_index >= parts.length() {
+        Some((align_content, align_content))
+      } else {
+        match parse_alignment_segment_with_overflow(parts, next_index) {
+          Some((justify_content, _)) => Some((align_content, justify_content))
+          None => Some((align_content, align_content))
+        }
+      }
+    None => None
   }
 }
 
@@ -1165,6 +1276,118 @@ fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
 }
 
 ///|
+fn merge_contain(
+  base : @style.Contain,
+  extra : @style.Contain,
+) -> @style.Contain {
+  let merged : @style.Contain = {
+    size: base.size || extra.size,
+    inline_size: base.inline_size || extra.inline_size,
+    layout: base.layout || extra.layout,
+    paint: base.paint || extra.paint,
+    style: base.style || extra.style,
+  }
+  if merged.size {
+    { ..merged, inline_size: false }
+  } else {
+    merged
+  }
+}
+
+///|
+/// Parse CSS container-type property into implied containment bits.
+/// Supported: normal | size | inline-size
+fn parse_container_type(tokens : ArrayView[@token.Token]) -> @style.Contain? {
+  let remaining = skip_whitespace(tokens)
+  if remaining.length() == 0 {
+    return None
+  }
+  match remaining[0] {
+    @token.Token::Ident(s) =>
+      if s == "normal" {
+        Some(@style.Contain::none())
+      } else if s == "size" {
+        Some({ ..@style.Contain::none(), size: true, style: true })
+      } else if s == "inline-size" {
+        Some({ ..@style.Contain::none(), inline_size: true, style: true })
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse contain-intrinsic-inline-size / contain-intrinsic-block-size.
+/// Returns a content-box fallback length in px, or None for none/auto.
+fn parse_contain_intrinsic_axis(tokens : ArrayView[@token.Token]) -> Double? {
+  let remaining = skip_whitespace(tokens)
+  if remaining.length() == 0 {
+    return None
+  }
+  match remaining[0] {
+    @token.Token::Ident(s) =>
+      if s == "none" || s == "auto" {
+        None
+      } else {
+        match parse_dimension(remaining) {
+          Some(@types.Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
+          _ => None
+        }
+      }
+    _ =>
+      match parse_dimension(remaining) {
+        Some(@types.Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
+        _ => None
+      }
+  }
+}
+
+///|
+/// Parse contain-intrinsic-size shorthand.
+/// One value applies to both inline/block axes; two values map to inline then block.
+fn parse_contain_intrinsic_size(
+  tokens : ArrayView[@token.Token],
+) -> (Double?, Double?)? {
+  let mut remaining = skip_whitespace(tokens)
+  let axis_values : Array[Double?] = []
+  while remaining.length() > 0 {
+    match remaining[0] {
+      @token.Token::Whitespace => remaining = skip_whitespace(remaining[1:])
+      @token.Token::Ident(s) =>
+        if s == "auto" {
+          remaining = skip_whitespace(remaining[1:])
+        } else if s == "none" {
+          axis_values.push(None)
+          remaining = skip_whitespace(remaining[1:])
+        } else {
+          match parse_dimension(remaining) {
+            Some(@types.Length(v)) =>
+              axis_values.push(Some(if v > 0.0 { v } else { 0.0 }))
+            _ => ()
+          }
+          remaining = skip_whitespace(remaining[1:])
+        }
+      _ => {
+        match parse_dimension(remaining) {
+          Some(@types.Length(v)) =>
+            axis_values.push(Some(if v > 0.0 { v } else { 0.0 }))
+          _ => ()
+        }
+        remaining = skip_whitespace(remaining[1:])
+      }
+    }
+  }
+  if axis_values.length() == 0 {
+    None
+  } else if axis_values.length() == 1 {
+    Some((axis_values[0], axis_values[0]))
+  } else {
+    Some((axis_values[0], axis_values[1]))
+  }
+}
+
+///|
 /// Parse CSS transform property
 /// Supports: translate(x, y), translateX(x), translateY(y), translate3d(x, y, z), none
 fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
@@ -1535,8 +1758,13 @@ fn apply_property(
   }
   // justify-content
   if property == "justify-content" {
-    match parse_alignment(value_tokens) {
-      Some(v) => return { ..style, justify_content: v }
+    match parse_alignment_with_overflow(value_tokens) {
+      Some((v, is_unsafe)) =>
+        return {
+          ..style,
+          justify_content: v,
+          justify_content_unsafe: is_unsafe,
+        }
       None => ()
     }
   }
@@ -1549,8 +1777,28 @@ fn apply_property(
   }
   // align-content
   if property == "align-content" {
-    match parse_alignment(value_tokens) {
-      Some(v) => return { ..style, align_content: v }
+    match parse_alignment_with_overflow(value_tokens) {
+      Some((v, is_unsafe)) =>
+        return { ..style, align_content: v, align_content_unsafe: is_unsafe }
+      None => ()
+    }
+  }
+  // place-content
+  if property == "place-content" {
+    match parse_place_content_with_overflow(value_tokens) {
+      Some(
+        (
+          (align_content, align_content_unsafe),
+          (justify_content, justify_content_unsafe),
+        )
+      ) =>
+        return {
+          ..style,
+          align_content,
+          align_content_unsafe,
+          justify_content,
+          justify_content_unsafe,
+        }
       None => ()
     }
   }
@@ -1971,6 +2219,44 @@ fn apply_property(
   if property == "contain" {
     let contain = parse_contain(value_tokens)
     return { ..style, contain, }
+  }
+  // container-type
+  if property == "container-type" {
+    match parse_container_type(value_tokens) {
+      Some(implied) =>
+        if implied.has_containment() {
+          return { ..style, contain: merge_contain(style.contain, implied) }
+        } else {
+          return style
+        }
+      None => ()
+    }
+  }
+  // contain-intrinsic-inline-size
+  if property == "contain-intrinsic-inline-size" {
+    let contain_intrinsic_inline_size = parse_contain_intrinsic_axis(
+      value_tokens,
+    )
+    return { ..style, contain_intrinsic_inline_size, }
+  }
+  // contain-intrinsic-block-size
+  if property == "contain-intrinsic-block-size" {
+    let contain_intrinsic_block_size = parse_contain_intrinsic_axis(
+      value_tokens,
+    )
+    return { ..style, contain_intrinsic_block_size, }
+  }
+  // contain-intrinsic-size
+  if property == "contain-intrinsic-size" {
+    match parse_contain_intrinsic_size(value_tokens) {
+      Some((contain_intrinsic_inline_size, contain_intrinsic_block_size)) =>
+        return {
+          ..style,
+          contain_intrinsic_inline_size,
+          contain_intrinsic_block_size,
+        }
+      None => ()
+    }
   }
   // transform
   if property == "transform" {

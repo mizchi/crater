@@ -68,9 +68,173 @@ test "parse_alignment" {
   inspect(@computed.parse_alignment("start"), content="Start")
   inspect(@computed.parse_alignment("flex-end"), content="FlexEnd")
   inspect(@computed.parse_alignment("end"), content="End")
+  inspect(@computed.parse_alignment("left"), content="Left")
+  inspect(@computed.parse_alignment("right"), content="Right")
   inspect(@computed.parse_alignment("center"), content="Center")
   inspect(@computed.parse_alignment("space-between"), content="SpaceBetween")
   inspect(@computed.parse_alignment("stretch"), content="Stretch")
+  inspect(@computed.parse_alignment("safe center"), content="Start")
+  inspect(@computed.parse_alignment("safe end"), content="Start")
+  inspect(@computed.parse_alignment("unsafe center"), content="Center")
+  inspect(@computed.parse_alignment("unsafe end"), content="End")
+}
+
+///|
+test "compute_inline place-content shorthand" {
+  let ctx = @computed.ComputeContext::new()
+
+  let safe_center = @computed.compute_inline("place-content: safe center", ctx)
+  inspect(safe_center.align_content, content="Start")
+  inspect(safe_center.justify_content, content="Start")
+  inspect(safe_center.align_content_unsafe, content="false")
+  inspect(safe_center.justify_content_unsafe, content="false")
+
+  let unsafe_end = @computed.compute_inline("place-content: unsafe end", ctx)
+  inspect(unsafe_end.align_content, content="End")
+  inspect(unsafe_end.justify_content, content="End")
+  inspect(unsafe_end.align_content_unsafe, content="true")
+  inspect(unsafe_end.justify_content_unsafe, content="true")
+
+  let mixed = @computed.compute_inline("place-content: end center", ctx)
+  inspect(mixed.align_content, content="End")
+  inspect(mixed.justify_content, content="Center")
+  inspect(mixed.align_content_unsafe, content="false")
+  inspect(mixed.justify_content_unsafe, content="false")
+
+  let left_right = @computed.compute_inline("place-content: start left", ctx)
+  inspect(left_right.align_content, content="Start")
+  inspect(left_right.justify_content, content="Left")
+  inspect(left_right.align_content_unsafe, content="false")
+  inspect(left_right.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse_align_self baseline variants" {
+  inspect(@computed.parse_align_self("baseline"), content="Baseline")
+  inspect(@computed.parse_align_self("first baseline"), content="Baseline")
+  inspect(@computed.parse_align_self("last baseline"), content="End")
+}
+
+///|
+test "parse_scroll_snap_type_and_align" {
+  let snap_type = @computed.parse_scroll_snap_type("x mandatory")
+  inspect(snap_type.axis, content="X")
+  inspect(snap_type.strictness, content="Mandatory")
+  let (inline_align, block_align) = @computed.parse_scroll_snap_align("center")
+  inspect(inline_align, content="Center")
+  inspect(block_align, content="Center")
+}
+
+///|
+test "compute_inline scroll_snap properties" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "scroll-snap-type: y mandatory; scroll-snap-align: center", ctx,
+  )
+  inspect(style.scroll_snap_type.axis, content="Y")
+  inspect(style.scroll_snap_type.strictness, content="Mandatory")
+  inspect(style.scroll_snap_align_x, content="Center")
+  inspect(style.scroll_snap_align_y, content="Center")
+}
+
+///|
+test "compute_inline container-type size implies contain size and style" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("container-type: size", ctx)
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.inline_size, content="false")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "compute_inline container-type merges with contain" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "contain: paint; container-type: inline-size", ctx,
+  )
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "compute_inline contain-intrinsic-inline-size parses length" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "contain-intrinsic-inline-size: 120px", ctx,
+  )
+  inspect(style.contain_intrinsic_inline_size, content="Some(120)")
+}
+
+///|
+test "compute_inline contain-intrinsic-size shorthand sets both axes" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("contain-intrinsic-size: 90px 45px", ctx)
+  inspect(style.contain_intrinsic_inline_size, content="Some(90)")
+  inspect(style.contain_intrinsic_block_size, content="Some(45)")
+}
+
+///|
+test "compute_inline columns shorthand parses count and width" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("columns: 2 40px; column-gap: 20px", ctx)
+  inspect(style.column_count, content="Some(2)")
+  inspect(style.column_width, content="Length(40)")
+  inspect(style.column_gap, content="Length(20)")
+}
+
+///|
+test "compute_inline break-before and column-span parse values" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "break-before: column; column-span: all", ctx,
+  )
+  inspect(style.break_before, content="Column")
+  inspect(style.column_span, content="All")
+}
+
+///|
+test "compute_inline break-after parses column value" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("break-after: column", ctx)
+  inspect(style.break_after, content="Column")
+}
+
+///|
+test "compute_inline font-size rem resolves against root font size" {
+  let ctx = {
+    ..@computed.ComputeContext::new(),
+    root_font_size: 16.0,
+    font_size: 8.0,
+  }
+  let style = @computed.compute_inline("font-size: 1rem", ctx)
+  inspect(style.font_size, content="16")
+}
+
+///|
+test "parse_grid_placement custom ident defaults to second line" {
+  inspect(@computed.parse_grid_placement("foo"), content="Line(2)")
+  inspect(@computed.parse_grid_placement("bar-baz"), content="Line(2)")
+}
+
+///|
+test "compute_inline grid-area shorthand sets row and column lines" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("grid-area: 1 / 2 / 3 / 4", ctx)
+  inspect(style.grid_row.start, content="Line(1)")
+  inspect(style.grid_column.start, content="Line(2)")
+  inspect(style.grid_row.end, content="Line(3)")
+  inspect(style.grid_column.end, content="Line(4)")
+}
+
+///|
+test "compute_inline grid-area custom idents place to implicit second track" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("grid-area: a / a / b / b", ctx)
+  inspect(style.grid_row.start, content="Line(2)")
+  inspect(style.grid_column.start, content="Line(2)")
+  inspect(style.grid_row.end, content="Line(2)")
+  inspect(style.grid_column.end, content="Line(2)")
 }
 
 ///|
@@ -105,6 +269,23 @@ test "compute_inline border shorthand" {
   inspect(style.border.right, content="Length(3)")
   inspect(style.border.bottom, content="Length(3)")
   inspect(style.border.left, content="Length(3)")
+}
+
+///|
+test "compute_inline border shorthand em uses context font-size" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 20.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline("border: 1em solid red", ctx)
+  inspect(style.border.top, content="Length(20)")
+  inspect(style.border.right, content="Length(20)")
+  inspect(style.border.bottom, content="Length(20)")
+  inspect(style.border.left, content="Length(20)")
 }
 
 ///|
@@ -251,6 +432,7 @@ test "is_inherited" {
   inspect(@computed.is_inherited("color"), content="true")
   inspect(@computed.is_inherited("font-size"), content="true")
   inspect(@computed.is_inherited("line-height"), content="true")
+  inspect(@computed.is_inherited("white-space"), content="true")
   // Non-inherited properties
   inspect(@computed.is_inherited("width"), content="false")
   inspect(@computed.is_inherited("display"), content="false")
@@ -344,6 +526,15 @@ test "font shorthand parsing" {
 }
 
 ///|
+test "em_dimensions_use_seeded_element_font_metrics" {
+  let ctx = @computed.ComputeContext::new()
+  let style1 = @computed.compute_inline("font: 25px/1 Ahem; width: 15em", ctx)
+  inspect(style1.width, content="Length(375)")
+  let style2 = @computed.compute_inline("width: 15em; font: 25px/1 Ahem", ctx)
+  inspect(style2.width, content="Length(375)")
+}
+
+///|
 test "logical properties inline-size and block-size" {
   let ctx = @computed.ComputeContext::new()
 
@@ -411,6 +602,15 @@ test "intrinsic keywords remain preserved with inherited writing-mode" {
     "width: 150px; max-width: min-content", child_ctx,
   )
   inspect(child.max_width, content="MinContent")
+}
+
+///|
+test "white-space inherits from parent style" {
+  let root_ctx = @computed.ComputeContext::new()
+  let parent = @computed.compute_inline("white-space: nowrap", root_ctx)
+  let child_ctx = @computed.ComputeContext::with_parent(parent)
+  let child = @computed.compute_inline("", child_ctx)
+  inspect(child.white_space, content="Nowrap")
 }
 
 ///|

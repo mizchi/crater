@@ -34,6 +34,16 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
               let selector = item.1
               stylesheet.add_rule(selector_text, selector, declarations.copy())
             }
+            let nested_rules = extract_ampersand_nested_rules(
+              tokens, pos, new_pos, selectors,
+            )
+            for nested_rule in nested_rules {
+              stylesheet.add_rule(
+                nested_rule.0,
+                nested_rule.1,
+                nested_rule.2.copy(),
+              )
+            }
             pos = new_pos
           }
           None => pos = pos + 1
@@ -213,6 +223,11 @@ fn parse_style_rule(
         break
       }
       @token.Token::EOF => break
+      @token.Token::Delim('&') =>
+        match skip_nested_rule_block(tokens, pos) {
+          Some(next_pos) => pos = next_pos
+          None => pos = pos + 1
+        }
       _ =>
         // Parse declaration
         match parse_rule_declaration(tokens, pos) {
@@ -316,6 +331,203 @@ fn parse_rule_declaration(
 }
 
 ///|
+/// Find matching right brace index for a left brace token.
+fn find_matching_right_brace(
+  tokens : Array[@token.Token],
+  left_brace_pos : Int,
+  limit : Int,
+) -> Int? {
+  if left_brace_pos < 0 || left_brace_pos >= tokens.length() {
+    return None
+  }
+  match tokens[left_brace_pos] {
+    @token.Token::LeftBrace => ()
+    _ => return None
+  }
+  let mut depth = 1
+  let mut pos = left_brace_pos + 1
+  while pos < tokens.length() && pos < limit {
+    match tokens[pos] {
+      @token.Token::LeftBrace => depth = depth + 1
+      @token.Token::RightBrace => {
+        depth = depth - 1
+        if depth == 0 {
+          return Some(pos)
+        }
+      }
+      @token.Token::EOF => return None
+      _ => ()
+    }
+    pos = pos + 1
+  }
+  None
+}
+
+///|
+/// Skip a nested ampersand rule block like `&::foo { ... }`.
+fn skip_nested_rule_block(tokens : Array[@token.Token], start : Int) -> Int? {
+  let mut pos = start
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftBrace =>
+        match find_matching_right_brace(tokens, pos, tokens.length()) {
+          Some(close) => return Some(close + 1)
+          None => return None
+        }
+      @token.Token::RightBrace | @token.Token::EOF => return None
+      _ => pos = pos + 1
+    }
+  }
+  None
+}
+
+///|
+fn replace_ampersand(
+  nested_selector : String,
+  parent_selector : String,
+) -> String {
+  let out = StringBuilder::new()
+  for i = 0; i < nested_selector.length(); i = i + 1 {
+    let c = nested_selector[i].to_int().unsafe_to_char()
+    if c == '&' {
+      out.write_string(parent_selector)
+    } else {
+      out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
+/// Extract one-level nested `&... { ... }` rules as parsed selector/declaration entries.
+fn extract_ampersand_nested_rules(
+  tokens : Array[@token.Token],
+  rule_start : Int,
+  rule_end : Int,
+  selectors : Array[(String, @selector.ComplexSelector)],
+) -> Array[(String, @selector.ComplexSelector, Array[@cascade.Declaration])] {
+  let rules : Array[
+    (String, @selector.ComplexSelector, Array[@cascade.Declaration]),
+  ] = []
+  let mut body_start = -1
+  let mut i = rule_start
+  while i < rule_end {
+    match tokens[i] {
+      @token.Token::LeftBrace => {
+        body_start = i
+        break
+      }
+      _ => i = i + 1
+    }
+  }
+  if body_start < 0 {
+    return rules
+  }
+
+  let mut pos = body_start + 1
+  while pos < rule_end - 1 {
+    pos = skip_ws(tokens, pos)
+    if pos >= rule_end - 1 {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::Delim('&') => {
+        let nested_selector_start = pos
+        while pos < rule_end - 1 {
+          match tokens[pos] {
+            @token.Token::LeftBrace
+            | @token.Token::RightBrace
+            | @token.Token::EOF => break
+            _ => pos = pos + 1
+          }
+        }
+        if pos >= rule_end - 1 {
+          break
+        }
+        match tokens[pos] {
+          @token.Token::LeftBrace => {
+            let nested_selector_text = tokens_to_string(
+                tokens, nested_selector_start, pos,
+              )
+              .trim()
+              .to_string()
+            match find_matching_right_brace(tokens, pos, rule_end) {
+              Some(nested_close) => {
+                let nested_decls : Array[@cascade.Declaration] = []
+                let mut decl_order = 0
+                let mut decl_pos = pos + 1
+                while decl_pos < nested_close {
+                  decl_pos = skip_ws(tokens, decl_pos)
+                  if decl_pos >= nested_close {
+                    break
+                  }
+                  match parse_rule_declaration(tokens, decl_pos) {
+                    Some((property, value, importance, new_decl_pos)) => {
+                      let decl : @cascade.Declaration = {
+                        property,
+                        value: @cascade.Value(value),
+                        origin: @cascade.Author,
+                        importance,
+                        specificity: { a: 0, b: 0, c: 0 },
+                        source_order: decl_order,
+                      }
+                      nested_decls.push(decl)
+                      decl_order = decl_order + 1
+                      if new_decl_pos > decl_pos {
+                        decl_pos = new_decl_pos
+                      } else {
+                        decl_pos = decl_pos + 1
+                      }
+                    }
+                    None => decl_pos = decl_pos + 1
+                  }
+                }
+                if not(nested_selector_text.is_empty()) &&
+                  not(nested_decls.is_empty()) {
+                  let nested_parts = split_by_comma(nested_selector_text)
+                  for parent_item in selectors {
+                    let parent_selector = parent_item.0.trim().to_string()
+                    if parent_selector.is_empty() {
+                      continue
+                    }
+                    for nested_part in nested_parts {
+                      let nested_trim = nested_part.trim().to_string()
+                      if nested_trim.is_empty() {
+                        continue
+                      }
+                      let expanded = replace_ampersand(
+                        nested_trim, parent_selector,
+                      )
+                      match @selector.parse_selector_text(expanded) {
+                        Some(sel) =>
+                          rules.push((expanded, sel, nested_decls.copy()))
+                        None => ()
+                      }
+                    }
+                  }
+                }
+                pos = nested_close + 1
+                continue
+              }
+              None => break
+            }
+          }
+          _ => pos = pos + 1
+        }
+      }
+      @token.Token::LeftBrace =>
+        match find_matching_right_brace(tokens, pos, rule_end) {
+          Some(close) => pos = close + 1
+          None => break
+        }
+      @token.Token::RightBrace | @token.Token::EOF => break
+      _ => pos = pos + 1
+    }
+  }
+  rules
+}
+
+///|
 /// Convert token range to string
 fn tokens_to_string(
   tokens : Array[@token.Token],
@@ -386,9 +598,73 @@ fn parse_selector_list_text(
 fn split_by_comma(s : String) -> Array[String] {
   let result : Array[String] = []
   let current = StringBuilder::new()
+  let mut paren_depth = 0
+  let mut bracket_depth = 0
+  let mut in_single_quote = false
+  let mut in_double_quote = false
+  let mut escaped = false
   for i = 0; i < s.length(); i = i + 1 {
     let c = s[i].to_int().unsafe_to_char()
-    if c == ',' {
+    if escaped {
+      current.write_char(c)
+      escaped = false
+      continue
+    }
+    if c == '\\' && (in_single_quote || in_double_quote) {
+      current.write_char(c)
+      escaped = true
+      continue
+    }
+    if in_single_quote {
+      current.write_char(c)
+      if c == '\'' {
+        in_single_quote = false
+      }
+      continue
+    }
+    if in_double_quote {
+      current.write_char(c)
+      if c == '"' {
+        in_double_quote = false
+      }
+      continue
+    }
+
+    if c == '\'' {
+      in_single_quote = true
+      current.write_char(c)
+      continue
+    }
+    if c == '"' {
+      in_double_quote = true
+      current.write_char(c)
+      continue
+    }
+    if c == '(' {
+      paren_depth += 1
+      current.write_char(c)
+      continue
+    }
+    if c == ')' {
+      if paren_depth > 0 {
+        paren_depth -= 1
+      }
+      current.write_char(c)
+      continue
+    }
+    if c == '[' {
+      bracket_depth += 1
+      current.write_char(c)
+      continue
+    }
+    if c == ']' {
+      if bracket_depth > 0 {
+        bracket_depth -= 1
+      }
+      current.write_char(c)
+      continue
+    }
+    if c == ',' && paren_depth == 0 && bracket_depth == 0 {
       result.push(current.to_string())
       current.reset()
     } else {

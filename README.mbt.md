@@ -40,16 +40,20 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| css-flexbox | 236 | 367 | 64.3% |
-| css-grid | 26 | 39 | 66.7% |
-| css-tables | 13 | 74 | 17.6% |
-| css-display | 14 | 93 | 15.1% |
-| css-sizing | 48 | 103 | 46.6% |
-| css-position | 59 | 117 | 50.4% |
-| css-overflow | 56 | 118 | 47.5% |
-| css-contain | 125 | 315 | 39.7% |
-| css-variables | 25 | 152 | 16.4% |
-| **Total** | **602** | **1378** | **43.7%** |
+| css-flexbox | 271 | 289 | 93.8% |
+| css-grid | 32 | 33 | 97.0% |
+| css-tables | 15 | 32 | 46.9% |
+| css-display | 58 | 79 | 73.4% |
+| css-box | 28 | 30 | 93.3% |
+| css-sizing | 88 | 94 | 93.6% |
+| css-align | 18 | 44 | 40.9% |
+| css-position | 59 | 84 | 70.2% |
+| css-overflow | 143 | 243 | 58.8% |
+| css-contain | 303 | 303 | 100.0% |
+| css-variables | 100 | 107 | 93.5% |
+| filter-effects | 100 | 106 | 94.3% |
+| compositing | 2 | 2 | 100.0% |
+| **Total** | **1217** | **1446** | **84.2%** |
 
 Run WPT tests:
 ```bash
@@ -58,6 +62,23 @@ npm run wpt:run-all    # Run all WPT tests
 ```
 
 WPT target selection is configured in `wpt.json`.
+
+Optional: external intrinsic providers for text/image in WPT runner:
+
+```bash
+# Text module (mizchi/text-compatible or measureText(text, fontSize) module)
+CRATER_TEXT_MODULE=/abs/path/to/text-module.js \
+CRATER_TEXT_FONT_PATH=/abs/path/to/font.ttf \
+npx tsx scripts/wpt-runner.ts css-overflow
+
+# Image module (resolveImageIntrinsicSize(src) -> {width,height} or [w,h])
+CRATER_IMAGE_MODULE=/abs/path/to/image-module.js \
+npx tsx scripts/wpt-runner.ts css-contain
+
+# Optional local file resolver fallback for images (off by default)
+CRATER_IMAGE_FILE_RESOLVE=1 \
+npx tsx scripts/wpt-runner.ts wpt/css/css-contain/contain-size-021.html
+```
 
 - Added recursive module scan for `css-align` and `css-box` via `recursiveModules`
 - Expanded `includePrefixes` for additional overflow/alignment coverage
@@ -70,6 +91,49 @@ Check current enabled test counts:
 ```bash
 npx tsx scripts/wpt-runner.ts --list
 ```
+
+#### WPT CI Maintenance (Parallel Shards)
+
+The CI workflow runs WPT compatibility checks with about 6 workers:
+
+- `wpt-css`: 4 shards (`wpt-css (shard-1..4)`)
+- `wpt-dom`: 1 job (`wpt-dom`, runs `--dom` and `--svg`)
+- `wpt-webdriver`: 1 job (`wpt-webdriver`, runs 3 BiDi targets)
+
+See the shard assignment in `.github/workflows/ci.yml` (`wpt-css-tests`, `wpt-dom-tests`, `wpt-webdriver-tests`).
+
+Each run also publishes two summaries:
+
+- `wpt-compat-summary`: compatibility totals/pass rate (`wpt-summary/wpt-compat-summary.md`)
+- `ci-timing-summary`: queue/run bottlenecks by job and group (`ci-timing/summary.md`)
+
+Use this checklist when maintaining shard balance:
+
+1. Open the latest GitHub Actions run and check `ci-timing-summary`.
+2. Compare `wpt-css (shard-*)` durations in "Slowest Jobs".
+3. If one shard is consistently slower (roughly >10s), move modules between shard definitions in `.github/workflows/ci.yml`.
+4. Keep each shard runtime close (current target is roughly 65-75s per CSS shard).
+5. Verify compatibility totals from `wpt-compat-summary` are not regressing.
+
+Optional local dry-run for summaries:
+
+```bash
+# Example: generate per-shard reports
+mkdir -p /tmp/wpt-reports
+npx tsx scripts/wpt-runner.ts css-overflow css-grid css-tables --workers 4 --json /tmp/wpt-reports/wpt-css-shard-1.json
+npx tsx scripts/wpt-dom-runner.ts --dom --json /tmp/wpt-reports/wpt-dom-dom.json
+npx tsx scripts/wpt-dom-runner.ts --svg --json /tmp/wpt-reports/wpt-dom-svg.json
+npx tsx scripts/wpt-webdriver-runner.ts "session/status" --json /tmp/wpt-reports/wpt-webdriver-session-status.json
+
+# Aggregate compatibility summary
+npx tsx scripts/wpt-ci-summary.ts --input /tmp/wpt-reports --json /tmp/wpt-summary.json --markdown /tmp/wpt-summary.md
+
+# Analyze CI run timing from GitHub Actions run jobs API output
+gh api repos/mizchi/crater/actions/runs/<RUN_ID>/jobs --paginate > /tmp/jobs.json
+npx tsx scripts/ci-timing-summary.ts --input /tmp/jobs.json --json /tmp/ci-timing-summary.json --markdown /tmp/ci-timing-summary.md
+```
+
+When compatibility improvement/regression should become the new baseline, update `tests/wpt-baseline.env` (used by `scripts/wpt-ci-summary.ts` for CSS baseline delta).
 
 ## Features
 

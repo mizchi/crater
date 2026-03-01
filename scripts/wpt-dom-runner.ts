@@ -28,6 +28,23 @@ interface TestFileResult {
   errors: number;
 }
 
+interface CliOptions {
+  args: string[];
+  jsonOutput?: string;
+}
+
+interface WptCompatShardReport {
+  schemaVersion: 1;
+  suite: 'wpt-dom';
+  target: string;
+  passed: number;
+  failed: number;
+  errors: number;
+  total: number;
+  passRate: number;
+  generatedAt: string;
+}
+
 // Read mock DOM setup from js_runtime_quickjs.mbt
 function extractMockDomSetup(): string {
   const mbtPath = path.join(process.cwd(), 'browser/src/js/js_runtime_quickjs.mbt');
@@ -1152,9 +1169,61 @@ function listTests(): void {
   console.log('\nCategories: dom, svg');
 }
 
+function parseCliArgs(rawArgs: string[]): CliOptions {
+  const options: CliOptions = { args: [] };
+
+  for (let i = 0; i < rawArgs.length; i++) {
+    const arg = rawArgs[i];
+    if (arg === '--json') {
+      options.jsonOutput = rawArgs[++i];
+      continue;
+    }
+    if (arg.startsWith('--json=')) {
+      options.jsonOutput = arg.slice('--json='.length);
+      continue;
+    }
+    options.args.push(arg);
+  }
+
+  return options;
+}
+
+function detectTarget(args: string[]): string {
+  if (args.includes('--all')) return 'all';
+  if (args.includes('--dom')) return 'dom';
+  if (args.includes('--svg')) return 'svg';
+  if (args.length === 0) return 'all';
+  return args.join(' ');
+}
+
+function writeShardReport(
+  jsonOutput: string | undefined,
+  args: string[],
+  passed: number,
+  failed: number,
+  errors: number
+): void {
+  if (!jsonOutput) return;
+  const total = passed + failed + errors;
+  const report: WptCompatShardReport = {
+    schemaVersion: 1,
+    suite: 'wpt-dom',
+    target: detectTarget(args),
+    passed,
+    failed,
+    errors,
+    total,
+    passRate: total > 0 ? passed / total : 0,
+    generatedAt: new Date().toISOString(),
+  };
+  fs.mkdirSync(path.dirname(jsonOutput), { recursive: true });
+  fs.writeFileSync(jsonOutput, JSON.stringify(report, null, 2), 'utf-8');
+}
+
 // Main
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  const cliOptions = parseCliArgs(process.argv.slice(2));
+  const args = cliOptions.args;
 
   if (args.length === 0) {
     console.log('WPT DOM Test Runner for Crater\n');
@@ -1164,6 +1233,7 @@ async function main(): Promise<void> {
     console.log('  npx tsx scripts/wpt-dom-runner.ts --all       # Run all tests');
     console.log('  npx tsx scripts/wpt-dom-runner.ts --dom       # Run DOM tests only');
     console.log('  npx tsx scripts/wpt-dom-runner.ts --svg       # Run SVG tests only');
+    console.log('  npx tsx scripts/wpt-dom-runner.ts --dom --json .wpt-reports/wpt-dom-dom.json');
     console.log('  npx tsx scripts/wpt-dom-runner.ts Document-*  # Run tests matching pattern');
     return;
   }
@@ -1204,6 +1274,7 @@ async function main(): Promise<void> {
 
   if (testFiles.length === 0) {
     console.error('No test files found');
+    writeShardReport(cliOptions.jsonOutput, args, 0, 0, 0);
     process.exit(1);
   }
 
@@ -1250,6 +1321,7 @@ async function main(): Promise<void> {
   }
 
   console.log(`\nSummary: ${totalPassed} passed, ${totalFailed} failed, ${totalErrors} errors`);
+  writeShardReport(cliOptions.jsonOutput, args, totalPassed, totalFailed, totalErrors);
   process.exit(totalFailed + totalErrors > 0 ? 1 : 0);
 }
 

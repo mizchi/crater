@@ -90,6 +90,9 @@ priv struct StyleBuilder {
   mut box_sizing : @types.BoxSizing
   mut overflow_x : @types.Overflow
   mut overflow_y : @types.Overflow
+  mut scroll_snap_type : @style.ScrollSnapType
+  mut scroll_snap_align_x : @style.ScrollSnapAlign
+  mut scroll_snap_align_y : @style.ScrollSnapAlign
   mut width : @types.Dimension
   mut height : @types.Dimension
   mut min_width : @types.Dimension
@@ -114,6 +117,8 @@ priv struct StyleBuilder {
   mut justify_content : @types.Alignment
   mut align_items : @types.Alignment
   mut align_content : @types.Alignment
+  mut justify_content_unsafe : Bool
+  mut align_content_unsafe : Bool
   mut align_self : @types.AlignSelf
   mut justify_self : @types.AlignSelf
   mut justify_items : @types.Alignment
@@ -123,6 +128,10 @@ priv struct StyleBuilder {
   mut order : Int
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
+  mut column_gap_is_normal : Bool
+  mut column_count : Int?
+  mut column_width : @types.Dimension
+  mut column_fill : @style.ColumnFill
   mut aspect_ratio : Double?
   mut inset_top : @types.Dimension
   mut inset_right : @types.Dimension
@@ -140,6 +149,7 @@ priv struct StyleBuilder {
   mut font_size : Double
   mut line_height : Double
   // Text wrapping and direction
+  mut text_align : @style.TextAlign
   mut white_space : @style.WhiteSpace
   mut writing_mode : @style.WritingMode
   mut direction : @style.Direction
@@ -156,6 +166,12 @@ priv struct StyleBuilder {
   mut background_color : @types.Color
   // Containment
   mut contain : @style.Contain
+  // Fragmentation
+  mut break_before : @style.BreakBefore
+  mut break_after : @style.BreakBefore
+  mut column_span : @style.ColumnSpan
+  mut contain_intrinsic_inline_size : Double?
+  mut contain_intrinsic_block_size : Double?
   // Transform
   mut transform : @style.Transform
   // Zoom (affects layout scaling)
@@ -180,6 +196,9 @@ fn StyleBuilder::new() -> StyleBuilder {
     box_sizing: @types.BoxSizing::ContentBox,
     overflow_x: @types.Overflow::Visible,
     overflow_y: @types.Overflow::Visible,
+    scroll_snap_type: @style.ScrollSnapType::none(),
+    scroll_snap_align_x: @style.ScrollSnapAlign::None,
+    scroll_snap_align_y: @style.ScrollSnapAlign::None,
     width: @types.Dimension::Auto,
     height: @types.Dimension::Auto,
     min_width: @types.Dimension::Auto,
@@ -204,6 +223,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     justify_content: @types.Alignment::Start,
     align_items: @types.Alignment::Stretch,
     align_content: @types.Alignment::Stretch,
+    justify_content_unsafe: false,
+    align_content_unsafe: false,
     align_self: @types.AlignSelf::Auto,
     justify_self: @types.AlignSelf::Auto,
     justify_items: @types.Alignment::Stretch,
@@ -213,6 +234,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     order: 0,
     row_gap: @types.Dimension::Length(0.0),
     column_gap: @types.Dimension::Length(0.0),
+    column_gap_is_normal: true,
+    column_count: None,
+    column_width: @types.Dimension::Auto,
+    column_fill: @style.ColumnFill::Balance,
     aspect_ratio: None,
     inset_top: @types.Dimension::Auto,
     inset_right: @types.Dimension::Auto,
@@ -227,6 +252,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_row_end: @types.GridPlacement::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    text_align: @style.TextAlign::Start,
     white_space: @style.WhiteSpace::Normal,
     writing_mode: @style.WritingMode::HorizontalTb,
     direction: @style.Direction::Ltr,
@@ -238,6 +264,11 @@ fn StyleBuilder::new() -> StyleBuilder {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: @style.Contain::none(),
+    break_before: @style.BreakBefore::Auto,
+    break_after: @style.BreakBefore::Auto,
+    column_span: @style.ColumnSpan::None,
+    contain_intrinsic_inline_size: None,
+    contain_intrinsic_block_size: None,
     transform: @style.Transform::none(),
     zoom: 1.0,
     border_spacing: 0.0,
@@ -260,6 +291,9 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     box_sizing: style.box_sizing,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_snap_type: style.scroll_snap_type,
+    scroll_snap_align_x: style.scroll_snap_align_x,
+    scroll_snap_align_y: style.scroll_snap_align_y,
     width: style.width,
     height: style.height,
     min_width: style.min_width,
@@ -284,6 +318,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     justify_content: style.justify_content,
     align_items: style.align_items,
     align_content: style.align_content,
+    justify_content_unsafe: style.justify_content_unsafe,
+    align_content_unsafe: style.align_content_unsafe,
     align_self: style.align_self,
     justify_self: style.justify_self,
     justify_items: style.justify_items,
@@ -293,6 +329,10 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     order: style.order,
     row_gap: style.row_gap,
     column_gap: style.column_gap,
+    column_gap_is_normal: style.column_gap_is_normal,
+    column_count: style.column_count,
+    column_width: style.column_width,
+    column_fill: style.column_fill,
     aspect_ratio: style.aspect_ratio,
     inset_top: style.inset.top,
     inset_right: style.inset.right,
@@ -307,6 +347,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     grid_row_end: style.grid_row.end,
     font_size: style.font_size,
     line_height: style.line_height,
+    text_align: style.text_align,
     white_space: style.white_space,
     writing_mode: style.writing_mode,
     direction: style.direction,
@@ -318,6 +359,11 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     color: style.color,
     background_color: style.background_color,
     contain: style.contain,
+    break_before: style.break_before,
+    break_after: style.break_after,
+    column_span: style.column_span,
+    contain_intrinsic_inline_size: style.contain_intrinsic_inline_size,
+    contain_intrinsic_block_size: style.contain_intrinsic_block_size,
     transform: style.transform,
     zoom: style.zoom,
     border_spacing: style.border_spacing,
@@ -339,6 +385,9 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     box_sizing: self.box_sizing,
     overflow_x: self.overflow_x,
     overflow_y: self.overflow_y,
+    scroll_snap_type: self.scroll_snap_type,
+    scroll_snap_align_x: self.scroll_snap_align_x,
+    scroll_snap_align_y: self.scroll_snap_align_y,
     width: self.width,
     height: self.height,
     min_width: self.min_width,
@@ -369,6 +418,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_content: self.justify_content,
     align_items: self.align_items,
     align_content: self.align_content,
+    justify_content_unsafe: self.justify_content_unsafe,
+    align_content_unsafe: self.align_content_unsafe,
     align_self: self.align_self,
     flex_grow: self.flex_grow,
     flex_shrink: self.flex_shrink,
@@ -376,6 +427,10 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     order: self.order,
     row_gap: self.row_gap,
     column_gap: self.column_gap,
+    column_gap_is_normal: self.column_gap_is_normal,
+    column_count: self.column_count,
+    column_width: self.column_width,
+    column_fill: self.column_fill,
     aspect_ratio: self.aspect_ratio,
     inset: {
       top: self.inset_top,
@@ -396,6 +451,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_self: self.justify_self,
     font_size: self.font_size,
     line_height: self.line_height,
+    text_align: self.text_align,
     white_space: self.white_space,
     writing_mode: self.writing_mode,
     direction: self.direction,
@@ -407,6 +463,11 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     color: self.color,
     background_color: self.background_color,
     contain: self.contain,
+    break_before: self.break_before,
+    break_after: self.break_after,
+    column_span: self.column_span,
+    contain_intrinsic_inline_size: self.contain_intrinsic_inline_size,
+    contain_intrinsic_block_size: self.contain_intrinsic_block_size,
     transform: self.transform,
     zoom: self.zoom,
     border_spacing: self.border_spacing,
@@ -528,6 +589,32 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "padding-right" => dimension_to_string(style.padding.right)
     "padding-bottom" => dimension_to_string(style.padding.bottom)
     "padding-left" => dimension_to_string(style.padding.left)
+    "column-count" =>
+      match style.column_count {
+        Some(v) => v.to_string()
+        None => "auto"
+      }
+    "column-width" => dimension_to_string(style.column_width)
+    "column-fill" =>
+      match style.column_fill {
+        @style.ColumnFill::Balance => "balance"
+        @style.ColumnFill::Auto => "auto"
+      }
+    "break-before" =>
+      match style.break_before {
+        @style.BreakBefore::Auto => "auto"
+        @style.BreakBefore::Column => "column"
+      }
+    "break-after" =>
+      match style.break_after {
+        @style.BreakBefore::Auto => "auto"
+        @style.BreakBefore::Column => "column"
+      }
+    "column-span" =>
+      match style.column_span {
+        @style.ColumnSpan::None => "none"
+        @style.ColumnSpan::All => "all"
+      }
     "flex-grow" => style.flex_grow.to_string()
     "flex-shrink" => style.flex_shrink.to_string()
     "flex-basis" => dimension_to_string(style.flex_basis)
@@ -554,6 +641,33 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.direction {
         @style.Direction::Ltr => "ltr"
         @style.Direction::Rtl => "rtl"
+      }
+    "text-align" =>
+      match style.text_align {
+        @style.TextAlign::Start => "start"
+        @style.TextAlign::End => "end"
+        @style.TextAlign::Left => "left"
+        @style.TextAlign::Right => "right"
+        @style.TextAlign::Center => "center"
+        @style.TextAlign::Justify => "justify"
+      }
+    "white-space" =>
+      match style.white_space {
+        @style.WhiteSpace::Normal => "normal"
+        @style.WhiteSpace::Nowrap => "nowrap"
+        @style.WhiteSpace::Pre => "pre"
+        @style.WhiteSpace::PreWrap => "pre-wrap"
+        @style.WhiteSpace::PreLine => "pre-line"
+      }
+    "contain-intrinsic-inline-size" =>
+      match style.contain_intrinsic_inline_size {
+        Some(v) => v.to_string() + "px"
+        None => "none"
+      }
+    "contain-intrinsic-block-size" =>
+      match style.contain_intrinsic_block_size {
+        Some(v) => v.to_string() + "px"
+        None => "none"
       }
     _ => initial_value(property)
   }
@@ -604,14 +718,16 @@ pub fn compute(
   // Seed writing-mode before applying logical properties.
   // Logical sizing must follow the element's effective writing mode.
   seed_writing_mode(builder, cascaded, ctx)
+  // Seed font metrics before resolving em/ch/ex units in other properties.
+  let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
   // Second pass: apply regular properties with var() resolution
   for prop in props {
-    if not(prop.has_prefix("--")) {
+    if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
       match cascaded.get(prop) {
         Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, ctx)
-          apply_property(builder, prop, value, ctx)
+          let value = resolve_keyword(prop, decl.value, font_ctx)
+          apply_property(builder, prop, value, font_ctx)
         }
         None => ()
       }
@@ -648,14 +764,15 @@ pub fn compute_with_vars(
 
   // Seed writing-mode before applying logical properties.
   seed_writing_mode(builder, cascaded, ctx)
+  let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
   // Second pass: apply regular properties
   for prop in props {
-    if not(prop.has_prefix("--")) {
+    if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
       match cascaded.get(prop) {
         Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, ctx)
-          apply_property(builder, prop, value, ctx)
+          let value = resolve_keyword(prop, decl.value, font_ctx)
+          apply_property(builder, prop, value, font_ctx)
         }
         None => ()
       }
@@ -688,6 +805,51 @@ fn seed_writing_mode(
     }
     None => ()
   }
+}
+
+///|
+fn is_preseeded_font_property(property : String) -> Bool {
+  property == "font" || property == "font-size" || property == "line-height"
+}
+
+///|
+/// Seed font-size/line-height ahead of general property application so
+/// em/ch/ex units in width/height and gaps resolve against the element's font.
+fn seed_font_metrics(
+  builder : StyleBuilder,
+  cascaded : @cascade.CascadedValues,
+  ctx : ComputeContext,
+) -> ComputeContext {
+  let mut seeded_font_size = ctx.font_size
+  let mut seeded_line_height = ctx.font_size
+
+  match cascaded.get("font") {
+    Some(decl) => {
+      let value = resolve_keyword("font", decl.value, ctx)
+      let (font_size, line_height) = parse_font_shorthand(value, ctx)
+      seeded_font_size = font_size
+      seeded_line_height = line_height
+    }
+    None => ()
+  }
+  match cascaded.get("font-size") {
+    Some(decl) => {
+      let value = resolve_keyword("font-size", decl.value, ctx)
+      seeded_font_size = parse_font_size(value, ctx)
+    }
+    None => ()
+  }
+  match cascaded.get("line-height") {
+    Some(decl) => {
+      let value = resolve_keyword("line-height", decl.value, ctx)
+      seeded_line_height = parse_line_height(value, seeded_font_size)
+    }
+    None => ()
+  }
+
+  builder.font_size = seeded_font_size
+  builder.line_height = seeded_line_height
+  { ..ctx, font_size: seeded_font_size }
 }
 
 ///|
@@ -935,17 +1097,17 @@ fn apply_property(
     }
     "border" => {
       // Shorthand: border: [width] [style] [color]
-      // Extract width value from the shorthand (e.g., "solid 3px", "1px solid red")
-      let width = extract_border_width(value)
+      // Resolve width value from shorthand (e.g., "solid 3px", "1em solid red").
+      let width = resolve_border_width(value, ctx)
       builder.border_top = width
       builder.border_right = width
       builder.border_bottom = width
       builder.border_left = width
     }
-    "border-top" => builder.border_top = extract_border_width(value)
-    "border-right" => builder.border_right = extract_border_width(value)
-    "border-bottom" => builder.border_bottom = extract_border_width(value)
-    "border-left" => builder.border_left = extract_border_width(value)
+    "border-top" => builder.border_top = resolve_border_width(value, ctx)
+    "border-right" => builder.border_right = resolve_border_width(value, ctx)
+    "border-bottom" => builder.border_bottom = resolve_border_width(value, ctx)
+    "border-left" => builder.border_left = resolve_border_width(value, ctx)
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
     "border-bottom-width" =>
@@ -1019,7 +1181,7 @@ fn apply_property(
       }
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
-      let width = extract_border_width(value)
+      let width = resolve_border_width(value, ctx)
       builder.border_top = width
       builder.border_bottom = width
     }
@@ -1042,13 +1204,18 @@ fn apply_property(
       }
     }
     "border-block-start" | "border-block-start-width" =>
-      builder.border_top = extract_border_width(value)
+      builder.border_top = resolve_border_width(value, ctx)
     "border-block-end" | "border-block-end-width" =>
-      builder.border_bottom = extract_border_width(value)
+      builder.border_bottom = resolve_border_width(value, ctx)
     "border-inline" | "border-inline-width" => {
-      let width = extract_border_width(value)
-      builder.border_left = width
-      builder.border_right = width
+      let width = resolve_border_width(value, ctx)
+      if builder.writing_mode.is_vertical() {
+        builder.border_top = width
+        builder.border_bottom = width
+      } else {
+        builder.border_left = width
+        builder.border_right = width
+      }
     }
     "border-inline-style" => {
       let raw_parts = value.trim().to_lower().split(" ")
@@ -1059,25 +1226,62 @@ fn apply_property(
           parts.push(p)
         }
       }
-      if parts.length() > 0 && is_none_border_style(parts[0]) {
-        builder.border_left = @types.Length(0.0)
-      }
-      if parts.length() > 1 && is_none_border_style(parts[1]) {
-        builder.border_right = @types.Length(0.0)
-      } else if parts.length() == 1 && is_none_border_style(parts[0]) {
-        builder.border_right = @types.Length(0.0)
+      if builder.writing_mode.is_vertical() {
+        if parts.length() > 0 && is_none_border_style(parts[0]) {
+          builder.border_top = @types.Length(0.0)
+        }
+        if parts.length() > 1 && is_none_border_style(parts[1]) {
+          builder.border_bottom = @types.Length(0.0)
+        } else if parts.length() == 1 && is_none_border_style(parts[0]) {
+          builder.border_bottom = @types.Length(0.0)
+        }
+      } else {
+        if parts.length() > 0 && is_none_border_style(parts[0]) {
+          builder.border_left = @types.Length(0.0)
+        }
+        if parts.length() > 1 && is_none_border_style(parts[1]) {
+          builder.border_right = @types.Length(0.0)
+        } else if parts.length() == 1 && is_none_border_style(parts[0]) {
+          builder.border_right = @types.Length(0.0)
+        }
       }
     }
     "border-inline-start" | "border-inline-start-width" =>
-      builder.border_left = extract_border_width(value)
+      if builder.writing_mode.is_vertical() {
+        builder.border_top = resolve_border_width(value, ctx)
+      } else {
+        builder.border_left = resolve_border_width(value, ctx)
+      }
     "border-inline-end" | "border-inline-end-width" =>
-      builder.border_right = extract_border_width(value)
+      if builder.writing_mode.is_vertical() {
+        builder.border_bottom = resolve_border_width(value, ctx)
+      } else {
+        builder.border_right = resolve_border_width(value, ctx)
+      }
     // Flexbox container
     "flex-direction" => builder.flex_direction = parse_flex_direction(value)
     "flex-wrap" => builder.flex_wrap = parse_flex_wrap(value)
-    "justify-content" => builder.justify_content = parse_alignment(value)
+    "justify-content" => {
+      let (alignment, is_unsafe) = parse_alignment_with_overflow(value)
+      builder.justify_content = alignment
+      builder.justify_content_unsafe = is_unsafe
+    }
     "align-items" => builder.align_items = parse_alignment(value)
-    "align-content" => builder.align_content = parse_alignment(value)
+    "align-content" => {
+      let (alignment, is_unsafe) = parse_alignment_with_overflow(value)
+      builder.align_content = alignment
+      builder.align_content_unsafe = is_unsafe
+    }
+    "place-content" =>
+      match parse_place_content_with_overflow(value) {
+        Some(((align_content, align_unsafe), (justify_content, justify_unsafe))) => {
+          builder.align_content = align_content
+          builder.align_content_unsafe = align_unsafe
+          builder.justify_content = justify_content
+          builder.justify_content_unsafe = justify_unsafe
+        }
+        None => ()
+      }
     // Flexbox/Grid item alignment
     "align-self" => builder.align_self = parse_align_self(value)
     "justify-self" => builder.justify_self = parse_align_self(value)
@@ -1240,6 +1444,7 @@ fn apply_property(
         .split(" ")
         .filter(fn(s) { not(s.is_empty()) })
         .collect()
+      builder.column_gap_is_normal = false
       match parts.length() {
         1 => {
           let dim = resolve_dimension_with_calc_percent_fallback(
@@ -1268,10 +1473,27 @@ fn apply_property(
     }
     "row-gap" | "grid-row-gap" =>
       builder.row_gap = resolve_dimension_with_calc_percent_fallback(value, ctx)
-    "column-gap" | "grid-column-gap" =>
+    "column-gap" | "grid-column-gap" => {
       builder.column_gap = resolve_dimension_with_calc_percent_fallback(
         value, ctx,
       )
+      builder.column_gap_is_normal = false
+    }
+    // Multi-column
+    "column-count" => builder.column_count = parse_column_count(value)
+    "column-width" => builder.column_width = parse_column_width(value, ctx)
+    "column-fill" => builder.column_fill = parse_column_fill(value)
+    "columns" =>
+      match parse_columns_shorthand(value, ctx) {
+        Some((count, width)) => {
+          builder.column_count = count
+          builder.column_width = width
+        }
+        None => ()
+      }
+    "break-before" => builder.break_before = parse_break_before(value)
+    "break-after" => builder.break_after = parse_break_before(value)
+    "column-span" => builder.column_span = parse_column_span(value)
     // Inset
     "top" => builder.inset_top = resolve_dimension(value, ctx)
     "right" => builder.inset_right = resolve_dimension(value, ctx)
@@ -1309,6 +1531,13 @@ fn apply_property(
     }
     "overflow-x" => builder.overflow_x = parse_overflow(value)
     "overflow-y" => builder.overflow_y = parse_overflow(value)
+    "scroll-snap-type" =>
+      builder.scroll_snap_type = parse_scroll_snap_type(value)
+    "scroll-snap-align" => {
+      let (inline_align, block_align) = parse_scroll_snap_align(value)
+      builder.scroll_snap_align_x = inline_align
+      builder.scroll_snap_align_y = block_align
+    }
     // Grid container
     "grid-auto-flow" => builder.grid_auto_flow = parse_grid_auto_flow(value)
     "grid-template-columns" =>
@@ -1347,10 +1576,20 @@ fn apply_property(
       builder.grid_row_start = start
       builder.grid_row_end = end
     }
+    "grid-area" => {
+      let (row_start, column_start, row_end, column_end) = parse_grid_area_shorthand(
+        value,
+      )
+      builder.grid_row_start = row_start
+      builder.grid_column_start = column_start
+      builder.grid_row_end = row_end
+      builder.grid_column_end = column_end
+    }
     // Font properties
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
       builder.line_height = parse_line_height(value, builder.font_size)
+    "text-align" => builder.text_align = parse_text_align(value)
     "white-space" => builder.white_space = parse_white_space(value)
     "writing-mode" => builder.writing_mode = parse_writing_mode(value)
     "direction" => builder.direction = parse_direction(value)
@@ -1363,6 +1602,30 @@ fn apply_property(
     }
     // CSS Containment
     "contain" => builder.contain = parse_contain(value)
+    "container-type" =>
+      match parse_container_type(value) {
+        Some(implied) =>
+          if implied.has_containment() {
+            builder.contain = merge_contain(builder.contain, implied)
+          }
+        None => ()
+      }
+    "contain-intrinsic-inline-size" =>
+      builder.contain_intrinsic_inline_size = parse_contain_intrinsic_axis(
+        value, ctx,
+      )
+    "contain-intrinsic-block-size" =>
+      builder.contain_intrinsic_block_size = parse_contain_intrinsic_axis(
+        value, ctx,
+      )
+    "contain-intrinsic-size" =>
+      match parse_contain_intrinsic_size(value, ctx) {
+        Some((inline_size, block_size)) => {
+          builder.contain_intrinsic_inline_size = inline_size
+          builder.contain_intrinsic_block_size = block_size
+        }
+        None => ()
+      }
     // Clip (legacy, deprecated but widely used for a11y)
     "clip" => builder.clip = parse_clip(value)
     // Paint properties (visual, not layout)
@@ -1431,6 +1694,66 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
 fn is_none_border_style(value : String) -> Bool {
   let v = value.trim().to_lower()
   v == "none" || v == "hidden"
+}
+
+///|
+/// Resolve border width from width/style/color shorthand tokens.
+/// Falls back to the existing default 1.5px for style-only shorthands.
+fn resolve_border_width(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Dimension {
+  let v = value.trim().to_lower()
+  if v == "none" || v == "hidden" || v == "0" {
+    return @types.Length(0.0)
+  }
+
+  let mut has_visible_style = false
+  let mut has_none_style = false
+
+  let parts = v
+    .split(" ")
+    .map(fn(part) { part.to_string().trim().to_string() })
+    .filter(fn(part) { not(part.is_empty()) })
+    .collect()
+
+  for part in parts {
+    match part {
+      "none" | "hidden" => {
+        has_none_style = true
+        continue
+      }
+      "thin" => return @types.Length(1.0)
+      "medium" => return @types.Length(3.0)
+      "thick" => return @types.Length(5.0)
+      "solid"
+      | "dotted"
+      | "dashed"
+      | "double"
+      | "groove"
+      | "ridge"
+      | "inset"
+      | "outset" => {
+        has_visible_style = true
+        continue
+      }
+      _ => ()
+    }
+
+    // Length-like token found in shorthand.
+    match resolve_dimension(part, ctx) {
+      @types.Length(px) => return @types.Length(px)
+      _ => ()
+    }
+  }
+
+  if has_none_style {
+    @types.Length(0.0)
+  } else if has_visible_style {
+    @types.Length(1.5)
+  } else {
+    @types.Length(0.0)
+  }
 }
 
 ///|
@@ -2124,10 +2447,22 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
 }
 
 ///|
+fn strip_css_ascii_whitespace(value : String) -> String {
+  let sb = StringBuilder::new()
+  for c in value.iter() {
+    if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '\u000C' {
+      sb.write_char(c)
+    }
+  }
+  sb.to_string()
+}
+
+///|
 /// Resolve dimension with relative unit conversion
 fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // First resolve any var() functions
-  let v = resolve_all_vars(value, ctx).trim()
+  let raw_v = resolve_all_vars(value, ctx).trim()
+  let v = strip_css_ascii_whitespace(raw_v.to_string())
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
   }
@@ -2145,16 +2480,18 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   }
 
   // Handle calc() expressions
-  if v.has_prefix("calc(") {
-    match parse_calc_string(v.to_string(), ctx) {
+  if raw_v.has_prefix("calc(") {
+    match parse_calc_string(raw_v.to_string(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex calc
     }
   }
 
   // Handle min(), max(), clamp() CSS math functions
-  if v.has_prefix("min(") || v.has_prefix("max(") || v.has_prefix("clamp(") {
-    match parse_css_math_function(v.to_string(), ctx) {
+  if raw_v.has_prefix("min(") ||
+    raw_v.has_prefix("max(") ||
+    raw_v.has_prefix("clamp(") {
+    match parse_css_math_function(raw_v.to_string(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex expressions
     }
@@ -2600,7 +2937,7 @@ fn apply_inheritance(
   // List of inherited properties we support
   let inherited_props = [
     "direction", "writing-mode", "text-align", "line-height", "font-size", "font-family",
-    "font-weight", "font-style", "color", "visibility",
+    "font-weight", "font-style", "color", "visibility", "white-space",
   ]
   for prop in inherited_props {
     // If property not in cascaded values, inherit from parent
@@ -2790,20 +3127,21 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
 fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   let v = value.trim()
 
+  // Handle rem units (relative to root font-size) first.
+  // "1rem" also ends with "em", so ordering matters.
+  match v.strip_suffix("rem") {
+    Some(num_str) => {
+      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      return n * ctx.root_font_size
+    }
+    None => ()
+  }
+
   // Handle em units (relative to parent font-size)
   match v.strip_suffix("em") {
     Some(num_str) => {
       let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
       return n * ctx.font_size
-    }
-    None => ()
-  }
-
-  // Handle rem units (relative to root font-size)
-  match v.strip_suffix("rem") {
-    Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
-      return n * ctx.root_font_size
     }
     None => ()
   }
@@ -2994,8 +3332,172 @@ fn parse_font_shorthand(
 }
 
 // =============================================================================
+// Multi-column / Fragmentation Parsing
+// =============================================================================
+
+///|
+fn parse_column_count(value : String) -> Int? {
+  let trimmed = value.trim().to_string()
+  if trimmed.is_empty() || trimmed == "auto" {
+    return None
+  }
+  try {
+    let parsed = @strconv.parse_int(trimmed)
+    if parsed >= 1 {
+      Some(parsed)
+    } else {
+      None
+    }
+  } catch {
+    _ => None
+  }
+}
+
+///|
+fn parse_column_width(value : String, ctx : ComputeContext) -> @types.Dimension {
+  let trimmed = value.trim().to_string()
+  if trimmed.is_empty() || trimmed == "auto" {
+    return @types.Dimension::Auto
+  }
+  let dim = resolve_dimension_with_calc_percent_fallback(trimmed, ctx)
+  match dim {
+    @types.Dimension::Length(v) =>
+      if v > 0.0 {
+        @types.Dimension::Length(v)
+      } else {
+        @types.Dimension::Auto
+      }
+    @types.Dimension::Percent(v) =>
+      if v > 0.0 {
+        @types.Dimension::Percent(v)
+      } else {
+        @types.Dimension::Auto
+      }
+    @types.Dimension::Auto
+    | @types.Dimension::MinContent
+    | @types.Dimension::MaxContent
+    | @types.Dimension::FitContent(_) => @types.Dimension::Auto
+  }
+}
+
+///|
+fn parse_column_fill(value : String) -> @style.ColumnFill {
+  match value.trim().to_string() {
+    "auto" => @style.ColumnFill::Auto
+    _ => @style.ColumnFill::Balance
+  }
+}
+
+///|
+fn parse_break_before(value : String) -> @style.BreakBefore {
+  match value.trim().to_string() {
+    "column" => @style.BreakBefore::Column
+    _ => @style.BreakBefore::Auto
+  }
+}
+
+///|
+fn parse_column_span(value : String) -> @style.ColumnSpan {
+  match value.trim().to_string() {
+    "all" => @style.ColumnSpan::All
+    _ => @style.ColumnSpan::None
+  }
+}
+
+///|
+fn parse_columns_shorthand(
+  value : String,
+  ctx : ComputeContext,
+) -> (Int?, @types.Dimension)? {
+  let parts : Array[StringView] = value
+    .trim()
+    .split(" ")
+    .filter(fn(s) { not(s.is_empty()) })
+    .collect()
+  if parts.length() == 0 {
+    return None
+  }
+  let mut count : Int? = None
+  let mut width = @types.Dimension::Auto
+  for part in parts {
+    let token = part.to_string()
+    if token == "auto" {
+      continue
+    }
+    if count is None {
+      match parse_column_count(token) {
+        Some(v) => {
+          count = Some(v)
+          continue
+        }
+        None => ()
+      }
+    }
+    let parsed_width = parse_column_width(token, ctx)
+    match parsed_width {
+      @types.Dimension::Auto => ()
+      _ => width = parsed_width
+    }
+  }
+  Some((count, width))
+}
+
+// =============================================================================
 // Containment Parsing
 // =============================================================================
+
+///|
+/// Parse contain-intrinsic-inline-size / contain-intrinsic-block-size.
+/// Returns a content-box fallback length in px, or None for none/auto.
+fn parse_contain_intrinsic_axis(
+  value : String,
+  ctx : ComputeContext,
+) -> Double? {
+  let v = resolve_all_vars(value, ctx).trim().to_string()
+  if v.is_empty() || v == "none" || v == "auto" {
+    return None
+  }
+  match resolve_dimension(v, ctx) {
+    @types.Length(length) => if length > 0.0 { Some(length) } else { Some(0.0) }
+    _ => None
+  }
+}
+
+///|
+/// Parse contain-intrinsic-size shorthand.
+/// One value applies to both inline/block axes; two values map to inline then block.
+fn parse_contain_intrinsic_size(
+  value : String,
+  ctx : ComputeContext,
+) -> (Double?, Double?)? {
+  let v = resolve_all_vars(value, ctx).trim().to_string()
+  if v.is_empty() {
+    return None
+  }
+  let axis_values : Array[Double?] = []
+  let parts = v.split(" ")
+  for part in parts {
+    let p = part.to_string().trim().to_string()
+    if p.is_empty() || p == "auto" {
+      continue
+    }
+    if p == "none" {
+      axis_values.push(None)
+      continue
+    }
+    match parse_contain_intrinsic_axis(p, ctx) {
+      Some(length) => axis_values.push(Some(length))
+      None => ()
+    }
+  }
+  if axis_values.length() == 0 {
+    None
+  } else if axis_values.length() == 1 {
+    Some((axis_values[0], axis_values[0]))
+  } else {
+    Some((axis_values[0], axis_values[1]))
+  }
+}
 
 ///|
 /// Parse contain property
@@ -3029,6 +3531,38 @@ fn parse_contain(value : String) -> @style.Contain {
     }
   }
   result
+}
+
+///|
+fn merge_contain(
+  base : @style.Contain,
+  extra : @style.Contain,
+) -> @style.Contain {
+  let merged : @style.Contain = {
+    size: base.size || extra.size,
+    inline_size: base.inline_size || extra.inline_size,
+    layout: base.layout || extra.layout,
+    paint: base.paint || extra.paint,
+    style: base.style || extra.style,
+  }
+  if merged.size {
+    { ..merged, inline_size: false }
+  } else {
+    merged
+  }
+}
+
+///|
+/// Parse container-type into implied contain bits.
+/// Supported: normal | size | inline-size
+fn parse_container_type(value : String) -> @style.Contain? {
+  match value.trim().to_string() {
+    "normal" => Some(@style.Contain::none())
+    "size" => Some({ ..@style.Contain::none(), size: true, style: true })
+    "inline-size" =>
+      Some({ ..@style.Contain::none(), inline_size: true, style: true })
+    _ => None
+  }
 }
 
 // Paint Property Parsing

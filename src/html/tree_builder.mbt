@@ -164,7 +164,7 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
 /// Insert element at appropriate place
 fn TreeBuilder::insert_element(self : TreeBuilder, element : Element) -> Unit {
   // Flush any pending text before inserting element
-  self.flush_pending_text()
+  self.flush_pending_text(next_tag=Some(element.tag))
   if self.foster_parenting && is_table_context(self.current_node()) {
     self.foster_parent_element(element)
   } else {
@@ -207,7 +207,10 @@ fn TreeBuilder::insert_characters(self : TreeBuilder, s : String) -> Unit {
 
 ///|
 /// Flush pending text buffer to current element
-fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
+fn TreeBuilder::flush_pending_text(
+  self : TreeBuilder,
+  next_tag? : String? = None,
+) -> Unit {
   if self.pending_text.is_empty() {
     return
   }
@@ -229,13 +232,40 @@ fn TreeBuilder::flush_pending_text(self : TreeBuilder) -> Unit {
         }
       }
       // Skip whitespace-only text nodes between elements
-      // (inter-element whitespace is usually insignificant)
+      // while preserving one collapsed space for later layout decisions.
       if is_whitespace_only(text) {
+        if should_preserve_inline_inter_element_whitespace(current, next_tag) {
+          current.children.push(Node::Text(" "))
+        }
         return
       }
       current.children.push(Node::Text(text))
     }
     None => ()
+  }
+}
+
+///|
+/// Keep a single collapsed whitespace when it appears between element siblings.
+/// Whether it contributes to layout is decided later from computed display values.
+fn should_preserve_inline_inter_element_whitespace(
+  current : Element,
+  next_tag : String?,
+) -> Bool {
+  let prev_len = current.children.length()
+  if prev_len == 0 {
+    return false
+  }
+  let has_next_element = match next_tag {
+    Some(_) => true
+    None => false
+  }
+  if not(has_next_element) {
+    return false
+  }
+  match current.children[prev_len - 1] {
+    Node::Element(_) => true
+    Node::Text(_) => false
   }
 }
 

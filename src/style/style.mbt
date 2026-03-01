@@ -73,6 +73,76 @@ pub fn Direction::is_rtl(self : Direction) -> Bool {
 }
 
 ///|
+/// CSS text-align property
+pub(all) enum TextAlign {
+  Start
+  End
+  Left
+  Right
+  Center
+  Justify
+} derive(Show, Eq)
+
+///|
+/// CSS scroll-snap-type axis
+pub(all) enum ScrollSnapAxis {
+  None
+  X
+  Y
+  Both
+} derive(Show, Eq)
+
+///|
+/// CSS scroll-snap-type strictness
+pub(all) enum ScrollSnapStrictness {
+  None
+  Mandatory
+  Proximity
+} derive(Show, Eq)
+
+///|
+/// CSS scroll-snap-type value
+pub(all) struct ScrollSnapType {
+  axis : ScrollSnapAxis
+  strictness : ScrollSnapStrictness
+} derive(Show, Eq)
+
+///|
+pub fn ScrollSnapType::none() -> ScrollSnapType {
+  { axis: ScrollSnapAxis::None, strictness: ScrollSnapStrictness::None }
+}
+
+///|
+pub fn ScrollSnapType::is_mandatory(self : ScrollSnapType) -> Bool {
+  self.strictness == ScrollSnapStrictness::Mandatory
+}
+
+///|
+pub fn ScrollSnapType::snaps_x(self : ScrollSnapType) -> Bool {
+  match self.axis {
+    ScrollSnapAxis::X | ScrollSnapAxis::Both => true
+    ScrollSnapAxis::None | ScrollSnapAxis::Y => false
+  }
+}
+
+///|
+pub fn ScrollSnapType::snaps_y(self : ScrollSnapType) -> Bool {
+  match self.axis {
+    ScrollSnapAxis::Y | ScrollSnapAxis::Both => true
+    ScrollSnapAxis::None | ScrollSnapAxis::X => false
+  }
+}
+
+///|
+/// CSS scroll-snap-align keywords
+pub(all) enum ScrollSnapAlign {
+  None
+  Start
+  End
+  Center
+} derive(Show, Eq)
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)
@@ -90,6 +160,27 @@ pub(all) enum MarginTrim {
   InlineStart
   InlineEnd
   Inline
+} derive(Show, Eq)
+
+///|
+/// CSS multi-column column-fill property.
+pub(all) enum ColumnFill {
+  Balance
+  Auto
+} derive(Show, Eq)
+
+///|
+/// CSS break-before property (minimum subset for multicol tests).
+pub(all) enum BreakBefore {
+  Auto
+  Column
+} derive(Show, Eq)
+
+///|
+/// CSS column-span property.
+pub(all) enum ColumnSpan {
+  None
+  All
 } derive(Show, Eq)
 
 ///|
@@ -219,6 +310,71 @@ pub fn Contain::has_containment(self : Contain) -> Bool {
 }
 
 ///|
+/// Whether containment suppresses intrinsic contribution on physical width.
+pub fn Style::suppresses_intrinsic_width(self : Style) -> Bool {
+  self.contain.size ||
+  (self.contain.inline_size && not(self.writing_mode.is_vertical()))
+}
+
+///|
+/// Whether containment suppresses intrinsic contribution on physical height.
+pub fn Style::suppresses_intrinsic_height(self : Style) -> Bool {
+  self.contain.size ||
+  (self.contain.inline_size && self.writing_mode.is_vertical())
+}
+
+///|
+/// Fallback intrinsic contribution on physical width from contain-intrinsic-size.
+pub fn Style::contained_intrinsic_width_fallback(self : Style) -> Double {
+  if self.writing_mode.is_vertical() {
+    match self.contain_intrinsic_block_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  } else {
+    match self.contain_intrinsic_inline_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  }
+}
+
+///|
+/// Fallback intrinsic contribution on physical height from contain-intrinsic-size.
+pub fn Style::contained_intrinsic_height_fallback(self : Style) -> Double {
+  if self.writing_mode.is_vertical() {
+    match self.contain_intrinsic_inline_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  } else {
+    match self.contain_intrinsic_block_size {
+      Some(v) => if v > 0.0 { v } else { 0.0 }
+      None => 0.0
+    }
+  }
+}
+
+///|
+/// Whether this style enables CSS multi-column layout.
+pub fn Style::has_multicol(self : Style) -> Bool {
+  match self.column_count {
+    // `column-count: 1` still establishes a multicol container; overflowing
+    // content may fragment into additional columns.
+    Some(v) => v > 0
+    None =>
+      match self.column_width {
+        @types.Length(v) => v > 0.0
+        @types.Percent(v) => v > 0.0
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => false
+      }
+  }
+}
+
+///|
 /// Vertical alignment for inline elements
 pub(all) enum VerticalAlign {
   Baseline // Align baseline (default, simplified to bottom for now)
@@ -244,6 +400,10 @@ pub(all) struct Style {
   // Overflow
   mut overflow_x : @types.Overflow
   mut overflow_y : @types.Overflow
+  // Scroll snap
+  mut scroll_snap_type : ScrollSnapType
+  mut scroll_snap_align_x : ScrollSnapAlign
+  mut scroll_snap_align_y : ScrollSnapAlign
   // Sizing
   mut width : @types.Dimension
   mut height : @types.Dimension
@@ -262,6 +422,10 @@ pub(all) struct Style {
   mut justify_content : @types.Alignment
   mut align_items : @types.Alignment
   mut align_content : @types.Alignment
+  // Whether overflow alignment requested `unsafe` position.
+  // Unqualified values default to safe behavior for initial scroll positioning.
+  mut justify_content_unsafe : Bool
+  mut align_content_unsafe : Bool
   mut align_self : @types.AlignSelf
   mut flex_grow : Double
   mut flex_shrink : Double
@@ -270,6 +434,11 @@ pub(all) struct Style {
   // Gap
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
+  mut column_gap_is_normal : Bool
+  // Multi-column layout
+  mut column_count : Int? // None = auto
+  mut column_width : @types.Dimension // auto or fixed width
+  mut column_fill : ColumnFill
   // Aspect ratio (width / height)
   mut aspect_ratio : Double?
   // Inset for position: absolute (left, right, top, bottom)
@@ -294,6 +463,7 @@ pub(all) struct Style {
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut line_height : Double // Computed line height in pixels (default = font_size)
   // Text wrapping and direction
+  mut text_align : TextAlign
   mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
   mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
   mut direction : Direction // direction: ltr | rtl (inline text direction)
@@ -310,6 +480,13 @@ pub(all) struct Style {
   mut background_color : @types.Color // Background color (not inherited)
   // Containment (for layout optimization)
   mut contain : Contain
+  // Fragmentation
+  mut break_before : BreakBefore
+  mut break_after : BreakBefore
+  mut column_span : ColumnSpan
+  // contain-intrinsic-* fallback sizes (content-box lengths in px)
+  mut contain_intrinsic_inline_size : Double?
+  mut contain_intrinsic_block_size : Double?
   // CSS transform (visual offset, applied in paint phase)
   mut transform : Transform
   // CSS zoom (affects layout scaling, inherited)
@@ -334,6 +511,9 @@ pub fn Style::default() -> Style {
     box_sizing: @types.ContentBox,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_snap_type: ScrollSnapType::none(),
+    scroll_snap_align_x: ScrollSnapAlign::None,
+    scroll_snap_align_y: ScrollSnapAlign::None,
     width: @types.Auto,
     height: @types.Auto,
     min_width: @types.Auto,
@@ -364,6 +544,8 @@ pub fn Style::default() -> Style {
     justify_content: @types.Start,
     align_items: @types.Stretch,
     align_content: @types.Stretch,
+    justify_content_unsafe: false,
+    align_content_unsafe: false,
     align_self: @types.AlignSelf::Auto,
     flex_grow: 0.0,
     flex_shrink: 1.0,
@@ -371,6 +553,10 @@ pub fn Style::default() -> Style {
     order: 0,
     row_gap: @types.Length(0.0),
     column_gap: @types.Length(0.0),
+    column_gap_is_normal: true,
+    column_count: None,
+    column_width: @types.Auto,
+    column_fill: Balance,
     aspect_ratio: None,
     inset: {
       left: @types.Auto,
@@ -391,6 +577,7 @@ pub fn Style::default() -> Style {
     justify_self: @types.AlignSelf::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    text_align: Start,
     white_space: Normal,
     writing_mode: HorizontalTb,
     direction: Ltr,
@@ -402,6 +589,11 @@ pub fn Style::default() -> Style {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     contain: Contain::none(),
+    break_before: BreakBefore::Auto,
+    break_after: BreakBefore::Auto,
+    column_span: ColumnSpan::None,
+    contain_intrinsic_inline_size: None,
+    contain_intrinsic_block_size: None,
     transform: Transform::none(),
     zoom: 1.0,
     border_spacing: 0.0,

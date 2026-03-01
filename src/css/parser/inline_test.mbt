@@ -328,6 +328,43 @@ test "contain: inline-size" {
 }
 
 ///|
+test "container-type: size implies contain size and style" {
+  let style = parse_inline_style("container-type: size")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.inline_size, content="false")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "container-type: inline-size implies contain inline-size and style" {
+  let style = parse_inline_style("container-type: inline-size")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "container-type merges with contain flags" {
+  let style = parse_inline_style("contain: paint; container-type: size")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain-intrinsic-inline-size parses length" {
+  let style = parse_inline_style("contain-intrinsic-inline-size: 100px")
+  inspect(style.contain_intrinsic_inline_size, content="Some(100)")
+}
+
+///|
+test "contain-intrinsic-size shorthand sets inline and block" {
+  let style = parse_inline_style("contain-intrinsic-size: 80px 40px")
+  inspect(style.contain_intrinsic_inline_size, content="Some(80)")
+  inspect(style.contain_intrinsic_block_size, content="Some(40)")
+}
+
+///|
 test "parse width fit-content" {
   let style = parse_inline_style("width: fit-content")
   inspect(style.width, content="FitContent(10000000000)")
@@ -673,6 +710,42 @@ test "parse align-content center" {
 test "parse align-content space-between" {
   let style = parse_inline_style("align-content: space-between")
   inspect(style.align_content, content="SpaceBetween")
+}
+
+///|
+test "parse place-content safe center" {
+  let style = parse_inline_style("place-content: safe center")
+  inspect(style.align_content, content="Start")
+  inspect(style.justify_content, content="Start")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse place-content end center" {
+  let style = parse_inline_style("place-content: end center")
+  inspect(style.align_content, content="End")
+  inspect(style.justify_content, content="Center")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse place-content unsafe end" {
+  let style = parse_inline_style("place-content: unsafe end")
+  inspect(style.align_content, content="End")
+  inspect(style.justify_content, content="End")
+  inspect(style.align_content_unsafe, content="true")
+  inspect(style.justify_content_unsafe, content="true")
+}
+
+///|
+test "parse place-content start left" {
+  let style = parse_inline_style("place-content: start left")
+  inspect(style.align_content, content="Start")
+  inspect(style.justify_content, content="Left")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
 }
 
 ///|

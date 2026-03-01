@@ -21,9 +21,38 @@ const CRATER_BIDI_PORT = 9222;
 const CRATER_BIDI_URL = `ws://127.0.0.1:${CRATER_BIDI_PORT}`;
 const SUBSET_CONFIG = "scripts/wpt-bidi-subset.json";
 
+interface CliOptions {
+  args: string[];
+  jsonOutput?: string;
+}
+
 interface SubsetConfig {
   tests: Record<string, Record<string, string[]>>;
   skip_patterns: string[];
+}
+
+interface PytestSummary {
+  passed: number;
+  failed: number;
+  errors: number;
+  total: number;
+}
+
+interface RunOutcome {
+  exitCode: number;
+  summary: PytestSummary;
+}
+
+interface WptCompatShardReport {
+  schemaVersion: 1;
+  suite: "wpt-webdriver";
+  target: string;
+  passed: number;
+  failed: number;
+  errors: number;
+  total: number;
+  passRate: number;
+  generatedAt: string;
 }
 
 // Load subset configuration
@@ -165,6 +194,119 @@ function shouldSkipFile(filename: string, skipPatterns: string[]): boolean {
   return false;
 }
 
+function emptySummary(): PytestSummary {
+  return {
+    passed: 0,
+    failed: 0,
+    errors: 0,
+    total: 0,
+  };
+}
+
+function stripAnsi(input: string): string {
+  return input.replace(/\x1B\[[0-9;]*m/g, "");
+}
+
+export function parsePytestSummary(output: string): PytestSummary {
+  const cleaned = stripAnsi(output).replace(/\r/g, "");
+  const lines = cleaned.split("\n").map((line) => line.trim());
+  const summaryLine = [...lines].reverse().find((line) => {
+    if (!/=+/.test(line)) return false;
+    return /(passed|failed|error|errors|skipped|xfailed|xpassed)/.test(line);
+  });
+
+  if (!summaryLine) {
+    if (/no tests ran/i.test(cleaned)) return emptySummary();
+    return emptySummary();
+  }
+
+  const counts = {
+    passed: 0,
+    failed: 0,
+    errors: 0,
+    skipped: 0,
+    xfailed: 0,
+    xpassed: 0,
+  };
+
+  const tokenRegex = /(\d+)\s+(passed|failed|error|errors|skipped|xfailed|xpassed)\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = tokenRegex.exec(summaryLine)) !== null) {
+    const value = Number.parseInt(match[1], 10);
+    const key = match[2];
+    if (!Number.isFinite(value)) continue;
+    if (key === "error" || key === "errors") {
+      counts.errors += value;
+      continue;
+    }
+    if (key in counts) {
+      counts[key as keyof typeof counts] += value;
+    }
+  }
+
+  return {
+    passed: counts.passed,
+    failed: counts.failed,
+    errors: counts.errors,
+    total: counts.passed + counts.failed + counts.errors,
+  };
+}
+
+function mergeSummaries(base: PytestSummary, item: PytestSummary): PytestSummary {
+  return {
+    passed: base.passed + item.passed,
+    failed: base.failed + item.failed,
+    errors: base.errors + item.errors,
+    total: base.total + item.total,
+  };
+}
+
+function parseCliArgs(rawArgs: string[]): CliOptions {
+  const options: CliOptions = { args: [] };
+
+  for (let i = 0; i < rawArgs.length; i++) {
+    const arg = rawArgs[i];
+    if (arg === "--json") {
+      options.jsonOutput = rawArgs[++i];
+      continue;
+    }
+    if (arg.startsWith("--json=")) {
+      options.jsonOutput = arg.slice("--json=".length);
+      continue;
+    }
+    options.args.push(arg);
+  }
+
+  return options;
+}
+
+function detectTarget(args: string[]): string {
+  if (args.length === 0) return "all";
+  if (args[0] === "--subset") return "subset";
+  if (args[0] === "--all") return "all";
+  if (args[0] === "--quick") {
+    return args[1] ? `quick ${args[1]}` : "quick";
+  }
+  return args[0];
+}
+
+function writeShardReport(jsonOutput: string | undefined, target: string, summary: PytestSummary): void {
+  if (!jsonOutput) return;
+  const report: WptCompatShardReport = {
+    schemaVersion: 1,
+    suite: "wpt-webdriver",
+    target,
+    passed: summary.passed,
+    failed: summary.failed,
+    errors: summary.errors,
+    total: summary.total,
+    passRate: summary.total > 0 ? summary.passed / summary.total : 0,
+    generatedAt: new Date().toISOString(),
+  };
+  fs.mkdirSync(path.dirname(jsonOutput), { recursive: true });
+  fs.writeFileSync(jsonOutput, JSON.stringify(report, null, 2), "utf-8");
+}
+
 // Copy test files to temp directory
 function copySimpleTests(
   testPath: string,
@@ -255,12 +397,12 @@ function copySimpleTests(
 async function runTests(
   testPath: string,
   options: { skipPatterns?: string[]; quick?: boolean; timeout?: number } = {}
-): Promise<number> {
+): Promise<RunOutcome> {
   const fullPath = path.join(process.cwd(), WPT_BIDI_TESTS, testPath);
 
   if (testPath && !fs.existsSync(fullPath)) {
     console.error(`Test path not found: ${fullPath}`);
-    return 1;
+    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
   }
 
   // Copy simple tests (without relative imports)
@@ -271,7 +413,7 @@ async function runTests(
     if (skipped.length > 0) {
       console.log(`Skipped: ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? ` and ${skipped.length - 5} more` : ""}`);
     }
-    return 1;
+    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
   }
 
   console.log(`Copied ${copied} tests to ${tempDir}`);
@@ -289,6 +431,9 @@ async function runTests(
   const timeout = options.timeout || 30;
 
   return new Promise((resolve) => {
+    const stdoutChunks: string[] = [];
+    const stderrChunks: string[] = [];
+
     const pytest = spawn(
       "uv",
       [
@@ -303,57 +448,83 @@ async function runTests(
         "--tb=short",
       ],
       {
-        stdio: "inherit",
+        stdio: ["ignore", "pipe", "pipe"],
         env,
         cwd: process.cwd(),
       }
     );
 
+    pytest.stdout?.on("data", (data) => {
+      const text = data.toString();
+      stdoutChunks.push(text);
+      process.stdout.write(text);
+    });
+
+    pytest.stderr?.on("data", (data) => {
+      const text = data.toString();
+      stderrChunks.push(text);
+      process.stderr.write(text);
+    });
+
     pytest.on("close", (code) => {
       // Clean up temp dir
       fs.rmSync(tempDir, { recursive: true, force: true });
-      resolve(code ?? 1);
+      const exitCode = code ?? 1;
+      const output = `${stdoutChunks.join("")}\n${stderrChunks.join("")}`;
+      let summary = parsePytestSummary(output);
+      if (summary.total === 0 && exitCode !== 0) {
+        // pytest summary line can be missing when process crashes/interrupted
+        summary = { passed: 0, failed: 1, errors: 0, total: 1 };
+      }
+      resolve({ exitCode, summary });
     });
   });
 }
 
 // Run subset of known-passing tests
-async function runSubset(): Promise<number> {
+async function runSubset(): Promise<RunOutcome> {
   const config = loadSubsetConfig();
   if (!config) {
     console.error("Subset config not found: " + SUBSET_CONFIG);
-    return 1;
+    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
   }
 
   console.log("Running known-passing test subset...\n");
 
-  let totalPassed = 0;
-  let totalFailed = 0;
+  let moduleFailures = 0;
+  let totalSummary = emptySummary();
 
   for (const [modulePath, files] of Object.entries(config.tests)) {
+    void files;
     console.log(`\n=== ${modulePath} ===`);
-    const exitCode = await runTests(modulePath, {
+    const outcome = await runTests(modulePath, {
       skipPatterns: config.skip_patterns,
       quick: true,
       timeout: 10,
     });
-    if (exitCode === 0) {
-      totalPassed++;
-    } else {
-      totalFailed++;
+    totalSummary = mergeSummaries(totalSummary, outcome.summary);
+    if (outcome.exitCode !== 0) {
+      moduleFailures++;
     }
   }
 
   console.log(`\n=== Summary ===`);
-  console.log(`Modules passed: ${totalPassed}`);
-  console.log(`Modules failed: ${totalFailed}`);
+  console.log(`Total passed: ${totalSummary.passed}`);
+  console.log(`Total failed: ${totalSummary.failed}`);
+  console.log(`Total errors: ${totalSummary.errors}`);
+  console.log(`Modules failed: ${moduleFailures}`);
 
-  return totalFailed > 0 ? 1 : 0;
+  return {
+    exitCode: moduleFailures > 0 ? 1 : 0,
+    summary: totalSummary,
+  };
 }
 
 // Main
 async function main(): Promise<number> {
-  const args = process.argv.slice(2);
+  const cliOptions = parseCliArgs(process.argv.slice(2));
+  const args = cliOptions.args;
+  const target = detectTarget(args);
 
   if (args.length === 0 || args[0] === "--help") {
     console.log("WPT WebDriver BiDi Test Runner for Crater\n");
@@ -363,6 +534,7 @@ async function main(): Promise<number> {
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --subset     # Known-passing tests only");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --quick <module>  # Skip timeout tests");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --all");
+    console.log("  npx tsx scripts/wpt-webdriver-runner.ts session/status --json .wpt-reports/wpt-webdriver-session-status.json");
     return 0;
   }
 
@@ -373,6 +545,7 @@ async function main(): Promise<number> {
 
   if (!checkUv()) {
     console.error("uv not found. Install: curl -LsSf https://astral.sh/uv/install.sh | sh");
+    writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
     return 1;
   }
 
@@ -385,28 +558,33 @@ async function main(): Promise<number> {
     const ready = await waitForServer();
     if (!ready) {
       console.error("Server failed to start");
+      writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
       return 1;
     }
     console.log("Server ready.\n");
 
-    let exitCode: number;
+    let outcome: RunOutcome;
 
     if (args[0] === "--subset") {
-      exitCode = await runSubset();
+      outcome = await runSubset();
     } else if (args[0] === "--quick") {
       const testPath = args[1] || "";
       const config = loadSubsetConfig();
-      exitCode = await runTests(testPath, {
+      outcome = await runTests(testPath, {
         skipPatterns: config?.skip_patterns,
         quick: true,
         timeout: 10,
       });
     } else {
       const testPath = args[0] === "--all" ? "" : args[0];
-      exitCode = await runTests(testPath);
+      outcome = await runTests(testPath);
     }
 
-    return exitCode;
+    writeShardReport(cliOptions.jsonOutput, target, outcome.summary);
+    return outcome.exitCode;
+  } catch (error) {
+    writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+    throw error;
   } finally {
     // Stop server
     server.kill("SIGTERM");

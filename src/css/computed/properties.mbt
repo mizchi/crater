@@ -11,6 +11,7 @@ pub fn is_inherited(property : String) -> Bool {
     | "writing-mode"
     | "text-align"
     | "line-height"
+    | "white-space"
     | "font-size"
     | "font-family"
     | "font-weight"
@@ -37,6 +38,8 @@ pub fn initial_value(property : String) -> String {
     "clear" => "none"
     // Overflow
     "overflow" | "overflow-x" | "overflow-y" => "visible"
+    "scroll-snap-type" => "none"
+    "scroll-snap-align" => "none"
     // Sizing
     "width" | "height" | "min-width" | "min-height" => "auto"
     "max-width" | "max-height" => "none"
@@ -75,6 +78,10 @@ pub fn initial_value(property : String) -> String {
     | "grid-gap"
     | "grid-row-gap"
     | "grid-column-gap" => "0"
+    "columns" | "column-count" | "column-width" => "auto"
+    "column-fill" => "balance"
+    "break-before" | "break-after" => "auto"
+    "column-span" => "none"
     // Aspect ratio
     "aspect-ratio" => "auto"
     // Inset
@@ -91,8 +98,13 @@ pub fn initial_value(property : String) -> String {
     // Text (inherited)
     "direction" => "ltr"
     "writing-mode" => "horizontal-tb"
+    "text-align" => "start"
+    "white-space" => "normal"
     // Containment
     "contain" => "none"
+    "contain-intrinsic-size"
+    | "contain-intrinsic-inline-size"
+    | "contain-intrinsic-block-size" => "none"
     // Table properties
     "caption-side" => "top"
     "border-collapse" => "separate"
@@ -284,6 +296,13 @@ pub fn parse_display(value : String) -> @types.Display {
     "table-footer-group" => @types.Display::TableFooterGroup
     "table-column" => @types.Display::TableColumn
     "table-column-group" => @types.Display::TableColumnGroup
+    // Ruby internal display types are inline-level for layout-tree comparison.
+    // (Full ruby formatting context is not yet implemented.)
+    "ruby" => @types.Display::Inline
+    "ruby-base" => @types.Display::Inline
+    "ruby-base-container" => @types.Display::Inline
+    "ruby-text" => @types.Display::Inline
+    "ruby-text-container" => @types.Display::Inline
     _ => @types.Display::Block
   }
 }
@@ -347,22 +366,144 @@ pub fn parse_flex_wrap(value : String) -> @types.FlexWrap {
 }
 
 ///|
-/// Parse alignment value (justify-content, align-items, align-content)
-/// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
-///       start/end are physical/logical (not affected by wrap-reverse)
-pub fn parse_alignment(value : String) -> @types.Alignment {
-  match value.trim().to_lower() {
+fn tokenize_alignment_value(value : String) -> Array[String] {
+  value
+  .trim()
+  .to_lower()
+  .split(" ")
+  .map(fn(part) { part.to_string().trim().to_string() })
+  .filter(fn(part) { not(part.is_empty()) })
+  .collect()
+}
+
+///|
+fn parse_alignment_keyword(value : String) -> @types.Alignment {
+  match value {
     "flex-start" => @types.Alignment::FlexStart
     "flex-end" => @types.Alignment::FlexEnd
     "start" => @types.Alignment::Start
     "end" => @types.Alignment::End
+    "left" => @types.Alignment::Left
+    "right" => @types.Alignment::Right
     "center" => @types.Alignment::Center
     "space-between" => @types.Alignment::SpaceBetween
     "space-around" => @types.Alignment::SpaceAround
     "space-evenly" => @types.Alignment::SpaceEvenly
     "stretch" => @types.Alignment::Stretch
-    "baseline" => @types.Alignment::Baseline
+    "baseline" | "first baseline" => @types.Alignment::Baseline
+    // Fallback alignment for last-baseline in axis alignment.
+    "last baseline" => @types.Alignment::End
     _ => @types.Alignment::FlexStart
+  }
+}
+
+///|
+fn parse_alignment_segment(
+  tokens : Array[String],
+  start : Int,
+) -> (String, Int)? {
+  if start >= tokens.length() {
+    return None
+  }
+  let head = tokens[start]
+  if start + 1 < tokens.length() {
+    let next = tokens[start + 1]
+    if head == "safe" ||
+      head == "unsafe" ||
+      ((head == "first" || head == "last") && next == "baseline") {
+      return Some((head + " " + next, start + 2))
+    }
+  }
+  Some((head, start + 1))
+}
+
+///|
+/// Parse alignment value (justify-content, align-items, align-content)
+/// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
+///       start/end are physical/logical (not affected by wrap-reverse)
+pub fn parse_alignment_with_overflow(
+  value : String,
+) -> (@types.Alignment, Bool) {
+  let tokens = tokenize_alignment_value(value)
+  if tokens.is_empty() {
+    return (@types.Alignment::FlexStart, false)
+  }
+  let mut offset = 0
+  let mut is_safe = false
+  let mut is_unsafe = false
+  if tokens[0] == "safe" {
+    is_safe = true
+    offset = 1
+  } else if tokens[0] == "unsafe" {
+    is_unsafe = true
+    offset = 1
+  }
+  if offset >= tokens.length() {
+    return (@types.Alignment::FlexStart, false)
+  }
+  let keyword = if offset + 1 < tokens.length() &&
+    tokens[offset + 1] == "baseline" &&
+    (tokens[offset] == "first" || tokens[offset] == "last") {
+    tokens[offset] + " baseline"
+  } else {
+    tokens[offset]
+  }
+  let parsed = parse_alignment_keyword(keyword)
+  let alignment = if is_safe {
+    match parsed {
+      @types.Alignment::Center
+      | @types.Alignment::End
+      | @types.Alignment::FlexEnd => @types.Alignment::Start
+      _ => parsed
+    }
+  } else {
+    parsed
+  }
+  (alignment, is_unsafe)
+}
+
+///|
+pub fn parse_alignment(value : String) -> @types.Alignment {
+  let (alignment, _) = parse_alignment_with_overflow(value)
+  alignment
+}
+
+///|
+/// Parse place-content shorthand.
+/// Returns (align_content, justify_content).
+pub fn parse_place_content_with_overflow(
+  value : String,
+) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))? {
+  let tokens = tokenize_alignment_value(value)
+  if tokens.is_empty() {
+    return None
+  }
+  match parse_alignment_segment(tokens, 0) {
+    Some((first, next_index)) => {
+      let first_alignment = parse_alignment_with_overflow(first)
+      if next_index >= tokens.length() {
+        return Some((first_alignment, first_alignment))
+      }
+      match parse_alignment_segment(tokens, next_index) {
+        Some((second, _)) =>
+          Some((first_alignment, parse_alignment_with_overflow(second)))
+        None => Some((first_alignment, first_alignment))
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// Parse place-content shorthand.
+/// Returns (align_content, justify_content).
+pub fn parse_place_content(
+  value : String,
+) -> (@types.Alignment, @types.Alignment)? {
+  match parse_place_content_with_overflow(value) {
+    Some(((align_content, _), (justify_content, _))) =>
+      Some((align_content, justify_content))
+    None => None
   }
 }
 
@@ -375,7 +516,9 @@ pub fn parse_align_self(value : String) -> @types.AlignSelf {
     "flex-end" | "end" => @types.AlignSelf::End
     "center" => @types.AlignSelf::Center
     "stretch" => @types.AlignSelf::Stretch
-    "baseline" => @types.AlignSelf::Baseline
+    "baseline" | "first baseline" => @types.AlignSelf::Baseline
+    // Fallback alignment for last-baseline in self alignment.
+    "last baseline" => @types.AlignSelf::End
     _ => @types.AlignSelf::Auto
   }
 }
@@ -390,6 +533,78 @@ pub fn parse_overflow(value : String) -> @types.Overflow {
     "scroll" => @types.Overflow::Scroll
     "auto" => @types.Overflow::Auto
     _ => @types.Overflow::Visible
+  }
+}
+
+///|
+/// Parse scroll-snap-type value
+/// Supports a minimal subset: none | x mandatory | y mandatory | both mandatory.
+pub fn parse_scroll_snap_type(value : String) -> @style.ScrollSnapType {
+  let tokens = value
+    .trim()
+    .to_lower()
+    .split(" ")
+    .map(fn(part) { part.to_string().trim().to_string() })
+    .filter(fn(part) { not(part.is_empty()) })
+    .collect()
+  if tokens.is_empty() {
+    return @style.ScrollSnapType::none()
+  }
+
+  let mut axis = @style.ScrollSnapAxis::None
+  let mut strictness = @style.ScrollSnapStrictness::None
+  for token in tokens {
+    match token {
+      "none" => return @style.ScrollSnapType::none()
+      "x" | "inline" => axis = @style.ScrollSnapAxis::X
+      "y" | "block" => axis = @style.ScrollSnapAxis::Y
+      "both" => axis = @style.ScrollSnapAxis::Both
+      "mandatory" => strictness = @style.ScrollSnapStrictness::Mandatory
+      "proximity" => strictness = @style.ScrollSnapStrictness::Proximity
+      _ => ()
+    }
+  }
+  if axis == @style.ScrollSnapAxis::None ||
+    strictness == @style.ScrollSnapStrictness::None {
+    @style.ScrollSnapType::none()
+  } else {
+    { axis, strictness }
+  }
+}
+
+///|
+/// Parse scroll-snap-align value as (inline, block).
+/// Supports keywords: none | start | end | center.
+pub fn parse_scroll_snap_align(
+  value : String,
+) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign) {
+  let tokens = value
+    .trim()
+    .to_lower()
+    .split(" ")
+    .map(fn(part) { part.to_string().trim().to_string() })
+    .filter(fn(part) { not(part.is_empty()) })
+    .collect()
+  if tokens.is_empty() {
+    return (@style.ScrollSnapAlign::None, @style.ScrollSnapAlign::None)
+  }
+  if tokens.length() == 1 {
+    let keyword = parse_scroll_snap_align_keyword(tokens[0])
+    return (keyword, keyword)
+  }
+  let block = parse_scroll_snap_align_keyword(tokens[0])
+  let inline = parse_scroll_snap_align_keyword(tokens[1])
+  (inline, block)
+}
+
+///|
+fn parse_scroll_snap_align_keyword(value : String) -> @style.ScrollSnapAlign {
+  match value.trim().to_lower() {
+    "none" => @style.ScrollSnapAlign::None
+    "start" => @style.ScrollSnapAlign::Start
+    "end" => @style.ScrollSnapAlign::End
+    "center" => @style.ScrollSnapAlign::Center
+    _ => @style.ScrollSnapAlign::None
   }
 }
 
@@ -431,6 +646,19 @@ pub fn parse_direction(value : String) -> @style.Direction {
 }
 
 ///|
+/// Parse text-align value
+pub fn parse_text_align(value : String) -> @style.TextAlign {
+  match value.trim().to_lower() {
+    "center" => @style.TextAlign::Center
+    "justify" => @style.TextAlign::Justify
+    "left" => @style.TextAlign::Left
+    "right" => @style.TextAlign::Right
+    "end" => @style.TextAlign::End
+    "start" | _ => @style.TextAlign::Start
+  }
+}
+
+///|
 /// Parse grid-auto-flow value
 pub fn parse_grid_auto_flow(value : String) -> @types.GridAutoFlow {
   match value.trim().to_lower() {
@@ -460,6 +688,10 @@ pub fn parse_grid_placement(value : String) -> @types.GridPlacement {
   let line = @strconv.parse_int(v.to_string()) catch { _ => 0 }
   if line != 0 {
     @types.GridPlacement::Line(line)
+  } else if is_basic_custom_ident(v) {
+    // Browser-compatible fallback: unresolved custom identifiers in placement
+    // create an implicit track before the item (equivalent to line 2 start).
+    @types.GridPlacement::Line(2)
   } else {
     @types.GridPlacement::Auto
   }
@@ -483,6 +715,84 @@ pub fn parse_grid_line_shorthand(
     let start = parse_grid_placement(v.to_string())
     (start, @types.GridPlacement::Auto)
   }
+}
+
+///|
+/// Parse grid-area shorthand:
+/// <row-start> / <column-start> / <row-end> / <column-end>
+pub fn parse_grid_area_shorthand(
+  value : String,
+) -> (
+  @types.GridPlacement,
+  @types.GridPlacement,
+  @types.GridPlacement,
+  @types.GridPlacement,
+) {
+  let v = value.trim()
+  let parts = v
+    .split("/")
+    .map(fn(s) { s.trim().to_string() })
+    .filter(fn(s) { not(s.is_empty()) })
+    .collect()
+  if parts.length() >= 4 {
+    (
+      parse_grid_placement(parts[0]),
+      parse_grid_placement(parts[1]),
+      parse_grid_placement(parts[2]),
+      parse_grid_placement(parts[3]),
+    )
+  } else if parts.length() == 3 {
+    (
+      parse_grid_placement(parts[0]),
+      parse_grid_placement(parts[1]),
+      parse_grid_placement(parts[2]),
+      @types.GridPlacement::Auto,
+    )
+  } else if parts.length() == 2 {
+    (
+      parse_grid_placement(parts[0]),
+      parse_grid_placement(parts[1]),
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+    )
+  } else if parts.length() == 1 {
+    let start = parse_grid_placement(parts[0])
+    (start, start, @types.GridPlacement::Auto, @types.GridPlacement::Auto)
+  } else {
+    (
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+      @types.GridPlacement::Auto,
+    )
+  }
+}
+
+///|
+fn is_basic_custom_ident(value : StringView) -> Bool {
+  if value.length() == 0 {
+    return false
+  }
+  let first = value[0]
+  let first_ok = (first >= 'a' && first <= 'z') ||
+    (first >= 'A' && first <= 'Z') ||
+    first == '_' ||
+    first == '-'
+  if not(first_ok) {
+    return false
+  }
+  for i = 1; i < value.length(); i = i + 1 {
+    let c = value[i]
+    let ok = (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c == '_' ||
+      c == '-'
+    if not(ok) {
+      return false
+    }
+  }
+  true
 }
 
 ///|

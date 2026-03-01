@@ -21,6 +21,8 @@ fn to_layout_alignment(alignment : @types.Alignment) -> @lt.Alignment {
   match alignment {
     @types.Start => @lt.Start
     @types.End => @lt.End
+    @types.Left => @lt.Start
+    @types.Right => @lt.End
     @types.FlexStart => @lt.FlexStart
     @types.FlexEnd => @lt.FlexEnd
     @types.Center => @lt.Center

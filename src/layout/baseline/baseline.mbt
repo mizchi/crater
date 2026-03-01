@@ -44,7 +44,8 @@ fn infer_baseline_height(node : @node.Node, fallback_height : Double) -> Double 
       } else if node.style.display == @types.Inline ||
         node.style.display == @types.InlineBlock ||
         node.style.display == @types.InlineFlex ||
-        node.style.display == @types.InlineGrid {
+        node.style.display == @types.InlineGrid ||
+        node.style.display == @types.Contents {
         if node.style.line_height > 0.0 {
           node.style.line_height
         } else {
@@ -94,6 +95,112 @@ fn resolve_top_inset(style : @style.Style) -> Double {
 }
 
 ///|
+fn is_no_principal_table_internal_display(display : @types.Display) -> Bool {
+  match display {
+    @types.TableRow
+    | @types.TableRowGroup
+    | @types.TableHeaderGroup
+    | @types.TableFooterGroup
+    | @types.TableColumn
+    | @types.TableColumnGroup => true
+    _ => false
+  }
+}
+
+///|
+fn is_ruby_internal_no_principal(node_id : String) -> Bool {
+  node_id == "rb" ||
+  node_id.has_prefix("rb#") ||
+  node_id == "rbc" ||
+  node_id.has_prefix("rbc#") ||
+  node_id == "rt" ||
+  node_id.has_prefix("rt#") ||
+  node_id == "rtc" ||
+  node_id.has_prefix("rtc#")
+}
+
+///|
+fn is_fieldset_node_id(node_id : String) -> Bool {
+  node_id == "fieldset" ||
+  node_id.has_prefix("fieldset#") ||
+  node_id.has_prefix("fieldset.")
+}
+
+///|
+fn is_legend_node_id(node_id : String) -> Bool {
+  node_id == "legend" ||
+  node_id.has_prefix("legend#") ||
+  node_id.has_prefix("legend.")
+}
+
+///|
+fn resolve_margin_top(style : @style.Style) -> Double {
+  match style.margin.top {
+    @types.Length(v) => v
+    _ => 0.0
+  }
+}
+
+///|
+fn resolve_margin_bottom(style : @style.Style) -> Double {
+  match style.margin.bottom {
+    @types.Length(v) => v
+    _ => 0.0
+  }
+}
+
+///|
+fn fieldset_non_legend_baseline(
+  node : @node.Node,
+  node_height : Double,
+) -> Double? {
+  if not(is_fieldset_node_id(node.id)) {
+    return None
+  }
+  let mut block_offset = resolve_top_inset(node.style)
+  let fallback_height = if node.style.line_height > 0.0 {
+    node.style.line_height
+  } else {
+    node_height
+  }
+  for i = 0; i < node.children.length(); i = i + 1 {
+    let child = node.children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => continue
+      @types.Float::None => ()
+    }
+    let margin_top = resolve_margin_top(child.style)
+    let margin_bottom = resolve_margin_bottom(child.style)
+    let child_height = infer_baseline_height(child, fallback_height)
+    if not(is_legend_node_id(child.id)) {
+      return Some(
+        block_offset + margin_top + compute_node_baseline(child, child_height),
+      )
+    }
+    block_offset = block_offset + margin_top + child_height + margin_bottom
+  }
+  None
+}
+
+///|
+fn containment_layout_applies_to_baseline(node : @node.Node) -> Bool {
+  if not(node.style.contain.layout) {
+    return false
+  }
+  if is_no_principal_table_internal_display(node.style.display) {
+    return false
+  }
+  not(is_ruby_internal_no_principal(node.id))
+}
+
+///|
 /// Compute the baseline of a node for baseline alignment
 /// For text nodes: baseline = font_size * 0.8 (typical ascent ratio)
 /// For other leaf nodes: baseline = height (bottom of box)
@@ -103,6 +210,12 @@ fn resolve_top_inset(style : @style.Style) -> Double {
 pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double {
   let children = node.children
   let style = node.style
+
+  // contain:layout suppresses baseline participation and synthesizes one from
+  // the element border box when containment actually applies.
+  if containment_layout_applies_to_baseline(node) {
+    return node_height
+  }
 
   // Leaf nodes: use font-based baseline for text, height for others
   if children.length() == 0 {
@@ -163,10 +276,14 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
           }
       }
     @types.Block | @types.FlowRoot | @types.Grid | @types.InlineGrid =>
-      // For block-like containers with children: use first in-flow child's baseline
-      match first_in_flow_child_baseline(children, node_height) {
-        Some(child_baseline) => child_baseline
-        None => node_height
+      match fieldset_non_legend_baseline(node, node_height) {
+        Some(fieldset_baseline) => fieldset_baseline
+        None =>
+          // For block-like containers with children: use first in-flow child's baseline
+          match first_in_flow_child_baseline(children, node_height) {
+            Some(child_baseline) => child_baseline
+            None => node_height
+          }
       }
     @types.Table
     | @types.InlineTable
@@ -183,6 +300,13 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
       }
     @types.Inline =>
       // Inline containers participate in baseline from their first line box.
+      match first_in_flow_child_baseline(children, node_height) {
+        Some(child_baseline) => child_baseline
+        None => text_baseline_from_style(style)
+      }
+    @types.Contents =>
+      // display: contents participates through descendants; do not synthesize
+      // baseline from its aggregate box height.
       match first_in_flow_child_baseline(children, node_height) {
         Some(child_baseline) => child_baseline
         None => text_baseline_from_style(style)

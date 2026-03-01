@@ -113,6 +113,10 @@ wpt-all:
 wpt-run-all:
     npx tsx scripts/wpt-runner.ts --all
 
+# Run WPT CSS tests and emit CI shard report JSON
+wpt-css-report module report *args:
+    npx tsx scripts/wpt-runner.ts {{module}} --json {{report}} {{args}}
+
 # Update WPT README
 wpt-update-readme:
     npx tsx scripts/update-wpt-readme.ts
@@ -126,6 +130,10 @@ wpt-dom pattern:
 # Run all WPT DOM tests
 wpt-dom-all:
     npx tsx scripts/wpt-dom-runner.ts --all
+
+# Run WPT DOM tests and emit CI shard report JSON
+wpt-dom-report target report *args:
+    npx tsx scripts/wpt-dom-runner.ts {{target}} --json {{report}} {{args}}
 
 # Run WPT SVG DOM tests
 wpt-svg:
@@ -144,6 +152,14 @@ wpt-filter-effects:
 # Run WPT compositing tests
 wpt-compositing:
     npx tsx scripts/wpt-runner.ts compositing
+
+# Aggregate WPT CI shard reports and render markdown/json summary
+wpt-ci-summary input json markdown:
+    npx tsx scripts/wpt-ci-summary.ts --input {{input}} --json {{json}} --markdown {{markdown}}
+
+# Aggregate CI job timing report from GitHub run jobs JSON
+ci-timing-summary input json markdown:
+    npx tsx scripts/ci-timing-summary.ts --input {{input}} --json {{json}} --markdown {{markdown}}
 
 # === WebDriver BiDi Server ===
 
@@ -164,6 +180,10 @@ wpt-webdriver-list:
 # Run WebDriver BiDi tests for a module (e.g., session/status)
 wpt-webdriver module:
     npx tsx scripts/wpt-webdriver-runner.ts {{module}}
+
+# Run WebDriver BiDi tests and emit CI shard report JSON
+wpt-webdriver-report module report *args:
+    npx tsx scripts/wpt-webdriver-runner.ts {{module}} --json {{report}} {{args}}
 
 # Run all WebDriver BiDi tests
 wpt-webdriver-all:

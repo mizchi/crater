@@ -688,6 +688,8 @@ fn decode_entity(entity : String) -> String? {
   // Named entities (common ones)
   match entity {
     "nbsp" => Some("\u00A0")
+    "emsp" => Some("\u2003")
+    "ensp" => Some("\u2002")
     "amp" => Some("&")
     "lt" => Some("<")
     "gt" => Some(">")

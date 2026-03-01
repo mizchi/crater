@@ -13,6 +13,20 @@ test "compute_justify negative free space packs to start for space alignments" {
 }
 
 ///|
+test "compute_justify end keeps negative overflow offset" {
+  let (start, gap) = compute_justify(@types.End, -48.0, 1)
+  assert_eq(start, -48.0)
+  assert_eq(gap, 0.0)
+}
+
+///|
+test "compute_justify flex-end keeps negative overflow offset" {
+  let (start, gap) = compute_justify(@types.FlexEnd, -48.0, 1)
+  assert_eq(start, -48.0)
+  assert_eq(gap, 0.0)
+}
+
+///|
 test "compute_align_offset center" {
   let offset = compute_align_offset(@types.Center, 40.0)
   assert_eq(offset, 20.0)
@@ -48,6 +62,22 @@ test "resolve_flex_axis row in vertical writing maps to column axis" {
   assert_eq(axis.direction_is_row, true)
   assert_eq(axis.is_row, false)
   assert_eq(axis.is_reverse, false)
+}
+
+///|
+test "resolve_flex_axis column in vertical writing maps to row axis" {
+  let axis = resolve_flex_axis(@types.Column, true, false)
+  assert_eq(axis.direction_is_row, false)
+  assert_eq(axis.is_row, true)
+  assert_eq(axis.is_reverse, false)
+}
+
+///|
+test "resolve_flex_axis column-reverse in vertical writing keeps row axis and reverse" {
+  let axis = resolve_flex_axis(@types.ColumnReverse, true, false)
+  assert_eq(axis.direction_is_row, false)
+  assert_eq(axis.is_row, true)
+  assert_eq(axis.is_reverse, true)
 }
 
 ///|

@@ -32,6 +32,8 @@ pub fn parse_align_self(String) -> @types.AlignSelf
 
 pub fn parse_alignment(String) -> @types.Alignment
 
+pub fn parse_alignment_with_overflow(String) -> (@types.Alignment, Bool)
+
 pub fn parse_aspect_ratio(String) -> Double?
 
 pub fn parse_clear(String) -> @types.Clear
@@ -54,6 +56,8 @@ pub fn parse_flex_wrap(String) -> @types.FlexWrap
 
 pub fn parse_float(String) -> @types.Float
 
+pub fn parse_grid_area_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement, @types.GridPlacement, @types.GridPlacement)
+
 pub fn parse_grid_auto_flow(String) -> @types.GridAutoFlow
 
 pub fn parse_grid_line_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement)
@@ -70,7 +74,17 @@ pub fn parse_number(String) -> Double
 
 pub fn parse_overflow(String) -> @types.Overflow
 
+pub fn parse_place_content(String) -> (@types.Alignment, @types.Alignment)?
+
+pub fn parse_place_content_with_overflow(String) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))?
+
 pub fn parse_position(String) -> @types.Position
+
+pub fn parse_scroll_snap_align(String) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign)
+
+pub fn parse_scroll_snap_type(String) -> @style.ScrollSnapType
+
+pub fn parse_text_align(String) -> @style.TextAlign
 
 pub fn parse_white_space(String) -> @style.WhiteSpace
 

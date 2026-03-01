@@ -6,6 +6,7 @@ pub fn renderHtmlToJsonForWpt(
   width : Int,
   height : Int,
 ) -> String {
+  install_wpt_external_measurement_providers()
   let ctx : @renderer.RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),

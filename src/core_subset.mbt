@@ -278,6 +278,8 @@ fn is_supported_alignment(alignment : @types.Alignment) -> Bool {
   match alignment {
     @types.Alignment::Start
     | @types.Alignment::End
+    | @types.Alignment::Left
+    | @types.Alignment::Right
     | @types.Alignment::FlexStart
     | @types.Alignment::FlexEnd
     | @types.Alignment::Center

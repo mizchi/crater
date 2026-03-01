@@ -66,9 +66,9 @@ fn dispatch_compute(
         dispatch,
       )
     @types.Table | @types.InlineTable => @table.compute(node, ctx, dispatch)
-    @types.Display::None | @types.Contents =>
+    @types.Display::None =>
       {
-        // display: none/contents - return zero-sized layout
+        // display: none - return zero-sized layout
         id: node.id,
         x: 0.0,
         y: 0.0,
@@ -84,6 +84,7 @@ fn dispatch_compute(
         children: [],
         text: node.text,
       }
+    @types.Contents => @block.compute(node, ctx, dispatch)
     // Table sub-elements - handled as blocks when encountered outside table context
     @types.TableRow
     | @types.TableCell
@@ -121,7 +122,7 @@ fn dispatch_compute_with_warnings(
       let layout = @table.compute(node, ctx, dispatch)
       { layout, warnings: [] }
     }
-    @types.Display::None | @types.Contents =>
+    @types.Display::None =>
       {
         layout: {
           id: node.id,
@@ -141,6 +142,7 @@ fn dispatch_compute_with_warnings(
         },
         warnings: [],
       }
+    @types.Contents => @block.compute_with_warnings(node, ctx, dispatch)
     // Table sub-elements - handled as blocks when encountered outside table context
     @types.TableRow
     | @types.TableCell

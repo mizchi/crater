@@ -113,6 +113,64 @@ test "ifc_line_wrapping" {
 }
 
 ///|
+test "ifc_nowrap_keeps_inline_blocks_on_same_line" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(60.0),
+    height: @types.Length(30.0),
+    white_space: @style.WhiteSpace::Nowrap,
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].x, content="60")
+  inspect(result.layouts[1].y, content="0")
+  inspect(result.total_height, content="30")
+}
+
+///|
+test "ifc_rtl_nowrap_places_overflow_items_to_inline_start_side" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(100.0),
+    height: @types.Length(30.0),
+    white_space: @style.WhiteSpace::Nowrap,
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+    container_direction=@style.Direction::Rtl,
+    container_white_space=@style.WhiteSpace::Nowrap,
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[1].x, content="-100")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].y, content="0")
+  inspect(result.total_height, content="30")
+}
+
+///|
 test "ifc_vertical_writing_wraps_by_available_height" {
   let default_style = @style.Style::default()
   let inline_style = {
@@ -138,6 +196,35 @@ test "ifc_vertical_writing_wraps_by_available_height" {
   inspect(result.layouts[1].x, content="0")
   inspect(result.layouts[1].y, content="0")
   inspect(result.total_height, content="100")
+}
+
+///|
+test "ifc_vertical_nowrap_keeps_items_in_single_column" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(100.0),
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(100.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+    container_writing_mode=@style.WritingMode::VerticalLr,
+    container_white_space=@style.WhiteSpace::Nowrap,
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].x, content="0")
+  inspect(result.layouts[1].y, content="100")
+  inspect(result.total_height, content="200")
 }
 
 ///|
@@ -235,6 +322,140 @@ test "ifc_replaced_only_line_includes_strut_descent" {
     default_dispatch(),
   )
   inspect(result.total_height, content="156.4")
+}
+
+///|
+test "ifc_contain_size_replaced_auto_size_uses_border_box_only" {
+  let default_style = @style.Style::default()
+  let replaced_style = {
+    ..default_style,
+    display: @types.Inline,
+    contain: { ..default_style.contain, size: true },
+    border: {
+      top: @types.Length(3.0),
+      right: @types.Length(3.0),
+      bottom: @types.Length(3.0),
+      left: @types.Length(3.0),
+    },
+  }
+  let replaced_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
+  let result = compute_ifc(
+    [child],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts[0].width, content="6")
+  inspect(result.layouts[0].height, content="6")
+}
+
+///|
+test "ifc_contain_size_replaced_uses_explicit_aspect_ratio_for_auto_height" {
+  let default_style = @style.Style::default()
+  let replaced_style = {
+    ..default_style,
+    display: @types.Inline,
+    contain: { ..default_style.contain, size: true },
+    width: @types.Length(100.0),
+    height: @types.Auto,
+    aspect_ratio: Some(1.0),
+  }
+  let replaced_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 60.0, max_width: 60.0, min_height: 60.0, max_height: 60.0 }
+    },
+  }
+  let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
+  let result = compute_ifc(
+    [child],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts[0].width, content="100")
+  inspect(result.layouts[0].height, content="100")
+}
+
+///|
+test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 16.0,
+    line_height: 19.2,
+  }
+  let contain_img_style = {
+    ..inline_style,
+    contain: { ..default_style.contain, size: true },
+    padding: {
+      top: @types.Length(50.0),
+      right: @types.Length(50.0),
+      bottom: @types.Length(50.0),
+      left: @types.Length(50.0),
+    },
+  }
+  let image_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 100.0,
+        max_height: 100.0,
+      }
+    },
+  }
+  let space_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 8.0, max_width: 8.0, min_height: 19.2, max_height: 19.2 }
+    },
+  }
+  let blue = @node.Node::with_measure(
+    "img#blue-test",
+    contain_img_style,
+    image_measure,
+    text="Image download support must be enabled",
+  )
+  let space = @node.Node::text("#text", inline_style, space_measure, " ")
+  let orange = @node.Node::with_measure(
+    "img#orange-reference",
+    inline_style,
+    image_measure,
+    text="Image download support must be enabled",
+  )
+  let result = compute_ifc(
+    [blue, space, orange],
+    800.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+
+  if result.total_height <= 150.0 {
+    fail(
+      "mixed inline line with contain:size image should not collapse to 150px",
+    )
+  }
+  if result.layouts[2].y <= 40.0 {
+    fail(
+      "following inline image should be pushed down by contain:size baseline behavior",
+    )
+  }
 }
 
 ///|
@@ -594,4 +815,51 @@ test "br_after_wrapped_text_uses_last_visual_line_position" {
   inspect(result.layouts.length(), content="2")
   inspect(result.layouts[1].x, content="24")
   inspect(result.layouts[1].y, content="19.2")
+}
+
+///|
+test "br_after_vertical_align_top_tall_inline_block_stays_near_line_top" {
+  let default_style = @style.Style::default()
+  let button_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(38.0),
+    height: @types.Length(50.0),
+    vertical_align: @style.VerticalAlign::Top,
+    contain: { ..default_style.contain, size: true },
+  }
+  let button_node = @node.Node::leaf("button", button_style)
+
+  let br_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 14.0,
+    line_height: 16.1,
+  }
+  let br_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      { min_width: 0.0, max_width: 0.0, min_height: 16.1, max_height: 16.1 }
+    },
+  }
+  let br_node = @node.Node::with_measure("br", br_style, br_measure)
+
+  let result = compute_ifc(
+    [button_node, br_node],
+    600.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].y, content="0")
+  if result.layouts[1].y >= 20.0 {
+    fail(
+      "br should stay near line top for vertical-align: top tall inline-block",
+    )
+  }
 }

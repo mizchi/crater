@@ -43,3 +43,11 @@ browser/dist/
 
 # MoonBit build output
 _build/
+
+# Local WPT investigation artifacts
+tmp/**/*.out
+tmp/**/*.log
+tmp/**/*.txt
+tmp/**/*.json
+tmp/wpt-modules/
+tmp/ws-video-test.html

@@ -1244,6 +1244,175 @@ test "grid_minmax_min_content_auto_track" {
   assert_eq(layout.children[0].width, 100.0)
 }
 
+///|
+test "grid_contain_inline_size_fit_content_ignores_item_intrinsic_width" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.FitContent(1.0e10),
+    contain: { ..default_style.contain, inline_size: true },
+    border: {
+      top: @types.Length(0.0),
+      right: @types.Length(50.0),
+      bottom: @types.Length(0.0),
+      left: @types.Length(50.0),
+    },
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  assert_eq(layout.width, 100.0)
+  assert_eq(layout.height, 100.0)
+}
+
+///|
+test "grid_contain_size_inline_grid_auto_size_uses_border_only" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(64.0),
+    height: @types.Length(32.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.InlineGrid,
+    contain: { ..default_style.contain, size: true },
+    border: {
+      top: @types.Length(5.0),
+      right: @types.Length(5.0),
+      bottom: @types.Length(5.0),
+      left: @types.Length(5.0),
+    },
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  assert_eq(layout.width, 10.0)
+  assert_eq(layout.height, 10.0)
+}
+
+///|
+test "grid_contain_size_preserves_explicit_tracks_and_gaps" {
+  let default_style = @style.Style::default()
+  let huge_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 500.0,
+        max_width: 500.0,
+        min_height: 1000.0,
+        max_height: 1000.0,
+      }
+    },
+  }
+  let child = @node.Node::with_measure("text", default_style, huge_measure)
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    contain: { ..default_style.contain, size: true },
+    column_gap: @types.Length(20.0),
+    row_gap: @types.Length(20.0),
+    grid_template_columns: [
+      @types.TrackSizingFunction::Auto,
+      @types.TrackSizingFunction::Length(80.0),
+    ],
+    grid_template_rows: [
+      @types.TrackSizingFunction::Length(40.0),
+      @types.TrackSizingFunction::Length(40.0),
+    ],
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  assert_eq(layout.width, 100.0)
+  assert_eq(layout.height, 100.0)
+}
+
+///|
+test "grid_contain_size_min_height_expands_fr_track_for_alignment" {
+  let default_style = @style.Style::default()
+  let absolute_item = @node.Node::leaf("absolute", {
+    ..default_style,
+    position: @types.Absolute,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  })
+  let aligned_item = @node.Node::leaf("item", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+    align_self: @types.AlignSelf::End,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    contain: { ..default_style.contain, size: true },
+    min_height: @types.Length(100.0),
+    grid_template_rows: [@types.TrackSizingFunction::Fr(1.0)],
+  }
+  let root = @node.Node::new("root", root_style, [absolute_item, aligned_item])
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+
+  assert_eq(layout.height, 100.0)
+  assert_eq(layout.children[0].y, 0.0)
+  assert_eq(layout.children[1].y, 50.0)
+}
+
+///|
+test "grid_inline_baseline_with_definite_height_replaced_item_keeps_auto_row_content_height" {
+  let default_style = @style.Style::default()
+  let canvas_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 300.0,
+        max_width: 300.0,
+        min_height: 150.0,
+        max_height: 150.0,
+      }
+    },
+  }
+  let canvas = @node.Node::with_measure(
+    "canvas",
+    {
+      ..default_style,
+      width: @types.Length(50.0),
+      height: @types.Length(100.0),
+    },
+    canvas_measure,
+  )
+  let item = @node.Node::leaf("item", {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(100.0),
+    contain: { ..default_style.contain, layout: true },
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.InlineGrid,
+      align_items: @types.Baseline,
+      grid_auto_flow: @types.Column,
+    },
+    [canvas, item],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  assert_eq(layout.height, 100.0)
+  assert_eq(layout.children[0].height, 100.0)
+  assert_eq(layout.children[1].height, 100.0)
+}
+
 // =============================================================================
 // Taffy Ported Tests - span
 // =============================================================================
@@ -1765,6 +1934,74 @@ test "grid_fr_sum_less_than_one" {
   // 0.3fr = 0.3 * 300 = 90
   assert_eq(layout.children[0].height, 60.0) // item1 (row 1, 0.2fr)
   assert_eq(layout.children[2].height, 90.0) // item3 (row 2, 0.3fr)
+}
+
+///|
+test "grid_overflow_alignment_center_offsets_single_item" {
+  let default_style = @style.Style::default()
+  let indicator = @node.Node::leaf("indicator", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+    justify_content: @types.Center,
+    align_content: @types.Center,
+  }
+  let root = @node.Node::new("root", root_style, [indicator])
+  let ctx : @types.LayoutContext = {
+    available_width: 300.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 300.0,
+    viewport_height: 200.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  assert_eq(layout.children[0].x, -24.0)
+  assert_eq(layout.children[0].y, -24.0)
+}
+
+///|
+test "grid_overflow_alignment_start_vertical_rl_rtl_offsets_both_axes" {
+  let default_style = @style.Style::default()
+  let indicator = @node.Node::leaf("indicator", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+    justify_content: @types.Start,
+    align_content: @types.Start,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Rtl,
+  }
+  let root = @node.Node::new("root", root_style, [indicator])
+  let ctx : @types.LayoutContext = {
+    available_width: 300.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 300.0,
+    viewport_height: 200.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  assert_eq(layout.children[0].x, -48.0)
+  assert_eq(layout.children[0].y, -48.0)
 }
 
 ///|

@@ -12,6 +12,10 @@ import {
 // Values
 pub fn apply_css_property_debug(@style.Style, String, String) -> @style.Style
 
+pub fn clear_image_intrinsic_size_provider() -> Unit
+
+pub fn clear_text_metrics_provider() -> Unit
+
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
 pub fn get_content_height(String, Int, Int) -> Int
@@ -46,9 +50,18 @@ pub fn render_to_sixel_with_styles(String, Int, Int) -> String
 
 pub fn render_with_external_css(String, RenderContext, Array[String]) -> @types.Layout
 
+pub fn set_image_intrinsic_size_provider(ImageIntrinsicSizeProvider) -> Unit
+
+pub fn set_text_metrics_provider(TextMetricsProvider) -> Unit
+
 // Errors
 
 // Types and methods
+pub struct ImageIntrinsicSizeProvider {
+  func : (String) -> (Double, Double)?
+}
+pub fn ImageIntrinsicSizeProvider::new((String) -> (Double, Double)?) -> Self
+
 pub(all) struct RenderContext {
   viewport_width : Double
   viewport_height : Double
@@ -56,6 +69,11 @@ pub(all) struct RenderContext {
   color_scheme : @media.ColorScheme
 }
 pub fn RenderContext::default() -> Self
+
+pub struct TextMetricsProvider {
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc
+}
+pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc) -> Self
 
 // Type aliases
 
