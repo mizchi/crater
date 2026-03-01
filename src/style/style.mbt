@@ -73,6 +73,65 @@ pub fn Direction::is_rtl(self : Direction) -> Bool {
 }
 
 ///|
+/// CSS scroll-snap-type axis
+pub(all) enum ScrollSnapAxis {
+  None
+  X
+  Y
+  Both
+} derive(Show, Eq)
+
+///|
+/// CSS scroll-snap-type strictness
+pub(all) enum ScrollSnapStrictness {
+  None
+  Mandatory
+  Proximity
+} derive(Show, Eq)
+
+///|
+/// CSS scroll-snap-type value
+pub(all) struct ScrollSnapType {
+  axis : ScrollSnapAxis
+  strictness : ScrollSnapStrictness
+} derive(Show, Eq)
+
+///|
+pub fn ScrollSnapType::none() -> ScrollSnapType {
+  { axis: ScrollSnapAxis::None, strictness: ScrollSnapStrictness::None }
+}
+
+///|
+pub fn ScrollSnapType::is_mandatory(self : ScrollSnapType) -> Bool {
+  self.strictness == ScrollSnapStrictness::Mandatory
+}
+
+///|
+pub fn ScrollSnapType::snaps_x(self : ScrollSnapType) -> Bool {
+  match self.axis {
+    ScrollSnapAxis::X | ScrollSnapAxis::Both => true
+    ScrollSnapAxis::None | ScrollSnapAxis::Y => false
+  }
+}
+
+///|
+pub fn ScrollSnapType::snaps_y(self : ScrollSnapType) -> Bool {
+  match self.axis {
+    ScrollSnapAxis::Y | ScrollSnapAxis::Both => true
+    ScrollSnapAxis::None | ScrollSnapAxis::X => false
+  }
+}
+
+///|
+/// CSS scroll-snap-align keywords
+pub(all) enum ScrollSnapAlign {
+  None
+  Start
+  End
+  Center
+} derive(Show, Eq)
+
+///|
 /// CSS visibility property
 pub(all) enum Visibility {
   Visible // Element is visible (default)
@@ -328,6 +387,10 @@ pub(all) struct Style {
   // Overflow
   mut overflow_x : @types.Overflow
   mut overflow_y : @types.Overflow
+  // Scroll snap
+  mut scroll_snap_type : ScrollSnapType
+  mut scroll_snap_align_x : ScrollSnapAlign
+  mut scroll_snap_align_y : ScrollSnapAlign
   // Sizing
   mut width : @types.Dimension
   mut height : @types.Dimension
@@ -430,6 +493,9 @@ pub fn Style::default() -> Style {
     box_sizing: @types.ContentBox,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    scroll_snap_type: ScrollSnapType::none(),
+    scroll_snap_align_x: ScrollSnapAlign::None,
+    scroll_snap_align_y: ScrollSnapAlign::None,
     width: @types.Auto,
     height: @types.Auto,
     min_width: @types.Auto,

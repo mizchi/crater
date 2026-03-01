@@ -527,6 +527,40 @@ test "contain_inline_size_fit_content_keeps_inline_children_single_line" {
 }
 
 ///|
+test "white_space_nowrap_parent_keeps_inline_block_children_on_same_line" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#scroller {
+    #|  width: 600px;
+    #|  white-space: nowrap;
+    #|}
+    #|#scroller div {
+    #|  display: inline-block;
+    #|  width: 600px;
+    #|  height: 20px;
+    #|}
+    #|</style>
+    #|<div id="scroller">
+    #|  <div id="a"></div>
+    #|  <div id="b"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let scroller = layout.children[0]
+  guard scroller.children.length() >= 2 else {
+    fail("scroller should include two inline-block children")
+  }
+  let first = scroller.children[0]
+  let second = scroller.children[1]
+  inspect(first.x, content="0")
+  guard second.x > 500.0 else {
+    fail("second inline-block should stay on the same line under nowrap")
+  }
+  inspect(second.y, content="0")
+}
+
+///|
 test "wpt_contain_layout_breaks_forced_column_break_stays_in_multicol" {
   let html_str =
     #|<!DOCTYPE html>
@@ -1986,6 +2020,25 @@ test "pseudo_content_css_escape_non_breaking_space_keeps_text_width" {
 }
 
 ///|
+test "pseudo_empty_content_with_block_display_generates_box" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#target::before { content: ""; display: block; width: 30px; height: 20px; }
+    #|#target::after { content: ""; display: block; width: 30px; height: 10px; }
+    #|</style>
+    #|<div id="target"></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  guard target.children.length() == 2 else {
+    fail("before/after pseudo boxes should be materialized as generated nodes")
+  }
+  guard target.height >= 30.0 else {
+    fail("generated pseudo boxes should contribute to host block-size")
+  }
+}
+
+///|
 test "contain_size_img_attr_ratio_keeps_auto_height" {
   // Mirrors css-contain/contain-size-replaced-007.html behavior.
   let html_str =
@@ -3239,6 +3292,51 @@ test "body_overflow_scroll_is_not_forced_to_viewport" {
 
   inspect(layout.id, content="body")
   inspect(layout.height, content="16")
+}
+
+///|
+test "scroll_snap_center_applies_initial_horizontal_offset" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.scroller {
+    #|  width: 50px;
+    #|  height: 50px;
+    #|  overflow: hidden;
+    #|  white-space: nowrap;
+    #|  scroll-snap-type: x mandatory;
+    #|  padding: 0 20px;
+    #|  box-sizing: border-box;
+    #|}
+    #|.scroller > div {
+    #|  display: inline-block;
+    #|  width: 45px;
+    #|  height: 45px;
+    #|  margin: 5px;
+    #|  box-sizing: border-box;
+    #|  scroll-snap-align: center;
+    #|}
+    #|</style>
+    #|<div class="scroller">
+    #|  <div></div>
+    #|  <div></div>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let node_tree = @renderer.render_to_node(html_str, ctx)
+  let scroller_node = node_tree.children[0]
+  let first_node = scroller_node.children[0]
+  inspect(scroller_node.style.scroll_snap_type.axis, content="X")
+  inspect(scroller_node.style.scroll_snap_type.strictness, content="Mandatory")
+  inspect(first_node.style.scroll_snap_align_x, content="Center")
+  inspect(first_node.style.scroll_snap_align_y, content="Center")
+
+  let layout = @renderer.render(html_str, ctx)
+  let scroller = layout.children[0]
+  let first = scroller.children[0]
+
+  inspect(scroller.width, content="50")
+  inspect(first.x, content="2.5")
 }
 
 ///|

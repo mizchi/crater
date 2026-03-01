@@ -90,6 +90,9 @@ priv struct StyleBuilder {
   mut box_sizing : @types.BoxSizing
   mut overflow_x : @types.Overflow
   mut overflow_y : @types.Overflow
+  mut scroll_snap_type : @style.ScrollSnapType
+  mut scroll_snap_align_x : @style.ScrollSnapAlign
+  mut scroll_snap_align_y : @style.ScrollSnapAlign
   mut width : @types.Dimension
   mut height : @types.Dimension
   mut min_width : @types.Dimension
@@ -190,6 +193,9 @@ fn StyleBuilder::new() -> StyleBuilder {
     box_sizing: @types.BoxSizing::ContentBox,
     overflow_x: @types.Overflow::Visible,
     overflow_y: @types.Overflow::Visible,
+    scroll_snap_type: @style.ScrollSnapType::none(),
+    scroll_snap_align_x: @style.ScrollSnapAlign::None,
+    scroll_snap_align_y: @style.ScrollSnapAlign::None,
     width: @types.Dimension::Auto,
     height: @types.Dimension::Auto,
     min_width: @types.Dimension::Auto,
@@ -279,6 +285,9 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     box_sizing: style.box_sizing,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    scroll_snap_type: style.scroll_snap_type,
+    scroll_snap_align_x: style.scroll_snap_align_x,
+    scroll_snap_align_y: style.scroll_snap_align_y,
     width: style.width,
     height: style.height,
     min_width: style.min_width,
@@ -367,6 +376,9 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     box_sizing: self.box_sizing,
     overflow_x: self.overflow_x,
     overflow_y: self.overflow_y,
+    scroll_snap_type: self.scroll_snap_type,
+    scroll_snap_align_x: self.scroll_snap_align_x,
+    scroll_snap_align_y: self.scroll_snap_align_y,
     width: self.width,
     height: self.height,
     min_width: self.min_width,
@@ -617,6 +629,14 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.direction {
         @style.Direction::Ltr => "ltr"
         @style.Direction::Rtl => "rtl"
+      }
+    "white-space" =>
+      match style.white_space {
+        @style.WhiteSpace::Normal => "normal"
+        @style.WhiteSpace::Nowrap => "nowrap"
+        @style.WhiteSpace::Pre => "pre"
+        @style.WhiteSpace::PreWrap => "pre-wrap"
+        @style.WhiteSpace::PreLine => "pre-line"
       }
     "contain-intrinsic-inline-size" =>
       match style.contain_intrinsic_inline_size {
@@ -1448,6 +1468,13 @@ fn apply_property(
     }
     "overflow-x" => builder.overflow_x = parse_overflow(value)
     "overflow-y" => builder.overflow_y = parse_overflow(value)
+    "scroll-snap-type" =>
+      builder.scroll_snap_type = parse_scroll_snap_type(value)
+    "scroll-snap-align" => {
+      let (inline_align, block_align) = parse_scroll_snap_align(value)
+      builder.scroll_snap_align_x = inline_align
+      builder.scroll_snap_align_y = block_align
+    }
     // Grid container
     "grid-auto-flow" => builder.grid_auto_flow = parse_grid_auto_flow(value)
     "grid-template-columns" =>
@@ -2846,7 +2873,7 @@ fn apply_inheritance(
   // List of inherited properties we support
   let inherited_props = [
     "direction", "writing-mode", "text-align", "line-height", "font-size", "font-family",
-    "font-weight", "font-style", "color", "visibility",
+    "font-weight", "font-style", "color", "visibility", "white-space",
   ]
   for prop in inherited_props {
     // If property not in cascaded values, inherit from parent

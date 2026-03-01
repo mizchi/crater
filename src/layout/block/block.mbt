@@ -75,6 +75,141 @@ fn calculate_scroll_dimensions(
 }
 
 ///|
+/// Apply initial scroll-snap offset for mandatory center snapping.
+fn apply_initial_scroll_snap(
+  node : @node.Node,
+  layout : @types.Layout,
+) -> @types.Layout {
+  if layout.children.is_empty() {
+    return layout
+  }
+  if not(node.style.scroll_snap_type.is_mandatory()) {
+    return layout
+  }
+
+  let supports_snap_x = node.style.scroll_snap_type.snaps_x() &&
+    overflow_creates_scroll_container(node.style.overflow_x)
+  let supports_snap_y = node.style.scroll_snap_type.snaps_y() &&
+    overflow_creates_scroll_container(node.style.overflow_y)
+  if not(supports_snap_x) && not(supports_snap_y) {
+    return layout
+  }
+
+  let max_scroll_x = if layout.scroll_width > layout.width {
+    layout.scroll_width - layout.width
+  } else {
+    0.0
+  }
+  let max_scroll_y = if layout.scroll_height > layout.height {
+    layout.scroll_height - layout.height
+  } else {
+    0.0
+  }
+  let snap_x = if supports_snap_x && max_scroll_x > 0.0 {
+    find_initial_snap_offset_x(node, layout, max_scroll_x)
+  } else {
+    None
+  }
+  let snap_y = if supports_snap_y && max_scroll_y > 0.0 {
+    find_initial_snap_offset_y(node, layout, max_scroll_y)
+  } else {
+    None
+  }
+  let offset_x = snap_x.unwrap_or(0.0)
+  let offset_y = snap_y.unwrap_or(0.0)
+  if offset_x.abs() <= 0.0001 && offset_y.abs() <= 0.0001 {
+    return layout
+  }
+
+  let shifted_children = layout.children.map(fn(child) {
+    { ..child, x: child.x - offset_x, y: child.y - offset_y }
+  })
+  { ..layout, children: shifted_children }
+}
+
+///|
+fn overflow_creates_scroll_container(overflow : @types.Overflow) -> Bool {
+  match overflow {
+    @types.Visible | @types.Clip => false
+    @types.Hidden | @types.Scroll | @types.Auto => true
+  }
+}
+
+///|
+fn find_initial_snap_offset_x(
+  node : @node.Node,
+  layout : @types.Layout,
+  max_scroll : Double,
+) -> Double? {
+  let count = if node.children.length() < layout.children.length() {
+    node.children.length()
+  } else {
+    layout.children.length()
+  }
+  let mut best_offset : Double? = None
+  for i = 0; i < count; i = i + 1 {
+    let child_node = node.children[i]
+    if child_node.style.scroll_snap_align_x != @style.ScrollSnapAlign::Center {
+      continue
+    }
+    let child_layout = layout.children[i]
+    let raw = child_layout.x + child_layout.width / 2.0 - layout.width / 2.0
+    let candidate = clamp(raw, 0.0, max_scroll)
+    best_offset = choose_nearer_to_origin(best_offset, candidate)
+  }
+  best_offset
+}
+
+///|
+fn find_initial_snap_offset_y(
+  node : @node.Node,
+  layout : @types.Layout,
+  max_scroll : Double,
+) -> Double? {
+  let count = if node.children.length() < layout.children.length() {
+    node.children.length()
+  } else {
+    layout.children.length()
+  }
+  let mut best_offset : Double? = None
+  for i = 0; i < count; i = i + 1 {
+    let child_node = node.children[i]
+    if child_node.style.scroll_snap_align_y != @style.ScrollSnapAlign::Center {
+      continue
+    }
+    let child_layout = layout.children[i]
+    let raw = child_layout.y + child_layout.height / 2.0 - layout.height / 2.0
+    let candidate = clamp(raw, 0.0, max_scroll)
+    best_offset = choose_nearer_to_origin(best_offset, candidate)
+  }
+  best_offset
+}
+
+///|
+fn choose_nearer_to_origin(current : Double?, candidate : Double) -> Double? {
+  match current {
+    Some(existing) =>
+      if candidate.abs() < existing.abs() {
+        Some(candidate)
+      } else {
+        Some(existing)
+      }
+    None => Some(candidate)
+  }
+}
+
+///|
+fn clamp(value : Double, min : Double, max : Double) -> Double {
+  if value < min {
+    min
+  } else if value > max {
+    max
+  } else {
+    value
+  }
+}
+
+///|
 /// Collapse two margins according to CSS rules:
 /// - Both positive: use the larger one
 /// - Both negative: use the more negative (smaller) one
@@ -1517,6 +1652,8 @@ fn compute_mixed_content_layout(
   layout_map : Map[Int, @types.Layout],
   dispatch : @node.DispatchFn,
   writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
+  direction? : @style.Direction = @style.Direction::Ltr,
+  white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
 ) -> MixedContentResult {
   // In vertical writing-mode, blocks flow horizontally instead of vertically
   let is_vertical = writing_mode.is_vertical()
@@ -1552,6 +1689,8 @@ fn compute_mixed_content_layout(
           },
           dispatch,
           container_writing_mode=writing_mode,
+          container_direction=direction,
+          container_white_space=white_space,
         )
         // Store layouts with original indices
         for j = 0; j < indices.length(); j = j + 1 {
@@ -1594,7 +1733,10 @@ fn compute_mixed_content_layout(
         let child_layout = match node.style.display {
           @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
             dispatch_fn(node, child_ctx, dispatch)
-          _ => compute_with_collapse(node, child_ctx, warnings, dispatch).layout
+          _ => {
+            let raw = compute_with_collapse(node, child_ctx, warnings, dispatch)
+            apply_initial_scroll_snap(node, raw.layout)
+          }
         }
         // Calculate margin values - use appropriate axis based on writing mode
         let margin_start = if is_vertical {
@@ -1716,68 +1858,45 @@ fn compute_root_layout(
   let result = compute_with_collapse(node, ctx, warnings, dispatch)
   let layout = result.layout
 
-  // Browser compatibility: body box metrics should remain content-based.
-  if node.id == "body" {
-    return layout
-  }
-
-  // For non-body roots, preserve escaped margin behavior used by internal layout tests.
-  match result.collapsed.top {
-    Some(escaped_margin) =>
-      if layout.children.length() > 0 {
-        let adjusted_children : Array[@types.Layout] = []
-        for i = 0; i < layout.children.length(); i = i + 1 {
-          let child = layout.children[i]
-          adjusted_children.push({
-            id: child.id,
-            x: child.x,
-            y: child.y + escaped_margin,
-            width: child.width,
-            height: child.height,
-            margin: child.margin,
-            padding: child.padding,
-            border: child.border,
-            overflow_x: child.overflow_x,
-            overflow_y: child.overflow_y,
-            scroll_width: child.scroll_width,
-            scroll_height: child.scroll_height,
-            children: child.children,
-            text: child.text,
-          })
-        }
-        let escaped_bottom = match result.collapsed.bottom {
-          Some(m) => m
-          None => 0.0
-        }
-        let new_height = layout.height + escaped_margin + escaped_bottom
-        {
-          id: layout.id,
-          x: layout.x,
-          y: layout.y,
-          width: layout.width,
-          height: new_height,
-          margin: layout.margin,
-          padding: layout.padding,
-          border: layout.border,
-          overflow_x: layout.overflow_x,
-          overflow_y: layout.overflow_y,
-          scroll_width: layout.scroll_width,
-          scroll_height: layout.scroll_height,
-          children: adjusted_children,
-          text: layout.text,
-        }
-      } else {
-        layout
-      }
-    None =>
-      match result.collapsed.bottom {
-        Some(escaped_margin) =>
+  let adjusted_for_margin = if node.id == "body" {
+    // Browser compatibility: body box metrics should remain content-based.
+    layout
+  } else {
+    // For non-body roots, preserve escaped margin behavior used by internal layout tests.
+    match result.collapsed.top {
+      Some(escaped_margin) =>
+        if layout.children.length() > 0 {
+          let adjusted_children : Array[@types.Layout] = []
+          for i = 0; i < layout.children.length(); i = i + 1 {
+            let child = layout.children[i]
+            adjusted_children.push({
+              id: child.id,
+              x: child.x,
+              y: child.y + escaped_margin,
+              width: child.width,
+              height: child.height,
+              margin: child.margin,
+              padding: child.padding,
+              border: child.border,
+              overflow_x: child.overflow_x,
+              overflow_y: child.overflow_y,
+              scroll_width: child.scroll_width,
+              scroll_height: child.scroll_height,
+              children: child.children,
+              text: child.text,
+            })
+          }
+          let escaped_bottom = match result.collapsed.bottom {
+            Some(m) => m
+            None => 0.0
+          }
+          let new_height = layout.height + escaped_margin + escaped_bottom
           {
             id: layout.id,
             x: layout.x,
             y: layout.y,
             width: layout.width,
-            height: layout.height + escaped_margin,
+            height: new_height,
             margin: layout.margin,
             padding: layout.padding,
             border: layout.border,
@@ -1785,12 +1904,36 @@ fn compute_root_layout(
             overflow_y: layout.overflow_y,
             scroll_width: layout.scroll_width,
             scroll_height: layout.scroll_height,
-            children: layout.children,
+            children: adjusted_children,
             text: layout.text,
           }
-        None => layout
-      }
+        } else {
+          layout
+        }
+      None =>
+        match result.collapsed.bottom {
+          Some(escaped_margin) =>
+            {
+              id: layout.id,
+              x: layout.x,
+              y: layout.y,
+              width: layout.width,
+              height: layout.height + escaped_margin,
+              margin: layout.margin,
+              padding: layout.padding,
+              border: layout.border,
+              overflow_x: layout.overflow_x,
+              overflow_y: layout.overflow_y,
+              scroll_width: layout.scroll_width,
+              scroll_height: layout.scroll_height,
+              children: layout.children,
+              text: layout.text,
+            }
+          None => layout
+        }
+    }
   }
+  apply_initial_scroll_snap(node, adjusted_for_margin)
 }
 
 ///|
@@ -1863,6 +2006,8 @@ fn compute_with_collapse(
         0.0,
         dispatch,
         container_writing_mode=style.writing_mode,
+        container_direction=style.direction,
+        container_white_space=style.white_space,
       )
       let mut inline_width = 0.0
       let mut inline_height = 0.0
@@ -1948,7 +2093,7 @@ fn compute_with_collapse(
         continue
       }
       let child_result = compute_with_collapse(child, ctx, warnings, dispatch)
-      let child_layout = child_result.layout
+      let child_layout = apply_initial_scroll_snap(child, child_result.layout)
       // Get child's margins
       let child_margin_top = child_layout.margin.top
       let child_margin_bottom = child_layout.margin.bottom
@@ -3389,6 +3534,8 @@ fn compute_with_collapse(
       padding.top + border.top,
       dispatch,
       container_writing_mode=style.writing_mode,
+      container_direction=style.direction,
+      container_white_space=style.white_space,
     )
 
     // Store IFC layouts with original indices
@@ -3621,6 +3768,8 @@ fn compute_with_collapse(
       layout_map,
       dispatch,
       writing_mode=style.writing_mode,
+      direction=style.direction,
+      white_space=style.white_space,
     )
     // fieldset legend overlays the top border line instead of participating in
     // normal block-flow vertical positioning.
@@ -3960,7 +4109,13 @@ fn compute_with_collapse(
           stretch_width: false,
           stretch_height: false,
         }
-        compute_with_collapse(child_for_layout, child_ctx, warnings, dispatch)
+        let raw = compute_with_collapse(
+          child_for_layout, child_ctx, warnings, dispatch,
+        )
+        {
+          ..raw,
+          layout: apply_initial_scroll_snap(child_for_layout, raw.layout),
+        }
       }
     }
     flow_children.push(child_result)
@@ -4177,8 +4332,12 @@ fn compute_with_collapse(
       | @types.InlineGrid
       | @types.Table
       | @types.InlineTable => dispatch_fn(child_for_layout, child_ctx, dispatch)
-      _ =>
-        compute_with_collapse(child_for_layout, child_ctx, warnings, dispatch).layout
+      _ => {
+        let raw = compute_with_collapse(
+          child_for_layout, child_ctx, warnings, dispatch,
+        )
+        apply_initial_scroll_snap(child_for_layout, raw.layout)
+      }
     }
 
     // Get child dimensions

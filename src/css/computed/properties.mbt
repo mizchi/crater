@@ -11,6 +11,7 @@ pub fn is_inherited(property : String) -> Bool {
     | "writing-mode"
     | "text-align"
     | "line-height"
+    | "white-space"
     | "font-size"
     | "font-family"
     | "font-weight"
@@ -37,6 +38,8 @@ pub fn initial_value(property : String) -> String {
     "clear" => "none"
     // Overflow
     "overflow" | "overflow-x" | "overflow-y" => "visible"
+    "scroll-snap-type" => "none"
+    "scroll-snap-align" => "none"
     // Sizing
     "width" | "height" | "min-width" | "min-height" => "auto"
     "max-width" | "max-height" => "none"
@@ -95,6 +98,7 @@ pub fn initial_value(property : String) -> String {
     // Text (inherited)
     "direction" => "ltr"
     "writing-mode" => "horizontal-tb"
+    "white-space" => "normal"
     // Containment
     "contain" => "none"
     "contain-intrinsic-size"
@@ -408,6 +412,78 @@ pub fn parse_overflow(value : String) -> @types.Overflow {
     "scroll" => @types.Overflow::Scroll
     "auto" => @types.Overflow::Auto
     _ => @types.Overflow::Visible
+  }
+}
+
+///|
+/// Parse scroll-snap-type value
+/// Supports a minimal subset: none | x mandatory | y mandatory | both mandatory.
+pub fn parse_scroll_snap_type(value : String) -> @style.ScrollSnapType {
+  let tokens = value
+    .trim()
+    .to_lower()
+    .split(" ")
+    .map(fn(part) { part.to_string().trim().to_string() })
+    .filter(fn(part) { not(part.is_empty()) })
+    .collect()
+  if tokens.is_empty() {
+    return @style.ScrollSnapType::none()
+  }
+
+  let mut axis = @style.ScrollSnapAxis::None
+  let mut strictness = @style.ScrollSnapStrictness::None
+  for token in tokens {
+    match token {
+      "none" => return @style.ScrollSnapType::none()
+      "x" | "inline" => axis = @style.ScrollSnapAxis::X
+      "y" | "block" => axis = @style.ScrollSnapAxis::Y
+      "both" => axis = @style.ScrollSnapAxis::Both
+      "mandatory" => strictness = @style.ScrollSnapStrictness::Mandatory
+      "proximity" => strictness = @style.ScrollSnapStrictness::Proximity
+      _ => ()
+    }
+  }
+  if axis == @style.ScrollSnapAxis::None ||
+    strictness == @style.ScrollSnapStrictness::None {
+    @style.ScrollSnapType::none()
+  } else {
+    { axis, strictness }
+  }
+}
+
+///|
+/// Parse scroll-snap-align value as (inline, block).
+/// Supports keywords: none | start | end | center.
+pub fn parse_scroll_snap_align(
+  value : String,
+) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign) {
+  let tokens = value
+    .trim()
+    .to_lower()
+    .split(" ")
+    .map(fn(part) { part.to_string().trim().to_string() })
+    .filter(fn(part) { not(part.is_empty()) })
+    .collect()
+  if tokens.is_empty() {
+    return (@style.ScrollSnapAlign::None, @style.ScrollSnapAlign::None)
+  }
+  if tokens.length() == 1 {
+    let keyword = parse_scroll_snap_align_keyword(tokens[0])
+    return (keyword, keyword)
+  }
+  let block = parse_scroll_snap_align_keyword(tokens[0])
+  let inline = parse_scroll_snap_align_keyword(tokens[1])
+  (inline, block)
+}
+
+///|
+fn parse_scroll_snap_align_keyword(value : String) -> @style.ScrollSnapAlign {
+  match value.trim().to_lower() {
+    "none" => @style.ScrollSnapAlign::None
+    "start" => @style.ScrollSnapAlign::Start
+    "end" => @style.ScrollSnapAlign::End
+    "center" => @style.ScrollSnapAlign::Center
+    _ => @style.ScrollSnapAlign::None
   }
 }
 

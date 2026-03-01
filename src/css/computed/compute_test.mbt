@@ -81,6 +81,28 @@ test "parse_align_self baseline variants" {
 }
 
 ///|
+test "parse_scroll_snap_type_and_align" {
+  let snap_type = @computed.parse_scroll_snap_type("x mandatory")
+  inspect(snap_type.axis, content="X")
+  inspect(snap_type.strictness, content="Mandatory")
+  let (inline_align, block_align) = @computed.parse_scroll_snap_align("center")
+  inspect(inline_align, content="Center")
+  inspect(block_align, content="Center")
+}
+
+///|
+test "compute_inline scroll_snap properties" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "scroll-snap-type: y mandatory; scroll-snap-align: center", ctx,
+  )
+  inspect(style.scroll_snap_type.axis, content="Y")
+  inspect(style.scroll_snap_type.strictness, content="Mandatory")
+  inspect(style.scroll_snap_align_x, content="Center")
+  inspect(style.scroll_snap_align_y, content="Center")
+}
+
+///|
 test "compute_inline container-type size implies contain size and style" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("container-type: size", ctx)
@@ -375,6 +397,7 @@ test "is_inherited" {
   inspect(@computed.is_inherited("color"), content="true")
   inspect(@computed.is_inherited("font-size"), content="true")
   inspect(@computed.is_inherited("line-height"), content="true")
+  inspect(@computed.is_inherited("white-space"), content="true")
   // Non-inherited properties
   inspect(@computed.is_inherited("width"), content="false")
   inspect(@computed.is_inherited("display"), content="false")
@@ -544,6 +567,15 @@ test "intrinsic keywords remain preserved with inherited writing-mode" {
     "width: 150px; max-width: min-content", child_ctx,
   )
   inspect(child.max_width, content="MinContent")
+}
+
+///|
+test "white-space inherits from parent style" {
+  let root_ctx = @computed.ComputeContext::new()
+  let parent = @computed.compute_inline("white-space: nowrap", root_ctx)
+  let child_ctx = @computed.ComputeContext::with_parent(parent)
+  let child = @computed.compute_inline("", child_ctx)
+  inspect(child.white_space, content="Nowrap")
 }
 
 ///|

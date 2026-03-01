@@ -74,6 +74,10 @@ pub fn parse_overflow(String) -> @types.Overflow
 
 pub fn parse_position(String) -> @types.Position
 
+pub fn parse_scroll_snap_align(String) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign)
+
+pub fn parse_scroll_snap_type(String) -> @style.ScrollSnapType
+
 pub fn parse_white_space(String) -> @style.WhiteSpace
 
 pub fn parse_writing_mode(String) -> @style.WritingMode

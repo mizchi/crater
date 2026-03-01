@@ -81,6 +81,43 @@ pub fn MarginTrim::trim_block_start(Self) -> Bool
 pub impl Eq for MarginTrim
 pub impl Show for MarginTrim
 
+pub(all) enum ScrollSnapAlign {
+  None
+  Start
+  End
+  Center
+}
+pub impl Eq for ScrollSnapAlign
+pub impl Show for ScrollSnapAlign
+
+pub(all) enum ScrollSnapAxis {
+  None
+  X
+  Y
+  Both
+}
+pub impl Eq for ScrollSnapAxis
+pub impl Show for ScrollSnapAxis
+
+pub(all) enum ScrollSnapStrictness {
+  None
+  Mandatory
+  Proximity
+}
+pub impl Eq for ScrollSnapStrictness
+pub impl Show for ScrollSnapStrictness
+
+pub(all) struct ScrollSnapType {
+  axis : ScrollSnapAxis
+  strictness : ScrollSnapStrictness
+}
+pub fn ScrollSnapType::is_mandatory(Self) -> Bool
+pub fn ScrollSnapType::none() -> Self
+pub fn ScrollSnapType::snaps_x(Self) -> Bool
+pub fn ScrollSnapType::snaps_y(Self) -> Bool
+pub impl Eq for ScrollSnapType
+pub impl Show for ScrollSnapType
+
 pub(all) struct Style {
   mut display : @types.Display
   mut position : @types.Position
@@ -89,6 +126,9 @@ pub(all) struct Style {
   mut box_sizing : @types.BoxSizing
   mut overflow_x : @types.Overflow
   mut overflow_y : @types.Overflow
+  mut scroll_snap_type : ScrollSnapType
+  mut scroll_snap_align_x : ScrollSnapAlign
+  mut scroll_snap_align_y : ScrollSnapAlign
   mut width : @types.Dimension
   mut height : @types.Dimension
   mut min_width : @types.Dimension
