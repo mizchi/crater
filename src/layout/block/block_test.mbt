@@ -2322,3 +2322,91 @@ test "multicol_with_column_count_one_flows_additional_columns_horizontally" {
   inspect(layout.children[2].x, content="200")
   inspect(layout.children[2].y, content="0")
 }
+
+///|
+test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.Inline,
+    line_height: 20.0,
+  }
+  let text_a_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      {
+        min_width: 96.0,
+        max_width: 96.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
+    },
+  }
+  let text_b_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      {
+        min_width: 104.0,
+        max_width: 104.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
+    },
+  }
+  let br_measure : @types.MeasureFunc = {
+    func: fn(
+      _available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      {
+        min_width: 0.0,
+        max_width: 0.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
+    },
+  }
+
+  let text1 = @node.Node::with_measure("#text", inline_style, text_a_measure)
+  let br1 = @node.Node::with_measure("br", inline_style, br_measure)
+  let br2 = @node.Node::with_measure("br", inline_style, br_measure)
+  let br3 = @node.Node::with_measure("br", inline_style, br_measure)
+  let br4 = @node.Node::with_measure("br", inline_style, br_measure)
+  let br5 = @node.Node::with_measure("br", inline_style, br_measure)
+  let text2 = @node.Node::with_measure("#text", inline_style, text_b_measure)
+  let br6 = @node.Node::with_measure("br", inline_style, br_measure)
+
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(420.0),
+      height: @types.Length(100.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      column_count: Some(3),
+      column_gap: @types.Length(0.0),
+      column_gap_is_normal: false,
+      column_fill: @style.ColumnFill::Auto,
+    },
+    [text1, br1, br2, br3, br4, br5, text2, br6],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 420.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 420.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[1].x, content="96")
+  inspect(layout.children[1].y, content="0")
+  inspect(layout.children[6].x, content="0")
+  inspect(layout.children[6].y, content="0")
+}

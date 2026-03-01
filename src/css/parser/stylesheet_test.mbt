@@ -749,3 +749,38 @@ test "parse border-collapse property" {
     ),
   )
 }
+
+///|
+test "parse one-level ampersand nested selector rule" {
+  let css =
+    #|.carousel {
+    #|  width: 800px;
+    #|  & > .item {
+    #|    display: inline-block;
+    #|    width: 158px;
+    #|  }
+    #|  height: 200px;
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="2")
+  inspect(stylesheet.rules[0].selector_text, content=".carousel")
+  inspect(stylesheet.rules[1].selector_text, content=".carousel > .item")
+  inspect(stylesheet.rules[0].declarations.length(), content="2")
+  inspect(stylesheet.rules[1].declarations.length(), content="2")
+}
+
+///|
+test "parse declarations after ampersand nested block" {
+  let css =
+    #|.box {
+    #|  color: red;
+    #|  &::before { content: "x"; }
+    #|  height: 20px;
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="2")
+  inspect(stylesheet.rules[0].selector_text, content=".box")
+  inspect(stylesheet.rules[0].declarations.length(), content="2")
+  inspect(stylesheet.rules[1].selector_text, content=".box::before")
+  inspect(stylesheet.rules[1].declarations.length(), content="1")
+}

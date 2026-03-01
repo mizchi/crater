@@ -2876,23 +2876,36 @@ fn compute_with_collapse(
 
   // Calculate available height for children
   let child_available_height : Double? = match style.height {
-    @types.Length(h) => Some(h - padding.vertical_sum() - border.vertical_sum())
+    @types.Length(h) =>
+      if style.box_sizing == @types.BorderBox {
+        Some(h - padding.vertical_sum() - border.vertical_sum())
+      } else {
+        Some(h)
+      }
     @types.Percent(p) =>
       match parent_height_opt {
         Some(ph) =>
-          Some(ph * p - padding.vertical_sum() - border.vertical_sum())
+          if style.box_sizing == @types.BorderBox {
+            Some(ph * p - padding.vertical_sum() - border.vertical_sum())
+          } else {
+            Some(ph * p)
+          }
         None =>
           // Percentage height in an indefinite containing block behaves like auto.
           // If max-height is definite, use that constrained content height so
           // descendants with percentage heights can resolve against the used size.
           match style.max_height {
             @types.Length(max_h) =>
-              Some(
-                @types.max(
-                  0.0,
-                  max_h - padding.vertical_sum() - border.vertical_sum(),
-                ),
-              )
+              if style.box_sizing == @types.BorderBox {
+                Some(
+                  @types.max(
+                    0.0,
+                    max_h - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              } else {
+                Some(@types.max(0.0, max_h))
+              }
             _ => None
           }
       }
@@ -4684,39 +4697,49 @@ fn compute_with_collapse(
       next_float_index = next_float_index + 1
     }
     if multicol_enabled {
+      let multicol_participates_in_inline_run = @inline.is_inline_level(
+          child_style.display,
+        ) &&
+        child_style.position != @types.Absolute &&
+        child_style.position != @types.Fixed
+      if not(multicol_participates_in_inline_run) && inline_run_active {
+        current_pos = current_pos + inline_run_height
+        inline_run_active = false
+        inline_run_x = 0.0
+        inline_run_height = 0.0
+        prev_margin_end = 0.0
+      }
       let mut effective_pos = current_pos
       let child_outer_height = child_layout.height +
         child_layout.margin.top +
         child_layout.margin.bottom
-      let fragmented_columns = if multicol_fragment_contained &&
-        child_style.column_span != @style.ColumnSpan::All &&
-        multicol_column_count > 1 {
+      let multicol_fragmentable_box = child_style.column_span !=
+        @style.ColumnSpan::All &&
+        not(multicol_participates_in_inline_run)
+      let fragmented_columns = if multicol_fragmentable_box {
         match multicol_height_limit {
           Some(limit) if limit > 0.0 => {
-            let ratio = child_outer_height / limit
-            let base = ratio.to_int()
-            let overflow_steps = if ratio > base.to_double() {
-              base + 1
-            } else {
-              base
+            let mut needed = (child_outer_height / limit).ceil().to_int()
+            if needed < 1 {
+              needed = 1
             }
-            let candidate = 1 + overflow_steps
-            if candidate > multicol_column_count {
+            if multicol_fragment_contained && needed > multicol_column_count {
               multicol_column_count
-            } else if candidate < 1 {
-              1
             } else {
-              candidate
+              needed
             }
           }
-          _ => multicol_column_count
+          _ =>
+            if multicol_column_count > 0 {
+              multicol_column_count
+            } else {
+              1
+            }
         }
       } else {
         1
       }
-      let fragmented_union_width = if multicol_fragment_contained &&
-        child_style.column_span != @style.ColumnSpan::All &&
-        fragmented_columns > 1 {
+      let fragmented_union_width = if fragmented_columns > 1 {
         child_layout.width +
         (multicol_column_width + multicol_column_gap) *
         (fragmented_columns - 1).to_double()
@@ -4765,12 +4788,20 @@ fn compute_with_collapse(
             let col_offset = if child_style.column_span ==
               @style.ColumnSpan::All {
               0.0
+            } else if multicol_participates_in_inline_run {
+              0.0
             } else {
               column_index.to_double() *
               (multicol_column_width + multicol_column_gap)
             }
             let clipped_height = if multicol_fragment_contained &&
               child_style.column_span != @style.ColumnSpan::All &&
+              not(multicol_participates_in_inline_run) &&
+              child_layout.height > limit {
+              limit
+            } else if not(multicol_fragment_contained) &&
+              child_style.column_span != @style.ColumnSpan::All &&
+              not(multicol_participates_in_inline_run) &&
               child_layout.height > limit {
               limit
             } else {
@@ -4850,11 +4881,17 @@ fn compute_with_collapse(
             } else {
               child_layout.children
             }
+            let multicol_inline_run_offset = if multicol_participates_in_inline_run {
+              inline_run_x
+            } else {
+              0.0
+            }
             let positioned_layout : @types.Layout = {
               id: child_layout.id,
               x: padding.left +
               border.left +
               col_offset +
+              multicol_inline_run_offset +
               child_layout.margin.left,
               y: padding.top +
               border.top +
@@ -4873,22 +4910,72 @@ fn compute_with_collapse(
               text: child_layout.text,
             }
             layout_map[flow_indices[i]] = positioned_layout
-            let advance = if multicol_fragment_contained &&
-              child_style.column_span != @style.ColumnSpan::All &&
-              child_outer_height > limit {
-              limit
+            if multicol_participates_in_inline_run {
+              let inline_item_height = child_layout.height +
+                child_layout.margin.top +
+                child_layout.margin.bottom
+              if child_node.id == "br" {
+                let mut line_height = if inline_run_height > inline_item_height {
+                  inline_run_height
+                } else {
+                  inline_item_height
+                }
+                let inline_strut_height = if child_style.line_height > 0.0 {
+                  child_style.line_height
+                } else if style.line_height > 0.0 {
+                  style.line_height
+                } else {
+                  inline_item_height
+                }
+                if inline_strut_height > line_height {
+                  line_height = inline_strut_height
+                }
+                if line_height > 0.0 {
+                  current_pos = effective_pos + line_height
+                } else {
+                  current_pos = effective_pos
+                }
+                inline_run_active = false
+                inline_run_x = 0.0
+                inline_run_height = 0.0
+                prev_margin_end = 0.0
+              } else {
+                let inline_advance = child_layout.width +
+                  child_layout.margin.left +
+                  child_layout.margin.right
+                inline_run_x = inline_run_x + inline_advance
+                if inline_item_height > inline_run_height {
+                  inline_run_height = inline_item_height
+                }
+                inline_run_active = true
+                current_pos = effective_pos
+              }
             } else {
-              child_outer_height
+              let advance = if multicol_fragment_contained &&
+                child_style.column_span != @style.ColumnSpan::All &&
+                child_outer_height > limit {
+                limit
+              } else {
+                child_outer_height
+              }
+              current_pos = effective_pos + advance
             }
-            current_pos = effective_pos + advance
             flow_y_positions.push(current_pos)
             continue
           }
         _ => ()
       }
+      let multicol_inline_run_offset = if multicol_participates_in_inline_run {
+        inline_run_x
+      } else {
+        0.0
+      }
       let positioned_layout : @types.Layout = {
         id: child_layout.id,
-        x: padding.left + border.left + child_layout.margin.left,
+        x: padding.left +
+        border.left +
+        multicol_inline_run_offset +
+        child_layout.margin.left,
         y: padding.top + border.top + current_pos + child_layout.margin.top,
         width: fragmented_union_width,
         height: child_layout.height,
@@ -4903,7 +4990,46 @@ fn compute_with_collapse(
         text: child_layout.text,
       }
       layout_map[flow_indices[i]] = positioned_layout
-      current_pos = current_pos + child_outer_height
+      if multicol_participates_in_inline_run {
+        let inline_item_height = child_layout.height +
+          child_layout.margin.top +
+          child_layout.margin.bottom
+        if child_node.id == "br" {
+          let mut line_height = if inline_run_height > inline_item_height {
+            inline_run_height
+          } else {
+            inline_item_height
+          }
+          let inline_strut_height = if child_style.line_height > 0.0 {
+            child_style.line_height
+          } else if style.line_height > 0.0 {
+            style.line_height
+          } else {
+            inline_item_height
+          }
+          if inline_strut_height > line_height {
+            line_height = inline_strut_height
+          }
+          if line_height > 0.0 {
+            current_pos = current_pos + line_height
+          }
+          inline_run_active = false
+          inline_run_x = 0.0
+          inline_run_height = 0.0
+          prev_margin_end = 0.0
+        } else {
+          let inline_advance = child_layout.width +
+            child_layout.margin.left +
+            child_layout.margin.right
+          inline_run_x = inline_run_x + inline_advance
+          if inline_item_height > inline_run_height {
+            inline_run_height = inline_item_height
+          }
+          inline_run_active = true
+        }
+      } else {
+        current_pos = current_pos + child_outer_height
+      }
       flow_y_positions.push(current_pos)
       continue
     }
@@ -5323,10 +5449,20 @@ fn compute_with_collapse(
         child_layout.margin.top +
         child_layout.margin.bottom
       if child_node.id == "br" {
-        let line_height = if inline_run_height > inline_item_height {
+        let mut line_height = if inline_run_height > inline_item_height {
           inline_run_height
         } else {
           inline_item_height
+        }
+        let inline_strut_height = if child_style.line_height > 0.0 {
+          child_style.line_height
+        } else if style.line_height > 0.0 {
+          style.line_height
+        } else {
+          inline_item_height
+        }
+        if inline_strut_height > line_height {
+          line_height = inline_strut_height
         }
         if line_height > 0.0 {
           current_pos = current_pos + line_height
