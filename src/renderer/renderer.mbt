@@ -591,19 +591,94 @@ fn is_inline_participating_display(display : @types.Display) -> Bool {
 }
 
 ///|
-fn get_inline_style_display(elem : @html.Element) -> @types.Display? {
-  match elem.style {
-    Some(style_str) => {
+let inline_style_display_cache : Ref[Map[String, @types.Display?]] = { val: {} }
+
+///|
+let inline_declaration_cache : Ref[Map[String, Array[(String, String)]]] = {
+  val: {},
+}
+
+///|
+fn parse_inline_declarations_cached(
+  inline_css : String,
+) -> Array[(String, String)] {
+  let cache = inline_declaration_cache.val
+  match cache.get(inline_css) {
+    Some(cached) => cached
+    None => {
+      // Parse inline CSS once and reuse across repeated style strings.
+      let parsed : Array[(String, String)] = []
+      let decls = inline_css.split(";")
+      for decl in decls {
+        let decl_str = decl.trim()
+        if decl_str.length() == 0 {
+          continue
+        }
+        let mut colon_idx = -1
+        for i = 0; i < decl_str.length(); i = i + 1 {
+          if decl_str[i] == ':' {
+            colon_idx = i
+            break
+          }
+        }
+        if colon_idx > 0 {
+          try {
+            let prop = decl_str[0:colon_idx].trim().to_string().to_lower()
+            let value = decl_str[colon_idx + 1:].trim().to_string()
+            if prop.length() > 0 && value.length() > 0 {
+              parsed.push((prop, value))
+            }
+          } catch {
+            _ => ()
+          }
+        }
+      }
+      cache[inline_css] = parsed
+      parsed
+    }
+  }
+}
+
+///|
+fn get_cached_inline_style_display(style_str : String) -> @types.Display? {
+  let cache = inline_style_display_cache.val
+  match cache.get(style_str) {
+    Some(cached) => cached
+    None => {
       let style_lower = style_str.to_lower()
-      if style_lower.contains("display:") || style_lower.contains("display :") {
+      let parsed_display = if style_lower.contains("display:") ||
+        style_lower.contains("display :") {
         let parsed = @parser.parse_inline_style(style_str)
         Some(parsed.display)
       } else {
         None
       }
+      cache[style_str] = parsed_display
+      parsed_display
     }
+  }
+}
+
+///|
+fn get_inline_style_display(elem : @html.Element) -> @types.Display? {
+  match elem.style {
+    Some(style_str) => get_cached_inline_style_display(style_str)
     None => None
   }
+}
+
+///|
+fn inline_css_establishes_effect_containing_block(inline_css : String) -> Bool {
+  let declarations = parse_inline_declarations_cached(inline_css)
+  for i = 0; i < declarations.length(); i = i + 1 {
+    let (prop, value) = declarations[i]
+    if prop == "filter" || prop == "backdrop-filter" {
+      if value.to_lower().trim() != "none" {
+        return true
+      }
+    }
+  }
+  false
 }
 
 ///|
@@ -5308,19 +5383,24 @@ fn compute_element_style_indexed(
   parent_style : @style.Style?,
   css_vars : Map[String, String],
 ) -> @style.Style {
-  // Create media environment for media query evaluation
-  let media_env = @media.MediaEnvironment::with_color_scheme(
-    ctx.viewport_width,
-    ctx.viewport_height,
-    ctx.color_scheme,
-  )
-  // Match stylesheets using index and get cascaded values
-  let cascaded = @cascade.cascade_element_indexed(
-    selector_elem,
-    indexed_stylesheets,
-    [],
-    Some(media_env),
-  )
+  let cascaded = if indexed_stylesheets.length() > 0 {
+    // Create media environment for media query evaluation only when needed.
+    let media_env = @media.MediaEnvironment::with_color_scheme(
+      ctx.viewport_width,
+      ctx.viewport_height,
+      ctx.color_scheme,
+    )
+    Some(
+      @cascade.cascade_element_indexed(
+        selector_elem,
+        indexed_stylesheets,
+        [],
+        Some(media_env),
+      ),
+    )
+  } else {
+    None
+  }
 
   // Start with default style
   let mut style = @style.Style::default()
@@ -5385,41 +5465,46 @@ fn compute_element_style_indexed(
 
   // Apply font metrics first so em/ch/ex units in later properties
   // (width/height/gap/etc.) resolve against the element's own font.
-  let font_props = ["font", "font-size", "line-height"]
-  for prop in font_props {
-    match cascaded.get_value(prop) {
-      Some(value) =>
-        style = apply_css_property_with_viewport(
-          style,
-          prop,
-          value,
-          ctx.viewport_width,
-          ctx.viewport_height,
-          css_vars,
-          parent_style,
-        )
-      None => ()
-    }
-  }
+  match cascaded {
+    Some(cascaded_values) => {
+      let font_props = ["font", "font-size", "line-height"]
+      for prop in font_props {
+        match cascaded_values.get_value(prop) {
+          Some(value) =>
+            style = apply_css_property_with_viewport(
+              style,
+              prop,
+              value,
+              ctx.viewport_width,
+              ctx.viewport_height,
+              css_vars,
+              parent_style,
+            )
+          None => ()
+        }
+      }
 
-  // Apply remaining cascaded values
-  for prop in cascaded.properties() {
-    if prop == "font" || prop == "font-size" || prop == "line-height" {
-      continue
+      // Apply remaining cascaded values
+      for prop in cascaded_values.properties() {
+        if prop == "font" || prop == "font-size" || prop == "line-height" {
+          continue
+        }
+        match cascaded_values.get_value(prop) {
+          Some(value) =>
+            style = apply_css_property_with_viewport(
+              style,
+              prop,
+              value,
+              ctx.viewport_width,
+              ctx.viewport_height,
+              css_vars,
+              parent_style,
+            )
+          None => ()
+        }
+      }
     }
-    match cascaded.get_value(prop) {
-      Some(value) =>
-        style = apply_css_property_with_viewport(
-          style,
-          prop,
-          value,
-          ctx.viewport_width,
-          ctx.viewport_height,
-          css_vars,
-          parent_style,
-        )
-      None => ()
-    }
+    None => ()
   }
 
   // Preserve table layout
@@ -5454,34 +5539,33 @@ fn compute_element_style_indexed(
   // Effects that establish a containing block for positioned descendants:
   // filter and backdrop-filter (non-none values).
   let mut establishes_effect_cb = false
-  match cascaded.get_value("filter") {
-    Some(value) =>
-      if value.to_lower().trim() != "none" {
-        establishes_effect_cb = true
+  match cascaded {
+    Some(cascaded_values) =>
+      match cascaded_values.get_value("filter") {
+        Some(value) =>
+          if value.to_lower().trim() != "none" {
+            establishes_effect_cb = true
+          }
+        None => ()
       }
     None => ()
   }
-  match cascaded.get_value("backdrop-filter") {
-    Some(value) =>
-      if value.to_lower().trim() != "none" {
-        establishes_effect_cb = true
+  match cascaded {
+    Some(cascaded_values) =>
+      match cascaded_values.get_value("backdrop-filter") {
+        Some(value) =>
+          if value.to_lower().trim() != "none" {
+            establishes_effect_cb = true
+          }
+        None => ()
       }
     None => ()
   }
   match inline_css {
-    Some(css) => {
-      let lowered = css.to_lower()
-      let has_filter = lowered.contains("filter:")
-      let filter_none = lowered.contains("filter: none")
-      if has_filter && not(filter_none) {
+    Some(css) =>
+      if inline_css_establishes_effect_containing_block(css) {
         establishes_effect_cb = true
       }
-      let has_backdrop_filter = lowered.contains("backdrop-filter:")
-      let backdrop_filter_none = lowered.contains("backdrop-filter: none")
-      if has_backdrop_filter && not(backdrop_filter_none) {
-        establishes_effect_cb = true
-      }
-    }
     None => ()
   }
   if establishes_effect_cb {
@@ -5568,41 +5652,15 @@ fn apply_inline_css_with_vars(
   viewport_height : Double,
   inherited_parent_style : @style.Style?,
 ) -> @style.Style {
-  // Parse the inline CSS to get property/value pairs
-  // Format: "property1: value1; property2: value2"
   let mut result = target
-  let decls = inline_css.split(";")
-  for decl in decls {
-    let decl_str = decl.trim()
-    if decl_str.length() == 0 {
-      continue
-    }
-    // Find the colon
-    let mut colon_idx = -1
-    for i = 0; i < decl_str.length(); i = i + 1 {
-      if decl_str[i] == ':' {
-        colon_idx = i
-        break
-      }
-    }
-    if colon_idx > 0 {
-      try {
-        let prop = decl_str[0:colon_idx].trim().to_string()
-        let value = decl_str[colon_idx + 1:].trim().to_string()
-        if prop.length() > 0 && value.length() > 0 {
-          // Use viewport-aware property application with CSS variables
-          result = apply_css_property_with_viewport(
-            result, prop, value, viewport_width, viewport_height, css_vars, inherited_parent_style,
-          )
-        }
-      } catch {
-        _ => ()
-      }
-    }
+  let declarations = parse_inline_declarations_cached(inline_css)
+  for i = 0; i < declarations.length(); i = i + 1 {
+    let (prop, value) = declarations[i]
+    result = apply_css_property_with_viewport(
+      result, prop, value, viewport_width, viewport_height, css_vars, inherited_parent_style,
+    )
   }
-  // Convert content-box dimensions to border-box dimensions
-  // The layout engine always works with outer (border-box) dimensions
-  adjust_for_box_sizing(result)
+  result
 }
 
 ///|
@@ -5636,6 +5694,27 @@ fn resolve_dimension_with_percent_basis(
     @types.MaxContent => 0.0
     @types.FitContent(_) => 0.0
   }
+}
+
+///|
+fn is_zero_dimension_value(dim : @types.Dimension) -> Bool {
+  match dim {
+    @types.Length(v) => v == 0.0
+    @types.Percent(v) => v == 0.0
+    _ => false
+  }
+}
+
+///|
+fn has_zero_box_offsets(style : @style.Style) -> Bool {
+  is_zero_dimension_value(style.padding.left) &&
+  is_zero_dimension_value(style.padding.right) &&
+  is_zero_dimension_value(style.padding.top) &&
+  is_zero_dimension_value(style.padding.bottom) &&
+  is_zero_dimension_value(style.border.left) &&
+  is_zero_dimension_value(style.border.right) &&
+  is_zero_dimension_value(style.border.top) &&
+  is_zero_dimension_value(style.border.bottom)
 }
 
 ///|
@@ -5734,6 +5813,9 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
       }
     }
     @types.ContentBox => {
+      if has_zero_box_offsets(style) {
+        return { ..style, box_sizing: @types.BorderBox }
+      }
       let percent_basis = match style.width {
         @types.Length(w) =>
           if w > 0.0 {
