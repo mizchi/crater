@@ -196,6 +196,20 @@ test "parse pseudo-class nth-child odd" {
 }
 
 ///|
+test "parse pseudo-class nth-child compact anb form" {
+  let sel = parse_selector_text(":nth-child(2n1)")
+  inspect(sel is Some(_), content="true")
+  let s = sel.unwrap()
+  match s.head.subclasses[0] {
+    PseudoClass(NthChild(expr)) => {
+      inspect(expr.a, content="2")
+      inspect(expr.b, content="1")
+    }
+    _ => fail("expected :nth-child pseudo-class")
+  }
+}
+
+///|
 test "parse pseudo-element before" {
   let sel = parse_selector_text("::before")
   inspect(sel is Some(_), content="true")
@@ -204,6 +218,36 @@ test "parse pseudo-element before" {
     PseudoElement(Before) => ()
     _ => fail("expected ::before pseudo-element")
   }
+}
+
+///|
+test "parse unknown pseudo-element invalidates selector" {
+  let sel = parse_selector_text("div::scroll-marker")
+  inspect(sel is None, content="true")
+}
+
+///|
+test "parse unknown pseudo-class invalidates selector" {
+  let sel = parse_selector_text("div:target-current")
+  inspect(sel is None, content="true")
+}
+
+///|
+test "parse unknown pseudo-element in descendant selector invalidates selector" {
+  let sel = parse_selector_text("#scroller div::scroll-marker")
+  inspect(sel is None, content="true")
+}
+
+///|
+test "parse unknown functional pseudo-element invalidates selector" {
+  let sel = parse_selector_text("div::scroll-button(*)")
+  inspect(sel is None, content="true")
+}
+
+///|
+test "parse selector with trailing garbage invalidates selector" {
+  let sel = parse_selector_text("div ???")
+  inspect(sel is None, content="true")
 }
 
 ///|

@@ -113,6 +113,64 @@ test "ifc_line_wrapping" {
 }
 
 ///|
+test "ifc_nowrap_keeps_inline_blocks_on_same_line" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(60.0),
+    height: @types.Length(30.0),
+    white_space: @style.WhiteSpace::Nowrap,
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].x, content="60")
+  inspect(result.layouts[1].y, content="0")
+  inspect(result.total_height, content="30")
+}
+
+///|
+test "ifc_rtl_nowrap_places_overflow_items_to_inline_start_side" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(100.0),
+    height: @types.Length(30.0),
+    white_space: @style.WhiteSpace::Nowrap,
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+    container_direction=@style.Direction::Rtl,
+    container_white_space=@style.WhiteSpace::Nowrap,
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[1].x, content="-100")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].y, content="0")
+  inspect(result.total_height, content="30")
+}
+
+///|
 test "ifc_vertical_writing_wraps_by_available_height" {
   let default_style = @style.Style::default()
   let inline_style = {
@@ -138,6 +196,35 @@ test "ifc_vertical_writing_wraps_by_available_height" {
   inspect(result.layouts[1].x, content="0")
   inspect(result.layouts[1].y, content="0")
   inspect(result.total_height, content="100")
+}
+
+///|
+test "ifc_vertical_nowrap_keeps_items_in_single_column" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(100.0),
+  }
+  let child1 = @node.Node::leaf("child1", inline_style)
+  let child2 = @node.Node::leaf("child2", inline_style)
+  let result = compute_ifc(
+    [child1, child2],
+    100.0,
+    Some(100.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+    container_writing_mode=@style.WritingMode::VerticalLr,
+    container_white_space=@style.WhiteSpace::Nowrap,
+  )
+  inspect(result.layouts.length(), content="2")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].x, content="0")
+  inspect(result.layouts[1].y, content="100")
+  inspect(result.total_height, content="200")
 }
 
 ///|

@@ -810,7 +810,8 @@ fn get_row_cells(row : @node.Node) -> Array[@node.Node] {
 fn calculate_intrinsic_column_widths(
   rows : Array[@node.Node],
   num_columns : Int,
-  _border_spacing : Double,
+  border_spacing : Double,
+  grid : Map[String, CellOccupancy],
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
@@ -822,14 +823,66 @@ fn calculate_intrinsic_column_widths(
     widths.push(0.0)
   }
 
-  // Calculate max-content width for each column
-  for row in rows {
+  // Calculate max-content width constraints for each column.
+  // For colspan cells, distribute any missing span width across spanned columns.
+  for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
+    let row = rows[row_idx]
     let cells = get_row_cells(row)
-    for i = 0; i < cells.length() && i < num_columns; i = i + 1 {
-      let cell_width = measure_cell_content_width(cells[i])
-      if cell_width > widths[i] {
-        widths[i] = cell_width
+    let mut col_index = 0
+    for cell_idx = 0; cell_idx < cells.length(); cell_idx = cell_idx + 1 {
+      let cell = cells[cell_idx]
+
+      // Skip columns occupied by previous-row rowspan cells.
+      while true {
+        match grid.get(key_for_pos(row_idx, col_index)) {
+          Some(occ) =>
+            if occ.row_index != row_idx || occ.cell_index != cell_idx {
+              col_index = col_index + 1
+            } else {
+              break
+            }
+          None => break
+        }
       }
+
+      if col_index >= num_columns {
+        break
+      }
+
+      let raw_colspan = if cell.style.colspan > 0 {
+        cell.style.colspan
+      } else {
+        1
+      }
+      let remaining_cols = num_columns - col_index
+      let span = if raw_colspan < remaining_cols {
+        raw_colspan
+      } else {
+        remaining_cols
+      }
+      if span <= 0 {
+        col_index = col_index + raw_colspan
+        continue
+      }
+
+      let cell_width = measure_cell_content_width(cell)
+      let mut current_span_width = 0.0
+      for i = 0; i < span; i = i + 1 {
+        current_span_width = current_span_width + widths[col_index + i]
+        if i < span - 1 {
+          current_span_width = current_span_width + border_spacing
+        }
+      }
+
+      if cell_width > current_span_width {
+        let extra_per_col = (cell_width - current_span_width) / span.to_double()
+        for i = 0; i < span; i = i + 1 {
+          let idx = col_index + i
+          widths[idx] = widths[idx] + extra_per_col
+        }
+      }
+
+      col_index = col_index + raw_colspan
     }
   }
   widths
@@ -932,28 +985,17 @@ fn calculate_column_widths(
   available_width : Double,
   border_spacing : Double,
   col_widths : Array[Double?],
+  grid : Map[String, CellOccupancy],
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
     return widths
   }
 
-  // Initialize column min widths
-  let col_min_widths : Array[Double] = []
-  for _i = 0; _i < num_columns; _i = _i + 1 {
-    col_min_widths.push(0.0)
-  }
-
-  // Calculate max-content width for each column
-  for row in rows {
-    let cells = get_row_cells(row)
-    for i = 0; i < cells.length() && i < num_columns; i = i + 1 {
-      let cell_width = measure_cell_content_width(cells[i])
-      if cell_width > col_min_widths[i] {
-        col_min_widths[i] = cell_width
-      }
-    }
-  }
+  // Use the same colspan/rowspan-aware intrinsic contribution model.
+  let col_min_widths = calculate_intrinsic_column_widths(
+    rows, num_columns, border_spacing, grid,
+  )
 
   // Calculate total spacing
   let total_spacing = border_spacing * (num_columns - 1).to_double()
@@ -1421,11 +1463,10 @@ pub fn compute_intrinsic_size(
   // Collect all rows and build occupancy grid
   let rows = collect_table_rows(node)
   let (grid, num_columns) = build_occupancy_grid(rows)
-  let _ = grid // Grid not needed for intrinsic size calculation
   if parent_is_row {
     // Compute intrinsic width
     let intrinsic_col_widths = calculate_intrinsic_column_widths(
-      rows, num_columns, border_spacing,
+      rows, num_columns, border_spacing, grid,
     )
     let intrinsic_content_width = if num_columns > 0 {
       let mut total = 0.0
@@ -1923,7 +1964,7 @@ pub fn compute(
 
   // Calculate intrinsic column widths first (for shrink-to-fit)
   let intrinsic_col_widths = calculate_intrinsic_column_widths(
-    rows, num_columns, border_spacing,
+    rows, num_columns, border_spacing, grid,
   )
 
   // Calculate intrinsic table width (content width based on columns)
@@ -2107,7 +2148,7 @@ pub fn compute(
   } else {
     // Auto layout: use content-based distribution
     calculate_column_widths(
-      rows, num_columns, row_content_width, border_spacing, col_widths,
+      rows, num_columns, row_content_width, border_spacing, col_widths, grid,
     )
   }
 

@@ -80,6 +80,10 @@ fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
       _ => break
     }
   }
+  parser.skip_whitespace()
+  if not(parser.is_at_end()) {
+    return None
+  }
   Some(SelectorList::{ selectors, })
 }
 
@@ -88,7 +92,17 @@ fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
 fn parse_selector(tokens : Array[@token.Token]) -> ComplexSelector? {
   let parser = SelectorParser::new(tokens)
   parser.skip_whitespace()
-  parser.parse_complex_selector()
+  match parser.parse_complex_selector() {
+    None => None
+    Some(sel) => {
+      parser.skip_whitespace()
+      if parser.is_at_end() {
+        Some(sel)
+      } else {
+        None
+      }
+    }
+  }
 }
 
 ///|
@@ -142,7 +156,7 @@ fn SelectorParser::parse_complex_selector(
       Some(comb) =>
         // Try to parse next compound selector
         match self.parse_compound_selector() {
-          None => break
+          None => return None
           Some(next) => {
             // Build chain: push current to tail with combinator, next becomes current
             tail.push({ combinator: comb, selector: current })
@@ -214,7 +228,7 @@ fn SelectorParser::parse_compound_selector(
             let _ = self.advance()
             match self.parse_pseudo_element() {
               Some(pe) => subclasses.push(PseudoElement(pe))
-              None => break
+              None => return None
             }
           }
           // Single colon - pseudo-class (or legacy pseudo-element)
@@ -226,7 +240,7 @@ fn SelectorParser::parse_compound_selector(
                 // Try legacy pseudo-element syntax (:before, :after)
                 match self.parse_pseudo_element() {
                   Some(pe) => subclasses.push(PseudoElement(pe))
-                  None => break
+                  None => return None
                 }
             }
         }
@@ -599,11 +613,34 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
       return None
     }
     Dimension(num, unit) => {
-      if unit.to_lower() == "n" {
+      let unit_lower = unit.to_lower()
+      if unit_lower == "n" {
         let _ = self.advance()
         let a = num.to_int()
         self.skip_whitespace()
         let b = self.parse_nth_b()
+        return Some({ a, b })
+      }
+      if unit_lower.length() > 1 && unit_lower[0] == 'n' {
+        let suffix = unit_lower[1:unit_lower.length()].to_string() catch {
+          _ => ""
+        }
+        let b = @strconv.parse_int(suffix) catch {
+          _ =>
+            if suffix.length() > 1 && suffix[0] == '+' {
+              @strconv.parse_int(
+                suffix[1:suffix.length()].to_string() catch {
+                  _ => ""
+                },
+              ) catch {
+                _ => 0
+              }
+            } else {
+              0
+            }
+        }
+        let _ = self.advance()
+        let a = num.to_int()
         return Some({ a, b })
       }
       return None

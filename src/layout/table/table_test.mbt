@@ -147,6 +147,59 @@ test "table equal column widths" {
 }
 
 ///|
+test "table intrinsic width respects colspan distribution" {
+  let wide_cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(48.0),
+    colspan: 2,
+  }
+  let narrow_cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(24.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_spacing: 0.0,
+  }
+
+  let span_cell = @node.Node::new("span", wide_cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [span_cell])
+  let cell_a = @node.Node::new("a", narrow_cell_style, [])
+  let cell_b = @node.Node::new("b", narrow_cell_style, [])
+  let row2 = @node.Node::new("row2", row_style, [cell_a, cell_b])
+  let table = @node.Node::new("table", table_style, [row1, row2])
+
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  assert_eq(layout.children.length(), 2)
+  let row2_layout = layout.children[1]
+  assert_eq(row2_layout.children.length(), 2)
+
+  // Colspan width should be distributed across 2 columns (24 + 24),
+  // instead of inflating only the first column.
+  inspect(row2_layout.children[0].width, content="24")
+  inspect(row2_layout.children[1].x, content="24")
+}
+
+///|
 test "table row ignores direct text nodes between cells" {
   let text_style : @style.Style = {
     ..@style.Style::default(),

@@ -289,6 +289,13 @@ test "parse pseudo-element selector" {
 }
 
 ///|
+test "drop unknown functional pseudo-element selector" {
+  let css = "div::scroll-button(*) { width: 100px; }"
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="0")
+}
+
+///|
 test "parse multiple pseudo-classes" {
   let css = "a:hover:focus { outline: none; }"
   let stylesheet = @parser.parse_stylesheet(css)

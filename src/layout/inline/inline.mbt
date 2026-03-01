@@ -130,6 +130,17 @@ fn has_inline_break_opportunity_between(
   prev : @node.Node,
   next : @node.Node,
 ) -> Bool {
+  let no_soft_wrap_prev = match prev.style.white_space {
+    @style.WhiteSpace::Nowrap | @style.WhiteSpace::Pre => true
+    _ => false
+  }
+  let no_soft_wrap_next = match next.style.white_space {
+    @style.WhiteSpace::Nowrap | @style.WhiteSpace::Pre => true
+    _ => false
+  }
+  if no_soft_wrap_prev || no_soft_wrap_next {
+    return false
+  }
   match (last_text_char(prev), first_text_char(next)) {
     (Some(prev_last), Some(next_first)) =>
       is_inline_whitespace_char(prev_last) ||
@@ -731,6 +742,8 @@ pub fn compute_ifc(
   content_offset_y : Double, // Padding + border top
   dispatch : @node.DispatchFn,
   container_writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
+  container_direction? : @style.Direction = @style.Direction::Ltr,
+  container_white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
 ) -> InlineLayoutResult {
   if children.length() == 0 {
     return { layouts: [], total_height: 0.0 }
@@ -739,6 +752,10 @@ pub fn compute_ifc(
   // Inline progression should follow container writing-mode, not child writing-mode.
   let writing_mode = container_writing_mode
   let is_vertical_rl = writing_mode.is_vertical() && writing_mode.is_block_rtl()
+  let allow_soft_wrap = match container_white_space {
+    @style.WhiteSpace::Nowrap | @style.WhiteSpace::Pre => false
+    _ => true
+  }
   if writing_mode.is_vertical() {
     let columns : Array[Array[Int]] = []
     let column_widths : Array[Double] = []
@@ -780,6 +797,7 @@ pub fn compute_ifc(
         child_margin.bottom
       let should_wrap_column = match max_inline_extent {
         Some(limit) =>
+          allow_soft_wrap &&
           current_column.length() > 0 &&
           child.id != "br" &&
           current_height + outer_height > limit
@@ -1054,12 +1072,17 @@ pub fn compute_ifc(
   }
 
   // Position items within line boxes
+  let is_rtl_inline = container_direction.is_rtl()
   let mut current_y = content_offset_y
   for line_index = 0
       line_index < line_boxes.length()
       line_index = line_index + 1 {
     let line = line_boxes[line_index]
-    let mut current_x = content_offset_x
+    let mut current_x = if is_rtl_inline {
+      content_offset_x + available_width
+    } else {
+      content_offset_x
+    }
     for item_index = 0
         item_index < line.items.length()
         item_index = item_index + 1 {
@@ -1071,7 +1094,11 @@ pub fn compute_ifc(
       )
 
       // Position at current x with margin
-      let x = current_x + child_margin.left
+      let x = if is_rtl_inline {
+        current_x - child_margin.right - item.layout.width
+      } else {
+        current_x + child_margin.left
+      }
 
       // Vertical alignment based on child's vertical-align property
       let y = match child.style.vertical_align {
@@ -1259,7 +1286,11 @@ pub fn compute_ifc(
         text: item.layout.text,
       }
       layout_map[item.index] = positioned
-      current_x = positioned_x + item.layout.width + child_margin.right
+      current_x = if is_rtl_inline {
+        positioned_x - child_margin.left
+      } else {
+        positioned_x + item.layout.width + child_margin.right
+      }
     }
     current_y = current_y + line.height
   }

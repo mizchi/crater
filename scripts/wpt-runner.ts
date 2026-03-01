@@ -133,10 +133,19 @@ function resolveFontFixturePath(): string | null {
   return null;
 }
 
-function createTextIntrinsicFnFromMeasureText(
+function resolveMeasuredAdvance(
+  measured: unknown,
+  text: string,
+  fontSize: number,
+): number {
+  if (text.length === 0) return 0;
+  if (hasFiniteNumber(measured) && measured > 0) return measured;
+  return text.length * (fontSize > 0 ? fontSize * 0.5 : 8);
+}
+
+export function createTextIntrinsicFnFromMeasureText(
   measureText: (text: string, fontSize: number) => number,
 ): ExternalTextIntrinsicFn {
-  let loadedFont = false;
   return (
     text: string,
     fontSize: number,
@@ -149,8 +158,7 @@ function createTextIntrinsicFnFromMeasureText(
     const effectiveLineHeight = lineHeight > 0 ? lineHeight : (fontSize > 0 ? fontSize : 16);
     const measure = (s: string): number => {
       const measured = measureText(s, fontSize);
-      if (hasFiniteNumber(measured) && measured >= 0) return measured;
-      return s.length * (fontSize > 0 ? fontSize * 0.5 : 8);
+      return resolveMeasuredAdvance(measured, s, fontSize);
     };
     const explicitLines = text.split('\n');
     const maxWidth = explicitLines.reduce((acc, line) => Math.max(acc, measure(line)), 0);
@@ -367,19 +375,33 @@ async function importFirstAvailable(specifiers: string[]): Promise<unknown | nul
   return null;
 }
 
-function resolveTextIntrinsicFn(mod: unknown): ExternalTextIntrinsicFn | null {
+export function resolveTextIntrinsicFn(mod: unknown): ExternalTextIntrinsicFn | null {
   if (!mod || typeof mod !== 'object') return null;
   const rec = mod as Record<string, unknown>;
-  const direct = rec.measureTextIntrinsic ?? rec.measureText ?? rec.default;
-  if (typeof direct === 'function') return direct as ExternalTextIntrinsicFn;
+  if (typeof rec.measureTextIntrinsic === 'function') {
+    return rec.measureTextIntrinsic as ExternalTextIntrinsicFn;
+  }
   if (typeof rec.measureText === 'function') {
     maybeLoadFontIntoModule(rec);
     return createTextIntrinsicFnFromMeasureText(
       rec.measureText as (text: string, fontSize: number) => number,
     );
   }
+  if (typeof rec.default === 'function') {
+    const defaultFn = rec.default as (...args: unknown[]) => unknown;
+    if (defaultFn.length <= 2) {
+      return createTextIntrinsicFnFromMeasureText(
+        (text: string, fontSize: number) =>
+          Number(defaultFn(text, fontSize)),
+      );
+    }
+    return defaultFn as ExternalTextIntrinsicFn;
+  }
   if (rec.default && typeof rec.default === 'object') {
     const nested = rec.default as Record<string, unknown>;
+    if (typeof nested.measureTextIntrinsic === 'function') {
+      return nested.measureTextIntrinsic as ExternalTextIntrinsicFn;
+    }
     if (typeof nested.measureText === 'function') {
       maybeLoadFontIntoModule(nested);
       return createTextIntrinsicFnFromMeasureText(
@@ -425,16 +447,10 @@ function resolveImageIntrinsicFn(mod: unknown): ExternalImageIntrinsicFn | null 
 }
 
 async function configureExternalIntrinsicProviders(): Promise<void> {
-  const localFontSpecifiers = [
-    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/_build/js/release/build/js/js.js'),
-    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/_build/js/debug/build/js/js.js'),
-    path.join(process.env.HOME ?? '', 'ghq/github.com/mizchi/font/target/js/release/build/js/js.js'),
-  ];
   const textSpecifiers = [
     process.env.CRATER_TEXT_MODULE,
     'mizchi/text',
     '@mizchi/text',
-    ...localFontSpecifiers,
   ].filter((v): v is string => Boolean(v));
   const imageSpecifiers = [
     process.env.CRATER_IMAGE_MODULE,
@@ -933,6 +949,10 @@ function isIgnorableInlineWrapper(node: LayoutNode): boolean {
   return node.id === 'span' && node.children.length === 0;
 }
 
+function isGeneratedPseudoNode(node: LayoutNode): boolean {
+  return node.id.startsWith('#pseudo::');
+}
+
 function compareLayouts(
   browser: LayoutNode,
   crater: LayoutNode,
@@ -997,8 +1017,12 @@ function compareLayouts(
     }
   }
 
-  const bChildren = options.ignoreTextNodes ? browser.children.filter(c => !c.id.startsWith('#text')) : browser.children;
-  const cChildren = options.ignoreTextNodes ? crater.children.filter(c => !c.id.startsWith('#text')) : crater.children;
+  const bChildren = options.ignoreTextNodes
+    ? browser.children.filter(c => !c.id.startsWith('#text') && !isGeneratedPseudoNode(c))
+    : browser.children;
+  const cChildren = options.ignoreTextNodes
+    ? crater.children.filter(c => !c.id.startsWith('#text') && !isGeneratedPseudoNode(c))
+    : crater.children;
 
   const minChildren = Math.min(bChildren.length, cChildren.length);
   const nextBrowserParentContentPos = {
@@ -1027,8 +1051,12 @@ function compareLayouts(
     const parentBoxClose =
       Math.abs(browser.width - crater.width) <= TOLERANCE &&
       Math.abs(browser.height - crater.height) <= TOLERANCE;
-    const normalizedBChildren = bChildren.filter(c => !isIgnorableInlineWrapper(c));
-    const normalizedCChildren = cChildren.filter(c => !isIgnorableInlineWrapper(c));
+    const normalizedBChildren = bChildren.filter(
+      c => !isIgnorableInlineWrapper(c) && !isGeneratedPseudoNode(c),
+    );
+    const normalizedCChildren = cChildren.filter(
+      c => !isIgnorableInlineWrapper(c) && !isGeneratedPseudoNode(c),
+    );
     const wrapperOnlyMismatch =
       parentBoxClose &&
       (
@@ -1335,4 +1363,12 @@ async function main(): Promise<void> {
   process.exit(failed > 0 ? 1 : 0);
 }
 
-main().catch(console.error);
+function isExecutedAsScript(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return import.meta.url === pathToFileURL(path.resolve(entry)).href;
+}
+
+if (isExecutedAsScript()) {
+  main().catch(console.error);
+}

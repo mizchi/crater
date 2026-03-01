@@ -995,6 +995,9 @@ fn compute_inline_flow_height(
       0.0,
       0.0,
       dispatch,
+      container_writing_mode=node.style.writing_mode,
+      container_direction=node.style.direction,
+      container_white_space=node.style.white_space,
     )
     Some(ifc.total_height)
   }

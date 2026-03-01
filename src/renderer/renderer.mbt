@@ -2867,7 +2867,38 @@ priv struct AfterPseudoSpec {
   position_relative : Bool
   out_of_flow : Bool
   left_offset : Double
-  text_style : @style.Style
+  generated_style : @style.Style
+}
+
+///|
+fn create_generated_pseudo_node(
+  spec : AfterPseudoSpec,
+  pseudo_kind : PseudoKind,
+) -> @node.Node {
+  let pseudo_id = match pseudo_kind {
+    Before => "#pseudo::before"
+    After => "#pseudo::after"
+  }
+  if spec.content.is_empty() {
+    @node.Node::leaf(pseudo_id, spec.generated_style)
+  } else {
+    let font_size = spec.generated_style.font_size
+    let text_line_height = spec.generated_style.line_height
+    let white_space = spec.generated_style.white_space
+    let writing_mode = spec.generated_style.writing_mode
+    @node.Node::with_measure(
+      pseudo_id,
+      spec.generated_style,
+      create_text_measure_with_provider(
+        spec.content,
+        font_size,
+        text_line_height,
+        white_space,
+        writing_mode,
+      ),
+      text=spec.content,
+    )
+  }
 }
 
 ///|
@@ -2885,10 +2916,12 @@ fn resolve_pseudo_spec(
     ctx.color_scheme,
   )
   let mut content_parts : Array[ContentPart]? = None
+  let mut content_specified = false
+  let mut content_disabled = false
   let mut position_relative = false
   let mut out_of_flow = false
   let mut left_offset = 0.0
-  let mut text_style = host_style
+  let mut generated_style = host_style
 
   for stylesheet in stylesheets {
     for rule in stylesheet.rules {
@@ -2915,7 +2948,15 @@ fn resolve_pseudo_spec(
                 @cascade.PropertyValue::Value(v) => {
                   let prop = decl.property.to_lower()
                   if prop == "content" {
-                    content_parts = parse_content_parts(v)
+                    content_specified = true
+                    let normalized = v.trim().to_lower().to_string()
+                    if normalized == "none" || normalized == "normal" {
+                      content_parts = None
+                      content_disabled = true
+                    } else {
+                      content_parts = parse_content_parts(v)
+                      content_disabled = false
+                    }
                   } else if prop == "position" {
                     let pos = v.trim().to_lower()
                     if pos == "relative" {
@@ -2925,12 +2966,11 @@ fn resolve_pseudo_spec(
                     }
                   } else if prop == "left" {
                     left_offset = parse_relative_left_offset(v, host_style)
-                  } else if prop == "font" ||
-                    prop == "font-size" ||
-                    prop == "line-height" ||
-                    prop == "white-space" ||
-                    prop == "writing-mode" {
-                    text_style = apply_css_property(text_style, prop, v)
+                  }
+                  if prop != "content" {
+                    generated_style = apply_css_property(
+                      generated_style, prop, v,
+                    )
                   }
                 }
                 _ => ()
@@ -2943,23 +2983,20 @@ fn resolve_pseudo_spec(
     }
   }
 
-  match content_parts {
-    Some(parts) => {
-      let text = evaluate_content_parts(parts, counters)
-      if text.is_empty() {
-        None
-      } else {
-        Some({
-          content: text,
-          position_relative,
-          out_of_flow,
-          left_offset,
-          text_style,
-        })
-      }
-    }
-    None => None
+  if content_disabled || not(content_specified) {
+    return None
   }
+  let text = match content_parts {
+    Some(parts) => evaluate_content_parts(parts, counters)
+    None => ""
+  }
+  Some({
+    content: text,
+    position_relative,
+    out_of_flow,
+    left_offset,
+    generated_style,
+  })
 }
 
 ///|
@@ -3713,7 +3750,7 @@ fn element_to_node_with_styles(
 
   match before_pseudo {
     Some(spec) if not(spec.out_of_flow) =>
-      children.push(create_text_node(spec.content, spec.text_style))
+      children.push(create_generated_pseudo_node(spec, Before))
     _ => ()
   }
 
@@ -3803,7 +3840,7 @@ fn element_to_node_with_styles(
   }
   match after_pseudo {
     Some(spec) if not(spec.out_of_flow) =>
-      children.push(create_text_node(spec.content, spec.text_style))
+      children.push(create_generated_pseudo_node(spec, After))
     _ => ()
   }
 
@@ -4012,7 +4049,7 @@ fn element_to_node_with_styles_internal(
 
   match before_pseudo {
     Some(spec) if not(spec.out_of_flow) =>
-      children.push(create_text_node(spec.content, spec.text_style))
+      children.push(create_generated_pseudo_node(spec, Before))
     _ => ()
   }
 
@@ -4100,7 +4137,7 @@ fn element_to_node_with_styles_internal(
   }
   match after_pseudo {
     Some(spec) if not(spec.out_of_flow) =>
-      children.push(create_text_node(spec.content, spec.text_style))
+      children.push(create_generated_pseudo_node(spec, After))
     _ => ()
   }
   let node_id = make_node_id(elem)
@@ -5244,6 +5281,7 @@ fn compute_element_style_indexed(
         color: ps.color,
         font_size: ps.font_size,
         line_height: ps.font_size * lh_ratio,
+        white_space: ps.white_space,
         writing_mode: ps.writing_mode,
         direction: ps.direction,
       }
