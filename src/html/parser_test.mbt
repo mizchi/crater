@@ -146,6 +146,45 @@ test "parse_document with link stylesheet" {
 }
 
 ///|
+test "parse_document ignores bogus declaration text in body" {
+  let html =
+    #|<!~quirks>
+    #|<table><tr><td>A</td></tr></table>
+  let doc = @html.parse_document(html)
+
+  // Find body element (skip whitespace text nodes).
+  let mut body_elem : @html.Element? = None
+  for child in doc.root.children {
+    match child {
+      @html.Node::Element(e) => if e.tag == "body" { body_elem = Some(e) }
+      _ => ()
+    }
+  }
+  let body = match body_elem {
+    Some(e) => e
+    None => {
+      inspect(false, content="body_not_found")
+      return
+    }
+  }
+
+  // Bogus declaration should not leak as visible text.
+  let mut has_non_ws_text = false
+  let mut has_table = false
+  for child in body.children {
+    match child {
+      @html.Node::Text(t) =>
+        if not(t.trim().is_empty()) {
+          has_non_ws_text = true
+        }
+      @html.Node::Element(e) => if e.tag == "table" { has_table = true }
+    }
+  }
+  inspect(has_non_ws_text, content="false")
+  inspect(has_table, content="true")
+}
+
+///|
 test "parse anchor with text" {
   let html = "<a href=\"test\">Learn more</a>"
   match @html.parse(html) {

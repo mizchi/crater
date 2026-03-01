@@ -192,6 +192,7 @@ pub(all) struct Style {
   mut transform : Transform
   mut zoom : Double
   mut border_spacing : Double
+  mut border_spacing_vertical : Double
   mut border_collapse : BorderCollapse
   mut table_layout : TableLayout
   mut caption_side : CaptionSide

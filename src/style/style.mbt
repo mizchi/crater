@@ -492,7 +492,8 @@ pub(all) struct Style {
   // CSS zoom (affects layout scaling, inherited)
   mut zoom : Double // zoom factor (1.0 = 100%, 2.0 = 200%)
   // Table properties
-  mut border_spacing : Double // border-spacing in pixels (horizontal and vertical, simplified)
+  mut border_spacing : Double // border-spacing horizontal in pixels
+  mut border_spacing_vertical : Double // border-spacing vertical in pixels
   mut border_collapse : BorderCollapse // border-collapse: separate | collapse
   mut table_layout : TableLayout // table-layout: auto | fixed
   mut caption_side : CaptionSide // caption-side: top | bottom
@@ -597,6 +598,7 @@ pub fn Style::default() -> Style {
     transform: Transform::none(),
     zoom: 1.0,
     border_spacing: 0.0,
+    border_spacing_vertical: 0.0,
     border_collapse: Separate,
     table_layout: Auto,
     caption_side: Top,

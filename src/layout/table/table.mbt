@@ -20,6 +20,25 @@ fn max(a : Double, b : Double) -> Double {
 }
 
 ///|
+/// In collapsed border model, only half of the table border contributes to the
+/// inner table area on each side.
+fn table_border_inset(
+  border : @types.Rect[Double],
+  border_collapse : Bool,
+) -> @types.Rect[Double] {
+  if border_collapse {
+    {
+      left: border.left * 0.5,
+      right: border.right * 0.5,
+      top: border.top * 0.5,
+      bottom: border.bottom * 0.5,
+    }
+  } else {
+    border
+  }
+}
+
+///|
 /// Create a zero-sized layout for a node
 fn create_zero_layout(node : @node.Node) -> @types.Layout {
   let zero_rect : @types.Rect[Double] = {
@@ -345,6 +364,33 @@ fn collect_column_widths(
 }
 
 ///|
+/// Collect collapsed-column flags from colgroup/col definitions.
+/// Indexes match collect_column_widths() order.
+fn collect_collapsed_columns(table_node : @node.Node) -> Array[Bool] {
+  let collapsed_columns : Array[Bool] = []
+  for child in collect_table_effective_children(table_node) {
+    if is_table_column_group(child.style.display) {
+      let group_collapsed = child.style.visibility == @style.Collapse
+      for col in collect_table_effective_children(child) {
+        if is_table_column(col.style.display) {
+          let is_collapsed = group_collapsed ||
+            col.style.visibility == @style.Collapse
+          collapsed_columns.push(is_collapsed)
+        }
+      }
+    } else if is_table_column(child.style.display) {
+      collapsed_columns.push(child.style.visibility == @style.Collapse)
+    }
+  }
+  collapsed_columns
+}
+
+///|
+fn is_collapsed_column(collapsed_columns : Array[Bool], col_idx : Int) -> Bool {
+  col_idx < collapsed_columns.length() && collapsed_columns[col_idx]
+}
+
+///|
 /// Resolve column width from style
 fn resolve_col_width(col : @node.Node, parent_width : Double) -> Double? {
   match col.style.width {
@@ -605,6 +651,15 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
       None => measure_node_intrinsic_width(child)
     }
   }
+  fn child_intrinsic_min_width(child : @node.Node) -> Double {
+    match child.measure {
+      Some(mf) => {
+        let intrinsic = (mf.func)(10000.0, 10000.0)
+        intrinsic.min_width
+      }
+      None => measure_node_intrinsic_min_width(child)
+    }
+  }
 
   let mut has_inline_flow = false
   let mut inline_only = true
@@ -620,6 +675,7 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
   }
 
   let mut max_child_width = 0.0
+  let mut min_child_width = 0.0
   if inline_only && has_inline_flow {
     let mut current_line_width = 0.0
     for child in cell.children {
@@ -633,6 +689,7 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
         current_line_width = 0.0
       } else {
         current_line_width = current_line_width + child_intrinsic_width(child)
+        min_child_width = max(min_child_width, child_intrinsic_min_width(child))
       }
     }
     if current_line_width > max_child_width {
@@ -646,11 +703,16 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
       }
       let child_width = child_intrinsic_width(child)
       max_child_width = max(max_child_width, child_width)
+      min_child_width = max(min_child_width, child_intrinsic_min_width(child))
     }
   }
+  let max_content_contribution = max_child_width + box_extra
+  let min_content_contribution = min_child_width + box_extra
   let mut intrinsic_width = match explicit_width {
-    Some(w) => w
-    None => max_child_width + box_extra
+    // In auto table layout, explicit cell width is a preferred minimum.
+    // Long unbreakable content can still expand the column via min-content.
+    Some(w) => max(w, min_content_contribution)
+    None => max_content_contribution
   }
   // Table-cell intrinsic contribution should respect explicit min/max bounds.
   match style.max_width {
@@ -767,6 +829,91 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
 }
 
 ///|
+/// Measure min-content intrinsic width of a node recursively.
+/// This is used by table auto layout when explicit cell widths are present.
+fn measure_node_intrinsic_min_width(node : @node.Node) -> Double {
+  let style = node.style
+
+  match style.width {
+    @types.Length(w) => return w
+    _ => ()
+  }
+
+  match node.measure {
+    Some(mf) => {
+      let intrinsic = (mf.func)(10000.0, 10000.0)
+      return intrinsic.min_width
+    }
+    None => ()
+  }
+
+  let box_extra = if style.display == @types.Contents {
+    0.0
+  } else {
+    let padding = @types.resolve_rect_intrinsic(style.padding)
+    let border = @types.resolve_rect_intrinsic(style.border)
+    padding.horizontal_sum() + border.horizontal_sum()
+  }
+
+  let mut has_inline_flow = false
+  let mut inline_only = true
+  for child in node.children {
+    if not(is_in_flow_intrinsic_child(child)) {
+      continue
+    }
+    has_inline_flow = true
+    if not(is_inline_intrinsic_child(child)) {
+      inline_only = false
+      break
+    }
+  }
+
+  let mut min_child_width = 0.0
+  if inline_only && has_inline_flow {
+    for child in node.children {
+      if not(is_in_flow_intrinsic_child(child)) || child.id == "br" {
+        continue
+      }
+      min_child_width = max(
+        min_child_width,
+        measure_node_intrinsic_min_width(child),
+      )
+    }
+  } else {
+    for child in node.children {
+      if not(is_in_flow_intrinsic_child(child)) {
+        continue
+      }
+      min_child_width = max(
+        min_child_width,
+        measure_node_intrinsic_min_width(child),
+      )
+    }
+  }
+
+  let mut intrinsic_width = min_child_width + box_extra
+  match style.max_width {
+    @types.Length(max_w) =>
+      if intrinsic_width > max_w {
+        intrinsic_width = max_w
+      }
+    _ => ()
+  }
+  match style.min_width {
+    @types.Length(min_w) =>
+      if intrinsic_width < min_w {
+        intrinsic_width = min_w
+      }
+    _ => ()
+  }
+  if intrinsic_width < box_extra {
+    box_extra
+  } else {
+    intrinsic_width
+  }
+}
+
+///|
 /// Normalize row children into table cells.
 /// Non-cell children are wrapped into anonymous table-cell boxes.
 fn normalize_row_cells(row : @node.Node) -> Array[@node.Node] {
@@ -834,6 +981,7 @@ fn calculate_intrinsic_column_widths(
   num_columns : Int,
   border_spacing : Double,
   grid : Map[String, CellOccupancy],
+  collapsed_columns : Array[Bool],
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
@@ -887,24 +1035,46 @@ fn calculate_intrinsic_column_widths(
         continue
       }
 
+      let mut span_has_collapsed_column = false
+      let active_columns : Array[Int] = []
+      for i = 0; i < span; i = i + 1 {
+        let idx = col_index + i
+        if is_collapsed_column(collapsed_columns, idx) {
+          span_has_collapsed_column = true
+        } else {
+          active_columns.push(idx)
+        }
+      }
+      // Width contributions from cells spanning collapsed columns are clipped.
+      if span_has_collapsed_column || active_columns.length() == 0 {
+        col_index = col_index + raw_colspan
+        continue
+      }
+
       let cell_width = measure_cell_content_width(cell)
       let mut current_span_width = 0.0
-      for i = 0; i < span; i = i + 1 {
-        current_span_width = current_span_width + widths[col_index + i]
-        if i < span - 1 {
+      for i = 0; i < active_columns.length(); i = i + 1 {
+        let idx = active_columns[i]
+        current_span_width = current_span_width + widths[idx]
+        if i < active_columns.length() - 1 {
           current_span_width = current_span_width + border_spacing
         }
       }
 
       if cell_width > current_span_width {
-        let extra_per_col = (cell_width - current_span_width) / span.to_double()
-        for i = 0; i < span; i = i + 1 {
-          let idx = col_index + i
+        let extra_per_col = (cell_width - current_span_width) /
+          active_columns.length().to_double()
+        for idx in active_columns {
           widths[idx] = widths[idx] + extra_per_col
         }
       }
 
       col_index = col_index + raw_colspan
+    }
+  }
+  for i = 0; i < num_columns; i = i + 1 {
+    if is_collapsed_column(collapsed_columns, i) {
+      widths[i] = 0.0
     }
   }
   widths
@@ -922,6 +1092,7 @@ fn calculate_fixed_column_widths(
   available_width : Double,
   border_spacing : Double,
   col_widths : Array[Double?],
+  collapsed_columns : Array[Bool],
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
@@ -936,6 +1107,10 @@ fn calculate_fixed_column_widths(
   // Priority: col element width > first row cell width > auto
   let explicit_widths : Array[Double?] = []
   for i = 0; i < num_columns; i = i + 1 {
+    if is_collapsed_column(collapsed_columns, i) {
+      explicit_widths.push(Some(0.0))
+      continue
+    }
     // First check col element width
     if i < col_widths.length() {
       match col_widths[i] {
@@ -990,9 +1165,13 @@ fn calculate_fixed_column_widths(
 
   // Build final widths array
   for i = 0; i < num_columns; i = i + 1 {
-    match explicit_widths[i] {
-      Some(w) => widths.push(w)
-      None => widths.push(auto_col_width)
+    if is_collapsed_column(collapsed_columns, i) {
+      widths.push(0.0)
+    } else {
+      match explicit_widths[i] {
+        Some(w) => widths.push(w)
+        None => widths.push(auto_col_width)
+      }
     }
   }
   widths
@@ -1008,6 +1187,7 @@ fn calculate_column_widths(
   border_spacing : Double,
   col_widths : Array[Double?],
   grid : Map[String, CellOccupancy],
+  collapsed_columns : Array[Bool],
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
@@ -1016,7 +1196,7 @@ fn calculate_column_widths(
 
   // Use the same colspan/rowspan-aware intrinsic contribution model.
   let col_min_widths = calculate_intrinsic_column_widths(
-    rows, num_columns, border_spacing, grid,
+    rows, num_columns, border_spacing, grid, collapsed_columns,
   )
 
   // Calculate total spacing
@@ -1024,22 +1204,33 @@ fn calculate_column_widths(
 
   // Count columns with explicit widths from col elements and calc remaining width
   let mut fixed_width_total = 0.0
-  let mut has_col_widths = false
+  let mut has_explicit_col_widths = false
   for i = 0; i < col_widths.length() && i < num_columns; i = i + 1 {
     match col_widths[i] {
       Some(w) => {
         fixed_width_total = fixed_width_total + w
-        has_col_widths = true
+        has_explicit_col_widths = true
       }
       None => ()
     }
   }
+  let mut has_collapsed_columns = false
+  for i = 0; i < num_columns; i = i + 1 {
+    if is_collapsed_column(collapsed_columns, i) {
+      has_collapsed_columns = true
+      break
+    }
+  }
+  let has_col_widths = has_explicit_col_widths || has_collapsed_columns
 
   // If we have col widths, use them; otherwise use content-based distribution
   if has_col_widths {
     // Count auto columns
     let mut auto_col_count = 0
     for i = 0; i < num_columns; i = i + 1 {
+      if is_collapsed_column(collapsed_columns, i) {
+        continue
+      }
       if i >= col_widths.length() {
         auto_col_count = auto_col_count + 1
       } else {
@@ -1060,16 +1251,26 @@ fn calculate_column_widths(
     } else {
       0.0
     }
+    let should_fill_auto_columns = has_explicit_col_widths
 
     // Build final widths array
     for i = 0; i < num_columns; i = i + 1 {
-      if i < col_widths.length() {
+      if is_collapsed_column(collapsed_columns, i) {
+        widths.push(0.0)
+      } else if i < col_widths.length() {
         match col_widths[i] {
           Some(w) => widths.push(w)
-          None => widths.push(max(col_min_widths[i], auto_col_width))
+          None =>
+            if should_fill_auto_columns {
+              widths.push(max(col_min_widths[i], auto_col_width))
+            } else {
+              widths.push(col_min_widths[i])
+            }
         }
-      } else {
+      } else if should_fill_auto_columns {
         widths.push(max(col_min_widths[i], auto_col_width))
+      } else {
+        widths.push(col_min_widths[i])
       }
     }
   } else {
@@ -1103,6 +1304,11 @@ fn calculate_column_widths(
       for w in col_min_widths {
         widths.push(w * scale)
       }
+    }
+  }
+  for i = 0; i < num_columns; i = i + 1 {
+    if is_collapsed_column(collapsed_columns, i) {
+      widths[i] = 0.0
     }
   }
   widths
@@ -1316,6 +1522,7 @@ fn layout_row(
   let mut collapsed_border_width = 0.0
   let mut first_cell_left_border = 0.0
   let mut last_cell_right_border = 0.0
+  let mut prev_cell_right_border = 0.0
   let row_cells = get_row_cells(row)
   for cell_idx = 0; cell_idx < row_cells.length(); cell_idx = cell_idx + 1 {
     let child = row_cells[cell_idx]
@@ -1371,8 +1578,10 @@ fn layout_row(
       // Add shared border between cells (one per pair)
       if col_index > 0 {
         // Middle border is shared - use max of adjacent borders
-        collapsed_border_width = collapsed_border_width + cell_border.left
+        let shared = max(prev_cell_right_border, cell_border.left)
+        collapsed_border_width = collapsed_border_width + shared
       }
+      prev_cell_right_border = cell_border.right
     }
     let cell_layout = layout_cell(
       child, cell_width, cell_ctx, border_collapse, dispatch,
@@ -1416,9 +1625,9 @@ fn layout_row(
     // - x_offset tracks actual placed cells with their correct widths
     // - For rows with all cells, use x_offset-based calculation
     // - Add collapsed borders
-    let total_border = first_cell_left_border +
+    let total_border = first_cell_left_border * 0.5 +
       collapsed_border_width +
-      last_cell_right_border
+      last_cell_right_border * 0.5
     // If row has all columns, use x_offset; otherwise extend to full width
     if col_index >= column_widths.length() {
       x_offset - border_spacing + padding.right + border.right + total_border
@@ -1445,10 +1654,15 @@ fn layout_row(
   // 2. explicit_row_height (from row style)
   // 3. ctx.available_height (min height from table distribution)
   let min_height_from_table = ctx.available_height.unwrap_or(0.0)
-  let row_content_height = max(
+  let row_content_height_raw = max(
     max_height,
     max(explicit_row_height.unwrap_or(0.0), min_height_from_table),
   )
+  let row_content_height = if style.visibility == @style.Collapse {
+    0.0
+  } else {
+    row_content_height_raw
+  }
 
   // Update cell heights to match row height (for vertical alignment)
   let final_cell_layouts : Array[@types.Layout] = []
@@ -1502,15 +1716,27 @@ pub fn compute_intrinsic_size(
   }
   let padding = @types.resolve_rect_intrinsic(style.padding)
   let border = @types.resolve_rect_intrinsic(style.border)
-  let border_spacing = style.border_spacing
+  let is_border_collapse = style.border_collapse == @style.Collapse
+  let inner_border = table_border_inset(border, is_border_collapse)
+  let border_spacing_x = if is_border_collapse {
+    0.0
+  } else {
+    style.border_spacing
+  }
+  let border_spacing_y = if is_border_collapse {
+    0.0
+  } else {
+    style.border_spacing_vertical
+  }
 
   // Collect all rows and build occupancy grid
   let rows = collect_table_rows(node)
   let (grid, num_columns) = build_occupancy_grid(rows)
+  let collapsed_columns = collect_collapsed_columns(node)
   if parent_is_row {
     // Compute intrinsic width
     let intrinsic_col_widths = calculate_intrinsic_column_widths(
-      rows, num_columns, border_spacing, grid,
+      rows, num_columns, border_spacing_x, grid, collapsed_columns,
     )
     let intrinsic_content_width = if num_columns > 0 {
       let mut total = 0.0
@@ -1518,7 +1744,7 @@ pub fn compute_intrinsic_size(
         total = total + w
       }
       // Total spacing = (num_columns - 1) between + 2 for edges = num_columns + 1
-      total + border_spacing * (num_columns + 1).to_double()
+      total + border_spacing_x * (num_columns + 1).to_double()
     } else {
       // Anonymous table flow content contributes to intrinsic width when no
       // explicit table rows/cells exist.
@@ -1551,7 +1777,9 @@ pub fn compute_intrinsic_size(
       }
       anon_flow_intrinsic_width
     }
-    intrinsic_content_width + padding.horizontal_sum() + border.horizontal_sum()
+    intrinsic_content_width +
+    padding.horizontal_sum() +
+    inner_border.horizontal_sum()
   } else {
     // Compute intrinsic height
     let mut caption_intrinsic_height = 0.0
@@ -1568,11 +1796,11 @@ pub fn compute_intrinsic_size(
     let mut row_intrinsic_height = 0.0
     if rows.length() > 0 {
       // Row area includes edge spacing and between-row spacing.
-      row_intrinsic_height = border_spacing
+      row_intrinsic_height = border_spacing_y
       for row in rows {
         row_intrinsic_height = row_intrinsic_height +
           compute_row_intrinsic_height(row) +
-          border_spacing
+          border_spacing_y
       }
     }
 
@@ -1611,7 +1839,7 @@ pub fn compute_intrinsic_size(
     row_intrinsic_height +
     anon_flow_intrinsic_height +
     padding.vertical_sum() +
-    border.vertical_sum()
+    inner_border.vertical_sum()
   }
 }
 
@@ -1649,6 +1877,11 @@ fn compute_base_row_heights(
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
     let row_style = row.style
+
+    if row_style.visibility == @style.Collapse {
+      heights.push(0.0)
+      continue
+    }
 
     // Check for explicit row height
     let mut max_height = match row_style.height {
@@ -1795,12 +2028,22 @@ fn collect_rowspan_cells(rows : Array[@node.Node]) -> Array[RowspanCellInfo] {
 }
 
 ///|
+fn collect_collapsed_row_flags(rows : Array[@node.Node]) -> Array[Bool] {
+  let flags : Array[Bool] = []
+  for row in rows {
+    flags.push(row.style.visibility == @style.Collapse)
+  }
+  flags
+}
+
+///|
 /// Distribute rowspan cell heights across spanned rows
 /// Modifies heights array in place
 fn distribute_rowspan_heights(
   heights : Array[Double],
   rowspan_cells : Array[RowspanCellInfo],
   border_spacing : Double,
+  collapsed_rows : Array[Bool],
 ) -> Unit {
   for cell_info in rowspan_cells {
     let start = cell_info.start_row
@@ -1811,6 +2054,19 @@ fn distribute_rowspan_heights(
     let actual_end = if end > heights.length() { heights.length() } else { end }
     let actual_span = actual_end - start
     if actual_span <= 0 {
+      continue
+    }
+
+    // Cells spanning collapsed rows should not force row growth.
+    // Their overflow is clipped to visible row area.
+    let mut spans_collapsed_row = false
+    for i = start; i < actual_end; i = i + 1 {
+      if i < collapsed_rows.length() && collapsed_rows[i] {
+        spans_collapsed_row = true
+        break
+      }
+    }
+    if spans_collapsed_row {
       continue
     }
 
@@ -2029,13 +2285,19 @@ pub fn compute(
 
   // Check if border-collapse is enabled
   let is_border_collapse = style.border_collapse == @style.Collapse
+  let inner_border = table_border_inset(border, is_border_collapse)
 
   // Border spacing from style (inherited from table element)
   // If border-collapse is collapse, border-spacing is effectively 0
-  let border_spacing = if is_border_collapse {
+  let border_spacing_x = if is_border_collapse {
     0.0
   } else {
     style.border_spacing
+  }
+  let border_spacing_y = if is_border_collapse {
+    0.0
+  } else {
+    style.border_spacing_vertical
   }
 
   // Collect all rows and build occupancy grid
@@ -2046,10 +2308,11 @@ pub fn compute(
 
   // Collect column width specifications from col/colgroup elements
   let col_widths = collect_column_widths(node, ctx.available_width)
+  let collapsed_columns = collect_collapsed_columns(node)
 
   // Calculate intrinsic column widths first (for shrink-to-fit)
   let intrinsic_col_widths = calculate_intrinsic_column_widths(
-    rows, num_columns, border_spacing, grid,
+    rows, num_columns, border_spacing_x, grid, collapsed_columns,
   )
 
   // Calculate intrinsic table width (content width based on columns)
@@ -2120,7 +2383,7 @@ pub fn compute(
       total = total + w
     }
     // Total spacing = (num_columns - 1) between + 2 for edges = num_columns + 1
-    total + border_spacing * (num_columns + 1).to_double()
+    total + border_spacing_x * (num_columns + 1).to_double()
   } else if caption_intrinsic_max_width > anon_flow_intrinsic_width {
     caption_intrinsic_max_width
   } else {
@@ -2130,7 +2393,7 @@ pub fn compute(
   // Calculate table width: shrink-to-fit for auto, unless in stretch context
   let intrinsic_table_width = intrinsic_content_width +
     padding.horizontal_sum() +
-    border.horizontal_sum()
+    inner_border.horizontal_sum()
   let mut table_width = if ctx.stretch_width {
     // Flex/grid parents may have already resolved the used main size.
     // Respect that definite size for table layout.
@@ -2187,7 +2450,7 @@ pub fn compute(
       @types.Auto => ()
     }
   }
-  let min_table_width = padding.horizontal_sum() + border.horizontal_sum()
+  let min_table_width = padding.horizontal_sum() + inner_border.horizontal_sum()
   if table_width < min_table_width {
     table_width = min_table_width
   }
@@ -2210,11 +2473,11 @@ pub fn compute(
   // Content width = table width - padding - border
   let content_width = max(
     0.0,
-    table_width - padding.horizontal_sum() - border.horizontal_sum(),
+    table_width - padding.horizontal_sum() - inner_border.horizontal_sum(),
   )
 
   // Row content width excludes edge spacing (only columns + between-column spacing)
-  let edge_spacing = border_spacing * 2.0
+  let edge_spacing = border_spacing_x * 2.0
   let row_content_width = max(0.0, content_width - edge_spacing)
 
   // Check if using fixed layout
@@ -2226,12 +2489,12 @@ pub fn compute(
     // In visual order, thead comes before tbody
     let first_row = get_first_visual_row(node)
     calculate_fixed_column_widths(
-      first_row, num_columns, row_content_width, border_spacing, col_widths,
+      first_row, num_columns, row_content_width, border_spacing_x, col_widths, collapsed_columns,
     )
   } else {
     // Auto layout: use content-based distribution
     calculate_column_widths(
-      rows, num_columns, row_content_width, border_spacing, col_widths, grid,
+      rows, num_columns, row_content_width, border_spacing_x, col_widths, grid, collapsed_columns,
     )
   }
 
@@ -2270,7 +2533,7 @@ pub fn compute(
         @types.Percent(p) =>
           ctx.available_height.unwrap_or(0.0) * p +
           padding.vertical_sum() +
-          border.vertical_sum()
+          inner_border.vertical_sum()
         _ => 0.0
       },
       match style.max_height {
@@ -2278,7 +2541,7 @@ pub fn compute(
         @types.Percent(p) =>
           ctx.available_height.unwrap_or(0.0) * p +
           padding.vertical_sum() +
-          border.vertical_sum()
+          inner_border.vertical_sum()
         _ => 1.0e10
       },
     )
@@ -2292,7 +2555,7 @@ pub fn compute(
       Some(
         ctx.available_height.unwrap_or(0.0) * p +
         padding.vertical_sum() +
-        border.vertical_sum(),
+        inner_border.vertical_sum(),
       )
     _ => None
   }
@@ -2338,9 +2601,12 @@ pub fn compute(
 
     // Step 2: Collect all rowspan cells
     let rowspan_cells = collect_rowspan_cells(rows)
+    let collapsed_rows = collect_collapsed_row_flags(rows)
 
     // Step 3: Distribute rowspan cell heights across spanned rows
-    distribute_rowspan_heights(base_heights, rowspan_cells, border_spacing)
+    distribute_rowspan_heights(
+      base_heights, rowspan_cells, border_spacing_y, collapsed_rows,
+    )
 
     // Step 3.5: Table padding contributes to the row grid edges.
     // Put top/bottom padding into first/last row so row-group/cell sizes
@@ -2359,14 +2625,14 @@ pub fn compute(
     match target_table_height {
       Some(h) => {
         // Calculate current total row height
-        let mut current_total = border_spacing // top edge
+        let mut current_total = border_spacing_y // top edge
         for i = 0; i < base_heights.length(); i = i + 1 {
           current_total = current_total + base_heights[i]
-          current_total = current_total + border_spacing
+          current_total = current_total + border_spacing_y
         }
         let available_content_height = h -
           padding.vertical_sum() -
-          border.vertical_sum()
+          inner_border.vertical_sum()
 
         // If explicit height is larger, distribute extra evenly
         if available_content_height > current_total && row_count > 0 {
@@ -2443,7 +2709,7 @@ pub fn compute(
 
   // Layout all children (including row groups)
   // y_offset includes top edge spacing
-  let mut y_offset = padding.top + border.top
+  let mut y_offset = padding.top + inner_border.top
 
   // First: layout top captions
   for entry in top_captions {
@@ -2473,7 +2739,7 @@ pub fn compute(
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
     let positioned_caption = {
       ..caption_layout,
-      x: padding.left + border.left,
+      x: padding.left + inner_border.left,
       y: y_offset,
     }
     y_offset = y_offset + caption_layout.height
@@ -2484,11 +2750,11 @@ pub fn compute(
   }
 
   // Add border-spacing before rows
-  y_offset = y_offset + border_spacing
+  y_offset = y_offset + border_spacing_y
   let row_flow_start_y = y_offset
 
   // x position for rows includes left edge spacing
-  let row_x_offset = padding.left + border.left + border_spacing
+  let row_x_offset = padding.left + inner_border.left + border_spacing_x
 
   // Track global row index (matching order in collect_table_rows)
   let mut global_row_idx = 0
@@ -2603,7 +2869,7 @@ pub fn compute(
         available_height: row_height,
       }
       let row_layout = layout_row(
-        anon_row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+        anon_row, global_row_idx, column_widths, border_spacing_x, row_ctx, is_border_collapse,
         grid, dispatch,
       )
       let run_indices : Array[Int] = []
@@ -2632,8 +2898,12 @@ pub fn compute(
           )
         }
       }
-      let advance = row_layout.height + border_spacing
-      y_offset = y_offset + row_layout.height + border_spacing
+      let advance = if anon_row.style.visibility == @style.Collapse {
+        0.0
+      } else {
+        row_layout.height + border_spacing_y
+      }
+      y_offset = y_offset + advance
       row_flow_items.push({ indices: run_indices, base_y, advance, bucket: 1 })
       global_row_idx = global_row_idx + 1
       pending_direct_cells = []
@@ -2673,7 +2943,7 @@ pub fn compute(
           available_height: row_height,
         }
         let row_layout = layout_row(
-          child, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+          child, global_row_idx, column_widths, border_spacing_x, row_ctx, is_border_collapse,
           grid, dispatch,
         )
         // Apply position: relative offset for rows
@@ -2688,8 +2958,12 @@ pub fn compute(
           y: y_offset + rel_y,
         }
         let indices : Array[Int] = [idx]
-        let advance = row_layout.height + border_spacing
-        y_offset = y_offset + row_layout.height + border_spacing
+        let advance = if child.style.visibility == @style.Collapse {
+          0.0
+        } else {
+          row_layout.height + border_spacing_y
+        }
+        y_offset = y_offset + advance
         layout_map[idx] = wrap_layout_with_contents_wrappers(
           positioned_row,
           entry.wrappers,
@@ -2710,7 +2984,9 @@ pub fn compute(
           parent_width,
         )
         let group_border = @types.resolve_rect(group_style.border, parent_width)
-        for row in normalize_row_group_rows(child) {
+        let group_rows = normalize_row_group_rows(child)
+        for row_idx = 0; row_idx < group_rows.length(); row_idx = row_idx + 1 {
+          let row = group_rows[row_idx]
           // Use pre-calculated row height for rows in row groups
           let row_height = if global_row_idx < row_heights.length() {
             Some(row_heights[global_row_idx])
@@ -2722,7 +2998,7 @@ pub fn compute(
             available_height: row_height,
           }
           let row_layout = layout_row(
-            row, global_row_idx, column_widths, border_spacing, row_ctx, is_border_collapse,
+            row, global_row_idx, column_widths, border_spacing_x, row_ctx, is_border_collapse,
             grid, dispatch,
           )
           // Apply position: relative offset for rows inside groups
@@ -2736,7 +3012,27 @@ pub fn compute(
             x: group_padding.left + group_border.left + rel_x,
             y: group_y + group_padding.top + group_border.top + rel_y,
           }
-          group_y = group_y + row_layout.height + border_spacing
+          let mut has_visible_next_row = false
+          for next_idx = row_idx + 1
+              next_idx < group_rows.length()
+              next_idx = next_idx + 1 {
+            if group_rows[next_idx].style.visibility != @style.Collapse {
+              has_visible_next_row = true
+              break
+            }
+          }
+          let spacing_after_row = if row.style.visibility == @style.Collapse ||
+            not(has_visible_next_row) {
+            0.0
+          } else {
+            border_spacing_y
+          }
+          let row_advance = if row.style.visibility == @style.Collapse {
+            0.0
+          } else {
+            row_layout.height + spacing_after_row
+          }
+          group_y = group_y + row_advance
           // Track max row width for consistent group width
           max_row_width = max(max_row_width, row_layout.width)
           if row.id.has_prefix("__anon-table-rowgrp-row-") {
@@ -2752,15 +3048,9 @@ pub fn compute(
           }
           global_row_idx = global_row_idx + 1
         }
-        // Group height excludes trailing border-spacing
-        let group_height = if group_y > 0.0 {
-          group_y -
-          border_spacing +
+        let group_height = group_y +
           group_padding.vertical_sum() +
           group_border.vertical_sum()
-        } else {
-          group_padding.vertical_sum() + group_border.vertical_sum()
-        }
         // In border-collapse mode, use actual row width; otherwise use row_content_width
         let group_width = if is_border_collapse && max_row_width > 0.0 {
           max_row_width +
@@ -2801,8 +3091,8 @@ pub fn compute(
           _ => 1
         }
         let indices : Array[Int] = [idx]
-        let advance = group_height + border_spacing
-        y_offset = y_offset + group_height + border_spacing
+        let advance = group_height + border_spacing_y
+        y_offset = y_offset + group_height + border_spacing_y
         layout_map[idx] = wrap_layout_with_contents_wrappers(
           group_layout,
           entry.wrappers,
@@ -2843,7 +3133,7 @@ pub fn compute(
               children: [],
               text: col.text,
             }
-            col_x = col_x + col_width + border_spacing
+            col_x = col_x + col_width + border_spacing_x
             table_col_idx = table_col_idx + 1
             col_layouts.push(col_layout)
           } else {
@@ -2852,7 +3142,7 @@ pub fn compute(
         }
         // Calculate colgroup total width
         let colgroup_width = if col_x > 0.0 {
-          col_x - border_spacing
+          col_x - border_spacing_x
         } else {
           0.0
         }
@@ -2899,7 +3189,7 @@ pub fn compute(
         layout_map[idx] = wrap_layout_with_contents_wrappers(
           {
             id: child.id,
-            x: column_start_x(column_widths, table_col_idx, border_spacing),
+            x: column_start_x(column_widths, table_col_idx, border_spacing_x),
             y: 0.0,
             width: col_width,
             height: 0.0,
@@ -2997,7 +3287,7 @@ pub fn compute(
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
     let positioned_caption = {
       ..caption_layout,
-      x: padding.left + border.left,
+      x: padding.left + inner_border.left,
       y: y_offset,
     }
     y_offset = y_offset + caption_layout.height
@@ -3010,7 +3300,7 @@ pub fn compute(
   // Calculate table height
   // y_offset includes table padding/border offsets already.
   // Convert back to content height before adding box model in final height.
-  let content_height = y_offset - padding.top - border.top
+  let content_height = y_offset - padding.top - inner_border.top
   let has_rendered_content = row_count > 0 ||
     has_anon_flow_children ||
     top_captions.length() > 0 ||
@@ -3018,18 +3308,21 @@ pub fn compute(
   let raw_table_height = if has_rendered_content {
     match style.height {
       @types.Length(h) =>
-        max(h, content_height + padding.vertical_sum() + border.vertical_sum())
+        max(
+          h,
+          content_height + padding.vertical_sum() + inner_border.vertical_sum(),
+        )
       @types.Percent(p) => {
         let parent_h = ctx.available_height.unwrap_or(0.0)
         max(
-          parent_h * p + padding.vertical_sum() + border.vertical_sum(),
-          content_height + padding.vertical_sum() + border.vertical_sum(),
+          parent_h * p + padding.vertical_sum() + inner_border.vertical_sum(),
+          content_height + padding.vertical_sum() + inner_border.vertical_sum(),
         )
       }
-      _ => content_height + padding.vertical_sum() + border.vertical_sum()
+      _ => content_height + padding.vertical_sum() + inner_border.vertical_sum()
     }
   } else {
-    padding.vertical_sum() + border.vertical_sum()
+    padding.vertical_sum() + inner_border.vertical_sum()
   }
   let clamped_min_height = max(raw_table_height, resolved_min_table_height)
   let mut table_height = if clamped_min_height > resolved_max_table_height {
@@ -3050,7 +3343,7 @@ pub fn compute(
 
   // Calculate row content height for colgroup/col height
   // This is the height of all rows (excluding padding/border)
-  let row_content_height = content_height - border_spacing
+  let row_content_height = content_height - border_spacing_y
 
   // Assemble child_layouts in original order from layout_map
   // Also update colgroup/col heights now that we know the table content height
@@ -3066,15 +3359,10 @@ pub fn compute(
           // This might be a colgroup - update its height and children's heights
           let updated_col_children : Array[@types.Layout] = []
           for col_layout in layout.children {
-            if col_layout.height == 0.0 && col_layout.width > 0.0 {
-              // This is a col element
-              updated_col_children.push({
-                ..col_layout,
-                height: row_content_height,
-              })
-            } else {
-              updated_col_children.push(col_layout)
-            }
+            updated_col_children.push({
+              ..col_layout,
+              height: row_content_height,
+            })
           }
           final_child_layouts.push({
             ..layout,

@@ -449,6 +449,51 @@ test "table content-based column widths" {
 }
 
 ///|
+test "table auto layout treats explicit cell width as minimum" {
+  let text_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Inline,
+  }
+  let wide_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 150.0, max_width: 150.0, min_height: 20.0, max_height: 20.0 }
+    },
+  }
+  let wide_text = @node.Node::with_measure("text", text_style, wide_measure)
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(100.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_spacing: 0.0,
+  }
+  let cell = @node.Node::new("cell", cell_style, [wide_text])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  inspect(layout.width, content="150")
+  inspect(layout.children[0].children[0].width, content="150")
+}
+
+///|
 /// Test shrink-to-fit behavior for table with auto width
 test "table shrink-to-fit width" {
   // Cells with explicit widths
@@ -551,6 +596,50 @@ test "table border-collapse" {
 
   // Cell border in layout should be 0 (collapsed borders don't add to dimensions)
   inspect(cell_layout.border.top, content="0")
+}
+
+///|
+test "table border-collapse uses half border for inner table area" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_collapse: @style.Collapse,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    border: {
+      left: @types.Length(20.0),
+      right: @types.Length(20.0),
+      top: @types.Length(20.0),
+      bottom: @types.Length(20.0),
+    },
+  }
+  let cell = @node.Node::new("cell", cell_style, [])
+  let row = @node.Node::new("row", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  inspect(layout.width, content="100")
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].width, content="80")
+  inspect(layout.children[0].height, content="80")
 }
 
 ///|
@@ -742,6 +831,130 @@ test "table-layout fixed standalone table-column boxes use resolved widths" {
   inspect(layout.children[1].width, content="200")
   inspect(layout.children[2].x, content="200")
   inspect(layout.children[2].width, content="0")
+}
+
+///|
+test "table column visibility collapse enforces zero-width track" {
+  let col1_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableColumn,
+    width: @types.Length(65.0),
+  }
+  let col2_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableColumn,
+    visibility: @style.Collapse,
+  }
+  let col3_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableColumn,
+    width: @types.Length(160.0),
+  }
+  let cell1_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(65.0),
+  }
+  let cell2_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(120.0),
+  }
+  let cell3_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(160.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_spacing: 0.0,
+  }
+
+  let col1 = @node.Node::new("col1", col1_style, [])
+  let col2 = @node.Node::new("col2", col2_style, [])
+  let col3 = @node.Node::new("col3", col3_style, [])
+  let td1 = @node.Node::new("td1", cell1_style, [])
+  let td2 = @node.Node::new("td2", cell2_style, [])
+  let td3 = @node.Node::new("td3", cell3_style, [])
+  let row = @node.Node::new("row", row_style, [td1, td2, td3])
+  let table = @node.Node::new("table", table_style, [col1, col2, col3, row])
+
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  inspect(layout.width, content="225")
+  inspect(layout.children[1].width, content="0")
+  inspect(layout.children[3].children[1].width, content="0")
+  inspect(layout.children[3].children[2].x, content="65")
+}
+
+///|
+test "table collapsed row suppresses vertical border spacing in rowspan flow" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(100.0),
+    padding: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+    },
+    rowspan: 2,
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let collapsed_row_style : @style.Style = {
+    ..row_style,
+    visibility: @style.Collapse,
+  }
+  let tbody_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRowGroup,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_spacing: 50.0,
+    border_spacing_vertical: 100.0,
+  }
+  let cell = @node.Node::new("cell", cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell])
+  let row2 = @node.Node::new("row2", collapsed_row_style, [])
+  let tbody = @node.Node::new("tbody", tbody_style, [row1, row2])
+  let table = @node.Node::new("table", table_style, [tbody])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  inspect(layout.height, content="200")
+  inspect(layout.children[0].height, content="0")
+  inspect(layout.children[0].children[1].y, content="0")
 }
 
 ///|

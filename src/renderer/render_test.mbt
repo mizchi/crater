@@ -3806,6 +3806,163 @@ test "intrinsic_percent_replaced_004_like_flex_parent_percent_height_chain" {
 }
 
 ///|
+test "quirks_table_cell_inline_size_preserves_table_display_model" {
+  let html_str =
+    #|<!~quirks>
+    #|<style>
+    #|  td {
+    #|    width: 50px;
+    #|    padding: 10px;
+    #|    border: 1px solid black;
+    #|    box-sizing: border-box;
+    #|  }
+    #|</style>
+    #|<table>
+    #|  <tr><td>A</td></tr>
+    #|</table>
+  let ctx = @renderer.RenderContext::default()
+  let node_root = @renderer.render_to_node(html_str, ctx)
+  let mut table_node : @node.Node? = None
+  for child in node_root.children {
+    if child.id == "table" {
+      table_node = Some(child)
+      break
+    }
+  }
+  let table = match table_node {
+    Some(node) => node
+    None => {
+      inspect(false, content="table_node_not_found")
+      return
+    }
+  }
+  let tbody = table.children[0]
+  let tr = tbody.children[0]
+  let td = tr.children[0]
+  inspect(table.style.display, content="Table")
+  inspect(table.style.width, content="Auto")
+  inspect(tbody.style.display, content="TableRowGroup")
+  inspect(tr.style.display, content="TableRow")
+  inspect(td.style.display, content="TableCell")
+
+  let layout_root = @renderer.render(html_str, ctx)
+  let mut table_layout : @types.Layout? = None
+  for child in layout_root.children {
+    if child.id == "table" {
+      table_layout = Some(child)
+      break
+    }
+  }
+  let table_box = match table_layout {
+    Some(node) => node
+    None => {
+      inspect(false, content="table_layout_not_found")
+      return
+    }
+  }
+  inspect(table_box.width, content="54")
+}
+
+///|
+test "mixed_inline_and_table_child_keeps_table_shrink_width" {
+  let html_str =
+    #|<!doctype html>
+    #|<a>Spec</a>
+    #|<table><tr><td>A</td></tr></table>
+  let ctx = @renderer.RenderContext::default()
+  let layout_root = @renderer.render(html_str, ctx)
+  let link = layout_root.children[0]
+  let table = layout_root.children[1]
+
+  inspect(link.id, content="a")
+  inspect(link.width, content="32")
+  inspect(table.id, content="table")
+  inspect(table.width, content="14")
+}
+
+///|
+test "wpt_visibility_collapse_border_spacing_002_layout" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|table#t {
+    #|  border-spacing: 50px 100px;
+    #|}
+    #|td {
+    #|  width: 100px;
+    #|  padding: 0;
+    #|}
+    #|tr + tr {
+    #|  visibility: collapse;
+    #|}
+    #|</style>
+    #|<table id="t">
+    #|  <tr><td rowspan="2"></td></tr>
+    #|  <tr></tr>
+    #|</table>
+  let ctx = @renderer.RenderContext::default()
+  let node_root = @renderer.render_to_node(html_str, ctx)
+  let mut table_node : @node.Node? = None
+  for child in node_root.children {
+    if child.id == "table#t" {
+      table_node = Some(child)
+      break
+    }
+  }
+  let table = match table_node {
+    Some(node) => node
+    None => {
+      inspect(false, content="table_node_not_found")
+      return
+    }
+  }
+  let tbody = table.children[0]
+  let collapsed_row = tbody.children[1]
+  inspect(table.style.border_spacing, content="50")
+  inspect(table.style.border_spacing_vertical, content="100")
+  inspect(tbody.style.display, content="TableRowGroup")
+  inspect(collapsed_row.style.visibility, content="Collapse")
+
+  let layout_root = @renderer.render(html_str, ctx)
+  let mut table_layout : @types.Layout? = None
+  for child in layout_root.children {
+    if child.id == "table#t" {
+      table_layout = Some(child)
+      break
+    }
+  }
+  let table_box = match table_layout {
+    Some(layout) => layout
+    None => {
+      inspect(false, content="table_layout_not_found")
+      return
+    }
+  }
+  inspect(table_box.height, content="200")
+  inspect(table_box.children[0].height, content="0")
+  inspect(table_box.children[0].children[1].y, content="0")
+}
+
+///|
+test "ua_default_h1_uses_larger_heading_metrics" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>html, body { margin: 0; padding: 0; }</style>
+    #|<h1>Visibility collapse</h1>
+    #|<a href="#">Spec</a>
+  let ctx = @renderer.RenderContext::default()
+  let layout_root = @renderer.render(html_str, ctx)
+  let h1 = layout_root.children[0]
+  let link = layout_root.children[1]
+  guard h1.height > 30.0 else {
+    fail("h1 should use larger UA heading metrics")
+  }
+  guard link.y > 50.0 else {
+    fail("following inline content should be pushed by heading bottom margin")
+  }
+}
+
+///|
 test "intrinsic_ratio_replaced_box_sizing_like_first_case" {
   let html_str =
     #|<!DOCTYPE html>

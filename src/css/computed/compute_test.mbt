@@ -903,6 +903,22 @@ test "compute_inline border-collapse separate" {
 }
 
 ///|
+test "compute_inline border-spacing single value sets both axes" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("border-spacing: 8px", ctx)
+  inspect(style.border_spacing, content="8")
+  inspect(style.border_spacing_vertical, content="8")
+}
+
+///|
+test "compute_inline border-spacing two values sets vertical axis" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("border-spacing: 50px 100px", ctx)
+  inspect(style.border_spacing, content="50")
+  inspect(style.border_spacing_vertical, content="100")
+}
+
+///|
 test "compute_inline margin-trim block" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("margin-trim: block", ctx)

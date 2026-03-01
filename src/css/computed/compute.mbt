@@ -178,6 +178,7 @@ priv struct StyleBuilder {
   mut zoom : Double
   // Table properties
   mut border_spacing : Double
+  mut border_spacing_vertical : Double
   mut border_collapse : @style.BorderCollapse
   mut table_layout : @style.TableLayout
   mut caption_side : @style.CaptionSide
@@ -272,6 +273,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     transform: @style.Transform::none(),
     zoom: 1.0,
     border_spacing: 0.0,
+    border_spacing_vertical: 0.0,
     border_collapse: @style.BorderCollapse::Separate,
     table_layout: @style.TableLayout::Auto,
     caption_side: @style.CaptionSide::Top,
@@ -367,6 +369,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     transform: style.transform,
     zoom: style.zoom,
     border_spacing: style.border_spacing,
+    border_spacing_vertical: style.border_spacing_vertical,
     border_collapse: style.border_collapse,
     table_layout: style.table_layout,
     caption_side: style.caption_side,
@@ -471,6 +474,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     transform: self.transform,
     zoom: self.zoom,
     border_spacing: self.border_spacing,
+    border_spacing_vertical: self.border_spacing_vertical,
     border_collapse: self.border_collapse,
     table_layout: self.table_layout,
     caption_side: self.caption_side,
@@ -630,7 +634,15 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.BorderCollapse::Separate => "separate"
         @style.BorderCollapse::Collapse => "collapse"
       }
-    "border-spacing" => style.border_spacing.to_string() + "px"
+    "border-spacing" =>
+      if style.border_spacing == style.border_spacing_vertical {
+        style.border_spacing.to_string() + "px"
+      } else {
+        style.border_spacing.to_string() +
+        "px " +
+        style.border_spacing_vertical.to_string() +
+        "px"
+      }
     "writing-mode" =>
       match style.writing_mode {
         @style.WritingMode::HorizontalTb => "horizontal-tb"
@@ -1670,8 +1682,11 @@ fn apply_property(
     // Zoom (layout scaling, inherited)
     "zoom" => builder.zoom = parse_zoom(value)
     // Table properties
-    "border-spacing" =>
-      builder.border_spacing = parse_border_spacing(value, ctx)
+    "border-spacing" => {
+      let (horizontal, vertical) = parse_border_spacing(value, ctx)
+      builder.border_spacing = horizontal
+      builder.border_spacing_vertical = vertical
+    }
     "border-collapse" => builder.border_collapse = parse_border_collapse(value)
     "table-layout" => builder.table_layout = parse_table_layout(value)
     "caption-side" => builder.caption_side = parse_caption_side(value)
@@ -1793,22 +1808,32 @@ fn parse_margin_trim(value : String) -> @style.MarginTrim {
 
 ///|
 /// Parse border-spacing value (single value or two values)
-fn parse_border_spacing(value : String, ctx : ComputeContext) -> Double {
+fn parse_border_spacing(
+  value : String,
+  ctx : ComputeContext,
+) -> (Double, Double) {
   let v = value.trim()
   // Split by whitespace
   let parts : Array[StringView] = v
     .split(" ")
     .filter(fn(s) { not(s.is_empty()) })
     .collect()
-  // Use first value (or the only value)
-  if parts.length() >= 1 {
-    let dim = resolve_dimension(parts[0].to_string(), ctx)
-    match dim {
-      @types.Length(px) => return px
-      _ => return 0.0
-    }
+  if parts.length() == 0 {
+    return (0.0, 0.0)
   }
-  0.0
+  let horizontal = match resolve_dimension(parts[0].to_string(), ctx) {
+    @types.Length(px) => px
+    _ => 0.0
+  }
+  let vertical = if parts.length() >= 2 {
+    match resolve_dimension(parts[1].to_string(), ctx) {
+      @types.Length(px) => px
+      _ => horizontal
+    }
+  } else {
+    horizontal
+  }
+  (horizontal, vertical)
 }
 
 ///|

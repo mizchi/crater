@@ -235,6 +235,25 @@ fn Tokenizer::skip_doctype(self : Tokenizer) -> Token? {
 }
 
 ///|
+/// Skip bogus markup declaration <! ... > as a comment token.
+/// This matches HTML "bogus comment" handling for invalid doctypes like <!~quirks>.
+fn Tokenizer::skip_bogus_markup_declaration(self : Tokenizer) -> Token? {
+  if self.peek_at(0) != Some('<') || self.peek_at(1) != Some('!') {
+    return None
+  }
+  self.pos += 2 // Skip "<!"
+  let start = self.pos
+  while self.pos < self.len && self.peek_fast() != '>' {
+    self.advance()
+  }
+  let content = self.input.unsafe_substring(start~, end=self.pos)
+  if self.pos < self.len && self.peek_fast() == '>' {
+    self.advance()
+  }
+  Some(Token::Comment(content))
+}
+
+///|
 /// Skip comment <!-- ... -->
 /// Handles HTML5 abrupt closing of empty comment (<!--> and <!--->)
 fn Tokenizer::skip_comment(self : Tokenizer) -> Token? {
@@ -355,6 +374,15 @@ pub fn Tokenizer::next_token(self : Tokenizer) -> Token {
         self.peek_at(3) is Some('-') {
         // Comment
         match self.skip_comment() {
+          Some(t) => t
+          None => {
+            let _ = self.consume()
+            Token::Character('<')
+          }
+        }
+      } else if self.peek_at(1) is Some('!') {
+        // Bogus declaration (e.g. <!~quirks>) is parsed as comment.
+        match self.skip_bogus_markup_declaration() {
           Some(t) => t
           None => {
             let _ = self.consume()

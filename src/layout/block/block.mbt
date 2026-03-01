@@ -2039,7 +2039,12 @@ fn compute_mixed_content_layout(
         // Otherwise mixed-content path can incorrectly stretch them to the
         // parent's available height (e.g. viewport-sized body context).
         let child_height_for_ctx : Double? = match node.style.display {
-          @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
+          @types.Flex
+          | @types.InlineFlex
+          | @types.Grid
+          | @types.InlineGrid
+          | @types.Table
+          | @types.InlineTable =>
             match node.style.height {
               @types.Auto =>
                 if node.style.writing_mode.is_vertical() {
@@ -2060,11 +2065,15 @@ fn compute_mixed_content_layout(
           stretch_width: false,
           stretch_height: false,
         }
-        // Use dispatch for flex/grid containers, block layout for others
+        // Use dispatch for flex/grid/table containers, block layout for others
         let @node.DispatchFn(dispatch_fn) = dispatch
         let child_layout = match node.style.display {
-          @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid =>
-            dispatch_fn(node, child_ctx, dispatch)
+          @types.Flex
+          | @types.InlineFlex
+          | @types.Grid
+          | @types.InlineGrid
+          | @types.Table
+          | @types.InlineTable => dispatch_fn(node, child_ctx, dispatch)
           _ => {
             let raw = compute_with_collapse(node, child_ctx, warnings, dispatch)
             apply_initial_scroll_snap(node, raw.layout)

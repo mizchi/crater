@@ -835,6 +835,7 @@ fn should_preserve_inter_element_whitespace(
           parent_selector,
           sibling_index + 1,
           siblings.length(),
+          None,
         )
         let computed = compute_element_style_indexed(
           selector_elem,
@@ -1325,7 +1326,11 @@ fn collect_inline_content(
       @html.Node::Element(elem) => {
         element_sibling_index += 1
         let child_selector = html_to_selector_element_with_parent(
-          elem, parent_selector, element_sibling_index, element_sibling_count,
+          elem,
+          parent_selector,
+          element_sibling_index,
+          element_sibling_count,
+          None,
         )
         let has_generated_pseudo = selector_has_generated_pseudo_content(
           child_selector, stylesheets, ctx,
@@ -3891,7 +3896,15 @@ fn element_to_node_with_styles(
     own_counters
   }
   let mut prev_sibling_counters : Map[String, CounterEntry]? = None
+  let mut prev_selector_sibling : @selector.Element? = None
   let mut element_child_index = 0
+  let mut element_child_count = 0
+  for child in remaining_children {
+    match child {
+      @html.Node::Element(_) => element_child_count = element_child_count + 1
+      _ => ()
+    }
+  }
 
   // Process remaining children (elements and synthetic text nodes)
   for i, child in remaining_children {
@@ -3909,10 +3922,7 @@ fn element_to_node_with_styles(
         }
         // Update sibling info on selector element for child processing
         let child_selector = html_to_selector_element_with_parent(
-          child_elem,
-          selector_elem,
-          i + 1,
-          remaining_children.length(),
+          child_elem, selector_elem, element_child_index, element_child_count, prev_selector_sibling,
         )
         let child_style_for_counter = compute_element_style_indexed(
           child_selector,
@@ -3928,6 +3938,7 @@ fn element_to_node_with_styles(
           ctx, child_owner_id,
         )
         prev_sibling_counters = Some(child_own_counters)
+        prev_selector_sibling = Some(child_selector)
         let child_node = element_to_node_with_styles_internal(
           child_elem,
           child_selector,
@@ -4193,7 +4204,15 @@ fn element_to_node_with_styles_internal(
     own_counters
   }
   let mut prev_sibling_counters : Map[String, CounterEntry]? = None
+  let mut prev_selector_sibling : @selector.Element? = None
   let mut element_child_index = 0
+  let mut element_child_count = 0
+  for child in remaining_children {
+    match child {
+      @html.Node::Element(_) => element_child_count = element_child_count + 1
+      _ => ()
+    }
+  }
 
   // Process remaining children (elements and synthetic text nodes)
   for i, child in remaining_children {
@@ -4210,10 +4229,7 @@ fn element_to_node_with_styles_internal(
           None => copy_counter_state(child_seed_counters)
         }
         let child_selector = html_to_selector_element_with_parent(
-          child_elem,
-          selector_elem,
-          i + 1,
-          remaining_children.length(),
+          child_elem, selector_elem, element_child_index, element_child_count, prev_selector_sibling,
         )
         let child_style_for_counter = compute_element_style_indexed(
           child_selector,
@@ -4229,6 +4245,7 @@ fn element_to_node_with_styles_internal(
           ctx, child_owner_id,
         )
         prev_sibling_counters = Some(child_own_counters)
+        prev_selector_sibling = Some(child_selector)
         let child_node = element_to_node_with_styles_internal(
           child_elem,
           child_selector,
@@ -5010,6 +5027,7 @@ fn html_to_selector_element_with_parent(
   parent : @selector.Element,
   sibling_index : Int,
   sibling_count : Int,
+  prev_sibling : @selector.Element?,
 ) -> @selector.Element {
   let mut sel_elem = @selector.Element::new(elem.tag)
 
@@ -5032,6 +5050,7 @@ fn html_to_selector_element_with_parent(
   // Set parent and sibling info
   sel_elem = sel_elem.set_parent(parent)
   sel_elem = sel_elem.set_sibling_info(sibling_index, sibling_count)
+  sel_elem = { ..sel_elem, prev_sibling, }
   sel_elem
 }
 
@@ -5105,14 +5124,16 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       }
     "h1" =>
       {
-        // h1 has 0.67em margin
+        // h1 UA defaults: bold 2em heading with block margins.
         ..default_style,
-        margin: @types.Rect::new(
-          @types.Length(10.7),
-          @types.Auto,
-          @types.Length(10.7),
-          @types.Auto,
-        ),
+        font_size: 32.0,
+        line_height: 38.4,
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(21.44),
+          bottom: @types.Length(21.44),
+        },
       }
     "h2" =>
       {
@@ -5434,7 +5455,7 @@ fn compute_element_style_indexed(
   style = { ..style, display: ua_style.display }
   style = { ..style, box_sizing: ua_style.box_sizing }
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
-  if selector_elem.tag_name.to_lower() == "button" {
+  if ua_style.font_size != 16.0 || ua_style.line_height != 16.0 {
     style = {
       ..style,
       font_size: ua_style.font_size,

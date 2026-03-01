@@ -41,6 +41,40 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
     expect(result?.maxHeight).toBe(20);
   });
 
+  it("collapses newline-only whitespace into a single visual line in normal mode", () => {
+    const fn = createTextIntrinsicFnFromMeasureText((text) => text.length * 10);
+    const result = fn(
+      "\n      Needs border\n    ",
+      16,
+      20,
+      "normal",
+      "horizontal-tb",
+      1000,
+      600,
+    );
+
+    expect(result?.maxHeight).toBe(20);
+    expect(result?.minHeight).toBe(20);
+  });
+
+  it("treats whitespace-only text as zero-height in normal mode", () => {
+    const fn = createTextIntrinsicFnFromMeasureText((text) => text.length * 10);
+    const result = fn(
+      "\n      \n    ",
+      16,
+      20,
+      "normal",
+      "horizontal-tb",
+      1000,
+      600,
+    );
+
+    expect(result?.maxWidth).toBe(0);
+    expect(result?.minWidth).toBe(0);
+    expect(result?.maxHeight).toBe(0);
+    expect(result?.minHeight).toBe(0);
+  });
+
   it("adapts measureText-only modules instead of treating them as intrinsic providers", () => {
     const fn = resolveTextIntrinsicFn({
       measureText: () => 0,

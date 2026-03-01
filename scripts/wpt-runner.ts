@@ -160,22 +160,51 @@ export function createTextIntrinsicFnFromMeasureText(
       const measured = measureText(s, fontSize);
       return resolveMeasuredAdvance(measured, s, fontSize);
     };
-    const explicitLines = text.split('\n');
-    const maxWidth = explicitLines.reduce((acc, line) => Math.max(acc, measure(line)), 0);
-    const minWordWidth = explicitLines.reduce((acc, line) => {
+    const whiteSpaceMode = whiteSpace.toLowerCase();
+    const preserveSpaces =
+      whiteSpaceMode === 'pre' ||
+      whiteSpaceMode === 'pre-wrap' ||
+      whiteSpaceMode === 'break-spaces';
+    const preserveLineBreaks =
+      whiteSpaceMode === 'pre' ||
+      whiteSpaceMode === 'pre-wrap' ||
+      whiteSpaceMode === 'pre-line' ||
+      whiteSpaceMode === 'break-spaces';
+    const normalizedText = text.replace(/\r\n?/g, '\n');
+    const lineSource = preserveLineBreaks
+      ? normalizedText
+      : normalizedText.replace(/\s+/g, ' ').trim();
+    const rawLines = preserveLineBreaks ? lineSource.split('\n') : [lineSource];
+    const normalizeLine = (line: string): string => {
+      if (preserveSpaces) return line;
+      return line.replace(/[ \t\f\v\r]+/g, ' ').trim();
+    };
+    const normalizedLines = rawLines.map(normalizeLine);
+    const hasRenderableText = normalizedLines.some(line => line.length > 0);
+    if (!hasRenderableText && !preserveLineBreaks) {
+      return {
+        minWidth: 0,
+        maxWidth: 0,
+        minHeight: 0,
+        maxHeight: 0,
+      };
+    }
+    const maxWidth = normalizedLines.reduce((acc, line) => Math.max(acc, measure(line)), 0);
+    const minWordWidth = normalizedLines.reduce((acc, line) => {
       const words = line.split(/\s+/).filter(Boolean);
       if (words.length === 0) return acc;
       return Math.max(acc, ...words.map(word => measure(word)));
     }, 0);
-    const noWrap = whiteSpace.toLowerCase().includes('nowrap');
+    const noWrap = whiteSpaceMode.includes('nowrap') || whiteSpaceMode === 'pre';
     const spaceWidth = measure(' ');
     let wrappedLines = 0;
-    for (const line of explicitLines) {
+    for (const rawLine of rawLines) {
+      const line = normalizeLine(rawLine);
       if (noWrap || availableWidth <= 0) {
         wrappedLines += 1;
         continue;
       }
-      const words = line.trim().split(/\s+/).filter(Boolean);
+      const words = line.split(/\s+/).filter(Boolean);
       if (words.length === 0) {
         wrappedLines += 1;
         continue;
@@ -197,7 +226,8 @@ export function createTextIntrinsicFnFromMeasureText(
       }
       wrappedLines += 1;
     }
-    const minHeight = Math.max(explicitLines.length, 1) * effectiveLineHeight;
+    const minLineCount = preserveLineBreaks ? rawLines.length : 1;
+    const minHeight = Math.max(minLineCount, 1) * effectiveLineHeight;
     const maxHeight = Math.max(wrappedLines, 1) * effectiveLineHeight;
     const isVertical = writingMode.toLowerCase().includes('vertical');
     if (isVertical) {
@@ -463,10 +493,26 @@ async function configureExternalIntrinsicProviders(): Promise<void> {
 
   const textModule = await importFirstAvailable(textSpecifiers);
   const textFn = resolveTextIntrinsicFn(textModule);
+  const fallbackAdvanceRatio = Number(process.env.CRATER_FALLBACK_ADVANCE_RATIO ?? '0.4125');
+  const fallbackSingleWordSlope = Number(process.env.CRATER_FALLBACK_ADVANCE_SLOPE ?? '0.015');
+  const fallbackTextFn = createTextIntrinsicFnFromMeasureText(
+    (text: string, fontSize: number) => {
+      const effectiveSize = fontSize > 0 ? fontSize : 16;
+      const trimmed = text.trim();
+      const isShortSingleToken = trimmed.length > 0 &&
+        trimmed.length <= 6 &&
+        !/\s/.test(trimmed);
+      const scale = isShortSingleToken
+        ? 1 + Math.max(0, effectiveSize - 16) * fallbackSingleWordSlope
+        : 1;
+      const clampedScale = Math.min(scale, 1.3);
+      return text.length * effectiveSize * fallbackAdvanceRatio * clampedScale;
+    },
+  );
   if (textFn) {
     globalThis.__craterMeasureTextIntrinsic = textFn;
   } else {
-    delete globalThis.__craterMeasureTextIntrinsic;
+    globalThis.__craterMeasureTextIntrinsic = fallbackTextFn;
   }
 
   const imageModule = await importFirstAvailable(imageSpecifiers);
