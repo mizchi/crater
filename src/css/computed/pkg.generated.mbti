@@ -84,6 +84,8 @@ pub fn parse_scroll_snap_align(String) -> (@style.ScrollSnapAlign, @style.Scroll
 
 pub fn parse_scroll_snap_type(String) -> @style.ScrollSnapType
 
+pub fn parse_text_align(String) -> @style.TextAlign
+
 pub fn parse_white_space(String) -> @style.WhiteSpace
 
 pub fn parse_writing_mode(String) -> @style.WritingMode

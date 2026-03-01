@@ -149,6 +149,7 @@ priv struct StyleBuilder {
   mut font_size : Double
   mut line_height : Double
   // Text wrapping and direction
+  mut text_align : @style.TextAlign
   mut white_space : @style.WhiteSpace
   mut writing_mode : @style.WritingMode
   mut direction : @style.Direction
@@ -251,6 +252,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_row_end: @types.GridPlacement::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    text_align: @style.TextAlign::Start,
     white_space: @style.WhiteSpace::Normal,
     writing_mode: @style.WritingMode::HorizontalTb,
     direction: @style.Direction::Ltr,
@@ -345,6 +347,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     grid_row_end: style.grid_row.end,
     font_size: style.font_size,
     line_height: style.line_height,
+    text_align: style.text_align,
     white_space: style.white_space,
     writing_mode: style.writing_mode,
     direction: style.direction,
@@ -448,6 +451,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_self: self.justify_self,
     font_size: self.font_size,
     line_height: self.line_height,
+    text_align: self.text_align,
     white_space: self.white_space,
     writing_mode: self.writing_mode,
     direction: self.direction,
@@ -637,6 +641,15 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.direction {
         @style.Direction::Ltr => "ltr"
         @style.Direction::Rtl => "rtl"
+      }
+    "text-align" =>
+      match style.text_align {
+        @style.TextAlign::Start => "start"
+        @style.TextAlign::End => "end"
+        @style.TextAlign::Left => "left"
+        @style.TextAlign::Right => "right"
+        @style.TextAlign::Center => "center"
+        @style.TextAlign::Justify => "justify"
       }
     "white-space" =>
       match style.white_space {
@@ -1552,6 +1565,7 @@ fn apply_property(
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
       builder.line_height = parse_line_height(value, builder.font_size)
+    "text-align" => builder.text_align = parse_text_align(value)
     "white-space" => builder.white_space = parse_white_space(value)
     "writing-mode" => builder.writing_mode = parse_writing_mode(value)
     "direction" => builder.direction = parse_direction(value)

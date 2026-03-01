@@ -172,6 +172,7 @@ pub(all) struct Style {
   mut justify_self : @types.AlignSelf
   mut font_size : Double
   mut line_height : Double
+  mut text_align : TextAlign
   mut white_space : WhiteSpace
   mut writing_mode : WritingMode
   mut direction : Direction
@@ -210,6 +211,17 @@ pub(all) enum TableLayout {
 }
 pub impl Eq for TableLayout
 pub impl Show for TableLayout
+
+pub(all) enum TextAlign {
+  Start
+  End
+  Left
+  Right
+  Center
+  Justify
+}
+pub impl Eq for TextAlign
+pub impl Show for TextAlign
 
 pub(all) struct Transform {
   translate_x : TranslateValue

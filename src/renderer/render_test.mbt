@@ -680,12 +680,130 @@ test "wpt_column_scroll_marker_004_fieldset_multicol_fragments" {
     #|  </fieldset>
     #|</div>
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let node = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let raw_wrapper = node.children[0]
+  let raw_carousel = raw_wrapper.children[0]
+  inspect(raw_carousel.style.box_sizing, content="ContentBox")
+  inspect(raw_carousel.children.length(), content="16")
   let wrapper = layout.children[0]
   let container = wrapper.children[0]
   let content = container.children[1]
   inspect(container.id, content="fieldset#container")
   inspect(content.width, content="116.66666666666666")
   inspect(content.height, content="50")
+}
+
+///|
+test "wpt_targeted_column_scroll_marker_selection_001_static_layout_metrics" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  .wrapper {
+    #|    display: grid;
+    #|    justify-content: center;
+    #|  }
+    #|  .carousel {
+    #|    width: 800px;
+    #|    height: 200px;
+    #|    overflow-x: scroll;
+    #|    scroll-snap-type: x mandatory;
+    #|    list-style-type: none;
+    #|    scroll-behavior: smooth;
+    #|    border: solid 2px grey;
+    #|    padding-top: 10%;
+    #|    text-align: center;
+    #|    counter-set: markeridx -1;
+    #|    columns: 2;
+    #|
+    #|    &::column::scroll-marker {
+    #|      content: counter(markeridx);
+    #|      counter-increment: markeridx;
+    #|      align-content: center;
+    #|      text-align: center;
+    #|      width: 35px;
+    #|      height: 35px;
+    #|      border-radius: 50%;
+    #|      margin: 3px;
+    #|      background-color: red;
+    #|    }
+    #|    &::column::scroll-marker:target-current {
+    #|      background-color: green;
+    #|    }
+    #|    &>.item {
+    #|      scroll-snap-align: center;
+    #|      height: 80%;
+    #|      width: 158px;
+    #|      border: 1px solid;
+    #|      place-content: center;
+    #|      display: inline-block;
+    #|    }
+    #|
+    #|    scroll-marker-group: after;
+    #|
+    #|    &::scroll-marker-group {
+    #|      height: 45px;
+    #|      display: flex;
+    #|      align-items: center;
+    #|      justify-content: center;
+    #|      border: solid 1px black;
+    #|      border-radius: 30px;
+    #|    }
+    #|  }
+    #|</style>
+    #|<div class="wrapper" id="wrapper">
+    #|  <div class="carousel" id="carousel">
+    #|    <div class="item item0" tabindex=0>0</div>
+    #|    <div class="item item1" tabindex=0>1</div>
+    #|    <div class="item item2" tabindex=0>2</div>
+    #|    <div class="item item3" tabindex=0>3</div>
+    #|    <div class="item item4" tabindex=0>4</div>
+    #|    <div class="item item5" tabindex=0>5</div>
+    #|    <div class="item item6" tabindex=0>6</div>
+    #|    <div class="item item7" tabindex=0>7</div>
+    #|    <div class="item item8" tabindex=0>8</div>
+    #|    <div class="item item9" tabindex=0>9</div>
+    #|    <div class="item item10" tabindex=0>10</div>
+    #|    <div class="item item11" tabindex=0>11</div>
+    #|    <div class="item item12" tabindex=0>12</div>
+    #|    <div class="item item13" tabindex=0>13</div>
+    #|    <div class="item item14" tabindex=0>14</div>
+    #|    <div class="item item15" tabindex=0>15</div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let node = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let raw_wrapper = node.children[0]
+  let raw_carousel = raw_wrapper.children[0]
+  inspect(
+    raw_carousel.children.length(),
+    content=(
+      #|31
+    ),
+  )
+  let wrapper = layout.children[0]
+  let carousel = wrapper.children[0]
+  let item0 = carousel.children[0]
+  inspect(carousel.id, content="div#carousel")
+  inspect(carousel.padding.top, content="80.4")
+  inspect(carousel.height, content="284.4")
+  inspect(
+    item0.x,
+    content=(
+      #|30
+    ),
+  )
+  inspect(
+    item0.height,
+    content=(
+      #|160
+    ),
+  )
 }
 
 ///|

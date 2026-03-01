@@ -73,6 +73,17 @@ pub fn Direction::is_rtl(self : Direction) -> Bool {
 }
 
 ///|
+/// CSS text-align property
+pub(all) enum TextAlign {
+  Start
+  End
+  Left
+  Right
+  Center
+  Justify
+} derive(Show, Eq)
+
+///|
 /// CSS scroll-snap-type axis
 pub(all) enum ScrollSnapAxis {
   None
@@ -452,6 +463,7 @@ pub(all) struct Style {
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut line_height : Double // Computed line height in pixels (default = font_size)
   // Text wrapping and direction
+  mut text_align : TextAlign
   mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
   mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
   mut direction : Direction // direction: ltr | rtl (inline text direction)
@@ -565,6 +577,7 @@ pub fn Style::default() -> Style {
     justify_self: @types.AlignSelf::Auto,
     font_size: 16.0,
     line_height: 16.0,
+    text_align: Start,
     white_space: Normal,
     writing_mode: HorizontalTb,
     direction: Ltr,

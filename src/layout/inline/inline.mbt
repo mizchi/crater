@@ -725,6 +725,28 @@ fn LineBox::can_fit(
 }
 
 ///|
+fn resolve_text_align_offset(
+  text_align : @style.TextAlign,
+  direction : @style.Direction,
+  available_width : Double,
+  line_width : Double,
+) -> Double {
+  let remaining = if available_width > line_width {
+    available_width - line_width
+  } else {
+    0.0
+  }
+  match text_align {
+    @style.TextAlign::Center => remaining / 2.0
+    @style.TextAlign::Start => 0.0
+    @style.TextAlign::End => remaining
+    @style.TextAlign::Left => if direction.is_rtl() { remaining } else { 0.0 }
+    @style.TextAlign::Right => if direction.is_rtl() { 0.0 } else { remaining }
+    @style.TextAlign::Justify => 0.0
+  }
+}
+
+///|
 /// Result of IFC computation
 pub struct InlineLayoutResult {
   layouts : Array[@types.Layout] // Positioned child layouts
@@ -743,6 +765,7 @@ pub fn compute_ifc(
   dispatch : @node.DispatchFn,
   container_writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
   container_direction? : @style.Direction = @style.Direction::Ltr,
+  container_text_align? : @style.TextAlign = @style.TextAlign::Start,
   container_white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
 ) -> InlineLayoutResult {
   if children.length() == 0 {
@@ -1078,10 +1101,16 @@ pub fn compute_ifc(
       line_index < line_boxes.length()
       line_index = line_index + 1 {
     let line = line_boxes[line_index]
+    let line_offset = resolve_text_align_offset(
+      container_text_align,
+      container_direction,
+      available_width,
+      line.width,
+    )
     let mut current_x = if is_rtl_inline {
-      content_offset_x + available_width
+      content_offset_x + available_width - line_offset
     } else {
-      content_offset_x
+      content_offset_x + line_offset
     }
     for item_index = 0
         item_index < line.items.length()

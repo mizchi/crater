@@ -1610,6 +1610,65 @@ fn estimate_multicol_column_height_limit(
 }
 
 ///|
+fn resolve_text_align_offset(
+  text_align : @style.TextAlign,
+  direction : @style.Direction,
+  available_width : Double,
+  line_width : Double,
+) -> Double {
+  let remaining = if available_width > line_width {
+    available_width - line_width
+  } else {
+    0.0
+  }
+  match text_align {
+    @style.TextAlign::Center => remaining / 2.0
+    @style.TextAlign::Right => remaining
+    @style.TextAlign::Left => 0.0
+    @style.TextAlign::End => if direction.is_rtl() { 0.0 } else { remaining }
+    @style.TextAlign::Start => if direction.is_rtl() { remaining } else { 0.0 }
+    @style.TextAlign::Justify => 0.0
+  }
+}
+
+///|
+fn estimate_multicol_inline_line_width(
+  start_index : Int,
+  flow_children : Array[LayoutWithCollapse],
+  flow_styles : Array[@style.Style],
+  flow_nodes : Array[@node.Node],
+  column_width : Double,
+) -> Double {
+  let mut total = 0.0
+  let mut has_item = false
+  for j = start_index; j < flow_children.length(); j = j + 1 {
+    if j >= flow_styles.length() || j >= flow_nodes.length() {
+      break
+    }
+    let child_style = flow_styles[j]
+    if not(@inline.is_inline_level(child_style.display)) ||
+      child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed {
+      break
+    }
+    let child_node = flow_nodes[j]
+    if child_node.id == "br" {
+      break
+    }
+    let child_layout = flow_children[j].layout
+    let advance = child_layout.width +
+      child_layout.margin.left +
+      child_layout.margin.right
+    if has_item && column_width > 0.0 && total + advance > column_width {
+      break
+    }
+    total = total + advance
+    has_item = true
+  }
+  total
+}
+
+///|
 /// Calculate max-content height of children for intrinsic sizing
 /// This is used when min-height or max-height is max-content/min-content
 fn calculate_children_max_content_height(
@@ -1912,6 +1971,7 @@ fn compute_mixed_content_layout(
   dispatch : @node.DispatchFn,
   writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
   direction? : @style.Direction = @style.Direction::Ltr,
+  text_align? : @style.TextAlign = @style.TextAlign::Start,
   white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
 ) -> MixedContentResult {
   // In vertical writing-mode, blocks flow horizontally instead of vertically
@@ -1949,6 +2009,7 @@ fn compute_mixed_content_layout(
           dispatch,
           container_writing_mode=writing_mode,
           container_direction=direction,
+          container_text_align=text_align,
           container_white_space=white_space,
         )
         // Store layouts with original indices
@@ -2266,6 +2327,7 @@ fn compute_with_collapse(
         dispatch,
         container_writing_mode=style.writing_mode,
         container_direction=style.direction,
+        container_text_align=style.text_align,
         container_white_space=style.white_space,
       )
       let mut inline_width = 0.0
@@ -2712,8 +2774,8 @@ fn compute_with_collapse(
         Some(h * ratio)
       } else {
         // aspect-ratio applies to content-box:
-        // Width = (height - padding - border) * ratio + padding + border
-        let content_height = h - padding.vertical_sum() - border.vertical_sum()
+        // Width = content-height * ratio + padding + border.
+        let content_height = h
         Some(
           content_height * ratio +
           padding.horizontal_sum() +
@@ -2727,9 +2789,7 @@ fn compute_with_collapse(
           if style.box_sizing == @types.BorderBox {
             Some(h * ratio)
           } else {
-            let content_height = h -
-              padding.vertical_sum() -
-              border.vertical_sum()
+            let content_height = h
             Some(
               content_height * ratio +
               padding.horizontal_sum() +
@@ -2745,8 +2805,20 @@ fn compute_with_collapse(
     Some(w) => w
     None =>
       match style.width {
-        @types.Length(w) => w
-        @types.Percent(p) => parent_width * p
+        @types.Length(w) =>
+          if style.box_sizing == @types.BorderBox {
+            w
+          } else {
+            w + padding.horizontal_sum() + border.horizontal_sum()
+          }
+        @types.Percent(p) => {
+          let content_w = parent_width * p
+          if style.box_sizing == @types.BorderBox {
+            content_w
+          } else {
+            content_w + padding.horizontal_sum() + border.horizontal_sum()
+          }
+        }
         @types.Auto =>
           if use_max_content {
             // Will be computed from content - use parent_width as initial value for children
@@ -2767,11 +2839,25 @@ fn compute_with_collapse(
   // CSS spec: min-width takes precedence over max-width when they conflict
   // So apply max first, then min
   match style.max_width {
-    @types.Length(max_w) => if box_width > max_w { box_width = max_w }
+    @types.Length(max_w) => {
+      let max_box_w = if style.box_sizing == @types.BorderBox {
+        max_w
+      } else {
+        max_w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+      if box_width > max_box_w {
+        box_width = max_box_w
+      }
+    }
     @types.Percent(p) => {
-      let max_w = parent_width * p
-      if box_width > max_w {
-        box_width = max_w
+      let max_content_w = parent_width * p
+      let max_box_w = if style.box_sizing == @types.BorderBox {
+        max_content_w
+      } else {
+        max_content_w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+      if box_width > max_box_w {
+        box_width = max_box_w
       }
     }
     @types.MaxContent | @types.FitContent(_) => {
@@ -2789,9 +2875,7 @@ fn compute_with_collapse(
           if style.box_sizing == @types.BorderBox {
             h * ar
           } else {
-            (h - padding.vertical_sum() - border.vertical_sum()) * ar +
-            padding.horizontal_sum() +
-            border.horizontal_sum()
+            h * ar + padding.horizontal_sum() + border.horizontal_sum()
           }
         (Some(ar), @types.Percent(p)) if ar > 0.0 =>
           match parent_height_opt {
@@ -2800,9 +2884,7 @@ fn compute_with_collapse(
               if style.box_sizing == @types.BorderBox {
                 h * ar
               } else {
-                (h - padding.vertical_sum() - border.vertical_sum()) * ar +
-                padding.horizontal_sum() +
-                border.horizontal_sum()
+                h * ar + padding.horizontal_sum() + border.horizontal_sum()
               }
             }
             None => 0.0
@@ -2829,11 +2911,25 @@ fn compute_with_collapse(
     @types.Auto => ()
   }
   match style.min_width {
-    @types.Length(min_w) => if box_width < min_w { box_width = min_w }
+    @types.Length(min_w) => {
+      let min_box_w = if style.box_sizing == @types.BorderBox {
+        min_w
+      } else {
+        min_w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+      if box_width < min_box_w {
+        box_width = min_box_w
+      }
+    }
     @types.Percent(p) => {
-      let min_w = parent_width * p
-      if box_width < min_w {
-        box_width = min_w
+      let min_content_w = parent_width * p
+      let min_box_w = if style.box_sizing == @types.BorderBox {
+        min_content_w
+      } else {
+        min_content_w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+      if box_width < min_box_w {
+        box_width = min_box_w
       }
     }
     @types.MaxContent => {
@@ -3812,6 +3908,7 @@ fn compute_with_collapse(
       dispatch,
       container_writing_mode=style.writing_mode,
       container_direction=style.direction,
+      container_text_align=style.text_align,
       container_white_space=style.white_space,
     )
 
@@ -3885,10 +3982,20 @@ fn compute_with_collapse(
       content_height
     }
     let mut box_height = match style.height {
-      @types.Length(h) => h
+      @types.Length(h) =>
+        if style.box_sizing == @types.BorderBox {
+          h
+        } else {
+          h + padding.vertical_sum() + border.vertical_sum()
+        }
       @types.Percent(p) =>
         match parent_height_opt {
-          Some(ph) => ph * p
+          Some(ph) =>
+            if style.box_sizing == @types.BorderBox {
+              ph * p
+            } else {
+              ph * p + padding.vertical_sum() + border.vertical_sum()
+            }
           None =>
             content_height_for_auto +
             padding.vertical_sum() +
@@ -4046,6 +4153,7 @@ fn compute_with_collapse(
       dispatch,
       writing_mode=style.writing_mode,
       direction=style.direction,
+      text_align=style.text_align,
       white_space=style.white_space,
     )
     // fieldset legend overlays the top border line instead of participating in
@@ -4103,10 +4211,20 @@ fn compute_with_collapse(
       content_height
     }
     let mut box_height = match style.height {
-      @types.Length(h) => h
+      @types.Length(h) =>
+        if style.box_sizing == @types.BorderBox {
+          h
+        } else {
+          h + padding.vertical_sum() + border.vertical_sum()
+        }
       @types.Percent(p) =>
         match parent_height_opt {
-          Some(ph) => ph * p
+          Some(ph) =>
+            if style.box_sizing == @types.BorderBox {
+              ph * p
+            } else {
+              ph * p + padding.vertical_sum() + border.vertical_sum()
+            }
           None =>
             content_height_for_auto +
             padding.vertical_sum() +
@@ -4671,6 +4789,7 @@ fn compute_with_collapse(
   let mut inline_run_active = false
   let mut inline_run_x = 0.0
   let mut inline_run_height = 0.0
+  let mut inline_run_align_offset = 0.0
   let multicol_height_limit = if multicol_enabled {
     estimate_multicol_column_height_limit(
       child_available_height, flow_children, flow_styles, multicol_column_count,
@@ -4707,12 +4826,54 @@ fn compute_with_collapse(
         inline_run_active = false
         inline_run_x = 0.0
         inline_run_height = 0.0
+        inline_run_align_offset = 0.0
         prev_margin_end = 0.0
+      }
+      let child_inline_advance = child_layout.width +
+        child_layout.margin.left +
+        child_layout.margin.right
+      if multicol_participates_in_inline_run && child_node.id != "br" {
+        if inline_run_active &&
+          multicol_column_width > 0.0 &&
+          inline_run_x + child_inline_advance > multicol_column_width {
+          current_pos = current_pos + inline_run_height
+          inline_run_active = false
+          inline_run_x = 0.0
+          inline_run_height = 0.0
+          inline_run_align_offset = 0.0
+          prev_margin_end = 0.0
+        }
+        if not(inline_run_active) {
+          let line_width = estimate_multicol_inline_line_width(
+            i, flow_children, flow_styles, flow_nodes, multicol_column_width,
+          )
+          inline_run_align_offset = resolve_text_align_offset(
+            style.text_align,
+            style.direction,
+            multicol_column_width,
+            line_width,
+          )
+        }
       }
       let mut effective_pos = current_pos
       let child_outer_height = child_layout.height +
         child_layout.margin.top +
         child_layout.margin.bottom
+      if multicol_participates_in_inline_run &&
+        child_node.id != "br" &&
+        inline_run_x == 0.0 {
+        match multicol_height_limit {
+          Some(limit) if limit > 0.0 => {
+            let absolute_col = (effective_pos / limit).to_int()
+            let local_y = effective_pos - absolute_col.to_double() * limit
+            if local_y > 0.0 && local_y + child_outer_height > limit {
+              effective_pos = (absolute_col + 1).to_double() * limit
+              current_pos = effective_pos
+            }
+          }
+          _ => ()
+        }
+      }
       let multicol_fragmentable_box = child_style.column_span !=
         @style.ColumnSpan::All &&
         not(multicol_participates_in_inline_run)
@@ -4782,8 +4943,6 @@ fn compute_with_collapse(
             let local_y = effective_pos - absolute_col.to_double() * limit
             let col_offset = if child_style.column_span ==
               @style.ColumnSpan::All {
-              0.0
-            } else if multicol_participates_in_inline_run {
               0.0
             } else {
               column_index.to_double() *
@@ -4877,7 +5036,7 @@ fn compute_with_collapse(
               child_layout.children
             }
             let multicol_inline_run_offset = if multicol_participates_in_inline_run {
-              inline_run_x
+              inline_run_align_offset + inline_run_x
             } else {
               0.0
             }
@@ -4933,11 +5092,10 @@ fn compute_with_collapse(
                 inline_run_active = false
                 inline_run_x = 0.0
                 inline_run_height = 0.0
+                inline_run_align_offset = 0.0
                 prev_margin_end = 0.0
               } else {
-                let inline_advance = child_layout.width +
-                  child_layout.margin.left +
-                  child_layout.margin.right
+                let inline_advance = child_inline_advance
                 inline_run_x = inline_run_x + inline_advance
                 if inline_item_height > inline_run_height {
                   inline_run_height = inline_item_height
@@ -4961,7 +5119,7 @@ fn compute_with_collapse(
         _ => ()
       }
       let multicol_inline_run_offset = if multicol_participates_in_inline_run {
-        inline_run_x
+        inline_run_align_offset + inline_run_x
       } else {
         0.0
       }
@@ -5011,11 +5169,10 @@ fn compute_with_collapse(
           inline_run_active = false
           inline_run_x = 0.0
           inline_run_height = 0.0
+          inline_run_align_offset = 0.0
           prev_margin_end = 0.0
         } else {
-          let inline_advance = child_layout.width +
-            child_layout.margin.left +
-            child_layout.margin.right
+          let inline_advance = child_inline_advance
           inline_run_x = inline_run_x + inline_advance
           if inline_item_height > inline_run_height {
             inline_run_height = inline_item_height
@@ -5037,6 +5194,7 @@ fn compute_with_collapse(
       inline_run_active = false
       inline_run_x = 0.0
       inline_run_height = 0.0
+      inline_run_align_offset = 0.0
       prev_margin_end = 0.0
     }
 
@@ -5465,6 +5623,7 @@ fn compute_with_collapse(
         inline_run_active = false
         inline_run_x = 0.0
         inline_run_height = 0.0
+        inline_run_align_offset = 0.0
         prev_margin_end = 0.0
       } else {
         let inline_advance = child_layout.width +
@@ -5528,6 +5687,7 @@ fn compute_with_collapse(
     inline_run_active = false
     inline_run_x = 0.0
     inline_run_height = 0.0
+    inline_run_align_offset = 0.0
     prev_margin_end = 0.0
   }
   while next_float_index < float_nodes.length() {
@@ -5634,10 +5794,20 @@ fn compute_with_collapse(
 
   // Box height - consider aspect_ratio
   let mut box_height = match style.height {
-    @types.Length(h) => h
+    @types.Length(h) =>
+      if style.box_sizing == @types.BorderBox {
+        h
+      } else {
+        h + padding.vertical_sum() + border.vertical_sum()
+      }
     @types.Percent(p) =>
       match parent_height_opt {
-        Some(ph) => ph * p
+        Some(ph) =>
+          if style.box_sizing == @types.BorderBox {
+            ph * p
+          } else {
+            ph * p + padding.vertical_sum() + border.vertical_sum()
+          }
         None =>
           content_height_for_auto +
           padding.vertical_sum() +

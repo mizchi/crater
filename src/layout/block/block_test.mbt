@@ -2392,7 +2392,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[1].x, content="96")
   inspect(layout.children[1].y, content="0")
-  inspect(layout.children[6].x, content="0")
+  inspect(layout.children[6].x, content="140")
   inspect(layout.children[6].y, content="0")
 }
 

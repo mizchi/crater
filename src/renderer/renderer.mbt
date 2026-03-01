@@ -709,8 +709,11 @@ fn trim_trailing_collapsible_whitespace(text : String) -> String {
 fn should_preserve_inter_element_whitespace(
   siblings : Array[@html.Node],
   index : Int,
-  stylesheets : Array[@cascade.Stylesheet],
+  parent_selector : @selector.Element,
+  parent_style : @style.Style,
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
   ctx : RenderContext,
+  css_vars : Map[String, String],
 ) -> Bool {
   if index <= 0 || index >= siblings.length() - 1 {
     return false
@@ -733,16 +736,55 @@ fn should_preserve_inter_element_whitespace(
   if prev_is_br || next_is_br {
     return false
   }
-  let prev_inline = match siblings[index - 1] {
-    @html.Node::Element(prev_elem) =>
-      has_inline_participating_display(prev_elem, stylesheets, ctx)
-    _ => false
+  fn inline_participates_at(
+    siblings : Array[@html.Node],
+    sibling_index : Int,
+    parent_selector : @selector.Element,
+    parent_style : @style.Style,
+    indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+    ctx : RenderContext,
+    css_vars : Map[String, String],
+  ) -> Bool {
+    match siblings[sibling_index] {
+      @html.Node::Element(elem) => {
+        let selector_elem = html_to_selector_element_with_parent(
+          elem,
+          parent_selector,
+          sibling_index + 1,
+          siblings.length(),
+        )
+        let computed = compute_element_style_indexed(
+          selector_elem,
+          elem.style,
+          indexed_stylesheets,
+          false,
+          ctx,
+          Some(parent_style),
+          css_vars,
+        )
+        is_inline_participating_display(computed.display)
+      }
+      _ => false
+    }
   }
-  let next_inline = match siblings[index + 1] {
-    @html.Node::Element(next_elem) =>
-      has_inline_participating_display(next_elem, stylesheets, ctx)
-    _ => false
-  }
+  let prev_inline = inline_participates_at(
+    siblings,
+    index - 1,
+    parent_selector,
+    parent_style,
+    indexed_stylesheets,
+    ctx,
+    css_vars,
+  )
+  let next_inline = inline_participates_at(
+    siblings,
+    index + 1,
+    parent_selector,
+    parent_style,
+    indexed_stylesheets,
+    ctx,
+    css_vars,
+  )
   prev_inline && next_inline
 }
 
@@ -3821,7 +3863,8 @@ fn element_to_node_with_styles(
         // to preserve DOM order when elements are interleaved with text.
         if not(text.is_empty()) {
           let preserve_ws = should_preserve_inter_element_whitespace(
-              remaining_children, i, stylesheets, ctx,
+              remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
+              css_vars,
             ) &&
             not(style.writing_mode.is_vertical()) &&
             not(style.suppresses_intrinsic_width())
@@ -4119,9 +4162,11 @@ fn element_to_node_with_styles_internal(
         // to preserve DOM order when elements are interleaved with text.
         if not(text.is_empty()) {
           let preserve_ws = should_preserve_inter_element_whitespace(
-              remaining_children, i, stylesheets, ctx,
+              remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
+              css_vars,
             ) &&
-            not(style.writing_mode.is_vertical())
+            not(style.writing_mode.is_vertical()) &&
+            not(style.suppresses_intrinsic_width())
           if is_whitespace_only_text(text) && not(preserve_ws) {
             continue
           }
@@ -5562,6 +5607,26 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
 }
 
 ///|
+fn resolve_dimension_with_percent_basis(
+  dim : @types.Dimension,
+  percent_basis : Double,
+) -> Double {
+  match dim {
+    @types.Length(v) => v
+    @types.Percent(p) =>
+      if percent_basis > 0.0 {
+        percent_basis * p
+      } else {
+        0.0
+      }
+    @types.Auto => 0.0
+    @types.MinContent => 0.0
+    @types.MaxContent => 0.0
+    @types.FitContent(_) => 0.0
+  }
+}
+
+///|
 /// Adjust dimensions for box-sizing: content-box
 /// When box-sizing is content-box (default), specified width/height are content dimensions.
 /// The layout engine expects outer dimensions (border-box), so we adjust here.
@@ -5657,15 +5722,43 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
       }
     }
     @types.ContentBox => {
+      let percent_basis = match style.width {
+        @types.Length(w) =>
+          if w > 0.0 {
+            w +
+            resolve_dimension_to_px(style.padding.left) +
+            resolve_dimension_to_px(style.padding.right) +
+            resolve_dimension_to_px(style.border.left) +
+            resolve_dimension_to_px(style.border.right)
+          } else {
+            0.0
+          }
+        _ => 0.0
+      }
       // Calculate padding and border sums
-      let padding_h = resolve_dimension_to_px(style.padding.left) +
-        resolve_dimension_to_px(style.padding.right)
-      let padding_v = resolve_dimension_to_px(style.padding.top) +
-        resolve_dimension_to_px(style.padding.bottom)
-      let border_h = resolve_dimension_to_px(style.border.left) +
-        resolve_dimension_to_px(style.border.right)
-      let border_v = resolve_dimension_to_px(style.border.top) +
-        resolve_dimension_to_px(style.border.bottom)
+      let padding_h = resolve_dimension_with_percent_basis(
+          style.padding.left,
+          percent_basis,
+        ) +
+        resolve_dimension_with_percent_basis(style.padding.right, percent_basis)
+      let padding_v = resolve_dimension_with_percent_basis(
+          style.padding.top,
+          percent_basis,
+        ) +
+        resolve_dimension_with_percent_basis(
+          style.padding.bottom,
+          percent_basis,
+        )
+      let border_h = resolve_dimension_with_percent_basis(
+          style.border.left,
+          percent_basis,
+        ) +
+        resolve_dimension_with_percent_basis(style.border.right, percent_basis)
+      let border_v = resolve_dimension_with_percent_basis(
+          style.border.top,
+          percent_basis,
+        ) +
+        resolve_dimension_with_percent_basis(style.border.bottom, percent_basis)
 
       // Adjust width and height to include padding+border
       let adjusted_width = match style.width {

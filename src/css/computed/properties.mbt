@@ -98,6 +98,7 @@ pub fn initial_value(property : String) -> String {
     // Text (inherited)
     "direction" => "ltr"
     "writing-mode" => "horizontal-tb"
+    "text-align" => "start"
     "white-space" => "normal"
     // Containment
     "contain" => "none"
@@ -641,6 +642,19 @@ pub fn parse_direction(value : String) -> @style.Direction {
   match value.trim().to_lower() {
     "rtl" => @style.Direction::Rtl
     "ltr" | _ => @style.Direction::Ltr
+  }
+}
+
+///|
+/// Parse text-align value
+pub fn parse_text_align(value : String) -> @style.TextAlign {
+  match value.trim().to_lower() {
+    "center" => @style.TextAlign::Center
+    "justify" => @style.TextAlign::Justify
+    "left" => @style.TextAlign::Left
+    "right" => @style.TextAlign::Right
+    "end" => @style.TextAlign::End
+    "start" | _ => @style.TextAlign::Start
   }
 }
 
