@@ -747,6 +747,14 @@ fn should_preserve_inter_element_whitespace(
   ) -> Bool {
     match siblings[sibling_index] {
       @html.Node::Element(elem) => {
+        // Fast path for inline-style-only documents.
+        // Avoid full computed-style resolution when no stylesheet rules exist.
+        if indexed_stylesheets.length() == 0 {
+          match get_inline_style_display(elem) {
+            Some(display) => return is_inline_participating_display(display)
+            None => return is_inline_element(elem)
+          }
+        }
         let selector_elem = html_to_selector_element_with_parent(
           elem,
           parent_selector,
@@ -3862,13 +3870,15 @@ fn element_to_node_with_styles(
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
         if not(text.is_empty()) {
-          let preserve_ws = should_preserve_inter_element_whitespace(
+          let text_is_ws = is_whitespace_only_text(text)
+          let preserve_ws = text_is_ws &&
+            should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
               css_vars,
             ) &&
             not(style.writing_mode.is_vertical()) &&
             not(style.suppresses_intrinsic_width())
-          if is_whitespace_only_text(text) && not(preserve_ws) {
+          if text_is_ws && not(preserve_ws) {
             continue
           }
           let text_parent_style = if preserve_ws {
@@ -4161,13 +4171,15 @@ fn element_to_node_with_styles_internal(
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
         if not(text.is_empty()) {
-          let preserve_ws = should_preserve_inter_element_whitespace(
+          let text_is_ws = is_whitespace_only_text(text)
+          let preserve_ws = text_is_ws &&
+            should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
               css_vars,
             ) &&
             not(style.writing_mode.is_vertical()) &&
             not(style.suppresses_intrinsic_width())
-          if is_whitespace_only_text(text) && not(preserve_ws) {
+          if text_is_ws && not(preserve_ws) {
             continue
           }
           let text_parent_style = if preserve_ws {

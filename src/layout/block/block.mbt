@@ -4790,6 +4790,7 @@ fn compute_with_collapse(
   let mut inline_run_x = 0.0
   let mut inline_run_height = 0.0
   let mut inline_run_align_offset = 0.0
+  let default_text_align = style.text_align == @style.TextAlign::Start
   let multicol_height_limit = if multicol_enabled {
     estimate_multicol_column_height_limit(
       child_available_height, flow_children, flow_styles, multicol_column_count,
@@ -4847,12 +4848,16 @@ fn compute_with_collapse(
           let line_width = estimate_multicol_inline_line_width(
             i, flow_children, flow_styles, flow_nodes, multicol_column_width,
           )
-          inline_run_align_offset = resolve_text_align_offset(
-            style.text_align,
-            style.direction,
-            multicol_column_width,
-            line_width,
-          )
+          inline_run_align_offset = if default_text_align {
+            0.0
+          } else {
+            resolve_text_align_offset(
+              style.text_align,
+              style.direction,
+              multicol_column_width,
+              line_width,
+            )
+          }
         }
       }
       let mut effective_pos = current_pos

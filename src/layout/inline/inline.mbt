@@ -1096,17 +1096,22 @@ pub fn compute_ifc(
 
   // Position items within line boxes
   let is_rtl_inline = container_direction.is_rtl()
+  let default_text_align = container_text_align == @style.TextAlign::Start
   let mut current_y = content_offset_y
   for line_index = 0
       line_index < line_boxes.length()
       line_index = line_index + 1 {
     let line = line_boxes[line_index]
-    let line_offset = resolve_text_align_offset(
-      container_text_align,
-      container_direction,
-      available_width,
-      line.width,
-    )
+    let line_offset = if default_text_align {
+      0.0
+    } else {
+      resolve_text_align_offset(
+        container_text_align,
+        container_direction,
+        available_width,
+        line.width,
+      )
+    }
     let mut current_x = if is_rtl_inline {
       content_offset_x + available_width - line_offset
     } else {
