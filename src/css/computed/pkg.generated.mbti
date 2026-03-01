@@ -32,6 +32,8 @@ pub fn parse_align_self(String) -> @types.AlignSelf
 
 pub fn parse_alignment(String) -> @types.Alignment
 
+pub fn parse_alignment_with_overflow(String) -> (@types.Alignment, Bool)
+
 pub fn parse_aspect_ratio(String) -> Double?
 
 pub fn parse_clear(String) -> @types.Clear
@@ -73,6 +75,8 @@ pub fn parse_number(String) -> Double
 pub fn parse_overflow(String) -> @types.Overflow
 
 pub fn parse_place_content(String) -> (@types.Alignment, @types.Alignment)?
+
+pub fn parse_place_content_with_overflow(String) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))?
 
 pub fn parse_position(String) -> @types.Position
 

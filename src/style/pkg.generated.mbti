@@ -144,6 +144,8 @@ pub(all) struct Style {
   mut justify_content : @types.Alignment
   mut align_items : @types.Alignment
   mut align_content : @types.Alignment
+  mut justify_content_unsafe : Bool
+  mut align_content_unsafe : Bool
   mut align_self : @types.AlignSelf
   mut flex_grow : Double
   mut flex_shrink : Double

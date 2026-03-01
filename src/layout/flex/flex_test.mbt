@@ -361,13 +361,524 @@ test "flex_row_reverse" {
   }
   let layout = compute(root, ctx, default_dispatch())
 
-  // In row-reverse, layout starts from the right (main-end)
-  // DOM order is preserved: children[0] = child1, children[1] = child2
-  // child1 is at x=150 (rightmost), child2 at x=100
+  // Default justify-content is logical `start`.
+  // In row-reverse with logical start, items are packed toward physical left.
+  // DOM order is preserved: children[0] = child1, children[1] = child2.
   inspect(layout.children[0].id, content="child1")
-  inspect(layout.children[0].x, content="150") // 200 - 50 = 150
+  inspect(layout.children[0].x, content="50")
   inspect(layout.children[1].id, content="child2")
-  inspect(layout.children[1].x, content="100") // 150 - 50 = 100
+  inspect(layout.children[1].x, content="0")
+}
+
+///|
+test "flex_row_reverse_start_is_logical_not_flex_relative" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.RowReverse,
+    justify_content: @types.Start,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+}
+
+///|
+test "flex_row_reverse_flex_start_is_flex_relative" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.RowReverse,
+    justify_content: @types.FlexStart,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="150")
+}
+
+///|
+test "justify_content_stretch_falls_back_to_flex_start_in_rtl_overflow" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    direction: @style.Direction::Rtl,
+    justify_content: @types.Stretch,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+}
+
+///|
+test "justify_content_left_is_physical_in_rtl_row_overflow" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    direction: @style.Direction::Rtl,
+    justify_content: @types.Left,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+}
+
+///|
+test "justify_content_space_around_overflow_uses_logical_start" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    direction: @style.Direction::Rtl,
+    justify_content: @types.SpaceAround,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+}
+
+///|
+test "row_wrap_start_respects_vertical_rl_block_start" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Ltr,
+    justify_content: @types.Start,
+    align_content: @types.Start,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+  inspect(layout.children[0].y, content="0")
+}
+
+///|
+test "row_wrap_end_respects_vertical_rl_block_end" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Ltr,
+    justify_content: @types.End,
+    align_content: @types.End,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="-48")
+}
+
+///|
+test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_rl" {
+  let default_style = @style.Style::default()
+  let tile_left = {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    float: @types.Float::Left,
+  }
+  let tile_right = { ..tile_left, float: @types.Float::Right }
+  let tile_left_clear = {
+    ..tile_left,
+    clear: @types.Clear::Both,
+  }
+  let indicator = @node.Node::new("indicator", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    margin: {
+      top: @types.Length(-24.0),
+      right: @types.Length(-24.0),
+      bottom: @types.Length(-24.0),
+      left: @types.Length(-24.0),
+    },
+    writing_mode: @style.WritingMode::HorizontalTb,
+    direction: @style.Direction::Ltr,
+  }, [
+    @node.Node::leaf("a", tile_left),
+    @node.Node::leaf("b", tile_left),
+    @node.Node::leaf("c", tile_right),
+    @node.Node::leaf("d", tile_left_clear),
+    @node.Node::leaf("e", tile_left),
+    @node.Node::leaf("f", tile_right),
+    @node.Node::leaf("g", tile_left_clear),
+    @node.Node::leaf("h", tile_left),
+    @node.Node::leaf("i", tile_right),
+  ])
+  let container = @node.Node::new("container", {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Ltr,
+  }, [indicator])
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Ltr,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [container])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let child = layout.children[0].children[0]
+  inspect(child.x, content="-24")
+  inspect(child.y, content="-24")
+}
+
+///|
+test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_lr" {
+  let default_style = @style.Style::default()
+  let tile_left = {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    float: @types.Float::Left,
+  }
+  let tile_right = { ..tile_left, float: @types.Float::Right }
+  let tile_left_clear = {
+    ..tile_left,
+    clear: @types.Clear::Both,
+  }
+  let indicator = @node.Node::new("indicator", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    margin: {
+      top: @types.Length(-24.0),
+      right: @types.Length(-24.0),
+      bottom: @types.Length(-24.0),
+      left: @types.Length(-24.0),
+    },
+    writing_mode: @style.WritingMode::HorizontalTb,
+    direction: @style.Direction::Ltr,
+  }, [
+    @node.Node::leaf("a", tile_left),
+    @node.Node::leaf("b", tile_left),
+    @node.Node::leaf("c", tile_right),
+    @node.Node::leaf("d", tile_left_clear),
+    @node.Node::leaf("e", tile_left),
+    @node.Node::leaf("f", tile_right),
+    @node.Node::leaf("g", tile_left_clear),
+    @node.Node::leaf("h", tile_left),
+    @node.Node::leaf("i", tile_right),
+  ])
+  let container = @node.Node::new("container", {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+    writing_mode: @style.WritingMode::VerticalLr,
+    direction: @style.Direction::Ltr,
+  }, [indicator])
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::VerticalLr,
+    direction: @style.Direction::Ltr,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [container])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let child = layout.children[0].children[0]
+  inspect(child.x, content="-24")
+  inspect(child.y, content="-24")
+}
+
+///|
+test "column_wrap_start_respects_vertical_rl_block_start" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::VerticalRl,
+    direction: @style.Direction::Ltr,
+    justify_content: @types.Start,
+    align_content: @types.Start,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+  inspect(layout.children[0].y, content="0")
+}
+
+///|
+test "column_wrap_start_respects_rtl_inline_start" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::HorizontalTb,
+    direction: @style.Direction::Rtl,
+    justify_content: @types.Start,
+    align_content: @types.Start,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="-48")
+  inspect(layout.children[0].y, content="0")
+}
+
+///|
+test "column_wrap_right_falls_back_to_start_on_vertical_block_axis" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+    flex_grow: 0.0,
+    flex_shrink: 0.0,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Column,
+    flex_wrap: @types.Wrap,
+    writing_mode: @style.WritingMode::HorizontalTb,
+    direction: @style.Direction::Ltr,
+    justify_content: @types.Right,
+    align_content: @types.Start,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Hidden,
+    overflow_y: @types.Hidden,
+  }
+  let root = @node.Node::new("root", root_style, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="0")
 }
 
 ///|
@@ -698,13 +1209,13 @@ test "flex_column_reverse" {
   }
   let layout = compute(root, ctx, default_dispatch())
 
-  // In column-reverse, layout starts from the bottom (main-end)
-  // DOM order is preserved: children[0] = child1, children[1] = child2
-  // child1 is at y=80 (bottommost), child2 at y=50
+  // Default justify-content is logical `start`.
+  // In column-reverse with logical start, items are packed toward physical top.
+  // DOM order is preserved: children[0] = child1, children[1] = child2.
   inspect(layout.children[0].id, content="child1")
-  inspect(layout.children[0].y, content="80") // 100 - 20 = 80
+  inspect(layout.children[0].y, content="30")
   inspect(layout.children[1].id, content="child2")
-  inspect(layout.children[1].y, content="50") // 80 - 30 = 50
+  inspect(layout.children[1].y, content="0")
 }
 
 ///|

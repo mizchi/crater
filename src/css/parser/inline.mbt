@@ -355,6 +355,10 @@ fn parse_alignment_keyword(value : String) -> @types.Alignment? {
     Some(@types.Alignment::FlexEnd)
   } else if value == "end" {
     Some(@types.Alignment::End)
+  } else if value == "left" {
+    Some(@types.Alignment::Left)
+  } else if value == "right" {
+    Some(@types.Alignment::Right)
   } else if value == "center" {
     Some(@types.Alignment::Center)
   } else if value == "space-between" {
@@ -387,18 +391,22 @@ fn collect_alignment_parts(tokens : ArrayView[@token.Token]) -> Array[String] {
 }
 
 ///|
-fn parse_alignment_segment(
+fn parse_alignment_segment_with_overflow(
   parts : Array[String],
   start : Int,
-) -> (@types.Alignment, Int)? {
+) -> ((@types.Alignment, Bool), Int)? {
   if start >= parts.length() {
     return None
   }
 
   let mut idx = start
   let mut is_safe = false
-  if parts[idx] == "safe" || parts[idx] == "unsafe" {
-    is_safe = parts[idx] == "safe"
+  let mut is_unsafe = false
+  if parts[idx] == "safe" {
+    is_safe = true
+    idx = idx + 1
+  } else if parts[idx] == "unsafe" {
+    is_unsafe = true
     idx = idx + 1
   }
   if idx >= parts.length() {
@@ -415,18 +423,41 @@ fn parse_alignment_segment(
   let next_index = if keyword == parts[idx] { idx + 1 } else { idx + 2 }
 
   match parse_alignment_keyword(keyword) {
-    Some(parsed) =>
-      if is_safe {
+    Some(parsed) => {
+      let alignment = if is_safe {
         match parsed {
           @types.Alignment::Center
           | @types.Alignment::End
-          | @types.Alignment::FlexEnd =>
-            Some((@types.Alignment::Start, next_index))
-          _ => Some((parsed, next_index))
+          | @types.Alignment::FlexEnd => @types.Alignment::Start
+          _ => parsed
         }
       } else {
-        Some((parsed, next_index))
+        parsed
       }
+      Some(((alignment, is_unsafe), next_index))
+    }
+    None => None
+  }
+}
+
+///|
+fn parse_alignment_segment(
+  parts : Array[String],
+  start : Int,
+) -> (@types.Alignment, Int)? {
+  match parse_alignment_segment_with_overflow(parts, start) {
+    Some(((alignment, _), next_index)) => Some((alignment, next_index))
+    None => None
+  }
+}
+
+///|
+fn parse_alignment_with_overflow(
+  tokens : ArrayView[@token.Token],
+) -> (@types.Alignment, Bool)? {
+  let parts = collect_alignment_parts(tokens)
+  match parse_alignment_segment_with_overflow(parts, 0) {
+    Some(((alignment, is_unsafe), _)) => Some((alignment, is_unsafe))
     None => None
   }
 }
@@ -442,17 +473,16 @@ fn parse_alignment(tokens : ArrayView[@token.Token]) -> @types.Alignment? {
 }
 
 ///|
-/// Parse place-content shorthand.
-fn parse_place_content(
+fn parse_place_content_with_overflow(
   tokens : ArrayView[@token.Token],
-) -> (@types.Alignment, @types.Alignment)? {
+) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))? {
   let parts = collect_alignment_parts(tokens)
-  match parse_alignment_segment(parts, 0) {
+  match parse_alignment_segment_with_overflow(parts, 0) {
     Some((align_content, next_index)) =>
       if next_index >= parts.length() {
         Some((align_content, align_content))
       } else {
-        match parse_alignment_segment(parts, next_index) {
+        match parse_alignment_segment_with_overflow(parts, next_index) {
           Some((justify_content, _)) => Some((align_content, justify_content))
           None => Some((align_content, align_content))
         }
@@ -1728,8 +1758,13 @@ fn apply_property(
   }
   // justify-content
   if property == "justify-content" {
-    match parse_alignment(value_tokens) {
-      Some(v) => return { ..style, justify_content: v }
+    match parse_alignment_with_overflow(value_tokens) {
+      Some((v, is_unsafe)) =>
+        return {
+          ..style,
+          justify_content: v,
+          justify_content_unsafe: is_unsafe,
+        }
       None => ()
     }
   }
@@ -1742,16 +1777,28 @@ fn apply_property(
   }
   // align-content
   if property == "align-content" {
-    match parse_alignment(value_tokens) {
-      Some(v) => return { ..style, align_content: v }
+    match parse_alignment_with_overflow(value_tokens) {
+      Some((v, is_unsafe)) =>
+        return { ..style, align_content: v, align_content_unsafe: is_unsafe }
       None => ()
     }
   }
   // place-content
   if property == "place-content" {
-    match parse_place_content(value_tokens) {
-      Some((align_content, justify_content)) =>
-        return { ..style, align_content, justify_content }
+    match parse_place_content_with_overflow(value_tokens) {
+      Some(
+        (
+          (align_content, align_content_unsafe),
+          (justify_content, justify_content_unsafe),
+        )
+      ) =>
+        return {
+          ..style,
+          align_content,
+          align_content_unsafe,
+          justify_content,
+          justify_content_unsafe,
+        }
       None => ()
     }
   }

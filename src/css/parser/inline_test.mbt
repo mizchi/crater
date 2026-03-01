@@ -717,6 +717,8 @@ test "parse place-content safe center" {
   let style = parse_inline_style("place-content: safe center")
   inspect(style.align_content, content="Start")
   inspect(style.justify_content, content="Start")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
 }
 
 ///|
@@ -724,6 +726,26 @@ test "parse place-content end center" {
   let style = parse_inline_style("place-content: end center")
   inspect(style.align_content, content="End")
   inspect(style.justify_content, content="Center")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse place-content unsafe end" {
+  let style = parse_inline_style("place-content: unsafe end")
+  inspect(style.align_content, content="End")
+  inspect(style.justify_content, content="End")
+  inspect(style.align_content_unsafe, content="true")
+  inspect(style.justify_content_unsafe, content="true")
+}
+
+///|
+test "parse place-content start left" {
+  let style = parse_inline_style("place-content: start left")
+  inspect(style.align_content, content="Start")
+  inspect(style.justify_content, content="Left")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
 }
 
 ///|

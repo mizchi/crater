@@ -117,6 +117,8 @@ priv struct StyleBuilder {
   mut justify_content : @types.Alignment
   mut align_items : @types.Alignment
   mut align_content : @types.Alignment
+  mut justify_content_unsafe : Bool
+  mut align_content_unsafe : Bool
   mut align_self : @types.AlignSelf
   mut justify_self : @types.AlignSelf
   mut justify_items : @types.Alignment
@@ -220,6 +222,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     justify_content: @types.Alignment::Start,
     align_items: @types.Alignment::Stretch,
     align_content: @types.Alignment::Stretch,
+    justify_content_unsafe: false,
+    align_content_unsafe: false,
     align_self: @types.AlignSelf::Auto,
     justify_self: @types.AlignSelf::Auto,
     justify_items: @types.Alignment::Stretch,
@@ -312,6 +316,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     justify_content: style.justify_content,
     align_items: style.align_items,
     align_content: style.align_content,
+    justify_content_unsafe: style.justify_content_unsafe,
+    align_content_unsafe: style.align_content_unsafe,
     align_self: style.align_self,
     justify_self: style.justify_self,
     justify_items: style.justify_items,
@@ -409,6 +415,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_content: self.justify_content,
     align_items: self.align_items,
     align_content: self.align_content,
+    justify_content_unsafe: self.justify_content_unsafe,
+    align_content_unsafe: self.align_content_unsafe,
     align_self: self.align_self,
     flex_grow: self.flex_grow,
     flex_shrink: self.flex_shrink,
@@ -1216,14 +1224,24 @@ fn apply_property(
     // Flexbox container
     "flex-direction" => builder.flex_direction = parse_flex_direction(value)
     "flex-wrap" => builder.flex_wrap = parse_flex_wrap(value)
-    "justify-content" => builder.justify_content = parse_alignment(value)
+    "justify-content" => {
+      let (alignment, is_unsafe) = parse_alignment_with_overflow(value)
+      builder.justify_content = alignment
+      builder.justify_content_unsafe = is_unsafe
+    }
     "align-items" => builder.align_items = parse_alignment(value)
-    "align-content" => builder.align_content = parse_alignment(value)
+    "align-content" => {
+      let (alignment, is_unsafe) = parse_alignment_with_overflow(value)
+      builder.align_content = alignment
+      builder.align_content_unsafe = is_unsafe
+    }
     "place-content" =>
-      match parse_place_content(value) {
-        Some((align_content, justify_content)) => {
+      match parse_place_content_with_overflow(value) {
+        Some(((align_content, align_unsafe), (justify_content, justify_unsafe))) => {
           builder.align_content = align_content
+          builder.align_content_unsafe = align_unsafe
           builder.justify_content = justify_content
+          builder.justify_content_unsafe = justify_unsafe
         }
         None => ()
       }

@@ -348,7 +348,9 @@ pub fn Style::contained_intrinsic_height_fallback(self : Style) -> Double {
 /// Whether this style enables CSS multi-column layout.
 pub fn Style::has_multicol(self : Style) -> Bool {
   match self.column_count {
-    Some(v) => v > 1
+    // `column-count: 1` still establishes a multicol container; overflowing
+    // content may fragment into additional columns.
+    Some(v) => v > 0
     None =>
       match self.column_width {
         @types.Length(v) => v > 0.0
@@ -409,6 +411,10 @@ pub(all) struct Style {
   mut justify_content : @types.Alignment
   mut align_items : @types.Alignment
   mut align_content : @types.Alignment
+  // Whether overflow alignment requested `unsafe` position.
+  // Unqualified values default to safe behavior for initial scroll positioning.
+  mut justify_content_unsafe : Bool
+  mut align_content_unsafe : Bool
   mut align_self : @types.AlignSelf
   mut flex_grow : Double
   mut flex_shrink : Double
@@ -526,6 +532,8 @@ pub fn Style::default() -> Style {
     justify_content: @types.Start,
     align_items: @types.Stretch,
     align_content: @types.Stretch,
+    justify_content_unsafe: false,
+    align_content_unsafe: false,
     align_self: @types.AlignSelf::Auto,
     flex_grow: 0.0,
     flex_shrink: 1.0,

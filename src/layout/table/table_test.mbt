@@ -1085,3 +1085,47 @@ test "table cell centers block child in vertical writing mode" {
   let block_layout = layout.children[0].children[0].children[0]
   assert_true(block_layout.x > 35.0)
 }
+
+///|
+test "table preserves negative descendant offsets inside cell scroll container" {
+  let default_style = @style.Style::default()
+  let indicator_style : @style.Style = {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  }
+  let scroller_style : @style.Style = {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+    overflow_x: @types.Overflow::Hidden,
+    overflow_y: @types.Overflow::Hidden,
+    justify_content: @types.Alignment::Center,
+    align_content: @types.Alignment::Center,
+    align_content_unsafe: true,
+  }
+  let cell_style : @style.Style = { ..default_style, display: @types.TableCell }
+  let row_style : @style.Style = { ..default_style, display: @types.TableRow }
+  let table_style : @style.Style = { ..default_style, display: @types.Table }
+
+  let indicator = @node.Node::leaf("div.indicator", indicator_style)
+  let scroller = @node.Node::new("div.test", scroller_style, [indicator])
+  let cell = @node.Node::new("td", cell_style, [scroller])
+  let row = @node.Node::new("tr", row_style, [cell])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  let scroller_layout = layout.children[0].children[0].children[0]
+  let indicator_layout = scroller_layout.children[0]
+  inspect(indicator_layout.x, content="0")
+  inspect(indicator_layout.y, content="-24")
+}

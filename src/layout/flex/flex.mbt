@@ -489,7 +489,8 @@ fn estimate_flex_text_intrinsic_main_size(
       } else {
         Some(line_height)
       }
-    None => Some(0.0)
+    // No embedded text payload: defer to MeasureFunc-based intrinsic sizing.
+    None => None
   }
 }
 
@@ -528,7 +529,8 @@ fn estimate_flex_text_min_main_size(
       } else {
         Some(line_height)
       }
-    None => Some(0.0)
+    // No embedded text payload: defer to MeasureFunc-based min-content sizing.
+    None => None
   }
 }
 
@@ -3387,9 +3389,17 @@ fn compute_internal(
   let axis = @alignment.resolve_flex_axis(
     effective_direction, is_vertical_writing, is_rtl,
   )
+  let declared_direction_is_row = match effective_direction {
+    @types.Row | @types.RowReverse => true
+    @types.Column | @types.ColumnReverse => false
+  }
   let direction_is_row = axis.direction_is_row
   let is_row = axis.is_row
-  let is_reverse = axis.is_reverse
+  let is_reverse = if not(declared_direction_is_row) && is_block_rtl {
+    not(axis.is_reverse)
+  } else {
+    axis.is_reverse
+  }
 
   // For main size, if container size is auto, we need special handling
   // min-height should only cause GROW (not SHRINK) when content < min
@@ -5518,10 +5528,62 @@ fn compute_internal(
   }
   // For wrap-reverse with flex-relative alignment, the line positioning is handled
   // by uses_reversed_layout, so we don't need to flip here
-  let effective_align_content_for_position : @types.Alignment = if should_wrap {
-    style.align_content
+  let effective_align_content_for_position = if should_wrap {
+    match style.align_content {
+      @types.Stretch | @types.Baseline => @types.Alignment::FlexStart
+      other => other
+    }
   } else {
     @types.FlexStart
+  }
+  let effective_align_content_for_position = if cross_free_space < 0.0 {
+    match effective_align_content_for_position {
+      @types.SpaceBetween => @types.Alignment::FlexStart
+      @types.SpaceAround
+      | @types.SpaceEvenly => @types.Alignment::Start
+      other => other
+    }
+  } else {
+    effective_align_content_for_position
+  }
+  let (effective_align_content_for_position, align_content_is_physical) =
+    match effective_align_content_for_position {
+      @types.Left => (@types.Alignment::Start, true)
+      @types.Right => (@types.Alignment::End, true)
+      other => (other, false)
+    }
+  let logical_start_is_min_cross = if direction_is_row {
+    // Row containers align lines on the block axis.
+    match style.writing_mode {
+      @style.WritingMode::VerticalRl => false
+      @style.WritingMode::HorizontalTb | @style.WritingMode::VerticalLr =>
+        true
+    }
+  } else {
+    // Column containers align lines on the inline axis.
+    style.direction == @style.Direction::Ltr
+  }
+  let effective_align_content_for_position = if
+    logical_start_is_min_cross || align_content_is_physical {
+    effective_align_content_for_position
+  } else {
+    match effective_align_content_for_position {
+      @types.Start => @types.Alignment::End
+      @types.End => @types.Alignment::Start
+      other => other
+    }
+  }
+  // In vertical-rl row containers, the cross axis physical min/max are mirrored
+  // relative to flex-relative start/end. Flip only flex-relative keywords here.
+  let effective_align_content_for_position = if
+    direction_is_row && style.writing_mode == @style.WritingMode::VerticalRl {
+    match effective_align_content_for_position {
+      @types.FlexStart => @types.Alignment::FlexEnd
+      @types.FlexEnd => @types.Alignment::FlexStart
+      other => other
+    }
+  } else {
+    effective_align_content_for_position
   }
   let (line_start_offset, line_gap) = @alignment.compute_justify(
     effective_align_content_for_position, cross_free_space, line_count,
@@ -5546,7 +5608,7 @@ fn compute_internal(
   // - For flex-relative alignment (FlexStart/FlexEnd/Stretch): position from physical end, move backward
   // - For physical alignment (Start/End): position from physical start, but reverse line ORDER
   // This means lines are always in reverse visual order, but the starting position differs
-  let is_flex_relative_align = match style.align_content {
+  let is_flex_relative_align = match effective_align_content_for_position {
     @types.FlexStart
     | @types.FlexEnd
     | @types.Stretch
@@ -5554,7 +5616,11 @@ fn compute_internal(
     | @types.SpaceBetween
     | @types.SpaceAround
     | @types.SpaceEvenly => true
-    @types.Start | @types.End | @types.Baseline => false
+    @types.Start
+    | @types.End
+    | @types.Left
+    | @types.Right
+    | @types.Baseline => false
   }
   let uses_reversed_position = is_wrap_reverse && is_flex_relative_align
   let mut cross_pos = if uses_reversed_position {
@@ -5629,18 +5695,72 @@ fn compute_internal(
       0.0
     }
 
-    // If auto margins exist, they absorb free space instead of justify-content
-    // For reverse directions, flip Start/End in justify_content
-    // In column-reverse: "start" means items at physical bottom, "end" means items at physical top
-    // Flipping gives us the correct start_offset for the reversed positioning algorithm
+    // If auto margins exist, they absorb free space instead of justify-content.
+    // Resolve keywords into the physical axis expected by compute_justify():
+    // - flip flex-relative values by reverse direction
+    // - map logical start/end by writing-mode + direction
+    let logical_start_is_min_main = if direction_is_row {
+      if style.writing_mode.is_vertical() {
+        style.direction == @style.Direction::Ltr
+      } else {
+        style.direction == @style.Direction::Ltr
+      }
+    } else {
+      match style.writing_mode {
+        @style.WritingMode::VerticalRl => false
+        @style.WritingMode::HorizontalTb | @style.WritingMode::VerticalLr =>
+          true
+      }
+    }
+    // In flex main-axis distribution, `stretch` behaves like `flex-start`.
+    // `baseline` is also treated as a start-side fallback for content distribution.
+    // `left`/`right`:
+    // - Row axis: treat as physical side on the inline axis.
+    // - Column axis: treat as physical side only on horizontal axes;
+    //   on vertical block-axis columns they fallback to logical start.
+    let (normalized_justify, justify_is_physical) = match style.justify_content {
+      @types.Stretch | @types.Baseline => (@types.Alignment::FlexStart, false)
+      @types.Left =>
+        if direction_is_row || is_row {
+          (@types.Alignment::Start, true)
+        } else {
+          (@types.Alignment::Start, false)
+        }
+      @types.Right =>
+        if direction_is_row || is_row {
+          (@types.Alignment::End, true)
+        } else {
+          (@types.Alignment::Start, false)
+        }
+      other => (other, false)
+    }
+    let overflow_fallback_justify = if line_free_space < 0.0 {
+      match normalized_justify {
+        @types.SpaceBetween => @types.Alignment::FlexStart
+        @types.SpaceAround
+        | @types.SpaceEvenly => @types.Alignment::Start
+        other => other
+      }
+    } else {
+      normalized_justify
+    }
     let effective_justify = if is_reverse {
-      match style.justify_content {
+      match overflow_fallback_justify {
+        @types.FlexStart => @types.Alignment::FlexEnd
+        @types.FlexEnd => @types.Alignment::FlexStart
+        other => other
+      }
+    } else {
+      overflow_fallback_justify
+    }
+    let effective_justify = if logical_start_is_min_main || justify_is_physical {
+      effective_justify
+    } else {
+      match effective_justify {
         @types.Start => @types.Alignment::End
         @types.End => @types.Alignment::Start
         other => other
       }
-    } else {
-      style.justify_content
     }
     let (start_offset, justify_gap) = if auto_margin_count > 0 {
       (0.0, 0.0)
@@ -6095,14 +6215,10 @@ fn compute_internal(
       } else {
         (item_cross, item.final_main)
       }
-      // For vertical-rl, flip x in column directions.
-      // In wrapped row directions, line progression is also mirrored.
-      let (child_x, child_y) = if is_block_rtl &&
-        (not(direction_is_row) || should_wrap) {
-        (container_width - child_x - child_width, child_y)
-      } else {
-        (child_x, child_y)
-      }
+      // Logical Start/End mapping above already resolves writing-mode direction.
+      // Avoid an extra physical mirror here, otherwise vertical-rl row-wrap
+      // placements flip Start/End twice.
+      let (child_x, child_y) = (child_x, child_y)
       let child_layout : @types.Layout = if child.children.length() == 0 {
         let child_style = child.style
         let child_padding = @types.resolve_rect(
@@ -7318,8 +7434,8 @@ fn compute_align(
 ) -> Double {
   let available = container_cross - item_cross - margin_cross
   match align {
-    @types.Start | @types.FlexStart => 0.0
-    @types.End | @types.FlexEnd => available
+    @types.Start | @types.Left | @types.FlexStart => 0.0
+    @types.End | @types.Right | @types.FlexEnd => available
     @types.Center => available / 2.0
     @types.Stretch => 0.0 // Already handled in cross size calculation
     @types.Baseline => available // For simple boxes, baseline = bottom = End alignment

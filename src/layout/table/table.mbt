@@ -2997,6 +2997,12 @@ pub fn compute(
       None => () // Should not happen
     }
   }
+  fn overflow_creates_scroll_container(overflow : @types.Overflow) -> Bool {
+    match overflow {
+      @types.Visible | @types.Clip => false
+      @types.Hidden | @types.Scroll | @types.Auto => true
+    }
+  }
   fn normalize_cell_descendant_offsets(
     layout : @types.Layout,
     inside_cell : Bool,
@@ -3005,12 +3011,18 @@ pub fn compute(
       layout.id == "td" ||
       layout.id == "th" ||
       layout.id.has_prefix("__anon-table-cell-")
+    let keeps_descendant_negative_offsets = overflow_creates_scroll_container(
+        layout.overflow_x,
+      ) ||
+      overflow_creates_scroll_container(layout.overflow_y)
+    let propagate_inside_cell = is_cell_box &&
+      not(keeps_descendant_negative_offsets)
     let normalized_children : Array[@types.Layout] = []
     for child in layout.children {
       let normalized_child = normalize_cell_descendant_offsets(
-        child, is_cell_box,
+        child, propagate_inside_cell,
       )
-      let normalized_y = if is_cell_box && normalized_child.y < 0.0 {
+      let normalized_y = if propagate_inside_cell && normalized_child.y < 0.0 {
         0.0
       } else {
         normalized_child.y

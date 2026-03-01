@@ -2204,3 +2204,121 @@ test "block_overflow_alignment_start_in_vertical_rl_rtl_shifts_both_axes" {
   inspect(layout.children[0].x, content="-48")
   inspect(layout.children[0].y, content="-48")
 }
+
+///|
+test "block_overflow_alignment_center_defaults_to_safe_start_when_overflowing" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(24.0),
+      height: @types.Length(24.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      justify_content: @types.Center,
+      align_content: @types.Center,
+      justify_content_unsafe: false,
+      align_content_unsafe: false,
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="0")
+}
+
+///|
+test "block_overflow_alignment_unsafe_center_keeps_center_when_overflowing" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(72.0),
+    height: @types.Length(72.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(24.0),
+      height: @types.Length(24.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      justify_content: @types.Center,
+      align_content: @types.Center,
+      justify_content_unsafe: true,
+      align_content_unsafe: true,
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="-24")
+}
+
+///|
+test "multicol_with_column_count_one_flows_additional_columns_horizontally" {
+  let default_style = @style.Style::default()
+  let item_style = {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+  }
+  let item1 = @node.Node::leaf("item1", item_style)
+  let item2 = @node.Node::leaf("item2", item_style)
+  let item3 = @node.Node::leaf("item3", item_style)
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(100.0),
+      height: @types.Length(100.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      column_count: Some(1),
+      column_gap: @types.Length(0.0),
+      column_gap_is_normal: false,
+      column_fill: @style.ColumnFill::Auto,
+    },
+    [item1, item2, item3],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(300.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[1].x, content="100")
+  inspect(layout.children[1].y, content="0")
+  inspect(layout.children[2].x, content="200")
+  inspect(layout.children[2].y, content="0")
+}

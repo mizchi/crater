@@ -68,6 +68,8 @@ test "parse_alignment" {
   inspect(@computed.parse_alignment("start"), content="Start")
   inspect(@computed.parse_alignment("flex-end"), content="FlexEnd")
   inspect(@computed.parse_alignment("end"), content="End")
+  inspect(@computed.parse_alignment("left"), content="Left")
+  inspect(@computed.parse_alignment("right"), content="Right")
   inspect(@computed.parse_alignment("center"), content="Center")
   inspect(@computed.parse_alignment("space-between"), content="SpaceBetween")
   inspect(@computed.parse_alignment("stretch"), content="Stretch")
@@ -84,14 +86,26 @@ test "compute_inline place-content shorthand" {
   let safe_center = @computed.compute_inline("place-content: safe center", ctx)
   inspect(safe_center.align_content, content="Start")
   inspect(safe_center.justify_content, content="Start")
+  inspect(safe_center.align_content_unsafe, content="false")
+  inspect(safe_center.justify_content_unsafe, content="false")
 
   let unsafe_end = @computed.compute_inline("place-content: unsafe end", ctx)
   inspect(unsafe_end.align_content, content="End")
   inspect(unsafe_end.justify_content, content="End")
+  inspect(unsafe_end.align_content_unsafe, content="true")
+  inspect(unsafe_end.justify_content_unsafe, content="true")
 
   let mixed = @computed.compute_inline("place-content: end center", ctx)
   inspect(mixed.align_content, content="End")
   inspect(mixed.justify_content, content="Center")
+  inspect(mixed.align_content_unsafe, content="false")
+  inspect(mixed.justify_content_unsafe, content="false")
+
+  let left_right = @computed.compute_inline("place-content: start left", ctx)
+  inspect(left_right.align_content, content="Start")
+  inspect(left_right.justify_content, content="Left")
+  inspect(left_right.align_content_unsafe, content="false")
+  inspect(left_right.justify_content_unsafe, content="false")
 }
 
 ///|

@@ -382,6 +382,8 @@ fn parse_alignment_keyword(value : String) -> @types.Alignment {
     "flex-end" => @types.Alignment::FlexEnd
     "start" => @types.Alignment::Start
     "end" => @types.Alignment::End
+    "left" => @types.Alignment::Left
+    "right" => @types.Alignment::Right
     "center" => @types.Alignment::Center
     "space-between" => @types.Alignment::SpaceBetween
     "space-around" => @types.Alignment::SpaceAround
@@ -418,19 +420,25 @@ fn parse_alignment_segment(
 /// Parse alignment value (justify-content, align-items, align-content)
 /// Note: flex-start/flex-end are flex-relative (affected by wrap-reverse)
 ///       start/end are physical/logical (not affected by wrap-reverse)
-pub fn parse_alignment(value : String) -> @types.Alignment {
+pub fn parse_alignment_with_overflow(
+  value : String,
+) -> (@types.Alignment, Bool) {
   let tokens = tokenize_alignment_value(value)
   if tokens.is_empty() {
-    return @types.Alignment::FlexStart
+    return (@types.Alignment::FlexStart, false)
   }
   let mut offset = 0
   let mut is_safe = false
-  if tokens[0] == "safe" || tokens[0] == "unsafe" {
-    is_safe = tokens[0] == "safe"
+  let mut is_unsafe = false
+  if tokens[0] == "safe" {
+    is_safe = true
+    offset = 1
+  } else if tokens[0] == "unsafe" {
+    is_unsafe = true
     offset = 1
   }
   if offset >= tokens.length() {
-    return @types.Alignment::FlexStart
+    return (@types.Alignment::FlexStart, false)
   }
   let keyword = if offset + 1 < tokens.length() &&
     tokens[offset + 1] == "baseline" &&
@@ -440,7 +448,7 @@ pub fn parse_alignment(value : String) -> @types.Alignment {
     tokens[offset]
   }
   let parsed = parse_alignment_keyword(keyword)
-  if is_safe {
+  let alignment = if is_safe {
     match parsed {
       @types.Alignment::Center
       | @types.Alignment::End
@@ -450,6 +458,39 @@ pub fn parse_alignment(value : String) -> @types.Alignment {
   } else {
     parsed
   }
+  (alignment, is_unsafe)
+}
+
+///|
+pub fn parse_alignment(value : String) -> @types.Alignment {
+  let (alignment, _) = parse_alignment_with_overflow(value)
+  alignment
+}
+
+///|
+/// Parse place-content shorthand.
+/// Returns (align_content, justify_content).
+pub fn parse_place_content_with_overflow(
+  value : String,
+) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))? {
+  let tokens = tokenize_alignment_value(value)
+  if tokens.is_empty() {
+    return None
+  }
+  match parse_alignment_segment(tokens, 0) {
+    Some((first, next_index)) => {
+      let first_alignment = parse_alignment_with_overflow(first)
+      if next_index >= tokens.length() {
+        return Some((first_alignment, first_alignment))
+      }
+      match parse_alignment_segment(tokens, next_index) {
+        Some((second, _)) =>
+          Some((first_alignment, parse_alignment_with_overflow(second)))
+        None => Some((first_alignment, first_alignment))
+      }
+    }
+    None => None
+  }
 }
 
 ///|
@@ -458,21 +499,9 @@ pub fn parse_alignment(value : String) -> @types.Alignment {
 pub fn parse_place_content(
   value : String,
 ) -> (@types.Alignment, @types.Alignment)? {
-  let tokens = tokenize_alignment_value(value)
-  if tokens.is_empty() {
-    return None
-  }
-  match parse_alignment_segment(tokens, 0) {
-    Some((first, next_index)) => {
-      let align_content = parse_alignment(first)
-      if next_index >= tokens.length() {
-        return Some((align_content, align_content))
-      }
-      match parse_alignment_segment(tokens, next_index) {
-        Some((second, _)) => Some((align_content, parse_alignment(second)))
-        None => Some((align_content, align_content))
-      }
-    }
+  match parse_place_content_with_overflow(value) {
+    Some(((align_content, _), (justify_content, _))) =>
+      Some((align_content, justify_content))
     None => None
   }
 }

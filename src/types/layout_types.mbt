@@ -53,6 +53,8 @@ pub(all) enum FlexDirection {
 pub(all) enum Alignment {
   Start
   End
+  Left
+  Right
   FlexStart
   FlexEnd
   Center

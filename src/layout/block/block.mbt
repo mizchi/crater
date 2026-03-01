@@ -4751,8 +4751,16 @@ fn compute_with_collapse(
             }
 
             let absolute_col = (effective_pos / limit).to_int()
-            let row_index = absolute_col / multicol_column_count
-            let column_index = absolute_col % multicol_column_count
+            let row_index = if multicol_fragment_contained {
+              absolute_col / multicol_column_count
+            } else {
+              0
+            }
+            let column_index = if multicol_fragment_contained {
+              absolute_col % multicol_column_count
+            } else {
+              absolute_col
+            }
             let local_y = effective_pos - absolute_col.to_double() * limit
             let col_offset = if child_style.column_span ==
               @style.ColumnSpan::All {
@@ -4816,8 +4824,16 @@ fn compute_with_collapse(
                   nested_pos = (nested_col + 1).to_double() * limit
                 }
                 let nested_col = (nested_pos / limit).to_int()
-                let nested_row = nested_col / multicol_column_count
-                let nested_col_index = nested_col % multicol_column_count
+                let nested_row = if multicol_fragment_contained {
+                  nested_col / multicol_column_count
+                } else {
+                  0
+                }
+                let nested_col_index = if multicol_fragment_contained {
+                  nested_col % multicol_column_count
+                } else {
+                  nested_col
+                }
                 let nested_local_y = nested_pos - nested_col.to_double() * limit
                 nested_layouts.push({
                   ..nested_layout,
