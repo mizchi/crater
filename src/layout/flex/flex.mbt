@@ -566,31 +566,28 @@ fn is_non_empty_collapsible_flex_text_node(node : @node.Node) -> Bool {
 }
 
 ///|
-fn has_trailing_space_from_measure(
-  node : @node.Node,
-  trimmed_text : String,
-) -> Bool {
-  if not(is_collapsible_flex_text_node(node)) {
+fn starts_with_collapsible_flex_whitespace(text : String) -> Bool {
+  for c in text.iter() {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+  }
+  false
+}
+
+///|
+fn ends_with_collapsible_flex_whitespace(text : String) -> Bool {
+  let chars : Array[Char] = []
+  for c in text.iter() {
+    chars.push(c)
+  }
+  if chars.is_empty() {
     return false
   }
-  match node.measure {
-    Some(mf) => {
-      let intrinsic = (mf.func)(0.0, 0.0)
-      let font_size = if node.style.font_size > 0.0 {
-        node.style.font_size
-      } else {
-        16.0
-      }
-      let char_width = font_size * 0.5
-      let (max_cols, _) = estimate_flex_text_columns(
-        trimmed_text,
-        node.style.white_space,
-      )
-      let trimmed_width = max_cols.to_double() * char_width
-      intrinsic.max_width > trimmed_width + char_width * 0.5
-    }
-    None => false
-  }
+  let last = chars[chars.length() - 1]
+  last == ' ' ||
+  last == '\t' ||
+  last == '\n' ||
+  last == '\r' ||
+  last == '\u000C'
 }
 
 ///|
@@ -648,8 +645,9 @@ fn normalize_flattened_flex_text_items(
     }
     let trimmed = text.trim().to_string()
     if trimmed.is_empty() {
-      if previous_significant_is_text(items, i) &&
-        next_significant_is_text(items, i) {
+      let prev_is_text = previous_significant_is_text(items, i)
+      let next_is_text = next_significant_is_text(items, i)
+      if prev_is_text && next_is_text {
         let normalized_node = @node.Node::with_uid_and_measure(
           node.id,
           node.uid,
@@ -662,12 +660,16 @@ fn normalize_flattened_flex_text_items(
       }
       continue
     }
-    let keep_trailing_space = has_trailing_space_from_measure(node, trimmed) &&
-      next_significant_is_text(items, i)
-    let normalized_text = if keep_trailing_space {
-      trimmed + "\u00A0"
-    } else {
-      trimmed
+    let keep_leading_space = previous_significant_is_text(items, i) &&
+      starts_with_collapsible_flex_whitespace(text)
+    let keep_trailing_space = next_significant_is_text(items, i) &&
+      ends_with_collapsible_flex_whitespace(text)
+    let mut normalized_text = trimmed
+    if keep_leading_space {
+      normalized_text = "\u00A0" + normalized_text
+    }
+    if keep_trailing_space {
+      normalized_text = normalized_text + "\u00A0"
     }
     if normalized_text == text {
       normalized.push(item)
@@ -684,6 +686,56 @@ fn normalize_flattened_flex_text_items(
     }
   }
   normalized
+}
+
+///|
+fn is_generated_pseudo_contents_text_item(item : FlattenedChild) -> Bool {
+  if not(is_non_empty_collapsible_flex_text_node(item.node)) {
+    return false
+  }
+  if item.contents_ancestors.length() != 1 {
+    return false
+  }
+  let ancestor = item.contents_ancestors[0]
+  ancestor.id.has_prefix("#pseudo::") &&
+  ancestor.style.display == @types.Contents
+}
+
+///|
+fn merge_adjacent_generated_pseudo_text_items(
+  items : Array[FlattenedChild],
+) -> Array[FlattenedChild] {
+  let merged : Array[FlattenedChild] = []
+  for item in items {
+    if merged.length() == 0 || not(is_generated_pseudo_contents_text_item(item)) {
+      merged.push(item)
+      continue
+    }
+    let last_index = merged.length() - 1
+    let prev_item = merged[last_index]
+    if not(is_generated_pseudo_contents_text_item(prev_item)) {
+      merged.push(item)
+      continue
+    }
+    let prev_text = match prev_item.node.text {
+      Some(text) => text
+      None => ""
+    }
+    let curr_text = match item.node.text {
+      Some(text) => text
+      None => ""
+    }
+    let merged_node = @node.Node::with_uid_and_measure(
+      prev_item.node.id,
+      prev_item.node.uid,
+      prev_item.node.style,
+      prev_item.node.children,
+      prev_item.node.measure,
+      Some(prev_text + curr_text),
+    )
+    merged[last_index] = { ..prev_item, node: merged_node }
+  }
+  merged
 }
 
 ///|
@@ -707,7 +759,8 @@ fn flatten_children_for_flex(node : @node.Node) -> Array[FlattenedChild] {
       })
     }
   }
-  normalize_flattened_flex_text_items(result)
+  let normalized = normalize_flattened_flex_text_items(result)
+  merge_adjacent_generated_pseudo_text_items(normalized)
 }
 
 ///|

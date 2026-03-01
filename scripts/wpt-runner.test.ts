@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
+  isScriptMutationDependentTest,
   resolveFocusedComparisonNodeId,
   resolveTextIntrinsicFn,
 } from "./wpt-runner.ts";
@@ -104,12 +105,84 @@ describe("resolveFocusedComparisonNodeId", () => {
     ).toBe("div.test");
   });
 
+  it("targets css-align block align-content fixtures to compare .test boxes", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-align/blocks/align-content-block-012.html",
+      ),
+    ).toBe("div.test");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-align/blocks/align-content-block-overflow-000.html",
+      ),
+    ).toBe("div.test");
+  });
+
+  it("targets display-contents details fixture to compare summary node", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-details-001.html",
+      ),
+    ).toBe("summary");
+  });
+
   it("does not change comparison target for other tests", () => {
     expect(
       resolveFocusedComparisonNodeId(
         "wpt/css/css-overflow/column-scroll-marker-001.html",
       ),
     ).toBeNull();
+  });
+});
+
+describe("isScriptMutationDependentTest", () => {
+  it("flags align-content dynamic-content fixture as script-dependent", () => {
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-align/blocks/align-content-block-dynamic-content.html",
+      ),
+    ).toBe(true);
+  });
+
+  it("flags css-display dynamic mutation fixtures as script-dependent", () => {
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-contents-dynamic-pseudo-insertion-001.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-contents-state-change-001.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-contents-dynamic-fieldset-legend-001.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-contents-shadow-dom-1.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-contents-shadow-host-whitespace.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-first-line-002.html",
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false for non-script-dependent fixtures", () => {
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-align/blocks/align-content-block-012.html",
+      ),
+    ).toBe(false);
   });
 });
 

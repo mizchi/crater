@@ -191,11 +191,50 @@ fn create_text_measure_with_provider(
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
 ) -> @types.MeasureFunc {
+  fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
+    match white_space {
+      @style.WhiteSpace::Normal
+      | @style.WhiteSpace::Nowrap
+      | @style.WhiteSpace::PreLine => true
+      _ => false
+    }
+  }
+  fn has_boundary_collapsible_whitespace(text : String) -> Bool {
+    let mut starts_with_ws = false
+    let mut seen_first = false
+    let mut ends_with_ws = false
+    for c in text.iter() {
+      if not(seen_first) {
+        seen_first = true
+        starts_with_ws = c == ' ' ||
+          c == '\t' ||
+          c == '\n' ||
+          c == '\r' ||
+          c == '\u000C'
+      }
+      ends_with_ws = c == ' ' ||
+        c == '\t' ||
+        c == '\n' ||
+        c == '\r' ||
+        c == '\u000C'
+    }
+    starts_with_ws || ends_with_ws
+  }
+  let trimmed = text.trim()
+  let force_builtin_measure = white_space_collapses_edges(white_space) &&
+    not(text.is_empty()) &&
+    (trimmed.is_empty() || has_boundary_collapsible_whitespace(text))
   match text_metrics_provider_override.val {
     Some(provider) =>
-      (provider.func)(
-        text, font_size, text_line_height, white_space, writing_mode,
-      )
+      if force_builtin_measure {
+        create_text_measure(
+          text, font_size, text_line_height, white_space, writing_mode,
+        )
+      } else {
+        (provider.func)(
+          text, font_size, text_line_height, white_space, writing_mode,
+        )
+      }
     None =>
       create_text_measure(
         text, font_size, text_line_height, white_space, writing_mode,
@@ -223,13 +262,26 @@ fn create_text_measure(
     raw_trimmed.to_string()
   }
   if not(raw_trimmed.is_empty()) {
+    let mut starts_with_ws = false
+    let mut seen_first = false
     let mut ends_with_ws = false
     for c in text.iter() {
+      if not(seen_first) {
+        seen_first = true
+        starts_with_ws = c == ' ' ||
+          c == '\t' ||
+          c == '\n' ||
+          c == '\r' ||
+          c == '\u000C'
+      }
       ends_with_ws = c == ' ' ||
         c == '\t' ||
         c == '\n' ||
         c == '\r' ||
         c == '\u000C'
+    }
+    if starts_with_ws {
+      trimmed = " " + trimmed
     }
     if ends_with_ws {
       trimmed = trimmed + " "
@@ -848,7 +900,7 @@ fn should_preserve_inter_element_whitespace(
         )
         is_inline_participating_display(computed.display)
       }
-      _ => false
+      @html.Node::Text(text) => not(is_whitespace_only_text(text))
     }
   }
   let prev_inline = inline_participates_at(
@@ -879,6 +931,9 @@ fn has_display_contents(
   stylesheets : Array[@cascade.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
+  if is_display_contents_suppressed_html_element(elem.tag) {
+    return false
+  }
   match elem.style {
     Some(style_str) => {
       let parsed = @parser.parse_inline_style(style_str)
@@ -1211,6 +1266,68 @@ fn contains_block_child(
 }
 
 ///|
+fn has_direct_display_contents_child(
+  elem : @html.Element,
+  parent_selector : @selector.Element,
+  parent_style : @style.Style,
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  ctx : RenderContext,
+  css_vars : Map[String, String],
+) -> Bool {
+  let mut element_child_count = 0
+  for child in elem.children {
+    match child {
+      @html.Node::Element(_) => element_child_count = element_child_count + 1
+      _ => ()
+    }
+  }
+  let mut element_child_index = 0
+  let mut prev_selector_sibling : @selector.Element? = None
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        element_child_index = element_child_index + 1
+        let child_selector = html_to_selector_element_with_parent(
+          child_elem, parent_selector, element_child_index, element_child_count,
+          prev_selector_sibling,
+        )
+        let child_style = compute_element_style_indexed(
+          child_selector,
+          child_elem.style,
+          indexed_stylesheets,
+          false,
+          ctx,
+          Some(parent_style),
+          css_vars,
+        )
+        prev_selector_sibling = Some(child_selector)
+        if child_style.display == @types.Contents {
+          return true
+        }
+      }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+fn has_direct_contents_class_child(elem : @html.Element) -> Bool {
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) =>
+        for cls in child_elem.classes {
+          if cls.to_lower() == "contents" {
+            return true
+          }
+        }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
 fn is_out_of_flow_positioned(
   elem : @html.Element,
   stylesheets : Array[@cascade.Stylesheet],
@@ -1270,7 +1387,10 @@ fn is_replaced_element(tag : String) -> Bool {
   match tag.to_lower() {
     "img"
     | "input"
+    | "textarea"
     | "select"
+    | "meter"
+    | "progress"
     | "video"
     | "audio"
     | "canvas"
@@ -1347,8 +1467,8 @@ fn collect_inline_content(
           flush_text(text_builder, remaining)
           // Replaced elements (img, input, etc.) are kept as separate nodes
           remaining.push(child)
-        } else if is_inline_element(elem) &&
-          not(will_have_non_inline_display(elem, stylesheets, ctx)) {
+        } else if has_display_contents(elem, stylesheets, ctx) ||
+          has_inline_participating_display(elem, stylesheets, ctx) {
           if preserve_inline_elements {
             // In flex/grid containers, direct inline children are layout items
             // and must be preserved as elements.
@@ -1401,6 +1521,102 @@ fn collect_inline_content(
     ("", remaining)
   } else {
     ("", children)
+  }
+}
+
+///|
+fn clone_node_with_children(
+  node : @node.Node,
+  children : Array[@node.Node],
+) -> @node.Node {
+  @node.Node::with_uid_and_measure(
+    node.id,
+    node.uid,
+    node.style,
+    children,
+    node.measure,
+    node.text,
+  )
+}
+
+///|
+fn find_first_summary_path_in_node(node : @node.Node) -> Array[Int]? {
+  if node_id_is_tag(node.id, "summary") {
+    return Some([])
+  }
+  for i = 0; i < node.children.length(); i = i + 1 {
+    match find_first_summary_path_in_node(node.children[i]) {
+      Some(path) => {
+        let prefixed : Array[Int] = [i]
+        for segment in path {
+          prefixed.push(segment)
+        }
+        return Some(prefixed)
+      }
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn find_first_summary_path_in_children(
+  children : Array[@node.Node],
+) -> (Int, Array[Int])? {
+  for i = 0; i < children.length(); i = i + 1 {
+    match find_first_summary_path_in_node(children[i]) {
+      Some(path) => return Some((i, path))
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn prune_node_to_summary_path(
+  node : @node.Node,
+  path : Array[Int],
+) -> @node.Node {
+  if path.length() == 0 {
+    return node
+  }
+  let next_index = path[0]
+  if next_index < 0 || next_index >= node.children.length() {
+    return node
+  }
+  let remaining : Array[Int] = []
+  for i = 1; i < path.length(); i = i + 1 {
+    remaining.push(path[i])
+  }
+  let kept_child = prune_node_to_summary_path(
+    node.children[next_index],
+    remaining,
+  )
+  let kept_children : Array[@node.Node] = []
+  for i = 0; i < next_index; i = i + 1 {
+    let sibling = node.children[i]
+    if sibling.id == "#text" {
+      match sibling.text {
+        Some(text) if not(text.is_empty()) && text.trim().is_empty() =>
+          kept_children.push(sibling)
+        _ => ()
+      }
+    }
+  }
+  kept_children.push(kept_child)
+  clone_node_with_children(node, kept_children)
+}
+
+///|
+fn prune_closed_details_children(
+  children : Array[@node.Node],
+) -> Array[@node.Node] {
+  match find_first_summary_path_in_children(children) {
+    Some((top_index, path)) => {
+      let pruned_top = prune_node_to_summary_path(children[top_index], path)
+      [pruned_top]
+    }
+    None => []
   }
 }
 
@@ -1468,7 +1684,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       create_text_measure_with_provider(
         normalized_text, font_size, text_line_height, white_space, writing_mode,
       ),
-      trimmed.to_string(),
+      normalized_text,
     )
   }
 }
@@ -3009,8 +3225,13 @@ fn create_generated_pseudo_node(
     Before => "#pseudo::before"
     After => "#pseudo::after"
   }
+  let pseudo_is_contents = spec.generated_style.display == @types.Contents
   if spec.content.is_empty() {
     @node.Node::leaf(pseudo_id, spec.generated_style)
+  } else if pseudo_is_contents {
+    // display: contents pseudo-elements should expose generated text as child content.
+    let text_child = create_text_node(spec.content, spec.generated_style)
+    @node.Node::new(pseudo_id, spec.generated_style, [text_child])
   } else {
     let font_size = spec.generated_style.font_size
     let text_line_height = spec.generated_style.line_height
@@ -3905,7 +4126,6 @@ fn element_to_node_with_styles(
       _ => ()
     }
   }
-
   // Process remaining children (elements and synthetic text nodes)
   for i, child in remaining_children {
     match child {
@@ -4059,7 +4279,13 @@ fn element_to_node_with_styles_internal(
     { ..computed_style, display: @types.InlineBlock }
   } else if computed_style.display == @types.Inline &&
     not(is_ruby_internal) &&
-    contains_block_child(elem, stylesheets, ctx) {
+    contains_block_child(elem, stylesheets, ctx) &&
+    not(
+      has_direct_display_contents_child(
+        elem, selector_elem, computed_style, indexed_stylesheets, ctx, css_vars,
+      ) ||
+      has_direct_contents_class_child(elem),
+    ) {
     // Inline element with block children should become block
     // This handles cases like <code><span class="line" style="display:block">
     { ..computed_style, display: @types.Block }
@@ -4162,21 +4388,9 @@ fn element_to_node_with_styles_internal(
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []
-  let parent_is_contents = match parent_style {
-    Some(ps) => ps.display == @types.Contents
-    None => false
-  }
-  let preserve_inline_elements = if parent_is_contents {
-    true
-  } else {
-    match style.display {
-      @types.Flex
-      | @types.InlineFlex
-      | @types.Grid
-      | @types.InlineGrid
-      | @types.Contents => true
-      _ => false
-    }
+  let preserve_inline_elements = match style.display {
+    @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
+    _ => false
   }
   let (inline_text, remaining_children) = collect_inline_content(
     elem.children,
@@ -4213,7 +4427,6 @@ fn element_to_node_with_styles_internal(
       _ => ()
     }
   }
-
   // Process remaining children (elements and synthetic text nodes)
   for i, child in remaining_children {
     match child {
@@ -4289,10 +4502,15 @@ fn element_to_node_with_styles_internal(
       children.push(create_generated_pseudo_node(spec, After))
     _ => ()
   }
+  let children = if tag_lower == "details" &&
+    not(elem.attributes.contains("open")) {
+    prune_closed_details_children(children)
+  } else {
+    children
+  }
   let node_id = make_node_id(elem)
 
   // Handle replaced elements (img, input, etc.) with intrinsic sizing
-  let tag_lower = elem.tag.to_lower()
   if tag_lower == "input" && children.is_empty() {
     // Get input type (default is "text")
     let input_type = match elem.attributes.get("type") {
@@ -5394,6 +5612,40 @@ fn uses_table_normal_line_height(tag : String) -> Bool {
 }
 
 ///|
+fn is_display_contents_suppressed_html_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "br"
+    | "wbr"
+    | "meter"
+    | "progress"
+    | "canvas"
+    | "embed"
+    | "object"
+    | "audio"
+    | "iframe"
+    | "img"
+    | "video"
+    | "input"
+    | "textarea"
+    | "select" => true
+    _ => false
+  }
+}
+
+///|
+fn normalize_display_contents_for_unusual_html(
+  tag : String,
+  style : @style.Style,
+) -> @style.Style {
+  if style.display == @types.Contents &&
+    is_display_contents_suppressed_html_element(tag) {
+    { ..style, display: @types.Display::None }
+  } else {
+    style
+  }
+}
+
+///|
 /// Compute element style using indexed stylesheets for better performance
 fn compute_element_style_indexed(
   selector_elem : @selector.Element,
@@ -5556,6 +5808,10 @@ fn compute_element_style_indexed(
       )
     None => ()
   }
+  style = normalize_display_contents_for_unusual_html(
+    selector_elem.tag_name,
+    style,
+  )
 
   // Effects that establish a containing block for positioned descendants:
   // filter and backdrop-filter (non-none values).

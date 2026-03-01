@@ -177,6 +177,9 @@ fn StreamingTreeBuilder::flush_pending_text(
         }
       }
       if stb_is_whitespace_only(text) {
+        if current.children.length() == 0 && stb_is_plain_space_only(text) {
+          current.children.push(Node::Text(" "))
+        }
         return
       }
       current.children.push(Node::Text(text))
@@ -189,6 +192,19 @@ fn StreamingTreeBuilder::flush_pending_text(
 fn stb_is_whitespace_only(s : String) -> Bool {
   for c in s {
     if not(stb_is_whitespace(c)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn stb_is_plain_space_only(s : String) -> Bool {
+  if s.is_empty() {
+    return false
+  }
+  for c in s {
+    if c != ' ' {
       return false
     }
   }

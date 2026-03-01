@@ -234,7 +234,11 @@ fn TreeBuilder::flush_pending_text(
       // Skip whitespace-only text nodes between elements
       // while preserving one collapsed space for later layout decisions.
       if is_whitespace_only(text) {
-        if should_preserve_inline_inter_element_whitespace(current, next_tag) {
+        let keep_space_only_leaf_text = next_tag is None &&
+          current.children.length() == 0 &&
+          is_plain_space_only(text)
+        if should_preserve_inline_inter_element_whitespace(current, next_tag) ||
+          keep_space_only_leaf_text {
           current.children.push(Node::Text(" "))
         }
         return
@@ -274,6 +278,19 @@ fn should_preserve_inline_inter_element_whitespace(
 fn is_whitespace_only(s : String) -> Bool {
   for c in s {
     if not(tb_is_whitespace(c)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn is_plain_space_only(s : String) -> Bool {
+  if s.is_empty() {
+    return false
+  }
+  for c in s {
+    if c != ' ' {
       return false
     }
   }

@@ -195,6 +195,413 @@ test "whitespace_between_inline_replaced_media_nodes_is_preserved" {
 }
 
 ///|
+test "display_contents_inline_flex_collapses_boundary_spaces" {
+  // Regression for css-display/display-contents-inline-flex-001:
+  // text around display:contents descendants should collapse boundary
+  // whitespace in flex formatting context ("012").
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.iflex { display: inline-flex; }
+    #|.contents { display: contents; }
+    #|.inline { display: inline; }
+    #|</style>
+    #|<div class="iflex">
+    #|  <div class="contents">
+    #|    0
+    #|    <div class="inline">1</div>
+    #|    2
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let host = layout.children[0]
+  inspect(host.width, content="24")
+}
+
+///|
+test "display_contents_inline_flex_drops_spaces_around_block_flex_items" {
+  // Regression for css-display/display-contents-inline-flex-001:
+  // whitespace around block-level flex items should collapse away ("012"), not
+  // be preserved as boundary spaces.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.iflex { display: inline-flex; }
+    #|.contents { display: contents; }
+    #|</style>
+    #|<div class="iflex">
+    #|  <div class="contents">
+    #|    0
+    #|    <div>1</div>
+    #|    2
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let host = layout.children[0]
+  inspect(host.width, content="24")
+}
+
+///|
+test "display_contents_inline_flex_keeps_spaces_between_text_runs" {
+  // Regression for css-display/display-contents-inline-flex-001:
+  // when display:contents wrappers flatten into adjacent text runs, one collapsed
+  // boundary space should remain ("0 1 2").
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.iflex { display: inline-flex; }
+    #|.contents { display: contents; }
+    #|</style>
+    #|<div class="iflex">
+    #|  <div class="contents">
+    #|    0
+    #|    <div class="contents">1</div>
+    #|    2
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let host = layout.children[0]
+  inspect(host.width, content="40")
+}
+
+///|
+test "display_contents_child_of_inline_stays_contents_and_parent_stays_inline" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.contents { display: contents; }
+    #|.inline { display: inline; }
+    #|</style>
+    #|<div class="contents"><div class="inline"><div class="contents">4</div></div></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let contents = root.children[0]
+  let inline = contents.children[0]
+  let child_contents = inline.children[0]
+  inspect(inline.style.display, content="Inline")
+  inspect(child_contents.style.display, content="Contents")
+}
+
+///|
+test "display_contents_textarea_computes_to_none" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|textarea { display: contents; }
+    #|</style>
+    #|<textarea>FAIL</textarea>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let child = layout.children[0]
+  inspect(child.id, content="textarea")
+  inspect(child.width, content="0")
+  inspect(child.height, content="0")
+}
+
+///|
+test "display_contents_whitespace_inside_inline_keeps_single_space" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|</style>
+    #|<span>Foo<div style="display: contents"> </div>bar</span>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let span = root.children[0]
+  let text = match span.children[0].text {
+    Some(value) => value
+    None => ""
+  }
+  inspect(text, content="Foo bar")
+}
+
+///|
+test "display_contents_inside_closed_details_suppresses_non_summary_text" {
+  let html_str =
+    #|<!doctype html>
+    #|<details>
+    #|  <div style="display:contents">
+    #|    <summary>summary</summary>
+    #|    details
+    #|  </div>
+    #|</details>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  fn contains_trimmed_text(node : @node.Node, target : String) -> Bool {
+    match node.text {
+      Some(text) => if text.trim().to_string() == target { return true }
+      None => ()
+    }
+    for child in node.children {
+      if contains_trimmed_text(child, target) {
+        return true
+      }
+    }
+    false
+  }
+  guard contains_trimmed_text(root, "summary") else {
+    fail("closed details should keep summary text")
+  }
+  guard not(contains_trimmed_text(root, "details")) else {
+    fail("closed details should suppress non-summary descendants")
+  }
+}
+
+///|
+test "display_contents_list_like_inline_wrapper_keeps_inline_display" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html, body { font-size: 16px; padding: 0; margin: 0; }
+    #|.inline { display: inline; }
+    #|.contents { display: contents; }
+    #|.c2 { background: blue; color: pink; }
+    #|.c3 { color: teal; }
+    #|.c4 { color: green; }
+    #|.b { background: inherit; }
+    #|</style>
+    #|<div class="contents c2">
+    #|  0
+    #|  <div class="contents c1">x</div>
+    #|  <div class="contents c1"><div class="contents c2">y</div></div>
+    #|  <div class="contents c1"><div class="contents c2"><div>1<span class="b">1</span></div></div></div>
+    #|  <div class="contents c2"><div class="inline">2a<div>2<div class="contents c2">b<span class="b">b</span></div></div></div></div>
+    #|  <div class="contents c3"><div class="inline">3</div></div>
+    #|  <div class="inline"><div class="contents c4">4</div></div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  fn contains_trimmed_text(node : @node.Node, target : String) -> Bool {
+    match node.text {
+      Some(text) => if text.trim() == target { return true }
+      None => ()
+    }
+    for child in node.children {
+      if contains_trimmed_text(child, target) {
+        return true
+      }
+    }
+    false
+  }
+  fn find_inline_with_text_4(node : @node.Node) -> @node.Node? {
+    if node.id == "div.inline" && contains_trimmed_text(node, "4") {
+      return Some(node)
+    }
+    for child in node.children {
+      match find_inline_with_text_4(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+  match find_inline_with_text_4(root) {
+    Some(inline4) => {
+      inspect(inline4.style.display, content="Inline")
+      guard inline4.children.length() > 0 else {
+        fail("inline wrapper for text 4 should have a child")
+      }
+      inspect(inline4.children[0].style.display, content="Contents")
+    }
+    None => fail("target inline wrapper with text 4 should exist")
+  }
+}
+
+///|
+test "display_contents_pseudo_text_participates_in_inline_flex_layout" {
+  // Regression for css-display/display-contents-before-after-003:
+  // ::before/::after with display:contents should contribute generated text as
+  // inline content, not as zero-sized pseudo boxes.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.flex { display: inline-flex; flex-direction: column; }
+    #|.flex::before { display: contents; content: "A"; }
+    #|.flex::after { display: contents; content: "S"; }
+    #|</style>
+    #|<div class="flex"></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let host = root.children[0]
+  inspect(host.children.length(), content="2")
+  inspect(host.children[0].id, content="#pseudo::before")
+  inspect(host.children[0].children.length(), content="1")
+  inspect(host.children[0].children[0].id, content="#text")
+  inspect(host.children[1].id, content="#pseudo::after")
+  inspect(host.children[1].children.length(), content="1")
+  inspect(host.children[1].children[0].id, content="#text")
+  let wpt_like_html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.flex { display: inline-flex; flex-direction: column; }
+    #|.flex::before { display: contents; content: "A"; }
+    #|.flex::after { display: contents; content: "S"; }
+    #|</style>
+    #|P<div class="flex"></div>S
+  let layout = @renderer.render(
+    wpt_like_html,
+    @renderer.RenderContext::default(),
+  )
+  let mut flex_width = -1.0
+  for child in layout.children {
+    if child.id == "div.flex" {
+      flex_width = child.width
+      break
+    }
+  }
+  guard flex_width >= 0.0 else { fail("flex layout node should be present") }
+  guard flex_width >= 8.0 else {
+    fail(
+      "display:contents pseudo generated text should contribute positive inline-flex width",
+    )
+  }
+}
+
+///|
+test "display_contents_selector_matches_when_class_is_not_first" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.columns { columns: 2; }
+    #|.contents { display: contents; }
+    #|</style>
+    #|<div class="columns">
+    #|  <div class="columns contents"><div>A</div></div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let outer = root.children[0]
+  let inner = outer.children[0]
+  inspect(inner.style.display, content="Contents")
+}
+
+///|
+test "display_contents_columns_combo_keeps_contents_display_in_wpt_like_tree" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.columns { columns: 2; height: 4em; }
+    #|.contents { display: contents; }
+    #|</style>
+    #|<div class="columns">
+    #|  <div class="columns contents">
+    #|    <div class="contents"><div>1</div></div>
+    #|    <div class="contents"><div>2</div></div>
+    #|    <div class="contents"><div>3</div></div>
+    #|  </div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let outer = root.children[0]
+  let inner = outer.children[0]
+  inspect(inner.id, content="div.columns")
+  inspect(inner.style.display, content="Contents")
+}
+
+///|
+test "display_inline_with_contents_child_stays_inline_sized" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.inline { display: inline; }
+    #|.contents { display: contents; }
+    #|</style>
+    #|<div id="root">
+    #|  <div class="inline"><div class="contents">4</div></div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let outer = root.children[0]
+  let inline = outer.children[0]
+  inspect(inline.style.display, content="Inline")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer_layout = layout.children[0]
+  let inline_layout = outer_layout.children[0]
+  inspect(inline_layout.width, content="8")
+}
+
+///|
+test "abspos_align_self_stretch_with_inset_shorthand_spans_containing_block" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.container { position: relative; width: 200px; height: 200px; }
+    #|.abspos {
+    #|  position: absolute;
+    #|  inset: 50px auto 50px 50px;
+    #|  margin: auto 0 auto 0;
+    #|  align-self: stretch;
+    #|}
+    #|.abspos::before {
+    #|  content: '';
+    #|  min-width: 50px;
+    #|  height: 100%;
+    #|  aspect-ratio: 1;
+    #|  display: block;
+    #|}
+    #|</style>
+    #|<div class="container"><div class="abspos"></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let abspos = container.children[0]
+  inspect(abspos.width, content="100")
+  inspect(abspos.height, content="100")
+}
+
+///|
+test "abspos_justify_self_stretch_with_inset_shorthand_spans_containing_block" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.container { position: relative; width: 200px; height: 200px; }
+    #|.abspos {
+    #|  position: absolute;
+    #|  inset: 50px 50px auto 50px;
+    #|  margin: 0 auto 0 auto;
+    #|  justify-self: stretch;
+    #|}
+    #|.abspos::before {
+    #|  content: '';
+    #|  width: 100%;
+    #|  min-height: 50px;
+    #|  aspect-ratio: 1;
+    #|  display: block;
+    #|}
+    #|</style>
+    #|<div class="container"><div class="abspos"></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let abspos = container.children[0]
+  inspect(abspos.width, content="100")
+  inspect(abspos.height, content="100")
+}
+
+///|
 test "whitespace_adjacent_to_br_is_not_preserved_between_replaced_nodes" {
   // Regression for css-contain/contain-size-replaced-003a:
   // whitespace immediately after <br> should not indent the next replaced element.
