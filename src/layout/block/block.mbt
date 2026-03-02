@@ -5894,17 +5894,22 @@ fn compute_with_collapse(
                   let nested_outer_height = nested_flow_height +
                     nested_layout.margin.top +
                     nested_layout.margin.bottom
-                  let nested_unbreakable = if j <
+                  let nested_is_inflow_float = nested_style.float !=
+                    @types.Float::None &&
+                    nested_style.position != @types.Absolute &&
+                    nested_style.position != @types.Fixed
+                  let nested_is_hr = nested_layout.id == "hr"
+                  let nested_base_unbreakable = if j <
                     nested_source_children.length() {
-                    nested_layout.id != "hr" &&
                     is_unbreakable_fragment_unit(
                       nested_source_children[j],
                       nested_layout,
                     )
                   } else {
-                    nested_layout.id != "hr" &&
                     nested_layout.children.length() == 0
                   }
+                  let nested_unbreakable = not(nested_is_hr) &&
+                    nested_base_unbreakable
                   let mut effective_nested_y = nested_layout.y +
                     nested_fragment_offset +
                     nested_carry_delta
@@ -5916,10 +5921,7 @@ fn compute_with_collapse(
                     nested_local_y > 0.0 &&
                     nested_local_y + nested_outer_height > limit {
                     let next_effective = (nested_col + 1).to_double() * limit
-                    let float_line_adjust = if nested_style.float !=
-                      @types.Float::None &&
-                      nested_style.position != @types.Absolute &&
-                      nested_style.position != @types.Fixed &&
+                    let float_line_adjust = if nested_is_inflow_float &&
                       nested_style.line_height > 0.0 {
                       nested_style.line_height
                     } else {
@@ -6012,17 +6014,18 @@ fn compute_with_collapse(
                     for idx = 0; idx < nested_positioned_children.length(); idx = idx +
                         1 {
                       let nested_child = nested_positioned_children[idx]
-                      let shift_zero_height_float = nested_height_zero &&
-                        nested_child.id == "div.float" &&
+                      let shift_zero_height_float = nested_child.id ==
+                        "div.float" &&
                         nested_child.y > 0.0
-                      if not(shifted_any) &&
-                        idx > 0 &&
+                      let should_shift_nested_child = idx > 0 &&
                         nested_child.children.length() > 0 &&
+                        nested_child.y > 0.0 &&
                         (
                           nested_child.x <= 0.01 ||
                           shift_zero_height_float
-                        ) &&
-                        nested_child.y > 0.0 {
+                        )
+                      if not(shifted_any) &&
+                        should_shift_nested_child {
                         let shift_y = if shift_zero_height_float {
                           -nested_child.y
                         } else {

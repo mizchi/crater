@@ -566,6 +566,8 @@ async function initCraterRenderer(): Promise<void> {
 // Configuration
 const TOLERANCE = 15;
 const MAY_TOLERANCE = 16;
+const ALIGN_CONTENT_BREAK_OVERFLOW_020 = 'align-content-block-break-overflow-020.html';
+const ALIGN_CONTENT_BREAK_OVERFLOW_020_TOLERANCE = 31;
 const VIEWPORT = { width: 800, height: 600 };
 const DEFAULT_CONCURRENCY = 6;
 const CI_PUPPETEER_ARGS = ['--no-sandbox', '--disable-setuid-sandbox'];
@@ -1215,6 +1217,13 @@ function mismatchScore(mismatches: Mismatch[]): number {
   return mismatches.reduce((sum, m) => sum + m.diff, 0);
 }
 
+function resolveComparisonTolerance(name: string, isMay: boolean): number {
+  if (name.toLowerCase() === ALIGN_CONTENT_BREAK_OVERFLOW_020) {
+    return ALIGN_CONTENT_BREAK_OVERFLOW_020_TOLERANCE;
+  }
+  return isMay ? MAY_TOLERANCE : TOLERANCE;
+}
+
 function compareLayouts(
   browser: LayoutNode,
   crater: LayoutNode,
@@ -1421,10 +1430,10 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
     }
     const browserLayout = await getBrowserLayout(browser, htmlPath);
     const matchMetadata = readWptMatchMetadata(htmlPath);
-    const comparisonTolerance =
-      name.toLowerCase() === 'align-content-block-break-overflow-020.html'
-        ? 31
-        : (matchMetadata.isMay ? MAY_TOLERANCE : TOLERANCE);
+    const comparisonTolerance = resolveComparisonTolerance(
+      name,
+      matchMetadata.isMay,
+    );
     const browserCandidates: Array<{ label: string; layout: LayoutNode }> = [
       { label: 'self', layout: browserLayout },
     ];
