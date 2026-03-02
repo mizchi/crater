@@ -1361,6 +1361,34 @@ test "grid_contain_size_min_height_expands_fr_track_for_alignment" {
 }
 
 ///|
+test "grid_abspos_auto_self_alignment_uses_container_items_alignment" {
+  let default_style = @style.Style::default()
+  let absolute_item = @node.Node::leaf("absolute", {
+    ..default_style,
+    position: @types.Absolute,
+    width: @types.Length(50.0),
+    height: @types.Length(50.0),
+    align_self: @types.AlignSelf::Auto,
+    justify_self: @types.AlignSelf::Auto,
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(100.0),
+    height: @types.Length(100.0),
+    align_items: @types.Center,
+    justify_items: @types.Center,
+    grid_template_columns: [@types.TrackSizingFunction::Length(100.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(100.0)],
+  }
+  let root = @node.Node::new("root", root_style, [absolute_item])
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+
+  assert_eq(layout.children[0].x, 25.0)
+  assert_eq(layout.children[0].y, 25.0)
+}
+
+///|
 test "grid_inline_baseline_with_definite_height_replaced_item_keeps_auto_row_content_height" {
   let default_style = @style.Style::default()
   let canvas_measure : @types.MeasureFunc = {

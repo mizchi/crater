@@ -383,6 +383,67 @@ test "fieldset_columns_shorthand_applies_in_wpt_like_case" {
 }
 
 ///|
+test "html_columns_propagate_to_body_root_style" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  html {
+    #|    columns: 3;
+    #|    max-height: 600px;
+    #|  }
+    #|  body { margin: 0; }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|  <div style="height: 100px"></div>
+    #|</body></html>
+  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  inspect(root.id, content="body")
+  inspect(root.style.column_count, content="Some(3)")
+  inspect(root.style.column_gap_is_normal, content="true")
+}
+
+///|
+test "align_self_static_position_005_inline_span_stays_inline" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.container {
+    #|  position: relative;
+    #|  border: 1px solid;
+    #|}
+    #|
+    #|.abs {
+    #|  position: absolute;
+    #|  background: purple;
+    #|  align-self: end;
+    #|  opacity: 0.5;
+    #|}
+    #|</style>
+    #|<div class="container">
+    #|  <span style="font: 20px/1 Ahem;">hello
+    #|    <span class="abs">hello</span>
+    #|    <span style="vertical-align: top; font-size: 50px;">world</span>
+    #|  </span>
+    #|</div>
+  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let container = root.children[0]
+  inspect(container.id, content="div.container")
+  let inline_span = container.children[0]
+  inspect(inline_span.id, content="span")
+  inspect(inline_span.style.display, content="Inline")
+  let mut has_abs = false
+  for child in inline_span.children {
+    if child.id == "span.abs" {
+      inspect(child.style.position, content="Absolute")
+      has_abs = true
+    }
+  }
+  inspect(has_abs, content="true")
+}
+
+///|
 test "fieldset_columns_shorthand_survives_following_column_scroll_marker_rule" {
   let html =
     #|<!doctype html>
@@ -584,6 +645,52 @@ test "clear text metrics provider restores default text measurement" {
     None => @types.IntrinsicSize::default()
   }
   inspect(restored_intrinsic.max_width == 24.0, content="true")
+}
+
+///|
+test "text metrics provider affects default text input intrinsic width" {
+  @renderer.clear_text_metrics_provider()
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<input id="target" type="text">
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let default_node = @renderer.render_to_node(html, ctx)
+  let default_input = default_node.children[0]
+  inspect(default_input.id, content="input#target")
+  let default_intrinsic = match default_input.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(default_intrinsic.max_width, content="172")
+
+  let provider = @renderer.TextMetricsProvider::new(fn(
+    _text : String,
+    _font_size : Double,
+    _line_height : Double,
+    _white_space : @style.WhiteSpace,
+    _writing_mode : @style.WritingMode,
+  ) -> @types.MeasureFunc {
+    {
+      func: fn(
+        _available_width : Double,
+        _available_height : Double,
+      ) -> @types.IntrinsicSize {
+        { min_width: 6.0, max_width: 6.0, min_height: 16.0, max_height: 16.0 }
+      },
+    }
+  })
+  @renderer.set_text_metrics_provider(provider)
+
+  let overridden_node = @renderer.render_to_node(html, ctx)
+  let overridden_input = overridden_node.children[0]
+  let overridden_intrinsic = match overridden_input.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(overridden_intrinsic.max_width, content="132")
+  @renderer.clear_text_metrics_provider()
 }
 
 ///|

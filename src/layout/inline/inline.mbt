@@ -1600,9 +1600,12 @@ fn compute_inline_child(
   let mut content_width = 0.0
   let mut content_height = 0.0
   let mut inline_cursor_x = 0.0
+  let mut inline_cursor_y = 0.0
+  let mut inline_line_height = 0.0
+  let mut max_line_width = 0.0
 
   // Process children - handle absolute positioned elements
-  let absolute_entries : Array[(Int, @node.Node)] = []
+  let absolute_entries : Array[(Int, @node.Node, Double)] = []
   for child in node.children {
     if child.style.display == @types.Display::None {
       children.push(create_zero_layout(child))
@@ -1624,7 +1627,12 @@ fn compute_inline_child(
       let child_index = children.length()
       children.push(child_layout)
       if child.style.position == @types.Absolute {
-        absolute_entries.push((child_index, child))
+        let static_y = if inline_line_height > 0.0 {
+          inline_cursor_y + inline_line_height
+        } else {
+          inline_cursor_y
+        }
+        absolute_entries.push((child_index, child, static_y))
       }
       // Absolute children don't contribute to inline element's size
     } else if child.style.display == @types.Contents {
@@ -1730,7 +1738,7 @@ fn compute_inline_child(
         available_width,
       )
       let mut child_x = inline_cursor_x + child_margin.left
-      let mut child_y = 0.0
+      let mut child_y = inline_cursor_y
       if child.style.position == @types.Relative {
         let rel_left = resolve_inset_dimension(
           child.style.inset.left,
@@ -1771,15 +1779,41 @@ fn compute_inline_child(
       }
       children.push(positioned_child)
       // Accumulate content size from flow children
-      // For inline elements, children are laid out horizontally
-      inline_cursor_x = inline_cursor_x +
-        child_margin.left +
-        child_layout.width +
-        child_margin.right
-      content_width = inline_cursor_x
-      if child_layout.height > content_height &&
-        not(is_ruby_annotation_child(node, child)) {
-        content_height = child_layout.height
+      // For inline elements, children are laid out horizontally.
+      // A <br> child forces a new line.
+      if child.id == "br" {
+        let line_width = inline_cursor_x +
+          child_margin.left +
+          child_layout.width +
+          child_margin.right
+        if line_width > max_line_width {
+          max_line_width = line_width
+        }
+        let mut advance = inline_line_height
+        if child_layout.height > advance {
+          advance = child_layout.height
+        }
+        if advance <= 0.0 {
+          advance = line_height_from_style(style)
+        }
+        inline_cursor_y = inline_cursor_y + advance
+        inline_cursor_x = 0.0
+        inline_line_height = 0.0
+        content_height = inline_cursor_y
+      } else {
+        inline_cursor_x = inline_cursor_x +
+          child_margin.left +
+          child_layout.width +
+          child_margin.right
+        content_width = inline_cursor_x
+        if child_layout.height > inline_line_height &&
+          not(is_ruby_annotation_child(node, child)) {
+          inline_line_height = child_layout.height
+        }
+        let line_bottom = inline_cursor_y + inline_line_height
+        if line_bottom > content_height {
+          content_height = line_bottom
+        }
       }
     } else if is_ruby_internal_container(node.id) {
       // Ruby internal boxes can contain non-inline descendants in WPT fixtures.
@@ -1853,6 +1887,17 @@ fn compute_inline_child(
     // Block-level children in inline context are not supported (would need anonymous blocks)
   }
 
+  if inline_cursor_x > max_line_width {
+    max_line_width = inline_cursor_x
+  }
+  if max_line_width > content_width {
+    content_width = max_line_width
+  }
+  let last_line_bottom = inline_cursor_y + inline_line_height
+  if last_line_bottom > content_height {
+    content_height = last_line_bottom
+  }
+
   // Calculate final width and height
   // For inline elements, content width is the sum of children widths
   // Content height is the maximum child height
@@ -1867,7 +1912,8 @@ fn compute_inline_child(
     let text_box_height = text_glyph_height +
       padding.vertical_sum() +
       border.vertical_sum()
-    if final_height > text_box_height {
+    let has_forced_line_break = inline_cursor_y > 0.0
+    if not(has_forced_line_break) && final_height > text_box_height {
       final_height = text_box_height
     }
   }
@@ -1890,6 +1936,24 @@ fn compute_inline_child(
     final_height = text_glyph_height_from_style(style)
   }
 
+  // Keep static-position baseline fallback for abspos descendants when this
+  // inline box is not their containing block.
+  for entry in absolute_entries {
+    let (idx, abs_child, static_y) = entry
+    let top_auto = match abs_child.style.inset.top {
+      @types.Auto => true
+      _ => false
+    }
+    let bottom_auto = match abs_child.style.inset.bottom {
+      @types.Auto => true
+      _ => false
+    }
+    if top_auto && bottom_auto {
+      let abs_layout = children[idx]
+      children[idx] = { ..abs_layout, y: static_y }
+    }
+  }
+
   // Resolve absolute child positions against this inline element's content box
   // only when this inline box establishes a containing block.
   if absolute_entries.length() > 0 &&
@@ -1905,7 +1969,7 @@ fn compute_inline_child(
     let area_width = if area_width_raw > 0.0 { area_width_raw } else { 0.0 }
     let area_height = if area_height_raw > 0.0 { area_height_raw } else { 0.0 }
     for entry in absolute_entries {
-      let (idx, abs_child) = entry
+      let (idx, abs_child, static_y) = entry
       let abs_layout = children[idx]
       let child_style = abs_child.style
       let inset_left = resolve_inset_dimension(
@@ -1932,7 +1996,7 @@ fn compute_inline_child(
       let y = match (inset_top, inset_bottom) {
         (Some(t), _) => area_top + t
         (None, Some(b)) => area_top + area_height - b - abs_layout.height
-        (None, None) => abs_layout.y
+        (None, None) => area_top + static_y
       }
       children[idx] = { ..abs_layout, x, y }
     }

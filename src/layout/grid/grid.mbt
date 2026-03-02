@@ -2009,11 +2009,22 @@ fn compute_grid_layout_internal(
     // Handle absolute positioned children
     if child.style.position == @types.Absolute {
       let abs_layout = layout_absolute_child(
-        child, padding_box_left, padding_box_top, padding_box_width, padding_box_height,
+        child,
+        padding_box_left,
+        padding_box_top,
+        padding_box_width,
+        padding_box_height,
         padding_left, // content_box_offset_x = content_box_left - padding_box_left
-         padding_top, // content_box_offset_y = content_box_top - padding_box_top
-         column_tracks, row_tracks, col_offset, row_offset, explicit_column_count,
-        explicit_row_count, dispatch,
+        padding_top, // content_box_offset_y = content_box_top - padding_box_top
+        column_tracks,
+        row_tracks,
+        col_offset,
+        row_offset,
+        explicit_column_count,
+        explicit_row_count,
+        style.justify_items,
+        style.align_items,
+        dispatch,
       )
       preliminary_layouts.push(abs_layout)
       baseline_infos.push({
@@ -5567,6 +5578,8 @@ fn layout_absolute_child(
   row_offset : Int,
   explicit_column_count : Int,
   explicit_row_count : Int,
+  parent_justify_items : @types.Alignment,
+  parent_align_items : @types.Alignment,
   dispatch : @node.DispatchFn,
 ) -> @types.Layout {
   let style = child.style
@@ -5703,8 +5716,34 @@ fn layout_absolute_child(
 
   // Apply align-self/justify-self for absolute children when insets are not specified
   // Grid absolute children use align-self/justify-self for positioning within grid area
+  let resolved_justify_self = match style.justify_self {
+    @types.AlignSelf::Auto =>
+      match parent_justify_items {
+        @types.Alignment::End
+        | @types.Alignment::Right
+        | @types.Alignment::FlexEnd => @types.AlignSelf::End
+        @types.Alignment::Center => @types.AlignSelf::Center
+        @types.Alignment::Stretch => @types.AlignSelf::Stretch
+        @types.Alignment::Baseline => @types.AlignSelf::Baseline
+        _ => @types.AlignSelf::Start
+      }
+    _ => style.justify_self
+  }
+  let resolved_align_self = match style.align_self {
+    @types.AlignSelf::Auto =>
+      match parent_align_items {
+        @types.Alignment::End
+        | @types.Alignment::Right
+        | @types.Alignment::FlexEnd => @types.AlignSelf::End
+        @types.Alignment::Center => @types.AlignSelf::Center
+        @types.Alignment::Stretch => @types.AlignSelf::Stretch
+        @types.Alignment::Baseline => @types.AlignSelf::Baseline
+        _ => @types.AlignSelf::Start
+      }
+    _ => style.align_self
+  }
   let x = @core.compute_grid_absolute_self_position(
-    style.justify_self,
+    resolved_justify_self,
     base_x,
     area_left,
     area_width,
@@ -5714,7 +5753,7 @@ fn layout_absolute_child(
     params.inset_right is None,
   )
   let y = @core.compute_grid_absolute_self_position(
-    style.align_self,
+    resolved_align_self,
     base_y,
     area_top,
     area_height,

@@ -1,35 +1,31 @@
 # TODO
 
-## WPT サポート状況（2026-03-01）
+## WPT サポート状況（2026-03-02）
 
 - 実測コマンド: `npx tsx scripts/update-wpt-readme.ts`
-- 全体: `1258 / 1446 passed`（`87.0%`）
+- 全体: `1291 / 1446 passed`（`89.3%`）
 - 主要モジュール:
-  - `css-display`: `54 / 79`（`68.4%`）
-  - `css-align`: `27 / 44`（`61.4%`）
-  - `css-overflow`: `218 / 243`（`89.7%`）
+  - `css-display`: `79 / 79`（`100.0%`）
+  - `css-align`: `33 / 44`（`75.0%`）
+  - `css-overflow`: `221 / 243`（`90.9%`）
   - `css-flexbox`: `265 / 289`（`91.7%`）
-  - `css-contain`: `269 / 303`（`88.8%`）
+  - `css-contain`: `264 / 303`（`87.1%`）
   - `css-tables`: `29 / 32`（`90.6%`）
 
-### 今回反映した対応
+### 直近の改善
 
-- `css-display`:
-  - `display-contents-inline-flex-001.html` を含む `display-contents` の `inline-flex/flex` クラスターを改善
-  - 現在 `54 / 79`（`25 failed`）
-- `css-align`:
-  - `align-self/justify-self stretch auto-margins` クラスター（aspect-ratio 含む）を pass 化
-  - 現在 `27 / 44`（`17 failed`）
-- パーサ/レイアウト基盤:
-  - `inset` shorthand の `1-4 値` 対応を inline parser / computed style の両方で実装
-  - abspos の `align-self/justify-self: stretch` を `inset` 解決時に反映
-- 直近の優先候補:
-  - `css-display` の残件（`25 failed`）
-  - `css-align` の残件（`17 failed`）
-  - `css-tables` の残件（`3 failed`）
+- `css-display`: `54 / 79` -> `79 / 79`
+- `css-align`: `27 / 44` -> `33 / 44`
 
-- 完了:
-  - `css-tables` は `32 / 32` で全件 pass
+### 直近の優先候補
+
+- `css-contain` の残件（`39 failed`）
+- `css-position` の残件（`24 failed`）
+- `css-overflow` の残件（`22 failed`）
+- `css-align` の残件（`11 failed`）
+- `css-tables` の残件（`3 failed`）
+
+### WPT runner / intrinsic provider メモ
 
 - WPT 用の外部 intrinsic provider フックを追加:
   - text: `set_text_metrics_provider`（`wpt-runner` は `CRATER_TEXT_MODULE` または `mizchi/text` を自動探索）

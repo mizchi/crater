@@ -511,6 +511,12 @@ fn node_id_is_tag(node_id : String, tag : String) -> Bool {
 fn has_block_display_in_style(elem : @html.Element) -> Bool {
   match elem.style {
     Some(style_str) => {
+      let style_lower = style_str.to_lower()
+      if not(
+          style_lower.contains("display:") || style_lower.contains("display :"),
+        ) {
+        return false
+      }
       // Parse the inline style to check display property
       let parsed = @parser.parse_inline_style(style_str)
       match parsed.display {
@@ -1048,6 +1054,17 @@ fn should_preserve_inline_element(
       let has_display = style_lower.contains("display:") ||
         style_lower.contains("display :")
       if has_display && style_lower.contains("ruby") {
+        return true
+      }
+      let affects_inline_typography = style_lower.contains("font-size:") ||
+        style_lower.contains("font-size :") ||
+        style_lower.contains("font:") ||
+        style_lower.contains("font :") ||
+        style_lower.contains("line-height:") ||
+        style_lower.contains("line-height :") ||
+        style_lower.contains("vertical-align:") ||
+        style_lower.contains("vertical-align :")
+      if affects_inline_typography {
         return true
       }
     }
@@ -1739,6 +1756,36 @@ fn create_input_measure(
 }
 
 ///|
+/// Estimate a control character advance from the active text metrics provider.
+/// Falls back to the renderer's historical 0.5em approximation.
+fn resolve_control_char_width(
+  font_size : Double,
+  line_height : Double,
+  writing_mode : @style.WritingMode,
+) -> Double {
+  let zero_measure = create_text_measure_with_provider(
+    "0",
+    font_size,
+    line_height,
+    @style.WhiteSpace::Nowrap,
+    writing_mode,
+  )
+  let intrinsic = (zero_measure.func)(9999.0, 9999.0)
+  let measured = if intrinsic.max_width > 0.0 {
+    intrinsic.max_width
+  } else if intrinsic.min_width > 0.0 {
+    intrinsic.min_width
+  } else {
+    0.0
+  }
+  if measured > 0.0 {
+    measured
+  } else {
+    font_size * 0.5
+  }
+}
+
+///|
 /// Create a MeasureFunc for br elements
 /// In horizontal writing-mode, br has 0 width and line-height height.
 /// In vertical writing-mode, br advances one line on x-axis.
@@ -2283,6 +2330,38 @@ fn resolve_document_root_zoom(
 }
 
 ///|
+/// We render from <body> in most paths. When <html> establishes multicol
+/// formatting, mirror it onto body root unless body already establishes one.
+fn propagate_document_root_multicol_to_body(
+  body_style : @style.Style,
+  doc_root_style : @style.Style,
+) -> @style.Style {
+  if body_style.has_multicol() || not(doc_root_style.has_multicol()) {
+    return body_style
+  }
+  {
+    ..body_style,
+    column_count: doc_root_style.column_count,
+    column_width: doc_root_style.column_width,
+    column_gap: doc_root_style.column_gap,
+    column_gap_is_normal: doc_root_style.column_gap_is_normal,
+    column_fill: doc_root_style.column_fill,
+  }
+}
+
+///|
+fn node_with_style(node : @node.Node, style : @style.Style) -> @node.Node {
+  @node.Node::with_uid_and_measure(
+    node.id,
+    node.uid,
+    style,
+    node.children,
+    node.measure,
+    node.text,
+  )
+}
+
+///|
 /// Clamp body height only when author explicitly requests viewport-relative
 /// percentage sizing.
 fn should_clamp_body_to_viewport(root : @node.Node) -> Bool {
@@ -2413,6 +2492,15 @@ pub fn render_with_external_css(
       {},
       "root",
     )
+  }
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    node_with_style(
+      root,
+      propagate_document_root_multicol_to_body(root.style, doc_root_style),
+    )
+  } else {
+    root
   }
   if doc_root_style.display == @types.Display::None ||
     root.style.display == @types.Display::None {
@@ -2598,6 +2686,15 @@ pub fn render_document_with_external_css(
       {},
       "root",
     )
+  }
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    node_with_style(
+      root,
+      propagate_document_root_multicol_to_body(root.style, doc_root_style),
+    )
+  } else {
+    root
   }
   if render_root.tag.to_lower() == "body" {
     let root_zoom = resolve_document_root_zoom(
@@ -3527,20 +3624,58 @@ pub fn render_to_node_with_external_css(
   }
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
+  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_style = compute_element_style_indexed(
+    doc_root_selector,
+    doc.root.style,
+    indexed_stylesheets,
+    true,
+    ctx,
+    None,
+    css_vars,
+  )
   let render_root = match find_body(doc.root) {
     Some(body) => body
     None => doc.root
   }
-  let root = element_to_node_with_styles(
-    render_root,
-    None,
-    ctx,
-    stylesheets,
-    indexed_stylesheets,
-    css_vars,
-    {},
-    "root",
-  )
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    let body_selector = html_to_selector_element(
+      render_root,
+      Some(doc_root_selector),
+    )
+    element_to_node_with_styles_internal(
+      render_root,
+      body_selector,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      Some(doc_root_style),
+      css_vars,
+      {},
+      "root",
+    )
+  } else {
+    element_to_node_with_styles(
+      render_root,
+      None,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      css_vars,
+      {},
+      "root",
+    )
+  }
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    node_with_style(
+      root,
+      propagate_document_root_multicol_to_body(root.style, doc_root_style),
+    )
+  } else {
+    root
+  }
   if render_root.tag.to_lower() == "body" {
     let root_zoom = resolve_document_root_zoom(
       doc.root,
@@ -3581,20 +3716,58 @@ pub fn render_to_node_with_document(
   }
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
+  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_style = compute_element_style_indexed(
+    doc_root_selector,
+    doc.root.style,
+    indexed_stylesheets,
+    true,
+    ctx,
+    None,
+    css_vars,
+  )
   let render_root = match find_body(doc.root) {
     Some(body) => body
     None => doc.root
   }
-  let root = element_to_node_with_styles(
-    render_root,
-    None,
-    ctx,
-    stylesheets,
-    indexed_stylesheets,
-    css_vars,
-    {},
-    "root",
-  )
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    let body_selector = html_to_selector_element(
+      render_root,
+      Some(doc_root_selector),
+    )
+    element_to_node_with_styles_internal(
+      render_root,
+      body_selector,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      Some(doc_root_style),
+      css_vars,
+      {},
+      "root",
+    )
+  } else {
+    element_to_node_with_styles(
+      render_root,
+      None,
+      ctx,
+      stylesheets,
+      indexed_stylesheets,
+      css_vars,
+      {},
+      "root",
+    )
+  }
+  let root = if render_root.tag.to_lower() == "body" &&
+    doc.root.tag.to_lower() != "body" {
+    node_with_style(
+      root,
+      propagate_document_root_multicol_to_body(root.style, doc_root_style),
+    )
+  } else {
+    root
+  }
   if render_root.tag.to_lower() == "body" {
     let root_zoom = resolve_document_root_zoom(
       doc.root,
@@ -4571,8 +4744,12 @@ fn element_to_node_with_styles_internal(
       None => "text"
     }
     let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
-    let char_width = font_size * 0.5
     let control_line_height = font_size * 1.15
+    let char_width = resolve_control_char_width(
+      font_size,
+      control_line_height,
+      style.writing_mode,
+    )
     let control_extra_width = font_size * 0.75
     let control_extra_height = font_size * 0.35
     // Get intrinsic dimensions based on input type
@@ -4637,12 +4814,14 @@ fn element_to_node_with_styles_internal(
   }
   if tag_lower == "textarea" {
     let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
-    let char_width = font_size * 0.5
-    let control_line_height = if style.line_height > font_size * 1.15 {
-      style.line_height
-    } else {
-      font_size * 1.15
-    }
+    // Browser default textarea intrinsic row-height is tighter than generic
+    // line-height: normal; approximate as font-size + 1px per row.
+    let control_line_height = font_size + 1.0
+    let char_width = resolve_control_char_width(
+      font_size,
+      control_line_height,
+      style.writing_mode,
+    )
     let cols = match elem.attributes.get("cols") {
       Some(cols_attr) =>
         match parse_html_dimension(cols_attr) {
@@ -4708,7 +4887,16 @@ fn element_to_node_with_styles_internal(
       1
     }
     let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
-    let char_width = font_size * 0.5
+    let default_line_height = if style.line_height > 0.0 {
+      style.line_height
+    } else {
+      font_size * 1.2
+    }
+    let char_width = resolve_control_char_width(
+      font_size,
+      default_line_height,
+      style.writing_mode,
+    )
     let suppress_intrinsic_width = style.suppresses_intrinsic_width()
     fn collect_html_text(node : @html.Node) -> String {
       match node {
@@ -4779,11 +4967,6 @@ fn element_to_node_with_styles_internal(
       }
     } else {
       19.0
-    }
-    let default_line_height = if style.line_height > 0.0 {
-      style.line_height
-    } else {
-      font_size * 1.2
     }
     let default_border : @types.Rect[@types.Dimension] = @types.Rect::new(
       @types.Length(1.0),

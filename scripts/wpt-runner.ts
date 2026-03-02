@@ -819,7 +819,12 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
       return normalizeRoot(extractLayout(testElement));
     }
 
-    const gridElement = document.querySelector('.grid');
+    const gridElement = Array.from(document.querySelectorAll('[class]')).find(el => {
+      const className = typeof el.className === 'string' ? el.className.trim() : '';
+      if (!className) return false;
+      const firstClass = className.split(/\s+/)[0];
+      return firstClass === 'grid';
+    });
     if (gridElement) {
       return normalizeRoot(extractLayout(gridElement));
     }

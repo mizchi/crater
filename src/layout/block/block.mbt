@@ -2187,6 +2187,7 @@ fn compute_mixed_content_layout(
   direction? : @style.Direction = @style.Direction::Ltr,
   text_align? : @style.TextAlign = @style.TextAlign::Start,
   white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
+  justify_items? : @types.Alignment = @types.Stretch,
 ) -> MixedContentResult {
   // In vertical writing-mode, blocks flow horizontally instead of vertically
   let is_vertical = writing_mode.is_vertical()
@@ -2196,6 +2197,29 @@ fn compute_mixed_content_layout(
   let mut escaped_end : Double? = None
   let content_offset_x = padding.left + border.left
   let content_offset_y = padding.top + border.top
+  fn resolve_mixed_justify_offset(
+    item_width : Double,
+    margin_left : Double,
+    margin_right : Double,
+  ) -> Double {
+    if is_vertical {
+      return 0.0
+    }
+    let free_space = available_width - item_width - margin_left - margin_right
+    if free_space <= 0.0 {
+      return 0.0
+    }
+    match justify_items {
+      @types.Stretch
+      | @types.Baseline
+      | @types.SpaceBetween
+      | @types.SpaceAround
+      | @types.SpaceEvenly => 0.0
+      @types.Center => free_space / 2.0
+      @types.End | @types.Right | @types.FlexEnd => free_space
+      @types.Start | @types.Left | @types.FlexStart => 0.0
+    }
+  }
   for i = 0; i < groups.length(); i = i + 1 {
     let group = groups[i]
     let is_first = i == 0
@@ -2226,29 +2250,142 @@ fn compute_mixed_content_layout(
           container_text_align=text_align,
           container_white_space=white_space,
         )
-        // Store layouts with original indices
-        for j = 0; j < indices.length(); j = j + 1 {
-          if j < ifc_result.layouts.length() {
-            let child_layout = ifc_result.layouts[j]
-            let normalized_layout = if j < nodes.length() &&
-              nodes[j].style.display == @types.Contents {
-              {
-                ..child_layout,
-                width: 0.0,
-                height: 0.0,
-                padding: @types.Rect::zero(),
-                border: @types.Rect::zero(),
-                scroll_width: 0.0,
-                scroll_height: 0.0,
-              }
-            } else {
-              child_layout
+        let use_inline_fallback = ifc_result.layouts.length() == 0 &&
+          nodes.length() > 0
+        if use_inline_fallback {
+          let fallback_layouts : Array[@types.Layout] = []
+          let mut fallback_cursor = 0.0
+          let mut fallback_line_height = 0.0
+          for inline_node in nodes {
+            let inline_ctx : @types.LayoutContext = {
+              available_width,
+              available_height,
+              sizing_mode: @types.Definite,
+              viewport_width: ctx.viewport_width,
+              viewport_height: ctx.viewport_height,
+              stretch_width: false,
+              stretch_height: false,
             }
-            layout_map[indices[j]] = normalized_layout
+            let @node.DispatchFn(dispatch_fn) = dispatch
+            let inline_layout = match inline_node.style.display {
+              @types.Flex
+              | @types.InlineFlex
+              | @types.Grid
+              | @types.InlineGrid
+              | @types.Table
+              | @types.InlineTable =>
+                dispatch_fn(inline_node, inline_ctx, dispatch)
+              _ =>
+                compute_with_collapse(
+                  inline_node, inline_ctx, warnings, dispatch,
+                ).layout
+            }
+            fallback_layouts.push({
+              ..inline_layout,
+              x: content_offset_x + fallback_cursor + inline_layout.margin.left,
+              y: content_offset_y + current_pos,
+            })
+            fallback_cursor = fallback_cursor +
+              inline_layout.width +
+              inline_layout.margin.left +
+              inline_layout.margin.right
+            let candidate_line_height = inline_layout.height +
+              inline_layout.margin.top +
+              inline_layout.margin.bottom
+            if candidate_line_height > fallback_line_height {
+              fallback_line_height = candidate_line_height
+            }
           }
+          let fallback_offset = resolve_mixed_justify_offset(
+            fallback_cursor, 0.0, 0.0,
+          )
+          for j = 0; j < indices.length(); j = j + 1 {
+            if j < fallback_layouts.length() {
+              let child_layout = fallback_layouts[j]
+              let aligned_layout = if fallback_offset.abs() > 0.0001 {
+                { ..child_layout, x: child_layout.x + fallback_offset }
+              } else {
+                child_layout
+              }
+              let normalized_layout = if j < nodes.length() &&
+                nodes[j].style.display == @types.Contents {
+                {
+                  ..aligned_layout,
+                  width: 0.0,
+                  height: 0.0,
+                  padding: @types.Rect::zero(),
+                  border: @types.Rect::zero(),
+                  scroll_width: 0.0,
+                  scroll_height: 0.0,
+                }
+              } else {
+                aligned_layout
+              }
+              layout_map[indices[j]] = normalized_layout
+            }
+          }
+          current_pos = current_pos + fallback_line_height
+        } else {
+          let mut group_min_x = 0.0
+          let mut group_max_x = 0.0
+          let mut has_group_box = false
+          if not(is_vertical) {
+            for child_layout in ifc_result.layouts {
+              let child_left = child_layout.x - child_layout.margin.left
+              let child_right = child_layout.x +
+                child_layout.width +
+                child_layout.margin.right
+              if not(has_group_box) {
+                group_min_x = child_left
+                group_max_x = child_right
+                has_group_box = true
+              } else {
+                if child_left < group_min_x {
+                  group_min_x = child_left
+                }
+                if child_right > group_max_x {
+                  group_max_x = child_right
+                }
+              }
+            }
+          }
+          let inline_group_width = if has_group_box {
+            group_max_x - group_min_x
+          } else {
+            0.0
+          }
+          let inline_group_offset = resolve_mixed_justify_offset(
+            inline_group_width, 0.0, 0.0,
+          )
+          // Store layouts with original indices
+          for j = 0; j < indices.length(); j = j + 1 {
+            if j < ifc_result.layouts.length() {
+              let child_layout = ifc_result.layouts[j]
+              let aligned_layout = if inline_group_offset.abs() > 0.0001 {
+                { ..child_layout, x: child_layout.x + inline_group_offset }
+              } else {
+                child_layout
+              }
+              let normalized_layout = if j < nodes.length() &&
+                nodes[j].style.display == @types.Contents {
+                {
+                  ..aligned_layout,
+                  width: 0.0,
+                  height: 0.0,
+                  padding: @types.Rect::zero(),
+                  border: @types.Rect::zero(),
+                  scroll_width: 0.0,
+                  scroll_height: 0.0,
+                }
+              } else {
+                aligned_layout
+              }
+              layout_map[indices[j]] = normalized_layout
+            }
+          }
+          // Anonymous blocks don't have margins, so no collapse
+          current_pos = current_pos + ifc_result.total_height
         }
-        // Anonymous blocks don't have margins, so no collapse
-        current_pos = current_pos + ifc_result.total_height
       }
       BlockChild(node~, index~) => {
         // Process block child with margin collapsing
@@ -2296,6 +2433,35 @@ fn compute_mixed_content_layout(
             apply_initial_scroll_snap(node, raw.layout)
           }
         }
+        let mut aligned_child_width = child_layout.width
+        let justify_items_enables_self_alignment = match justify_items {
+          @types.Stretch
+          | @types.Baseline
+          | @types.SpaceBetween
+          | @types.SpaceAround
+          | @types.SpaceEvenly => false
+          _ => true
+        }
+        if not(is_vertical) &&
+          justify_items_enables_self_alignment &&
+          node.style.width == @types.Auto {
+          let intrinsic_inline = if node.children.length() == 0 &&
+            node.measure is None &&
+            node.text is None {
+            0.0
+          } else {
+            calculate_children_max_content_width(node, available_width)
+          }
+          let min_box_width = child_layout.padding.horizontal_sum() +
+            child_layout.border.horizontal_sum()
+          let fit_content_width = intrinsic_inline + min_box_width
+          if fit_content_width < aligned_child_width {
+            aligned_child_width = fit_content_width
+          }
+          if aligned_child_width < min_box_width {
+            aligned_child_width = min_box_width
+          }
+        }
         // Calculate margin values - use appropriate axis based on writing mode
         let margin_start = if is_vertical {
           child_layout.margin.left
@@ -2330,7 +2496,13 @@ fn compute_mixed_content_layout(
         let base_x = if is_vertical {
           content_offset_x + current_pos
         } else {
-          content_offset_x + child_layout.margin.left
+          content_offset_x +
+          child_layout.margin.left +
+          resolve_mixed_justify_offset(
+            aligned_child_width,
+            child_layout.margin.left,
+            child_layout.margin.right,
+          )
         }
         let base_y = if is_vertical {
           content_offset_y + child_layout.margin.top
@@ -2364,7 +2536,11 @@ fn compute_mixed_content_layout(
           id: child_layout.id,
           x: layout_x,
           y: base_y,
-          width: layout_width,
+          width: if node.id == "span" {
+            layout_width
+          } else {
+            aligned_child_width
+          },
           height: child_layout.height,
           margin: child_layout.margin,
           padding: child_layout.padding,
@@ -2696,6 +2872,7 @@ fn compute_with_collapse(
       direction=style.direction,
       text_align=style.text_align,
       white_space=style.white_space,
+      justify_items=style.justify_items,
     )
     let children_layouts : Array[@types.Layout] = []
     let mut max_in_flow_width = 0.0
@@ -3010,7 +3187,8 @@ fn compute_with_collapse(
   // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
   // InlineBlock elements also use shrink-to-fit (max-content) when width is auto
-  let is_inline_block = style.display == @types.InlineBlock ||
+  let is_inline_block = style.display == @types.Inline ||
+    style.display == @types.InlineBlock ||
     style.display == @types.TableCell
   let use_max_content = match (ctx.sizing_mode, style.width) {
     (@types.MaxContent, @types.Auto) => true
@@ -4208,34 +4386,33 @@ fn compute_with_collapse(
 
     // Calculate box height from IFC content
     let mut content_height = ifc_result.total_height
-    if establishes_bfc {
-      // Include floated descendants wrapped by zero-height inline boxes.
-      let mut ifc_descendant_extent = 0.0
-      for i = 0; i < flow_indices.length(); i = i + 1 {
-        match layout_map.get(flow_indices[i]) {
-          Some(layout) => {
-            let descendant_h = if i < flow_nodes.length() &&
-              id_matches_tag(flow_nodes[i].id, "ruby") {
-              0.0
-            } else {
-              get_children_total_height(layout.children)
-            }
-            let child_block = if layout.height > descendant_h {
-              layout.height
-            } else {
-              descendant_h
-            }
-            let extent = layout.y + child_block
-            if extent > ifc_descendant_extent {
-              ifc_descendant_extent = extent
-            }
+    // Include descendant visual overflow from inline children (e.g. large
+    // top-aligned inline descendants) in IFC content height.
+    let mut ifc_descendant_extent = 0.0
+    for i = 0; i < flow_indices.length(); i = i + 1 {
+      match layout_map.get(flow_indices[i]) {
+        Some(layout) => {
+          let descendant_h = if i < flow_nodes.length() &&
+            id_matches_tag(flow_nodes[i].id, "ruby") {
+            0.0
+          } else {
+            get_children_flow_extent_height(layout.children)
           }
-          None => ()
+          let child_block = if layout.height > descendant_h {
+            layout.height
+          } else {
+            descendant_h
+          }
+          let extent = layout.y + child_block
+          if extent > ifc_descendant_extent {
+            ifc_descendant_extent = extent
+          }
         }
+        None => ()
       }
-      if ifc_descendant_extent > content_height {
-        content_height = ifc_descendant_extent
-      }
+    }
+    if ifc_descendant_extent > content_height {
+      content_height = ifc_descendant_extent
     }
     let content_height_for_auto = if style.suppresses_intrinsic_height() {
       style.contained_intrinsic_height_fallback()
@@ -4416,6 +4593,7 @@ fn compute_with_collapse(
       direction=style.direction,
       text_align=style.text_align,
       white_space=style.white_space,
+      justify_items=style.justify_items,
     )
     // fieldset legend overlays the top border line instead of participating in
     // normal block-flow vertical positioning.
@@ -5125,15 +5303,40 @@ fn compute_with_collapse(
           }
         }
       }
+      let effective_margin_top = match child_collapsed.top {
+        Some(escaped) => collapse_margins(child_layout.margin.top, escaped)
+        None => child_layout.margin.top
+      }
+      let effective_margin_bottom = match child_collapsed.bottom {
+        Some(escaped) => collapse_margins(child_layout.margin.bottom, escaped)
+        None => child_layout.margin.bottom
+      }
+      let visual_margin_top = if effective_margin_top < child_layout.margin.top {
+        child_layout.margin.top
+      } else {
+        effective_margin_top
+      }
+      let visual_margin_bottom = if effective_margin_bottom <
+        child_layout.margin.bottom {
+        child_layout.margin.bottom
+      } else {
+        effective_margin_bottom
+      }
       let mut effective_pos = current_pos
+      if effective_pos < 0.0 {
+        effective_pos = 0.0
+        if current_pos < 0.0 {
+          current_pos = 0.0
+        }
+      }
       let child_flow_height = if child_style.display == @types.Contents {
         get_children_total_height(child_layout.children)
       } else {
         child_layout.height
       }
       let child_outer_height = child_flow_height +
-        child_layout.margin.top +
-        child_layout.margin.bottom
+        visual_margin_top +
+        visual_margin_bottom
       if multicol_participates_in_inline_run &&
         child_node.id != "br" &&
         inline_run_x == 0.0 {
@@ -5256,7 +5459,11 @@ fn compute_with_collapse(
               1 &&
               (
                 has_nested_forced_column_break ||
-                child_style.display == @types.Contents
+                child_style.display == @types.Contents ||
+                (
+                  fragmented_columns > 1 &&
+                  not(multicol_participates_in_inline_run)
+                )
               )
             let positioned_children : Array[@types.Layout] = if should_reflow_nested_children {
               let nested_layouts : Array[@types.Layout] = []
@@ -5271,63 +5478,94 @@ fn compute_with_collapse(
                 }
                 nested_source_children.push(source_child)
               }
-              let mut nested_pos = 0.0
-              for j = 0; j < child_layout.children.length(); j = j + 1 {
-                let nested_layout = child_layout.children[j]
-                let nested_style = if j < nested_source_children.length() {
-                  nested_source_children[j].style
-                } else {
-                  @style.Style::default()
+              let use_existing_nested_offsets = fragmented_columns > 1 &&
+                not(has_nested_forced_column_break) &&
+                child_style.display != @types.Contents
+              if use_existing_nested_offsets {
+                for j = 0; j < child_layout.children.length(); j = j + 1 {
+                  let nested_layout = child_layout.children[j]
+                  let nested_col = (nested_layout.y / limit).to_int()
+                  let nested_row = if multicol_fragment_contained {
+                    nested_col / multicol_column_count
+                  } else {
+                    0
+                  }
+                  let nested_col_index = if multicol_fragment_contained {
+                    nested_col % multicol_column_count
+                  } else {
+                    nested_col
+                  }
+                  let nested_local_y = nested_layout.y -
+                    nested_col.to_double() * limit
+                  nested_layouts.push({
+                    ..nested_layout,
+                    x: nested_layout.x +
+                    nested_col_index.to_double() *
+                    (multicol_column_width + multicol_column_gap),
+                    y: nested_row.to_double() * limit + nested_local_y,
+                  })
                 }
-                let nested_flow_height = if nested_style.display ==
-                  @types.Contents {
-                  get_children_total_height(nested_layout.children)
-                } else {
-                  nested_layout.height
-                }
-                let nested_outer_height = nested_flow_height +
-                  nested_layout.margin.top +
-                  nested_layout.margin.bottom
-                if j > 0 {
-                  let prev_nested_style = if j - 1 <
-                    nested_source_children.length() {
-                    nested_source_children[j - 1].style
+              } else {
+                let mut nested_pos = 0.0
+                for j = 0; j < child_layout.children.length(); j = j + 1 {
+                  let nested_layout = child_layout.children[j]
+                  let nested_style = if j < nested_source_children.length() {
+                    nested_source_children[j].style
                   } else {
                     @style.Style::default()
                   }
-                  if prev_nested_style.break_after == @style.BreakBefore::Column &&
+                  let nested_flow_height = if nested_style.display ==
+                    @types.Contents {
+                    get_children_total_height(nested_layout.children)
+                  } else {
+                    nested_layout.height
+                  }
+                  let nested_outer_height = nested_flow_height +
+                    nested_layout.margin.top +
+                    nested_layout.margin.bottom
+                  if j > 0 {
+                    let prev_nested_style = if j - 1 <
+                      nested_source_children.length() {
+                      nested_source_children[j - 1].style
+                    } else {
+                      @style.Style::default()
+                    }
+                    if prev_nested_style.break_after ==
+                      @style.BreakBefore::Column &&
+                      nested_pos > 0.0 {
+                      let nested_col = (nested_pos / limit).to_int()
+                      nested_pos = (nested_col + 1).to_double() * limit
+                    }
+                  }
+                  if nested_style.break_before == @style.BreakBefore::Column &&
                     nested_pos > 0.0 {
                     let nested_col = (nested_pos / limit).to_int()
                     nested_pos = (nested_col + 1).to_double() * limit
                   }
-                }
-                if nested_style.break_before == @style.BreakBefore::Column &&
-                  nested_pos > 0.0 {
                   let nested_col = (nested_pos / limit).to_int()
-                  nested_pos = (nested_col + 1).to_double() * limit
+                  let nested_row = if multicol_fragment_contained {
+                    nested_col / multicol_column_count
+                  } else {
+                    0
+                  }
+                  let nested_col_index = if multicol_fragment_contained {
+                    nested_col % multicol_column_count
+                  } else {
+                    nested_col
+                  }
+                  let nested_local_y = nested_pos -
+                    nested_col.to_double() * limit
+                  nested_layouts.push({
+                    ..nested_layout,
+                    x: nested_col_index.to_double() *
+                    (multicol_column_width + multicol_column_gap) +
+                    nested_layout.margin.left,
+                    y: nested_row.to_double() * limit +
+                    nested_local_y +
+                    nested_layout.margin.top,
+                  })
+                  nested_pos = nested_pos + nested_outer_height
                 }
-                let nested_col = (nested_pos / limit).to_int()
-                let nested_row = if multicol_fragment_contained {
-                  nested_col / multicol_column_count
-                } else {
-                  0
-                }
-                let nested_col_index = if multicol_fragment_contained {
-                  nested_col % multicol_column_count
-                } else {
-                  nested_col
-                }
-                let nested_local_y = nested_pos - nested_col.to_double() * limit
-                nested_layouts.push({
-                  ..nested_layout,
-                  x: nested_col_index.to_double() *
-                  (multicol_column_width + multicol_column_gap) +
-                  nested_layout.margin.left,
-                  y: nested_row.to_double() * limit +
-                  nested_local_y +
-                  nested_layout.margin.top,
-                })
-                nested_pos = nested_pos + nested_outer_height
               }
               nested_layouts
             } else {
@@ -5345,10 +5583,7 @@ fn compute_with_collapse(
               col_offset +
               multicol_inline_run_offset +
               child_layout.margin.left,
-              y: padding.top +
-              border.top +
-              positioned_y +
-              child_layout.margin.top,
+              y: padding.top + border.top + positioned_y + visual_margin_top,
               width: fragmented_union_width,
               height: clipped_height,
               margin: child_layout.margin,
@@ -5363,9 +5598,18 @@ fn compute_with_collapse(
             }
             layout_map[flow_indices[i]] = positioned_layout
             if multicol_participates_in_inline_run {
-              let inline_item_height = child_layout.height +
-                child_layout.margin.top +
-                child_layout.margin.bottom
+              let inline_descendant_height = get_children_flow_extent_height(
+                child_layout.children,
+              )
+              let inline_visual_height = if inline_descendant_height >
+                child_layout.height {
+                inline_descendant_height
+              } else {
+                child_layout.height
+              }
+              let inline_item_height = inline_visual_height +
+                effective_margin_top +
+                effective_margin_bottom
               if child_node.id == "br" {
                 let mut line_height = if inline_run_height > inline_item_height {
                   inline_run_height
@@ -5427,7 +5671,7 @@ fn compute_with_collapse(
         border.left +
         multicol_inline_run_offset +
         child_layout.margin.left,
-        y: padding.top + border.top + current_pos + child_layout.margin.top,
+        y: padding.top + border.top + current_pos + visual_margin_top,
         width: fragmented_union_width,
         height: child_layout.height,
         margin: child_layout.margin,
@@ -5442,9 +5686,18 @@ fn compute_with_collapse(
       }
       layout_map[flow_indices[i]] = positioned_layout
       if multicol_participates_in_inline_run {
-        let inline_item_height = child_layout.height +
-          child_layout.margin.top +
-          child_layout.margin.bottom
+        let inline_descendant_height = get_children_flow_extent_height(
+          child_layout.children,
+        )
+        let inline_visual_height = if inline_descendant_height >
+          child_layout.height {
+          inline_descendant_height
+        } else {
+          child_layout.height
+        }
+        let inline_item_height = inline_visual_height +
+          effective_margin_top +
+          effective_margin_bottom
         if child_node.id == "br" {
           let mut line_height = if inline_run_height > inline_item_height {
             inline_run_height
@@ -5695,6 +5948,29 @@ fn compute_with_collapse(
     } else {
       0.0
     }
+    let explicit_justify_self = match child_style.justify_self {
+      @types.AlignSelf::End => @types.Alignment::End
+      @types.AlignSelf::Center => @types.Alignment::Center
+      @types.AlignSelf::Stretch => @types.Alignment::Stretch
+      @types.AlignSelf::Start
+      | @types.AlignSelf::Auto
+      | @types.AlignSelf::Baseline => @types.Alignment::Start
+    }
+    let mut positioned_child_width = child_layout.width
+    if not(is_vertical_writing) &&
+      not(participates_in_inline_run) &&
+      child_style.position != @types.Absolute &&
+      child_style.position != @types.Fixed &&
+      explicit_justify_self == @types.Alignment::Stretch {
+      let stretch_width = child_available_width -
+        child_layout.margin.left -
+        child_layout.margin.right
+      if stretch_width > 0.0 {
+        positioned_child_width = stretch_width
+      } else {
+        positioned_child_width = 0.0
+      }
+    }
     let child_x = {
       let margin_left_auto = match child_style.margin.left {
         @types.Auto => true
@@ -5706,7 +5982,7 @@ fn compute_with_collapse(
       }
       // Available space for auto margins
       let available = child_available_width -
-        child_layout.width -
+        positioned_child_width -
         child_layout.margin.left -
         child_layout.margin.right
       if margin_left_auto && margin_right_auto {
@@ -5727,11 +6003,33 @@ fn compute_with_collapse(
         inline_run_offset
       } else {
         // No auto or only right auto: use left margin
-        child_layout.margin.left +
-        padding.left +
-        border.left +
-        float_inline_offset +
-        inline_run_offset
+        let base_x = child_layout.margin.left +
+          padding.left +
+          border.left +
+          float_inline_offset +
+          inline_run_offset
+        let self_align_offset = if not(is_vertical_writing) &&
+          not(participates_in_inline_run) &&
+          child_style.position != @types.Absolute &&
+          child_style.position != @types.Fixed {
+          let free_space = child_available_width -
+            positioned_child_width -
+            child_layout.margin.left -
+            child_layout.margin.right
+          if free_space <= 0.0 {
+            0.0
+          } else {
+            match explicit_justify_self {
+              @types.Alignment::End => free_space
+              @types.Alignment::Center => free_space / 2.0
+              @types.Alignment::Start | @types.Alignment::Stretch => 0.0
+              _ => 0.0
+            }
+          }
+        } else {
+          0.0
+        }
+        base_x + self_align_offset
       }
     }
 
@@ -5786,7 +6084,7 @@ fn compute_with_collapse(
         border.left
       let final_x_pos = if is_block_rtl {
         // For vertical-rl: position from right side of container
-        box_width - x_from_left - child_layout.width
+        box_width - x_from_left - positioned_child_width
       } else {
         // For vertical-lr: position from left side (normal)
         x_from_left
@@ -5839,7 +6137,7 @@ fn compute_with_collapse(
       positioned_y
     }
     let adjusted_layout = adjust_inline_span_float_quirk(
-      { ..child_layout, x: positioned_x },
+      { ..child_layout, x: positioned_x, width: positioned_child_width },
       is_vertical_writing,
     )
     let is_display_contents = child_style.display == @types.Contents
@@ -5901,7 +6199,16 @@ fn compute_with_collapse(
     layout_map[flow_indices[i]] = positioned_layout
 
     if participates_in_inline_run {
-      let inline_item_height = child_layout.height +
+      let inline_descendant_height = get_children_flow_extent_height(
+        child_layout.children,
+      )
+      let inline_visual_height = if inline_descendant_height >
+        child_layout.height {
+        inline_descendant_height
+      } else {
+        child_layout.height
+      }
+      let inline_item_height = inline_visual_height +
         child_layout.margin.top +
         child_layout.margin.bottom
       if child_node.id == "br" {

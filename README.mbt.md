@@ -43,17 +43,17 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-flexbox | 265 | 289 | 91.7% |
 | css-grid | 31 | 33 | 93.9% |
 | css-tables | 29 | 32 | 90.6% |
-| css-display | 54 | 79 | 68.4% |
+| css-display | 79 | 79 | 100.0% |
 | css-box | 30 | 30 | 100.0% |
-| css-sizing | 87 | 94 | 92.6% |
-| css-align | 27 | 44 | 61.4% |
+| css-sizing | 86 | 94 | 91.5% |
+| css-align | 33 | 44 | 75.0% |
 | css-position | 60 | 84 | 71.4% |
-| css-overflow | 218 | 243 | 89.7% |
-| css-contain | 269 | 303 | 88.8% |
-| css-variables | 99 | 107 | 92.5% |
-| filter-effects | 87 | 106 | 82.1% |
+| css-overflow | 221 | 243 | 90.9% |
+| css-contain | 264 | 303 | 87.1% |
+| css-variables | 100 | 107 | 93.5% |
+| filter-effects | 91 | 106 | 85.8% |
 | compositing | 2 | 2 | 100.0% |
-| **Total** | **1258** | **1446** | **87.0%** |
+| **Total** | **1291** | **1446** | **89.3%** |
 
 Run WPT tests:
 ```bash

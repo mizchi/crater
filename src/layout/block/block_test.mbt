@@ -1610,6 +1610,41 @@ test "anonymous_block_multiple_inline_in_group" {
 }
 
 ///|
+test "anonymous_block_respects_justify_items_end_alignment" {
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+  let inline_block = @node.Node::leaf("span", {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(100.0),
+    height: @types.Length(20.0),
+  })
+  let empty_block = @node.Node::leaf("div", default_style)
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(200.0),
+      justify_items: @types.Right,
+    },
+    [inline_block, empty_block],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(120.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 200.0,
+    viewport_height: 120.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="100")
+  inspect(layout.children[1].x, content="200")
+  inspect(layout.children[1].width, content="0")
+}
+
+///|
 /// Regression: mixed content path must not force auto-height flex children to
 /// the parent's available_height.
 test "anonymous_block_mixed_does_not_stretch_auto_height_flex" {
@@ -2486,6 +2521,62 @@ test "fieldset_multicol_fragments_non_legend_child" {
   let layout = compute(root, ctx, default_dispatch())
   inspect(layout.children[1].width, content="116.66666666666666")
   inspect(layout.children[1].height, content="50")
+}
+
+///|
+test "multicol_fragmented_block_reflows_nested_children_across_columns" {
+  let default_style = @style.Style::default()
+  let nested1 = @node.Node::leaf("div.n1", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(40.0),
+  })
+  let nested2 = @node.Node::leaf("div.n2", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(40.0),
+  })
+  let nested3 = @node.Node::leaf("div.n3", {
+    ..default_style,
+    width: @types.Length(100.0),
+    height: @types.Length(40.0),
+  })
+  let fragmented_child = @node.Node::new(
+    "div.fragmented",
+    { ..default_style },
+    [nested1, nested2, nested3],
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(200.0),
+      height: @types.Length(80.0),
+      overflow_x: @types.Hidden,
+      overflow_y: @types.Hidden,
+      column_count: Some(2),
+      column_gap: @types.Length(0.0),
+      column_gap_is_normal: false,
+      column_fill: @style.ColumnFill::Auto,
+    },
+    [fragmented_child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(120.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 200.0,
+    viewport_height: 120.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].children[0].x, content="0")
+  inspect(layout.children[0].children[0].y, content="0")
+  inspect(layout.children[0].children[1].x, content="0")
+  inspect(layout.children[0].children[1].y, content="40")
+  inspect(layout.children[0].children[2].x, content="100")
+  inspect(layout.children[0].children[2].y, content="0")
 }
 
 ///|

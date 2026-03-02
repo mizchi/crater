@@ -104,3 +104,32 @@ test "absolute_position_in_static_grid_parent_uses_grid_containing_block" {
   inspect(absolute_child.width, content="100")
   inspect(absolute_child.height, content="50")
 }
+
+///|
+test "absolute_position_in_inline_with_line_break_uses_multiline_static_y" {
+  let html =
+    #|<div style="border: 1px solid; position: relative; width: 100px; height: 100px; display: inline-block;">
+    #|  <div style="display: inline; color: transparent; font: 10px monospace; line-height: 25px;">
+    #|    text
+    #|    <div style="position: absolute; width: 50px; height: 50px;"></div>
+    #|    <br>text
+    #|  </div>
+    #|</div>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  let container = layout.children[0]
+  let inline = container.children[0]
+  let abs = inline.children[1]
+
+  guard inline.height >= 30.0 else {
+    fail("inline box should keep multiline height when it contains <br>")
+  }
+  guard abs.y >= 24.0 && abs.y <= 26.0 else {
+    fail("abspos static y should reflect line break baseline progression")
+  }
+}
