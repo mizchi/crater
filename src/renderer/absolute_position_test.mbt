@@ -133,3 +133,61 @@ test "absolute_position_in_inline_with_line_break_uses_multiline_static_y" {
     fail("abspos static y should reflect line break baseline progression")
   }
 }
+
+///|
+test "abspos_non_auto_inset_inside_static_flex_uses_outer_abs_containing_block" {
+  let html =
+    #|<div style="position: relative; width: 300px; height: 300px;">
+    #|  <div style="display: flex; width: 30px; height: 30px; margin-left: 270px;">
+    #|    <div style="position: absolute; inset: 0; width: 100px; height: 100px; align-self: center; justify-self: center;"></div>
+    #|  </div>
+    #|</div>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  let container = layout.children[0]
+  let inner = container.children[0]
+  let abs = inner.children[0]
+
+  let abs_global_x = inner.x + abs.x
+  let abs_global_y = inner.y + abs.y
+  guard abs_global_x == 100.0 else {
+    fail("abs x should center in outer containing block, not inner flex")
+  }
+  guard abs_global_y == 100.0 else {
+    fail("abs y should center in outer containing block, not inner flex")
+  }
+}
+
+///|
+test "abspos_non_auto_inset_inside_static_grid_uses_outer_abs_containing_block" {
+  let html =
+    #|<div style="position: relative; width: 300px; height: 300px;">
+    #|  <div style="display: grid; width: 30px; height: 30px; margin-left: 270px;">
+    #|    <div style="position: absolute; inset: 0; width: 100px; height: 100px; align-self: center; justify-self: center;"></div>
+    #|  </div>
+    #|</div>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  let container = layout.children[0]
+  let inner = container.children[0]
+  let abs = inner.children[0]
+
+  let abs_global_x = inner.x + abs.x
+  let abs_global_y = inner.y + abs.y
+  guard abs_global_x == 100.0 else {
+    fail("abs x should center in outer containing block, not inner grid")
+  }
+  guard abs_global_y == 100.0 else {
+    fail("abs y should center in outer containing block, not inner grid")
+  }
+}

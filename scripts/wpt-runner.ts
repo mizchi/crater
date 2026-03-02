@@ -197,6 +197,7 @@ export function createTextIntrinsicFnFromMeasureText(
     }, 0);
     const noWrap = whiteSpaceMode.includes('nowrap') || whiteSpaceMode === 'pre';
     const spaceWidth = measure(' ');
+    const wrapEpsilon = 0.01;
     let wrappedLines = 0;
     for (const rawLine of rawLines) {
       const line = normalizeLine(rawLine);
@@ -217,7 +218,7 @@ export function createTextIntrinsicFnFromMeasureText(
           continue;
         }
         const next = current + spaceWidth + width;
-        if (next <= availableWidth) {
+        if (next <= availableWidth + wrapEpsilon) {
           current = next;
         } else {
           wrappedLines += 1;
@@ -502,11 +503,15 @@ async function configureExternalIntrinsicProviders(): Promise<void> {
       const isShortSingleToken = trimmed.length > 0 &&
         trimmed.length <= 6 &&
         !/\s/.test(trimmed);
+      const isUppercaseToken = /^[A-Z0-9]+$/.test(trimmed);
+      const tokenAdvanceRatio = isUppercaseToken && trimmed.length >= 5
+        ? Math.max(fallbackAdvanceRatio, 0.625)
+        : fallbackAdvanceRatio;
       const scale = isShortSingleToken
         ? 1 + Math.max(0, effectiveSize - 16) * fallbackSingleWordSlope
         : 1;
       const clampedScale = Math.min(scale, 1.3);
-      return text.length * effectiveSize * fallbackAdvanceRatio * clampedScale;
+      return text.length * effectiveSize * tokenAdvanceRatio * clampedScale;
     },
   );
   if (textFn) {
@@ -1431,6 +1436,23 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
     const craterComparable = focusedBrowserLayout && focusedCraterLayout
       ? focusedCraterLayout
       : normalizedCraterLayout;
+    const dumpTarget = process.env.CRATER_DUMP_LAYOUT;
+    if (dumpTarget && htmlPath.includes(dumpTarget)) {
+      const dump = (node: LayoutNode, depth = 0, maxDepth = 6): void => {
+        const pad = '  '.repeat(depth);
+        console.log(
+          `${pad}${node.id} x=${node.x.toFixed(1)} y=${node.y.toFixed(1)} w=${node.width.toFixed(1)} h=${node.height.toFixed(1)}`,
+        );
+        if (depth >= maxDepth) return;
+        for (const child of node.children) {
+          dump(child, depth + 1, maxDepth);
+        }
+      };
+      console.log('--- browser comparable ---');
+      dump(browserComparable);
+      console.log('--- crater comparable ---');
+      dump(craterComparable);
+    }
 
     const mismatches = compareLayouts(browserComparable, craterComparable, 'root', {
       ignoreTextNodes: true,

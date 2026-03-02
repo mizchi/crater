@@ -265,6 +265,8 @@ fn create_text_measure(
     let mut starts_with_ws = false
     let mut seen_first = false
     let mut ends_with_ws = false
+    let mut before_first_non_ws = true
+    let mut leading_has_line_break = false
     for c in text.iter() {
       if not(seen_first) {
         seen_first = true
@@ -274,13 +276,26 @@ fn create_text_measure(
           c == '\r' ||
           c == '\u000C'
       }
+      if before_first_non_ws {
+        if c == '\n' || c == '\r' {
+          leading_has_line_break = true
+        }
+        let is_ws = c == ' ' ||
+          c == '\t' ||
+          c == '\n' ||
+          c == '\r' ||
+          c == '\u000C'
+        if not(is_ws) {
+          before_first_non_ws = false
+        }
+      }
       ends_with_ws = c == ' ' ||
         c == '\t' ||
         c == '\n' ||
         c == '\r' ||
         c == '\u000C'
     }
-    if starts_with_ws {
+    if starts_with_ws && not(leading_has_line_break) {
       trimmed = " " + trimmed
     }
     if ends_with_ws {
@@ -2609,7 +2624,18 @@ pub fn render_with_external_css(
 
   // Apply zoom and transform scale to layout
   let scaled_layout = apply_zoom_and_scale(
-    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0, false,
+    layout,
+    root,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    false,
+    0.0,
+    0.0,
+    ctx.viewport_width,
+    ctx.viewport_height,
   )
   let scaled_layout = if should_clamp_body_to_viewport(root) {
     // Body auto-height should be at least viewport-height, but still grow to
@@ -2803,7 +2829,18 @@ pub fn render_document_with_external_css(
 
   // Apply zoom and transform scale to layout
   let scaled_layout = apply_zoom_and_scale(
-    layout, root, 1.0, 1.0, 1.0, 0.0, 0.0, false,
+    layout,
+    root,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    false,
+    0.0,
+    0.0,
+    ctx.viewport_width,
+    ctx.viewport_height,
   )
   let scaled_layout = if should_clamp_body_to_viewport(root) {
     let min_viewport_height = if scaled_layout.height < ctx.viewport_height {
@@ -6750,12 +6787,7 @@ fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
     @types.Static => false
     _ => true
   }
-  let layout_container = match style.display {
-    @types.Grid | @types.InlineGrid | @types.Flex | @types.InlineFlex => true
-    _ => false
-  }
   positioned ||
-  layout_container ||
   containment_establishes_cb ||
   not(style.transform.is_none()) ||
   is_svg_container_id(node.id)
@@ -6770,11 +6802,46 @@ fn is_auto_inset(dim : @types.Dimension) -> Bool {
 }
 
 ///|
-fn has_all_auto_insets(style : @style.Style) -> Bool {
-  is_auto_inset(style.inset.left) &&
-  is_auto_inset(style.inset.right) &&
-  is_auto_inset(style.inset.top) &&
-  is_auto_inset(style.inset.bottom)
+fn has_non_auto_horizontal_insets(style : @style.Style) -> Bool {
+  not(is_auto_inset(style.inset.left)) || not(is_auto_inset(style.inset.right))
+}
+
+///|
+fn has_non_auto_vertical_insets(style : @style.Style) -> Bool {
+  not(is_auto_inset(style.inset.top)) || not(is_auto_inset(style.inset.bottom))
+}
+
+///|
+fn is_flex_or_grid_container_display(display : @types.Display) -> Bool {
+  match display {
+    @types.Grid | @types.InlineGrid | @types.Flex | @types.InlineFlex => true
+    _ => false
+  }
+}
+
+///|
+fn compute_abspos_non_auto_inset_alignment_offset(
+  self_alignment : @types.AlignSelf,
+  inset_start : @types.Dimension,
+  inset_end : @types.Dimension,
+  containing_block_size : Double,
+  child_size : Double,
+) -> Double {
+  if is_auto_inset(inset_start) || is_auto_inset(inset_end) {
+    return 0.0
+  }
+  let start = resolve_dimension_with_percent_basis(
+    inset_start, containing_block_size,
+  )
+  let end = resolve_dimension_with_percent_basis(
+    inset_end, containing_block_size,
+  )
+  let free_space = containing_block_size - start - end - child_size
+  match self_alignment {
+    @types.AlignSelf::Center => free_space / 2.0
+    @types.AlignSelf::End => free_space
+    _ => 0.0
+  }
 }
 
 ///|
@@ -6794,6 +6861,10 @@ fn apply_zoom_and_scale(
   parent_global_x : Double,
   parent_global_y : Double,
   has_abs_containing_block_ancestor : Bool,
+  abs_containing_block_global_x : Double,
+  abs_containing_block_global_y : Double,
+  abs_containing_block_width : Double,
+  abs_containing_block_height : Double,
 ) -> @types.Layout {
   // Calculate effective zoom (parent zoom * node zoom)
   let effective_zoom = parent_zoom * node.style.zoom
@@ -6839,51 +6910,147 @@ fn apply_zoom_and_scale(
     origin_adjust_y
   let global_x = parent_global_x + scaled_x
   let global_y = parent_global_y + scaled_y
+  let establishes_abs_containing_block_here = establishes_absolute_containing_block(
+    node,
+  )
   let has_abs_containing_block = has_abs_containing_block_ancestor ||
-    establishes_absolute_containing_block(node)
+    establishes_abs_containing_block_here
+  let current_abs_containing_block_global_x = if establishes_abs_containing_block_here {
+    global_x
+  } else {
+    abs_containing_block_global_x
+  }
+  let current_abs_containing_block_global_y = if establishes_abs_containing_block_here {
+    global_y
+  } else {
+    abs_containing_block_global_y
+  }
+  let current_abs_containing_block_width = if establishes_abs_containing_block_here {
+    scaled_width
+  } else {
+    abs_containing_block_width
+  }
+  let current_abs_containing_block_height = if establishes_abs_containing_block_here {
+    scaled_height
+  } else {
+    abs_containing_block_height
+  }
 
   // Process children with updated parent zoom and scale
   let scaled_children : Array[@types.Layout] = []
-  let min_len = if layout.children.length() < node.children.length() {
-    layout.children.length()
-  } else {
-    node.children.length()
-  }
-  for i = 0; i < min_len; i = i + 1 {
+  let mut child_node_cursor = 0
+  for i = 0; i < layout.children.length(); i = i + 1 {
     let child_layout = layout.children[i]
-    let child_node = node.children[i]
+    if node.children.length() == 0 {
+      scaled_children.push(child_layout)
+      continue
+    }
+    let mut matched_index : Int? = None
+    let mut scan_index = child_node_cursor
+    while scan_index < node.children.length() {
+      let candidate = node.children[scan_index]
+      if candidate.style.display == @types.Display::None {
+        scan_index = scan_index + 1
+        continue
+      }
+      if candidate.id == child_layout.id {
+        matched_index = Some(scan_index)
+        break
+      }
+      scan_index = scan_index + 1
+    }
+    let child_node = match matched_index {
+      Some(index) => {
+        child_node_cursor = index + 1
+        node.children[index]
+      }
+      None =>
+        if child_node_cursor < node.children.length() {
+          let fallback_index = child_node_cursor
+          child_node_cursor = fallback_index + 1
+          node.children[fallback_index]
+        } else {
+          node.children[node.children.length() - 1]
+        }
+    }
     let scaled_child = apply_zoom_and_scale(
       child_layout, child_node, effective_zoom, child_parent_scale_x, child_parent_scale_y,
-      global_x, global_y, has_abs_containing_block,
+      global_x, global_y, has_abs_containing_block, current_abs_containing_block_global_x,
+      current_abs_containing_block_global_y, current_abs_containing_block_width,
+      current_abs_containing_block_height,
     )
-    if child_node.style.position == @types.Absolute &&
-      not(has_abs_containing_block) {
-      // Absolute descendants without a containing block are viewport-relative.
-      if is_no_principal_table_internal_display(node.style.display) &&
-        has_all_auto_insets(child_node.style) {
-        // Static-positioned abs descendants under no-principal table-internal
-        // ancestors were already shifted during block flow placement.
-        scaled_children.push({
-          ..scaled_child,
-          x: scaled_child.x + scaled_x,
-          y: scaled_child.y + scaled_y,
-        })
+    if child_node.style.position == @types.Absolute {
+      let inset_left_auto = is_auto_inset(child_node.style.inset.left)
+      let inset_right_auto = is_auto_inset(child_node.style.inset.right)
+      let inset_top_auto = is_auto_inset(child_node.style.inset.top)
+      let inset_bottom_auto = is_auto_inset(child_node.style.inset.bottom)
+      let adjust_x = if has_non_auto_horizontal_insets(child_node.style) {
+        let cb_global_x = if has_abs_containing_block {
+          current_abs_containing_block_global_x
+        } else {
+          0.0
+        }
+        cb_global_x - global_x
       } else {
-        scaled_children.push({
-          ..scaled_child,
-          x: scaled_child.x - global_x,
-          y: scaled_child.y - global_y,
-        })
+        0.0
       }
+      let adjust_y = if has_non_auto_vertical_insets(child_node.style) {
+        let cb_global_y = if has_abs_containing_block {
+          current_abs_containing_block_global_y
+        } else {
+          0.0
+        }
+        cb_global_y - global_y
+      } else {
+        0.0
+      }
+      // Absolute children are laid out in their immediate static parent first.
+      // For right/bottom inset cases, convert to the true containing-block size.
+      let cb_size_adjust_x = if not(inset_right_auto) && inset_left_auto {
+        current_abs_containing_block_width - scaled_width
+      } else {
+        0.0
+      }
+      let cb_size_adjust_y = if not(inset_bottom_auto) && inset_top_auto {
+        current_abs_containing_block_height - scaled_height
+      } else {
+        0.0
+      }
+      let align_adjust_x = if is_flex_or_grid_container_display(
+          node.style.display,
+        ) {
+        compute_abspos_non_auto_inset_alignment_offset(
+          child_node.style.justify_self,
+          child_node.style.inset.left,
+          child_node.style.inset.right,
+          current_abs_containing_block_width,
+          scaled_child.width,
+        )
+      } else {
+        0.0
+      }
+      let align_adjust_y = if is_flex_or_grid_container_display(
+          node.style.display,
+        ) {
+        compute_abspos_non_auto_inset_alignment_offset(
+          child_node.style.align_self,
+          child_node.style.inset.top,
+          child_node.style.inset.bottom,
+          current_abs_containing_block_height,
+          scaled_child.height,
+        )
+      } else {
+        0.0
+      }
+      scaled_children.push({
+        ..scaled_child,
+        x: scaled_child.x + adjust_x + cb_size_adjust_x + align_adjust_x,
+        y: scaled_child.y + adjust_y + cb_size_adjust_y + align_adjust_y,
+      })
     } else {
       scaled_children.push(scaled_child)
     }
   }
-  // Add any remaining layout children without scaling (shouldn't happen in practice)
-  for i = min_len; i < layout.children.length(); i = i + 1 {
-    scaled_children.push(layout.children[i])
-  }
-
   // Scale margin, padding, border
   let scaled_margin : @types.Rect[Double] = {
     left: layout.margin.left * total_scale_x,

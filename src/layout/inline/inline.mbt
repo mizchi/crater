@@ -649,6 +649,47 @@ fn max_text_glyph_height_in_node(node : @node.Node) -> Double {
 }
 
 ///|
+fn resolve_abs_static_position_in_inline(
+  container_style : @style.Style,
+  abs_child_style : @style.Style,
+  inline_cursor_x : Double,
+  inline_cursor_y : Double,
+  inline_line_height : Double,
+) -> (Double, Double) {
+  let line_advance = if inline_line_height > 0.0 {
+    inline_line_height
+  } else {
+    line_height_from_style(container_style)
+  }
+  if container_style.writing_mode.is_vertical() {
+    let static_x = if is_inline_level(abs_child_style.display) {
+      inline_cursor_x
+    } else if container_style.writing_mode.is_block_rtl() {
+      // Vertical-rl static-positioned block descendants advance to the
+      // previous column edge before abs alignment is applied.
+      inline_cursor_x - line_advance * 2.0
+    } else {
+      inline_cursor_x
+    }
+    (static_x, inline_cursor_y)
+  } else {
+    let static_x = if is_inline_level(abs_child_style.display) {
+      inline_cursor_x
+    } else {
+      0.0
+    }
+    let static_y = if is_inline_level(abs_child_style.display) {
+      inline_cursor_y
+    } else if inline_line_height > 0.0 {
+      inline_cursor_y + inline_line_height
+    } else {
+      inline_cursor_y
+    }
+    (static_x, static_y)
+  }
+}
+
+///|
 /// Ensure each line box includes the inline formatting strut from parent font metrics.
 /// The strut defines the line box minimum ascent/descent from line-height.
 fn LineBox::ensure_line_strut(
@@ -1605,7 +1646,8 @@ fn compute_inline_child(
   let mut max_line_width = 0.0
 
   // Process children - handle absolute positioned elements
-  let absolute_entries : Array[(Int, @node.Node, Double)] = []
+  let absolute_entries : Array[(Int, @node.Node, Double, Double)] = []
+  let mut saw_out_of_flow_child = false
   for child in node.children {
     if child.style.display == @types.Display::None {
       children.push(create_zero_layout(child))
@@ -1624,16 +1666,19 @@ fn compute_inline_child(
       }
       let @node.DispatchFn(dispatch_fn) = dispatch
       let child_layout = dispatch_fn(child, child_ctx, dispatch)
-      let child_index = children.length()
+      let layout_index = children.length()
       children.push(child_layout)
       if child.style.position == @types.Absolute {
-        let static_y = if inline_line_height > 0.0 {
-          inline_cursor_y + inline_line_height
-        } else {
-          inline_cursor_y
-        }
-        absolute_entries.push((child_index, child, static_y))
+        let (static_x, static_y) = resolve_abs_static_position_in_inline(
+          style,
+          child.style,
+          inline_cursor_x,
+          inline_cursor_y,
+          inline_line_height,
+        )
+        absolute_entries.push((layout_index, child, static_x, static_y))
       }
+      saw_out_of_flow_child = true
       // Absolute children don't contribute to inline element's size
     } else if child.style.display == @types.Contents {
       // display: contents does not generate its own box, but its inline descendants
@@ -1728,11 +1773,19 @@ fn compute_inline_child(
       if contents_height > content_height {
         content_height = contents_height
       }
+      saw_out_of_flow_child = false
     } else if is_inline_level(child.style.display) {
       // Recursively process inline children
-      let child_layout = compute_inline_child(
+      let raw_child_layout = compute_inline_child(
         child, available_width, available_height, dispatch,
       )
+      let collapse_whitespace_after_out_of_flow = saw_out_of_flow_child &&
+        is_whitespace_text_node(child)
+      let child_layout = if collapse_whitespace_after_out_of_flow {
+        { ..raw_child_layout, width: 0.0, height: 0.0 }
+      } else {
+        raw_child_layout
+      }
       let child_margin = @types.resolve_rect(
         child.style.margin,
         available_width,
@@ -1815,6 +1868,9 @@ fn compute_inline_child(
           content_height = line_bottom
         }
       }
+      if not(collapse_whitespace_after_out_of_flow) {
+        saw_out_of_flow_child = false
+      }
     } else if is_ruby_internal_container(node.id) {
       // Ruby internal boxes can contain non-inline descendants in WPT fixtures.
       // Keep them in-flow as inline contributions instead of dropping them.
@@ -1883,6 +1939,7 @@ fn compute_inline_child(
         not(is_ruby_annotation_child(node, child)) {
         content_height = child_layout.height
       }
+      saw_out_of_flow_child = false
     }
     // Block-level children in inline context are not supported (would need anonymous blocks)
   }
@@ -1935,11 +1992,37 @@ fn compute_inline_child(
   if final_height == 0.0 && id_matches_tag(node.id, "source") {
     final_height = text_glyph_height_from_style(style)
   }
+  if not(style.writing_mode.is_vertical()) &&
+    absolute_entries.length() > 0 &&
+    inline_cursor_y == 0.0 {
+    let horizontal_inline_line_height = line_height_from_style(style) +
+      padding.vertical_sum() +
+      border.vertical_sum()
+    if final_height > horizontal_inline_line_height {
+      final_height = horizontal_inline_line_height
+    }
+  }
+  if style.writing_mode.is_vertical() && absolute_entries.length() > 0 {
+    let vertical_inline_line_height = line_height_from_style(style) +
+      padding.vertical_sum() +
+      border.vertical_sum()
+    if final_height > vertical_inline_line_height {
+      final_height = vertical_inline_line_height
+    }
+  }
 
   // Keep static-position baseline fallback for abspos descendants when this
   // inline box is not their containing block.
   for entry in absolute_entries {
-    let (idx, abs_child, static_y) = entry
+    let (idx, abs_child, static_x, static_y) = entry
+    let left_auto = match abs_child.style.inset.left {
+      @types.Auto => true
+      _ => false
+    }
+    let right_auto = match abs_child.style.inset.right {
+      @types.Auto => true
+      _ => false
+    }
     let top_auto = match abs_child.style.inset.top {
       @types.Auto => true
       _ => false
@@ -1951,6 +2034,10 @@ fn compute_inline_child(
     if top_auto && bottom_auto {
       let abs_layout = children[idx]
       children[idx] = { ..abs_layout, y: static_y }
+    }
+    if left_auto && right_auto {
+      let abs_layout = children[idx]
+      children[idx] = { ..abs_layout, x: static_x }
     }
   }
 
@@ -1969,7 +2056,7 @@ fn compute_inline_child(
     let area_width = if area_width_raw > 0.0 { area_width_raw } else { 0.0 }
     let area_height = if area_height_raw > 0.0 { area_height_raw } else { 0.0 }
     for entry in absolute_entries {
-      let (idx, abs_child, static_y) = entry
+      let (idx, abs_child, static_x, static_y) = entry
       let abs_layout = children[idx]
       let child_style = abs_child.style
       let inset_left = resolve_inset_dimension(
@@ -1991,7 +2078,7 @@ fn compute_inline_child(
       let x = match (inset_left, inset_right) {
         (Some(l), _) => area_left + l
         (None, Some(r)) => area_left + area_width - r - abs_layout.width
-        (None, None) => abs_layout.x
+        (None, None) => area_left + static_x
       }
       let y = match (inset_top, inset_bottom) {
         (Some(t), _) => area_top + t
