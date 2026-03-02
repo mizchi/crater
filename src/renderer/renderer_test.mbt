@@ -405,6 +405,30 @@ test "html_columns_propagate_to_body_root_style" {
 }
 
 ///|
+test "html_max_width_constrains_body_layout_width" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  html { max-width: 780px; }
+    #|  body { margin: 0; }
+    #|  #box { height: 10px; }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|  <div id="box"></div>
+    #|</body></html>
+  let ctx = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = @renderer.render(html, ctx)
+  inspect(layout.width, content="780")
+  inspect(layout.children[0].width, content="780")
+}
+
+///|
 test "align_self_static_position_005_inline_span_stays_inline" {
   let html =
     #|<!DOCTYPE html>

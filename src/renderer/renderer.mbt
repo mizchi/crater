@@ -2350,6 +2350,58 @@ fn propagate_document_root_multicol_to_body(
 }
 
 ///|
+fn resolve_root_available_width(
+  viewport_width : Double,
+  root_margin : @types.Rect[Double],
+  doc_root_style : @style.Style?,
+) -> Double {
+  let base = viewport_width - root_margin.left - root_margin.right
+  let base = if base > 0.0 { base } else { 0.0 }
+  match doc_root_style {
+    None => base
+    Some(style) => {
+      let mut doc_width = match style.width {
+        @types.Length(v) => v
+        @types.Percent(p) => viewport_width * p
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => viewport_width
+      }
+      let min_width = match style.min_width {
+        @types.Length(v) => v
+        @types.Percent(p) => viewport_width * p
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => 0.0
+      }
+      let max_width = match style.max_width {
+        @types.Length(v) => v
+        @types.Percent(p) => viewport_width * p
+        @types.Auto
+        | @types.MinContent
+        | @types.MaxContent
+        | @types.FitContent(_) => 1.0e10
+      }
+      if doc_width > max_width {
+        doc_width = max_width
+      }
+      if doc_width < min_width {
+        doc_width = min_width
+      }
+      let constrained = doc_width - root_margin.left - root_margin.right
+      let constrained = if constrained > 0.0 { constrained } else { 0.0 }
+      if constrained < base {
+        constrained
+      } else {
+        base
+      }
+    }
+  }
+}
+
+///|
 fn node_with_style(node : @node.Node, style : @style.Style) -> @node.Node {
   @node.Node::with_uid_and_measure(
     node.id,
@@ -2520,9 +2572,15 @@ pub fn render_with_external_css(
 
   // Create layout context - subtract root margin from available space
   let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
-  let available_width = ctx.viewport_width -
-    root_margin.left -
-    root_margin.right
+  let available_width = resolve_root_available_width(
+    ctx.viewport_width,
+    root_margin,
+    if render_root.tag.to_lower() == "body" && doc.root.tag.to_lower() != "body" {
+      Some(doc_root_style)
+    } else {
+      None
+    },
+  )
   // Root with explicit/% height should resolve against viewport; otherwise keep
   // height unconstrained so content can grow naturally.
   let root_available_height : Double? = if render_root.tag.to_lower() == "body" {
@@ -2710,9 +2768,15 @@ pub fn render_document_with_external_css(
 
   // Create layout context - subtract root margin from available space
   let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
-  let available_width = ctx.viewport_width -
-    root_margin.left -
-    root_margin.right
+  let available_width = resolve_root_available_width(
+    ctx.viewport_width,
+    root_margin,
+    if render_root.tag.to_lower() == "body" && doc.root.tag.to_lower() != "body" {
+      Some(doc_root_style)
+    } else {
+      None
+    },
+  )
   let root_available_height : Double? = if render_root.tag.to_lower() == "body" {
     Some(ctx.viewport_height)
   } else {
