@@ -1828,6 +1828,16 @@ fn resolve_text_align_offset(
 }
 
 ///|
+fn is_inline_flow_participant(
+  node : @node.Node,
+  style : @style.Style,
+) -> Bool {
+  node.id == "br" ||
+  node.id.has_prefix("#text") ||
+  @inline.is_inline_level(style.display)
+}
+
+///|
 fn estimate_multicol_inline_line_width(
   start_index : Int,
   flow_children : Array[LayoutWithCollapse],
@@ -1842,12 +1852,12 @@ fn estimate_multicol_inline_line_width(
       break
     }
     let child_style = flow_styles[j]
-    if not(@inline.is_inline_level(child_style.display)) ||
+    let child_node = flow_nodes[j]
+    if not(is_inline_flow_participant(child_node, child_style)) ||
       child_style.position == @types.Absolute ||
       child_style.position == @types.Fixed {
       break
     }
-    let child_node = flow_nodes[j]
     if child_node.id == "br" {
       break
     }
@@ -2137,7 +2147,6 @@ fn reflow_fragmented_children_with_offset(
     }
     if not(child_is_inflow_float) &&
       prefer_next_column_for_block_children &&
-      fragment_offset > 0.0 &&
       j > 0 &&
       child_layout.children.length() > 0 {
       let col = (effective_pos / limit).to_int()
@@ -2206,12 +2215,19 @@ fn reflow_fragmented_children_with_offset(
     let child_height_zero = child_height_zero_by_layout ||
       child_height_zero_by_style
     let positioned_children = if child_layout.children.length() > 0 {
+      let nested_prefer_next_column = prefer_next_column_for_block_children ||
+        child_height_zero
+      let child_fragment_offset = if child_has_direct_inflow_float {
+        fragment_offset
+      } else {
+        local_pos
+      }
       reflow_fragmented_children_with_offset(
         child_layout.children,
         child_source_children,
         limit,
-        local_pos,
-        child_height_zero,
+        child_fragment_offset,
+        nested_prefer_next_column,
         multicol_fragment_contained,
         multicol_column_count,
         multicol_column_width,
@@ -2220,8 +2236,33 @@ fn reflow_fragmented_children_with_offset(
     } else {
       child_layout.children
     }
+    let adjusted_positioned_children = if
+      prefer_next_column_for_block_children &&
+      not(child_has_direct_inflow_float) &&
+      positioned_children.length() > 1 {
+      let shifted_children : Array[@types.Layout] = []
+      let mut shifted_any = false
+      let column_shift = multicol_column_width + multicol_column_gap
+      for idx = 0; idx < positioned_children.length(); idx = idx + 1 {
+        let positioned_child = positioned_children[idx]
+        if not(shifted_any) &&
+          idx > 0 &&
+          positioned_child.children.length() > 0 &&
+          positioned_child.x <= 0.01 {
+          shifted_children.push(
+            shift_layout_subtree(positioned_child, column_shift, 0.0),
+          )
+          shifted_any = true
+        } else {
+          shifted_children.push(positioned_child)
+        }
+      }
+      shifted_children
+    } else {
+      positioned_children
+    }
     let positioned_children_width = get_children_flow_extent_width(
-      positioned_children,
+      adjusted_positioned_children,
     )
     let child_auto_height = match child_style.height {
       @types.Dimension::Auto => true
@@ -2264,7 +2305,7 @@ fn reflow_fragmented_children_with_offset(
       y: row.to_double() * limit + local_pos - fragment_offset,
       width: positioned_width,
       height: positioned_height,
-      children: positioned_children,
+      children: adjusted_positioned_children,
     })
     if not(child_is_inflow_float) {
       pos = pos + child_outer_height
@@ -5573,8 +5614,9 @@ fn compute_with_collapse(
       next_float_index = next_float_index + 1
     }
     if multicol_enabled {
-      let multicol_participates_in_inline_run = @inline.is_inline_level(
-          child_style.display,
+      let multicol_participates_in_inline_run = is_inline_flow_participant(
+          child_node,
+          child_style,
         ) &&
         child_style.position != @types.Absolute &&
         child_style.position != @types.Fixed
@@ -6352,7 +6394,7 @@ fn compute_with_collapse(
       continue
     }
     let participates_in_inline_run = enable_float_inline_run &&
-      @inline.is_inline_level(child_style.display) &&
+      is_inline_flow_participant(child_node, child_style) &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed
     if not(participates_in_inline_run) && inline_run_active {
