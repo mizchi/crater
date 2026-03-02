@@ -5896,11 +5896,13 @@ fn compute_with_collapse(
                     nested_layout.margin.bottom
                   let nested_unbreakable = if j <
                     nested_source_children.length() {
+                    nested_layout.id != "hr" &&
                     is_unbreakable_fragment_unit(
                       nested_source_children[j],
                       nested_layout,
                     )
                   } else {
+                    nested_layout.id != "hr" &&
                     nested_layout.children.length() == 0
                   }
                   let mut effective_nested_y = nested_layout.y +
@@ -5914,9 +5916,19 @@ fn compute_with_collapse(
                     nested_local_y > 0.0 &&
                     nested_local_y + nested_outer_height > limit {
                     let next_effective = (nested_col + 1).to_double() * limit
+                    let float_line_adjust = if nested_style.float !=
+                      @types.Float::None &&
+                      nested_style.position != @types.Absolute &&
+                      nested_style.position != @types.Fixed &&
+                      nested_style.line_height > 0.0 {
+                      nested_style.line_height
+                    } else {
+                      0.0
+                    }
                     nested_carry_delta = nested_carry_delta +
-                      (next_effective - effective_nested_y)
-                    effective_nested_y = next_effective
+                      (next_effective - effective_nested_y) +
+                      float_line_adjust
+                    effective_nested_y = next_effective + float_line_adjust
                     nested_col = (effective_nested_y / limit).to_int()
                     nested_local_y = effective_nested_y -
                       nested_col.to_double() * limit
@@ -6000,12 +6012,22 @@ fn compute_with_collapse(
                     for idx = 0; idx < nested_positioned_children.length(); idx = idx +
                         1 {
                       let nested_child = nested_positioned_children[idx]
+                      let shift_zero_height_float = nested_height_zero &&
+                        nested_child.id == "div.float" &&
+                        nested_child.y > 0.0
                       if not(shifted_any) &&
                         idx > 0 &&
                         nested_child.children.length() > 0 &&
-                        nested_child.x <= 0.01 &&
+                        (
+                          nested_child.x <= 0.01 ||
+                          shift_zero_height_float
+                        ) &&
                         nested_child.y > 0.0 {
-                        let shift_y = -nested_local_y - nested_child.y
+                        let shift_y = if shift_zero_height_float {
+                          -nested_child.y
+                        } else {
+                          -nested_local_y - nested_child.y
+                        }
                         shifted_children.push(
                           shift_layout_subtree(
                             nested_child,
@@ -7014,6 +7036,12 @@ fn compute_with_collapse(
       escaped_bottom = Some(prev_margin_end)
     }
   }
+  while next_float_index < float_nodes.length() {
+    let float_layout = place_float_layout(next_float_index, current_pos)
+    float_layouts.push(float_layout)
+    layout_map[float_indices[next_float_index]] = float_layout
+    next_float_index = next_float_index + 1
+  }
   if inline_run_active {
     current_pos = current_pos + inline_run_height
     inline_run_active = false
@@ -7021,12 +7049,6 @@ fn compute_with_collapse(
     inline_run_height = 0.0
     inline_run_align_offset = 0.0
     prev_margin_end = 0.0
-  }
-  while next_float_index < float_nodes.length() {
-    let float_layout = place_float_layout(next_float_index, current_pos)
-    float_layouts.push(float_layout)
-    layout_map[float_indices[next_float_index]] = float_layout
-    next_float_index = next_float_index + 1
   }
 
   // Replace anonymous-table placeholders with projected original children.
