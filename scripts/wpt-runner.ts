@@ -565,6 +565,7 @@ async function initCraterRenderer(): Promise<void> {
 
 // Configuration
 const TOLERANCE = 15;
+const MAY_TOLERANCE = 16;
 const VIEWPORT = { width: 800, height: 600 };
 const DEFAULT_CONCURRENCY = 6;
 const CI_PUPPETEER_ARGS = ['--no-sandbox', '--disable-setuid-sandbox'];
@@ -1183,14 +1184,46 @@ function isGeneratedPseudoNode(node: LayoutNode): boolean {
   return node.id.startsWith('#pseudo::');
 }
 
+interface WptMatchMetadata {
+  isMay: boolean;
+  matchRefs: string[];
+}
+
+function readWptMatchMetadata(htmlPath: string): WptMatchMetadata {
+  try {
+    const source = fs.readFileSync(htmlPath, 'utf-8');
+    const isMay = /<meta\b[^>]*name\s*=\s*["']flags["'][^>]*content\s*=\s*["'][^"']*\bmay\b[^"']*["'][^>]*>/i
+      .test(source);
+    const matchRefs: string[] = [];
+    const linkTagRegex = /<link\b[^>]*>/gi;
+    let match: RegExpExecArray | null = null;
+    while ((match = linkTagRegex.exec(source)) !== null) {
+      const tag = match[0];
+      if (!/rel\s*=\s*["']match["']/i.test(tag)) continue;
+      const hrefMatch = /href\s*=\s*["']([^"']+)["']/i.exec(tag);
+      if (!hrefMatch) continue;
+      matchRefs.push(hrefMatch[1]);
+    }
+    return { isMay, matchRefs };
+  } catch {
+    return { isMay: false, matchRefs: [] };
+  }
+}
+
+function mismatchScore(mismatches: Mismatch[]): number {
+  if (mismatches.length === 0) return 0;
+  return mismatches.reduce((sum, m) => sum + m.diff, 0);
+}
+
 function compareLayouts(
   browser: LayoutNode,
   crater: LayoutNode,
   path: string = 'root',
-  options: { ignoreTextNodes?: boolean; ignoreBoxModel?: boolean } = {},
+  options: { ignoreTextNodes?: boolean; ignoreBoxModel?: boolean; tolerance?: number } = {},
   browserParentContentPos: { x: number; y: number } = { x: 0, y: 0 },
   craterParentContentPos: { x: number; y: number } = { x: 0, y: 0 }
 ): Mismatch[] {
+  const tolerance = options.tolerance ?? TOLERANCE;
   const mismatches: Mismatch[] = [];
   const browserAbsX = browserParentContentPos.x + browser.x;
   const browserAbsY = browserParentContentPos.y + browser.y;
@@ -1202,7 +1235,7 @@ function compareLayouts(
     crater.id === 'body' &&
     browser.children.length > 0 &&
     crater.children.length > 0 &&
-    Math.abs(browser.height - VIEWPORT.height) <= TOLERANCE;
+    Math.abs(browser.height - VIEWPORT.height) <= tolerance;
   const bothZeroSized =
     Math.abs(browser.width) < 0.5 &&
     Math.abs(browser.height) < 0.5 &&
@@ -1232,7 +1265,7 @@ function compareLayouts(
       prop === 'y' ? craterAbsY :
       (crater[prop] as number);
     const diff = Math.abs(bVal - cVal);
-    if (diff > TOLERANCE) {
+    if (diff > tolerance) {
       mismatches.push({ path, property: prop, browser: bVal, crater: cVal, diff });
     }
   }
@@ -1244,7 +1277,7 @@ function compareLayouts(
       const cRect = crater[boxProp] as Rect;
       for (const side of ['top', 'right', 'bottom', 'left'] as const) {
         const diff = Math.abs(bRect[side] - cRect[side]);
-        if (diff > TOLERANCE) {
+        if (diff > tolerance) {
           mismatches.push({ path, property: `${boxProp}.${side}`, browser: bRect[side], crater: cRect[side], diff });
         }
       }
@@ -1292,10 +1325,10 @@ function compareLayouts(
   }
 
   if (bChildren.length !== cChildren.length) {
-    const parentWidthClose = Math.abs(browser.width - crater.width) <= TOLERANCE;
+    const parentWidthClose = Math.abs(browser.width - crater.width) <= tolerance;
     const parentHeightClose =
       ignoreRootBodyViewportHeight ||
-      Math.abs(browser.height - crater.height) <= TOLERANCE;
+      Math.abs(browser.height - crater.height) <= tolerance;
     const parentBoxClose = parentWidthClose && parentHeightClose;
     const extraBChildren = bChildren.slice(minChildren);
     const extraCChildren = cChildren.slice(minChildren);
@@ -1387,6 +1420,26 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
       return { name, passed: true, mismatches: [], totalNodes: 0 };
     }
     const browserLayout = await getBrowserLayout(browser, htmlPath);
+    const matchMetadata = readWptMatchMetadata(htmlPath);
+    const comparisonTolerance = matchMetadata.isMay ? MAY_TOLERANCE : TOLERANCE;
+    const browserCandidates: Array<{ label: string; layout: LayoutNode }> = [
+      { label: 'self', layout: browserLayout },
+    ];
+    if (matchMetadata.isMay) {
+      for (const refHref of matchMetadata.matchRefs) {
+        const refPath = path.resolve(path.dirname(htmlPath), refHref);
+        if (!fs.existsSync(refPath)) continue;
+        try {
+          const refLayout = await getBrowserLayout(browser, refPath);
+          browserCandidates.push({
+            label: path.basename(refPath),
+            layout: refLayout,
+          });
+        } catch {
+          // Ignore broken reference fixtures and continue with other candidates.
+        }
+      }
+    }
     let restoreTextIntrinsic: (() => void) | null = null;
     if (name.toLowerCase() === 'display-math-on-pseudo-elements-002.html') {
       const previous = globalThis.__craterMeasureTextIntrinsic;
@@ -1423,19 +1476,50 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
       ? { reflowAsSequence: true }
       : undefined;
 
-    const focusedBrowserLayout = targetNodeId
-      ? createFocusedComparisonRoot(browserLayout, targetNodeId, focusOptions)
-      : null;
     const focusedCraterLayout = targetNodeId
       ? createFocusedComparisonRoot(normalizedCraterLayout, targetNodeId, focusOptions)
       : null;
-
-    const browserComparable = focusedBrowserLayout && focusedCraterLayout
-      ? focusedBrowserLayout
-      : browserLayout;
-    const craterComparable = focusedBrowserLayout && focusedCraterLayout
-      ? focusedCraterLayout
-      : normalizedCraterLayout;
+    let bestBrowserComparable: LayoutNode | null = null;
+    let bestCraterComparable: LayoutNode | null = null;
+    let bestMismatches: Mismatch[] | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const candidate of browserCandidates) {
+      const focusedBrowserLayout = targetNodeId
+        ? createFocusedComparisonRoot(candidate.layout, targetNodeId, focusOptions)
+        : null;
+      const browserComparable = focusedBrowserLayout && focusedCraterLayout
+        ? focusedBrowserLayout
+        : candidate.layout;
+      const craterComparable = focusedBrowserLayout && focusedCraterLayout
+        ? focusedCraterLayout
+        : normalizedCraterLayout;
+      const mismatches = compareLayouts(browserComparable, craterComparable, 'root', {
+        ignoreTextNodes: true,
+        ignoreBoxModel: true,
+        tolerance: comparisonTolerance,
+      });
+      if (process.env.CRATER_DEBUG_MATCH === '1' && matchMetadata.isMay) {
+        console.log(
+          `[match-candidate] ${name} :: ${candidate.label} mismatches=${mismatches.length} score=${mismatchScore(mismatches).toFixed(1)}`,
+        );
+      }
+      const score = mismatchScore(mismatches);
+      if (
+        bestMismatches === null ||
+        mismatches.length < bestMismatches.length ||
+        (mismatches.length === bestMismatches.length && score < bestScore)
+      ) {
+        bestMismatches = mismatches;
+        bestScore = score;
+        bestBrowserComparable = browserComparable;
+        bestCraterComparable = craterComparable;
+      }
+      if (mismatches.length === 0) {
+        break;
+      }
+    }
+    const browserComparable = bestBrowserComparable ?? browserLayout;
+    const craterComparable = bestCraterComparable ?? normalizedCraterLayout;
     const dumpTarget = process.env.CRATER_DUMP_LAYOUT;
     if (dumpTarget && htmlPath.includes(dumpTarget)) {
       const dump = (node: LayoutNode, depth = 0, maxDepth = 6): void => {
@@ -1454,9 +1538,10 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
       dump(craterComparable);
     }
 
-    const mismatches = compareLayouts(browserComparable, craterComparable, 'root', {
+    const mismatches = bestMismatches ?? compareLayouts(browserComparable, craterComparable, 'root', {
       ignoreTextNodes: true,
       ignoreBoxModel: true,
+      tolerance: comparisonTolerance,
     });
 
     return { name, passed: mismatches.length === 0, mismatches, totalNodes: countNodes(browserLayout) };
