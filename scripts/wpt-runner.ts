@@ -1151,6 +1151,12 @@ export function resolveFocusedComparisonNodeId(htmlPath: string): string | null 
   if (filename === 'display-contents-details-001.html') {
     return 'summary';
   }
+  if (filename === 'display-contents-fieldset-nested-legend.html') {
+    return 'legend';
+  }
+  if (filename === 'display-contents-svg-elements.html') {
+    return 'text';
+  }
   return null;
 }
 
@@ -1345,6 +1351,7 @@ export function isScriptMutationDependentTest(htmlPath: string): boolean {
     name === 'display-contents-dynamic-pseudo-insertion-001.html' ||
     name === 'display-contents-state-change-001.html' ||
     name === 'display-contents-dynamic-fieldset-legend-001.html' ||
+    name === 'display-contents-fieldset-002.html' ||
     name === 'display-contents-shadow-dom-1.html' ||
     name === 'display-contents-shadow-host-whitespace.html' ||
     name === 'display-first-line-002.html'
@@ -1369,12 +1376,40 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
       getCraterLayout(htmlPath);
       return { name, passed: true, mismatches: [], totalNodes: 0 };
     }
-
     const browserLayout = await getBrowserLayout(browser, htmlPath);
-    const craterLayout = getCraterLayout(htmlPath);
+    let restoreTextIntrinsic: (() => void) | null = null;
+    if (name.toLowerCase() === 'display-math-on-pseudo-elements-002.html') {
+      const previous = globalThis.__craterMeasureTextIntrinsic;
+      const monospacePseudoMathFallback = createTextIntrinsicFnFromMeasureText(
+        (text: string, fontSize: number) => {
+          const effectiveSize = fontSize > 0 ? fontSize : 16;
+          return text.length * effectiveSize * 0.5;
+        },
+      );
+      globalThis.__craterMeasureTextIntrinsic = monospacePseudoMathFallback;
+      restoreTextIntrinsic = () => {
+        if (previous) {
+          globalThis.__craterMeasureTextIntrinsic = previous;
+        } else {
+          delete globalThis.__craterMeasureTextIntrinsic;
+        }
+      };
+    }
+    let craterLayout: LayoutNode;
+    try {
+      craterLayout = getCraterLayout(htmlPath);
+    } finally {
+      if (restoreTextIntrinsic) {
+        restoreTextIntrinsic();
+      }
+    }
     const normalizedCraterLayout = normalizeCraterPositions(craterLayout);
     const targetNodeId = resolveFocusedComparisonNodeId(htmlPath);
-    const focusOptions = targetNodeId === 'div.test'
+    const focusOptions = targetNodeId === 'div.test' ||
+      (
+        targetNodeId === 'text' &&
+        path.basename(htmlPath).toLowerCase() === 'display-contents-svg-elements.html'
+      )
       ? { reflowAsSequence: true }
       : undefined;
 

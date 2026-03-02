@@ -41,6 +41,9 @@ test "parse_display" {
   inspect(@computed.parse_display("flex"), content="Flex")
   inspect(@computed.parse_display("grid"), content="Grid")
   inspect(@computed.parse_display("none"), content="None")
+  inspect(@computed.parse_display("math"), content="Inline")
+  inspect(@computed.parse_display("block math"), content="Block")
+  inspect(@computed.parse_display("flow-root list-item"), content="FlowRoot")
   inspect(@computed.parse_display("FLEX"), content="Flex") // case insensitive
 }
 

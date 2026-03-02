@@ -3644,6 +3644,35 @@ fn is_svg_element(tag : String) -> Bool {
 }
 
 ///|
+fn selector_parent_is_svg(selector_elem : @selector.Element) -> Bool {
+  match selector_elem.parent {
+    Some(parent) => is_svg_element(parent.tag_name.to_lower())
+    None => false
+  }
+}
+
+///|
+fn normalize_svg_display_contents(
+  tag : String,
+  style : @style.Style,
+  parent_is_svg : Bool,
+) -> @style.Style {
+  if style.display != @types.Contents {
+    return style
+  }
+  if tag == "svg" && not(parent_is_svg) {
+    // Root-level SVG display:contents should not leak SVG descendants into
+    // HTML flow sizing.
+    return { ..style, display: @types.Display::None }
+  }
+  if tag == "text" && parent_is_svg {
+    // SVG <text> with display:contents does not create a CSS flow box.
+    return { ..style, display: @types.Display::None }
+  }
+  style
+}
+
+///|
 /// Apply SVG attributes (width, height, x, y, line coords, circle/ellipse) to style
 fn apply_svg_attributes_to_style(
   style : @style.Style,
@@ -3875,6 +3904,10 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
     @types.Percent(_) => true
     _ => false
   }
+  let has_default_object_size = style.width == @types.Auto &&
+    style.height == @types.Auto &&
+    not(style.contain.size) &&
+    style.display != @types.Contents
 
   {
     ..style
@@ -3888,11 +3921,15 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
     },
     width: if style.width == @types.Auto && height_is_percent {
       @types.Auto
+    } else if has_default_object_size {
+      @types.Length(300.0)
     } else {
       style.width
     },
     height: if style.height == @types.Auto && width_is_percent {
       @types.Auto
+    } else if has_default_object_size {
+      @types.Length(150.0)
     } else {
       style.height
     },
@@ -3999,6 +4036,10 @@ fn element_to_node_with_styles(
   )
 
   let cell_tag = elem.tag.to_lower()
+  let parent_is_svg = selector_parent_is_svg(selector_elem)
+  let computed_style = normalize_svg_display_contents(
+    cell_tag, computed_style, parent_is_svg,
+  )
   // Handle table attributes that affect table formatting context.
   let style = if cell_tag == "table" {
     let border_spacing = match elem.attributes.get("cellspacing") {
@@ -4091,13 +4132,17 @@ fn element_to_node_with_styles(
     @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
     _ => false
   }
-  let (inline_text, remaining_children) = collect_inline_content(
-    elem.children,
-    stylesheets,
-    ctx,
-    preserve_inline_elements,
-    selector_elem,
-  )
+  let (inline_text, remaining_children) = if is_svg_element(cell_tag) {
+    ("", elem.children)
+  } else {
+    collect_inline_content(
+      elem.children,
+      stylesheets,
+      ctx,
+      preserve_inline_elements,
+      selector_elem,
+    )
+  }
 
   match before_pseudo {
     Some(spec) if not(spec.out_of_flow) =>
@@ -4261,6 +4306,10 @@ fn element_to_node_with_styles_internal(
   } else {
     computed_style
   }
+  let parent_is_svg = selector_parent_is_svg(selector_elem)
+  let computed_style = normalize_svg_display_contents(
+    tag_lower, computed_style, parent_is_svg,
+  )
 
   let is_ruby_internal = tag_lower == "ruby" ||
     tag_lower == "rb" ||
@@ -4392,13 +4441,17 @@ fn element_to_node_with_styles_internal(
     @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
     _ => false
   }
-  let (inline_text, remaining_children) = collect_inline_content(
-    elem.children,
-    stylesheets,
-    ctx,
-    preserve_inline_elements,
-    selector_elem,
-  )
+  let (inline_text, remaining_children) = if is_svg_element(tag_lower) {
+    ("", elem.children)
+  } else {
+    collect_inline_content(
+      elem.children,
+      stylesheets,
+      ctx,
+      preserve_inline_elements,
+      selector_elem,
+    )
+  }
 
   match before_pseudo {
     Some(spec) if not(spec.out_of_flow) =>

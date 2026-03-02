@@ -662,6 +662,50 @@ test "block_flow_root_stays_at_top_when_short_enough_between_floats" {
 }
 
 ///|
+test "block_flow_root_zero_width_avoids_float_overlap_with_inline_offset" {
+  let default_style = @style.Style::default()
+  let right_float_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(250.0),
+    height: @types.Length(100.0),
+  }
+  let left_float_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(250.0),
+    height: @types.Length(100.0),
+  }
+  let flow_root_style = {
+    ..default_style,
+    display: @types.FlowRoot,
+    width: @types.Length(0.0),
+    height: @types.Length(200.0),
+  }
+  let right_float = @node.Node::leaf("right-float", right_float_style)
+  let left_float = @node.Node::leaf("left-float", left_float_style)
+  let flow_root = @node.Node::leaf("flow-root", flow_root_style)
+  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root = @node.Node::new("root", root_style, [
+    right_float, left_float, flow_root,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let flow_root_layout = layout.children[2]
+  inspect(flow_root_layout.x, content="250")
+  inspect(flow_root_layout.y, content="100")
+  inspect(layout.height, content="300")
+}
+
+///|
 test "block_absolute_positioning_works" {
   let default_style = @style.Style::default()
   let abs_child_style = {

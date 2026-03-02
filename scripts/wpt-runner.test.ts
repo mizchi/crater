@@ -126,6 +126,22 @@ describe("resolveFocusedComparisonNodeId", () => {
     ).toBe("summary");
   });
 
+  it("targets nested legend display-contents fixture to compare legend node", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-fieldset-nested-legend.html",
+      ),
+    ).toBe("legend");
+  });
+
+  it("targets svg display-contents fixture to compare rendered text nodes", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-svg-elements.html",
+      ),
+    ).toBe("text");
+  });
+
   it("does not change comparison target for other tests", () => {
     expect(
       resolveFocusedComparisonNodeId(
@@ -158,6 +174,11 @@ describe("isScriptMutationDependentTest", () => {
     expect(
       isScriptMutationDependentTest(
         "wpt/css/css-display/display-contents-dynamic-fieldset-legend-001.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-display/display-contents-fieldset-002.html",
       ),
     ).toBe(true);
     expect(

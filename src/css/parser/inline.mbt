@@ -182,56 +182,91 @@ fn parse_multi_dimensions(
 }
 
 ///|
+fn parse_display_keyword(keyword : String) -> @types.Display? {
+  if keyword == "block" {
+    Some(@types.Block)
+  } else if keyword == "inline" {
+    Some(@types.Inline)
+  } else if keyword == "inline-block" {
+    Some(@types.InlineBlock)
+  } else if keyword == "flex" {
+    Some(@types.Flex)
+  } else if keyword == "inline-flex" {
+    Some(@types.InlineFlex)
+  } else if keyword == "grid" {
+    Some(@types.Grid)
+  } else if keyword == "inline-grid" {
+    Some(@types.InlineGrid)
+  } else if keyword == "table" {
+    Some(@types.Table)
+  } else if keyword == "inline-table" {
+    Some(@types.InlineTable)
+  } else if keyword == "table-row" {
+    Some(@types.TableRow)
+  } else if keyword == "table-cell" {
+    Some(@types.TableCell)
+  } else if keyword == "table-caption" {
+    Some(@types.TableCaption)
+  } else if keyword == "table-row-group" {
+    Some(@types.TableRowGroup)
+  } else if keyword == "table-header-group" {
+    Some(@types.TableHeaderGroup)
+  } else if keyword == "table-footer-group" {
+    Some(@types.TableFooterGroup)
+  } else if keyword == "table-column" {
+    Some(@types.TableColumn)
+  } else if keyword == "table-column-group" {
+    Some(@types.TableColumnGroup)
+  } else if keyword == "none" {
+    Some(@types.Display::None)
+  } else if keyword == "contents" {
+    Some(@types.Contents)
+  } else if keyword == "flow-root" {
+    Some(@types.FlowRoot)
+  } else if keyword == "math" {
+    Some(@types.Inline)
+  } else {
+    None
+  }
+}
+
+///|
 /// Parse display property
 fn parse_display(tokens : ArrayView[@token.Token]) -> @types.Display? {
   if tokens.length() == 0 {
     return None
   }
-  match tokens[0] {
-    @token.Token::Ident(s) =>
-      if s == "block" {
-        Some(@types.Block)
-      } else if s == "inline" {
-        Some(@types.Inline)
-      } else if s == "inline-block" {
-        Some(@types.InlineBlock)
-      } else if s == "flex" {
-        Some(@types.Flex)
-      } else if s == "inline-flex" {
-        Some(@types.InlineFlex)
-      } else if s == "grid" {
-        Some(@types.Grid)
-      } else if s == "inline-grid" {
-        Some(@types.InlineGrid)
-      } else if s == "table" {
-        Some(@types.Table)
-      } else if s == "inline-table" {
-        Some(@types.InlineTable)
-      } else if s == "table-row" {
-        Some(@types.TableRow)
-      } else if s == "table-cell" {
-        Some(@types.TableCell)
-      } else if s == "table-caption" {
-        Some(@types.TableCaption)
-      } else if s == "table-row-group" {
-        Some(@types.TableRowGroup)
-      } else if s == "table-header-group" {
-        Some(@types.TableHeaderGroup)
-      } else if s == "table-footer-group" {
-        Some(@types.TableFooterGroup)
-      } else if s == "table-column" {
-        Some(@types.TableColumn)
-      } else if s == "table-column-group" {
-        Some(@types.TableColumnGroup)
-      } else if s == "none" {
-        Some(@types.Display::None)
-      } else if s == "contents" {
-        Some(@types.Contents)
-      } else {
-        None
-      }
-    _ => None
+  let keywords : Array[String] = []
+  for token in tokens {
+    match token {
+      @token.Token::Ident(s) => keywords.push(s)
+      @token.Token::Whitespace => ()
+      _ => return None
+    }
   }
+  if keywords.length() == 0 {
+    return None
+  }
+  if keywords.length() == 2 {
+    let first = keywords[0]
+    let second = keywords[1]
+    if (first == "math" && second == "inline") ||
+      (first == "inline" && second == "math") {
+      return Some(@types.Inline)
+    }
+    if (first == "math" && second == "block") ||
+      (first == "block" && second == "math") {
+      return Some(@types.Block)
+    }
+    if (first == "flow-root" && second == "list-item") ||
+      (first == "list-item" && second == "flow-root") {
+      return Some(@types.FlowRoot)
+    }
+  }
+  if keywords.length() != 1 {
+    return None
+  }
+  parse_display_keyword(keywords[0])
 }
 
 ///|

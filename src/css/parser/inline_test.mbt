@@ -19,6 +19,20 @@ test "parse display flex" {
 }
 
 ///|
+test "parse display flow-root list-item" {
+  let style = parse_inline_style("display: flow-root list-item")
+  inspect(style.display, content="FlowRoot")
+}
+
+///|
+test "parse display math aliases" {
+  let inline_math = parse_inline_style("display: math")
+  inspect(inline_math.display, content="Inline")
+  let block_math = parse_inline_style("display: block math")
+  inspect(block_math.display, content="Block")
+}
+
+///|
 test "parse flex properties" {
   let style = parse_inline_style(
     "display: flex; flex-direction: column; justify-content: center",

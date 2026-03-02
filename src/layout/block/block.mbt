@@ -5658,7 +5658,7 @@ fn compute_with_collapse(
         is_vertical_writing,
       ) &&
       float_ctx.has_floats() &&
-      @inline.is_inline_level(child_style.display) &&
+      (@inline.is_inline_level(child_style.display) || child_establishes_bfc) &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed {
       let probe_height = if child_layout.height > 0.0 {
@@ -5668,7 +5668,12 @@ fn compute_with_collapse(
       } else {
         1.0
       }
-      let probe_y = child_y - padding.top - border.top
+      let probe_height = if child_establishes_bfc {
+        probe_height + effective_margin_top + effective_margin_bottom
+      } else {
+        probe_height
+      }
+      let probe_y = child_y - padding.top - border.top + float_clearance_offset
       let probe_y = if probe_y > 0.0 { probe_y } else { 0.0 }
       let (left_edge, right_edge) = float_ctx.get_available_space(
         probe_y, probe_height,

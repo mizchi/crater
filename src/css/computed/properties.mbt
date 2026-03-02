@@ -274,7 +274,31 @@ fn split_whitespace(s : String) -> Array[String] {
 ///|
 /// Parse display value
 pub fn parse_display(value : String) -> @types.Display {
-  match value.trim().to_lower() {
+  let normalized = value.trim().to_lower().to_string()
+  let parts = split_whitespace(normalized)
+  if parts.length() == 0 {
+    return @types.Display::Block
+  }
+  if parts.length() == 2 {
+    let first = parts[0]
+    let second = parts[1]
+    if (first == "math" && second == "inline") ||
+      (first == "inline" && second == "math") {
+      return @types.Display::Inline
+    }
+    if (first == "math" && second == "block") ||
+      (first == "block" && second == "math") {
+      return @types.Display::Block
+    }
+    if (first == "flow-root" && second == "list-item") ||
+      (first == "list-item" && second == "flow-root") {
+      return @types.Display::FlowRoot
+    }
+  }
+  if parts.length() > 1 {
+    return @types.Display::Block
+  }
+  match parts[0] {
     "block" => @types.Display::Block
     "inline" => @types.Display::Inline
     "inline-block" => @types.Display::InlineBlock
@@ -285,6 +309,7 @@ pub fn parse_display(value : String) -> @types.Display {
     "none" => @types.Display::None
     "contents" => @types.Display::Contents
     "flow-root" => @types.Display::FlowRoot
+    "math" => @types.Display::Inline
     // Table display types
     "table" => @types.Display::Table
     "inline-table" => @types.Display::InlineTable
