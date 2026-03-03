@@ -224,17 +224,27 @@ fn parse_html_into(
           let attr_name = make_substring(chars, attr_start, i.val)
           if i.val < len && chars[i.val] == '=' {
             i.val += 1
-            // Skip quote
-            if i.val < len && chars[i.val] == '"' {
+            // Skip opening quote if present.
+            let quote = if i.val < len &&
+              (chars[i.val] == '"' || chars[i.val] == '\'') {
+              let q = chars[i.val]
               i.val += 1
+              Some(q)
+            } else {
+              None
             }
             let val_start = i.val
-            while i.val < len && chars[i.val] != '"' {
+            while i.val < len {
+              match quote {
+                Some(q) => if chars[i.val] == q { break }
+                None => if chars[i.val] == ' ' || chars[i.val] == '>' { break }
+              }
               i.val += 1
             }
             let attr_val = make_substring(chars, val_start, i.val)
-            if i.val < len && chars[i.val] == '"' {
-              i.val += 1
+            match quote {
+              Some(q) => if i.val < len && chars[i.val] == q { i.val += 1 }
+              None => ()
             }
             let _ = tree.set_attribute(elem, attr_name, attr_val)
           }

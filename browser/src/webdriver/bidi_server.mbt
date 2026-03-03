@@ -173,8 +173,9 @@ pub fn BidiServer::stop(self : BidiServer) -> Unit {
 extern "js" fn js_evaluate_expression(
   expression : String,
   capture_console : Bool,
+  user_activation : Bool,
 ) -> String =
-  #| (expression, captureConsole) => {
+  #| (expression, captureConsole, userActivation) => {
   #|   const consoleEntries = [];
   #|   let originalConsole = null;
   #|   if (captureConsole) {
@@ -203,6 +204,24 @@ extern "js" fn js_evaluate_expression(
   #|     console.info = makeInterceptor('info', 'info');
   #|     console.debug = makeInterceptor('debug', 'debug');
   #|   }
+  #|
+  #|   const applyUserActivation = (active) => {
+  #|     const isActive = !!active;
+  #|     globalThis.__bidiUserActivation = isActive;
+  #|     if (!globalThis.navigator) globalThis.navigator = {};
+  #|     globalThis.navigator.userActivation = {
+  #|       isActive,
+  #|       hasBeenActive: isActive
+  #|     };
+  #|     if (globalThis.document) {
+  #|       globalThis.document.execCommand = function(command) {
+  #|         const cmd = String(command || '').toLowerCase();
+  #|         if (cmd === 'selectall') return true;
+  #|         if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|         return false;
+  #|       };
+  #|     }
+  #|   };
   #|
   #|   // Setup Mock DOM if not already present
   #|   if (!globalThis.document) {
@@ -725,7 +744,13 @@ extern "js" fn js_evaluate_expression(
   #|       querySelector(sel) { return querySelect(html, sel, false); },
   #|       querySelectorAll(sel) { return querySelect(html, sel, true); },
   #|       getElementsByTagName(tag) { return html.getElementsByTagName(tag); },
-  #|       getElementsByClassName(cls) { return html.getElementsByClassName(cls); }
+  #|       getElementsByClassName(cls) { return html.getElementsByClassName(cls); },
+  #|       execCommand(command) {
+  #|         const cmd = String(command || '').toLowerCase();
+  #|         if (cmd === 'selectall') return true;
+  #|         if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|         return false;
+  #|       }
   #|     };
   #|
   #|     html.ownerDocument = globalThis.document;
@@ -743,6 +768,7 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.self = globalThis;
   #|     globalThis.parent = globalThis;
   #|     globalThis.top = globalThis;
+  #|     globalThis.__bidiUserActivation = false;
   #|     globalThis.location = {
   #|       href: 'about:blank',
   #|       origin: '',
@@ -763,7 +789,11 @@ extern "js" fn js_evaluate_expression(
   #|       language: 'en-US',
   #|       languages: ['en-US', 'en'],
   #|       onLine: true,
-  #|       cookieEnabled: false
+  #|       cookieEnabled: false,
+  #|       userActivation: {
+  #|         isActive: false,
+  #|         hasBeenActive: false
+  #|       }
   #|     };
   #|     globalThis.history = {
   #|       length: 1,
@@ -1818,6 +1848,8 @@ extern "js" fn js_evaluate_expression(
   #|     };
   #|   }
   #|
+  #|   applyUserActivation(userActivation);
+  #|
   #|   // Store toBidiValue in global scope for async use
   #|   const toBidiValueFn = toBidiValue;
   #|
@@ -1939,8 +1971,26 @@ extern "js" fn js_evaluate_expression(
 extern "js" fn js_evaluate_expression_fast(
   id : Int,
   expression : String,
+  user_activation : Bool,
+  realm_id : String,
 ) -> String =
-  #| (id, expression) => {
+  #| (id, expression, userActivation, realmId) => {
+  #|   const isActive = !!userActivation;
+  #|   globalThis.__bidiUserActivation = isActive;
+  #|   if (!globalThis.navigator) globalThis.navigator = {};
+  #|   globalThis.navigator.userActivation = {
+  #|     isActive,
+  #|     hasBeenActive: isActive
+  #|   };
+  #|   if (globalThis.document) {
+  #|     globalThis.document.execCommand = function(command) {
+  #|       const cmd = String(command || '').toLowerCase();
+  #|       if (cmd === 'selectall') return true;
+  #|       if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|       return false;
+  #|     };
+  #|   }
+  #|
   #|   function toBidiValue(value) {
   #|     if (value === undefined) return { type: "undefined" };
   #|     if (value === null) return { type: "null" };
@@ -1980,7 +2030,7 @@ extern "js" fn js_evaluate_expression_fast(
   #|     return { type: "object" };
   #|   }
   #|
-  #|   const realm = "default-realm";
+  #|   const realm = realmId;
   #|   const wrapResult = (valueJson) =>
   #|     `{"id":${id},"type":"success","result":{"realm":${JSON.stringify(realm)},"result":${valueJson}}}`;
   #|   try {
@@ -2039,21 +2089,25 @@ extern "js" fn js_evaluate_expression_fast(
 fn evaluate_js_with_console(
   expression : String,
   capture_console : Bool,
+  user_activation : Bool,
 ) -> String {
-  js_evaluate_expression(expression, capture_console)
+  js_evaluate_expression(expression, capture_console, user_activation)
 }
 
 ///|
 /// Evaluate JavaScript expression and return result as JSON (sync)
 pub fn evaluate_js(expression : String) -> String {
-  evaluate_js_with_console(expression, true)
+  evaluate_js_with_console(expression, true, false)
 }
 
 ///|
 /// FFI: Evaluate JavaScript expression asynchronously (awaits Promise)
 /// Returns a Promise that resolves to JSON string
-extern "js" fn js_evaluate_expression_async(expression : String) -> @core.Any =
-  #| async (expression) => {
+extern "js" fn js_evaluate_expression_async(
+  expression : String,
+  user_activation : Bool,
+) -> @core.Any =
+  #| async (expression, userActivation) => {
   #|   const consoleEntries = [];
   #|   const captureConsole = true;
   #|   const originalConsole = {
@@ -2079,6 +2133,37 @@ extern "js" fn js_evaluate_expression_async(expression : String) -> @core.Any =
   #|   console.error = makeInterceptor('error', 'error');
   #|   console.info = makeInterceptor('info', 'info');
   #|   console.debug = makeInterceptor('debug', 'debug');
+  #|
+  #|   const isActive = !!userActivation;
+  #|   globalThis.__bidiUserActivation = isActive;
+  #|   if (!globalThis.navigator) globalThis.navigator = {};
+  #|   globalThis.navigator.userActivation = {
+  #|     isActive,
+  #|     hasBeenActive: isActive
+  #|   };
+  #|   if (!globalThis.document) {
+  #|     const body = {
+  #|       appendChild(node) { return node; }
+  #|     };
+  #|     globalThis.document = {
+  #|       body,
+  #|       createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
+  #|       execCommand(command) {
+  #|         const cmd = String(command || '').toLowerCase();
+  #|         if (cmd === 'selectall') return true;
+  #|         if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|         return false;
+  #|       }
+  #|     };
+  #|   }
+  #|   if (globalThis.document) {
+  #|     globalThis.document.execCommand = function(command) {
+  #|       const cmd = String(command || '').toLowerCase();
+  #|       if (cmd === 'selectall') return true;
+  #|       if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|       return false;
+  #|     };
+  #|   }
   #|
   #|   function toBidiValue(value) {
   #|     if (value === undefined) return { type: "undefined" };
@@ -2156,7 +2241,7 @@ extern "js" fn js_await_promise(promise : @core.Any) -> String =
 /// Evaluate JavaScript expression asynchronously (awaits Promise if awaitPromise=true)
 /// Returns a Promise (@core.Any) that resolves to JSON string
 pub fn evaluate_js_async(expression : String) -> @core.Any {
-  js_evaluate_expression_async(expression)
+  js_evaluate_expression_async(expression, false)
 }
 
 ///|
@@ -2168,8 +2253,9 @@ extern "js" fn js_eval_and_send_async(
   expression : String,
   ctx_id : String,
   capture_console : Bool,
+  user_activation : Bool,
 ) -> Unit =
-  #| async (socket, requestId, expression, ctxId, captureConsole) => {
+  #| async (socket, requestId, expression, ctxId, captureConsole, userActivation) => {
   #|   const consoleEntries = [];
   #|   let originalConsole = null;
   #|   if (captureConsole) {
@@ -2192,6 +2278,37 @@ extern "js" fn js_eval_and_send_async(
   #|     console.error = makeInterceptor('error', 'error');
   #|     console.info = makeInterceptor('info', 'info');
   #|     console.debug = makeInterceptor('debug', 'debug');
+  #|   }
+  #|
+  #|   const isActive = !!userActivation;
+  #|   globalThis.__bidiUserActivation = isActive;
+  #|   if (!globalThis.navigator) globalThis.navigator = {};
+  #|   globalThis.navigator.userActivation = {
+  #|     isActive,
+  #|     hasBeenActive: isActive
+  #|   };
+  #|   if (!globalThis.document) {
+  #|     const body = {
+  #|       appendChild(node) { return node; }
+  #|     };
+  #|     globalThis.document = {
+  #|       body,
+  #|       createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
+  #|       execCommand(command) {
+  #|         const cmd = String(command || '').toLowerCase();
+  #|         if (cmd === 'selectall') return true;
+  #|         if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|         return false;
+  #|       }
+  #|     };
+  #|   }
+  #|   if (globalThis.document) {
+  #|     globalThis.document.execCommand = function(command) {
+  #|       const cmd = String(command || '').toLowerCase();
+  #|       if (cmd === 'selectall') return true;
+  #|       if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
+  #|       return false;
+  #|     };
   #|   }
   #|
   #|   function toBidiValue(value) {
@@ -2300,9 +2417,10 @@ fn eval_and_send_async_with_console(
   expression : String,
   ctx_id : String,
   capture_console : Bool,
+  user_activation : Bool,
 ) -> Unit {
   js_eval_and_send_async(
-    socket, request_id, expression, ctx_id, capture_console,
+    socket, request_id, expression, ctx_id, capture_console, user_activation,
   )
 }
 
@@ -2314,7 +2432,9 @@ pub fn eval_and_send_async(
   expression : String,
   ctx_id : String,
 ) -> Unit {
-  eval_and_send_async_with_console(socket, request_id, expression, ctx_id, true)
+  eval_and_send_async_with_console(
+    socket, request_id, expression, ctx_id, true, false,
+  )
 }
 
 ///|
@@ -2367,7 +2487,21 @@ pub fn parse_data_url(url : String) -> (String, String)? {
   // Build header string (from index 5 to comma)
   let header = make_substr(chars, 5, comma_idx)
   // Build data string (from comma+1 to end)
-  let data = make_substr(chars, comma_idx + 1, chars.length())
+  let raw_data = make_substr(chars, comma_idx + 1, chars.length())
+  // Ignore URL fragment (e.g. #domain=alt) in payload.
+  let data_chars = raw_data.to_array()
+  let mut hash_idx = -1
+  for i = 0; i < data_chars.length(); i = i + 1 {
+    if data_chars[i] == '#' {
+      hash_idx = i
+      break
+    }
+  }
+  let data = if hash_idx >= 0 {
+    make_substr(data_chars, 0, hash_idx)
+  } else {
+    raw_data
+  }
   // Check if base64
   let is_base64 = header.contains(";base64")
   let content_type = if is_base64 {

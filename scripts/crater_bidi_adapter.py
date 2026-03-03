@@ -178,10 +178,17 @@ class BrowsingContextModule:
         self._session = session
 
     async def create(self, type_hint: str = "tab", **kwargs):
+        params = {"type": type_hint}
+        for key, value in kwargs.items():
+            params[self._to_camel_case(key)] = value
         future = await self._session.send_command(
-            "browsingContext.create", {"type": type_hint, **kwargs}
+            "browsingContext.create", params
         )
         return await future
+
+    def _to_camel_case(self, snake_str):
+        components = snake_str.split('_')
+        return components[0] + ''.join(x.title() for x in components[1:])
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
         future = await self._session.send_command(
@@ -249,6 +256,7 @@ class ScriptModule:
         self._session = session
 
     async def evaluate(self, expression, target, await_promise=False, **kwargs):
+        raw_result = kwargs.pop("raw_result", False)
         params = {
             "expression": expression,
             "target": target,  # Pass target as-is for WPT validation tests
@@ -263,7 +271,10 @@ class ScriptModule:
             else:
                 params[camel_key] = value
         future = await self._session.send_command("script.evaluate", params)
-        return await future
+        result = await future
+        if raw_result:
+            return result
+        return result.get("result", result)
 
     def _to_camel_case(self, snake_str):
         """Convert snake_case to camelCase"""
@@ -279,6 +290,7 @@ class ScriptModule:
         return result
 
     async def call_function(self, function_declaration, target, arguments=None, await_promise=False, **kwargs):
+        raw_result = kwargs.pop("raw_result", False)
         params = {
             "functionDeclaration": function_declaration,
             "target": target,  # Pass target as-is for WPT validation tests
@@ -294,7 +306,10 @@ class ScriptModule:
             else:
                 params[camel_key] = value
         future = await self._session.send_command("script.callFunction", params)
-        return await future
+        result = await future
+        if raw_result:
+            return result
+        return result.get("result", result)
 
     async def add_preload_script(self, function_declaration: str, **kwargs):
         params = {"functionDeclaration": function_declaration, **kwargs}
@@ -304,6 +319,14 @@ class ScriptModule:
     async def remove_preload_script(self, script: str):
         future = await self._session.send_command("script.removePreloadScript", {"script": script})
         return await future
+
+    async def get_realms(self, **kwargs):
+        params = {}
+        for key, value in kwargs.items():
+            params[self._to_camel_case(key)] = value
+        future = await self._session.send_command("script.getRealms", params)
+        result = await future
+        return result.get("realms", [])
 
 
 class NetworkModule:
@@ -405,8 +428,81 @@ async def bidi_session():
     """Create a BiDi session connected to Crater."""
     session = CraterBidiSession(CRATER_BIDI_URL)
     await session.start()
+    await _trim_contexts_for_test(session)
     yield session
+    await _trim_contexts_for_test(session)
     await session.end()
+
+
+def _context_sort_key(context_info: dict):
+    ctx_id = context_info.get("context", "")
+    if ctx_id.startswith("session-"):
+        try:
+            return int(ctx_id.split("-", maxsplit=1)[1])
+        except ValueError:
+            return 10**9
+    return 10**9
+
+
+async def _trim_contexts_for_test(session: CraterBidiSession):
+    """
+    Keep at most one baseline browsing context between tests.
+    Crater's BiDi server is long-lived across the pytest process, so
+    contexts created in one test would otherwise leak into later tests.
+    """
+    try:
+        contexts = await session.browsing_context.get_tree()
+    except Exception:
+        return
+
+    if not contexts:
+        await session.browsing_context.create(type_hint="tab")
+        return
+
+    sorted_contexts = sorted(contexts, key=_context_sort_key)
+    for context_info in reversed(sorted_contexts[1:]):
+        ctx_id = context_info.get("context")
+        if not ctx_id:
+            continue
+        try:
+            await session.browsing_context.close(context=ctx_id)
+        except Exception:
+            pass
+
+    # Reset the baseline top-level context to about:blank so child frame
+    # contexts created in previous tests are dropped.
+    baseline_ctx_id = sorted_contexts[0].get("context")
+    if baseline_ctx_id:
+        # Force-close any non-baseline contexts, including leaked child
+        # contexts that are not exposed by browsingContext.getTree(root=None).
+        try:
+            realms = await session.script.get_realms()
+            leaked_contexts = []
+            for realm in realms:
+                ctx_id = realm.get("context")
+                if isinstance(ctx_id, str) and ctx_id != baseline_ctx_id:
+                    leaked_contexts.append(ctx_id)
+            # Preserve order while removing duplicates.
+            seen = set()
+            for ctx_id in leaked_contexts:
+                if ctx_id in seen:
+                    continue
+                seen.add(ctx_id)
+                try:
+                    await session.browsing_context.close(context=ctx_id)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        try:
+            await session.browsing_context.navigate(
+                context=baseline_ctx_id,
+                url="about:blank",
+                wait="complete",
+            )
+        except Exception:
+            pass
 
 
 @pytest_asyncio.fixture
@@ -440,9 +536,12 @@ async def new_tab(bidi_session):
 @pytest.fixture
 def url():
     """Generate test URLs."""
-    def _url(path: str) -> str:
-        # WPT test server would normally be at localhost:8000
-        base = os.environ.get("WPT_SERVER_URL", "http://localhost:8000")
+    def _url(path: str, domain: str = "") -> str:
+        # WPT test server would normally be at localhost:8000.
+        if domain == "alt":
+            base = os.environ.get("WPT_ALT_SERVER_URL", "http://alt.localhost:8000")
+        else:
+            base = os.environ.get("WPT_SERVER_URL", "http://localhost:8000")
         if path.startswith("/"):
             return f"{base}{path}"
         return f"{base}/{path}"
@@ -454,9 +553,10 @@ def inline():
     """Generate inline HTML data URLs."""
     import base64
 
-    def _inline(content: str, content_type: str = "text/html") -> str:
+    def _inline(content: str, content_type: str = "text/html", domain: str = "", **_ignored) -> str:
         encoded = base64.b64encode(content.encode()).decode()
-        return f"data:{content_type};base64,{encoded}"
+        suffix = f"#domain={domain}" if domain else ""
+        return f"data:{content_type};base64,{encoded}{suffix}"
     return _inline
 
 
@@ -472,31 +572,46 @@ def configuration():
 async def subscribe_events(bidi_session):
     """Subscribe to events and clean up after test."""
     subscriptions = []
+    cleanup_requests = []
 
     async def _subscribe(events, contexts=None, user_contexts=None):
         result = await bidi_session.session.subscribe(
             events=events, contexts=contexts, user_contexts=user_contexts
         )
+        cleanup_params = {"events": events}
+        if contexts:
+            cleanup_params["contexts"] = contexts
+        if user_contexts:
+            cleanup_params["userContexts"] = user_contexts
+        cleanup_requests.append(cleanup_params)
         if "subscription" in result:
             subscriptions.append(result["subscription"])
         return result
 
     yield _subscribe
 
-    for sub in reversed(subscriptions):
+    if subscriptions:
+        for sub in reversed(subscriptions):
+            try:
+                await bidi_session.session.unsubscribe(subscriptions=[sub])
+            except Exception:
+                pass
+        return
+
+    for params in reversed(cleanup_requests):
         try:
-            await bidi_session.session.unsubscribe(subscriptions=[sub])
+            await bidi_session.session.unsubscribe(**params)
         except Exception:
             pass
 
 
 @pytest.fixture
-def wait_for_event(bidi_session, event_loop):
+def wait_for_event(bidi_session):
     """Wait for a BiDi event."""
     remove_listeners = []
 
     def _wait_for_event(event_name: str):
-        future = event_loop.create_future()
+        future = asyncio.get_running_loop().create_future()
 
         async def on_event(_, data):
             remove_listener()
@@ -535,8 +650,29 @@ def capabilities():
     return {}
 
 
+@pytest_asyncio.fixture
+async def create_user_context(bidi_session):
+    """Create user contexts and clean them up after test."""
+    created = []
+
+    async def _create(**kwargs):
+        result = await bidi_session.browser.create_user_context(**kwargs)
+        user_context = result.get("userContext")
+        if isinstance(user_context, str) and user_context != "default":
+            created.append(user_context)
+        return user_context
+
+    yield _create
+
+    for user_context in reversed(created):
+        try:
+            await bidi_session.browser.remove_user_context(user_context=user_context)
+        except Exception:
+            pass
+
+
 @pytest.fixture
-def wait_for_future_safe(event_loop):
+def wait_for_future_safe():
     """
     Wait for a future with a timeout, returning a default value on timeout or error.
     This is similar to WPT's wait_for_future_safe.
@@ -549,16 +685,51 @@ def wait_for_future_safe(event_loop):
     return _wait_for_future_safe
 
 
-@pytest_asyncio.fixture
-async def test_page(bidi_session, new_tab, inline):
-    """Create a test page with basic HTML."""
-    page = inline("<html><body><p>Test page</p></body></html>")
-    await bidi_session.browsing_context.navigate(
-        context=new_tab["context"],
-        url=page,
-        wait="complete"
+@pytest.fixture
+def test_page(inline):
+    return inline("<div>foo</div>")
+
+
+@pytest.fixture
+def test_origin(url):
+    return url("")
+
+
+@pytest.fixture
+def test_alt_origin(url):
+    return url("", domain="alt")
+
+
+@pytest.fixture
+def test_page2(inline):
+    return inline("<div>bar</div>")
+
+
+@pytest.fixture
+def test_page_cross_origin(inline):
+    return inline("<div>bar</div>", domain="alt")
+
+
+@pytest.fixture
+def test_page_multiple_frames(inline, test_page, test_page2):
+    return inline(
+        f"<iframe src='{test_page}'></iframe><iframe src='{test_page2}'></iframe>"
     )
-    return new_tab
+
+
+@pytest.fixture
+def test_page_nested_frames(inline, test_page_same_origin_frame):
+    return inline(f"<iframe src='{test_page_same_origin_frame}'></iframe>")
+
+
+@pytest.fixture
+def test_page_cross_origin_frame(inline, test_page_cross_origin):
+    return inline(f"<iframe src='{test_page_cross_origin}'></iframe>")
+
+
+@pytest.fixture
+def test_page_same_origin_frame(inline, test_page):
+    return inline(f"<iframe src='{test_page}'></iframe>")
 
 
 @pytest.fixture

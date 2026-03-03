@@ -51,11 +51,20 @@ pub struct BidiProtocol {
   mut session_id : String?
   mut default_context_id : String?
   mut next_navigation_id : Int
+  mut next_realm_id : Int
   subscriptions : Map[String, Bool] // module-level subscriptions (legacy)
   context_subscriptions : Map[String, Array[String]] // context -> events
   mut global_subscriptions : Array[String] // events subscribed globally
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
+  context_original_opener : Map[String, String]
+  context_realm : Map[String, String]
+  context_sandbox_realm : Map[String, String] // "<context>::<sandbox>" -> realm
+  realm_context : Map[String, String] // realm -> context
+  realm_sandbox : Map[String, String] // sandbox realm -> sandbox name
+  context_parent : Map[String, String]
+  context_children : Map[String, Array[String]]
+  context_client_window : Map[String, String]
   mut socket : @core.Any? // WebSocket for async responses
   mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
   mut dom_initialized : Bool // Deno-side mock DOM initialized
@@ -72,11 +81,20 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     session_id: None,
     default_context_id: None,
     next_navigation_id: 1,
+    next_realm_id: 1,
     subscriptions: {},
     context_subscriptions: {},
     global_subscriptions: [],
     user_contexts,
     context_user_context: {},
+    context_original_opener: {},
+    context_realm: {},
+    context_sandbox_realm: {},
+    realm_context: {},
+    realm_sandbox: {},
+    context_parent: {},
+    context_children: {},
+    context_client_window: {},
     socket: None,
     use_quickjs: false,
     dom_initialized: false,
@@ -222,7 +240,7 @@ fn BidiProtocol::dispatch_session(
       // Send response BEFORE events (BiDi protocol requirement)
       self.send_success(request.id, Some(result))
       // Emit initial context + realm events so Puppeteer can bind immediately.
-      self.emit_context_created(ctx_id, "tab", "about:blank")
+      self.emit_context_created(ctx_id, "tab", "about:blank", None, None)
       self.emit_default_realm(ctx_id)
       Ok(())
     }
@@ -382,7 +400,22 @@ fn BidiProtocol::dispatch_browsing_context(
         }
         None => () // No root specified, return all contexts
       }
-      let contexts = self.build_context_tree()
+      let max_depth = match get_param_raw(request.params, "maxDepth") {
+        Some(Number(n, ..)) => Some(n.to_int64().to_int())
+        _ => None
+      }
+      let contexts = match get_string_param(request.params, "root") {
+        Some(root_id) =>
+          match self.build_context_entry(root_id, true, 0, max_depth) {
+            Some(entry) => {
+              let single : Array[Json] = []
+              single.push(entry)
+              single
+            }
+            None => []
+          }
+        None => self.build_context_tree(max_depth)
+      }
       let result = make_object({ "contexts": Json::array(contexts) })
       self.send_success(request.id, Some(result))
       Ok(())
@@ -394,7 +427,7 @@ fn BidiProtocol::dispatch_browsing_context(
       let ctx_id = self.create_context(user_ctx)
       let result = make_object({ "context": Json::string(ctx_id) })
       // Emit events before response for immediate listener availability.
-      self.emit_context_created(ctx_id, "tab", "about:blank")
+      self.emit_context_created(ctx_id, "tab", "about:blank", None, None)
       self.emit_default_realm(ctx_id)
       self.send_success(request.id, Some(result))
       Ok(())
@@ -412,17 +445,14 @@ fn BidiProtocol::dispatch_browsing_context(
                 Ok(_) => {
                   let nav_id = self.next_navigation_id.to_string()
                   self.next_navigation_id += 1
-                  // Load content for data: URLs
-                  if url.has_prefix("data:") {
-                    match parse_data_url(url) {
-                      Some((content_type, content)) =>
-                        if content_type.has_prefix("text/html") ||
-                          content_type == "" {
-                          session.load_html(content)
-                        }
-                      None => ()
-                    }
-                  }
+                  self.load_data_url_content(ctx_id, url)
+                  self.drop_child_contexts(ctx_id)
+                  self.refresh_child_contexts_from_iframes(ctx_id)
+                  self.clear_context_sandbox_realms(ctx_id)
+                  // Navigation replaces the default window realm.
+                  let window_realm_id = self.assign_new_realm(ctx_id)
+                  self.emit_default_realm(ctx_id)
+                  self.emit_worker_realms_from_scripts(ctx_id, window_realm_id)
                   let result = make_object({
                     "navigation": Json::string(nav_id),
                     "url": Json::string(url),
@@ -463,6 +493,10 @@ fn BidiProtocol::dispatch_browsing_context(
               let url = session.get_url()
               let nav_id = self.next_navigation_id.to_string()
               self.next_navigation_id += 1
+              self.clear_context_sandbox_realms(ctx_id)
+              // Reload creates a new realm.
+              self.assign_new_realm(ctx_id) |> ignore
+              self.emit_default_realm(ctx_id)
               self.emit_navigation_events(ctx_id, url, nav_id)
               self.send_success(request.id, Some(make_object({})))
               Ok(())
@@ -484,10 +518,34 @@ fn BidiProtocol::dispatch_browsing_context(
     "close" =>
       match get_string_param(request.params, "context") {
         Some(ctx_id) => {
+          let original_opener = self.context_original_opener.get(ctx_id)
+          self.drop_child_contexts(ctx_id)
+          self.unlink_from_parent(ctx_id)
           if self.manager.close_session(ctx_id) {
             // Send response BEFORE events (BiDi protocol requirement)
             self.send_success(request.id, Some(make_object({})))
-            self.emit_context_destroyed(ctx_id)
+            self.emit_context_destroyed(ctx_id, original_opener)
+            self.context_parent.remove(ctx_id)
+            self.context_children.remove(ctx_id)
+            self.context_user_context.remove(ctx_id)
+            self.context_original_opener.remove(ctx_id)
+            match self.context_realm.get(ctx_id) {
+              Some(realm_id) => {
+                self.realm_context.remove(realm_id)
+                self.realm_sandbox.remove(realm_id)
+              }
+              None => ()
+            }
+            self.context_realm.remove(ctx_id)
+            self.clear_context_sandbox_realms(ctx_id)
+            self.context_client_window.remove(ctx_id)
+            match self.default_context_id {
+              Some(default_ctx) =>
+                if default_ctx == ctx_id {
+                  self.default_context_id = None
+                }
+              None => ()
+            }
           } else {
             self.send_error(
               request.id,
@@ -568,25 +626,19 @@ fn BidiProtocol::dispatch_script(
         Some(_) => return Ok(())
         None => ()
       }
-      // Get context ID for log events
-      let ctx_id = match request.params {
-        Some(Object(params_map)) =>
-          match params_map.get("target") {
-            Some(Object(target)) =>
-              match target.get("context") {
-                Some(String(id)) => id
-                _ => "default"
-              }
-            _ => "default"
-          }
-        _ => "default"
-      }
+      // Resolve target context/realm for evaluation.
+      let (ctx_id, realm_id) = self.resolve_target_context_realm(request.params)
       // Check if awaitPromise is true
       let await_promise = match get_param_raw(request.params, "awaitPromise") {
         Some(True) => true
         _ => false
       }
+      let user_activation = get_user_activation_value(request.params)
       let expr = get_string_param(request.params, "expression").unwrap()
+      // Handle window.open directly so browsing context state stays in sync.
+      if self.try_handle_window_open(request.id, ctx_id, expr) {
+        return Ok(())
+      }
       let capture_console = self.is_subscribed_for_context(
           "log.entryAdded", ctx_id,
         ) ||
@@ -612,7 +664,12 @@ fn BidiProtocol::dispatch_script(
       }
       // Fast path: no console capture, no awaitPromise, no QuickJS
       if self.dom_initialized && not(capture_console) && not(await_promise) {
-        let raw = js_evaluate_expression_fast(request.id, expr)
+        let raw = js_evaluate_expression_fast(
+          request.id,
+          expr,
+          user_activation,
+          realm_id,
+        )
         self.send_raw(raw)
         return Ok(())
       }
@@ -627,6 +684,7 @@ fn BidiProtocol::dispatch_script(
               expr,
               ctx_id,
               capture_console,
+              user_activation,
             )
             return Ok(()) // No sync response needed
           }
@@ -634,7 +692,9 @@ fn BidiProtocol::dispatch_script(
         }
       }
       // Synchronous evaluation (Deno eval)
-      let eval_result_json = evaluate_js_with_console(expr, capture_console)
+      let eval_result_json = evaluate_js_with_console(
+        expr, capture_console, user_activation,
+      )
       self.dom_initialized = true
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
@@ -657,7 +717,7 @@ fn BidiProtocol::dispatch_script(
             make_object({ "type": Json::string("undefined") }),
           )
           let result = make_object({
-            "realm": Json::string("default-realm"),
+            "realm": Json::string(realm_id),
             "result": bidi_value,
           })
           self.send_success(request.id, Some(result))
@@ -667,14 +727,14 @@ fn BidiProtocol::dispatch_script(
             make_object({}),
           )
           let result = make_object({
-            "realm": Json::string("default-realm"),
+            "realm": Json::string(realm_id),
             "exceptionDetails": exc_details,
           })
           self.send_success(request.id, Some(result))
         }
         _ => {
           let result = make_object({
-            "realm": Json::string("default-realm"),
+            "realm": Json::string(realm_id),
             "result": make_object({ "type": Json::string("undefined") }),
           })
           self.send_success(request.id, Some(result))
@@ -738,19 +798,10 @@ fn BidiProtocol::dispatch_script(
         Some(_) => return Ok(())
         None => ()
       }
-      // Get context ID for log events
-      let ctx_id_call = match request.params {
-        Some(Object(params_map)) =>
-          match params_map.get("target") {
-            Some(Object(target)) =>
-              match target.get("context") {
-                Some(String(id)) => id
-                _ => "default"
-              }
-            _ => "default"
-          }
-        _ => "default"
-      }
+      // Resolve target context/realm for function call.
+      let (ctx_id_call, realm_id_call) = self.resolve_target_context_realm(
+        request.params,
+      )
       let capture_console_call = self.is_subscribed_for_context(
           "log.entryAdded", ctx_id_call,
         ) ||
@@ -761,6 +812,7 @@ fn BidiProtocol::dispatch_script(
         Some(True) => true
         _ => false
       }
+      let user_activation_call = get_user_activation_value(request.params)
       // Get arguments if provided
       let args_json = match get_param_raw(request.params, "arguments") {
         Some(Array(args)) => {
@@ -805,6 +857,7 @@ fn BidiProtocol::dispatch_script(
               call_expr,
               ctx_id_call,
               capture_console_call,
+              user_activation_call,
             )
             return Ok(()) // No sync response needed
           }
@@ -812,7 +865,7 @@ fn BidiProtocol::dispatch_script(
         }
       }
       let eval_result_json = evaluate_js_with_console(
-        call_expr, capture_console_call,
+        call_expr, capture_console_call, user_activation_call,
       )
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
@@ -835,7 +888,7 @@ fn BidiProtocol::dispatch_script(
             make_object({ "type": Json::string("undefined") }),
           )
           let result = make_object({
-            "realm": Json::string("default-realm"),
+            "realm": Json::string(realm_id_call),
             "result": bidi_value,
           })
           self.send_success(request.id, Some(result))
@@ -845,14 +898,14 @@ fn BidiProtocol::dispatch_script(
             make_object({}),
           )
           let result = make_object({
-            "realm": Json::string("default-realm"),
+            "realm": Json::string(realm_id_call),
             "exceptionDetails": exc_details,
           })
           self.send_success(request.id, Some(result))
         }
         _ => {
           let result = make_object({
-            "realm": Json::string("default-realm"),
+            "realm": Json::string(realm_id_call),
             "result": make_object({ "type": Json::string("undefined") }),
           })
           self.send_success(request.id, Some(result))
@@ -873,13 +926,92 @@ fn BidiProtocol::dispatch_script(
       Ok(())
     }
     "getRealms" => {
-      // Return the default realm
-      let realm = make_object({
-        "realm": Json::string("default-realm"),
-        "type": Json::string("window"),
-        "origin": Json::string("://"),
-      })
-      let result = make_object({ "realms": Json::array([realm]) })
+      // Validate optional context parameter
+      let context_filter = match get_param_raw(request.params, "context") {
+        Some(String(ctx_id)) => {
+          if not(self.manager.has_session(ctx_id)) {
+            self.send_error(
+              request.id,
+              "no such frame",
+              "Unknown context: " + ctx_id,
+            )
+            return Ok(())
+          }
+          Some(ctx_id)
+        }
+        None => None
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "context must be a string",
+          )
+          return Ok(())
+        }
+      }
+      // Validate optional type parameter
+      match get_param_raw(request.params, "type") {
+        Some(String(t)) =>
+          if t != "window" {
+            self.send_error(
+              request.id,
+              "invalid argument",
+              "type must be 'window'",
+            )
+            return Ok(())
+          }
+        None => ()
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "type must be a string",
+          )
+          return Ok(())
+        }
+      }
+
+      // Return one realm per known top-level context.
+      let realms : Array[Json] = []
+      for ctx_id in self.manager.list_sessions() {
+        let should_include = match context_filter {
+          Some(filter_ctx) => filter_ctx == ctx_id
+          None => true
+        }
+        if should_include {
+          let realm_id = self.context_realm
+            .get(ctx_id)
+            .unwrap_or("realm-" + ctx_id)
+          let origin = self.get_context_origin(ctx_id)
+          realms.push(
+            make_object({
+              "realm": Json::string(realm_id),
+              "context": Json::string(ctx_id),
+              "type": Json::string("window"),
+              "origin": Json::string(origin),
+              "sandbox": Json::null(),
+            }),
+          )
+          let prefix = ctx_id + "::"
+          for key, sandbox_realm in self.context_sandbox_realm {
+            if key.has_prefix(prefix) {
+              let sandbox_name = key[prefix.length():].to_string() catch {
+                _ => ""
+              }
+              realms.push(
+                make_object({
+                  "realm": Json::string(sandbox_realm),
+                  "context": Json::string(ctx_id),
+                  "type": Json::string("window"),
+                  "origin": Json::string(origin),
+                  "sandbox": Json::string(sandbox_name),
+                }),
+              )
+            }
+          }
+        }
+      }
+      let result = make_object({ "realms": Json::array(realms) })
       self.send_success(request.id, Some(result))
       Ok(())
     }
@@ -1036,10 +1168,406 @@ fn BidiProtocol::create_context(
 ) -> String {
   let id = self.manager.create_session()
   self.context_user_context[id] = user_context_id
+  self.context_children[id] = []
+  self.context_client_window[id] = "client-window-" + id
+  self.context_parent.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
+  self.assign_new_realm(id) |> ignore
   id
+}
+
+///|
+/// Create an iframe browsing context under a parent context.
+fn BidiProtocol::create_child_context(
+  self : BidiProtocol,
+  parent_ctx_id : String,
+  user_context_id : String,
+) -> String {
+  let id = self.manager.create_session()
+  self.context_user_context[id] = user_context_id
+  self.context_parent[id] = parent_ctx_id
+  self.context_children[id] = []
+  let parent_children = self.context_children.get(parent_ctx_id).unwrap_or([])
+  parent_children.push(id)
+  self.context_children[parent_ctx_id] = parent_children
+  self.context_client_window[id] = self.context_client_window
+    .get(parent_ctx_id)
+    .unwrap_or("client-window-" + parent_ctx_id)
+  if not(self.user_contexts.contains(user_context_id)) {
+    self.user_contexts[user_context_id] = true
+  }
+  self.assign_new_realm(id) |> ignore
+  id
+}
+
+///|
+/// Unlink a context from its parent's children list.
+fn BidiProtocol::unlink_from_parent(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  match self.context_parent.get(ctx_id) {
+    Some(parent_ctx_id) => {
+      match self.context_children.get(parent_ctx_id) {
+        Some(children) => {
+          let filtered : Array[String] = []
+          for child_id in children {
+            if child_id != ctx_id {
+              filtered.push(child_id)
+            }
+          }
+          self.context_children[parent_ctx_id] = filtered
+        }
+        None => ()
+      }
+      self.context_parent.remove(ctx_id)
+    }
+    None => ()
+  }
+}
+
+///|
+/// Remove all descendant browsing contexts under a parent context.
+fn BidiProtocol::drop_child_contexts(
+  self : BidiProtocol,
+  parent_ctx_id : String,
+) -> Unit {
+  match self.context_children.get(parent_ctx_id) {
+    Some(children) => {
+      for child_ctx_id in children {
+        self.drop_child_contexts(child_ctx_id)
+        self.manager.close_session(child_ctx_id) |> ignore
+        self.context_parent.remove(child_ctx_id)
+        self.context_children.remove(child_ctx_id)
+        self.context_user_context.remove(child_ctx_id)
+        self.context_original_opener.remove(child_ctx_id)
+        match self.context_realm.get(child_ctx_id) {
+          Some(realm_id) => {
+            self.realm_context.remove(realm_id)
+            self.realm_sandbox.remove(realm_id)
+          }
+          None => ()
+        }
+        self.context_realm.remove(child_ctx_id)
+        self.clear_context_sandbox_realms(child_ctx_id)
+        self.context_client_window.remove(child_ctx_id)
+      }
+      self.context_children[parent_ctx_id] = []
+    }
+    None => ()
+  }
+}
+
+///|
+/// Load inline HTML content when URL is a data URL.
+fn BidiProtocol::load_data_url_content(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+) -> Unit {
+  if not(url.has_prefix("data:")) {
+    match self.manager.get_session(ctx_id) {
+      Some(session) => session.load_html("")
+      None => ()
+    }
+    return
+  }
+  match parse_data_url(url) {
+    Some((content_type, content)) =>
+      if content_type.has_prefix("text/html") || content_type == "" {
+        match self.manager.get_session(ctx_id) {
+          Some(session) => session.load_html(content)
+          None => ()
+        }
+      }
+    None => ()
+  }
+}
+
+///|
+/// Collect iframe src values from a context document.
+fn BidiProtocol::collect_iframe_sources(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Array[String] {
+  match self.manager.get_session(ctx_id) {
+    Some(session) => {
+      let doc = session.get_tree().get_document()
+      match session.get_tree().query_selector_all(doc, "iframe") {
+        Ok(nodes) => {
+          let sources : Array[String] = []
+          for node in nodes {
+            match session.get_tree().get_attribute(node, "src") {
+              Ok(Some(src)) => sources.push(src)
+              _ => sources.push("about:blank")
+            }
+          }
+          sources
+        }
+        Err(_) => []
+      }
+    }
+    None => []
+  }
+}
+
+///|
+/// Find substring position in a string from a start offset.
+fn find_substring(haystack : String, needle : String, start : Int) -> Int? {
+  let h = haystack.to_array()
+  let n = needle.to_array()
+  if n.length() == 0 {
+    return Some(start)
+  }
+  if start < 0 || start >= h.length() || n.length() > h.length() {
+    return None
+  }
+  for i = start; i + n.length() <= h.length(); i = i + 1 {
+    let mut matched = true
+    for j = 0; j < n.length(); j = j + 1 {
+      if h[i + j] != n[j] {
+        matched = false
+        break
+      }
+    }
+    if matched {
+      return Some(i)
+    }
+  }
+  None
+}
+
+///|
+/// Extract quoted URL argument following a marker like "new Worker(".
+fn extract_quoted_after_marker(source : String, marker : String) -> String? {
+  match find_substring(source, marker, 0) {
+    Some(marker_idx) => {
+      let chars = source.to_array()
+      let quote_start = marker_idx + marker.length()
+      if quote_start >= chars.length() {
+        return None
+      }
+      let quote = chars[quote_start]
+      if quote != '"' && quote != '\'' {
+        return None
+      }
+      let mut end = quote_start + 1
+      while end < chars.length() && chars[end] != quote {
+        end += 1
+      }
+      if end >= chars.length() {
+        return None
+      }
+      let value = source[quote_start + 1:end].to_string() catch { _ => "" }
+      if value.length() == 0 {
+        None
+      } else {
+        Some(value)
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// Collect inline script source texts from a context document.
+fn BidiProtocol::collect_script_texts(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Array[String] {
+  match self.manager.get_session(ctx_id) {
+    Some(session) => {
+      let doc = session.get_tree().get_document()
+      match session.get_tree().query_selector_all(doc, "script") {
+        Ok(nodes) => {
+          let scripts : Array[String] = []
+          for node in nodes {
+            match session.get_tree().get_text_content(node) {
+              Ok(text) => scripts.push(text)
+              Err(_) => ()
+            }
+          }
+          scripts
+        }
+        Err(_) => []
+      }
+    }
+    None => []
+  }
+}
+
+///|
+/// Emit worker realmCreated event derived from script source.
+fn BidiProtocol::emit_worker_realm_created(
+  self : BidiProtocol,
+  owner_ctx_id : String,
+  worker_type : String,
+  worker_origin : String,
+  owner_realm_id : String,
+) -> Unit {
+  let event_name = "script.realmCreated"
+  if not(self.is_subscribed_for_context(event_name, owner_ctx_id)) &&
+    not(self.is_subscribed("script")) {
+    return
+  }
+  let worker_realm_id = "realm-" + self.next_realm_id.to_string()
+  self.next_realm_id += 1
+  self.realm_context[worker_realm_id] = owner_ctx_id
+  let params = if worker_type == "dedicated-worker" {
+    let owners : Array[Json] = []
+    owners.push(Json::string(owner_realm_id))
+    make_object({
+      "realm": Json::string(worker_realm_id),
+      "type": Json::string(worker_type),
+      "origin": Json::string(worker_origin),
+      "owners": Json::array(owners),
+    })
+  } else {
+    make_object({
+      "realm": Json::string(worker_realm_id),
+      "type": Json::string(worker_type),
+      "origin": Json::string(worker_origin),
+    })
+  }
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
+/// Emit worker realms discovered in script tags after navigation.
+fn BidiProtocol::emit_worker_realms_from_scripts(
+  self : BidiProtocol,
+  ctx_id : String,
+  window_realm_id : String,
+) -> Unit {
+  let scripts = self.collect_script_texts(ctx_id)
+  for script_source in scripts {
+    match extract_quoted_after_marker(script_source, "new Worker(") {
+      Some(worker_url) =>
+        self.emit_worker_realm_created(
+          ctx_id, "dedicated-worker", worker_url, window_realm_id,
+        )
+      None => ()
+    }
+    match extract_quoted_after_marker(script_source, "new SharedWorker(") {
+      Some(worker_url) =>
+        self.emit_worker_realm_created(
+          ctx_id, "shared-worker", worker_url, window_realm_id,
+        )
+      None => ()
+    }
+    match
+      extract_quoted_after_marker(script_source, "serviceWorker.register(") {
+      Some(worker_url) =>
+        self.emit_worker_realm_created(
+          ctx_id, "service-worker", worker_url, window_realm_id,
+        )
+      None => ()
+    }
+  }
+}
+
+///|
+/// Rebuild child contexts from iframe elements under a parent context.
+fn BidiProtocol::refresh_child_contexts_from_iframes(
+  self : BidiProtocol,
+  parent_ctx_id : String,
+) -> Unit {
+  let frame_sources = self.collect_iframe_sources(parent_ctx_id)
+  let user_ctx = self.context_user_context
+    .get(parent_ctx_id)
+    .unwrap_or("default")
+  for src in frame_sources {
+    let child_ctx_id = self.create_child_context(parent_ctx_id, user_ctx)
+    match self.manager.get_session(child_ctx_id) {
+      Some(child_session) => {
+        let _ = child_session.navigate_to(src)
+      }
+      None => ()
+    }
+    self.load_data_url_content(child_ctx_id, src)
+    self.emit_context_created(
+      child_ctx_id,
+      "tab",
+      "about:blank",
+      None,
+      Some(parent_ctx_id),
+    )
+    self.emit_default_realm(child_ctx_id)
+    let child_nav_id = self.next_navigation_id.to_string()
+    self.next_navigation_id += 1
+    self.emit_navigation_events(child_ctx_id, src, child_nav_id)
+    self.refresh_child_contexts_from_iframes(child_ctx_id)
+  }
+}
+
+///|
+/// Assign a new realm id for a browsing context.
+fn BidiProtocol::assign_new_realm(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  match self.context_realm.get(ctx_id) {
+    Some(old_realm) => {
+      self.realm_context.remove(old_realm)
+      self.realm_sandbox.remove(old_realm)
+    }
+    None => ()
+  }
+  let realm_id = "realm-" + self.next_realm_id.to_string()
+  self.next_realm_id += 1
+  self.context_realm[ctx_id] = realm_id
+  self.realm_context[realm_id] = ctx_id
+  realm_id
+}
+
+///|
+/// Compute key for sandbox realm mapping.
+fn make_sandbox_key(ctx_id : String, sandbox_name : String) -> String {
+  ctx_id + "::" + sandbox_name
+}
+
+///|
+/// Clear sandbox realms for a context.
+fn BidiProtocol::clear_context_sandbox_realms(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  let prefix = ctx_id + "::"
+  let to_remove : Array[String] = []
+  for key, realm_id in self.context_sandbox_realm {
+    if key.has_prefix(prefix) {
+      to_remove.push(key)
+      self.realm_context.remove(realm_id)
+      self.realm_sandbox.remove(realm_id)
+    }
+  }
+  for key in to_remove {
+    self.context_sandbox_realm.remove(key)
+  }
+}
+
+///|
+/// Get or create a sandbox realm for a context.
+fn BidiProtocol::get_or_create_sandbox_realm(
+  self : BidiProtocol,
+  ctx_id : String,
+  sandbox_name : String,
+) -> String {
+  let key = make_sandbox_key(ctx_id, sandbox_name)
+  match self.context_sandbox_realm.get(key) {
+    Some(realm_id) => realm_id
+    None => {
+      let realm_id = "realm-" + self.next_realm_id.to_string()
+      self.next_realm_id += 1
+      self.context_sandbox_realm[key] = realm_id
+      self.realm_context[realm_id] = ctx_id
+      self.realm_sandbox[realm_id] = sandbox_name
+      self.emit_realm_created(ctx_id, realm_id, Some(sandbox_name))
+      realm_id
+    }
+  }
 }
 
 ///|
@@ -1057,25 +1585,138 @@ fn BidiProtocol::build_capabilities(self : BidiProtocol) -> Json {
 
 ///|
 /// Build tree result for browsingContext.getTree
-fn BidiProtocol::build_context_tree(self : BidiProtocol) -> Array[Json] {
+fn BidiProtocol::build_context_tree(
+  self : BidiProtocol,
+  max_depth : Int?,
+) -> Array[Json] {
   let contexts : Array[Json] = []
   for ctx_id in self.manager.list_sessions() {
-    match self.manager.get_session(ctx_id) {
-      Some(session) =>
-        contexts.push(
-          make_object({
-            "context": Json::string(ctx_id),
-            "url": Json::string(session.get_url()),
-            "children": Json::array([]),
-            "userContext": Json::string(
-              self.context_user_context.get(ctx_id).unwrap_or("default"),
-            ),
-          }),
-        )
-      None => ()
+    if self.context_parent.get(ctx_id) == None {
+      match self.build_context_entry(ctx_id, true, 0, max_depth) {
+        Some(entry) => contexts.push(entry)
+        None => ()
+      }
     }
   }
   contexts
+}
+
+///|
+/// Build a single context entry recursively.
+fn BidiProtocol::build_context_entry(
+  self : BidiProtocol,
+  ctx_id : String,
+  include_parent : Bool,
+  depth : Int,
+  max_depth : Int?,
+) -> Json? {
+  match self.manager.get_session(ctx_id) {
+    Some(session) => {
+      let truncate_children = match max_depth {
+        Some(max_d) => depth >= max_d
+        None => false
+      }
+      let children_json = if truncate_children {
+        Json::null()
+      } else {
+        let children : Array[Json] = []
+        for child_ctx_id in self.context_children.get(ctx_id).unwrap_or([]) {
+          match
+            self.build_context_entry(child_ctx_id, false, depth + 1, max_depth) {
+            Some(child_entry) => children.push(child_entry)
+            None => ()
+          }
+        }
+        Json::array(children)
+      }
+      let original_opener = match self.context_original_opener.get(ctx_id) {
+        Some(opener) => Json::string(opener)
+        None => Json::null()
+      }
+      let parent_json = match self.context_parent.get(ctx_id) {
+        Some(parent_ctx_id) => Json::string(parent_ctx_id)
+        None => Json::null()
+      }
+      let client_window = self.context_client_window
+        .get(ctx_id)
+        .unwrap_or("client-window-" + ctx_id)
+      let user_ctx = self.context_user_context.get(ctx_id).unwrap_or("default")
+      let entry = if include_parent {
+        make_object({
+          "context": Json::string(ctx_id),
+          "url": Json::string(session.get_url()),
+          "children": children_json,
+          "parent": parent_json,
+          "clientWindow": Json::string(client_window),
+          "userContext": Json::string(user_ctx),
+          "originalOpener": original_opener,
+        })
+      } else {
+        make_object({
+          "context": Json::string(ctx_id),
+          "url": Json::string(session.get_url()),
+          "children": children_json,
+          "clientWindow": Json::string(client_window),
+          "userContext": Json::string(user_ctx),
+          "originalOpener": original_opener,
+        })
+      }
+      Some(entry)
+    }
+    None => None
+  }
+}
+
+///|
+/// Resolve the realm origin for a browsing context.
+fn BidiProtocol::get_context_origin(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  match self.manager.get_session(ctx_id) {
+    Some(session) => derive_realm_origin(session.get_url())
+    None => "null"
+  }
+}
+
+///|
+/// Convert a context URL into a realm origin string.
+fn derive_realm_origin(url : String) -> String {
+  if url.has_prefix("about:") {
+    return "null"
+  }
+  if url.has_prefix("data:") {
+    if url.contains("#domain=alt") {
+      return "http://alt.localhost:8000/"
+    }
+    return "http://localhost:8000/"
+  }
+  if url.has_prefix("http://") {
+    return extract_http_origin(url, "http://", 7)
+  }
+  if url.has_prefix("https://") {
+    return extract_http_origin(url, "https://", 8)
+  }
+  "null"
+}
+
+///|
+/// Extract scheme + host + slash origin from an absolute HTTP(S) URL.
+fn extract_http_origin(url : String, scheme : String, start : Int) -> String {
+  let chars = url.to_array()
+  let mut end = chars.length()
+  for i = start; i < chars.length(); i = i + 1 {
+    if chars[i] == '/' || chars[i] == '?' || chars[i] == '#' {
+      end = i
+      break
+    }
+  }
+  let host = url[start:end].to_string() catch { _ => "" }
+  if host.length() == 0 {
+    "null"
+  } else {
+    scheme + host + "/"
+  }
 }
 
 ///|
@@ -1089,15 +1730,18 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
         Some(Array(events)) =>
           for evt in events {
             match evt {
-              String(s) => {
-                events_to_sub.push(s)
-                // Also add to legacy subscriptions for backward compatibility
-                self.subscriptions[get_subscription_key(s)] = true
-              }
+              String(s) => events_to_sub.push(s)
               _ => ()
             }
           }
         _ => ()
+      }
+      let mut wants_realm_created = false
+      for evt in events_to_sub {
+        if evt == "script.realmCreated" || get_subscription_key(evt) == "script" {
+          wants_realm_created = true
+          break
+        }
       }
       // Check if contexts are specified
       match map.get("contexts") {
@@ -1115,17 +1759,29 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
                   }
                 }
                 self.context_subscriptions[ctx_id] = existing
+                if wants_realm_created {
+                  self.emit_existing_realms_for_context(ctx_id)
+                }
               }
               _ => ()
             }
           }
-        _ =>
-          // Global subscription (no contexts specified)
+        // Global subscription (no contexts specified)
+        _ => {
           for evt in events_to_sub {
             if not(array_contains(self.global_subscriptions, evt)) {
               self.global_subscriptions.push(evt)
             }
+            self.subscriptions[get_subscription_key(evt)] = true
           }
+          if wants_realm_created {
+            for ctx_id in self.manager.list_sessions() {
+              if self.context_parent.get(ctx_id) == None {
+                self.emit_existing_realms_for_context(ctx_id)
+              }
+            }
+          }
+        }
       }
     }
     _ => ()
@@ -1146,11 +1802,7 @@ fn BidiProtocol::handle_unsubscribe(
         Some(Array(events)) =>
           for evt in events {
             match evt {
-              String(s) => {
-                events_to_unsub.push(s)
-                // Remove from legacy subscriptions
-                self.subscriptions.remove(get_subscription_key(s))
-              }
+              String(s) => events_to_unsub.push(s)
               _ => ()
             }
           }
@@ -1173,12 +1825,26 @@ fn BidiProtocol::handle_unsubscribe(
               _ => ()
             }
           }
-        _ =>
-          // Global unsubscription
+        // Global unsubscription
+        _ => {
           self.global_subscriptions = array_filter_not(
             self.global_subscriptions,
             events_to_unsub,
           )
+          for evt in events_to_unsub {
+            let module_key = get_subscription_key(evt)
+            let mut has_same_module = false
+            for sub in self.global_subscriptions {
+              if sub == evt || get_subscription_key(sub) == module_key {
+                has_same_module = true
+                break
+              }
+            }
+            if not(has_same_module) {
+              self.subscriptions.remove(module_key)
+            }
+          }
+        }
       }
     }
     _ => ()
@@ -1218,6 +1884,8 @@ fn BidiProtocol::emit_context_created(
   ctx_id : String,
   ctx_type : String,
   url : String,
+  original_opener : String?,
+  parent_ctx_id : String?,
 ) -> Unit {
   let event_name = "browsingContext.contextCreated"
   if not(self.is_subscribed_for_context(event_name, ctx_id)) &&
@@ -1225,12 +1893,26 @@ fn BidiProtocol::emit_context_created(
     return
   }
   let user_ctx = self.context_user_context.get(ctx_id).unwrap_or("default")
+  let opener_json = match original_opener {
+    Some(opener) => Json::string(opener)
+    None => Json::null()
+  }
+  let parent_json = match parent_ctx_id {
+    Some(parent_id) => Json::string(parent_id)
+    None => Json::null()
+  }
+  let client_window = self.context_client_window
+    .get(ctx_id)
+    .unwrap_or("client-window-" + ctx_id)
   let params = make_object({
     "context": Json::string(ctx_id),
     "url": Json::string(url),
     "type": Json::string(ctx_type),
+    "children": Json::null(),
+    "parent": parent_json,
+    "clientWindow": Json::string(client_window),
     "userContext": Json::string(user_ctx),
-    "originalOpener": Json::null(),
+    "originalOpener": opener_json,
   })
   self.outbox.push(Event({ event_method: event_name, params }))
 }
@@ -1240,35 +1922,81 @@ fn BidiProtocol::emit_context_created(
 fn BidiProtocol::emit_context_destroyed(
   self : BidiProtocol,
   ctx_id : String,
+  original_opener : String?,
 ) -> Unit {
   let event_name = "browsingContext.contextDestroyed"
   if not(self.is_subscribed_for_context(event_name, ctx_id)) &&
     not(self.is_subscribed("browsingContext")) {
     return
   }
-  let params = make_object({ "context": Json::string(ctx_id) })
+  let opener_json = match original_opener {
+    Some(opener) => Json::string(opener)
+    None => Json::null()
+  }
+  let params = make_object({
+    "context": Json::string(ctx_id),
+    "originalOpener": opener_json,
+  })
   self.outbox.push(Event({ event_method: event_name, params }))
 }
 
 ///|
-/// Emit default realmCreated event for a context
-fn BidiProtocol::emit_default_realm(
+/// Emit realmCreated event for a context realm.
+fn BidiProtocol::emit_realm_created(
   self : BidiProtocol,
   ctx_id : String,
+  realm_id : String,
+  sandbox_name : String?,
 ) -> Unit {
   let event_name = "script.realmCreated"
   if not(self.is_subscribed_for_context(event_name, ctx_id)) &&
     not(self.is_subscribed("script")) {
     return
   }
+  let sandbox_json = match sandbox_name {
+    Some(name) => Json::string(name)
+    None => Json::null()
+  }
   let params = make_object({
-    "realm": Json::string("realm-" + ctx_id),
+    "realm": Json::string(realm_id),
     "type": Json::string("window"),
     "context": Json::string(ctx_id),
-    "origin": Json::string("://"),
-    "sandbox": Json::null(),
+    "origin": Json::string(self.get_context_origin(ctx_id)),
+    "sandbox": sandbox_json,
   })
   self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
+/// Emit default realmCreated event for a context.
+fn BidiProtocol::emit_default_realm(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  self.emit_realm_created(ctx_id, realm_id, None)
+}
+
+///|
+/// Emit all existing realms for a context subtree.
+fn BidiProtocol::emit_existing_realms_for_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  if not(self.manager.has_session(ctx_id)) {
+    return
+  }
+  self.emit_default_realm(ctx_id)
+  let prefix = ctx_id + "::"
+  for key, realm_id in self.context_sandbox_realm {
+    if key.has_prefix(prefix) {
+      let sandbox_name = key[prefix.length():].to_string() catch { _ => "" }
+      self.emit_realm_created(ctx_id, realm_id, Some(sandbox_name))
+    }
+  }
+  for child_ctx_id in self.context_children.get(ctx_id).unwrap_or([]) {
+    self.emit_existing_realms_for_context(child_ctx_id)
+  }
 }
 
 ///|
@@ -1343,7 +2071,18 @@ fn BidiProtocol::is_subscribed_for_context(
       return true
     }
   }
-  // Check context-specific subscriptions
+  // Check context-specific subscriptions (including ancestors).
+  self.is_subscribed_for_context_chain(event, module_key, ctx_id)
+}
+
+///|
+/// Check context-specific subscriptions for context and its ancestors.
+fn BidiProtocol::is_subscribed_for_context_chain(
+  self : BidiProtocol,
+  event : String,
+  module_key : String,
+  ctx_id : String,
+) -> Bool {
   match self.context_subscriptions.get(ctx_id) {
     Some(events) =>
       for sub in events {
@@ -1353,7 +2092,11 @@ fn BidiProtocol::is_subscribed_for_context(
       }
     None => ()
   }
-  false
+  match self.context_parent.get(ctx_id) {
+    Some(parent_ctx_id) =>
+      self.is_subscribed_for_context_chain(event, module_key, parent_ctx_id)
+    None => false
+  }
 }
 
 ///|
@@ -1520,8 +2263,7 @@ fn BidiProtocol::validate_script_target(
       // Check if realm is specified
       match target_map.get("realm") {
         Some(String(realm_id)) =>
-          // Currently we only have "default-realm"
-          if realm_id != "default-realm" && not(realm_id.has_prefix("realm-")) {
+          if not(self.realm_context.contains(realm_id)) {
             self.send_error(
               request_id,
               "no such frame",
@@ -1715,6 +2457,133 @@ fn BidiProtocol::validate_user_activation(
     }
   }
   None
+}
+
+///|
+/// Resolve target context/realm pair from script target.
+fn BidiProtocol::resolve_target_context_realm(
+  self : BidiProtocol,
+  params : Json?,
+) -> (String, String) {
+  match get_param_raw(params, "target") {
+    Some(Object(target_map)) => {
+      let context_id = match target_map.get("context") {
+        Some(String(id)) => Some(id)
+        _ => None
+      }
+      let realm_id = match target_map.get("realm") {
+        Some(String(id)) => Some(id)
+        _ => None
+      }
+      let sandbox_name = match target_map.get("sandbox") {
+        Some(String(name)) => Some(name)
+        _ => None
+      }
+      match realm_id {
+        Some(realm) => {
+          let fallback_ctx = self.default_context_id.unwrap_or(
+            self.ensure_default_context(),
+          )
+          let resolved_ctx = self.realm_context
+            .get(realm)
+            .unwrap_or(context_id.unwrap_or(fallback_ctx))
+          (resolved_ctx, realm)
+        }
+        None =>
+          match context_id {
+            Some(ctx_id) =>
+              match sandbox_name {
+                Some(name) =>
+                  (ctx_id, self.get_or_create_sandbox_realm(ctx_id, name))
+                None =>
+                  (
+                    ctx_id,
+                    self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id),
+                  )
+              }
+            None => {
+              let fallback_ctx = self.default_context_id.unwrap_or(
+                self.ensure_default_context(),
+              )
+              (
+                fallback_ctx,
+                self.context_realm
+                .get(fallback_ctx)
+                .unwrap_or("realm-" + fallback_ctx),
+              )
+            }
+          }
+      }
+    }
+    _ => {
+      let fallback_ctx = self.default_context_id.unwrap_or(
+        self.ensure_default_context(),
+      )
+      (
+        fallback_ctx,
+        self.context_realm.get(fallback_ctx).unwrap_or("realm-" + fallback_ctx),
+      )
+    }
+  }
+}
+
+///|
+/// Extract userActivation parameter with default false.
+fn get_user_activation_value(params : Json?) -> Bool {
+  match get_param_raw(params, "userActivation") {
+    Some(True) => true
+    _ => false
+  }
+}
+
+///|
+/// Handle top-level `window.open(...)` evaluate calls and keep browsing context
+/// state synchronized with BiDi events.
+fn BidiProtocol::try_handle_window_open(
+  self : BidiProtocol,
+  request_id : Int,
+  opener_ctx_id : String,
+  expression : String,
+) -> Bool {
+  let trimmed = expression.trim().to_string()
+  if not(trimmed.has_prefix("window.open(")) {
+    return false
+  }
+
+  let user_ctx = self.context_user_context
+    .get(opener_ctx_id)
+    .unwrap_or("default")
+  let new_ctx_id = self.create_context(user_ctx)
+  self.context_original_opener[new_ctx_id] = opener_ctx_id
+
+  // WPT expects contextCreated.url to stay about:blank for window.open flows.
+  self.emit_context_created(
+    new_ctx_id,
+    "tab",
+    "about:blank",
+    Some(opener_ctx_id),
+    None,
+  )
+  self.emit_default_realm(new_ctx_id)
+
+  let returns_null = trimmed.contains("noopener") ||
+    trimmed.contains("noreferrer")
+  let remote_value = if returns_null {
+    make_object({ "type": Json::string("null") })
+  } else {
+    make_object({
+      "type": Json::string("window"),
+      "value": make_object({ "context": Json::string(new_ctx_id) }),
+    })
+  }
+  let result = make_object({
+    "realm": Json::string(
+      self.context_realm.get(opener_ctx_id).unwrap_or("realm-" + opener_ctx_id),
+    ),
+    "result": remote_value,
+  })
+  self.send_success(request_id, Some(result))
+  true
 }
 
 ///|

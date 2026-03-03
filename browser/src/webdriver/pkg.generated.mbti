@@ -193,11 +193,20 @@ pub struct BidiProtocol {
   mut session_id : String?
   mut default_context_id : String?
   mut next_navigation_id : Int
+  mut next_realm_id : Int
   subscriptions : Map[String, Bool]
   context_subscriptions : Map[String, Array[String]]
   mut global_subscriptions : Array[String]
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
+  context_original_opener : Map[String, String]
+  context_realm : Map[String, String]
+  context_sandbox_realm : Map[String, String]
+  realm_context : Map[String, String]
+  realm_sandbox : Map[String, String]
+  context_parent : Map[String, String]
+  context_children : Map[String, Array[String]]
+  context_client_window : Map[String, String]
   mut socket : @core.Any?
   mut use_quickjs : Bool
   mut dom_initialized : Bool
