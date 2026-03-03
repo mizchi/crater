@@ -216,7 +216,7 @@ bench-playwright:
     pnpm bench:playwright
 
 # Run all Playwright-based tests
-test-playwright-all: test-playwright-adapter test-website
+test-playwright-all: test-playwright test-playwright-adapter test-website
 
 # Run BiDi manual tests (Python, requires BiDi server to be running)
 test-bidi-manual:

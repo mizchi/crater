@@ -447,6 +447,9 @@ jobs:
       - name: Run Playwright adapter tests
         run: just test-playwright-adapter
 
+      - name: Run Playwright BiDi E2E tests
+        run: just test-playwright
+
       - name: Run website loading tests
         run: just test-website
 
