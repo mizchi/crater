@@ -1075,8 +1075,19 @@ pub fn compute_ifc(
   let line_boxes : Array[LineBox] = []
   let mut current_line = LineBox::new()
   let layout_map : Map[Int, @types.Layout] = {}
+  let child_has_abs_desc_cache : Map[Int, Bool] = {}
+  let child_has_non_ws_text_cache : Map[Int, Bool] = {}
+  let child_has_inflow_block_desc_flag : Array[Bool] = []
+  for child in children {
+    if child.style.display == @types.Display::None {
+      child_has_inflow_block_desc_flag.push(false)
+    } else {
+      child_has_inflow_block_desc_flag.push(has_inflow_block_descendant(child))
+    }
+  }
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
+    let child_has_inflow_block_desc = child_has_inflow_block_desc_flag[i]
 
     // Skip display:none children
     if child.style.display == @types.Display::None {
@@ -1162,7 +1173,7 @@ pub fn compute_ifc(
       _ => baseline
     }
 
-    if current_line.items.length() > 0 && has_inflow_block_descendant(child) {
+    if current_line.items.length() > 0 && child_has_inflow_block_desc {
       current_line.ensure_line_strut(children)
       line_boxes.push(current_line)
       current_line = LineBox::new()
@@ -1212,10 +1223,25 @@ pub fn compute_ifc(
           prev_child, child,
         )
         keep_same_line = not(has_break_opportunity)
+        let child_establishes_abs_cb = inline_establishes_abs_containing_block(
+          child.style,
+        )
+        let child_has_abs_desc = if child_establishes_abs_cb {
+          match child_has_abs_desc_cache.get(i) {
+            Some(v) => v
+            None => {
+              let v = has_absolute_descendant(child)
+              child_has_abs_desc_cache[i] = v
+              v
+            }
+          }
+        } else {
+          false
+        }
         if has_break_opportunity &&
-          inline_establishes_abs_containing_block(child.style) &&
-          has_absolute_descendant(child) &&
-          not(has_inflow_block_descendant(child)) {
+          child_establishes_abs_cb &&
+          child_has_abs_desc &&
+          not(child_has_inflow_block_desc) {
           // Inline abs-containing wrappers may keep their first fragment on the
           // current line even when the overall bounding box exceeds line width.
           keep_same_line = true
@@ -1285,6 +1311,22 @@ pub fn compute_ifc(
         item_index = item_index + 1 {
       let item = line.items[item_index]
       let child = children[item.index]
+      let child_has_inflow_block_desc = child_has_inflow_block_desc_flag[item.index]
+      let child_establishes_abs_cb = inline_establishes_abs_containing_block(
+        child.style,
+      )
+      let child_has_abs_desc = if child_establishes_abs_cb {
+        match child_has_abs_desc_cache.get(item.index) {
+          Some(v) => v
+          None => {
+            let v = has_absolute_descendant(child)
+            child_has_abs_desc_cache[item.index] = v
+            v
+          }
+        }
+      } else {
+        false
+      }
       let child_margin = @types.resolve_rect(
         child.style.margin,
         available_width,
@@ -1368,7 +1410,7 @@ pub fn compute_ifc(
       if item_index == 0 &&
         line_index > 0 &&
         inline_establishes_abs_containing_block(child.style) &&
-        not(has_inflow_block_descendant(child)) {
+        not(child_has_inflow_block_desc) {
         let prev_line = line_boxes[line_index - 1]
         if prev_line.items.length() > 0 {
           let prev_item = prev_line.items[prev_line.items.length() - 1]
@@ -1452,9 +1494,9 @@ pub fn compute_ifc(
       }
       let mut effective_layout = item.layout
       if item_index > 0 &&
-        inline_establishes_abs_containing_block(child.style) &&
-        has_absolute_descendant(child) &&
-        not(has_inflow_block_descendant(child)) &&
+        child_establishes_abs_cb &&
+        child_has_abs_desc &&
+        not(child_has_inflow_block_desc) &&
         positioned_x > content_offset_x {
         let carry_x = positioned_x - content_offset_x
         let shifted_children : Array[@types.Layout] = []
@@ -1463,9 +1505,18 @@ pub fn compute_ifc(
             shift_layout_subtree(child_layout, carry_x, 0.0),
           )
         }
+        let child_has_non_ws_text = match
+          child_has_non_ws_text_cache.get(item.index) {
+          Some(v) => v
+          None => {
+            let v = has_non_whitespace_text_descendant(child)
+            child_has_non_ws_text_cache[item.index] = v
+            v
+          }
+        }
         let line_band = line_height_from_style(child.style)
         let expanded_height = if effective_layout.height > line_band &&
-          has_non_whitespace_text_descendant(child) {
+          child_has_non_ws_text {
           effective_layout.height + line_band * 2.0
         } else if effective_layout.height > line_band {
           effective_layout.height + line_band
@@ -2242,10 +2293,17 @@ fn compute_inline_child(
   if final_height == 0.0 && id_matches_tag(node.id, "source") {
     final_height = text_glyph_height_from_style(style)
   }
+  let node_has_non_ws_text_desc = if absolute_entries.length() > 0 &&
+    inline_cursor_y == 0.0 &&
+    not(style.writing_mode.is_vertical()) {
+    has_non_whitespace_text_descendant(node)
+  } else {
+    false
+  }
   if not(style.writing_mode.is_vertical()) &&
     absolute_entries.length() > 0 &&
     inline_cursor_y == 0.0 &&
-    not(has_non_whitespace_text_descendant(node)) {
+    not(node_has_non_ws_text_desc) {
     let horizontal_inline_line_height = line_height_from_style(style) +
       padding.vertical_sum() +
       border.vertical_sum()
@@ -2294,10 +2352,14 @@ fn compute_inline_child(
 
   // Resolve absolute child positions against this inline element's content box
   // only when this inline box establishes a containing block.
+  let mut node_has_inflow_block_desc = false
+  let mut node_has_inflow_block_desc_computed = false
   if absolute_entries.length() > 0 &&
     inline_establishes_abs_containing_block(style) {
+    node_has_inflow_block_desc = has_inflow_block_descendant(node)
+    node_has_inflow_block_desc_computed = true
     let area_left = padding.left + border.left
-    let area_top_adjust = if has_inflow_block_descendant(node) {
+    let area_top_adjust = if node_has_inflow_block_desc {
       -line_height_from_style(style)
     } else {
       0.0
@@ -2344,13 +2406,28 @@ fn compute_inline_child(
       children[idx] = { ..abs_layout, x, y }
     }
   }
-  if has_inflow_block_descendant(node) {
-    for i = 0; i < children.length(); i = i + 1 {
-      let child_layout = children[i]
-      if child_layout.id == "div" &&
-        child_layout.width == 0.0 &&
-        child_layout.height == 0.0 {
-        children[i] = { ..child_layout, width: available_width }
+  let mut has_zero_size_div_child = false
+  for child_layout in children {
+    if child_layout.id == "div" &&
+      child_layout.width == 0.0 &&
+      child_layout.height == 0.0 {
+      has_zero_size_div_child = true
+      break
+    }
+  }
+  if has_zero_size_div_child {
+    if not(node_has_inflow_block_desc_computed) {
+      node_has_inflow_block_desc = has_inflow_block_descendant(node)
+      node_has_inflow_block_desc_computed = true
+    }
+    if node_has_inflow_block_desc {
+      for i = 0; i < children.length(); i = i + 1 {
+        let child_layout = children[i]
+        if child_layout.id == "div" &&
+          child_layout.width == 0.0 &&
+          child_layout.height == 0.0 {
+          children[i] = { ..child_layout, width: available_width }
+        }
       }
     }
   }

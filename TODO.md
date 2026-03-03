@@ -2,31 +2,36 @@
 
 ## WPT サポート状況（2026-03-03）
 
-- 実測コマンド: `npx tsx scripts/update-wpt-readme.ts`
-- 全体: `1367 / 1446 passed`（`94.5%`）
-- 主要モジュール:
-  - `css-display`: `74 / 79`（`93.7%`）
-  - `css-align`: `39 / 44`（`88.6%`）
-  - `css-overflow`: `230 / 243`（`94.7%`）
-  - `css-sizing`: `90 / 94`（`95.7%`）
-  - `css-position`: `74 / 84`（`88.1%`）
-  - `css-flexbox`: `267 / 289`（`92.4%`）
-  - `css-contain`: `303 / 303`（`100.0%`）
-  - `css-tables`: `26 / 32`（`81.3%`）
+- 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
+- 全体: `1366 / 1446 passed`（`94.5%`、`80 failed`）
+
+| Module | Passed | Failed | Total | Rate |
+|--------|--------|--------|-------|------|
+| css-flexbox | 267 | 22 | 289 | 92.4% |
+| css-grid | 32 | 1 | 33 | 97.0% |
+| css-tables | 26 | 6 | 32 | 81.2% |
+| css-display | 71 | 8 | 79 | 89.9% |
+| css-box | 30 | 0 | 30 | 100.0% |
+| css-sizing | 88 | 6 | 94 | 93.6% |
+| css-align | 38 | 6 | 44 | 86.4% |
+| css-position | 84 | 0 | 84 | 100.0% |
+| css-overflow | 231 | 12 | 243 | 95.1% |
+| css-contain | 298 | 5 | 303 | 98.3% |
+| css-variables | 100 | 7 | 107 | 93.5% |
+| filter-effects | 99 | 7 | 106 | 93.4% |
+| compositing | 2 | 0 | 2 | 100.0% |
 
 ### 直近の改善
 
-- `css-position`: `59 / 84` -> `74 / 84`
-- `css-overflow`: `228 / 243` -> `230 / 243`
-- `css-sizing`: `88 / 94` -> `90 / 94`
+- `css-position`: `74 / 84` -> `84 / 84`
 
 ### 直近の優先候補
 
-- `css-position` の残件（`10 failed`）
-- `css-overflow` の残件（`13 failed`）
-- `css-tables` の残件（`6 failed`）
-- `css-align` の残件（`5 failed`）
-- `css-display` の残件（`5 failed`）
+- `css-flexbox` の残件（`22 failed`）
+- `css-overflow` の残件（`12 failed`）
+- `css-display` の残件（`8 failed`）
+- `css-variables` の残件（`7 failed`）
+- `filter-effects` の残件（`7 failed`）
 
 ### WPT runner / intrinsic provider メモ
 
