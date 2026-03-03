@@ -191,3 +191,108 @@ test "abspos_non_auto_inset_inside_static_grid_uses_outer_abs_containing_block" 
     fail("abs y should center in outer containing block, not inner grid")
   }
 }
+
+///|
+test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
+  let html =
+    #|<div id="container" style="font: 20px/1 monospace; color: white; height: 100px; width: 100px; background: red;">
+    #|  <div style="height: 60px;"></div>
+    #|  B
+    #|  <span style="position: relative;">
+    #|    <div></div>
+    #|    AA
+    #|    <div class="abs" style="position: absolute; background: green; height: 100px; width: 100px; top: -60px;"></div>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  guard container.children.length() >= 3 else {
+    fail("container should keep block, text, and span")
+  }
+  let span = container.children[2]
+  guard span.id.has_prefix("span") else {
+    fail("third child should be inline containing block")
+  }
+  guard span.x == 0.0 else {
+    fail(
+      "inline containing block should start at line start after preceding text",
+    )
+  }
+  guard span.y == 80.0 else {
+    fail(
+      "inline containing block should be on the line after preceding inline text",
+    )
+  }
+  let non_text_children : Array[@types.Layout] = []
+  for child in span.children {
+    if not(child.id.has_prefix("#text")) {
+      non_text_children.push(child)
+    }
+  }
+  guard non_text_children.length() == 2 else {
+    fail("span should keep in-flow block child and abs child")
+  }
+  let abs = non_text_children[1]
+  guard abs.id.has_prefix("div.abs") else {
+    fail("second non-text child should be absolute descendant")
+  }
+  guard abs.y == -80.0 else {
+    fail("abs static y should include preceding inline line box height")
+  }
+}
+
+///|
+test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
+  let html =
+    #|<div id="container" style="height: 100px; width: 100px; font: 20px/1 monospace; color: white; background: red;">
+    #|  <div style="height: 50px;"></div>
+    #|  BBBB
+    #|  <span style="position: relative;">
+    #|    <div class="abs" style="position: absolute; background: green; height: 100px; width: 50px; top: -50px; left: -30px;"></div>
+    #|    AA A AA AAAA
+    #|    <div class="abs" style="position: absolute; background: green; height: 100px; width: 50px; top: -50px; left: -80px;"></div>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  guard container.children.length() >= 3 else {
+    fail("container should keep block, text, and span")
+  }
+  let span = container.children[2]
+  guard span.id.has_prefix("span") else {
+    fail("third child should be inline containing block")
+  }
+  guard span.y == 50.0 else {
+    fail(
+      "relative inline should keep first fragment on the same line as preceding text",
+    )
+  }
+  guard span.height >= 55.0 else {
+    fail(
+      "relative inline should keep multiline fragment height when text wraps",
+    )
+  }
+  let abs_children : Array[@types.Layout] = []
+  for child in span.children {
+    if child.id.has_prefix("div.abs") {
+      abs_children.push(child)
+    }
+  }
+  guard abs_children.length() == 2 else {
+    fail("span should keep two absolute descendants")
+  }
+  let abs0 = abs_children[0]
+  let abs1 = abs_children[1]
+  guard abs0.y == -50.0 && abs1.y == -50.0 else {
+    fail(
+      "absolute descendants should stay anchored to the first line of inline containing block",
+    )
+  }
+  let carry = abs0.x - -30.0
+  guard carry >= 35.0 else {
+    fail("abs descendants should include preceding inline carry offset")
+  }
+  guard abs0.x - abs1.x == 50.0 else {
+    fail("absolute descendants should keep their inset delta")
+  }
+}
