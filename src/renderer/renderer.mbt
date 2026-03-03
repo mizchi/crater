@@ -1566,6 +1566,12 @@ fn collect_inline_content(
             flush_text(text_builder, remaining)
             remaining.push(child)
             has_inline_content = true
+          } else if will_have_non_inline_display(elem, stylesheets, ctx) {
+            // inline-block/inline-flex/inline-grid and other non-inline values
+            // must remain as elements; flattening drops intrinsic boxes.
+            flush_text(text_builder, remaining)
+            remaining.push(child)
+            has_inline_content = true
             // Check if this inline element contains replaced elements (like <a><img></a>)
           } else if has_generated_pseudo {
             // Pseudo-elements require the inline host element to remain addressable.
@@ -1827,6 +1833,56 @@ fn create_input_measure(
       }
     },
   }
+}
+
+///|
+fn inset_is_definite(dim : @types.Dimension) -> Bool {
+  match dim {
+    @types.Length(_) | @types.Percent(_) => true
+    _ => false
+  }
+}
+
+///|
+fn should_preserve_auto_replaced_width(style : @style.Style) -> Bool {
+  if style.width != @types.Auto {
+    return false
+  }
+  match style.position {
+    @types.Absolute | @types.Fixed =>
+      inset_is_definite(style.inset.left) &&
+      inset_is_definite(style.inset.right)
+    _ => false
+  }
+}
+
+///|
+fn should_preserve_auto_replaced_height(style : @style.Style) -> Bool {
+  if style.height != @types.Auto {
+    return false
+  }
+  match style.position {
+    @types.Absolute | @types.Fixed =>
+      inset_is_definite(style.inset.top) &&
+      inset_is_definite(style.inset.bottom)
+    _ => false
+  }
+}
+
+///|
+fn is_definite_replaced_size(dim : @types.Dimension) -> Bool {
+  match dim {
+    @types.Length(_) | @types.Percent(_) => true
+    _ => false
+  }
+}
+
+///|
+fn should_apply_intrinsic_replaced_aspect_ratio(
+  width : @types.Dimension,
+  height : @types.Dimension,
+) -> Bool {
+  not(is_definite_replaced_size(width) && is_definite_replaced_size(height))
 }
 
 ///|
@@ -2424,6 +2480,32 @@ fn propagate_document_root_multicol_to_body(
 }
 
 ///|
+fn should_layout_document_root(
+  doc_root : @html.Element,
+  doc_root_style : @style.Style,
+) -> Bool {
+  if doc_root.tag.to_lower() != "html" {
+    return false
+  }
+  doc_root_style.position == @types.Absolute ||
+  doc_root_style.position == @types.Fixed
+}
+
+///|
+fn select_render_root(
+  doc_root : @html.Element,
+  doc_root_style : @style.Style,
+) -> @html.Element {
+  if should_layout_document_root(doc_root, doc_root_style) {
+    return doc_root
+  }
+  match find_body(doc_root) {
+    Some(body) => body
+    None => doc_root
+  }
+}
+
+///|
 fn resolve_root_available_width(
   viewport_width : Double,
   root_margin : @types.Rect[Double],
@@ -2581,11 +2663,8 @@ pub fn render_with_external_css(
     css_vars,
   )
 
-  // Find body element, or use root if not found
-  let render_root = match find_body(doc.root) {
-    Some(body) => body
-    None => doc.root
-  }
+  // Find layout root. Use document root when html itself is out-of-flow.
+  let render_root = select_render_root(doc.root, doc_root_style)
 
   // Convert to node tree with stylesheet styles applied
   let root = if render_root.tag.to_lower() == "body" &&
@@ -2794,11 +2873,8 @@ pub fn render_document_with_external_css(
     css_vars,
   )
 
-  // Find body element, or use root if not found
-  let render_root = match find_body(doc.root) {
-    Some(body) => body
-    None => doc.root
-  }
+  // Find layout root. Use document root when html itself is out-of-flow.
+  let render_root = select_render_root(doc.root, doc_root_style)
 
   // Convert to node tree with stylesheet styles applied
   let root = if render_root.tag.to_lower() == "body" &&
@@ -3803,10 +3879,7 @@ pub fn render_to_node_with_external_css(
     None,
     css_vars,
   )
-  let render_root = match find_body(doc.root) {
-    Some(body) => body
-    None => doc.root
-  }
+  let render_root = select_render_root(doc.root, doc_root_style)
   let root = if render_root.tag.to_lower() == "body" &&
     doc.root.tag.to_lower() != "body" {
     let body_selector = html_to_selector_element(
@@ -3895,10 +3968,7 @@ pub fn render_to_node_with_document(
     None,
     css_vars,
   )
-  let render_root = match find_body(doc.root) {
-    Some(body) => body
-    None => doc.root
-  }
+  let render_root = select_render_root(doc.root, doc_root_style)
   let root = if render_root.tag.to_lower() == "body" &&
     doc.root.tag.to_lower() != "body" {
     let body_selector = html_to_selector_element(
@@ -4670,6 +4740,7 @@ fn element_to_node_with_styles_internal(
     { ..computed_style, display: @types.InlineBlock }
   } else if computed_style.display == @types.Inline &&
     not(is_ruby_internal) &&
+    computed_style.position == @types.Static &&
     contains_block_child(elem, stylesheets, ctx) &&
     not(
       has_direct_display_contents_child(
@@ -4966,14 +5037,16 @@ fn element_to_node_with_styles_internal(
       _ => (150.0, 21.0)
     }
     let measure = create_input_measure(intrinsic_width, intrinsic_height)
+    let preserve_auto_width = should_preserve_auto_replaced_width(style)
+    let preserve_auto_height = should_preserve_auto_replaced_height(style)
     let input_style : @style.Style = {
       ..style,
-      width: if style.width == @types.Auto {
+      width: if style.width == @types.Auto && not(preserve_auto_width) {
         @types.Length(intrinsic_width)
       } else {
         style.width
       },
-      height: if style.height == @types.Auto {
+      height: if style.height == @types.Auto && not(preserve_auto_height) {
         @types.Length(intrinsic_height)
       } else {
         style.height
@@ -5010,14 +5083,16 @@ fn element_to_node_with_styles_internal(
     let intrinsic_width = cols * char_width + font_size * 1.1
     let intrinsic_height = rows * control_line_height
     let measure = create_input_measure(intrinsic_width, intrinsic_height)
+    let preserve_auto_width = should_preserve_auto_replaced_width(style)
+    let preserve_auto_height = should_preserve_auto_replaced_height(style)
     let textarea_style : @style.Style = {
       ..style,
-      width: if style.width == @types.Auto {
+      width: if style.width == @types.Auto && not(preserve_auto_width) {
         @types.Length(intrinsic_width)
       } else {
         style.width
       },
-      height: if style.height == @types.Auto {
+      height: if style.height == @types.Auto && not(preserve_auto_height) {
         @types.Length(intrinsic_height)
       } else {
         style.height
@@ -5204,6 +5279,8 @@ fn element_to_node_with_styles_internal(
         normalized_children.push(child)
       }
     }
+    let preserve_auto_width = should_preserve_auto_replaced_width(style)
+    let preserve_auto_height = should_preserve_auto_replaced_height(style)
     let select_style : @style.Style = {
       ..style,
       border: if has_ua_border {
@@ -5211,12 +5288,12 @@ fn element_to_node_with_styles_internal(
       } else {
         default_border
       },
-      width: if style.width == @types.Auto {
+      width: if style.width == @types.Auto && not(preserve_auto_width) {
         @types.Length(default_width)
       } else {
         style.width
       },
-      height: if style.height == @types.Auto {
+      height: if style.height == @types.Auto && not(preserve_auto_height) {
         @types.Length(default_height)
       } else {
         style.height
@@ -5345,40 +5422,45 @@ fn element_to_node_with_styles_internal(
     // - CSS dimensions (%, px, etc.) override HTML attributes
     // - Set aspect ratio from intrinsic dimensions if not already set
     // - If height is %, keep width as Auto so aspect_ratio can compute it
-    let img_style : @style.Style = {
-      ..style,
-      width: if style.width == @types.Auto {
-        if suppress_auto_inline_size {
-          @types.Auto
-          // If height is %, keep width Auto to let aspect_ratio compute it
-        } else if height_is_percent {
-          @types.Auto
-        } else if attr_width > 0.0 {
-          @types.Length(attr_width)
-        } else {
-          style.width
-        }
+    let resolved_width : @types.Dimension = if style.width == @types.Auto {
+      if suppress_auto_inline_size {
+        @types.Auto
+        // If height is %, keep width Auto to let aspect_ratio compute it
+      } else if height_is_percent {
+        @types.Auto
+      } else if attr_width > 0.0 {
+        @types.Length(attr_width)
       } else {
         style.width
-      },
-      height: if style.height == @types.Auto {
-        if suppress_auto_block_size {
-          @types.Auto
-          // If width is %, keep height Auto to let aspect_ratio compute it
-        } else if width_is_percent {
-          @types.Auto
-        } else if attr_height > 0.0 {
-          @types.Length(attr_height)
-        } else {
-          style.height
-        }
+      }
+    } else {
+      style.width
+    }
+    let resolved_height : @types.Dimension = if style.height == @types.Auto {
+      if suppress_auto_block_size {
+        @types.Auto
+        // If width is %, keep height Auto to let aspect_ratio compute it
+      } else if width_is_percent {
+        @types.Auto
+      } else if attr_height > 0.0 {
+        @types.Length(attr_height)
       } else {
         style.height
-      },
+      }
+    } else {
+      style.height
+    }
+    let keep_intrinsic_ratio = should_apply_intrinsic_replaced_aspect_ratio(
+      resolved_width, resolved_height,
+    )
+    let img_style : @style.Style = {
+      ..style,
+      width: resolved_width,
+      height: resolved_height,
       // Set aspect ratio from intrinsic dimensions (for % sizing)
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio // Keep CSS-specified ratio
-        None => intrinsic_aspect_ratio // Use intrinsic ratio
+        None => if keep_intrinsic_ratio { intrinsic_aspect_ratio } else { None }
       },
     }
     return match alt_text {
@@ -5425,36 +5507,46 @@ fn element_to_node_with_styles_internal(
     }
     let suppress_auto_inline_size = style.suppresses_intrinsic_width()
     let suppress_auto_block_size = style.suppresses_intrinsic_height()
+    let resolved_width : @types.Dimension = if style.width == @types.Auto {
+      if suppress_auto_inline_size {
+        @types.Auto
+        // If height is %, keep width Auto to let aspect_ratio compute it
+      } else if height_is_percent {
+        @types.Auto
+      } else {
+        @types.Length(intrinsic_width)
+      }
+    } else {
+      style.width
+    }
+    let resolved_height : @types.Dimension = if style.height == @types.Auto {
+      if suppress_auto_block_size {
+        @types.Auto
+        // If width is %, keep height Auto to let aspect_ratio compute it
+      } else if width_is_percent {
+        @types.Auto
+      } else {
+        @types.Length(intrinsic_height)
+      }
+    } else {
+      style.height
+    }
+    let keep_intrinsic_ratio = should_apply_intrinsic_replaced_aspect_ratio(
+      resolved_width, resolved_height,
+    )
     let canvas_style : @style.Style = {
       ..style,
-      width: if style.width == @types.Auto {
-        if suppress_auto_inline_size {
-          @types.Auto
-          // If height is %, keep width Auto to let aspect_ratio compute it
-        } else if height_is_percent {
-          @types.Auto
-        } else {
-          @types.Length(intrinsic_width)
-        }
-      } else {
-        style.width
-      },
-      height: if style.height == @types.Auto {
-        if suppress_auto_block_size {
-          @types.Auto
-          // If width is %, keep height Auto to let aspect_ratio compute it
-        } else if width_is_percent {
-          @types.Auto
-        } else {
-          @types.Length(intrinsic_height)
-        }
-      } else {
-        style.height
-      },
+      width: resolved_width,
+      height: resolved_height,
       // Set aspect ratio from intrinsic dimensions (for % sizing)
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio // Keep CSS-specified ratio
-        None => if style.contain.size { None } else { intrinsic_aspect_ratio }
+        None =>
+          if style.contain.size || not(keep_intrinsic_ratio) {
+            None
+          } else {
+            intrinsic_aspect_ratio
+          }
       },
     }
 
@@ -5505,33 +5597,43 @@ fn element_to_node_with_styles_internal(
     }
     let suppress_auto_inline_size = style.suppresses_intrinsic_width()
     let suppress_auto_block_size = style.suppresses_intrinsic_height()
+    let resolved_width : @types.Dimension = if style.width == @types.Auto {
+      if suppress_auto_inline_size {
+        @types.Auto
+      } else if height_is_percent {
+        @types.Auto
+      } else {
+        @types.Length(intrinsic_width)
+      }
+    } else {
+      style.width
+    }
+    let resolved_height : @types.Dimension = if style.height == @types.Auto {
+      if suppress_auto_block_size {
+        @types.Auto
+      } else if width_is_percent {
+        @types.Auto
+      } else {
+        @types.Length(intrinsic_height)
+      }
+    } else {
+      style.height
+    }
+    let keep_intrinsic_ratio = should_apply_intrinsic_replaced_aspect_ratio(
+      resolved_width, resolved_height,
+    )
     let replaced_style : @style.Style = {
       ..style,
-      width: if style.width == @types.Auto {
-        if suppress_auto_inline_size {
-          @types.Auto
-        } else if height_is_percent {
-          @types.Auto
-        } else {
-          @types.Length(intrinsic_width)
-        }
-      } else {
-        style.width
-      },
-      height: if style.height == @types.Auto {
-        if suppress_auto_block_size {
-          @types.Auto
-        } else if width_is_percent {
-          @types.Auto
-        } else {
-          @types.Length(intrinsic_height)
-        }
-      } else {
-        style.height
-      },
+      width: resolved_width,
+      height: resolved_height,
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio
-        None => if style.contain.size { None } else { intrinsic_aspect_ratio }
+        None =>
+          if style.contain.size || not(keep_intrinsic_ratio) {
+            None
+          } else {
+            intrinsic_aspect_ratio
+          }
       },
     }
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
@@ -6257,13 +6359,108 @@ fn compute_element_style_indexed(
 
   // Apply viewport dimensions if root
   if is_root {
-    match style.width {
-      @types.Dimension::Auto =>
-        style = { ..style, width: @types.Dimension::Length(ctx.viewport_width) }
-      _ => ()
+    let is_out_of_flow_root = style.position == @types.Absolute ||
+      style.position == @types.Fixed
+    if is_out_of_flow_root {
+      style = resolve_out_of_flow_root_auto_size(
+        style,
+        ctx.viewport_width,
+        ctx.viewport_height,
+      )
+    }
+    let has_horizontal_inset_pair = is_out_of_flow_root &&
+      inset_is_definite_for_root(style.inset.left, ctx.viewport_width) &&
+      inset_is_definite_for_root(style.inset.right, ctx.viewport_width)
+    if not(has_horizontal_inset_pair) {
+      match style.width {
+        @types.Dimension::Auto =>
+          style = {
+            ..style,
+            width: @types.Dimension::Length(ctx.viewport_width),
+          }
+        _ => ()
+      }
     }
   }
   adjust_for_box_sizing(style)
+}
+
+///|
+fn resolve_inset_for_root(
+  value : @types.Dimension,
+  available : Double,
+) -> Double? {
+  match value {
+    @types.Length(v) => Some(v)
+    @types.Percent(p) => Some(available * p)
+    _ => None
+  }
+}
+
+///|
+fn inset_is_definite_for_root(
+  value : @types.Dimension,
+  available : Double,
+) -> Bool {
+  resolve_inset_for_root(value, available) is Some(_)
+}
+
+///|
+fn resolve_non_auto_length_for_root(
+  value : @types.Dimension,
+  available : Double,
+) -> Double {
+  match value {
+    @types.Length(v) => v
+    @types.Percent(p) => available * p
+    _ => 0.0
+  }
+}
+
+///|
+fn resolve_out_of_flow_root_auto_size(
+  style : @style.Style,
+  viewport_width : Double,
+  viewport_height : Double,
+) -> @style.Style {
+  let inset_left = resolve_inset_for_root(style.inset.left, viewport_width)
+  let inset_right = resolve_inset_for_root(style.inset.right, viewport_width)
+  let inset_top = resolve_inset_for_root(style.inset.top, viewport_height)
+  let inset_bottom = resolve_inset_for_root(style.inset.bottom, viewport_height)
+  let margin_left = resolve_non_auto_length_for_root(
+    style.margin.left,
+    viewport_width,
+  )
+  let margin_right = resolve_non_auto_length_for_root(
+    style.margin.right,
+    viewport_width,
+  )
+  let margin_top = resolve_non_auto_length_for_root(
+    style.margin.top,
+    viewport_height,
+  )
+  let margin_bottom = resolve_non_auto_length_for_root(
+    style.margin.bottom,
+    viewport_height,
+  )
+  let mut next_style = style
+  match (next_style.width, inset_left, inset_right) {
+    (@types.Auto, Some(left), Some(right)) => {
+      let used = viewport_width - left - right - margin_left - margin_right
+      let used = if used > 0.0 { used } else { 0.0 }
+      next_style = { ..next_style, width: @types.Length(used) }
+    }
+    _ => ()
+  }
+  match (next_style.height, inset_top, inset_bottom) {
+    (@types.Auto, Some(top), Some(bottom)) => {
+      let used = viewport_height - top - bottom - margin_top - margin_bottom
+      let used = if used > 0.0 { used } else { 0.0 }
+      next_style = { ..next_style, height: @types.Length(used) }
+    }
+    _ => ()
+  }
+  next_style
 }
 
 ///|

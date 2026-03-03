@@ -4851,3 +4851,100 @@ test "wpt_flex_child_percent_basis_resize_1_like" {
   inspect(scroll_outer.height, content="100")
   inspect(scroll_inner.height, content="100")
 }
+
+///|
+test "html_abspos_root_keeps_html_as_layout_root" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html {
+    #|  display: flex;
+    #|  position: absolute;
+    #|  left: 10px;
+    #|  right: 20px;
+    #|  top: 30px;
+    #|  bottom: 40px;
+    #|  border: 5px solid black;
+    #|  box-sizing: border-box;
+    #|}
+    #|body { margin: 0; }
+    #|</style>
+    #|<body>root abs test</body>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  inspect(layout.id, content="html")
+  guard (layout.width - 770.0).abs() < 0.01 else {
+    fail("absolute-positioned html root width should honor left/right insets")
+  }
+  guard (layout.height - 530.0).abs() < 0.01 else {
+    fail("absolute-positioned html root height should honor top/bottom insets")
+  }
+  let body = layout.children[0]
+  inspect(body.id, content="body")
+  guard body.height > 500.0 else {
+    fail("body should stretch in cross-axis inside html:flex container")
+  }
+}
+
+///|
+test "html_fixed_root_keeps_html_as_layout_root" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html {
+    #|  display: grid;
+    #|  position: fixed;
+    #|  left: 10px;
+    #|  right: 20px;
+    #|  top: 30px;
+    #|  bottom: 40px;
+    #|  border: 5px solid black;
+    #|  box-sizing: border-box;
+    #|}
+    #|body { margin: 0; }
+    #|</style>
+    #|<body>root fixed test</body>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  inspect(layout.id, content="html")
+  guard (layout.width - 770.0).abs() < 0.01 else {
+    fail("fixed-positioned html root width should honor left/right insets")
+  }
+  guard (layout.height - 530.0).abs() < 0.01 else {
+    fail("fixed-positioned html root height should honor top/bottom insets")
+  }
+  let body = layout.children[0]
+  inspect(body.id, content="body")
+  guard body.height > 500.0 else {
+    fail("body should stretch in cross-axis inside html:grid container")
+  }
+}
+
+///|
+test "abspos_canvas_display_table_respects_explicit_css_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#wrap { position: relative; }
+    #|canvas {
+    #|  position: absolute;
+    #|  display: table;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|}
+    #|</style>
+    #|<div id="wrap"><canvas width="200"></canvas></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let node = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let node_wrap = node.children[0]
+  let node_canvas = node_wrap.children[0]
+  inspect(node_canvas.style.width, content="Length(100)")
+  inspect(node_canvas.style.height, content="Length(100)")
+  let wrap = layout.children[0]
+  let canvas = wrap.children[0]
+  inspect(canvas.id, content="canvas")
+  inspect(canvas.width, content="100")
+  inspect(canvas.height, content="100")
+}

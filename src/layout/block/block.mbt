@@ -393,6 +393,61 @@ fn shift_layout_subtree(
 }
 
 ///|
+/// Compute occupied height extent from in-flow descendants only.
+/// Absolute/fixed descendants are excluded from parent auto-height accounting.
+fn get_inflow_children_flow_extent_height(
+  source_node : @node.Node,
+  children : Array[@types.Layout],
+) -> Double {
+  if children.length() == 0 {
+    return 0.0
+  }
+  let mut min_top = @double.infinity
+  let mut max_bottom = -@double.infinity
+  for i = 0; i < children.length(); i = i + 1 {
+    let child_layout = children[i]
+    let skip_out_of_flow = if i < source_node.children.length() {
+      let child_style = source_node.children[i].style
+      child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed
+    } else {
+      false
+    }
+    if skip_out_of_flow {
+      continue
+    }
+    let child_height = if child_layout.height > 0.0 {
+      child_layout.height
+    } else if i < source_node.children.length() {
+      get_inflow_children_flow_extent_height(
+        source_node.children[i],
+        child_layout.children,
+      )
+    } else {
+      get_children_flow_extent_height(child_layout.children)
+    }
+    let top = child_layout.y
+    let bottom = child_layout.y + child_height
+    if top < min_top {
+      min_top = top
+    }
+    if bottom > max_bottom {
+      max_bottom = bottom
+    }
+  }
+  if min_top == @double.infinity || max_bottom == -@double.infinity {
+    0.0
+  } else {
+    let extent = max_bottom - min_top
+    if extent > 0.0 {
+      extent
+    } else {
+      0.0
+    }
+  }
+}
+
+///|
 /// Shift out-of-flow descendants by ancestry offset.
 /// Stop propagation when a descendant establishes its own containing block.
 fn shift_out_of_flow_descendants(
@@ -3223,6 +3278,7 @@ fn compute_with_collapse(
         }
         layout_map[flow_indices[i]] = adjust_inline_span_float_quirk(
           normalized_layout,
+          flow_node,
           style.writing_mode.is_vertical(),
         )
       }
@@ -3240,7 +3296,10 @@ fn compute_with_collapse(
             id_matches_tag(flow_nodes[i].id, "ruby") {
             0.0
           } else {
-            get_children_flow_extent_height(layout.children)
+            get_inflow_children_flow_extent_height(
+              flow_nodes[i],
+              layout.children,
+            )
           }
           let child_block = if layout.height > descendant_h {
             layout.height
@@ -4308,13 +4367,16 @@ fn compute_with_collapse(
       }
     }
 
-    // Apply inset offset for non-absolute positioned children
-    // (Static and Relative both apply inset as offset from flow position)
-    let (raw_final_x, raw_final_y) = if child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed {
+    // Relative positioning offsets apply only to position:relative.
+    let (raw_final_x, raw_final_y) = if child_style.position == @types.Relative {
       let height_context = match child_available_height {
         Some(h) => Some(h + padding.vertical_sum() + border.vertical_sum())
-        None => None
+        None =>
+          if style.position == @types.Relative {
+            ctx.available_height
+          } else {
+            None
+          }
       }
       let (x_offset, y_offset) = @core.resolve_relative_inset_offsets(
         child_style.inset,
@@ -4413,10 +4475,14 @@ fn compute_with_collapse(
     }
     let adjusted_layout = adjust_inline_span_float_quirk(
       { ..child_layout, x: positioned_x, width: positioned_child_width },
+      child_node,
       is_vertical_writing,
     )
-    let adjusted_layout = if float_intrusion_left > 0.0 ||
-      float_intrusion_right > 0.0 {
+    let has_partial_float_intrusion = (
+        float_intrusion_left > 0.0 || float_intrusion_right > 0.0
+      ) &&
+      float_intrusion_left + float_intrusion_right < child_available_width
+    let adjusted_layout = if has_partial_float_intrusion {
       shift_direct_float_children_for_intrusion(
         adjusted_layout, child_node, float_intrusion_left, float_intrusion_right,
       )
@@ -4481,7 +4547,8 @@ fn compute_with_collapse(
     layout_map[flow_indices[i]] = positioned_layout
 
     if participates_in_inline_run {
-      let inline_descendant_height = get_children_flow_extent_height(
+      let inline_descendant_height = get_inflow_children_flow_extent_height(
+        child_node,
         child_layout.children,
       )
       let inline_visual_height = if child_style.contain.size {
@@ -4518,7 +4585,10 @@ fn compute_with_collapse(
           if is_vertical_writing {
             get_children_flow_extent_width(child_layout.children)
           } else {
-            get_children_flow_extent_height(child_layout.children)
+            get_inflow_children_flow_extent_height(
+              child_node,
+              child_layout.children,
+            )
           }
         } else if is_vertical_writing {
           child_layout.width
@@ -5182,19 +5252,23 @@ fn layout_absolute_child(
     child_inner
   }
   let actual_min_width = match child_style.min_width {
-    @types.MaxContent | @types.MinContent => intrinsic_size.width
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      intrinsic_size.width
     _ => params.min_width
   }
   let actual_max_width = match child_style.max_width {
-    @types.MaxContent | @types.MinContent => intrinsic_size.width
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      intrinsic_size.width
     _ => params.max_width
   }
   let actual_min_height = match child_style.min_height {
-    @types.MaxContent | @types.MinContent => intrinsic_size.height
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      intrinsic_size.height
     _ => params.min_height
   }
   let actual_max_height = match child_style.max_height {
-    @types.MaxContent | @types.MinContent => intrinsic_size.height
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      intrinsic_size.height
     _ => params.max_height
   }
 
@@ -5482,19 +5556,23 @@ fn layout_fixed_child(
 
   // Calculate actual min/max constraints, handling max-content/min-content
   let actual_min_width = match child_style.min_width {
-    @types.MaxContent | @types.MinContent => child_inner.width
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      child_inner.width
     _ => params.min_width
   }
   let actual_max_width = match child_style.max_width {
-    @types.MaxContent | @types.MinContent => child_inner.width
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      child_inner.width
     _ => params.max_width
   }
   let actual_min_height = match child_style.min_height {
-    @types.MaxContent | @types.MinContent => child_inner.height
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      child_inner.height
     _ => params.min_height
   }
   let actual_max_height = match child_style.max_height {
-    @types.MaxContent | @types.MinContent => child_inner.height
+    @types.MaxContent | @types.MinContent | @types.FitContent(_) =>
+      child_inner.height
     _ => params.max_height
   }
 

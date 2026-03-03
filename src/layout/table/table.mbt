@@ -75,7 +75,7 @@ fn create_zero_layout(node : @node.Node) -> @types.Layout {
 fn calculate_relative_offset(
   style : @style.Style,
   container_width : Double,
-  container_height : Double,
+  container_height : Double?,
 ) -> (Double, Double) {
   // Only apply offset for position: relative
   if style.position != @types.Relative {
@@ -84,8 +84,26 @@ fn calculate_relative_offset(
   @core.resolve_relative_inset_offsets(
     style.inset,
     container_width,
-    Some(container_height),
+    container_height,
   )
+}
+
+///|
+/// Resolve percentage context for relative inset on the block axis.
+/// Percentages only resolve when the containing block height is definite.
+fn resolve_relative_height_context(
+  style : @style.Style,
+  parent_height_context : Double?,
+) -> Double? {
+  match style.height {
+    @types.Length(h) => Some(h)
+    @types.Percent(p) =>
+      match parent_height_context {
+        Some(parent_h) => Some(parent_h * p)
+        None => None
+      }
+    _ => None
+  }
 }
 
 ///|
@@ -1503,6 +1521,10 @@ fn layout_row(
     }
     _ => ctx.available_height
   }
+  let relative_row_height_context = resolve_relative_height_context(
+    style,
+    ctx.available_height,
+  )
 
   // Create cell context with row height for percentage height resolution
   let cell_ctx : @types.LayoutContext = {
@@ -1590,7 +1612,7 @@ fn layout_row(
     let (rel_x, rel_y) = calculate_relative_offset(
       child.style,
       cell_width,
-      cell_layout.height,
+      relative_row_height_context,
     )
     let positioned_cell = { ..cell_layout, x: x_offset + rel_x, y: rel_y }
     // Only count rowspan=1 cells towards max_height
@@ -2559,6 +2581,10 @@ pub fn compute(
       )
     _ => None
   }
+  let table_relative_height_context = resolve_relative_height_context(
+    style,
+    ctx.available_height,
+  )
   let stretch_table_height : Double? = if ctx.stretch_height {
     match ctx.available_height {
       Some(h) if h < 1.0e9 => Some(max(0.0, h - caption_intrinsic_total))
@@ -2737,10 +2763,15 @@ pub fn compute(
       continue
     }
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
+    let (rel_x, rel_y) = calculate_relative_offset(
+      child.style,
+      caption_layout.width,
+      table_relative_height_context,
+    )
     let positioned_caption = {
       ..caption_layout,
-      x: padding.left + inner_border.left,
-      y: y_offset,
+      x: padding.left + inner_border.left + rel_x,
+      y: y_offset + rel_y,
     }
     y_offset = y_offset + caption_layout.height
     layout_map[idx] = wrap_layout_with_contents_wrappers(
@@ -2881,7 +2912,7 @@ pub fn compute(
           let (rel_x, rel_y) = calculate_relative_offset(
             cell.style,
             cell_layout.width,
-            cell_layout.height,
+            None,
           )
           layout_map[idx] = wrap_layout_with_contents_wrappers(
             {
@@ -2950,7 +2981,7 @@ pub fn compute(
         let (rel_x, rel_y) = calculate_relative_offset(
           child.style,
           row_layout.width,
-          row_layout.height,
+          table_relative_height_context,
         )
         let positioned_row = {
           ..row_layout,
@@ -2978,6 +3009,9 @@ pub fn compute(
         let mut group_y = 0.0
         let mut max_row_width = 0.0
         let group_style = child.style
+        let group_relative_height_context = resolve_relative_height_context(
+          group_style, table_relative_height_context,
+        )
         let group_margin = @types.resolve_rect(group_style.margin, parent_width)
         let group_padding = @types.resolve_rect(
           group_style.padding,
@@ -3005,7 +3039,7 @@ pub fn compute(
           let (rel_x, rel_y) = calculate_relative_offset(
             row.style,
             row_layout.width,
-            row_layout.height,
+            group_relative_height_context,
           )
           let positioned_row = {
             ..row_layout,
@@ -3061,7 +3095,7 @@ pub fn compute(
         }
         // Apply position: relative offset for row groups
         let (rel_x, rel_y) = calculate_relative_offset(
-          group_style, row_content_width, group_height,
+          group_style, row_content_width, table_relative_height_context,
         )
         let group_layout : @types.Layout = {
           id: child.id,
@@ -3285,10 +3319,15 @@ pub fn compute(
       continue
     }
     let caption_layout = dispatch_fn(child, caption_child_ctx, dispatch)
+    let (rel_x, rel_y) = calculate_relative_offset(
+      child.style,
+      caption_layout.width,
+      table_relative_height_context,
+    )
     let positioned_caption = {
       ..caption_layout,
-      x: padding.left + inner_border.left,
-      y: y_offset,
+      x: padding.left + inner_border.left + rel_x,
+      y: y_offset + rel_y,
     }
     y_offset = y_offset + caption_layout.height
     layout_map[idx] = wrap_layout_with_contents_wrappers(

@@ -1,29 +1,32 @@
 # TODO
 
-## WPT サポート状況（2026-03-02）
+## WPT サポート状況（2026-03-03）
 
 - 実測コマンド: `npx tsx scripts/update-wpt-readme.ts`
-- 全体: `1291 / 1446 passed`（`89.3%`）
+- 全体: `1367 / 1446 passed`（`94.5%`）
 - 主要モジュール:
-  - `css-display`: `79 / 79`（`100.0%`）
-  - `css-align`: `33 / 44`（`75.0%`）
-  - `css-overflow`: `221 / 243`（`90.9%`）
-  - `css-flexbox`: `265 / 289`（`91.7%`）
-  - `css-contain`: `264 / 303`（`87.1%`）
-  - `css-tables`: `29 / 32`（`90.6%`）
+  - `css-display`: `74 / 79`（`93.7%`）
+  - `css-align`: `39 / 44`（`88.6%`）
+  - `css-overflow`: `230 / 243`（`94.7%`）
+  - `css-sizing`: `90 / 94`（`95.7%`）
+  - `css-position`: `74 / 84`（`88.1%`）
+  - `css-flexbox`: `267 / 289`（`92.4%`）
+  - `css-contain`: `303 / 303`（`100.0%`）
+  - `css-tables`: `26 / 32`（`81.3%`）
 
 ### 直近の改善
 
-- `css-display`: `54 / 79` -> `79 / 79`
-- `css-align`: `27 / 44` -> `33 / 44`
+- `css-position`: `59 / 84` -> `74 / 84`
+- `css-overflow`: `228 / 243` -> `230 / 243`
+- `css-sizing`: `88 / 94` -> `90 / 94`
 
 ### 直近の優先候補
 
-- `css-contain` の残件（`39 failed`）
-- `css-position` の残件（`24 failed`）
-- `css-overflow` の残件（`22 failed`）
-- `css-align` の残件（`11 failed`）
-- `css-tables` の残件（`3 failed`）
+- `css-position` の残件（`10 failed`）
+- `css-overflow` の残件（`13 failed`）
+- `css-tables` の残件（`6 failed`）
+- `css-align` の残件（`5 failed`）
+- `css-display` の残件（`5 failed`）
 
 ### WPT runner / intrinsic provider メモ
 

@@ -15,8 +15,17 @@ pub fn compute(
       apply_initial_scroll_snap(node, @flex.compute(node, ctx, dispatch))
     @types.Grid | @types.InlineGrid =>
       apply_initial_scroll_snap(node, @grid.compute(node, ctx, dispatch))
-    @types.Table | @types.InlineTable =>
-      apply_initial_scroll_snap(node, @table.compute(node, ctx, dispatch))
+    @types.Table | @types.InlineTable => {
+      // Replaced-like leaves (e.g. canvas/img with display:table) should keep
+      // explicit replaced sizing instead of table intrinsic row sizing.
+      let is_replaced_table_leaf = node.measure is Some(_) &&
+        node.children.is_empty()
+      if is_replaced_table_leaf {
+        apply_initial_scroll_snap(node, @block.compute(node, ctx, dispatch))
+      } else {
+        apply_initial_scroll_snap(node, @table.compute(node, ctx, dispatch))
+      }
+    }
     _ => @block.compute(node, ctx, dispatch)
   }
 }

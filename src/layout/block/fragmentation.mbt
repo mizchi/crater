@@ -373,13 +373,43 @@ fn reflow_fragmented_children_with_offset(
 /// Browsers report zero-sized inline box shifted after its float contribution.
 fn adjust_inline_span_float_quirk(
   layout : @types.Layout,
+  source_node : @node.Node,
   is_vertical_writing : Bool,
 ) -> @types.Layout {
   if layout.id != "span" ||
+    source_node.id != "span" ||
     is_vertical_writing ||
     layout.height != 0.0 ||
     layout.width <= 0.0 ||
     layout.children.length() == 0 {
+    return layout
+  }
+
+  let mut has_inflow_float = false
+  for child in source_node.children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.id.has_prefix("#text") {
+      match child.text {
+        Some(text) =>
+          if not(is_whitespace_only_flow_text(child)) && not(text.is_empty()) {
+            return layout
+          }
+        None => ()
+      }
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => has_inflow_float = true
+      @types.Float::None => return layout
+    }
+  }
+  if not(has_inflow_float) {
     return layout
   }
 

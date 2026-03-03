@@ -5498,13 +5498,16 @@ fn apply_alignment(
   let _ = final_margin_right
   let _ = final_margin_bottom
 
-  // Apply inset for relative positioning
-  // left/top take precedence over right/bottom.
-  let (inset_x, inset_y) = @core.resolve_relative_inset_offsets(
-    child_style.inset,
-    cell_width,
-    Some(cell_height),
-  )
+  // Apply inset only for position:relative.
+  let (inset_x, inset_y) = if child_style.position == @types.Relative {
+    @core.resolve_relative_inset_offsets(
+      child_style.inset,
+      cell_width,
+      Some(cell_height),
+    )
+  } else {
+    (0.0, 0.0)
+  }
   (
     cell_x + final_margin_left + x_offset + inset_x,
     cell_y + final_margin_top + y_offset + inset_y,

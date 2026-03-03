@@ -211,6 +211,12 @@ pub fn compute_size_params(
 /// constrain the dimension.
 pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
   if is_width {
+    match style.width {
+      @types.Length(_) | @types.Percent(_) => return true
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        return true
+      _ => ()
+    }
     match style.max_width {
       @types.Length(_) | @types.Percent(_) => true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
@@ -223,6 +229,12 @@ pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
         }
     }
   } else {
+    match style.height {
+      @types.Length(_) | @types.Percent(_) => return true
+      @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
+        return true
+      _ => ()
+    }
     match style.max_height {
       @types.Length(_) | @types.Percent(_) => true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
