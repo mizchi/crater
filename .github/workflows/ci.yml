@@ -154,12 +154,27 @@ jobs:
         include:
           - name: shard-1
             modules: css-overflow css-grid css-tables
+            soft_fail: true
           - name: shard-2
-            modules: css-contain css-display css-box
+            modules: css-contain css-display
+            soft_fail: true
           - name: shard-3
-            modules: css-flexbox css-position filter-effects
+            modules: css-flexbox filter-effects
+            soft_fail: true
           - name: shard-4
-            modules: css-sizing css-align css-variables compositing
+            modules: css-sizing css-align css-variables
+            soft_fail: true
+          # Enforce full pass for css-position to prevent regressions.
+          - name: css-position-strict
+            modules: css-position
+            soft_fail: false
+          # Enforce full pass for currently green modules.
+          - name: css-box-strict
+            modules: css-box
+            soft_fail: false
+          - name: compositing-strict
+            modules: compositing
+            soft_fail: false
 
     steps:
       - name: Checkout code
@@ -203,7 +218,7 @@ jobs:
         run: |
           mkdir -p wpt-reports
           npx tsx scripts/wpt-runner.ts ${{ matrix.modules }} --workers 4 --json "wpt-reports/wpt-css-${{ matrix.name }}.json"
-        continue-on-error: true
+        continue-on-error: ${{ matrix.soft_fail }}
 
       - name: Upload WPT CSS shard report
         if: always()
