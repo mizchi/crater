@@ -169,6 +169,7 @@ priv struct StyleBuilder {
   // Fragmentation
   mut break_before : @style.BreakBefore
   mut break_after : @style.BreakBefore
+  mut break_inside : @style.BreakInside
   mut column_span : @style.ColumnSpan
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?
@@ -267,6 +268,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     contain: @style.Contain::none(),
     break_before: @style.BreakBefore::Auto,
     break_after: @style.BreakBefore::Auto,
+    break_inside: @style.BreakInside::Auto,
     column_span: @style.ColumnSpan::None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
@@ -363,6 +365,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     contain: style.contain,
     break_before: style.break_before,
     break_after: style.break_after,
+    break_inside: style.break_inside,
     column_span: style.column_span,
     contain_intrinsic_inline_size: style.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: style.contain_intrinsic_block_size,
@@ -468,6 +471,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     contain: self.contain,
     break_before: self.break_before,
     break_after: self.break_after,
+    break_inside: self.break_inside,
     column_span: self.column_span,
     contain_intrinsic_inline_size: self.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: self.contain_intrinsic_block_size,
@@ -613,6 +617,11 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.break_after {
         @style.BreakBefore::Auto => "auto"
         @style.BreakBefore::Column => "column"
+      }
+    "break-inside" | "page-break-inside" =>
+      match style.break_inside {
+        @style.BreakInside::Auto => "auto"
+        @style.BreakInside::Avoid => "avoid"
       }
     "column-span" =>
       match style.column_span {
@@ -1505,6 +1514,8 @@ fn apply_property(
       }
     "break-before" => builder.break_before = parse_break_before(value)
     "break-after" => builder.break_after = parse_break_before(value)
+    "break-inside" | "page-break-inside" =>
+      builder.break_inside = parse_break_inside(value)
     "column-span" => builder.column_span = parse_column_span(value)
     // Inset
     "top" => builder.inset_top = resolve_dimension(value, ctx)
@@ -3448,6 +3459,14 @@ fn parse_break_before(value : String) -> @style.BreakBefore {
   match value.trim().to_string() {
     "column" => @style.BreakBefore::Column
     _ => @style.BreakBefore::Auto
+  }
+}
+
+///|
+fn parse_break_inside(value : String) -> @style.BreakInside {
+  match value.trim().to_string() {
+    "avoid" => @style.BreakInside::Avoid
+    _ => @style.BreakInside::Auto
   }
 }
 

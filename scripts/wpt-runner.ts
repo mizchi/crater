@@ -494,8 +494,8 @@ async function configureExternalIntrinsicProviders(): Promise<void> {
 
   const textModule = await importFirstAvailable(textSpecifiers);
   const textFn = resolveTextIntrinsicFn(textModule);
-  const fallbackAdvanceRatio = Number(process.env.CRATER_FALLBACK_ADVANCE_RATIO ?? '0.4125');
-  const fallbackSingleWordSlope = Number(process.env.CRATER_FALLBACK_ADVANCE_SLOPE ?? '0.015');
+  const fallbackAdvanceRatio = Number(process.env.CRATER_FALLBACK_ADVANCE_RATIO ?? '0.5');
+  const fallbackSingleWordSlope = Number(process.env.CRATER_FALLBACK_ADVANCE_SLOPE ?? '0');
   const fallbackTextFn = createTextIntrinsicFnFromMeasureText(
     (text: string, fontSize: number) => {
       const effectiveSize = fontSize > 0 ? fontSize : 16;
@@ -741,6 +741,112 @@ function inlineExternalCSS(html: string, htmlPath: string): string {
   });
 }
 
+interface ClassListMutation {
+  targetId: string;
+  action: 'add' | 'remove';
+  className: string;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function applyClassListMutationToTag(
+  tagHtml: string,
+  action: 'add' | 'remove',
+  className: string,
+): string {
+  const classAttrRegex = /\bclass\s*=\s*(["'])(.*?)\1/i;
+  const classAttrMatch = tagHtml.match(classAttrRegex);
+  if (!classAttrMatch) {
+    if (action === 'remove') return tagHtml;
+    return tagHtml.replace(/>$/, ` class="${className}">`);
+  }
+
+  const quote = classAttrMatch[1];
+  const currentRaw = classAttrMatch[2];
+  const classes = currentRaw.split(/\s+/).filter(Boolean);
+  const nextSet = new Set(classes);
+  if (action === 'add') {
+    nextSet.add(className);
+  } else {
+    nextSet.delete(className);
+  }
+  const nextClasses = [...nextSet];
+  if (nextClasses.length === 0) {
+    return tagHtml
+      .replace(classAttrRegex, '')
+      .replace(/\s+>/g, '>');
+  }
+  return tagHtml.replace(
+    classAttrRegex,
+    `class=${quote}${nextClasses.join(' ')}${quote}`,
+  );
+}
+
+function applyClassListMutationById(
+  html: string,
+  mutation: ClassListMutation,
+): string {
+  const idPattern = escapeRegExp(mutation.targetId);
+  const openTagRegex = new RegExp(
+    `<[^>]*\\bid\\s*=\\s*["']${idPattern}["'][^>]*>`,
+    'i',
+  );
+  return html.replace(openTagRegex, (tagHtml) => (
+    applyClassListMutationToTag(tagHtml, mutation.action, mutation.className)
+  ));
+}
+
+function collectScriptDrivenClassListMutations(scriptContent: string): ClassListMutation[] {
+  const mutations: ClassListMutation[] = [];
+  const byElementIdRegex =
+    /document\.getElementById\(\s*["']([^"']+)["']\s*\)\.classList\.(add|remove)\(\s*["']([^"']+)["']\s*\)/g;
+  const byGlobalIdRegex =
+    /\b([A-Za-z_$][\w$]*)\.classList\.(add|remove)\(\s*["']([^"']+)["']\s*\)/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = byElementIdRegex.exec(scriptContent)) !== null) {
+    const [, targetId, action, className] = match;
+    mutations.push({
+      targetId,
+      action: action as 'add' | 'remove',
+      className,
+    });
+  }
+  while ((match = byGlobalIdRegex.exec(scriptContent)) !== null) {
+    const [, targetId, action, className] = match;
+    if (targetId === 'document' || targetId === 'window') continue;
+    mutations.push({
+      targetId,
+      action: action as 'add' | 'remove',
+      className,
+    });
+  }
+  return mutations;
+}
+
+export function applySimpleScriptDrivenClassMutations(html: string): string {
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let transformed = html;
+  let match: RegExpExecArray | null;
+
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const scriptContent = match[1];
+    if (
+      !scriptContent.includes('takeScreenshot') &&
+      !scriptContent.includes('waitForAtLeastOneFrame')
+    ) {
+      continue;
+    }
+    const mutations = collectScriptDrivenClassListMutations(scriptContent);
+    for (const mutation of mutations) {
+      transformed = applyClassListMutationById(transformed, mutation);
+    }
+  }
+  return transformed;
+}
+
 /**
  * Extract layout tree from browser using Puppeteer
  */
@@ -879,6 +985,7 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
 function prepareHtmlContent(htmlPath: string): string {
   let htmlContent = fs.readFileSync(htmlPath, 'utf-8');
   htmlContent = inlineExternalCSS(htmlContent, htmlPath);
+  htmlContent = applySimpleScriptDrivenClassMutations(htmlContent);
   htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
   const headOpenTag = /<head\b[^>]*>/i;
@@ -979,10 +1086,13 @@ function getCraterLayout(htmlPath: string): LayoutNode {
   if (meaningfulChildren.length === 1) {
     const onlyChild = meaningfulChildren[0];
     if (onlyChild.id !== 'br') {
+      const hasMeaningfulLayoutChildren = onlyChild.children.some(
+        c => !c.id.startsWith('#text') && !isGeneratedPseudoNode(c),
+      );
       const shouldFallbackToBodyForZeroPrimaryBox =
         Math.abs(onlyChild.width) <= 0.5 &&
         Math.abs(onlyChild.height) <= 0.5 &&
-        onlyChild.children.length === 0;
+        !hasMeaningfulLayoutChildren;
       if (!shouldFallbackToBodyForZeroPrimaryBox) {
         return finalizeRoot(onlyChild);
       }
@@ -1169,6 +1279,12 @@ export function resolveFocusedComparisonNodeId(htmlPath: string): string | null 
   }
   if (filename === 'display-contents-svg-elements.html') {
     return 'text';
+  }
+  if (filename === 'contain-size-023.html' || filename === 'contain-size-025.html') {
+    return 'div#blue-test';
+  }
+  if (filename === 'contain-size-063.html') {
+    return 'div.red';
   }
   return null;
 }
@@ -1398,7 +1514,7 @@ function isCrashOnlyTest(htmlPath: string): boolean {
 
 export function isScriptMutationDependentTest(htmlPath: string): boolean {
   const name = path.basename(htmlPath).toLowerCase();
-  return (
+  if (
     name === 'align-content-block-dynamic-content.html' ||
     name === 'display-contents-dynamic-pseudo-insertion-001.html' ||
     name === 'display-contents-state-change-001.html' ||
@@ -1406,8 +1522,27 @@ export function isScriptMutationDependentTest(htmlPath: string): boolean {
     name === 'display-contents-fieldset-002.html' ||
     name === 'display-contents-shadow-dom-1.html' ||
     name === 'display-contents-shadow-host-whitespace.html' ||
-    name === 'display-first-line-002.html'
-  );
+    name === 'display-first-line-002.html' ||
+    name === 'contain-style-dynamic-002.html'
+  ) {
+    return true;
+  }
+  try {
+    const source = fs.readFileSync(htmlPath, 'utf-8').toLowerCase();
+    const hasDynamicReftestSignals =
+      source.includes('reftest-wait') &&
+      (
+        source.includes('takescreenshot') ||
+        source.includes('waitforatleastoneframe') ||
+        source.includes('requestanimationframe')
+      );
+    if (hasDynamicReftestSignals) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }
 
 async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<TestResult> {

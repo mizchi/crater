@@ -152,7 +152,8 @@ fn is_table_principal_display(display : @types.Display) -> Bool {
 ///|
 /// Containment effects only apply when the element generates a principal box.
 fn containment_applies(display : @types.Display) -> Bool {
-  not(is_no_principal_table_internal_display(display))
+  not(is_no_principal_table_internal_display(display)) &&
+  display != @types.Inline
 }
 
 ///|
@@ -1722,7 +1723,9 @@ fn compute_with_collapse(
       match layout_map.get(i) {
         Some(layout) => {
           children_layouts.push(layout)
-          if keep_intrinsic_size {
+          let child_style_for_size = node.children[i].style
+          if keep_intrinsic_size &&
+            contributes_to_no_principal_intrinsic_size(child_style_for_size) {
             let child_right = layout.x + layout.width
             if child_right > max_in_flow_width {
               max_in_flow_width = child_right
@@ -4430,8 +4433,6 @@ fn compute_with_collapse(
       child_style,
       child_style.display,
     )
-    let should_offset_no_principal = no_principal &&
-      (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
     let should_offset_for_containment = parent_containment_abs_cb &&
       not(establishes_abs_cb) &&
       (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
@@ -4439,15 +4440,6 @@ fn compute_with_collapse(
       // display: contents descendants are already laid out in the local flow
       // coordinate space; additional subtree shifting double-counts offsets.
       adjusted_layout
-    } else if should_offset_no_principal {
-      shift_out_of_flow_descendants(
-        adjusted_layout,
-        child_node,
-        -positioned_x,
-        -legend_border_overlay_y,
-        true,
-        true,
-      )
     } else if should_offset_for_containment {
       shift_out_of_flow_descendants(
         adjusted_layout,
@@ -4460,10 +4452,20 @@ fn compute_with_collapse(
     } else {
       adjusted_layout
     }
+    let positioned_layout_x = if no_principal {
+      0.0
+    } else {
+      adjusted_for_no_principal.x
+    }
+    let positioned_layout_y = if no_principal {
+      0.0
+    } else {
+      legend_border_overlay_y
+    }
     let positioned_layout : @types.Layout = {
       id: adjusted_for_no_principal.id,
-      x: adjusted_for_no_principal.x,
-      y: legend_border_overlay_y,
+      x: positioned_layout_x,
+      y: positioned_layout_y,
       width: adjusted_for_no_principal.width,
       height: adjusted_for_no_principal.height,
       margin: adjusted_for_no_principal.margin,
@@ -4482,8 +4484,9 @@ fn compute_with_collapse(
       let inline_descendant_height = get_children_flow_extent_height(
         child_layout.children,
       )
-      let inline_visual_height = if inline_descendant_height >
-        child_layout.height {
+      let inline_visual_height = if child_style.contain.size {
+        child_layout.height
+      } else if inline_descendant_height > child_layout.height {
         inline_descendant_height
       } else {
         child_layout.height
@@ -5790,4 +5793,13 @@ fn compute_nested_intrinsic(
       dispatch_fn(node, ctx, dispatch)
     _ => compute_with_collapse(node, ctx, warnings, dispatch).layout
   }
+}
+
+///|
+fn contributes_to_no_principal_intrinsic_size(
+  child_style : @style.Style,
+) -> Bool {
+  child_style.position != @types.Absolute &&
+  child_style.position != @types.Fixed &&
+  child_style.float == @types.Float::None
 }

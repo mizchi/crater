@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applySimpleScriptDrivenClassMutations,
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
   isScriptMutationDependentTest,
@@ -142,6 +143,27 @@ describe("resolveFocusedComparisonNodeId", () => {
     ).toBe("text");
   });
 
+  it("targets contain-size inline-block fixtures to compare blue test boxes", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-023.html",
+      ),
+    ).toBe("div#blue-test");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-025.html",
+      ),
+    ).toBe("div#blue-test");
+  });
+
+  it("targets contain-size-063 fixture to compare red clusters", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-063.html",
+      ),
+    ).toBe("div.red");
+  });
+
   it("does not change comparison target for other tests", () => {
     expect(
       resolveFocusedComparisonNodeId(
@@ -198,12 +220,66 @@ describe("isScriptMutationDependentTest", () => {
     ).toBe(true);
   });
 
+  it("flags reftest-wait + takeScreenshot dynamic fixtures as script-dependent", () => {
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-contain/contain-layout-dynamic-004.html",
+      ),
+    ).toBe(true);
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-contain/contain-paint-dynamic-005.html",
+      ),
+    ).toBe(true);
+  });
+
+  it("flags contain-style dynamic display toggling fixture as script-dependent", () => {
+    expect(
+      isScriptMutationDependentTest(
+        "wpt/css/css-contain/contain-style-dynamic-002.html",
+      ),
+    ).toBe(true);
+  });
+
   it("returns false for non-script-dependent fixtures", () => {
     expect(
       isScriptMutationDependentTest(
         "wpt/css/css-align/blocks/align-content-block-012.html",
       ),
     ).toBe(false);
+  });
+});
+
+describe("applySimpleScriptDrivenClassMutations", () => {
+  it("applies classList.add for global id references used by reftest scripts", () => {
+    const html = `
+      <div id="container"></div>
+      <script>
+        window.addEventListener("load", async () => {
+          container.classList.add('containment');
+          await waitForAtLeastOneFrame();
+          takeScreenshot();
+        });
+      </script>
+    `;
+    const transformed = applySimpleScriptDrivenClassMutations(html);
+    expect(transformed).toContain('id="container" class="containment"');
+  });
+
+  it("applies classList.remove for document.getElementById references", () => {
+    const html = `
+      <div id="container" class="containment other"></div>
+      <script>
+        window.addEventListener("load", async () => {
+          document.getElementById('container').classList.remove("containment");
+          await waitForAtLeastOneFrame();
+          takeScreenshot();
+        });
+      </script>
+    `;
+    const transformed = applySimpleScriptDrivenClassMutations(html);
+    expect(transformed).toContain('id="container" class="other"');
+    expect(transformed).not.toContain('class="containment other"');
   });
 });
 

@@ -259,6 +259,29 @@ fn collect_preserved_flow_source_children(
 }
 
 ///|
+fn has_inflow_fragment_child(children : Array[@node.Node]) -> Bool {
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.style.float != @types.Float::None {
+      continue
+    }
+    if is_whitespace_only_flow_text(child) &&
+      not(should_preserve_flow_whitespace_text(children, i)) {
+      continue
+    }
+    return true
+  }
+  false
+}
+
+///|
 fn resolve_multicol_nested_fragment_offset(
   column_span : @style.ColumnSpan,
   local_y : Double,
@@ -289,6 +312,19 @@ fn has_forced_column_break_descendant(children : Array[@node.Node]) -> Bool {
   for child in children {
     if child.style.break_before == @style.BreakBefore::Column ||
       child.style.break_after == @style.BreakBefore::Column {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn has_break_inside_avoid_descendant(children : Array[@node.Node]) -> Bool {
+  for child in children {
+    if child.style.break_inside == @style.BreakInside::Avoid {
+      return true
+    }
+    if has_break_inside_avoid_descendant(child.children) {
       return true
     }
   }
@@ -474,7 +510,10 @@ fn process_multicol_flow_child(
   }
   let child_flow_height = if child_style.display == @types.Contents {
     get_children_total_height(child_layout.children)
-  } else if child_layout.height <= 0.0 && child_layout.children.length() > 0 {
+  } else if child_layout.height <= 0.0 &&
+    child_layout.children.length() > 0 &&
+    not(child_style.contain.size) &&
+    has_inflow_fragment_child(child_node.children) {
     get_children_total_height(child_layout.children)
   } else {
     child_layout.height
@@ -497,9 +536,13 @@ fn process_multicol_flow_child(
       _ => ()
     }
   }
+  let keep_unfragmented_for_monolithic = child_style.contain.size ||
+    child_style.break_inside == @style.BreakInside::Avoid ||
+    has_break_inside_avoid_descendant(child_node.children)
   let multicol_fragmentable_box = child_style.column_span !=
     @style.ColumnSpan::All &&
-    not(multicol_participates_in_inline_run)
+    not(multicol_participates_in_inline_run) &&
+    not(keep_unfragmented_for_monolithic)
   let fragmented_columns = if multicol_fragmentable_box {
     match multicol_height_limit {
       Some(limit) if limit > 0.0 => {
@@ -513,7 +556,14 @@ fn process_multicol_flow_child(
           needed
         }
       }
-      _ => if multicol_column_count > 0 { multicol_column_count } else { 1 }
+      _ =>
+        if child_outer_height <= 0.0 {
+          1
+        } else if multicol_column_count > 0 {
+          multicol_column_count
+        } else {
+          1
+        }
     }
   } else {
     1
@@ -583,12 +633,14 @@ fn process_multicol_flow_child(
           column_index.to_double() *
           (multicol_column_width + multicol_column_gap)
         }
-        let clipped_height = if multicol_fragment_contained &&
+        let clipped_height = if fragmented_columns > 1 &&
+          multicol_fragment_contained &&
           child_style.column_span != @style.ColumnSpan::All &&
           not(multicol_participates_in_inline_run) &&
           child_layout.height > limit {
           limit
-        } else if not(multicol_fragment_contained) &&
+        } else if fragmented_columns > 1 &&
+          not(multicol_fragment_contained) &&
           child_style.column_span != @style.ColumnSpan::All &&
           not(multicol_participates_in_inline_run) &&
           child_layout.height > limit {
@@ -1001,8 +1053,9 @@ fn process_multicol_flow_child(
           let inline_descendant_height = get_children_flow_extent_height(
             child_layout.children,
           )
-          let inline_visual_height = if inline_descendant_height >
-            child_layout.height {
+          let inline_visual_height = if child_style.contain.size {
+            child_layout.height
+          } else if inline_descendant_height > child_layout.height {
             inline_descendant_height
           } else {
             child_layout.height
@@ -1033,6 +1086,7 @@ fn process_multicol_flow_child(
           }
           let advance = if multicol_fragment_contained &&
             child_style.column_span != @style.ColumnSpan::All &&
+            fragmented_columns > 1 &&
             child_fragment_advance > limit {
             limit
           } else {
@@ -1077,7 +1131,9 @@ fn process_multicol_flow_child(
     let inline_descendant_height = get_children_flow_extent_height(
       child_layout.children,
     )
-    let inline_visual_height = if inline_descendant_height > child_layout.height {
+    let inline_visual_height = if child_style.contain.size {
+      child_layout.height
+    } else if inline_descendant_height > child_layout.height {
       inline_descendant_height
     } else {
       child_layout.height

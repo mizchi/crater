@@ -29,6 +29,9 @@ fn is_unbreakable_fragment_unit(
   source_node : @node.Node,
   layout : @types.Layout,
 ) -> Bool {
+  if source_node.style.break_inside == @style.BreakInside::Avoid {
+    return true
+  }
   if layout.children.length() == 0 {
     return true
   }

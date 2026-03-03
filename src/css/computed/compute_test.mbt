@@ -204,6 +204,20 @@ test "compute_inline break-after parses column value" {
 }
 
 ///|
+test "compute_inline break-inside parses avoid value" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("break-inside: avoid", ctx)
+  inspect(style.break_inside, content="Avoid")
+}
+
+///|
+test "compute_inline page-break-inside aliases break-inside" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("page-break-inside: avoid", ctx)
+  inspect(style.break_inside, content="Avoid")
+}
+
+///|
 test "compute_inline font-size rem resolves against root font size" {
   let ctx = {
     ..@computed.ComputeContext::new(),

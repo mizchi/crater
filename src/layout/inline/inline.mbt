@@ -41,7 +41,9 @@ fn resolve_inset_dimension(
 fn inline_establishes_abs_containing_block(style : @style.Style) -> Bool {
   match style.position {
     @types.Absolute | @types.Fixed | @types.Relative => true
-    @types.Static => style.contain.layout || style.contain.paint
+    @types.Static =>
+      style.display != @types.Inline &&
+      (style.contain.layout || style.contain.paint)
   }
 }
 
@@ -460,6 +462,22 @@ fn is_whitespace_text_node(node : @node.Node) -> Bool {
 }
 
 ///|
+fn is_generated_pseudo_text_only(node : @node.Node) -> Bool {
+  if node.id.has_prefix("#text") {
+    return true
+  }
+  if not(node.id.has_prefix("#pseudo::")) {
+    return false
+  }
+  for child in node.children {
+    if not(is_generated_pseudo_text_only(child)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
 fn ruby_annotation_only_should_collapse(node : @node.Node) -> Bool {
   let mut has_annotation_child = false
   for child in node.children {
@@ -469,7 +487,7 @@ fn ruby_annotation_only_should_collapse(node : @node.Node) -> Bool {
       }
       has_annotation_child = true
       for grand_child in child.children {
-        if not(grand_child.id.has_prefix("#text")) {
+        if not(is_generated_pseudo_text_only(grand_child)) {
           return false
         }
       }

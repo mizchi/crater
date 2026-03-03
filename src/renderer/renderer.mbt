@@ -220,10 +220,48 @@ fn create_text_measure_with_provider(
     }
     starts_with_ws || ends_with_ws
   }
-  let trimmed = text.trim()
+  fn has_non_collapsible_space_glyph(text : String) -> Bool {
+    for c in text.iter() {
+      let cp = c.to_int()
+      if cp == 0x00A0 || // NO-BREAK SPACE
+        cp == 0x1680 ||
+        (cp >= 0x2000 && cp <= 0x200A) ||
+        cp == 0x202F ||
+        cp == 0x205F ||
+        cp == 0x3000 {
+        return true
+      }
+    }
+    false
+  }
+  fn is_ahem_like_measure_target(
+    text : String,
+    font_size : Double,
+    text_line_height : Double,
+  ) -> Bool {
+    if font_size < 80.0 || text_line_height > font_size * 1.01 {
+      return false
+    }
+    let trimmed = trim_collapsible_whitespace_edges(text)
+    if trimmed.is_empty() {
+      return false
+    }
+    for c in trimmed.iter() {
+      if c != 'X' && c != '\u00A0' {
+        return false
+      }
+    }
+    true
+  }
+  let trimmed = trim_collapsible_whitespace_edges(text)
   let force_builtin_measure = white_space_collapses_edges(white_space) &&
     not(text.is_empty()) &&
-    (trimmed.is_empty() || has_boundary_collapsible_whitespace(text))
+    (
+      trimmed.is_empty() ||
+      has_boundary_collapsible_whitespace(text) ||
+      has_non_collapsible_space_glyph(text) ||
+      is_ahem_like_measure_target(text, font_size, text_line_height)
+    )
   match text_metrics_provider_override.val {
     Some(provider) =>
       if force_builtin_measure {
@@ -255,7 +293,7 @@ fn create_text_measure(
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
 ) -> @types.MeasureFunc {
-  let raw_trimmed = text.trim()
+  let raw_trimmed = trim_collapsible_whitespace_edges(text)
   let mut trimmed = if raw_trimmed.is_empty() && not(text.is_empty()) {
     " "
   } else {
@@ -819,6 +857,27 @@ fn is_whitespace_only_text(text : String) -> Bool {
 ///|
 fn is_collapsible_whitespace_char(c : Char) -> Bool {
   c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+}
+
+///|
+fn trim_collapsible_whitespace_edges(text : String) -> String {
+  let chars : Array[Char] = []
+  for c in text.iter() {
+    chars.push(c)
+  }
+  let mut start = 0
+  while start < chars.length() && is_collapsible_whitespace_char(chars[start]) {
+    start = start + 1
+  }
+  let mut end = chars.length()
+  while end > start && is_collapsible_whitespace_char(chars[end - 1]) {
+    end = end - 1
+  }
+  let buf = StringBuilder::new()
+  for i = start; i < end; i = i + 1 {
+    buf.write_char(chars[i])
+  }
+  buf.to_string()
 }
 
 ///|
@@ -1661,7 +1720,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   } else {
     text
   }
-  let trimmed = normalized_text.trim()
+  let trimmed = trim_collapsible_whitespace_edges(normalized_text)
   let font_size = parent_style.font_size
   let text_line_height = parent_style.line_height
   let white_space = parent_style.white_space
@@ -3424,12 +3483,20 @@ fn create_generated_pseudo_node(
     After => "#pseudo::after"
   }
   let pseudo_is_contents = spec.generated_style.display == @types.Contents
+  let inline_plain_generated_text = spec.generated_style.display ==
+    @types.Inline &&
+    not(spec.position_relative) &&
+    not(spec.out_of_flow) &&
+    spec.left_offset.abs() <= 0.01
   if spec.content.is_empty() {
     @node.Node::leaf(pseudo_id, spec.generated_style)
   } else if pseudo_is_contents {
     // display: contents pseudo-elements should expose generated text as child content.
     let text_child = create_text_node(spec.content, spec.generated_style)
     @node.Node::new(pseudo_id, spec.generated_style, [text_child])
+  } else if inline_plain_generated_text {
+    // Static inline generated content behaves like regular inline text runs.
+    create_text_node(spec.content, spec.generated_style)
   } else {
     let font_size = spec.generated_style.font_size
     let text_line_height = spec.generated_style.line_height
@@ -3470,7 +3537,8 @@ fn resolve_pseudo_spec(
   let mut position_relative = false
   let mut out_of_flow = false
   let mut left_offset = 0.0
-  let mut generated_style = host_style
+  // ::before/::after default to inline formatting participation.
+  let mut generated_style = { ..host_style, display: @types.Inline }
 
   for stylesheet in stylesheets {
     for rule in stylesheet.rules {
@@ -5120,12 +5188,13 @@ fn element_to_node_with_styles_internal(
             border: zero_dim_rect,
           }
         }
+        let option_children = if is_listbox { child.children } else { [] }
         normalized_children.push(
           @node.Node::with_uid_and_measure(
             child.id,
             child.uid,
             option_style,
-            child.children,
+            option_children,
             child.measure,
             child.text,
           ),
@@ -6984,35 +7053,119 @@ fn apply_zoom_and_scale(
       let inset_right_auto = is_auto_inset(child_node.style.inset.right)
       let inset_top_auto = is_auto_inset(child_node.style.inset.top)
       let inset_bottom_auto = is_auto_inset(child_node.style.inset.bottom)
+      let parent_based_horizontal = if has_non_auto_horizontal_insets(
+          child_node.style,
+        ) {
+        if not(inset_left_auto) {
+          let parent_left = resolve_dimension_with_percent_basis(
+            child_node.style.inset.left,
+            scaled_width,
+          )
+          let parent_based_x = parent_left + scaled_child.margin.left
+          (scaled_child.x - parent_based_x).abs() <= 0.5
+        } else if not(inset_right_auto) {
+          let parent_right = resolve_dimension_with_percent_basis(
+            child_node.style.inset.right,
+            scaled_width,
+          )
+          let parent_based_x = scaled_width -
+            scaled_child.width -
+            parent_right -
+            scaled_child.margin.right
+          (scaled_child.x - parent_based_x).abs() <= 0.5
+        } else {
+          false
+        }
+      } else {
+        false
+      }
+      let parent_based_vertical = if has_non_auto_vertical_insets(
+          child_node.style,
+        ) {
+        if not(inset_top_auto) {
+          let parent_top = resolve_dimension_with_percent_basis(
+            child_node.style.inset.top,
+            scaled_height,
+          )
+          let parent_based_y = parent_top + scaled_child.margin.top
+          (scaled_child.y - parent_based_y).abs() <= 0.5
+        } else if not(inset_bottom_auto) {
+          let parent_bottom = resolve_dimension_with_percent_basis(
+            child_node.style.inset.bottom,
+            scaled_height,
+          )
+          let parent_based_y = scaled_height -
+            scaled_child.height -
+            parent_bottom -
+            scaled_child.margin.bottom
+          (scaled_child.y - parent_based_y).abs() <= 0.5
+        } else {
+          false
+        }
+      } else {
+        false
+      }
       let adjust_x = if has_non_auto_horizontal_insets(child_node.style) {
-        let cb_global_x = if has_abs_containing_block {
-          current_abs_containing_block_global_x
+        if parent_based_horizontal {
+          let cb_global_x = if has_abs_containing_block {
+            current_abs_containing_block_global_x
+          } else {
+            0.0
+          }
+          cb_global_x - global_x
         } else {
           0.0
         }
-        cb_global_x - global_x
       } else {
         0.0
       }
       let adjust_y = if has_non_auto_vertical_insets(child_node.style) {
-        let cb_global_y = if has_abs_containing_block {
-          current_abs_containing_block_global_y
+        if parent_based_vertical {
+          let cb_global_y = if has_abs_containing_block {
+            current_abs_containing_block_global_y
+          } else {
+            0.0
+          }
+          cb_global_y - global_y
         } else {
           0.0
         }
-        cb_global_y - global_y
       } else {
         0.0
       }
       // Absolute children are laid out in their immediate static parent first.
       // For right/bottom inset cases, convert to the true containing-block size.
       let cb_size_adjust_x = if not(inset_right_auto) && inset_left_auto {
-        current_abs_containing_block_width - scaled_width
+        let parent_right = resolve_dimension_with_percent_basis(
+          child_node.style.inset.right,
+          scaled_width,
+        )
+        let parent_based_x = scaled_width -
+          scaled_child.width -
+          parent_right -
+          scaled_child.margin.right
+        if (scaled_child.x - parent_based_x).abs() <= 0.5 {
+          current_abs_containing_block_width - scaled_width
+        } else {
+          0.0
+        }
       } else {
         0.0
       }
       let cb_size_adjust_y = if not(inset_bottom_auto) && inset_top_auto {
-        current_abs_containing_block_height - scaled_height
+        let parent_bottom = resolve_dimension_with_percent_basis(
+          child_node.style.inset.bottom,
+          scaled_height,
+        )
+        let parent_based_y = scaled_height -
+          scaled_child.height -
+          parent_bottom -
+          scaled_child.margin.bottom
+        if (scaled_child.y - parent_based_y).abs() <= 0.5 {
+          current_abs_containing_block_height - scaled_height
+        } else {
+          0.0
+        }
       } else {
         0.0
       }

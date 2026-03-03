@@ -880,6 +880,43 @@ test "float_after_br_starts_after_inline_select_line" {
 }
 
 ///|
+test "contain_size_select_single_option_text_does_not_shift_following_rows" {
+  // Regression for css-contain/contain-size-select-elem-001.html:
+  // hidden option text in single-line select should not advance block flow.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|select { contain: size; color: transparent; }
+    #|.minWidth { min-width: 100px; }
+    #|.width { width: 100px; }
+    #|</style>
+    #|<select id="s1"><option>Very long option text should stay internal</option><option>a</option></select>
+    #|<br id="b1">
+    #|<select id="s2" class="minWidth"><option>Very long option text should stay internal</option><option>b</option></select>
+    #|<br id="b2">
+    #|<select id="s3" class="width"><option>Very long option text should stay internal</option><option>c</option></select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let mut b2_y = -1.0
+  let mut s3_y = -1.0
+  for child in layout.children {
+    if child.id == "br#b2" {
+      b2_y = child.y
+    } else if child.id == "select#s3" {
+      s3_y = child.y
+    }
+  }
+  guard b2_y >= 0.0 else { fail("layout should include second br") }
+  guard s3_y >= 0.0 else { fail("layout should include third select") }
+  guard b2_y <= 40.0 else {
+    fail("single select option text should not push second br down")
+  }
+  guard s3_y <= 60.0 else {
+    fail("single select option text should not push later select down")
+  }
+}
+
+///|
 test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback" {
   // Mirrors css-contain/contain-inline-size-intrinsic.html behavior.
   let html_str =
@@ -998,6 +1035,56 @@ test "wpt_contain_layout_breaks_forced_column_break_stays_in_multicol" {
     fail("break-before:column child should move to the next column")
   }
   inspect(forced.y, content="0")
+}
+
+///|
+test "multicol_break_inside_avoid_keeps_block_unfragmented" {
+  // Regression for css-contain/contain-style-breaks-00{1,2,3}.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|article {
+    #|  columns: 2 1ch;
+    #|  column-gap: 0;
+    #|  font-family: monospace;
+    #|}
+    #|#target {
+    #|  break-inside: avoid;
+    #|}
+    #|</style>
+    #|<article id="article">
+    #|  <div id="target">
+    #|    A<br>
+    #|    A<br>
+    #|    A<br>
+    #|    A
+    #|  </div>
+    #|</article>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let article = layout.children[0]
+  let target = article.children[0]
+  let mut max_child_x = 0.0
+  let mut min_delta_y = 0.0
+  let mut prev_y = -1.0
+  for child in target.children {
+    if child.x > max_child_x {
+      max_child_x = child.x
+    }
+    if prev_y >= 0.0 {
+      let delta = child.y - prev_y
+      if delta < min_delta_y {
+        min_delta_y = delta
+      }
+    }
+    prev_y = child.y
+  }
+  guard max_child_x <= 8.5 else {
+    fail("break-inside:avoid block children should not spill to next column")
+  }
+  guard min_delta_y >= -0.1 else {
+    fail("break-inside:avoid block should keep child flow in one column")
+  }
 }
 
 ///|
@@ -2538,6 +2625,16 @@ test "ruby_rt_after_pseudo_content_is_reflected_in_layout" {
   let div = layout.children[1]
   let ruby = div.children[0]
   let rt = ruby.children[0]
+  guard ruby.width == 0.0 else {
+    fail(
+      "annotation-only ruby with contain:paint rt should collapse ruby width",
+    )
+  }
+  guard ruby.height == 0.0 else {
+    fail(
+      "annotation-only ruby with contain:paint rt should collapse ruby height",
+    )
+  }
   guard div.height >= 30.0 else {
     fail("rt::after generated text should contribute line box height")
   }
@@ -2548,6 +2645,32 @@ test "ruby_rt_after_pseudo_content_is_reflected_in_layout" {
   }
   guard rt.width >= 30.0 else {
     fail("rt::after generated text should contribute annotation width")
+  }
+}
+
+///|
+test "pseudo_before_after_default_inline_does_not_stack_list_item_lines" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|ol { margin: 0; padding: 0; list-style: none; }
+    #|li::before, li::after { content: "1"; }
+    #|</style>
+    #|<ol><li>A</li><li>B</li></ol>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  guard layout.children.length() > 0 else { fail("body should include ol") }
+  let ol = layout.children[0]
+  guard ol.children.length() >= 2 else { fail("ol should include two li") }
+  let first = ol.children[0]
+  let second = ol.children[1]
+  guard first.height <= 24.0 else {
+    fail(
+      "inline pseudo content should not expand li into stacked 3-line height",
+    )
+  }
+  guard second.y <= 24.0 else {
+    fail("second li should start around one line-height below first li")
   }
 }
 
@@ -2956,6 +3079,37 @@ test "wpt_contain_layout_button_002_border_box_min_size" {
   inspect(button_a.height, content="30")
   inspect(button_b.width, content="30")
   inspect(button_b.height, content="30")
+}
+
+///|
+test "contain_size_button_inner_overflow_does_not_expand_inline_line_height" {
+  // Regression for css-contain/contain-size-button-002.html.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|button {
+    #|  contain: size;
+    #|  margin: 0;
+    #|  border: 1em solid green;
+    #|  vertical-align: top;
+    #|}
+    #|.inner {
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  color: transparent;
+    #|}
+    #|</style>
+    #|<button id="a"><div class="inner">inner</div></button>
+    #|<br id="line">
+    #|<button id="b"><div class="inner">inner</div></button>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let first = layout.children[0]
+  let second = layout.children[2]
+  inspect(first.height, content="28")
+  guard second.y <= 40.0 else {
+    fail("contain:size button line should not grow from inner overflow content")
+  }
 }
 
 ///|

@@ -24,6 +24,13 @@ pub(all) enum BreakBefore {
 pub impl Eq for BreakBefore
 pub impl Show for BreakBefore
 
+pub(all) enum BreakInside {
+  Auto
+  Avoid
+}
+pub impl Eq for BreakInside
+pub impl Show for BreakInside
+
 pub(all) enum CaptionSide {
   Top
   Bottom
@@ -186,6 +193,7 @@ pub(all) struct Style {
   mut contain : Contain
   mut break_before : BreakBefore
   mut break_after : BreakBefore
+  mut break_inside : BreakInside
   mut column_span : ColumnSpan
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?
