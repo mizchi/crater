@@ -28,6 +28,7 @@ export interface AggregatedSummary {
   rows: WptCompatShardReport[];
   total: Counter;
   bySuite: Record<string, Counter>;
+  byCategory: Record<string, Counter>;
 }
 
 export interface CssBaseline {
@@ -122,6 +123,16 @@ function emptyCounter(): Counter {
   return { passed: 0, failed: 0, errors: 0, total: 0, passRate: 0 };
 }
 
+export function reportCategoryKey(report: Pick<WptCompatShardReport, "suite" | "target">): string {
+  let target = report.target.trim();
+  if (!target) target = "unknown";
+  if (target.startsWith("quick ")) target = target.slice("quick ".length);
+  if (target.startsWith("profile ")) target = target.slice("profile ".length);
+
+  const normalized = target.split("/")[0] || "unknown";
+  return `${report.suite}/${normalized}`;
+}
+
 function asNonNegativeInteger(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return 0;
   return Math.floor(value);
@@ -200,11 +211,14 @@ export function aggregateReports(reports: WptCompatShardReport[]): AggregatedSum
   });
 
   const bySuite: Record<string, Counter> = {};
+  const byCategory: Record<string, Counter> = {};
   let total = emptyCounter();
 
   for (const row of rows) {
     total = addCounter(total, row);
     bySuite[row.suite] = addCounter(bySuite[row.suite] ?? emptyCounter(), row);
+    const category = reportCategoryKey(row);
+    byCategory[category] = addCounter(byCategory[category] ?? emptyCounter(), row);
   }
 
   return {
@@ -212,6 +226,7 @@ export function aggregateReports(reports: WptCompatShardReport[]): AggregatedSum
     rows,
     total,
     bySuite,
+    byCategory,
   };
 }
 
@@ -273,6 +288,17 @@ export function renderMarkdownSummary(summary: AggregatedSummary, baseline?: Css
   }
   lines.push("");
 
+  lines.push("## Category Totals");
+  lines.push("");
+  lines.push("| Category | Passed | Failed | Errors | Total | Pass Rate |");
+  lines.push("| --- | ---: | ---: | ---: | ---: | ---: |");
+  for (const [category, counter] of Object.entries(summary.byCategory).sort(([a], [b]) => a.localeCompare(b))) {
+    lines.push(
+      `| ${category} | ${counter.passed} | ${counter.failed} | ${counter.errors} | ${counter.total} | ${formatPercent(counter.passRate)} |`
+    );
+  }
+  lines.push("");
+
   const cssTotals = summary.bySuite["wpt-css"];
   if (baseline && cssTotals) {
     const baselineRate = baseline.total > 0 ? baseline.passed / baseline.total : 0;
@@ -313,6 +339,7 @@ export async function main(): Promise<number> {
     reports: summary.rows,
     total: summary.total,
     bySuite: summary.bySuite,
+    byCategory: summary.byCategory,
     reportCount: summary.rows.length,
   };
 

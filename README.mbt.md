@@ -98,7 +98,7 @@ The CI workflow runs WPT compatibility checks with about 6 workers:
 
 - `wpt-css`: 4 shards (`wpt-css (shard-1..4)`)
 - `wpt-dom`: 1 job (`wpt-dom`, runs `--dom` and `--svg`)
-- `wpt-webdriver`: 1 job (`wpt-webdriver`, runs 3 BiDi targets)
+- `wpt-webdriver`: 1 job (`wpt-webdriver`, runs 7 strict BiDi targets)
 
 See the shard assignment in `.github/workflows/ci.yml` (`wpt-css-tests`, `wpt-dom-tests`, `wpt-webdriver-tests`).
 
@@ -123,7 +123,10 @@ mkdir -p /tmp/wpt-reports
 npx tsx scripts/wpt-runner.ts css-overflow css-grid css-tables --workers 4 --json /tmp/wpt-reports/wpt-css-shard-1.json
 npx tsx scripts/wpt-dom-runner.ts --dom --json /tmp/wpt-reports/wpt-dom-dom.json
 npx tsx scripts/wpt-dom-runner.ts --svg --json /tmp/wpt-reports/wpt-dom-svg.json
-npx tsx scripts/wpt-webdriver-runner.ts "session/status" --json /tmp/wpt-reports/wpt-webdriver-session-status.json
+npx tsx scripts/wpt-webdriver-runner.ts --subset --json /tmp/wpt-reports/wpt-webdriver-strict.json
+
+# Optional: network sweep profile (non-gating, excludes auth-related paths)
+npx tsx scripts/wpt-webdriver-runner.ts --profile network-no-auth --json /tmp/wpt-reports/wpt-webdriver-network-no-auth.json
 
 # Aggregate compatibility summary
 npx tsx scripts/wpt-ci-summary.ts --input /tmp/wpt-reports --json /tmp/wpt-summary.json --markdown /tmp/wpt-summary.md

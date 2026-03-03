@@ -1,26 +1,39 @@
 {
-  "description": "Known passing WPT WebDriver BiDi tests for Crater",
-  "version": "0.3.0",
-  "tests": {
-    "session/status": {
-      "status.py": ["test_bidi_session_status"]
-    },
-    "browsing_context/get_tree": {
-      "invalid.py": [
-        "test_params_max_depth_invalid_type",
-        "test_params_max_depth_invalid_value",
-        "test_params_root_invalid_type",
-        "test_params_root_invalid_value"
-      ]
-    },
-    "script/evaluate": {
-      "invalid.py": ["*"]
-    }
-  },
-  "skip_patterns": [
+  "description": "WPT WebDriver BiDi profiles for Crater CI",
+  "version": "0.4.0",
+  "default_skip_patterns": [
     "**/original_opener.py",
     "**/user_activation.py",
-    "**/sandbox.py",
-    "**/realm*.py"
-  ]
+    "**/sandbox.py"
+  ],
+  "profiles": {
+    "strict": {
+      "description": "Known green targets used as strict CI gate",
+      "targets": [
+        "session/status",
+        "browsing_context/get_tree",
+        "browsing_context/context_created/context_created.py",
+        "script/evaluate/invalid.py",
+        "script/get_realms",
+        "script/realm_created/realm_created.py",
+        "script/realm_created/window_open.py"
+      ],
+      "quick": true,
+      "timeout": 10
+    },
+    "network-no-auth": {
+      "description": "Network compatibility sweep excluding auth-specific paths",
+      "targets": [
+        "network"
+      ],
+      "skip_patterns": [
+        "network/auth_required/**",
+        "network/continue_with_auth/**",
+        "network/add_intercept/phase_auth_required.py",
+        "network/continue_response/credentials.py"
+      ],
+      "quick": true,
+      "timeout": 10
+    }
+  }
 }

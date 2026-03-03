@@ -2,7 +2,12 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parsePytestSummary, resolveBidiServerPath } from "./wpt-webdriver-runner.ts";
+import {
+  parsePytestSummary,
+  resolveBidiServerPath,
+  resolveRequestedTargetPath,
+  shouldSkipPath,
+} from "./wpt-webdriver-runner.ts";
 
 const createdDirs: string[] = [];
 
@@ -74,5 +79,24 @@ describe("parsePytestSummary", () => {
       errors: 0,
       total: 7,
     });
+  });
+});
+
+describe("shouldSkipPath", () => {
+  it("supports glob patterns for nested auth-related paths", () => {
+    expect(shouldSkipPath("network/auth_required/auth_required.py", ["network/auth_required/**"])).toBe(true);
+    expect(shouldSkipPath("network/continue_with_auth/action.py", ["network/continue_with_auth/**"])).toBe(true);
+    expect(shouldSkipPath("network/add_intercept/invalid.py", ["network/auth_required/**"])).toBe(false);
+  });
+});
+
+describe("resolveRequestedTargetPath", () => {
+  it("accepts file targets without .py suffix", () => {
+    const cwd = mkTempProject();
+    const bidiRoot = path.join(cwd, "wpt/webdriver/tests/bidi");
+    const targetPath = path.join(bidiRoot, "script/realm_created/window_open.py");
+    touch(targetPath);
+
+    expect(resolveRequestedTargetPath("script/realm_created/window_open", bidiRoot)).toBe("script/realm_created/window_open.py");
   });
 });

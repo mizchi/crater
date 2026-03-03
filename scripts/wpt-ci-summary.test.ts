@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aggregateReports,
+  reportCategoryKey,
   type WptCompatShardReport,
   renderMarkdownSummary,
 } from "./wpt-ci-summary.ts";
@@ -37,6 +38,15 @@ describe("aggregateReports", () => {
     expect(summary.total.total).toBe(297);
     expect(summary.bySuite["wpt-css"]?.total).toBe(250);
     expect(summary.bySuite["wpt-dom"]?.errors).toBe(2);
+    expect(summary.byCategory["wpt-css/css-flexbox"]?.total).toBe(200);
+    expect(summary.byCategory["wpt-dom/dom"]?.errors).toBe(2);
+  });
+});
+
+describe("reportCategoryKey", () => {
+  it("normalizes quick/profile prefixes and module paths", () => {
+    expect(reportCategoryKey(makeReport({ suite: "wpt-webdriver", target: "quick script/get_realms" }))).toBe("wpt-webdriver/script");
+    expect(reportCategoryKey(makeReport({ suite: "wpt-webdriver", target: "profile strict" }))).toBe("wpt-webdriver/strict");
   });
 });
 
@@ -56,6 +66,8 @@ describe("renderMarkdownSummary", () => {
 
     expect(markdown).toContain("| Suite | Target | Passed | Failed | Errors | Total | Pass Rate |");
     expect(markdown).toContain("| wpt-css | css-flexbox | 120 | 80 | 0 | 200 | 66.67% |");
+    expect(markdown).toContain("## Category Totals");
+    expect(markdown).toContain("| wpt-css/css-flexbox | 120 | 80 | 0 | 200 | 60.00% |");
     expect(markdown).toContain("Baseline delta (wpt-css)");
     expect(markdown).toContain("Passed: +");
   });

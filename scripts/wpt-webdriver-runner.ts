@@ -7,7 +7,8 @@
  * Usage:
  *   npx tsx scripts/wpt-webdriver-runner.ts --list
  *   npx tsx scripts/wpt-webdriver-runner.ts session/status
- *   npx tsx scripts/wpt-webdriver-runner.ts --subset     # Run only known-passing tests
+ *   npx tsx scripts/wpt-webdriver-runner.ts --subset     # Alias of --profile strict
+ *   npx tsx scripts/wpt-webdriver-runner.ts --profile strict
  *   npx tsx scripts/wpt-webdriver-runner.ts --quick      # Skip timeout-prone tests
  */
 
@@ -16,19 +17,32 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
-const WPT_BIDI_TESTS = "wpt/webdriver/tests/bidi";
+const WPT_TESTS_ROOT = "wpt/webdriver/tests";
+const WPT_BIDI_TESTS = `${WPT_TESTS_ROOT}/bidi`;
+const WPT_SUPPORT_TESTS = `${WPT_TESTS_ROOT}/support`;
 const CRATER_BIDI_PORT = 9222;
 const CRATER_BIDI_URL = `ws://127.0.0.1:${CRATER_BIDI_PORT}`;
 const SUBSET_CONFIG = "scripts/wpt-bidi-subset.json";
+const DEFAULT_PROFILE_NAME = "strict";
 
 interface CliOptions {
   args: string[];
   jsonOutput?: string;
 }
 
+interface TestProfile {
+  description?: string;
+  targets: string[];
+  skip_patterns?: string[];
+  quick?: boolean;
+  timeout?: number;
+}
+
 interface SubsetConfig {
-  tests: Record<string, Record<string, string[]>>;
-  skip_patterns: string[];
+  tests?: Record<string, Record<string, string[]>>;
+  skip_patterns?: string[];
+  default_skip_patterns?: string[];
+  profiles?: Record<string, TestProfile>;
 }
 
 interface PytestSummary {
@@ -159,12 +173,14 @@ function listTests(): void {
 
   // Show subset info
   const config = loadSubsetConfig();
-  if (config) {
-    console.log("\nKnown passing test modules (--subset):");
-    for (const mod of Object.keys(config.tests)) {
+  const strict = resolveProfileConfig(config, DEFAULT_PROFILE_NAME);
+  if (strict) {
+    console.log(`\nKnown passing targets (--subset / --profile ${DEFAULT_PROFILE_NAME}):`);
+    for (const mod of strict.targets) {
       console.log(`  ${mod}`);
     }
   }
+  listProfiles(config);
 }
 
 // Count test files in a directory
@@ -183,15 +199,63 @@ function countTests(dir: string): number {
   return count;
 }
 
-// Check if file should be skipped
-function shouldSkipFile(filename: string, skipPatterns: string[]): boolean {
-  for (const pattern of skipPatterns) {
-    const name = pattern.replace("**/", "");
-    if (filename === name || filename.endsWith(name)) {
-      return true;
-    }
+function normalizePathForGlob(input: string): string {
+  return input.replaceAll(path.sep, "/").replace(/^\.\//, "");
+}
+
+export function shouldSkipPath(relativePath: string, skipPatterns: string[]): boolean {
+  const normalizedPath = normalizePathForGlob(relativePath);
+  return skipPatterns.some((pattern) => {
+    const normalizedPattern = normalizePathForGlob(pattern);
+    return path.matchesGlob(normalizedPath, normalizedPattern);
+  });
+}
+
+export function resolveRequestedTargetPath(testPath: string, baseDir: string): string | null {
+  if (!testPath) return "";
+  const normalized = normalizePathForGlob(testPath);
+  const directPath = path.join(baseDir, normalized);
+  if (fs.existsSync(directPath)) return normalized;
+  if (!normalized.endsWith(".py")) {
+    const withPy = `${normalized}.py`;
+    if (fs.existsSync(path.join(baseDir, withPy))) return withPy;
   }
-  return false;
+  return null;
+}
+
+function getDefaultSkipPatterns(config?: SubsetConfig | null): string[] {
+  const legacy = config?.skip_patterns ?? [];
+  const explicit = config?.default_skip_patterns ?? [];
+  return [...explicit, ...legacy];
+}
+
+function resolveProfileConfig(config: SubsetConfig | null, profileName: string): TestProfile | null {
+  if (!config) return null;
+  if (config.profiles?.[profileName]) return config.profiles[profileName];
+
+  // Backward compatibility for old subset config.
+  if (profileName === DEFAULT_PROFILE_NAME && config.tests) {
+    return {
+      targets: Object.keys(config.tests),
+      skip_patterns: config.skip_patterns ?? [],
+      quick: true,
+      timeout: 10,
+    };
+  }
+
+  return null;
+}
+
+function listProfiles(config: SubsetConfig | null): void {
+  if (!config?.profiles) return;
+  const profileEntries = Object.entries(config.profiles).sort(([a], [b]) => a.localeCompare(b));
+  if (profileEntries.length === 0) return;
+
+  console.log("\nAvailable profiles:");
+  for (const [name, profile] of profileEntries) {
+    const desc = profile.description ? ` - ${profile.description}` : "";
+    console.log(`  ${name} (${profile.targets.length} targets)${desc}`);
+  }
 }
 
 function emptySummary(): PytestSummary {
@@ -283,6 +347,9 @@ function parseCliArgs(rawArgs: string[]): CliOptions {
 function detectTarget(args: string[]): string {
   if (args.length === 0) return "all";
   if (args[0] === "--subset") return "subset";
+  if (args[0] === "--profile") {
+    return args[1] ? `profile ${args[1]}` : "profile";
+  }
   if (args[0] === "--all") return "all";
   if (args[0] === "--quick") {
     return args[1] ? `quick ${args[1]}` : "quick";
@@ -307,90 +374,209 @@ function writeShardReport(jsonOutput: string | undefined, target: string, summar
   fs.writeFileSync(jsonOutput, JSON.stringify(report, null, 2), "utf-8");
 }
 
-// Copy test files to temp directory
-function copySimpleTests(
+function collectPythonFiles(targetPath: string): string[] {
+  if (!fs.existsSync(targetPath)) return [];
+  const stat = fs.statSync(targetPath);
+  if (stat.isFile()) return [targetPath];
+
+  const files: string[] = [];
+  const stack = [targetPath];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name === "__pycache__") continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (!entry.name.endsWith(".py")) continue;
+      if (entry.name === "conftest.py" || entry.name === "__init__.py" || entry.name.startsWith("_")) {
+        continue;
+      }
+      files.push(full);
+    }
+  }
+  return files.sort();
+}
+
+function collectConftestFiles(targetPath: string): string[] {
+  if (!fs.existsSync(targetPath)) return [];
+  const stat = fs.statSync(targetPath);
+  const conftests = new Set<string>();
+
+  const addParentConftests = (startDir: string): void => {
+    let current = startDir;
+    const bidiRoot = path.join(process.cwd(), WPT_BIDI_TESTS);
+    while (current.startsWith(bidiRoot)) {
+      const conftest = path.join(current, "conftest.py");
+      if (fs.existsSync(conftest)) {
+        conftests.add(conftest);
+      }
+      if (current === bidiRoot) break;
+      current = path.dirname(current);
+    }
+  };
+
+  if (stat.isDirectory()) {
+    const stack = [targetPath];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      const entries = fs.readdirSync(current, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          stack.push(full);
+          continue;
+        }
+        if (entry.isFile() && entry.name === "conftest.py") {
+          conftests.add(full);
+        }
+      }
+    }
+    addParentConftests(targetPath);
+  } else {
+    addParentConftests(path.dirname(targetPath));
+  }
+
+  return [...conftests].sort();
+}
+
+function copyFileEnsuringDir(src: string, dest: string): void {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+}
+
+function copyInitChain(
+  bidiRoot: string,
+  testsRoot: string,
+  relativeFromBidi: string,
+): void {
+  const bidiInit = path.join(bidiRoot, "__init__.py");
+  if (fs.existsSync(bidiInit)) {
+    copyFileEnsuringDir(bidiInit, path.join(testsRoot, "bidi", "__init__.py"));
+  }
+
+  const dirParts = path.dirname(relativeFromBidi).split(path.sep).filter(Boolean);
+  let sourceDir = bidiRoot;
+  let destDir = path.join(testsRoot, "bidi");
+
+  for (const part of dirParts) {
+    sourceDir = path.join(sourceDir, part);
+    destDir = path.join(destDir, part);
+    const initPath = path.join(sourceDir, "__init__.py");
+    if (fs.existsSync(initPath)) {
+      copyFileEnsuringDir(initPath, path.join(destDir, "__init__.py"));
+    }
+  }
+}
+
+function copySupportModules(testsRoot: string): void {
+  const sourceTestsRoot = path.join(process.cwd(), WPT_TESTS_ROOT);
+  const testsInit = path.join(sourceTestsRoot, "__init__.py");
+  if (fs.existsSync(testsInit)) {
+    copyFileEnsuringDir(testsInit, path.join(testsRoot, "__init__.py"));
+  }
+
+  const supportRoot = path.join(process.cwd(), WPT_SUPPORT_TESTS);
+  if (!fs.existsSync(supportRoot)) return;
+
+  const files = collectPythonFiles(supportRoot);
+  const stack = [supportRoot];
+  const inits: string[] = [];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (entry.isFile() && entry.name === "__init__.py") {
+        inits.push(full);
+      }
+    }
+  }
+
+  for (const file of [...files, ...inits]) {
+    const rel = path.relative(supportRoot, file);
+    const normalized = normalizePathForGlob(rel);
+    // Avoid WDSPEC fixture dependencies for now.
+    if (normalized === "fixtures.py" || normalized === "fixtures_bidi.py" || normalized === "fixtures_http.py") {
+      continue;
+    }
+    copyFileEnsuringDir(file, path.join(testsRoot, "support", rel));
+  }
+}
+
+interface CopiedTests {
+  tempDir: string;
+  runPath: string;
+  copied: number;
+  skipped: string[];
+}
+
+// Copy test files to temp directory while preserving package structure.
+function copyTestsToTemp(
   testPath: string,
   options: { skipPatterns?: string[]; quick?: boolean } = {}
-): { tempDir: string; copied: number; skipped: string[] } {
-  const fullPath = path.join(process.cwd(), WPT_BIDI_TESTS, testPath);
+): CopiedTests {
+  const bidiRoot = path.join(process.cwd(), WPT_BIDI_TESTS);
   const tempDir = path.join(process.cwd(), ".wpt-temp");
+  const testsRoot = path.join(tempDir, "tests");
+  const skipPatterns = options.skipPatterns ?? [];
+  const quickSkipFiles = options.quick
+    ? ["original_opener.py", "user_activation.py", "sandbox.py"]
+    : [];
 
-  // Clean up old temp dir
   if (fs.existsSync(tempDir)) {
     fs.rmSync(tempDir, { recursive: true });
   }
-  fs.mkdirSync(tempDir, { recursive: true });
+  fs.mkdirSync(testsRoot, { recursive: true });
 
-  let copied = 0;
+  const resolvedTestPath = resolveRequestedTargetPath(testPath, bidiRoot);
+  if (resolvedTestPath === null) {
+    return { tempDir, runPath: "", copied: 0, skipped: [] };
+  }
+
+  const sourceTargetPath = resolvedTestPath
+    ? path.join(bidiRoot, resolvedTestPath)
+    : bidiRoot;
+  const runPath = resolvedTestPath
+    ? path.join(testsRoot, "bidi", resolvedTestPath)
+    : path.join(testsRoot, "bidi");
+
+  const candidates = collectPythonFiles(sourceTargetPath);
   const skipped: string[] = [];
-  const skipPatterns = options.skipPatterns || [];
+  let copied = 0;
 
-  // Quick mode skips tests known to timeout
-  const quickSkipFiles = options.quick ? [
-    "original_opener.py",
-    "user_activation.py",
-    "sandbox.py",
-  ] : [];
-
-  // Copy test files that don't have relative imports
-  const copyFile = (src: string, dest: string) => {
-    const filename = path.basename(src);
-
-    // Skip based on patterns
-    if (shouldSkipFile(filename, skipPatterns) || quickSkipFiles.includes(filename)) {
-      skipped.push(filename + " (skip pattern)");
-      return;
+  for (const sourcePath of candidates) {
+    const relFromBidi = path.relative(bidiRoot, sourcePath);
+    const relFromBidiPosix = normalizePathForGlob(relFromBidi);
+    const filename = path.basename(sourcePath);
+    if (shouldSkipPath(relFromBidiPosix, skipPatterns) || quickSkipFiles.includes(filename)) {
+      skipped.push(`${relFromBidiPosix} (skip pattern)`);
+      continue;
     }
-
-    const content = fs.readFileSync(src, "utf-8");
-
-    // Skip files with relative imports or WPT support imports
-    if (
-      content.includes("from ..") ||
-      content.includes("import ..") ||
-      content.includes("from tests.") ||
-      content.includes("import tests.")
-    ) {
-      skipped.push(filename + " (relative import)");
-      return;
-    }
-
-    fs.copyFileSync(src, dest);
+    const destination = path.join(testsRoot, "bidi", relFromBidi);
+    copyFileEnsuringDir(sourcePath, destination);
+    copyInitChain(bidiRoot, testsRoot, relFromBidi);
     copied++;
-  };
-
-  if (!fs.existsSync(fullPath)) {
-    return { tempDir, copied: 0, skipped: [] };
   }
 
-  const stat = fs.statSync(fullPath);
-  if (stat.isDirectory()) {
-    // Find all .py files recursively
-    const findPyFiles = (dir: string): string[] => {
-      const files: string[] = [];
-      for (const item of fs.readdirSync(dir)) {
-        if (item === "conftest.py" || item === "__init__.py" || item.startsWith("_")) continue;
-        const itemPath = path.join(dir, item);
-        const itemStat = fs.statSync(itemPath);
-        if (itemStat.isDirectory()) {
-          files.push(...findPyFiles(itemPath));
-        } else if (item.endsWith(".py")) {
-          files.push(itemPath);
-        }
-      }
-      return files;
-    };
-
-    const pyFiles = findPyFiles(fullPath);
-    for (const file of pyFiles) {
-      const destPath = path.join(tempDir, path.basename(file));
-      copyFile(file, destPath);
-    }
-  } else if (fullPath.endsWith(".py")) {
-    copyFile(fullPath, path.join(tempDir, path.basename(fullPath)));
+  const conftestCandidates = collectConftestFiles(sourceTargetPath);
+  for (const conftestPath of conftestCandidates) {
+    const relFromBidi = path.relative(bidiRoot, conftestPath);
+    const destination = path.join(testsRoot, "bidi", relFromBidi);
+    copyFileEnsuringDir(conftestPath, destination);
+    copyInitChain(bidiRoot, testsRoot, relFromBidi);
   }
 
-  return { tempDir, copied, skipped };
+  copySupportModules(testsRoot);
+  return { tempDir, runPath, copied, skipped };
 }
 
 // Run tests
@@ -398,15 +584,14 @@ async function runTests(
   testPath: string,
   options: { skipPatterns?: string[]; quick?: boolean; timeout?: number } = {}
 ): Promise<RunOutcome> {
-  const fullPath = path.join(process.cwd(), WPT_BIDI_TESTS, testPath);
-
-  if (testPath && !fs.existsSync(fullPath)) {
+  const resolvedPath = resolveRequestedTargetPath(testPath, path.join(process.cwd(), WPT_BIDI_TESTS));
+  if (resolvedPath === null) {
+    const fullPath = path.join(process.cwd(), WPT_BIDI_TESTS, testPath);
     console.error(`Test path not found: ${fullPath}`);
     return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
   }
 
-  // Copy simple tests (without relative imports)
-  const { tempDir, copied, skipped } = copySimpleTests(testPath, options);
+  const { tempDir, runPath, copied, skipped } = copyTestsToTemp(resolvedPath, options);
 
   if (copied === 0) {
     console.error("No compatible tests found");
@@ -425,7 +610,9 @@ async function runTests(
   const env = {
     ...process.env,
     CRATER_BIDI_URL,
-    PYTHONPATH: path.join(process.cwd(), "scripts"),
+    PYTHONPATH: [path.join(process.cwd(), "scripts"), tempDir, process.env.PYTHONPATH]
+      .filter(Boolean)
+      .join(path.delimiter),
   };
 
   const timeout = options.timeout || 30;
@@ -440,7 +627,7 @@ async function runTests(
         "run",
         "--",
         "pytest",
-        tempDir,
+        runPath,
         "-v",
         `--timeout=${timeout}`,
         "-p", "crater_bidi_adapter",
@@ -481,26 +668,30 @@ async function runTests(
   });
 }
 
-// Run subset of known-passing tests
-async function runSubset(): Promise<RunOutcome> {
+// Run a named profile from scripts/wpt-bidi-subset.json.
+async function runProfile(profileName: string): Promise<RunOutcome> {
   const config = loadSubsetConfig();
-  if (!config) {
-    console.error("Subset config not found: " + SUBSET_CONFIG);
+  const profile = resolveProfileConfig(config, profileName);
+  if (!profile) {
+    console.error(`Profile "${profileName}" not found in ${SUBSET_CONFIG}`);
     return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
   }
 
-  console.log("Running known-passing test subset...\n");
+  console.log(`Running profile: ${profileName}\n`);
 
   let moduleFailures = 0;
   let totalSummary = emptySummary();
+  const defaultSkipPatterns = getDefaultSkipPatterns(config);
+  const skipPatterns = [...defaultSkipPatterns, ...(profile.skip_patterns ?? [])];
+  const quick = profile.quick ?? true;
+  const timeout = profile.timeout ?? 10;
 
-  for (const [modulePath, files] of Object.entries(config.tests)) {
-    void files;
-    console.log(`\n=== ${modulePath} ===`);
-    const outcome = await runTests(modulePath, {
-      skipPatterns: config.skip_patterns,
-      quick: true,
-      timeout: 10,
+  for (const target of profile.targets) {
+    console.log(`\n=== ${target} ===`);
+    const outcome = await runTests(target, {
+      skipPatterns,
+      quick,
+      timeout,
     });
     totalSummary = mergeSummaries(totalSummary, outcome.summary);
     if (outcome.exitCode !== 0) {
@@ -531,7 +722,8 @@ async function main(): Promise<number> {
     console.log("Usage:");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --list");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts session/status");
-    console.log("  npx tsx scripts/wpt-webdriver-runner.ts --subset     # Known-passing tests only");
+    console.log("  npx tsx scripts/wpt-webdriver-runner.ts --subset     # Alias of --profile strict");
+    console.log("  npx tsx scripts/wpt-webdriver-runner.ts --profile strict");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --quick <module>  # Skip timeout tests");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts --all");
     console.log("  npx tsx scripts/wpt-webdriver-runner.ts session/status --json .wpt-reports/wpt-webdriver-session-status.json");
@@ -566,12 +758,15 @@ async function main(): Promise<number> {
     let outcome: RunOutcome;
 
     if (args[0] === "--subset") {
-      outcome = await runSubset();
+      outcome = await runProfile(DEFAULT_PROFILE_NAME);
+    } else if (args[0] === "--profile") {
+      const profileName = args[1] ?? "";
+      outcome = await runProfile(profileName);
     } else if (args[0] === "--quick") {
       const testPath = args[1] || "";
       const config = loadSubsetConfig();
       outcome = await runTests(testPath, {
-        skipPatterns: config?.skip_patterns,
+        skipPatterns: getDefaultSkipPatterns(config),
         quick: true,
         timeout: 10,
       });

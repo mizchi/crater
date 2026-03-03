@@ -185,6 +185,10 @@ wpt-webdriver module:
 wpt-webdriver-report module report *args:
     npx tsx scripts/wpt-webdriver-runner.ts {{module}} --json {{report}} {{args}}
 
+# Run a predefined WebDriver BiDi profile (e.g., strict, network-no-auth)
+wpt-webdriver-profile profile:
+    npx tsx scripts/wpt-webdriver-runner.ts --profile {{profile}}
+
 # Run all WebDriver BiDi tests
 wpt-webdriver-all:
     npx tsx scripts/wpt-webdriver-runner.ts --all

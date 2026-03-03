@@ -380,11 +380,15 @@ jobs:
         run: |
           mkdir -p wpt-reports
           status=0
-          npx tsx scripts/wpt-webdriver-runner.ts "session/status" --json "wpt-reports/wpt-webdriver-session-status.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts "browsing_context/get_tree" --json "wpt-reports/wpt-webdriver-browsing-context-get-tree.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts "script/evaluate" --json "wpt-reports/wpt-webdriver-script-evaluate.json" || status=1
+
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "session/status" --json "wpt-reports/wpt-webdriver-session-status.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "browsing_context/get_tree" --json "wpt-reports/wpt-webdriver-browsing-context-get-tree.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "browsing_context/context_created/context_created.py" --json "wpt-reports/wpt-webdriver-browsing-context-context-created.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/evaluate/invalid.py" --json "wpt-reports/wpt-webdriver-script-evaluate-invalid.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/get_realms" --json "wpt-reports/wpt-webdriver-script-get-realms.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/realm_created/realm_created.py" --json "wpt-reports/wpt-webdriver-script-realm-created.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/realm_created/window_open.py" --json "wpt-reports/wpt-webdriver-script-realm-window-open.json" || status=1
           exit $status
-        continue-on-error: true
 
       - name: Upload WPT WebDriver shard report
         if: always()
