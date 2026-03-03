@@ -871,6 +871,12 @@ pub fn compute_ifc(
       let child_layout = compute_inline_child(
         child, child_available_width, available_height, dispatch,
       )
+      let child_layout = if is_whitespace_text_node(child) {
+        // Keep inline advance for whitespace runs but avoid column-height inflation.
+        { ..child_layout, height: 0.0 }
+      } else {
+        child_layout
+      }
       child_layout_cache[i] = child_layout
       child_margin_cache[i] = child_margin
 
@@ -882,7 +888,7 @@ pub fn compute_ifc(
           allow_soft_wrap &&
           current_column.length() > 0 &&
           child.id != "br" &&
-          current_height + outer_height > limit
+          current_height + outer_height >= limit
         None => false
       }
       if should_wrap_column {
@@ -1020,6 +1026,13 @@ pub fn compute_ifc(
     let child_layout = compute_inline_child(
       child, child_available_width, available_height, dispatch,
     )
+    let child_layout = if is_whitespace_text_node(child) {
+      // Keep inter-item spacing while preventing indentation whitespace from
+      // inflating line box metrics.
+      { ..child_layout, height: 0.0 }
+    } else {
+      child_layout
+    }
 
     // Calculate baseline based on font metrics
     // For text nodes, baseline is at font_size * ascender_ratio from top
@@ -1324,11 +1337,11 @@ pub fn compute_ifc(
         )
         let rel_top = resolve_inset_dimension(
           child.style.inset.top,
-          line.height,
+          available_height.unwrap_or(0.0),
         )
         let rel_bottom = resolve_inset_dimension(
           child.style.inset.bottom,
-          line.height,
+          available_height.unwrap_or(0.0),
         )
         let x_offset = match (rel_left, rel_right) {
           (Some(l), Some(r)) => l - r
@@ -1799,8 +1812,12 @@ fn compute_inline_child(
       )
       let collapse_whitespace_after_out_of_flow = saw_out_of_flow_child &&
         is_whitespace_text_node(child)
+      let collapse_standalone_whitespace = is_whitespace_text_node(child)
       let child_layout = if collapse_whitespace_after_out_of_flow {
         { ..raw_child_layout, width: 0.0, height: 0.0 }
+      } else if collapse_standalone_whitespace {
+        // Indentation whitespace should keep inline advance but not inflate line height.
+        { ..raw_child_layout, height: 0.0 }
       } else {
         raw_child_layout
       }

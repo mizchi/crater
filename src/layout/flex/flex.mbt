@@ -6245,11 +6245,9 @@ fn compute_internal(
         (x, y)
       }
 
-      // Apply inset offsets for non-absolute positioned children
-      // (Static and Relative both apply inset as offset from flow position)
+      // Relative positioning offsets apply only to position:relative.
       let child_style = child.style
-      let (child_x, child_y) = if child_style.position != @types.Absolute &&
-        child_style.position != @types.Fixed {
+      let (child_x, child_y) = if child_style.position == @types.Relative {
         let (x_offset, y_offset) = @core.resolve_relative_inset_offsets(
           child_style.inset,
           content_width,
@@ -6597,11 +6595,19 @@ fn compute_internal(
         (w, h, inner)
       }
       (Some(w), None) => {
+        let auto_height_probe = if child_style.writing_mode.is_vertical() {
+          match ctx.available_height {
+            Some(h) if h > 0.0 => Some(h)
+            _ => Some(padding_box_height)
+          }
+        } else {
+          None
+        }
         let inner = compute_nested(
           child,
           {
             available_width: w,
-            available_height: None,
+            available_height: auto_height_probe,
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
@@ -6625,11 +6631,25 @@ fn compute_internal(
           cache,
           dispatch,
         )
-        // Shrink-to-fit: min(max-content, available_width)
-        let shrink_to_fit_width = if intrinsic_width < container_width {
-          intrinsic_width
+        let center_aligned_auto_main = params.inset_left is None &&
+          params.inset_right is None &&
+          style.justify_content == @types.Center
+        let shrink_fit_available_width = if center_aligned_auto_main {
+          let expanded = container_width + margin.left + margin.right
+          if expanded > container_width {
+            expanded
+          } else {
+            container_width
+          }
         } else {
           container_width
+        }
+        // Shrink-to-fit: min(max-content, available_width)
+        let shrink_to_fit_width = if intrinsic_width <
+          shrink_fit_available_width {
+          intrinsic_width
+        } else {
+          shrink_fit_available_width
         }
         // Step 2: Layout with definite width so percentage children resolve correctly
         let inner = compute_nested(
@@ -6666,12 +6686,20 @@ fn compute_internal(
         } else {
           container_width
         }
+        let auto_height_probe = if child_style.writing_mode.is_vertical() {
+          match ctx.available_height {
+            Some(h) if h > 0.0 => Some(h)
+            _ => Some(padding_box_height)
+          }
+        } else {
+          None
+        }
         // Step 2: Layout with definite width to get height and child layouts
         let inner = compute_nested(
           child,
           {
             available_width: shrink_to_fit_width,
-            available_height: None,
+            available_height: auto_height_probe,
             sizing_mode: @types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,

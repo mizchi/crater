@@ -1506,7 +1506,8 @@ function isCrashOnlyTest(htmlPath: string): boolean {
   try {
     const source = fs.readFileSync(htmlPath, 'utf-8').toLowerCase();
     return source.includes('test passes by not crashing') ||
-      source.includes('not crash');
+      source.includes('not crash') ||
+      source.includes('crashtest');
   } catch {
     return false;
   }
