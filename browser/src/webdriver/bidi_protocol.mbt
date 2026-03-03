@@ -55,6 +55,7 @@ pub struct BidiProtocol {
   subscriptions : Map[String, Bool] // module-level subscriptions (legacy)
   context_subscriptions : Map[String, Array[String]] // context -> events
   mut global_subscriptions : Array[String] // events subscribed globally
+  mut global_unsubscribed_events : Array[String] // event-level overrides for module subscriptions
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
   context_original_opener : Map[String, String]
@@ -85,6 +86,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     subscriptions: {},
     context_subscriptions: {},
     global_subscriptions: [],
+    global_unsubscribed_events: [],
     user_contexts,
     context_user_context: {},
     context_original_opener: {},
@@ -1097,8 +1099,7 @@ pub fn BidiProtocol::emit_log_entry(
   text : String,
   console_method : String,
 ) -> Unit {
-  if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) &&
-    not(self.is_subscribed("log")) {
+  if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
     return
   }
   let timestamp = 0.0 // Would be actual timestamp in real impl
@@ -1408,8 +1409,7 @@ fn BidiProtocol::emit_worker_realm_created(
   owner_realm_id : String,
 ) -> Unit {
   let event_name = "script.realmCreated"
-  if not(self.is_subscribed_for_context(event_name, owner_ctx_id)) &&
-    not(self.is_subscribed("script")) {
+  if not(self.is_subscribed_for_context(event_name, owner_ctx_id)) {
     return
   }
   let worker_realm_id = "realm-" + self.next_realm_id.to_string()
@@ -1769,10 +1769,22 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
         // Global subscription (no contexts specified)
         _ => {
           for evt in events_to_sub {
+            let module_key = get_subscription_key(evt)
+            if module_key == evt {
+              self.global_unsubscribed_events = array_filter_by_module(
+                self.global_unsubscribed_events,
+                module_key,
+              )
+            } else {
+              self.global_unsubscribed_events = array_filter_not(
+                self.global_unsubscribed_events,
+                [evt],
+              )
+            }
             if not(array_contains(self.global_subscriptions, evt)) {
               self.global_subscriptions.push(evt)
             }
-            self.subscriptions[get_subscription_key(evt)] = true
+            self.subscriptions[module_key] = true
           }
           if wants_realm_created {
             for ctx_id in self.manager.list_sessions() {
@@ -1833,6 +1845,14 @@ fn BidiProtocol::handle_unsubscribe(
           )
           for evt in events_to_unsub {
             let module_key = get_subscription_key(evt)
+            if module_key == evt {
+              self.global_unsubscribed_events = array_filter_by_module(
+                self.global_unsubscribed_events,
+                module_key,
+              )
+            } else if not(array_contains(self.global_unsubscribed_events, evt)) {
+              self.global_unsubscribed_events.push(evt)
+            }
             let mut has_same_module = false
             for sub in self.global_subscriptions {
               if sub == evt || get_subscription_key(sub) == module_key {
@@ -1878,6 +1898,18 @@ fn array_filter_not(
 }
 
 ///|
+/// Filter array to keep events outside the given module
+fn array_filter_by_module(arr : Array[String], module_key : String) -> Array[String] {
+  let result : Array[String] = []
+  for s in arr {
+    if get_subscription_key(s) != module_key {
+      result.push(s)
+    }
+  }
+  result
+}
+
+///|
 /// Emit contextCreated event
 fn BidiProtocol::emit_context_created(
   self : BidiProtocol,
@@ -1888,8 +1920,7 @@ fn BidiProtocol::emit_context_created(
   parent_ctx_id : String?,
 ) -> Unit {
   let event_name = "browsingContext.contextCreated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) &&
-    not(self.is_subscribed("browsingContext")) {
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
     return
   }
   let user_ctx = self.context_user_context.get(ctx_id).unwrap_or("default")
@@ -1925,8 +1956,7 @@ fn BidiProtocol::emit_context_destroyed(
   original_opener : String?,
 ) -> Unit {
   let event_name = "browsingContext.contextDestroyed"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) &&
-    not(self.is_subscribed("browsingContext")) {
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
     return
   }
   let opener_json = match original_opener {
@@ -1949,8 +1979,7 @@ fn BidiProtocol::emit_realm_created(
   sandbox_name : String?,
 ) -> Unit {
   let event_name = "script.realmCreated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) &&
-    not(self.is_subscribed("script")) {
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
     return
   }
   let sandbox_json = match sandbox_name {
@@ -2014,22 +2043,19 @@ fn BidiProtocol::emit_navigation_events(
     "timestamp": Json::number(0.0),
   })
   // Emit navigationStarted
-  if self.is_subscribed_for_context("browsingContext.navigationStarted", ctx_id) ||
-    self.is_subscribed("browsingContext") {
+  if self.is_subscribed_for_context("browsingContext.navigationStarted", ctx_id) {
     self.outbox.push(
       Event({ event_method: "browsingContext.navigationStarted", params: base }),
     )
   }
   // Emit domContentLoaded
-  if self.is_subscribed_for_context("browsingContext.domContentLoaded", ctx_id) ||
-    self.is_subscribed("browsingContext") {
+  if self.is_subscribed_for_context("browsingContext.domContentLoaded", ctx_id) {
     self.outbox.push(
       Event({ event_method: "browsingContext.domContentLoaded", params: base }),
     )
   }
   // Emit load
-  if self.is_subscribed_for_context("browsingContext.load", ctx_id) ||
-    self.is_subscribed("browsingContext") {
+  if self.is_subscribed_for_context("browsingContext.load", ctx_id) {
     self.outbox.push(
       Event({ event_method: "browsingContext.load", params: base }),
     )
@@ -2039,8 +2065,7 @@ fn BidiProtocol::emit_navigation_events(
     "context": Json::string(ctx_id),
     "url": Json::string(url),
   })
-  if self.is_subscribed_for_context("browsingContext.historyUpdated", ctx_id) ||
-    self.is_subscribed("browsingContext") {
+  if self.is_subscribed_for_context("browsingContext.historyUpdated", ctx_id) {
     self.outbox.push(
       Event({ event_method: "browsingContext.historyUpdated", params: history }),
     )
@@ -2061,13 +2086,18 @@ fn BidiProtocol::is_subscribed_for_context(
   ctx_id : String,
 ) -> Bool {
   let module_key = get_subscription_key(event)
+  let blocked_global = array_contains(self.global_unsubscribed_events, event)
   // Check legacy module-level subscription
-  if self.subscriptions.get(module_key).unwrap_or(false) {
+  if not(blocked_global) &&
+    self.subscriptions.get(module_key).unwrap_or(false) {
     return true
   }
   // Check global subscriptions (exact event match or module match)
   for sub in self.global_subscriptions {
-    if sub == event || get_subscription_key(sub) == module_key {
+    if sub == event {
+      return true
+    }
+    if not(blocked_global) && get_subscription_key(sub) == module_key {
       return true
     }
   }

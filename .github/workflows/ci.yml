@@ -381,7 +381,10 @@ jobs:
           mkdir -p wpt-reports
           status=0
 
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "errors" --json "wpt-reports/wpt-webdriver-errors.json" || status=1
           npx tsx scripts/wpt-webdriver-runner.ts --quick "session/status" --json "wpt-reports/wpt-webdriver-session-status.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "session/subscribe/events.py" --json "wpt-reports/wpt-webdriver-session-subscribe-events.json" || status=1
+          npx tsx scripts/wpt-webdriver-runner.ts --quick "session/unsubscribe/events.py" --json "wpt-reports/wpt-webdriver-session-unsubscribe-events.json" || status=1
           npx tsx scripts/wpt-webdriver-runner.ts --quick "browsing_context/get_tree" --json "wpt-reports/wpt-webdriver-browsing-context-get-tree.json" || status=1
           npx tsx scripts/wpt-webdriver-runner.ts --quick "browsing_context/context_created/context_created.py" --json "wpt-reports/wpt-webdriver-browsing-context-context-created.json" || status=1
           npx tsx scripts/wpt-webdriver-runner.ts --quick "script/evaluate/invalid.py" --json "wpt-reports/wpt-webdriver-script-evaluate-invalid.json" || status=1

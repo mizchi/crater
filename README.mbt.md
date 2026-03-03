@@ -98,7 +98,7 @@ The CI workflow runs WPT compatibility checks with about 6 workers:
 
 - `wpt-css`: 4 shards (`wpt-css (shard-1..4)`)
 - `wpt-dom`: 1 job (`wpt-dom`, runs `--dom` and `--svg`)
-- `wpt-webdriver`: 1 job (`wpt-webdriver`, runs 7 strict BiDi targets)
+- `wpt-webdriver`: 1 job (`wpt-webdriver`, runs 10 strict BiDi targets)
 
 See the shard assignment in `.github/workflows/ci.yml` (`wpt-css-tests`, `wpt-dom-tests`, `wpt-webdriver-tests`).
 

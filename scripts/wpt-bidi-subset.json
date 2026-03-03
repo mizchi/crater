@@ -10,7 +10,10 @@
     "strict": {
       "description": "Known green targets used as strict CI gate",
       "targets": [
+        "errors",
         "session/status",
+        "session/subscribe/events.py",
+        "session/unsubscribe/events.py",
         "browsing_context/get_tree",
         "browsing_context/context_created/context_created.py",
         "script/evaluate/invalid.py",
