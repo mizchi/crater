@@ -7195,6 +7195,16 @@ fn resolve_http_equiv_redirect_url(url : String) -> String? {
 }
 
 ///|
+/// Resolve committed navigation URL (redirect.py commits to the location target).
+fn resolve_navigation_committed_url(url : String) -> String {
+  if url.contains("/redirect.py") {
+    get_runtime_url_query_param(url, "location").unwrap_or(url)
+  } else {
+    url
+  }
+}
+
+///|
 /// Emit browsingContext.fragmentNavigated for same-document fragment changes.
 fn BidiProtocol::emit_fragment_navigated_event(
   self : BidiProtocol,
@@ -9387,6 +9397,27 @@ fn BidiProtocol::emit_navigation_started_event(
 }
 
 ///|
+/// Emit navigationCommitted event for the given context.
+fn BidiProtocol::emit_navigation_committed_event(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  let event_name = "browsingContext.navigationCommitted"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params = make_object({
+    "context": Json::string(ctx_id),
+    "navigation": Json::string(navigation_id),
+    "url": Json::string(url),
+    "timestamp": Json::number(input_now_ms()),
+  })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
 /// Emit basic navigation events
 fn BidiProtocol::emit_navigation_events(
   self : BidiProtocol,
@@ -9401,12 +9432,17 @@ fn BidiProtocol::emit_navigation_events(
     "url": Json::string(url),
     "timestamp": Json::number(timestamp),
   })
+  let committed_url = resolve_navigation_committed_url(url)
   self.emit_navigation_started_event(ctx_id, url, navigation_id)
+  self.emit_navigation_committed_event(ctx_id, committed_url, navigation_id)
   match resolve_http_equiv_redirect_url(url) {
     Some(redirected_url) => {
       let redirected_nav_id = self.next_navigation_id.to_string()
       self.next_navigation_id += 1
       self.emit_navigation_started_event(
+        ctx_id, redirected_url, redirected_nav_id,
+      )
+      self.emit_navigation_committed_event(
         ctx_id, redirected_url, redirected_nav_id,
       )
     }

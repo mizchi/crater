@@ -1624,6 +1624,22 @@ async def new_tab(bidi_session):
 
 
 @pytest.fixture
+def server_config():
+    """Minimal WPT-like server config used by fixtures requiring server metadata."""
+    return {
+        "browser_host": "localhost",
+        "ports": {
+            "http": [8000],
+            "https": [8000],
+        },
+        "domains": {
+            "": {"": "localhost"},
+            "alt": {"": "alt.localhost"},
+        },
+    }
+
+
+@pytest.fixture
 def url():
     """Generate test URLs."""
     def _url(path: str, domain: str = "") -> str:
