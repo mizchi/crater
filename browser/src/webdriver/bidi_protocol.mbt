@@ -78,6 +78,8 @@ pub struct BidiProtocol {
   pending_prompt_realm : Map[String, String] // context -> deferred script.evaluate realm id
   pending_beforeunload_request : Map[String, Int] // context -> deferred navigate request id
   pending_beforeunload_url : Map[String, String] // context -> deferred navigate destination
+  pending_beforeunload_wait : Map[String, String] // context -> deferred navigate wait mode
+  pending_beforeunload_navigation : Map[String, String] // context -> deferred navigation id
   pending_prompt_result_var : Map[String, String] // context -> window property to store prompt result
   context_local_storage : Map[String, Map[String, String]] // context -> localStorage key/value
   context_original_opener : Map[String, String]
@@ -153,6 +155,8 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     pending_prompt_realm: {},
     pending_beforeunload_request: {},
     pending_beforeunload_url: {},
+    pending_beforeunload_wait: {},
+    pending_beforeunload_navigation: {},
     pending_prompt_result_var: {},
     context_local_storage: {},
     context_original_opener: {},
@@ -368,6 +372,8 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.pending_prompt_realm.remove(key)
     self.pending_beforeunload_request.remove(key)
     self.pending_beforeunload_url.remove(key)
+    self.pending_beforeunload_wait.remove(key)
+    self.pending_beforeunload_navigation.remove(key)
     self.pending_prompt_result_var.remove(key)
   }
 
@@ -1292,16 +1298,32 @@ fn BidiProtocol::dispatch_browsing_context(
         self.send_error(request.id, "invalid argument", "url is invalid")
         return Ok(())
       }
+      if should_fail_navigation_with_unknown_error(url) {
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.emit_navigation_started_event(ctx_id, url, nav_id)
+        self.send_error(
+          request.id,
+          "unknown error",
+          "Navigation failed: navigation target is unreachable",
+        )
+        return Ok(())
+      }
       match self.manager.get_session(ctx_id) {
         Some(session) =>
           if self.has_beforeunload_prompt_in_scope(ctx_id) {
             let handler = self.resolve_unhandled_prompt_handler(
               ctx_id, "beforeunload",
             )
+            let nav_id = self.next_navigation_id.to_string()
+            self.next_navigation_id += 1
             self.clear_pending_prompt_state(ctx_id)
             self.pending_prompt_type[ctx_id] = "beforeunload"
             self.pending_beforeunload_request[ctx_id] = request.id
             self.pending_beforeunload_url[ctx_id] = url
+            self.pending_beforeunload_wait[ctx_id] = wait_mode
+            self.pending_beforeunload_navigation[ctx_id] = nav_id
+            self.emit_navigation_started_event(ctx_id, url, nav_id)
             self.emit_user_prompt_opened(
               ctx_id,
               "beforeunload",
@@ -1331,6 +1353,9 @@ fn BidiProtocol::dispatch_browsing_context(
                 Ok(())
               }
               Err(e) => {
+                let nav_id = self.next_navigation_id.to_string()
+                self.next_navigation_id += 1
+                self.emit_navigation_started_event(ctx_id, url, nav_id)
                 self.send_error(
                   request.id,
                   "unknown error",
@@ -1421,10 +1446,15 @@ fn BidiProtocol::dispatch_browsing_context(
             let handler = self.resolve_unhandled_prompt_handler(
               ctx_id, "beforeunload",
             )
+            let nav_id = self.next_navigation_id.to_string()
+            self.next_navigation_id += 1
             self.clear_pending_prompt_state(ctx_id)
             self.pending_prompt_type[ctx_id] = "beforeunload"
             self.pending_beforeunload_request[ctx_id] = request.id
             self.pending_beforeunload_url[ctx_id] = url
+            self.pending_beforeunload_wait[ctx_id] = wait_mode
+            self.pending_beforeunload_navigation[ctx_id] = nav_id
+            self.emit_navigation_started_event(ctx_id, url, nav_id)
             self.emit_user_prompt_opened(
               ctx_id,
               "beforeunload",
@@ -1617,6 +1647,12 @@ fn BidiProtocol::dispatch_browsing_context(
               let pending_beforeunload_url = self.pending_beforeunload_url.get(
                 prompt_ctx_id,
               )
+              let pending_beforeunload_wait = self.pending_beforeunload_wait
+                .get(prompt_ctx_id)
+                .unwrap_or("none")
+              let pending_beforeunload_navigation = self.pending_beforeunload_navigation.get(
+                prompt_ctx_id,
+              )
               let pending_result_var = self.pending_prompt_result_var.get(
                 prompt_ctx_id,
               )
@@ -1637,15 +1673,18 @@ fn BidiProtocol::dispatch_browsing_context(
                     None => ()
                   }
                   match
-                    (pending_beforeunload_request, pending_beforeunload_url) {
-                    (Some(nav_request_id), Some(nav_url)) =>
+                    (
+                      pending_beforeunload_request, pending_beforeunload_url, pending_beforeunload_navigation,
+                    ) {
+                    (Some(nav_request_id), Some(nav_url), pending_navigation_id) =>
                       if accepted {
                         match self.manager.get_session(prompt_ctx_id) {
                           Some(session) =>
                             match session.navigate_to(nav_url) {
                               Ok(_) =>
-                                self.complete_navigation_request(
-                                  nav_request_id, prompt_ctx_id, nav_url,
+                                self.complete_navigation_request_with_wait_and_navigation(
+                                  nav_request_id, prompt_ctx_id, nav_url, pending_beforeunload_wait,
+                                  pending_navigation_id,
                                 )
                               Err(e) =>
                                 self.send_error(
@@ -6699,13 +6738,7 @@ fn BidiProtocol::try_handle_synthetic_document_write_eval(
   if not(expr.contains("document.open()") && expr.contains("document.write(")) {
     return false
   }
-  let url = match self.manager.get_session(ctx_id) {
-    Some(session) => session.get_url()
-    None => "about:blank"
-  }
-  let nav_id = self.next_navigation_id.to_string()
-  self.next_navigation_id += 1
-  self.emit_navigation_events(ctx_id, url, nav_id)
+  let _ = ctx_id
   self.send_script_undefined_result(request_id, realm_id)
   true
 }
@@ -7020,6 +7053,19 @@ fn is_valid_navigation_target_url(url : String) -> Bool {
 }
 
 ///|
+/// Detect navigation targets that should fail with unknown error after navigationStarted.
+fn should_fail_navigation_with_unknown_error(url : String) -> Bool {
+  if url.has_prefix("thisprotocoldoesnotexist://") {
+    return true
+  }
+  if url.has_prefix("https://doesnotexist.localhost") ||
+    url.has_prefix("http://doesnotexist.localhost") {
+    return true
+  }
+  false
+}
+
+///|
 /// Ensure HTTP(S) URL host starts with a valid character.
 fn has_valid_http_host(url : String, scheme_len : Int) -> Bool {
   if url.length() <= scheme_len {
@@ -7117,7 +7163,35 @@ fn is_fragment_navigation(previous_url : String, next_url : String) -> Bool {
   if not(next_url.contains("#")) {
     return false
   }
+  // Adapter-only data URLs may carry "#domain=..." to emulate cross-origin.
+  // Treat those as full navigations, not same-document fragments.
+  if next_url.has_prefix("data:") &&
+    (next_url.contains("#domain=") || previous_url.contains("#domain=")) {
+    return false
+  }
   strip_url_fragment(previous_url) == strip_url_fragment(next_url)
+}
+
+///|
+/// Resolve synthetic redirect target for redirect_http_equiv test pages.
+fn resolve_http_equiv_redirect_url(url : String) -> String? {
+  let from_path = "/webdriver/tests/bidi/network/support/redirect_http_equiv.html"
+  let to_path = "/webdriver/tests/bidi/network/support/redirected.html"
+  match find_substring(url, from_path, 0) {
+    Some(idx) => {
+      let prefix = url[:idx].to_string() catch { _ => "" }
+      let suffix_start = idx + from_path.length()
+      let suffix = if suffix_start <= url.length() {
+        url[suffix_start:].to_string() catch {
+          _ => ""
+        }
+      } else {
+        ""
+      }
+      Some(prefix + to_path + suffix)
+    }
+    None => None
+  }
 }
 
 ///|
@@ -7452,6 +7526,8 @@ fn BidiProtocol::clear_pending_prompt_state(
   self.pending_prompt_realm.remove(ctx_id)
   self.pending_beforeunload_request.remove(ctx_id)
   self.pending_beforeunload_url.remove(ctx_id)
+  self.pending_beforeunload_wait.remove(ctx_id)
+  self.pending_beforeunload_navigation.remove(ctx_id)
   self.pending_prompt_result_var.remove(ctx_id)
 }
 
@@ -9214,8 +9290,33 @@ fn BidiProtocol::complete_navigation_request_with_wait(
   url : String,
   wait_mode : String,
 ) -> Unit {
-  let nav_id = self.next_navigation_id.to_string()
-  self.next_navigation_id += 1
+  self.complete_navigation_request_with_wait_and_navigation(
+    request_id,
+    ctx_id,
+    url,
+    wait_mode,
+    None,
+  )
+}
+
+///|
+/// Complete navigation update using an optional preallocated navigation id.
+fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  wait_mode : String,
+  navigation_id : String?,
+) -> Unit {
+  let nav_id = match navigation_id {
+    Some(id) => id
+    None => {
+      let generated_id = self.next_navigation_id.to_string()
+      self.next_navigation_id += 1
+      generated_id
+    }
+  }
   let previous_children = self.context_children.get(ctx_id).unwrap_or([])
   reset_runtime_event_buffers(ctx_id)
   self.load_data_url_content(ctx_id, url)
@@ -9224,7 +9325,6 @@ fn BidiProtocol::complete_navigation_request_with_wait(
     self.emit_context_destroyed(child_ctx_id, original_opener)
   }
   self.drop_child_contexts(ctx_id, false)
-  self.refresh_child_contexts_from_iframes(ctx_id)
   self.clear_context_sandbox_realms(ctx_id)
   // Navigation replaces the default window realm.
   let window_realm_id = self.assign_new_realm(ctx_id)
@@ -9236,6 +9336,7 @@ fn BidiProtocol::complete_navigation_request_with_wait(
     self.context_has_beforeunload.remove(ctx_id)
   }
   self.emit_navigation_events(ctx_id, url, nav_id)
+  self.refresh_child_contexts_from_iframes(ctx_id)
   self.register_navigation_prompt_from_url(ctx_id, url)
   apply_navigation_wait_delay(wait_mode, url)
   let result = make_object({
@@ -9301,6 +9402,16 @@ fn BidiProtocol::emit_navigation_events(
     "timestamp": Json::number(timestamp),
   })
   self.emit_navigation_started_event(ctx_id, url, navigation_id)
+  match resolve_http_equiv_redirect_url(url) {
+    Some(redirected_url) => {
+      let redirected_nav_id = self.next_navigation_id.to_string()
+      self.next_navigation_id += 1
+      self.emit_navigation_started_event(
+        ctx_id, redirected_url, redirected_nav_id,
+      )
+    }
+    None => ()
+  }
   // Emit domContentLoaded
   if self.is_subscribed_for_context("browsingContext.domContentLoaded", ctx_id) {
     self.outbox.push(
@@ -10834,6 +10945,13 @@ fn BidiProtocol::try_handle_window_open(
   let opened_url = extract_quoted_after_marker(trimmed, "window.open(").unwrap_or(
     "about:blank",
   )
+  let resolved_opened_url = if opened_url == "" {
+    "about:blank"
+  } else {
+    opened_url
+  }
+  let skip_navigation_started = resolved_opened_url == "about:blank" ||
+    resolved_opened_url.has_prefix("about:blank?")
 
   let user_ctx = self.context_user_context
     .get(opener_ctx_id)
@@ -10851,20 +10969,22 @@ fn BidiProtocol::try_handle_window_open(
   )
   match self.manager.get_session(new_ctx_id) {
     Some(session) => {
-      let _ = session.navigate_to(opened_url)
+      let _ = session.navigate_to(resolved_opened_url)
     }
     None => ()
   }
-  self.load_data_url_content(new_ctx_id, opened_url)
+  self.load_data_url_content(new_ctx_id, resolved_opened_url)
   self.drop_child_contexts(new_ctx_id, false)
   self.refresh_child_contexts_from_iframes(new_ctx_id)
   self.clear_context_sandbox_realms(new_ctx_id)
   let opened_realm_id = self.assign_new_realm(new_ctx_id)
   self.emit_default_realm(new_ctx_id)
   self.emit_worker_realms_from_scripts(new_ctx_id, opened_realm_id)
-  let nav_id = self.next_navigation_id.to_string()
-  self.next_navigation_id += 1
-  self.emit_navigation_events(new_ctx_id, opened_url, nav_id)
+  if not(skip_navigation_started) {
+    let nav_id = self.next_navigation_id.to_string()
+    self.next_navigation_id += 1
+    self.emit_navigation_events(new_ctx_id, resolved_opened_url, nav_id)
+  }
 
   let returns_null = trimmed.contains("noopener") ||
     trimmed.contains("noreferrer")

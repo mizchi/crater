@@ -1860,17 +1860,16 @@ def wait_for_event(bidi_session):
     def _wait_for_event(event_name: str):
         loop = asyncio.get_running_loop()
         future = loop.create_future()
-        buffered = bidi_session.pop_event_backlog(event_name)
-        if buffered is not None:
-            future.set_result(buffered)
-            return future
+        # Drop stale backlog entries. This fixture should observe events
+        # that happen after listener registration, matching WPT behavior.
+        bidi_session._event_backlog[event_name] = []
 
         async def on_event(_, data):
+            if future.done():
+                return
             remove_listener()
             if remove_listener in remove_listeners:
                 remove_listeners.remove(remove_listener)
-            # Consume corresponding buffered event entry.
-            bidi_session.pop_event_backlog(event_name)
             future.set_result(data)
 
         remove_listener = bidi_session.add_event_listener(event_name, on_event)
