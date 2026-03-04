@@ -8139,13 +8139,10 @@ fn BidiProtocol::handle_subscribe(
             }
           }
         }
-        if wants_context_created {
-          for ctx_id in self.manager.list_sessions() {
-            if self.context_parent.get(ctx_id) == None {
-              self.emit_existing_context_created_tree(ctx_id)
-            }
-          }
-        }
+        // For global subscriptions we do not eagerly replay existing
+        // browsingContext.contextCreated events. Replaying here leaves stale
+        // contextCreated entries queued before later create/window.open events
+        // and breaks WPT ordering expectations for wait_for_event.
       }
       if has_log_subscription(events_to_sub) {
         self.flush_pending_log_entries()

@@ -71,6 +71,33 @@ test "bidi browsingContext create emits events before response" {
 }
 
 ///|
+test "bidi global contextCreated subscribe does not replay existing context" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.contextCreated\"]}}",
+  )
+  let sub_msgs = proto.take_messages()
+  assert_eq(sub_msgs.length(), 1)
+  assert_true(sub_msgs[0].to_json().contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.create\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  let event_json = msgs[0].to_json()
+  let response_json = msgs[1].to_json()
+  assert_true(event_json.contains("browsingContext.contextCreated"))
+  assert_true(event_json.contains("\"context\":\"session-2\""))
+  assert_true(response_json.contains("\"context\":\"session-2\""))
+}
+
+///|
 test "bidi browsingContext close unknown context returns no such frame" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
