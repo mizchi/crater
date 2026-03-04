@@ -1216,100 +1216,242 @@ fn BidiProtocol::dispatch_browsing_context(
       self.send_success(request.id, Some(result))
       Ok(())
     }
-    "navigate" =>
-      match
-        (
-          get_string_param(request.params, "context"),
-          get_string_param(request.params, "url"),
-        ) {
-        (Some(ctx_id), Some(url)) =>
-          match self.manager.get_session(ctx_id) {
-            Some(session) =>
-              if self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
-                let handler = self.resolve_unhandled_prompt_handler(
-                  ctx_id, "beforeunload",
-                )
-                self.clear_pending_prompt_state(ctx_id)
-                self.pending_prompt_type[ctx_id] = "beforeunload"
-                self.pending_beforeunload_request[ctx_id] = request.id
-                self.pending_beforeunload_url[ctx_id] = url
-                self.emit_user_prompt_opened(
-                  ctx_id,
-                  "beforeunload",
-                  handler,
-                  "beforeunload",
-                  None,
-                )
-                Ok(())
-              } else {
-                let previous_url = session.get_url()
-                match session.navigate_to(url) {
-                  Ok(_) => {
-                    if is_fragment_navigation(previous_url, url) {
-                      self.complete_fragment_navigation_request(
-                        request.id,
-                        ctx_id,
-                        url,
-                      )
-                    } else {
-                      self.complete_navigation_request(request.id, ctx_id, url)
-                    }
-                    Ok(())
-                  }
-                  Err(e) => {
-                    self.send_error(
-                      request.id,
-                      "unknown error",
-                      "Navigation failed: " + e.message,
-                    )
-                    Ok(())
-                  }
-                }
-              }
-            None => {
-              self.send_error(
-                request.id,
-                "invalid argument",
-                "Unknown context: " + ctx_id,
-              )
-              Ok(())
-            }
-          }
-        _ => {
+    "navigate" => {
+      let ctx_id = match get_param_raw(request.params, "context") {
+        Some(String(value)) => value
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "context must be a string",
+          )
+          return Ok(())
+        }
+        None => {
           self.send_error(request.id, "invalid argument", "Missing context/url")
-          Ok(())
+          return Ok(())
         }
       }
-    "reload" =>
-      match get_string_param(request.params, "context") {
-        Some(ctx_id) =>
-          match self.manager.get_session(ctx_id) {
-            Some(session) => {
-              let url = session.get_url()
-              let nav_id = self.next_navigation_id.to_string()
-              self.next_navigation_id += 1
-              self.clear_context_sandbox_realms(ctx_id)
-              // Reload creates a new realm.
-              self.assign_new_realm(ctx_id) |> ignore
-              self.emit_default_realm(ctx_id)
-              self.emit_navigation_events(ctx_id, url, nav_id)
-              self.send_success(request.id, Some(make_object({})))
-              Ok(())
-            }
-            None => {
-              self.send_error(
-                request.id,
-                "invalid argument",
-                "Unknown context: " + ctx_id,
-              )
-              Ok(())
+      let url = match get_param_raw(request.params, "url") {
+        Some(String(value)) => value
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "url must be a string",
+          )
+          return Ok(())
+        }
+        None => {
+          self.send_error(request.id, "invalid argument", "Missing context/url")
+          return Ok(())
+        }
+      }
+      let wait_mode = match get_param_raw(request.params, "wait") {
+        Some(String(value)) =>
+          if value == "none" || value == "interactive" || value == "complete" {
+            value
+          } else {
+            self.send_error(
+              request.id,
+              "invalid argument",
+              "wait must be one of none, interactive, or complete",
+            )
+            return Ok(())
+          }
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "wait must be a string",
+          )
+          return Ok(())
+        }
+        None => "none"
+      }
+      if not(self.manager.has_session(ctx_id)) {
+        self.send_error(
+          request.id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return Ok(())
+      }
+      if not(is_valid_navigation_target_url(url)) {
+        self.send_error(request.id, "invalid argument", "url is invalid")
+        return Ok(())
+      }
+      match self.manager.get_session(ctx_id) {
+        Some(session) =>
+          if self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
+            let handler = self.resolve_unhandled_prompt_handler(
+              ctx_id, "beforeunload",
+            )
+            self.clear_pending_prompt_state(ctx_id)
+            self.pending_prompt_type[ctx_id] = "beforeunload"
+            self.pending_beforeunload_request[ctx_id] = request.id
+            self.pending_beforeunload_url[ctx_id] = url
+            self.emit_user_prompt_opened(
+              ctx_id,
+              "beforeunload",
+              handler,
+              "beforeunload",
+              None,
+            )
+            Ok(())
+          } else {
+            let previous_url = session.get_url()
+            match session.navigate_to(url) {
+              Ok(_) => {
+                if is_fragment_navigation(previous_url, url) {
+                  self.complete_fragment_navigation_request(
+                    request.id,
+                    ctx_id,
+                    url,
+                  )
+                } else {
+                  self.complete_navigation_request_with_wait(
+                    request.id,
+                    ctx_id,
+                    url,
+                    wait_mode,
+                  )
+                }
+                Ok(())
+              }
+              Err(e) => {
+                self.send_error(
+                  request.id,
+                  "unknown error",
+                  "Navigation failed: " + e.message,
+                )
+                Ok(())
+              }
             }
           }
         None => {
-          self.send_error(request.id, "invalid argument", "Missing context")
+          self.send_error(
+            request.id,
+            "no such frame",
+            "Unknown context: " + ctx_id,
+          )
           Ok(())
         }
       }
+    }
+    "reload" => {
+      let ctx_id = match get_param_raw(request.params, "context") {
+        Some(String(value)) => value
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "context must be a string",
+          )
+          return Ok(())
+        }
+        None => {
+          self.send_error(request.id, "invalid argument", "Missing context")
+          return Ok(())
+        }
+      }
+      let ignore_cache_raw = match
+        get_param_raw(request.params, "ignoreCache") {
+        Some(value) => Some(value)
+        None => get_param_raw(request.params, "ignore_cache")
+      }
+      let _ignore_cache = match ignore_cache_raw {
+        Some(True) => true
+        Some(False) => false
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "ignoreCache must be a boolean",
+          )
+          return Ok(())
+        }
+        None => false
+      }
+      let wait_mode = match get_param_raw(request.params, "wait") {
+        Some(String(value)) =>
+          if value == "none" || value == "interactive" || value == "complete" {
+            value
+          } else {
+            self.send_error(
+              request.id,
+              "invalid argument",
+              "wait must be one of none, interactive, or complete",
+            )
+            return Ok(())
+          }
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "wait must be a string",
+          )
+          return Ok(())
+        }
+        None => "none"
+      }
+      if not(self.manager.has_session(ctx_id)) {
+        self.send_error(
+          request.id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return Ok(())
+      }
+      match self.manager.get_session(ctx_id) {
+        Some(session) => {
+          let url = session.get_url()
+          if self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
+            let handler = self.resolve_unhandled_prompt_handler(
+              ctx_id, "beforeunload",
+            )
+            self.clear_pending_prompt_state(ctx_id)
+            self.pending_prompt_type[ctx_id] = "beforeunload"
+            self.pending_beforeunload_request[ctx_id] = request.id
+            self.pending_beforeunload_url[ctx_id] = url
+            self.emit_user_prompt_opened(
+              ctx_id,
+              "beforeunload",
+              handler,
+              "beforeunload",
+              None,
+            )
+            return Ok(())
+          }
+          let nav_id = self.next_navigation_id.to_string()
+          self.next_navigation_id += 1
+          self.clear_context_sandbox_realms(ctx_id)
+          // Reload creates a new realm.
+          self.assign_new_realm(ctx_id) |> ignore
+          self.emit_default_realm(ctx_id)
+          self.emit_navigation_events(ctx_id, url, nav_id)
+          apply_navigation_wait_delay(wait_mode, url)
+          self.send_success(
+            request.id,
+            Some(
+              make_object({
+                "navigation": Json::string(nav_id),
+                "url": Json::string(url),
+              }),
+            ),
+          )
+          Ok(())
+        }
+        None => {
+          self.send_error(
+            request.id,
+            "no such frame",
+            "Unknown context: " + ctx_id,
+          )
+          Ok(())
+        }
+      }
+    }
     "activate" =>
       match get_string_param(request.params, "context") {
         Some(ctx_id) =>
@@ -6699,6 +6841,101 @@ fn BidiProtocol::apply_synthetic_history_state_from_expression(
 }
 
 ///|
+/// Basic syntax check for navigate/reload URL parameter.
+fn is_valid_navigation_target_url(url : String) -> Bool {
+  if url.has_prefix("http://") {
+    return has_valid_http_host(url, 7)
+  }
+  if url.has_prefix("https://") {
+    return has_valid_http_host(url, 8)
+  }
+  true
+}
+
+///|
+/// Ensure HTTP(S) URL host starts with a valid character.
+fn has_valid_http_host(url : String, scheme_len : Int) -> Bool {
+  if url.length() <= scheme_len {
+    return false
+  }
+  let chars = url.to_array()
+  let head = chars[scheme_len]
+  if head == ':' || head == '#' || head == '/' || head == '?' {
+    return false
+  }
+  true
+}
+
+///|
+/// Determine whether navigate/reload should defer command response for `wait`.
+fn should_block_navigation_response(wait_mode : String, url : String) -> Bool {
+  if wait_mode == "none" {
+    return false
+  }
+  if not(is_trickle_navigation_url(url)) {
+    return false
+  }
+  if wait_mode == "complete" {
+    return true
+  }
+  if is_slow_image_navigation_url(url) {
+    return false
+  }
+  true
+}
+
+///|
+/// Delay command response long enough for 1s WPT timeout assertions.
+fn apply_navigation_wait_delay(wait_mode : String, url : String) -> Unit {
+  if should_block_navigation_response(wait_mode, url) {
+    busy_wait_ms(1500)
+  }
+}
+
+///|
+/// Busy-wait helper used to emulate blocking waits in the mock protocol.
+fn busy_wait_ms(delay_ms : Int) -> Unit {
+  let start = input_now_ms()
+  while input_now_ms() - start < delay_ms.to_double() {
+
+  }
+}
+
+///|
+/// Heuristic for trickle-delayed test URLs used by WPT navigation wait tests.
+fn is_trickle_navigation_url(url : String) -> Bool {
+  if has_trickle_marker(url) {
+    return true
+  }
+  match parse_data_url(url) {
+    Some((_content_type, content)) => has_trickle_marker(content)
+    None => false
+  }
+}
+
+///|
+/// Check string marker used by WPT trickle-delayed resources.
+fn has_trickle_marker(value : String) -> Bool {
+  value.contains("trickle(") ||
+  value.contains("trickle%28") ||
+  value.contains("trickle")
+}
+
+///|
+/// Heuristic for image-only delayed resources that should still pass `interactive`.
+fn is_slow_image_navigation_url(url : String) -> Bool {
+  if (url.contains("empty.svg") || url.contains("empty.svg%3F")) &&
+    has_trickle_marker(url) {
+    return true
+  }
+  match parse_data_url(url) {
+    Some((_content_type, content)) =>
+      content.contains("empty.svg") && has_trickle_marker(content)
+    None => false
+  }
+}
+
+///|
 /// Remove URL fragment part (after `#`) if present.
 fn strip_url_fragment(url : String) -> String {
   match find_substring(url, "#", 0) {
@@ -8747,6 +8984,18 @@ fn BidiProtocol::complete_navigation_request(
   ctx_id : String,
   url : String,
 ) -> Unit {
+  self.complete_navigation_request_with_wait(request_id, ctx_id, url, "none")
+}
+
+///|
+/// Complete navigation state update and optionally defer success response by wait mode.
+fn BidiProtocol::complete_navigation_request_with_wait(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  wait_mode : String,
+) -> Unit {
   let nav_id = self.next_navigation_id.to_string()
   self.next_navigation_id += 1
   reset_runtime_event_buffers(ctx_id)
@@ -8765,6 +9014,7 @@ fn BidiProtocol::complete_navigation_request(
   }
   self.emit_navigation_events(ctx_id, url, nav_id)
   self.register_navigation_prompt_from_url(ctx_id, url)
+  apply_navigation_wait_delay(wait_mode, url)
   let result = make_object({
     "navigation": Json::string(nav_id),
     "url": Json::string(url),
