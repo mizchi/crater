@@ -72,7 +72,26 @@ pub struct BidiProtocol {
   context_parent : Map[String, String]
   context_children : Map[String, Array[String]]
   context_client_window : Map[String, String]
+  input_pressed_keys : Map[String, Array[String]] // context -> pressed key stack
+  input_pointer_x : Map[String, Double] // context -> current pointer x
+  input_pointer_y : Map[String, Double] // context -> current pointer y
+  input_pointer_buttons : Map[String, Int] // context -> mouse buttons bitfield
+  input_pointer_type : Map[String, String] // context -> last pointer type
+  input_pointer_target_shared : Map[String, String] // context -> last element-origin sharedId
+  input_pointer_down_x : Map[String, Double] // context -> primary pointerDown x
+  input_pointer_down_y : Map[String, Double] // context -> primary pointerDown y
+  input_pointer_down_target_shared : Map[String, String] // context -> primary pointerDown target
+  input_pointer_dragged : Map[String, Bool] // context -> whether pointer moved while primary button pressed
+  input_html_drag_source_shared : Map[String, String] // context -> active HTML draggable source sharedId
+  input_html_drag_active : Map[String, Bool] // context -> whether dragstart has been emitted
+  input_last_click_time : Map[String, Double] // context -> timestamp of last primary click release
+  input_last_click_x : Map[String, Double] // context -> x of last primary click release
+  input_last_click_y : Map[String, Double] // context -> y of last primary click release
+  input_last_click_target_shared : Map[String, String] // context -> target of last primary click release
+  input_pending_double_click : Map[String, Bool] // context -> whether current click sequence should emit dblclick
+  input_action_clock_ms : Map[String, Double] // context -> virtual input clock advanced by pause durations
   mut socket : @core.Any? // WebSocket for async responses
+  mut socket_epoch : Int // Monotonic epoch for active WebSocket
   mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
   mut dom_initialized : Bool // Deno-side mock DOM initialized
 }
@@ -109,7 +128,26 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     context_parent: {},
     context_children: {},
     context_client_window: {},
+    input_pressed_keys: {},
+    input_pointer_x: {},
+    input_pointer_y: {},
+    input_pointer_buttons: {},
+    input_pointer_type: {},
+    input_pointer_target_shared: {},
+    input_pointer_down_x: {},
+    input_pointer_down_y: {},
+    input_pointer_down_target_shared: {},
+    input_pointer_dragged: {},
+    input_html_drag_source_shared: {},
+    input_html_drag_active: {},
+    input_last_click_time: {},
+    input_last_click_x: {},
+    input_last_click_y: {},
+    input_last_click_target_shared: {},
+    input_pending_double_click: {},
+    input_action_clock_ms: {},
     socket: None,
+    socket_epoch: 0,
     use_quickjs: false,
     dom_initialized: false,
   }
@@ -134,18 +172,29 @@ pub fn BidiProtocol::is_quickjs_enabled(self : BidiProtocol) -> Bool {
 }
 
 ///|
-/// Set WebSocket for async responses
+/// Set WebSocket for async responses and return epoch token.
 pub fn BidiProtocol::set_socket(
   self : BidiProtocol,
   socket : @core.Any,
-) -> Unit {
+) -> Int {
+  self.socket_epoch += 1
   self.socket = Some(socket)
+  self.socket_epoch
 }
 
 ///|
 /// Clear WebSocket reference
 pub fn BidiProtocol::clear_socket(self : BidiProtocol) -> Unit {
   self.socket = None
+}
+
+///|
+/// Check whether a captured WebSocket epoch is still active.
+pub fn BidiProtocol::is_current_socket_epoch(
+  self : BidiProtocol,
+  epoch : Int,
+) -> Bool {
+  self.socket_epoch == epoch
 }
 
 ///|
@@ -290,6 +339,150 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   for key in context_client_window_keys {
     self.context_client_window.remove(key)
   }
+
+  let input_pressed_keys : Array[String] = []
+  for key, _ in self.input_pressed_keys {
+    input_pressed_keys.push(key)
+  }
+  for key in input_pressed_keys {
+    self.input_pressed_keys.remove(key)
+  }
+
+  let input_pointer_x_keys : Array[String] = []
+  for key, _ in self.input_pointer_x {
+    input_pointer_x_keys.push(key)
+  }
+  for key in input_pointer_x_keys {
+    self.input_pointer_x.remove(key)
+  }
+
+  let input_pointer_y_keys : Array[String] = []
+  for key, _ in self.input_pointer_y {
+    input_pointer_y_keys.push(key)
+  }
+  for key in input_pointer_y_keys {
+    self.input_pointer_y.remove(key)
+  }
+
+  let input_pointer_button_keys : Array[String] = []
+  for key, _ in self.input_pointer_buttons {
+    input_pointer_button_keys.push(key)
+  }
+  for key in input_pointer_button_keys {
+    self.input_pointer_buttons.remove(key)
+  }
+
+  let input_pointer_type_keys : Array[String] = []
+  for key, _ in self.input_pointer_type {
+    input_pointer_type_keys.push(key)
+  }
+  for key in input_pointer_type_keys {
+    self.input_pointer_type.remove(key)
+  }
+
+  let input_pointer_target_keys : Array[String] = []
+  for key, _ in self.input_pointer_target_shared {
+    input_pointer_target_keys.push(key)
+  }
+  for key in input_pointer_target_keys {
+    self.input_pointer_target_shared.remove(key)
+  }
+
+  let input_pointer_down_x_keys : Array[String] = []
+  for key, _ in self.input_pointer_down_x {
+    input_pointer_down_x_keys.push(key)
+  }
+  for key in input_pointer_down_x_keys {
+    self.input_pointer_down_x.remove(key)
+  }
+
+  let input_pointer_down_y_keys : Array[String] = []
+  for key, _ in self.input_pointer_down_y {
+    input_pointer_down_y_keys.push(key)
+  }
+  for key in input_pointer_down_y_keys {
+    self.input_pointer_down_y.remove(key)
+  }
+
+  let input_pointer_down_target_keys : Array[String] = []
+  for key, _ in self.input_pointer_down_target_shared {
+    input_pointer_down_target_keys.push(key)
+  }
+  for key in input_pointer_down_target_keys {
+    self.input_pointer_down_target_shared.remove(key)
+  }
+
+  let input_pointer_dragged_keys : Array[String] = []
+  for key, _ in self.input_pointer_dragged {
+    input_pointer_dragged_keys.push(key)
+  }
+  for key in input_pointer_dragged_keys {
+    self.input_pointer_dragged.remove(key)
+  }
+
+  let input_html_drag_source_keys : Array[String] = []
+  for key, _ in self.input_html_drag_source_shared {
+    input_html_drag_source_keys.push(key)
+  }
+  for key in input_html_drag_source_keys {
+    self.input_html_drag_source_shared.remove(key)
+  }
+
+  let input_html_drag_active_keys : Array[String] = []
+  for key, _ in self.input_html_drag_active {
+    input_html_drag_active_keys.push(key)
+  }
+  for key in input_html_drag_active_keys {
+    self.input_html_drag_active.remove(key)
+  }
+
+  let input_last_click_time_keys : Array[String] = []
+  for key, _ in self.input_last_click_time {
+    input_last_click_time_keys.push(key)
+  }
+  for key in input_last_click_time_keys {
+    self.input_last_click_time.remove(key)
+  }
+
+  let input_last_click_x_keys : Array[String] = []
+  for key, _ in self.input_last_click_x {
+    input_last_click_x_keys.push(key)
+  }
+  for key in input_last_click_x_keys {
+    self.input_last_click_x.remove(key)
+  }
+
+  let input_last_click_y_keys : Array[String] = []
+  for key, _ in self.input_last_click_y {
+    input_last_click_y_keys.push(key)
+  }
+  for key in input_last_click_y_keys {
+    self.input_last_click_y.remove(key)
+  }
+
+  let input_last_click_target_keys : Array[String] = []
+  for key, _ in self.input_last_click_target_shared {
+    input_last_click_target_keys.push(key)
+  }
+  for key in input_last_click_target_keys {
+    self.input_last_click_target_shared.remove(key)
+  }
+
+  let input_pending_double_click_keys : Array[String] = []
+  for key, _ in self.input_pending_double_click {
+    input_pending_double_click_keys.push(key)
+  }
+  for key in input_pending_double_click_keys {
+    self.input_pending_double_click.remove(key)
+  }
+
+  let input_action_clock_keys : Array[String] = []
+  for key, _ in self.input_action_clock_ms {
+    input_action_clock_keys.push(key)
+  }
+  for key in input_action_clock_keys {
+    self.input_action_clock_ms.remove(key)
+  }
 }
 
 ///|
@@ -416,7 +609,8 @@ fn BidiProtocol::dispatch_session(
       Ok(())
     }
     "unsubscribe" => {
-      match self.validate_session_unsubscribe_params(request.id, request.params) {
+      match
+        self.validate_session_unsubscribe_params(request.id, request.params) {
         Some(_) => return Ok(())
         None => ()
       }
@@ -615,6 +809,7 @@ fn BidiProtocol::dispatch_browsing_context(
                 Ok(_) => {
                   let nav_id = self.next_navigation_id.to_string()
                   self.next_navigation_id += 1
+                  reset_runtime_event_buffers(ctx_id)
                   self.load_data_url_content(ctx_id, url)
                   self.drop_child_contexts(ctx_id)
                   self.refresh_child_contexts_from_iframes(ctx_id)
@@ -709,6 +904,7 @@ fn BidiProtocol::dispatch_browsing_context(
             self.clear_context_sandbox_realms(ctx_id)
             self.context_client_window.remove(ctx_id)
             self.pending_log_entries.remove(ctx_id)
+            self.clear_input_state_for_context(ctx_id)
             match self.default_context_id {
               Some(default_ctx) =>
                 if default_ctx == ctx_id {
@@ -816,7 +1012,9 @@ fn BidiProtocol::dispatch_script(
       }
       let user_activation = get_user_activation_value(request.params)
       let expr = get_string_param(request.params, "expression").unwrap()
-      let serialization_options_json = get_serialization_options_json(request.params)
+      let serialization_options_json = get_serialization_options_json(
+        request.params,
+      )
       let has_serialization_options = has_serialization_options_param(
         request.params,
       )
@@ -868,11 +1066,7 @@ fn BidiProtocol::dispatch_script(
       if await_promise {
         if not(self.dom_initialized) {
           let _ = evaluate_js_with_console(
-            "undefined",
-            false,
-            false,
-            false,
-            "{}",
+            "undefined", false, false, false, "{}",
           )
           self.dom_initialized = true
         }
@@ -896,11 +1090,7 @@ fn BidiProtocol::dispatch_script(
       }
       // Synchronous evaluation (Deno eval)
       let eval_result_json = evaluate_js_with_console(
-        expr,
-        capture_console,
-        user_activation,
-        root_ownership,
-        serialization_options_json,
+        expr, capture_console, user_activation, root_ownership, serialization_options_json,
       )
       self.dom_initialized = true
       let eval_result = @json.parse(eval_result_json) catch {
@@ -1086,11 +1276,7 @@ fn BidiProtocol::dispatch_script(
         (not(has_serialization_options_call) || function_is_async) {
         if not(self.dom_initialized) {
           let _ = evaluate_js_with_console(
-            "undefined",
-            false,
-            false,
-            false,
-            "{}",
+            "undefined", false, false, false, "{}",
           )
           self.dom_initialized = true
         }
@@ -1113,10 +1299,7 @@ fn BidiProtocol::dispatch_script(
         }
       }
       let eval_result_json = evaluate_js_with_console(
-        call_expr,
-        capture_console_call,
-        user_activation_call,
-        root_ownership_call,
+        call_expr, capture_console_call, user_activation_call, root_ownership_call,
         serialization_options_json_call,
       )
       let eval_result = @json.parse(eval_result_json) catch {
@@ -1281,17 +1464,27 @@ fn BidiProtocol::dispatch_script(
 }
 
 ///|
-/// Dispatch input domain (no-op for now)
+/// Dispatch input domain (partial implementation for automation primitives)
 fn BidiProtocol::dispatch_input(
   self : BidiProtocol,
   request : BidiRequest,
   action : String,
 ) -> Result[Unit, String] {
   match action {
-    "performActions" | "releaseActions" => {
-      self.send_success(request.id, Some(make_object({})))
-      Ok(())
-    }
+    "performActions" =>
+      if self.handle_input_perform_actions(request.id, request.params) {
+        self.send_success(request.id, Some(make_object({})))
+        Ok(())
+      } else {
+        Ok(())
+      }
+    "releaseActions" =>
+      if self.handle_input_release_actions(request.id, request.params) {
+        self.send_success(request.id, Some(make_object({})))
+        Ok(())
+      } else {
+        Ok(())
+      }
     _ => {
       self.send_error(
         request.id,
@@ -1300,6 +1493,1534 @@ fn BidiProtocol::dispatch_input(
       )
       Ok(())
     }
+  }
+}
+
+///|
+/// Handle input.performActions.
+fn BidiProtocol::handle_input_perform_actions(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Bool {
+  let ctx_id = match self.validate_input_context(request_id, params) {
+    Some(id) => id
+    None => return false
+  }
+  let sources = match get_param_raw(params, "actions") {
+    Some(Array(items)) => items
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "actions must be an array",
+      )
+      return false
+    }
+  }
+
+  set_runtime_context(ctx_id)
+  set_runtime_context_frames(
+    ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+
+  let source_types : Array[String] = []
+  let source_actions_list : Array[Array[Json]] = []
+  let source_pointer_types : Array[String] = []
+
+  for source in sources {
+    let (source_type, source_actions, pointer_type) = match source {
+      Object(source_map) => {
+        let source_type = match source_map.get("type") {
+          Some(String(t)) =>
+            if t == "none" || t == "key" || t == "pointer" || t == "wheel" {
+              t
+            } else {
+              self.send_error(
+                request_id, "invalid argument", "input source type is invalid",
+              )
+              return false
+            }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "input source type must be a string",
+            )
+            return false
+          }
+        }
+        match source_map.get("id") {
+          Some(String(_)) => ()
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "input source id must be a string",
+            )
+            return false
+          }
+        }
+        let actions = match source_map.get("actions") {
+          Some(Array(a)) => a
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "input source actions must be an array",
+            )
+            return false
+          }
+        }
+        let mut pointer_type = "mouse"
+        if source_type == "pointer" {
+          match source_map.get("parameters") {
+            Some(Object(pointer_params)) =>
+              match pointer_params.get("pointerType") {
+                Some(String(pt)) =>
+                  if pt == "mouse" || pt == "pen" || pt == "touch" {
+                    pointer_type = pt
+                  } else {
+                    self.send_error(
+                      request_id, "invalid argument", "pointerType is invalid",
+                    )
+                    return false
+                  }
+                Some(_) => {
+                  self.send_error(
+                    request_id, "invalid argument", "pointerType must be a string",
+                  )
+                  return false
+                }
+                None => ()
+              }
+            Some(_) => {
+              self.send_error(
+                request_id, "invalid argument", "pointer parameters must be an object",
+              )
+              return false
+            }
+            None => ()
+          }
+          self.input_pointer_type[ctx_id] = pointer_type
+        }
+        (source_type, actions, pointer_type)
+      }
+      _ => {
+        self.send_error(
+          request_id, "invalid argument", "input source must be an object",
+        )
+        return false
+      }
+    }
+    source_types.push(source_type)
+    source_actions_list.push(source_actions)
+    source_pointer_types.push(pointer_type)
+  }
+
+  let mut max_ticks = 0
+  for source_actions in source_actions_list {
+    if source_actions.length() > max_ticks {
+      max_ticks = source_actions.length()
+    }
+  }
+
+  for tick in 0..<max_ticks {
+    for source_idx in 0..<source_types.length() {
+      let source_type = source_types[source_idx]
+      let source_actions = source_actions_list[source_idx]
+      let pointer_type = source_pointer_types[source_idx]
+      if tick >= source_actions.length() {
+        continue
+      }
+      let raw_action = source_actions[tick]
+
+      if self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return false
+      }
+      let action_map = match raw_action {
+        Object(m) => m
+        _ => {
+          self.send_error(
+            request_id, "invalid argument", "action entry must be an object",
+          )
+          return false
+        }
+      }
+      let action_type = match action_map.get("type") {
+        Some(String(t)) => t
+        _ => {
+          self.send_error(
+            request_id, "invalid argument", "action type must be a string",
+          )
+          return false
+        }
+      }
+
+      if action_type == "pause" {
+        let mut pause_duration_ms = 0
+        match action_map.get("duration") {
+          Some(duration) =>
+            match json_as_safe_int(duration, 0.0, 9007199254740991.0) {
+              Some(parsed) => pause_duration_ms = parsed
+              None => {
+                self.send_error(
+                  request_id, "invalid argument", "pause duration must be a non-negative integer",
+                )
+                return false
+              }
+            }
+          None => ()
+        }
+        self.input_action_clock_ms[ctx_id] = self.input_action_clock_ms
+          .get(ctx_id)
+          .unwrap_or(0.0) +
+          pause_duration_ms.to_double()
+        continue
+      }
+
+      match source_type {
+        "none" => {
+          self.send_error(
+            request_id, "invalid argument", "none source supports only pause actions",
+          )
+          return false
+        }
+        "key" => {
+          if action_type != "keyDown" && action_type != "keyUp" {
+            self.send_error(
+              request_id, "invalid argument", "key action type is invalid",
+            )
+            return false
+          }
+          let key_value = match action_map.get("value") {
+            Some(String(v)) => v
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "key action value must be a string",
+              )
+              return false
+            }
+          }
+          if not(input_is_single_grapheme(key_value)) {
+            self.send_error(
+              request_id, "invalid argument", "key action value must be a single grapheme",
+            )
+            return false
+          }
+          let normalized_key = normalize_input_key(key_value)
+          if action_type == "keyUp" && not(
+              self.has_pressed_key(ctx_id, normalized_key),
+            ) {
+            continue
+          }
+          let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
+            ctx_id,
+            normalized_key,
+            action_type == "keyDown",
+          )
+          input_dispatch_key_action(
+            action_type, key_value, ctrl, alt, shift, meta,
+          )
+          if action_type == "keyDown" {
+            if self.handle_inline_attribute_navigation(ctx_id, "onkeydown") {
+              self.input_pressed_keys.remove(ctx_id)
+              continue
+            }
+            if self.context_has_window_close_onkeydown(ctx_id) {
+              if self.force_close_context_from_input(ctx_id) {
+                self.send_error(
+                  request_id,
+                  "no such frame",
+                  "Unknown context: " + ctx_id,
+                )
+                return false
+              }
+            }
+            self.push_pressed_key(ctx_id, normalized_key)
+          } else {
+            self.remove_pressed_key(ctx_id, normalized_key)
+          }
+        }
+        "pointer" => {
+          if not(
+              action_type == "pointerMove" ||
+              action_type == "pointerDown" ||
+              action_type == "pointerUp",
+            ) {
+            self.send_error(
+              request_id, "invalid argument", "pointer action type is invalid",
+            )
+            return false
+          }
+          if not(
+              self.validate_pointer_common_properties(request_id, action_map),
+            ) {
+            return false
+          }
+          if action_type == "pointerMove" {
+            let x = match action_map.get("x") {
+              Some(value) =>
+                match
+                  json_as_safe_number(
+                    value, -9007199254740991.0, 9007199254740991.0,
+                  ) {
+                  Some(parsed) => parsed
+                  None => {
+                    self.send_error(
+                      request_id, "invalid argument", "pointerMove x must be a number",
+                    )
+                    return false
+                  }
+                }
+              None => {
+                self.send_error(
+                  request_id, "invalid argument", "pointerMove x is required",
+                )
+                return false
+              }
+            }
+            let y = match action_map.get("y") {
+              Some(value) =>
+                match
+                  json_as_safe_number(
+                    value, -9007199254740991.0, 9007199254740991.0,
+                  ) {
+                  Some(parsed) => parsed
+                  None => {
+                    self.send_error(
+                      request_id, "invalid argument", "pointerMove y must be a number",
+                    )
+                    return false
+                  }
+                }
+              None => {
+                self.send_error(
+                  request_id, "invalid argument", "pointerMove y is required",
+                )
+                return false
+              }
+            }
+            let move_duration_ms = match action_map.get("duration") {
+              Some(value) =>
+                match json_as_safe_int(value, 0.0, 9007199254740991.0) {
+                  Some(parsed) => parsed
+                  None => {
+                    self.send_error(
+                      request_id, "invalid argument", "pointerMove duration must be a non-negative integer",
+                    )
+                    return false
+                  }
+                }
+              None => 0
+            }
+            self.input_action_clock_ms[ctx_id] = self.input_action_clock_ms
+              .get(ctx_id)
+              .unwrap_or(0.0) +
+              move_duration_ms.to_double()
+            let (final_x, final_y, target_shared) = match
+              self.resolve_pointer_origin(
+                request_id,
+                ctx_id,
+                action_map.get("origin"),
+                x,
+                y,
+                true,
+              ) {
+              Some(resolved) => resolved
+              None => return false
+            }
+            if not(
+                self.ensure_pointer_within_viewport(
+                  request_id, final_x, final_y,
+                ),
+              ) {
+              return false
+            }
+            self.input_pointer_x[ctx_id] = final_x
+            self.input_pointer_y[ctx_id] = final_y
+            self.input_pointer_target_shared[ctx_id] = target_shared
+            let buttons = self.input_pointer_buttons.get(ctx_id).unwrap_or(0)
+            let width = match action_map.get("width") {
+              Some(value) =>
+                json_as_safe_int(value, 0.0, 9007199254740991.0).unwrap_or(1)
+                  .to_double()
+              None => 1.0
+            }
+            let height = match action_map.get("height") {
+              Some(value) =>
+                json_as_safe_int(value, 0.0, 9007199254740991.0).unwrap_or(1)
+                  .to_double()
+              None => 1.0
+            }
+            let pressure = match action_map.get("pressure") {
+              Some(Number(n, ..)) => n
+              _ =>
+                if button_state_contains(buttons, button_to_mask(0)) {
+                  0.5
+                } else {
+                  0.0
+                }
+            }
+            let tangential_pressure = match action_map.get("tangentialPressure") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            let twist = match action_map.get("twist") {
+              Some(value) =>
+                json_as_safe_int(value, 0.0, 359.0).unwrap_or(0).to_double()
+              None => 0.0
+            }
+            let altitude_angle = match action_map.get("altitudeAngle") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            let azimuth_angle = match action_map.get("azimuthAngle") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            if button_state_contains(buttons, button_to_mask(0)) {
+              let down_x = self.input_pointer_down_x.get(ctx_id).unwrap_or(final_x)
+              let down_y = self.input_pointer_down_y.get(ctx_id).unwrap_or(final_y)
+              let down_target = self.input_pointer_down_target_shared.get(ctx_id)
+                .unwrap_or(target_shared)
+              if abs_double(final_x - down_x) > 0.5 ||
+                abs_double(final_y - down_y) > 0.5 ||
+                down_target != target_shared {
+                self.input_pointer_dragged[ctx_id] = true
+              }
+            }
+            let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
+              ctx_id, "", false,
+            )
+            input_set_pointer_event_properties(
+              width,
+              height,
+              pressure,
+              tangential_pressure,
+              twist,
+              altitude_angle,
+              azimuth_angle,
+            )
+            let should_emit_move = pointer_type == "mouse" ||
+              button_state_contains(buttons, button_to_mask(0))
+            if should_emit_move {
+              input_dispatch_pointer_event(
+                target_shared,
+                "pointermove",
+                final_x,
+                final_y,
+                0,
+                buttons,
+                pointer_type,
+                ctrl,
+                alt,
+                shift,
+                meta,
+              )
+              input_dispatch_pointer_event(
+                target_shared,
+                "mousemove",
+                final_x,
+                final_y,
+                0,
+                buttons,
+                pointer_type,
+                ctrl,
+                alt,
+                shift,
+                meta,
+              )
+            }
+            if button_state_contains(buttons, button_to_mask(0)) {
+              let drag_source = self.input_html_drag_source_shared.get(ctx_id)
+                .unwrap_or("")
+              if drag_source != "" {
+                if not(self.input_html_drag_active.get(ctx_id).unwrap_or(false)) {
+                  input_dispatch_pointer_event(
+                    drag_source,
+                    "dragstart",
+                    final_x,
+                    final_y,
+                    0,
+                    buttons,
+                    pointer_type,
+                    ctrl,
+                    alt,
+                    shift,
+                    meta,
+                  )
+                  self.input_html_drag_active[ctx_id] = true
+                }
+                let drag_target = if target_shared != "" {
+                  target_shared
+                } else {
+                  drag_source
+                }
+                input_dispatch_pointer_event(
+                  drag_target,
+                  "dragenter",
+                  final_x,
+                  final_y,
+                  0,
+                  buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+                if move_duration_ms > 0 {
+                  input_dispatch_pointer_event(
+                    drag_target,
+                    "dragleave",
+                    final_x,
+                    final_y,
+                    0,
+                    buttons,
+                    pointer_type,
+                    ctrl,
+                    alt,
+                    shift,
+                    meta,
+                  )
+                }
+                input_dispatch_pointer_event(
+                  drag_target,
+                  "dragover",
+                  final_x,
+                  final_y,
+                  0,
+                  buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+              }
+            }
+            input_clear_pointer_event_properties()
+          } else {
+            let button = match action_map.get("button") {
+              Some(value) =>
+                match json_as_safe_int(value, 0.0, 9007199254740991.0) {
+                  Some(parsed) => parsed
+                  None => {
+                    self.send_error(
+                      request_id, "invalid argument", "pointer button must be a non-negative integer",
+                    )
+                    return false
+                  }
+                }
+              None => {
+                self.send_error(
+                  request_id, "invalid argument", "pointer button is required",
+                )
+                return false
+              }
+            }
+            let current_x = self.input_pointer_x.get(ctx_id).unwrap_or(0.0)
+            let current_y = self.input_pointer_y.get(ctx_id).unwrap_or(0.0)
+            let target_shared = self.input_pointer_target_shared
+              .get(ctx_id)
+              .unwrap_or("")
+            let old_buttons = self.input_pointer_buttons
+              .get(ctx_id)
+              .unwrap_or(0)
+            let width = match action_map.get("width") {
+              Some(value) =>
+                json_as_safe_int(value, 0.0, 9007199254740991.0).unwrap_or(1)
+                  .to_double()
+              None => 1.0
+            }
+            let height = match action_map.get("height") {
+              Some(value) =>
+                json_as_safe_int(value, 0.0, 9007199254740991.0).unwrap_or(1)
+                  .to_double()
+              None => 1.0
+            }
+            let tangential_pressure = match action_map.get("tangentialPressure") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            let twist = match action_map.get("twist") {
+              Some(value) =>
+                json_as_safe_int(value, 0.0, 359.0).unwrap_or(0).to_double()
+              None => 0.0
+            }
+            let altitude_angle = match action_map.get("altitudeAngle") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            let azimuth_angle = match action_map.get("azimuthAngle") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            if action_type == "pointerDown" {
+              let next_buttons = button_state_add(old_buttons, button)
+              self.input_pointer_buttons[ctx_id] = next_buttons
+              let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
+                ctx_id, "", false,
+              )
+              let pressure = match action_map.get("pressure") {
+                Some(Number(n, ..)) => n
+                _ =>
+                  if button == 0 {
+                    0.5
+                  } else {
+                    0.0
+                  }
+              }
+              input_set_pointer_event_properties(
+                width,
+                height,
+                pressure,
+                tangential_pressure,
+                twist,
+                altitude_angle,
+                azimuth_angle,
+              )
+              if button == 0 && pointer_type != "mouse" {
+                input_dispatch_pointer_event(
+                  target_shared,
+                  "pointerover",
+                  current_x,
+                  current_y,
+                  button,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+                input_dispatch_pointer_event(
+                  target_shared,
+                  "pointerenter",
+                  current_x,
+                  current_y,
+                  button,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+              }
+              input_dispatch_pointer_event(
+                target_shared, "pointerdown", current_x, current_y, button, next_buttons,
+                pointer_type, ctrl, alt, shift, meta,
+              )
+              input_clear_pointer_event_properties()
+              if self.handle_inline_attribute_navigation(ctx_id, "onpointerdown") {
+                continue
+              }
+              if self.context_has_window_close_onpointerdown(ctx_id) {
+                if not(self.force_close_context_from_input(ctx_id)) {
+                  self.send_error(
+                    request_id,
+                    "no such frame",
+                    "Unknown context: " + ctx_id,
+                  )
+                  return false
+                }
+              } else {
+                input_dispatch_pointer_event(
+                  target_shared, "mousedown", current_x, current_y, button, next_buttons,
+                  pointer_type, ctrl, alt, shift, meta,
+                )
+                if self.handle_inline_attribute_navigation(ctx_id, "onmousedown") {
+                  continue
+                }
+                if self.context_has_window_close_onmousedown(ctx_id) {
+                  if not(self.force_close_context_from_input(ctx_id)) {
+                    self.send_error(
+                      request_id,
+                      "no such frame",
+                      "Unknown context: " + ctx_id,
+                    )
+                    return false
+                  }
+                }
+              }
+              if button == 0 {
+                self.input_pointer_down_x[ctx_id] = current_x
+                self.input_pointer_down_y[ctx_id] = current_y
+                self.input_pointer_down_target_shared[ctx_id] = target_shared
+                self.input_pointer_dragged[ctx_id] = false
+                if target_shared != "" &&
+                  runtime_shared_node_is_draggable(target_shared) {
+                  self.input_html_drag_source_shared[ctx_id] = target_shared
+                  self.input_html_drag_active[ctx_id] = false
+                } else {
+                  self.input_html_drag_source_shared.remove(ctx_id)
+                  self.input_html_drag_active.remove(ctx_id)
+                }
+                let now = self.input_action_clock_ms.get(ctx_id).unwrap_or(0.0)
+                let pending_double_click = match self.input_last_click_time.get(ctx_id) {
+                  Some(last_time) => {
+                    let last_target = self.input_last_click_target_shared.get(ctx_id)
+                      .unwrap_or("")
+                    let last_x = self.input_last_click_x.get(ctx_id).unwrap_or(-999999.0)
+                    let last_y = self.input_last_click_y.get(ctx_id).unwrap_or(-999999.0)
+                    now - last_time <= 640.0 &&
+                    last_target == target_shared &&
+                    abs_double(current_x - last_x) <= 4.0 &&
+                    abs_double(current_y - last_y) <= 4.0
+                  }
+                  None => false
+                }
+                self.input_pending_double_click[ctx_id] = pending_double_click
+              } else {
+                self.input_pending_double_click.remove(ctx_id)
+              }
+            } else {
+              let next_buttons = button_state_remove(old_buttons, button)
+              self.input_pointer_buttons[ctx_id] = next_buttons
+              let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
+                ctx_id, "", false,
+              )
+              input_set_pointer_event_properties(
+                width,
+                height,
+                0.0,
+                tangential_pressure,
+                twist,
+                altitude_angle,
+                azimuth_angle,
+              )
+              input_dispatch_pointer_event(
+                target_shared, "pointerup", current_x, current_y, button, next_buttons,
+                pointer_type, ctrl, alt, shift, meta,
+              )
+              if pointer_type == "touch" && button == 0 {
+                input_dispatch_pointer_event(
+                  target_shared,
+                  "pointerout",
+                  current_x,
+                  current_y,
+                  button,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+                input_dispatch_pointer_event(
+                  target_shared,
+                  "pointerleave",
+                  current_x,
+                  current_y,
+                  button,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+              }
+              input_clear_pointer_event_properties()
+              let is_mac_ctrl_left_click = button == 0 &&
+                ctrl &&
+                input_is_mac_platform()
+              if is_mac_ctrl_left_click {
+                input_dispatch_pointer_event(
+                  target_shared, "contextmenu", current_x, current_y, button, next_buttons,
+                  pointer_type, ctrl, alt, shift, meta,
+                )
+                input_dispatch_pointer_event(
+                  target_shared, "mouseup", current_x, current_y, button, next_buttons,
+                  pointer_type, ctrl, alt, shift, meta,
+                )
+                self.input_pending_double_click.remove(ctx_id)
+                if button == 0 {
+                  self.input_pointer_down_x.remove(ctx_id)
+                  self.input_pointer_down_y.remove(ctx_id)
+                  self.input_pointer_down_target_shared.remove(ctx_id)
+                  self.input_pointer_dragged.remove(ctx_id)
+                  self.input_html_drag_source_shared.remove(ctx_id)
+                  self.input_html_drag_active.remove(ctx_id)
+                }
+              } else {
+                input_dispatch_pointer_event(
+                  target_shared, "mouseup", current_x, current_y, button, next_buttons,
+                  pointer_type, ctrl, alt, shift, meta,
+                )
+                if button == 0 {
+                  let drag_source = self.input_html_drag_source_shared.get(ctx_id)
+                    .unwrap_or("")
+                  let drag_active = self.input_html_drag_active.get(ctx_id).unwrap_or(
+                    false,
+                  )
+                  if drag_source != "" && drag_active {
+                    let drop_target = if target_shared != "" {
+                      target_shared
+                    } else {
+                      drag_source
+                    }
+                    input_dispatch_pointer_event(
+                      drop_target,
+                      "drop",
+                      current_x,
+                      current_y,
+                      button,
+                      next_buttons,
+                      pointer_type,
+                      ctrl,
+                      alt,
+                      shift,
+                      meta,
+                    )
+                    input_dispatch_pointer_event(
+                      drag_source,
+                      "dragend",
+                      current_x,
+                      current_y,
+                      button,
+                      next_buttons,
+                      pointer_type,
+                      ctrl,
+                      alt,
+                      shift,
+                      meta,
+                    )
+                  }
+                  let was_dragged = self.input_pointer_dragged.get(ctx_id).unwrap_or(
+                    false,
+                  )
+                  if not(was_dragged) {
+                    input_dispatch_pointer_event(
+                      target_shared, "click", current_x, current_y, button, next_buttons,
+                      pointer_type, ctrl, alt, shift, meta,
+                    )
+                    if self.input_pending_double_click.get(ctx_id).unwrap_or(false) {
+                      input_dispatch_pointer_event(
+                        target_shared, "dblclick", current_x, current_y, button, next_buttons,
+                        pointer_type, ctrl, alt, shift, meta,
+                      )
+                    }
+                    self.input_last_click_time[ctx_id] = self.input_action_clock_ms
+                      .get(ctx_id)
+                      .unwrap_or(0.0)
+                    self.input_last_click_x[ctx_id] = current_x
+                    self.input_last_click_y[ctx_id] = current_y
+                    self.input_last_click_target_shared[ctx_id] = target_shared
+                    self.handle_pointer_click_navigation(
+                      ctx_id,
+                      target_shared,
+                      current_x,
+                      current_y,
+                    )
+                  }
+                  self.input_pending_double_click.remove(ctx_id)
+                  self.input_pointer_down_x.remove(ctx_id)
+                  self.input_pointer_down_y.remove(ctx_id)
+                  self.input_pointer_down_target_shared.remove(ctx_id)
+                  self.input_pointer_dragged.remove(ctx_id)
+                  self.input_html_drag_source_shared.remove(ctx_id)
+                  self.input_html_drag_active.remove(ctx_id)
+                } else if button == 2 {
+                  input_dispatch_pointer_event(
+                    target_shared, "contextmenu", current_x, current_y, button, next_buttons,
+                    pointer_type, ctrl, alt, shift, meta,
+                  )
+                  self.input_pending_double_click.remove(ctx_id)
+                }
+              }
+            }
+          }
+        }
+        "wheel" => {
+          if action_type != "scroll" {
+            self.send_error(
+              request_id, "invalid argument", "wheel action type is invalid",
+            )
+            return false
+          }
+          let x = match action_map.get("x") {
+            Some(value) =>
+              match
+                json_as_safe_int(value, -9007199254740991.0, 9007199254740991.0) {
+                Some(parsed) => parsed
+                None => {
+                  self.send_error(
+                    request_id, "invalid argument", "wheel x must be an integer",
+                  )
+                  return false
+                }
+              }
+            None => {
+              self.send_error(
+                request_id, "invalid argument", "wheel x is required",
+              )
+              return false
+            }
+          }
+          let y = match action_map.get("y") {
+            Some(value) =>
+              match
+                json_as_safe_int(value, -9007199254740991.0, 9007199254740991.0) {
+                Some(parsed) => parsed
+                None => {
+                  self.send_error(
+                    request_id, "invalid argument", "wheel y must be an integer",
+                  )
+                  return false
+                }
+              }
+            None => {
+              self.send_error(
+                request_id, "invalid argument", "wheel y is required",
+              )
+              return false
+            }
+          }
+          let delta_x = match action_map.get("deltaX") {
+            Some(value) =>
+              match
+                json_as_safe_int(value, -9007199254740991.0, 9007199254740991.0) {
+                Some(parsed) => parsed
+                None => {
+                  self.send_error(
+                    request_id, "invalid argument", "wheel deltaX must be an integer",
+                  )
+                  return false
+                }
+              }
+            None => {
+              self.send_error(
+                request_id, "invalid argument", "wheel deltaX is required",
+              )
+              return false
+            }
+          }
+          let delta_y = match action_map.get("deltaY") {
+            Some(value) =>
+              match
+                json_as_safe_int(value, -9007199254740991.0, 9007199254740991.0) {
+                Some(parsed) => parsed
+                None => {
+                  self.send_error(
+                    request_id, "invalid argument", "wheel deltaY must be an integer",
+                  )
+                  return false
+                }
+              }
+            None => {
+              self.send_error(
+                request_id, "invalid argument", "wheel deltaY is required",
+              )
+              return false
+            }
+          }
+          let (final_x, final_y, target_shared) = match
+            self.resolve_pointer_origin(
+              request_id,
+              ctx_id,
+              action_map.get("origin"),
+              x.to_double(),
+              y.to_double(),
+              false,
+            ) {
+            Some(resolved) => resolved
+            None => return false
+          }
+          if not(
+              self.ensure_pointer_within_viewport(request_id, final_x, final_y),
+            ) {
+            return false
+          }
+          let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
+            ctx_id, "", false,
+          )
+          input_dispatch_wheel_event(
+            target_shared,
+            final_x,
+            final_y,
+            delta_x.to_double(),
+            delta_y.to_double(),
+            ctrl,
+            alt,
+            shift,
+            meta,
+          )
+        }
+        _ => ()
+      }
+    }
+  }
+  true
+}
+
+///|
+/// Handle input.releaseActions.
+fn BidiProtocol::handle_input_release_actions(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Bool {
+  let ctx_id = match self.validate_input_context(request_id, params) {
+    Some(id) => id
+    None => return false
+  }
+
+  set_runtime_context(ctx_id)
+  set_runtime_context_frames(
+    ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+
+  let pointer_type = self.input_pointer_type.get(ctx_id).unwrap_or("mouse")
+  let pressed = self.input_pressed_keys.get(ctx_id).unwrap_or([])
+  let mut idx = pressed.length()
+  while idx > 0 {
+    idx = idx - 1
+    let key = pressed[idx]
+    let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
+      ctx_id, "", false,
+    )
+    input_dispatch_key_action("keyUp", key, ctrl, alt, shift, meta)
+    self.remove_pressed_key(ctx_id, key)
+  }
+  self.input_pressed_keys.remove(ctx_id)
+
+  let current_x = self.input_pointer_x.get(ctx_id).unwrap_or(0.0)
+  let current_y = self.input_pointer_y.get(ctx_id).unwrap_or(0.0)
+  let target_shared = self.input_pointer_target_shared.get(ctx_id).unwrap_or("")
+  let current_buttons = self.input_pointer_buttons.get(ctx_id).unwrap_or(0)
+  if button_state_contains(current_buttons, button_to_mask(2)) {
+    input_dispatch_pointer_event(
+      target_shared,
+      "pointerup",
+      current_x,
+      current_y,
+      2,
+      button_state_remove(current_buttons, 2),
+      pointer_type,
+      false,
+      false,
+      false,
+      false,
+    )
+    input_dispatch_pointer_event(
+      target_shared,
+      "mouseup",
+      current_x,
+      current_y,
+      2,
+      button_state_remove(current_buttons, 2),
+      pointer_type,
+      false,
+      false,
+      false,
+      false,
+    )
+  }
+  if button_state_contains(current_buttons, button_to_mask(1)) {
+    input_dispatch_pointer_event(
+      target_shared,
+      "pointerup",
+      current_x,
+      current_y,
+      1,
+      button_state_remove(current_buttons, 1),
+      pointer_type,
+      false,
+      false,
+      false,
+      false,
+    )
+    input_dispatch_pointer_event(
+      target_shared,
+      "mouseup",
+      current_x,
+      current_y,
+      1,
+      button_state_remove(current_buttons, 1),
+      pointer_type,
+      false,
+      false,
+      false,
+      false,
+    )
+  }
+  if button_state_contains(current_buttons, button_to_mask(0)) {
+    input_dispatch_pointer_event(
+      target_shared,
+      "pointerup",
+      current_x,
+      current_y,
+      0,
+      button_state_remove(current_buttons, 0),
+      pointer_type,
+      false,
+      false,
+      false,
+      false,
+    )
+    input_dispatch_pointer_event(
+      target_shared,
+      "mouseup",
+      current_x,
+      current_y,
+      0,
+      button_state_remove(current_buttons, 0),
+      pointer_type,
+      false,
+      false,
+      false,
+      false,
+    )
+    input_dispatch_pointer_event(
+      target_shared, "click", current_x, current_y, 0, 0, pointer_type, false, false,
+      false, false,
+    )
+  }
+  self.input_pointer_buttons.remove(ctx_id)
+  self.input_pointer_target_shared.remove(ctx_id)
+  self.input_pointer_x.remove(ctx_id)
+  self.input_pointer_y.remove(ctx_id)
+  self.input_pointer_down_x.remove(ctx_id)
+  self.input_pointer_down_y.remove(ctx_id)
+  self.input_pointer_down_target_shared.remove(ctx_id)
+  self.input_pointer_dragged.remove(ctx_id)
+  self.input_html_drag_source_shared.remove(ctx_id)
+  self.input_html_drag_active.remove(ctx_id)
+  self.input_last_click_time.remove(ctx_id)
+  self.input_last_click_x.remove(ctx_id)
+  self.input_last_click_y.remove(ctx_id)
+  self.input_last_click_target_shared.remove(ctx_id)
+  self.input_pending_double_click.remove(ctx_id)
+  self.input_action_clock_ms.remove(ctx_id)
+  true
+}
+
+///|
+/// Validate input context parameter and return context ID.
+fn BidiProtocol::validate_input_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> String? {
+  let ctx_id = match get_param_raw(params, "context") {
+    Some(String(id)) => id
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return None
+    }
+  }
+  if not(self.manager.has_session(ctx_id)) {
+    self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+    return None
+  }
+  Some(ctx_id)
+}
+
+///|
+/// Validate pointer common property types/ranges.
+fn BidiProtocol::validate_pointer_common_properties(
+  self : BidiProtocol,
+  request_id : Int,
+  action_map : Map[String, Json],
+) -> Bool {
+  match action_map.get("width") {
+    Some(value) =>
+      if json_as_safe_int(value, 0.0, 9007199254740991.0) is None {
+        self.send_error(
+          request_id, "invalid argument", "pointer width must be a non-negative integer",
+        )
+        return false
+      }
+    None => ()
+  }
+  match action_map.get("height") {
+    Some(value) =>
+      if json_as_safe_int(value, 0.0, 9007199254740991.0) is None {
+        self.send_error(
+          request_id, "invalid argument", "pointer height must be a non-negative integer",
+        )
+        return false
+      }
+    None => ()
+  }
+  match action_map.get("pressure") {
+    Some(Number(_)) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "pointer pressure must be a number",
+      )
+      return false
+    }
+    None => ()
+  }
+  match action_map.get("tangentialPressure") {
+    Some(Number(_)) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "pointer tangentialPressure must be a number",
+      )
+      return false
+    }
+    None => ()
+  }
+  match action_map.get("twist") {
+    Some(value) =>
+      if json_as_safe_int(value, 0.0, 359.0) is None {
+        self.send_error(
+          request_id, "invalid argument", "pointer twist must be an integer in [0, 359]",
+        )
+        return false
+      }
+    None => ()
+  }
+  match action_map.get("altitudeAngle") {
+    Some(Number(_)) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "pointer altitudeAngle must be a number",
+      )
+      return false
+    }
+    None => ()
+  }
+  match action_map.get("azimuthAngle") {
+    Some(Number(_)) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "pointer azimuthAngle must be a number",
+      )
+      return false
+    }
+    None => ()
+  }
+  true
+}
+
+///|
+/// Resolve pointer/wheel origin with integer offsets.
+fn BidiProtocol::resolve_pointer_origin(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  origin : Json?,
+  offset_x : Double,
+  offset_y : Double,
+  allow_pointer_origin : Bool,
+) -> (Double, Double, String)? {
+  match origin {
+    None | Some(String("viewport")) =>
+      Some((offset_x, offset_y, ""))
+    Some(String("pointer")) =>
+      if allow_pointer_origin {
+        Some(
+          (
+            self.input_pointer_x.get(ctx_id).unwrap_or(0.0) +
+            offset_x,
+            self.input_pointer_y.get(ctx_id).unwrap_or(0.0) +
+            offset_y,
+            self.input_pointer_target_shared.get(ctx_id).unwrap_or(""),
+          ),
+        )
+      } else {
+        self.send_error(
+          request_id, "invalid argument", "pointer origin is not supported for this action",
+        )
+        None
+      }
+    Some(String(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "origin must be 'viewport', 'pointer', or element origin",
+      )
+      None
+    }
+    Some(Object(origin_map)) => {
+      let origin_type = match origin_map.get("type") {
+        Some(String(s)) => s
+        _ => {
+          self.send_error(
+            request_id, "invalid argument", "origin.type must be a string",
+          )
+          return None
+        }
+      }
+      if origin_type != "element" {
+        self.send_error(
+          request_id, "invalid argument", "origin.type must be 'element'",
+        )
+        return None
+      }
+      let element_obj = match origin_map.get("element") {
+        Some(Object(elem)) => elem
+        _ => {
+          self.send_error(
+            request_id, "invalid argument", "origin.element must be an object",
+          )
+          return None
+        }
+      }
+      let shared_id = match element_obj.get("sharedId") {
+        Some(String(id)) => id
+        _ => {
+          self.send_error(
+            request_id, "invalid argument", "origin.element.sharedId must be a string",
+          )
+          return None
+        }
+      }
+      if not(has_runtime_shared_node(shared_id)) ||
+        not(runtime_shared_node_is_element(shared_id)) {
+        self.send_error(
+          request_id,
+          "no such element",
+          "Unknown element: " + shared_id,
+        )
+        return None
+      }
+      let center_json = @json.parse(
+        get_runtime_shared_node_center_json(shared_id),
+      ) catch {
+        _ => make_object({})
+      }
+      let center_x = match get_field(center_json, "x") {
+        Some(Number(n, ..)) => n
+        _ => 0.0
+      }
+      let center_y = match get_field(center_json, "y") {
+        Some(Number(n, ..)) => n
+        _ => 0.0
+      }
+      Some(
+        (
+          center_x + offset_x,
+          center_y + offset_y,
+          shared_id,
+        ),
+      )
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "origin must be a string or object",
+      )
+      None
+    }
+  }
+}
+
+///|
+/// Validate pointer target coordinates against viewport.
+fn BidiProtocol::ensure_pointer_within_viewport(
+  self : BidiProtocol,
+  request_id : Int,
+  x : Double,
+  y : Double,
+) -> Bool {
+  let _ = self
+  if x < 0.0 || y < 0.0 || x > 1024.0 || y > 768.0 {
+    self.send_error(
+      request_id, "move target out of bounds", "Target coordinate is outside viewport",
+    )
+    false
+  } else {
+    true
+  }
+}
+
+///|
+/// Absolute value helper for doubles.
+fn abs_double(value : Double) -> Double {
+  if value < 0.0 {
+    0.0 - value
+  } else {
+    value
+  }
+}
+
+///|
+/// Parse safe integer JSON value.
+fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int? {
+  match value {
+    Number(n, ..) =>
+      if n == n.to_int64().to_double() && n >= min && n <= max {
+        Some(n.to_int64().to_int())
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse safe JSON number value.
+fn json_as_safe_number(value : Json, min : Double, max : Double) -> Double? {
+  match value {
+    Number(n, ..) =>
+      if n >= min && n <= max {
+        Some(n)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Normalize WebDriver special key value for internal state tracking.
+fn normalize_input_key(value : String) -> String {
+  match value {
+    "\uE003" => "Backspace"
+    "\uE004" => "Tab"
+    "\uE006" | "\uE007" => "Enter"
+    "\uE008" | "\uE050" => "Shift"
+    "\uE009" | "\uE051" => "Control"
+    "\uE00A" | "\uE052" => "Alt"
+    "\uE00C" => "Escape"
+    "\uE03D" | "\uE053" => "Meta"
+    _ => value
+  }
+}
+
+///|
+/// Push pressed key in stack order.
+fn BidiProtocol::push_pressed_key(
+  self : BidiProtocol,
+  ctx_id : String,
+  key : String,
+) -> Unit {
+  let keys = self.input_pressed_keys.get(ctx_id).unwrap_or([])
+  keys.push(key)
+  self.input_pressed_keys[ctx_id] = keys
+}
+
+///|
+/// Check whether key is currently pressed in the context.
+fn BidiProtocol::has_pressed_key(
+  self : BidiProtocol,
+  ctx_id : String,
+  key : String,
+) -> Bool {
+  let keys = self.input_pressed_keys.get(ctx_id).unwrap_or([])
+  for existing in keys {
+    if existing == key {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Remove first matching pressed key.
+fn BidiProtocol::remove_pressed_key(
+  self : BidiProtocol,
+  ctx_id : String,
+  key : String,
+) -> Unit {
+  let keys = self.input_pressed_keys.get(ctx_id).unwrap_or([])
+  let filtered : Array[String] = []
+  let mut removed = false
+  for existing in keys {
+    if not(removed) && existing == key {
+      removed = true
+    } else {
+      filtered.push(existing)
+    }
+  }
+  if filtered.length() == 0 {
+    self.input_pressed_keys.remove(ctx_id)
+  } else {
+    self.input_pressed_keys[ctx_id] = filtered
+  }
+}
+
+///|
+/// Resolve modifier booleans from pressed key state.
+fn BidiProtocol::resolve_input_modifiers(
+  self : BidiProtocol,
+  ctx_id : String,
+  current_key : String,
+  include_current : Bool,
+) -> (Bool, Bool, Bool, Bool) {
+  let keys = self.input_pressed_keys.get(ctx_id).unwrap_or([])
+  let mut ctrl = false
+  let mut alt = false
+  let mut shift = false
+  let mut meta = false
+  for key in keys {
+    if key == "Control" {
+      ctrl = true
+    } else if key == "Alt" {
+      alt = true
+    } else if key == "Shift" {
+      shift = true
+    } else if key == "Meta" {
+      meta = true
+    }
+  }
+  if include_current {
+    if current_key == "Control" {
+      ctrl = true
+    } else if current_key == "Alt" {
+      alt = true
+    } else if current_key == "Shift" {
+      shift = true
+    } else if current_key == "Meta" {
+      meta = true
+    }
+  }
+  (ctrl, alt, shift, meta)
+}
+
+///|
+/// Convert pointer button to bit mask compatible with MouseEvent.buttons.
+fn button_to_mask(button : Int) -> Int {
+  match button {
+    0 => 1
+    1 => 4
+    2 => 2
+    _ => 0
+  }
+}
+
+///|
+/// Check whether button bit mask exists in state.
+fn button_state_contains(state : Int, mask : Int) -> Bool {
+  if mask == 1 {
+    state % 2 == 1
+  } else if mask == 2 {
+    state / 2 % 2 == 1
+  } else if mask == 4 {
+    state / 4 % 2 == 1
+  } else {
+    false
+  }
+}
+
+///|
+/// Add button into button state bitfield.
+fn button_state_add(state : Int, button : Int) -> Int {
+  let mask = button_to_mask(button)
+  if mask == 0 || button_state_contains(state, mask) {
+    state
+  } else {
+    state + mask
+  }
+}
+
+///|
+/// Remove button from button state bitfield.
+fn button_state_remove(state : Int, button : Int) -> Int {
+  let mask = button_to_mask(button)
+  if mask == 0 || not(button_state_contains(state, mask)) {
+    state
+  } else {
+    state - mask
   }
 }
 
@@ -1400,12 +3121,7 @@ fn BidiProtocol::process_console_entries(
               _ => 0.0
             }
             self.emit_log_entry(
-              ctx_id,
-              level,
-              text,
-              console_method,
-              args,
-              timestamp,
+              ctx_id, level, text, console_method, args, timestamp,
             )
           }
           _ => ()
@@ -1459,15 +3175,10 @@ fn BidiProtocol::process_channel_messages(
               _ => ""
             }
             if channel != "" {
-              let data = msg_map.get("data").unwrap_or(
-                make_object({ "type": Json::string("undefined") }),
-              )
-              self.emit_script_message(
-                ctx_id,
-                realm_id,
-                channel,
-                data,
-              )
+              let data = msg_map
+                .get("data")
+                .unwrap_or(make_object({ "type": Json::string("undefined") }))
+              self.emit_script_message(ctx_id, realm_id, channel, data)
             }
           }
           _ => ()
@@ -1563,6 +3274,32 @@ fn BidiProtocol::unlink_from_parent(
 }
 
 ///|
+/// Clear input state for a browsing context.
+fn BidiProtocol::clear_input_state_for_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  self.input_pressed_keys.remove(ctx_id)
+  self.input_pointer_x.remove(ctx_id)
+  self.input_pointer_y.remove(ctx_id)
+  self.input_pointer_buttons.remove(ctx_id)
+  self.input_pointer_type.remove(ctx_id)
+  self.input_pointer_target_shared.remove(ctx_id)
+  self.input_pointer_down_x.remove(ctx_id)
+  self.input_pointer_down_y.remove(ctx_id)
+  self.input_pointer_down_target_shared.remove(ctx_id)
+  self.input_pointer_dragged.remove(ctx_id)
+  self.input_html_drag_source_shared.remove(ctx_id)
+  self.input_html_drag_active.remove(ctx_id)
+  self.input_last_click_time.remove(ctx_id)
+  self.input_last_click_x.remove(ctx_id)
+  self.input_last_click_y.remove(ctx_id)
+  self.input_last_click_target_shared.remove(ctx_id)
+  self.input_pending_double_click.remove(ctx_id)
+  self.input_action_clock_ms.remove(ctx_id)
+}
+
+///|
 /// Remove all descendant browsing contexts under a parent context.
 fn BidiProtocol::drop_child_contexts(
   self : BidiProtocol,
@@ -1588,11 +3325,141 @@ fn BidiProtocol::drop_child_contexts(
         self.clear_context_sandbox_realms(child_ctx_id)
         self.context_client_window.remove(child_ctx_id)
         self.pending_log_entries.remove(child_ctx_id)
+        self.clear_input_state_for_context(child_ctx_id)
       }
       self.context_children[parent_ctx_id] = []
     }
     None => ()
   }
+}
+
+///|
+/// Close a context without sending a command response (used by synthetic events).
+fn BidiProtocol::force_close_context_from_input(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  let original_opener = self.context_original_opener.get(ctx_id)
+  self.drop_child_contexts(ctx_id)
+  self.unlink_from_parent(ctx_id)
+  if not(self.manager.close_session(ctx_id)) {
+    return false
+  }
+  self.emit_context_destroyed(ctx_id, original_opener)
+  self.context_parent.remove(ctx_id)
+  self.context_children.remove(ctx_id)
+  self.context_user_context.remove(ctx_id)
+  self.context_original_opener.remove(ctx_id)
+  match self.context_realm.get(ctx_id) {
+    Some(realm_id) => {
+      self.realm_context.remove(realm_id)
+      self.realm_sandbox.remove(realm_id)
+    }
+    None => ()
+  }
+  self.context_realm.remove(ctx_id)
+  self.clear_context_sandbox_realms(ctx_id)
+  self.context_client_window.remove(ctx_id)
+  self.pending_log_entries.remove(ctx_id)
+  self.clear_input_state_for_context(ctx_id)
+  match self.default_context_id {
+    Some(default_ctx) =>
+      if default_ctx == ctx_id {
+        self.default_context_id = None
+      }
+    None => ()
+  }
+  true
+}
+
+///|
+/// Whether current context has an inline handler that closes window.
+fn BidiProtocol::context_has_window_close_handler(
+  self : BidiProtocol,
+  ctx_id : String,
+  attribute_name : String,
+) -> Bool {
+  match self.manager.get_session(ctx_id) {
+    Some(session) => {
+      let doc = session.get_tree().get_document()
+      let selector = "[" + attribute_name + "]"
+      match session.get_tree().query_selector_all(doc, selector) {
+        Ok(nodes) =>
+          for node in nodes {
+            match session.get_tree().get_attribute(node, attribute_name) {
+              Ok(Some(attr)) => if attr.contains("window.close") { return true }
+              _ => ()
+            }
+          }
+        Err(_) => ()
+      }
+      false
+    }
+    None => false
+  }
+}
+
+///|
+/// Whether current context has an inline keydown handler that closes window.
+fn BidiProtocol::context_has_window_close_onkeydown(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  self.context_has_window_close_handler(ctx_id, "onkeydown")
+}
+
+///|
+/// Whether current context has an inline mousedown handler that closes window.
+fn BidiProtocol::context_has_window_close_onmousedown(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  self.context_has_window_close_handler(ctx_id, "onmousedown")
+}
+
+///|
+/// Whether current context has an inline pointerdown handler that closes window.
+fn BidiProtocol::context_has_window_close_onpointerdown(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  self.context_has_window_close_handler(ctx_id, "onpointerdown")
+}
+
+///|
+/// Navigate current context when inline event handler assigns window.location.
+fn BidiProtocol::handle_inline_attribute_navigation(
+  self : BidiProtocol,
+  ctx_id : String,
+  attribute_name : String,
+) -> Bool {
+  set_runtime_context(ctx_id)
+  let destination = get_runtime_inline_navigation_url(attribute_name).unwrap_or(
+    "",
+  )
+  if destination == "" {
+    return false
+  }
+  match self.manager.get_session(ctx_id) {
+    Some(session) =>
+      match session.navigate_to(destination) {
+        Ok(_) => ()
+        Err(_) => ()
+      }
+    None => return false
+  }
+  reset_runtime_event_buffers(ctx_id)
+  self.load_data_url_content(ctx_id, destination)
+  self.drop_child_contexts(ctx_id)
+  self.refresh_child_contexts_from_iframes(ctx_id)
+  self.clear_context_sandbox_realms(ctx_id)
+  let window_realm_id = self.assign_new_realm(ctx_id)
+  self.emit_default_realm(ctx_id)
+  self.emit_worker_realms_from_scripts(ctx_id, window_realm_id)
+  let nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  self.emit_navigation_events(ctx_id, destination, nav_id)
+  true
 }
 
 ///|
@@ -1602,14 +3469,10 @@ fn BidiProtocol::load_data_url_content(
   ctx_id : String,
   url : String,
 ) -> Unit {
-  let is_child_context = self.context_parent.get(ctx_id) != None
+  set_runtime_context(ctx_id)
   if not(url.has_prefix("data:")) {
-    // Runtime DOM is global; avoid overriding top-level context with iframe content.
-    if not(is_child_context) {
-      // For non-data URLs, keep the browser session DOM loaded by navigate_to
-      // and mirror the fetched page into script runtime.
-      sync_runtime_page(url)
-    }
+    sync_runtime_page(url)
+    set_runtime_context(ctx_id)
     return
   }
   match parse_data_url(url) {
@@ -1623,12 +3486,49 @@ fn BidiProtocol::load_data_url_content(
           Some(session) => session.load_html(content)
           None => ()
         }
-        if not(is_child_context) {
-          sync_runtime_html(content, url, true)
-        }
+        sync_runtime_html(content, url, true)
+        set_runtime_context(ctx_id)
       }
     None => ()
   }
+}
+
+///|
+/// Emit navigation events when click target resolves to an anchor href.
+fn BidiProtocol::handle_pointer_click_navigation(
+  self : BidiProtocol,
+  ctx_id : String,
+  target_shared : String,
+  x : Double,
+  y : Double,
+) -> Unit {
+  let shared_href = get_runtime_shared_node_href(target_shared).unwrap_or("")
+  let clicked_href = get_runtime_last_click_href().unwrap_or("")
+  let point_href = get_runtime_href_at_point(x, y).unwrap_or("")
+  let destination = if shared_href != "" {
+    shared_href
+  } else if clicked_href != "" {
+    clicked_href
+  } else if point_href != "" {
+    point_href
+  } else {
+    return
+  }
+  if destination == "" {
+    return
+  }
+  match self.manager.get_session(ctx_id) {
+    Some(session) =>
+      match session.navigate_to(destination) {
+        Ok(_) => ()
+        Err(_) => ()
+      }
+    None => ()
+  }
+  self.load_data_url_content(ctx_id, destination)
+  let nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  self.emit_navigation_events(ctx_id, destination, nav_id)
 }
 
 ///|
@@ -1637,6 +3537,11 @@ fn BidiProtocol::collect_iframe_sources(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Array[String] {
+  set_runtime_context(ctx_id)
+  let runtime_sources = get_runtime_iframe_sources()
+  if runtime_sources.length() > 0 {
+    return runtime_sources
+  }
   match self.manager.get_session(ctx_id) {
     Some(session) => {
       let doc = session.get_tree().get_document()
@@ -1842,7 +3747,11 @@ fn BidiProtocol::refresh_child_contexts_from_iframes(
     let child_nav_id = self.next_navigation_id.to_string()
     self.next_navigation_id += 1
     self.emit_navigation_events(child_ctx_id, src, child_nav_id)
-    self.refresh_child_contexts_from_iframes(child_ctx_id)
+    // about:blank fallback frames can mirror parent runtime and recurse infinitely.
+    // Avoid deep expansion until frame documents diverge via explicit navigation/src.
+    if src != "about:blank" {
+      self.refresh_child_contexts_from_iframes(child_ctx_id)
+    }
   }
 }
 
@@ -2864,7 +4773,9 @@ fn BidiProtocol::validate_session_subscribe_params(
   let map = match params {
     Some(Object(map)) => map
     _ => {
-      self.send_error(request_id, "invalid argument", "params must be an object")
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
       return Some(())
     }
   }
@@ -2938,7 +4849,9 @@ fn BidiProtocol::validate_session_subscribe_params(
       }
     }
     Some(_) => {
-      self.send_error(request_id, "invalid argument", "contexts must be an array")
+      self.send_error(
+        request_id, "invalid argument", "contexts must be an array",
+      )
       return Some(())
     }
     None => ()
@@ -2967,9 +4880,7 @@ fn BidiProtocol::validate_session_subscribe_params(
             }
           _ => {
             self.send_error(
-              request_id,
-              "invalid argument",
-              "userContexts entries must be strings",
+              request_id, "invalid argument", "userContexts entries must be strings",
             )
             return Some(())
           }
@@ -3006,7 +4917,9 @@ fn BidiProtocol::validate_session_unsubscribe_params(
   let map = match params {
     Some(Object(map)) => map
     _ => {
-      self.send_error(request_id, "invalid argument", "params must be an object")
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
       return Some(())
     }
   }
@@ -3043,9 +4956,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
           }
           _ => {
             self.send_error(
-              request_id,
-              "invalid argument",
-              "subscriptions entries must be strings",
+              request_id, "invalid argument", "subscriptions entries must be strings",
             )
             return Some(())
           }
@@ -3103,9 +5014,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
     }
     None => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "Either events or subscriptions must be provided",
+        request_id, "invalid argument", "Either events or subscriptions must be provided",
       )
       return Some(())
     }
@@ -3134,7 +5043,9 @@ fn BidiProtocol::validate_session_unsubscribe_params(
       }
     }
     Some(_) => {
-      self.send_error(request_id, "invalid argument", "contexts must be an array")
+      self.send_error(
+        request_id, "invalid argument", "contexts must be an array",
+      )
       return Some(())
     }
     None => ()
@@ -3155,9 +5066,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
           String(_) => ()
           _ => {
             self.send_error(
-              request_id,
-              "invalid argument",
-              "userContexts entries must be strings",
+              request_id, "invalid argument", "userContexts entries must be strings",
             )
             return Some(())
           }
@@ -3264,10 +5173,10 @@ fn is_valid_subscription_id_format(subscription_id : String) -> Bool {
   }
   for c in subscription_id.iter() {
     if not(
-      (c >= '0' && c <= '9') ||
-      (c >= 'a' && c <= 'f') ||
-      (c >= 'A' && c <= 'F')
-    ) {
+        (c >= '0' && c <= '9') ||
+        (c >= 'a' && c <= 'f') ||
+        (c >= 'A' && c <= 'F'),
+      ) {
       return false
     }
   }
@@ -3736,6 +5645,9 @@ fn BidiProtocol::try_handle_window_open(
   if not(trimmed.has_prefix("window.open(")) {
     return false
   }
+  let opened_url = extract_quoted_after_marker(trimmed, "window.open(").unwrap_or(
+    "about:blank",
+  )
 
   let user_ctx = self.context_user_context
     .get(opener_ctx_id)
@@ -3751,7 +5663,22 @@ fn BidiProtocol::try_handle_window_open(
     Some(opener_ctx_id),
     None,
   )
+  match self.manager.get_session(new_ctx_id) {
+    Some(session) => {
+      let _ = session.navigate_to(opened_url)
+    }
+    None => ()
+  }
+  self.load_data_url_content(new_ctx_id, opened_url)
+  self.drop_child_contexts(new_ctx_id)
+  self.refresh_child_contexts_from_iframes(new_ctx_id)
+  self.clear_context_sandbox_realms(new_ctx_id)
+  let opened_realm_id = self.assign_new_realm(new_ctx_id)
   self.emit_default_realm(new_ctx_id)
+  self.emit_worker_realms_from_scripts(new_ctx_id, opened_realm_id)
+  let nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  self.emit_navigation_events(new_ctx_id, opened_url, nav_id)
 
   let returns_null = trimmed.contains("noopener") ||
     trimmed.contains("noreferrer")
@@ -4049,156 +5976,157 @@ fn bidi_value_to_js_literal(value : Json) -> String {
           "\")) ?? undefined)"
         _ =>
           match map.get("handle") {
-        Some(String(handle_id)) =>
-          "((globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.get(\"" +
-          escape_js_string(handle_id) +
-          "\")) ?? undefined)"
-        _ =>
-          match map.get("type") {
-        Some(String("undefined")) => "undefined"
-        Some(String("null")) => "null"
-        Some(String("boolean")) =>
-          match map.get("value") {
-            Some(True) => "true"
-            Some(False) => "false"
-            _ => "false"
-          }
-        Some(String("number")) =>
-          match map.get("value") {
-            Some(Number(n, ..)) => n.to_string()
-            Some(String(s)) => s // NaN, Infinity, etc.
-            _ => "0"
-          }
-        Some(String("string")) =>
-          match map.get("value") {
-            Some(String(s)) => "\"" + escape_js_string(s) + "\""
-            _ => "\"\""
-          }
-        Some(String("bigint")) =>
-          match map.get("value") {
-            Some(String(s)) => s + "n"
-            _ => "0n"
-          }
-        Some(String("channel")) =>
-          match map.get("value") {
-            Some(Object(channel_map)) => {
-              let channel_name = match channel_map.get("channel") {
-                Some(String(s)) => s
-                _ => "channel"
-              }
-              let ownership = match channel_map.get("ownership") {
-                Some(String(s)) => s
-                _ => "none"
-              }
-              let max_object_depth = match
-                channel_map.get("serializationOptions") {
-                Some(Object(ser_opts)) =>
-                  match ser_opts.get("maxObjectDepth") {
+            Some(String(handle_id)) =>
+              "((globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.get(\"" +
+              escape_js_string(handle_id) +
+              "\")) ?? undefined)"
+            _ =>
+              match map.get("type") {
+                Some(String("undefined")) => "undefined"
+                Some(String("null")) => "null"
+                Some(String("boolean")) =>
+                  match map.get("value") {
+                    Some(True) => "true"
+                    Some(False) => "false"
+                    _ => "false"
+                  }
+                Some(String("number")) =>
+                  match map.get("value") {
                     Some(Number(n, ..)) => n.to_string()
-                    _ => "-1"
+                    Some(String(s)) => s // NaN, Infinity, etc.
+                    _ => "0"
                   }
-                _ => "-1"
-              }
-              "((...__args) => {" +
-              "if (!globalThis.__bidiChannelMessages) globalThis.__bidiChannelMessages = [];" +
-              "globalThis.__bidiChannelMessages.push({" +
-              "channel: \"" +
-              escape_js_string(channel_name) +
-              "\"," +
-              "data: (__args.length > 0 ? __args[0] : undefined)," +
-              "ownership: \"" +
-              escape_js_string(ownership) +
-              "\"," +
-              "maxObjectDepth: " +
-              max_object_depth +
-              "});" +
-              "})"
-            }
-            _ => "(() => {})"
-          }
-        Some(String("date")) =>
-          match map.get("value") {
-            Some(String(s)) => "new Date(\"" + escape_js_string(s) + "\")"
-            _ => "new Date(0)"
-          }
-        Some(String("regexp")) =>
-          match map.get("value") {
-            Some(Object(regexp_map)) => {
-              let pattern = match regexp_map.get("pattern") {
-                Some(String(s)) => "\"" + escape_js_string(s) + "\""
-                _ => "\"\""
-              }
-              let flags = match regexp_map.get("flags") {
-                Some(String(s)) => "\"" + escape_js_string(s) + "\""
-                _ => "\"\""
-              }
-              "new RegExp(" + pattern + ", " + flags + ")"
-            }
-            _ => "new RegExp(\"\", \"\")"
-          }
-        Some(String("array")) =>
-          match map.get("value") {
-            Some(Array(items)) => {
-              let parts : Array[String] = []
-              for item in items {
-                parts.push(bidi_value_to_js_literal(item))
-              }
-              "[" + parts.join(", ") + "]"
-            }
-            _ => "[]"
-          }
-        Some(String("map")) =>
-          match map.get("value") {
-            Some(Array(entries)) => {
-              let parts : Array[String] = []
-              for entry in entries {
-                match entry {
-                  Array(kv) if kv.length() >= 2 => {
-                    let key = bidi_value_to_js_literal(kv[0])
-                    let val = bidi_value_to_js_literal(kv[1])
-                    parts.push("[" + key + ", " + val + "]")
+                Some(String("string")) =>
+                  match map.get("value") {
+                    Some(String(s)) => "\"" + escape_js_string(s) + "\""
+                    _ => "\"\""
                   }
-                  _ => ()
-                }
-              }
-              "new Map([" + parts.join(", ") + "])"
-            }
-            _ => "new Map()"
-          }
-        Some(String("set")) =>
-          match map.get("value") {
-            Some(Array(items)) => {
-              let parts : Array[String] = []
-              for item in items {
-                parts.push(bidi_value_to_js_literal(item))
-              }
-              "new Set([" + parts.join(", ") + "])"
-            }
-            _ => "new Set()"
-          }
-        Some(String("object")) =>
-          match map.get("value") {
-            Some(Array(entries)) => {
-              let parts : Array[String] = []
-              for entry in entries {
-                match entry {
-                  Array(kv) if kv.length() >= 2 => {
-                    let key = match kv[0] {
-                      String(s) => "\"" + escape_js_string(s) + "\""
-                      _ => bidi_value_to_js_literal(kv[0])
+                Some(String("bigint")) =>
+                  match map.get("value") {
+                    Some(String(s)) => s + "n"
+                    _ => "0n"
+                  }
+                Some(String("channel")) =>
+                  match map.get("value") {
+                    Some(Object(channel_map)) => {
+                      let channel_name = match channel_map.get("channel") {
+                        Some(String(s)) => s
+                        _ => "channel"
+                      }
+                      let ownership = match channel_map.get("ownership") {
+                        Some(String(s)) => s
+                        _ => "none"
+                      }
+                      let max_object_depth = match
+                        channel_map.get("serializationOptions") {
+                        Some(Object(ser_opts)) =>
+                          match ser_opts.get("maxObjectDepth") {
+                            Some(Number(n, ..)) => n.to_string()
+                            _ => "-1"
+                          }
+                        _ => "-1"
+                      }
+                      "((...__args) => {" +
+                      "if (!globalThis.__bidiChannelMessages) globalThis.__bidiChannelMessages = [];" +
+                      "globalThis.__bidiChannelMessages.push({" +
+                      "channel: \"" +
+                      escape_js_string(channel_name) +
+                      "\"," +
+                      "data: (__args.length > 0 ? __args[0] : undefined)," +
+                      "ownership: \"" +
+                      escape_js_string(ownership) +
+                      "\"," +
+                      "maxObjectDepth: " +
+                      max_object_depth +
+                      "});" +
+                      "})"
                     }
-                    let val = bidi_value_to_js_literal(kv[1])
-                    parts.push(key + ": " + val)
+                    _ => "(() => {})"
                   }
-                  _ => ()
-                }
+                Some(String("date")) =>
+                  match map.get("value") {
+                    Some(String(s)) =>
+                      "new Date(\"" + escape_js_string(s) + "\")"
+                    _ => "new Date(0)"
+                  }
+                Some(String("regexp")) =>
+                  match map.get("value") {
+                    Some(Object(regexp_map)) => {
+                      let pattern = match regexp_map.get("pattern") {
+                        Some(String(s)) => "\"" + escape_js_string(s) + "\""
+                        _ => "\"\""
+                      }
+                      let flags = match regexp_map.get("flags") {
+                        Some(String(s)) => "\"" + escape_js_string(s) + "\""
+                        _ => "\"\""
+                      }
+                      "new RegExp(" + pattern + ", " + flags + ")"
+                    }
+                    _ => "new RegExp(\"\", \"\")"
+                  }
+                Some(String("array")) =>
+                  match map.get("value") {
+                    Some(Array(items)) => {
+                      let parts : Array[String] = []
+                      for item in items {
+                        parts.push(bidi_value_to_js_literal(item))
+                      }
+                      "[" + parts.join(", ") + "]"
+                    }
+                    _ => "[]"
+                  }
+                Some(String("map")) =>
+                  match map.get("value") {
+                    Some(Array(entries)) => {
+                      let parts : Array[String] = []
+                      for entry in entries {
+                        match entry {
+                          Array(kv) if kv.length() >= 2 => {
+                            let key = bidi_value_to_js_literal(kv[0])
+                            let val = bidi_value_to_js_literal(kv[1])
+                            parts.push("[" + key + ", " + val + "]")
+                          }
+                          _ => ()
+                        }
+                      }
+                      "new Map([" + parts.join(", ") + "])"
+                    }
+                    _ => "new Map()"
+                  }
+                Some(String("set")) =>
+                  match map.get("value") {
+                    Some(Array(items)) => {
+                      let parts : Array[String] = []
+                      for item in items {
+                        parts.push(bidi_value_to_js_literal(item))
+                      }
+                      "new Set([" + parts.join(", ") + "])"
+                    }
+                    _ => "new Set()"
+                  }
+                Some(String("object")) =>
+                  match map.get("value") {
+                    Some(Array(entries)) => {
+                      let parts : Array[String] = []
+                      for entry in entries {
+                        match entry {
+                          Array(kv) if kv.length() >= 2 => {
+                            let key = match kv[0] {
+                              String(s) => "\"" + escape_js_string(s) + "\""
+                              _ => bidi_value_to_js_literal(kv[0])
+                            }
+                            let val = bidi_value_to_js_literal(kv[1])
+                            parts.push(key + ": " + val)
+                          }
+                          _ => ()
+                        }
+                      }
+                      "{" + parts.join(", ") + "}"
+                    }
+                    _ => "{}"
+                  }
+                _ => "undefined"
               }
-              "{" + parts.join(", ") + "}"
-            }
-            _ => "{}"
-          }
-        _ => "undefined"
-          }
           }
       }
     String(s) => "\"" + escape_js_string(s) + "\""

@@ -166,3 +166,211 @@ test "bidi unsubscribe by subscription id keeps duplicate subscription" {
   }
   assert_false(has_load_after_second_unsub)
 }
+
+///|
+test "bidi input performActions validates context type" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"input.performActions\",\"params\":{\"context\":true,\"actions\":[]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"error\":\"invalid argument\""))
+}
+
+///|
+test "bidi input performActions validates unknown context" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"input.performActions\",\"params\":{\"context\":\"missing\",\"actions\":[]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"error\":\"no such frame\""))
+}
+
+///|
+test "bidi input key actions update focused input value" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input id='keys'><script>document.getElementById('keys').focus()</script>\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"key\",\"id\":\"key-0\",\"actions\":[{\"type\":\"keyDown\",\"value\":\"a\"},{\"type\":\"keyUp\",\"value\":\"a\"}]}]}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"document.getElementById('keys').value\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":\"a\""))
+}
+
+///|
+test "bidi input keyUp without keyDown does not dispatch keyboard events" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input id='keys'><script>document.getElementById('keys').focus()</script>\"}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"window.events=[];const k=document.getElementById('keys');k.focus();['keydown','keypress','keyup'].forEach(t=>k.addEventListener(t,e=>window.events.push({type:e.type,key:e.key,code:e.code})));\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"key\",\"id\":\"key-0\",\"actions\":[{\"type\":\"keyUp\",\"value\":\"a\"}]}]}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.events)\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":\"[]\""))
+}
+
+///|
+test "bidi input special right key resolves code and key" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input id='keys'><script>document.getElementById('keys').focus()</script>\"}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"window.events=[];const k=document.getElementById('keys');k.focus();['keydown','keypress','keyup'].forEach(t=>k.addEventListener(t,e=>window.events.push({type:e.type,key:e.key,code:e.code,location:e.location})));\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"key\",\"id\":\"key-0\",\"actions\":[{\"type\":\"keyDown\",\"value\":\"\\uE014\"}]}]}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.events[0])\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\\\"key\\\":\\\"ArrowRight\\\""))
+  assert_true(json.contains("\\\"code\\\":\\\"ArrowRight\\\""))
+}
+
+///|
+test "bidi input pointer actions record click event" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='outer' style='width:100px;height:100px'></div><script>window.allEvents={events:[]}</script>\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"pointer\",\"id\":\"pointer-0\",\"parameters\":{\"pointerType\":\"mouse\"},\"actions\":[{\"type\":\"pointerMove\",\"x\":10,\"y\":10},{\"type\":\"pointerDown\",\"button\":0},{\"type\":\"pointerUp\",\"button\":0}]}]}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.allEvents.events.map(e => e.type))\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(
+    json.contains(
+      "\"value\":\"[\\\"pointermove\\\",\\\"mousemove\\\",\\\"pointerdown\\\",\\\"mousedown\\\",\\\"pointerup\\\",\\\"mouseup\\\",\\\"click\\\"]\"",
+    ),
+  )
+}
+
+///|
+test "bidi input pointerDown can close context without trailing action" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input style='position:absolute;left:0;top:0;width:120px;height:80px' onmousedown='window.close()'>close</input>\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"pointer\",\"id\":\"pointer-0\",\"parameters\":{\"pointerType\":\"mouse\"},\"actions\":[{\"type\":\"pointerMove\",\"x\":10,\"y\":10},{\"type\":\"pointerDown\",\"button\":0}]}]}}",
+  )
+  let perform_msgs = proto.take_messages()
+  assert_eq(perform_msgs.length(), 1)
+  let perform_json = perform_msgs[0].to_json()
+  assert_true(perform_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"1\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let evaluate_msgs = proto.take_messages()
+  assert_eq(evaluate_msgs.length(), 1)
+  let evaluate_json = evaluate_msgs[0].to_json()
+  assert_true(evaluate_json.contains("\"type\":\"error\""))
+  assert_true(evaluate_json.contains("\"error\":\"no such frame\""))
+}
+
+///|
+test "bidi input pointerDown close reports error when actions continue" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input style='position:absolute;left:0;top:0;width:120px;height:80px' onmousedown='window.close()'>close</input>\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"pointer\",\"id\":\"pointer-0\",\"parameters\":{\"pointerType\":\"mouse\"},\"actions\":[{\"type\":\"pointerMove\",\"x\":10,\"y\":10},{\"type\":\"pointerDown\",\"button\":0},{\"type\":\"pointerUp\",\"button\":0}]}]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"error\":\"no such frame\""))
+}

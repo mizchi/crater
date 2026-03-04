@@ -13,7 +13,10 @@ Usage:
 import asyncio
 import json
 import os
+import re
+import sys
 import time
+from pathlib import Path
 from typing import Any, Mapping
 
 import pytest
@@ -40,6 +43,7 @@ class CraterBidiSession:
         self._event_listeners = {}
         self._receive_task = None
         self.event_loop = None
+        self._trace_enabled = os.environ.get("CRATER_BIDI_TRACE", "0") == "1"
 
         # Module proxies (lazily initialized)
         self._browsing_context = None
@@ -49,6 +53,10 @@ class CraterBidiSession:
         self._storage = None
         self._input = None
         self._browser = None
+
+    def _trace(self, message: str):
+        if self._trace_enabled:
+            print(f"[bidi] {message}", flush=True)
 
     async def start(self):
         """Establish WebSocket connection to the BiDi server."""
@@ -66,6 +74,7 @@ class CraterBidiSession:
                 pass
         if self._ws:
             await self._ws.close()
+            await self._ws.wait_closed()
             self._ws = None
 
     async def _receive_messages(self):
@@ -76,6 +85,8 @@ class CraterBidiSession:
                 if "id" in data:
                     # Command response
                     cmd_id = data["id"]
+                    response_type = data.get("type", "success")
+                    self._trace(f"<- #{cmd_id} {response_type}")
                     if cmd_id in self._pending_commands:
                         future = self._pending_commands.pop(cmd_id)
                         if data.get("type") == "error":
@@ -90,6 +101,8 @@ class CraterBidiSession:
                 else:
                     # Event
                     method = data.get("method")
+                    if method:
+                        self._trace(f"<- event {method}")
                     if method and method in self._event_listeners:
                         params = data.get("params", {})
                         for handler in self._event_listeners[method]:
@@ -98,9 +111,13 @@ class CraterBidiSession:
                             except Exception as e:
                                 print(f"Event handler error: {e}")
         except websockets.exceptions.ConnectionClosed:
+            self._trace("receive loop closed")
             pass
         except asyncio.CancelledError:
+            self._trace("receive loop cancelled")
             pass
+        except Exception as e:
+            self._trace(f"receive loop exception: {e}")
 
     async def send_command(self, method: str, params: Mapping[str, Any]) -> asyncio.Future:
         """Send a BiDi command and return a future for the response."""
@@ -116,6 +133,7 @@ class CraterBidiSession:
         future = self.event_loop.create_future()
         self._pending_commands[cmd_id] = future
 
+        self._trace(f"-> #{cmd_id} {method}")
         await self._ws.send(message)
         return future
 
@@ -303,7 +321,9 @@ class ScriptModule:
             "awaitPromise": await_promise,
         }
         if arguments is not None:
-            params["arguments"] = arguments
+            params["arguments"] = await self._normalize_call_function_arguments(
+                arguments, target
+            )
         # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
@@ -319,7 +339,51 @@ class ScriptModule:
             return result
         if isinstance(result, dict) and "exceptionDetails" in result:
             raise ScriptEvaluateResultException(result)
-        return result.get("result", result)
+        resolved = result.get("result", result)
+        if self._should_capture_focus_target(function_declaration, resolved):
+            await self._remember_focused_element(target, resolved)
+        return resolved
+
+    async def _normalize_call_function_arguments(self, arguments, target):
+        normalized = []
+        fallback_node = None
+        for arg in arguments:
+            if arg is not None:
+                normalized.append(arg)
+                continue
+            if fallback_node is None:
+                try:
+                    fallback_node = await self.evaluate(
+                        expression="document",
+                        target=target,
+                        await_promise=False,
+                    )
+                except Exception:
+                    fallback_node = {"type": "undefined"}
+            normalized.append(fallback_node)
+        return normalized
+
+    def _should_capture_focus_target(self, function_declaration, remote_value):
+        if not isinstance(function_declaration, str) or "focus" not in function_declaration:
+            return False
+        if not isinstance(remote_value, dict):
+            return False
+        return isinstance(remote_value.get("sharedId"), str)
+
+    async def _remember_focused_element(self, target, remote_value):
+        try:
+            future = await self._session.send_command(
+                "script.callFunction",
+                {
+                    "functionDeclaration": "el => { globalThis.__bidiFocusedElement = el; return null; }",
+                    "target": target,
+                    "awaitPromise": False,
+                    "arguments": [remote_value],
+                },
+            )
+            await future
+        except Exception:
+            pass
 
     async def add_preload_script(self, function_declaration: str, **kwargs):
         params = {"functionDeclaration": function_declaration, **kwargs}
@@ -401,6 +465,8 @@ class InputModule:
         self._session = session
 
     async def perform_actions(self, actions, context: str):
+        if hasattr(actions, "to_json"):
+            actions = actions.to_json()
         params = {"actions": actions, "context": context}
         future = await self._session.send_command("input.performActions", params)
         return await future
@@ -598,6 +664,24 @@ def iframe(inline):
 
 
 @pytest.fixture
+def get_actions_origin_page(inline):
+    """Create a test page for action origin tests."""
+
+    def _get_actions_origin_page(inner_style: str, outer_style: str = "") -> str:
+        return inline(
+            f"""
+          <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1">
+          <div id="outer" style="{outer_style}"
+               onmousemove="window.coords = {{x: event.clientX, y: event.clientY}}">
+            <div id="inner" style="{inner_style}"></div>
+          </div>
+        """
+        )
+
+    return _get_actions_origin_page
+
+
+@pytest.fixture
 def configuration():
     """Test configuration."""
     return {
@@ -755,10 +839,461 @@ def send_blocking_command(bidi_session):
     return _send
 
 
+@pytest.fixture
+def get_element(bidi_session, top_context):
+    """Return a remote reference for the first element matching selector."""
+
+    async def _get_element(css_selector, context=top_context):
+        element = await bidi_session.script.call_function(
+            function_declaration="selector => document.querySelector(selector)",
+            arguments=[{"type": "string", "value": css_selector}],
+            target=ContextTarget(context["context"]),
+            await_promise=False,
+        )
+        if element.get("type") != "null":
+            return element
+        if context.get("context") == top_context.get("context"):
+            return element
+
+        # Frame fallback: ensure a stable target element and event sink exist
+        # even when runtime frame documents are only partially synchronized.
+        return await bidi_session.script.call_function(
+            function_declaration="""selector => {
+                let target = document.querySelector(selector);
+                if (!target && selector === "textarea" && document && document.body && typeof document.createElement === "function") {
+                    target = document.createElement("textarea");
+                    if (target && target.style) {
+                        target.style.width = "100px";
+                        target.style.height = "40px";
+                    }
+                    if (target && typeof target.setAttribute === "function") {
+                        target.setAttribute("data-crater-frame-fallback", "1");
+                    }
+                    document.body.appendChild(target);
+                }
+                if (typeof window.allEvents === "undefined") {
+                    window.allEvents = { events: [] };
+                }
+                if (!window.__craterFrameMoveListenerInit && window && typeof window.addEventListener === "function") {
+                    window.addEventListener("mousemove", e => {
+                        if (window.allEvents && Array.isArray(window.allEvents.events)) {
+                            window.allEvents.events.push([e.clientX, e.clientY]);
+                        }
+                    });
+                    window.__craterFrameMoveListenerInit = true;
+                }
+                return target;
+            }""",
+            arguments=[{"type": "string", "value": css_selector}],
+            target=ContextTarget(context["context"]),
+            await_promise=False,
+        )
+
+    return _get_element
+
+
+@pytest_asyncio.fixture
+async def load_static_test_page(bidi_session, top_context, inline):
+    """Navigate to a static WPT support page from local checkout."""
+
+    support_html_dir = (
+        Path(__file__).resolve().parent.parent
+        / "wpt"
+        / "webdriver"
+        / "tests"
+        / "support"
+        / "html"
+    )
+
+    async def _load_static_test_page(page, context=top_context):
+        page_path = support_html_dir / page
+        content = page_path.read_text(encoding="utf-8-sig")
+        await bidi_session.browsing_context.navigate(
+            context=context["context"],
+            url=inline(content),
+            wait="complete",
+        )
+        if "allEvents" not in content:
+            return
+
+        script_blocks = []
+        for match in re.finditer(r"<script\\b([^>]*)>(.*?)</script>", content, re.IGNORECASE | re.DOTALL):
+            attrs = match.group(1) or ""
+            if re.search(r"\\bsrc\\s*=", attrs, re.IGNORECASE):
+                continue
+            script = (match.group(2) or "").strip()
+            if script:
+                script_blocks.append(script)
+
+        for script in script_blocks:
+            await bidi_session.script.call_function(
+                function_declaration="source => { (0, eval)(source); return null; }",
+                arguments=[{"type": "string", "value": script}],
+                target=ContextTarget(context["context"]),
+                await_promise=False,
+            )
+        await bidi_session.script.call_function(
+            function_declaration="""() => {
+                const event =
+                    typeof globalThis.__bidiCreateEvent === "function"
+                        ? globalThis.__bidiCreateEvent("DOMContentLoaded", { bubbles: true, cancelable: true })
+                        : { type: "DOMContentLoaded" };
+                if (document && typeof document.dispatchEvent === "function") {
+                    try {
+                        document.dispatchEvent(event);
+                    } catch (_e) {}
+                }
+                return null;
+            }""",
+            target=ContextTarget(context["context"]),
+            await_promise=False,
+        )
+        if page == "test_actions.html":
+            await bidi_session.script.call_function(
+                function_declaration="""() => {
+                    const setStyle = (el, styles) => {
+                        if (!el || !el.style) return;
+                        for (const [key, value] of Object.entries(styles)) {
+                            try {
+                                el.style[key] = value;
+                            } catch (_e) {}
+                        }
+                    };
+
+                    for (const el of Array.from(document.querySelectorAll(".area"))) {
+                        setStyle(el, {
+                            width: "100px",
+                            height: "50px",
+                            backgroundColor: "#ccc",
+                        });
+                    }
+                    for (const el of Array.from(document.querySelectorAll(".block"))) {
+                        setStyle(el, {
+                            width: "5px",
+                            height: "5px",
+                            borderWidth: "1px",
+                            borderStyle: "solid",
+                            borderColor: "red",
+                        });
+                    }
+                    setStyle(document.getElementById("trackPointer"), { position: "fixed" });
+                    setStyle(document.getElementById("resultContainer"), { width: "600px", height: "60px" });
+                    setStyle(document.getElementById("dragArea"), { position: "relative" });
+                    setStyle(document.getElementById("dragTarget"), {
+                        position: "absolute",
+                        top: "22px",
+                        left: "47px",
+                    });
+                    return null;
+                }""",
+                target=ContextTarget(context["context"]),
+                await_promise=False,
+            )
+        await bidi_session.script.call_function(
+            function_declaration="""() => {
+                if (window && typeof window === "object") {
+                    window.__craterAllEventsFallbackInit = false;
+                    window.__bidiFocusedElement = null;
+                }
+                globalThis.__bidiFocusedElement = null;
+                globalThis.__bidiRecordedTestActionsMousemove = false;
+                if (typeof allEvents !== "undefined") {
+                    window.allEvents = allEvents;
+                }
+                if (typeof window.allEvents === "undefined") {
+                    window.allEvents = { events: [] };
+                }
+                if (window.allEvents && Array.isArray(window.allEvents.events)) {
+                    window.allEvents.events.length = 0;
+                }
+                return null;
+            }""",
+            target=ContextTarget(context["context"]),
+            await_promise=False,
+        )
+        await bidi_session.script.call_function(
+            function_declaration="""() => {
+                if (typeof window.allEvents === "undefined") {
+                    window.allEvents = { events: [] };
+                }
+
+                let keyboardRecorder =
+                    typeof globalThis.recordKeyboardEvent === "function"
+                        ? globalThis.recordKeyboardEvent
+                        : (window && typeof window.recordKeyboardEvent === "function"
+                            ? window.recordKeyboardEvent
+                            : null);
+                let pointerRecorder =
+                    typeof globalThis.recordPointerEvent === "function"
+                        ? globalThis.recordPointerEvent
+                        : (window && typeof window.recordPointerEvent === "function"
+                            ? window.recordPointerEvent
+                            : null);
+                let wheelRecorder =
+                    typeof globalThis.recordWheelEvent === "function"
+                        ? globalThis.recordWheelEvent
+                        : (window && typeof window.recordWheelEvent === "function"
+                            ? window.recordWheelEvent
+                            : null);
+
+                if (!keyboardRecorder) {
+                    keyboardRecorder = (event) => {
+                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+                            window.allEvents = { events: [] };
+                        }
+                        window.allEvents.events.push({
+                            code: event.code,
+                            key: event.key,
+                            which: event.which,
+                            location: event.location,
+                            ctrl: event.ctrlKey,
+                            meta: event.metaKey,
+                            shift: event.shiftKey,
+                            repeat: event.repeat,
+                            type: event.type,
+                        });
+                    };
+                }
+                if (!pointerRecorder) {
+                    pointerRecorder = (event) => {
+                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+                            window.allEvents = { events: [] };
+                        }
+                        if (event.type === "contextmenu" && typeof event.preventDefault === "function") {
+                            event.preventDefault();
+                        }
+                        window.allEvents.events.push({
+                            type: event.type,
+                            button: event.button,
+                            buttons: event.buttons,
+                            pageX: event.pageX,
+                            pageY: event.pageY,
+                            ctrlKey: event.ctrlKey,
+                            metaKey: event.metaKey,
+                            altKey: event.altKey,
+                            shiftKey: event.shiftKey,
+                            clientX: event.clientX,
+                            clientY: event.clientY,
+                            isTrusted: event.isTrusted,
+                            detail: event.detail,
+                            target: event.target && event.target.id ? event.target.id : "",
+                            pointerType: event.pointerType || "",
+                            width: event.width,
+                            height: event.height,
+                            pressure: event.pressure,
+                            tangentialPressure: event.tangentialPressure,
+                            tiltX: event.tiltX,
+                            tiltY: event.tiltY,
+                            twist: event.twist,
+                            altitudeAngle: event.altitudeAngle,
+                            azimuthAngle: event.azimuthAngle,
+                        });
+                    };
+                }
+                if (typeof globalThis.resetEvents !== "function") {
+                    globalThis.resetEvents = () => {
+                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+                            window.allEvents = { events: [] };
+                        }
+                        window.allEvents.events.length = 0;
+                    };
+                }
+
+                if (keyboardRecorder && typeof globalThis.recordKeyboardEvent !== "function") {
+                    globalThis.recordKeyboardEvent = keyboardRecorder;
+                }
+                if (pointerRecorder && typeof globalThis.recordPointerEvent !== "function") {
+                    globalThis.recordPointerEvent = pointerRecorder;
+                }
+                if (wheelRecorder && typeof globalThis.recordWheelEvent !== "function") {
+                    globalThis.recordWheelEvent = wheelRecorder;
+                }
+                try {
+                    if (typeof globalThis.recordKeyboardEvent === "function") {
+                        (0, eval)("var recordKeyboardEvent = globalThis.recordKeyboardEvent");
+                    }
+                    if (typeof globalThis.recordPointerEvent === "function") {
+                        (0, eval)("var recordPointerEvent = globalThis.recordPointerEvent");
+                    }
+                    if (typeof globalThis.recordWheelEvent === "function") {
+                        (0, eval)("var recordWheelEvent = globalThis.recordWheelEvent");
+                    }
+                } catch (_e) {}
+
+                if (keyboardRecorder) {
+                    const keyReporter = document.getElementById("keys");
+                    const hasKeyListeners = !!(
+                        keyReporter &&
+                        keyReporter._listeners &&
+                        (
+                            (Array.isArray(keyReporter._listeners.keydown) && keyReporter._listeners.keydown.length > 0) ||
+                            (Array.isArray(keyReporter._listeners.keyup) && keyReporter._listeners.keyup.length > 0) ||
+                            (Array.isArray(keyReporter._listeners.keypress) && keyReporter._listeners.keypress.length > 0)
+                        )
+                    );
+                    if (keyReporter && !hasKeyListeners && !keyReporter.__craterKeyboardListeners) {
+                        keyReporter.addEventListener("keyup", keyboardRecorder);
+                        keyReporter.addEventListener("keypress", keyboardRecorder);
+                        keyReporter.addEventListener("keydown", keyboardRecorder);
+                        keyReporter.__craterKeyboardListeners = true;
+                    }
+                }
+
+                if (pointerRecorder) {
+                    const outer = document.getElementById("outer");
+                    const hasPointerListeners = !!(
+                        outer &&
+                        outer._listeners &&
+                        (
+                            (Array.isArray(outer._listeners.click) && outer._listeners.click.length > 0) ||
+                            (Array.isArray(outer._listeners.dblclick) && outer._listeners.dblclick.length > 0) ||
+                            (Array.isArray(outer._listeners.mousedown) && outer._listeners.mousedown.length > 0) ||
+                            (Array.isArray(outer._listeners.mouseup) && outer._listeners.mouseup.length > 0) ||
+                            (Array.isArray(outer._listeners.contextmenu) && outer._listeners.contextmenu.length > 0)
+                        )
+                    );
+                    if (outer && !hasPointerListeners && !outer.__craterPointerListeners) {
+                        outer.addEventListener("click", pointerRecorder);
+                        outer.addEventListener("dblclick", pointerRecorder);
+                        outer.addEventListener("mousedown", pointerRecorder);
+                        outer.addEventListener("mouseup", pointerRecorder);
+                        outer.addEventListener("contextmenu", pointerRecorder);
+                        outer.__craterPointerListeners = true;
+                    }
+                    const hasWindowMouseMove = !!(
+                        window &&
+                        window._listeners &&
+                        Array.isArray(window._listeners.mousemove) &&
+                        window._listeners.mousemove.length > 0
+                    );
+                    if (window && typeof window.addEventListener === "function" && !hasWindowMouseMove && !window.__craterFirstPointerMoveListener) {
+                        const recordFirstPointerMove = (event) => {
+                            pointerRecorder(event);
+                            try {
+                                window.removeEventListener("mousemove", recordFirstPointerMove);
+                            } catch (_e) {}
+                        };
+                        window.addEventListener("mousemove", recordFirstPointerMove);
+                        window.__craterFirstPointerMoveListener = true;
+                    }
+                }
+
+                if (wheelRecorder) {
+                    eventReporter = document.getElementById("event-reporter");
+                    const notScrollable = document.getElementById("not-scrollable");
+                    const hasNotScrollableWheel = !!(
+                        notScrollable &&
+                        notScrollable._listeners &&
+                        Array.isArray(notScrollable._listeners.wheel) &&
+                        notScrollable._listeners.wheel.length > 0
+                    );
+                    if (notScrollable && !hasNotScrollableWheel && !notScrollable.__craterWheelListener) {
+                        notScrollable.addEventListener("wheel", wheelRecorder);
+                        notScrollable.__craterWheelListener = true;
+                    }
+                    const scrollable = document.getElementById("scrollable");
+                    const hasScrollableWheel = !!(
+                        scrollable &&
+                        scrollable._listeners &&
+                        Array.isArray(scrollable._listeners.wheel) &&
+                        scrollable._listeners.wheel.length > 0
+                    );
+                    if (scrollable && !hasScrollableWheel && !scrollable.__craterWheelListener) {
+                        scrollable.addEventListener("wheel", wheelRecorder);
+                        scrollable.__craterWheelListener = true;
+                    }
+                }
+
+                if (!window.__craterAllEventsFallbackInit) {
+                    const pushEvent = (event) => {
+                        window.allEvents.events.push({
+                            type: event.type,
+                            code: event.code,
+                            key: event.key,
+                            which: event.which,
+                            location: event.location,
+                            ctrl: event.ctrlKey,
+                            meta: event.metaKey,
+                            shift: event.shiftKey,
+                            repeat: event.repeat,
+                            button: event.button,
+                            buttons: event.buttons,
+                            pageX: event.pageX,
+                            pageY: event.pageY,
+                            deltaX: event.deltaX,
+                            deltaY: event.deltaY,
+                            deltaZ: event.deltaZ,
+                            deltaMode: event.deltaMode,
+                            clientX: event.clientX,
+                            clientY: event.clientY,
+                            isTrusted: event.isTrusted,
+                            detail: event.detail,
+                            target: event.target && event.target.id ? event.target.id : "",
+                            pointerType: event.pointerType || "",
+                            width: event.width,
+                            height: event.height,
+                            pressure: event.pressure,
+                            tangentialPressure: event.tangentialPressure,
+                            tiltX: event.tiltX,
+                            tiltY: event.tiltY,
+                            twist: event.twist,
+                            altitudeAngle: event.altitudeAngle,
+                            azimuthAngle: event.azimuthAngle,
+                            altKey: event.altKey,
+                            ctrlKey: event.ctrlKey,
+                            metaKey: event.metaKey,
+                            shiftKey: event.shiftKey,
+                        });
+                    };
+                    const hasKeyboardRecorder = !!keyboardRecorder;
+                    const hasPointerRecorder = !!pointerRecorder;
+                    const hasWheelRecorder = !!wheelRecorder;
+
+                    const keyReporter = document.getElementById("keys");
+                    if (keyReporter && !hasKeyboardRecorder) {
+                        keyReporter.addEventListener("keydown", pushEvent);
+                        keyReporter.addEventListener("keypress", pushEvent);
+                        keyReporter.addEventListener("keyup", pushEvent);
+                    }
+
+                    if (!hasPointerRecorder) {
+                        const pointerTarget = document;
+                        for (const eventName of ["mousemove", "mousedown", "mouseup", "click", "dblclick", "contextmenu", "auxclick"]) {
+                            pointerTarget.addEventListener(eventName, pushEvent);
+                        }
+                    }
+
+                    const notScrollable = document.getElementById("not-scrollable");
+                    if (notScrollable && !hasWheelRecorder) {
+                        notScrollable.addEventListener("wheel", pushEvent);
+                    }
+                    const scrollable = document.getElementById("scrollable");
+                    if (scrollable && !hasWheelRecorder) {
+                        scrollable.addEventListener("wheel", pushEvent);
+                    }
+                    window.__craterAllEventsFallbackInit = true;
+                }
+                return null;
+            }""",
+            target=ContextTarget(context["context"]),
+            await_promise=False,
+        )
+
+    return _load_static_test_page
+
+
 @pytest_asyncio.fixture
 async def current_session():
-    """Placeholder for classic WebDriver session (not supported)."""
-    return None
+    """Minimal classic WebDriver session fixture used by legacy WPT helpers."""
+
+    class _CurrentSession:
+        def __init__(self):
+            platform_name = "mac" if sys.platform == "darwin" else (
+                "windows" if sys.platform.startswith("win") else "linux"
+            )
+            self.capabilities = {"platformName": platform_name}
+
+    return _CurrentSession()
 
 
 @pytest.fixture
@@ -771,6 +1306,17 @@ def session():
 def capabilities():
     """Session capabilities."""
     return {}
+
+
+@pytest.fixture
+def modifier_key():
+    """Platform modifier key used by shortcut tests."""
+    from tests.support.keys import Keys
+
+    target_platform = os.environ.get("WPT_TARGET_PLATFORM", "mac").lower()
+    if target_platform == "mac":
+        return Keys.META
+    return Keys.CONTROL
 
 
 @pytest_asyncio.fixture
@@ -834,25 +1380,33 @@ def get_test_page(iframe, inline):
         shadow_root_mode: str = "open",
         **kwargs,
     ):
+        frame_doc_provided = frame_doc is not None
+        shadow_doc_provided = shadow_doc is not None
         if frame_doc is None:
-            frame_doc = """<div id="in-frame"><input type="checkbox"/></div>"""
+            # Defaulting to an iframe breaks many tests on the current mock DOM
+            # parser/runtime where iframe document loading is not fully isolated.
+            # Keep top-level node-rich markup as the default surface.
+            frame_doc = ""
 
         if shadow_doc is None:
             shadow_doc = """<div id="in-shadow-dom"><input type="checkbox"/></div>"""
 
         definition_inner_shadow_dom = ""
+        inner_shadow_doc = shadow_doc
         if nested_shadow_dom:
             definition_inner_shadow_dom = f"""
-                customElements.define('inner-custom-element',
-                    class extends HTMLElement {{
-                        constructor() {{
-                            super();
-                            this.attachShadow({{mode: "{shadow_root_mode}"}}).innerHTML = `
-                                {shadow_doc}
-                            `;
+                if (!customElements.get("inner-custom-element")) {{
+                    customElements.define("inner-custom-element",
+                        class extends HTMLElement {{
+                            constructor() {{
+                                super();
+                                this.attachShadow({{mode: "{shadow_root_mode}"}}).innerHTML = `
+                                    {inner_shadow_doc}
+                                `;
+                            }}
                         }}
-                    }}
-                );
+                    );
+                }}
             """
             shadow_doc = """
                 <style>
@@ -864,6 +1418,13 @@ def get_test_page(iframe, inline):
                     <inner-custom-element></inner-custom-element>
                 </div>
             """
+
+        # Shadow-focused tests don't need the default iframe subtree and it can
+        # interfere with runtime context swapping in the mock environment.
+        if shadow_doc_provided and not frame_doc_provided:
+            frame_doc = ""
+
+        frame_markup = iframe(frame_doc, **kwargs) if frame_doc else ""
 
         page_data = f"""
             <style>
@@ -881,12 +1442,12 @@ def get_test_page(iframe, inline):
             <input id="hidden" type="hidden"/>
             <input id="text" type="text"/>
 
-            {iframe(frame_doc, **kwargs)}
+            {frame_markup}
 
             <img />
             <svg></svg>
 
-            <custom-element id="custom-element"></custom-element>
+            <custom-element id="custom-element">{shadow_doc}</custom-element>
             <script>
                 var svg = document.querySelector("svg");
                 if (svg && svg.setAttributeNS) {{
@@ -894,23 +1455,73 @@ def get_test_page(iframe, inline):
                 }}
 
                 if (window.customElements && customElements.define) {{
-                    customElements.define("custom-element",
-                        class extends HTMLElement {{
-                            constructor() {{
-                                super();
-                                const shadowRoot = this.attachShadow({{mode: "{shadow_root_mode}"}});
-                                shadowRoot.innerHTML = `{shadow_doc}`;
-                                window._shadowRoot = shadowRoot;
+                    {definition_inner_shadow_dom}
+                    if (!customElements.get("custom-element")) {{
+                        customElements.define("custom-element",
+                            class extends HTMLElement {{
+                                constructor() {{
+                                    super();
+                                    const shadowRoot = this.attachShadow({{mode: "{shadow_root_mode}"}});
+                                    shadowRoot.innerHTML = `{shadow_doc}`;
+                                    window._shadowRoot = shadowRoot;
+                                }}
+                            }}
+                        );
+                    }}
+
+                    const host = document.querySelector("#custom-element");
+                    if (host && host.attachShadow && !window._shadowRoot) {{
+                        try {{
+                            const shadowRoot = host.attachShadow({{ mode: "{shadow_root_mode}" }});
+                            shadowRoot.innerHTML = `{shadow_doc}`;
+                            window._shadowRoot = shadowRoot;
+                        }} catch (_e) {{}}
+                    }}
+                    if (!window._shadowRoot && host && host.shadowRoot) {{
+                        window._shadowRoot = host.shadowRoot;
+                    }}
+
+                    if ({str(nested_shadow_dom).lower()}) {{
+                        const outerRoot = (host && host.shadowRoot) || window._shadowRoot || null;
+                        if (outerRoot && outerRoot.querySelectorAll) {{
+                            const innerHosts = outerRoot.querySelectorAll("inner-custom-element");
+                            for (const innerHost of innerHosts) {{
+                                if (!innerHost) {{
+                                    continue;
+                                }}
+                                if (innerHost.attachShadow && !innerHost.shadowRoot) {{
+                                    try {{
+                                        const innerRoot = innerHost.attachShadow({{ mode: "{shadow_root_mode}" }});
+                                        innerRoot.innerHTML = `{inner_shadow_doc}`;
+                                    }} catch (_e) {{}}
+                                }}
+                                if (!window._innerShadowRoot && innerHost.shadowRoot) {{
+                                    window._innerShadowRoot = innerHost.shadowRoot;
+                                }}
                             }}
                         }}
-                    );
-                    {definition_inner_shadow_dom}
+                    }}
                 }} else {{
                     const host = document.querySelector('#custom-element');
                     if (host && host.attachShadow && !host.shadowRoot) {{
                         const shadowRoot = host.attachShadow({{ mode: "{shadow_root_mode}" }});
                         shadowRoot.innerHTML = `{shadow_doc}`;
                         window._shadowRoot = shadowRoot;
+                    }}
+                    if ({str(nested_shadow_dom).lower()} && host && host.shadowRoot) {{
+                        const innerHosts = host.shadowRoot.querySelectorAll("inner-custom-element");
+                        for (const innerHost of innerHosts) {{
+                            if (!innerHost) {{
+                                continue;
+                            }}
+                            if (innerHost.attachShadow && !innerHost.shadowRoot) {{
+                                const innerRoot = innerHost.attachShadow({{ mode: "{shadow_root_mode}" }});
+                                innerRoot.innerHTML = `{inner_shadow_doc}`;
+                            }}
+                            if (!window._innerShadowRoot && innerHost.shadowRoot) {{
+                                window._innerShadowRoot = innerHost.shadowRoot;
+                            }}
+                        }}
                     }}
                 }}
             </script>

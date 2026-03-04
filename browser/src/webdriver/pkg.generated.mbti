@@ -21,6 +21,16 @@ pub fn evaluate_js(String) -> String
 
 pub fn evaluate_js_async(String) -> @core.Any
 
+pub fn get_runtime_href_at_point(Double, Double) -> String?
+
+pub fn get_runtime_iframe_sources() -> Array[String]
+
+pub fn get_runtime_last_click_href() -> String?
+
+pub fn get_runtime_shared_node_center_json(String) -> String
+
+pub fn get_runtime_shared_node_href(String) -> String?
+
 pub fn handle_element_click(@cdp.CdpSession, Int) -> Result[Unit, CdpHandlerError]
 
 pub fn handle_find_element(@cdp.CdpSession, String, String) -> Result[Int, CdpHandlerError]
@@ -41,7 +51,19 @@ pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, CdpHandlerError]
 
 pub fn handle_rpc(CdpSessionManager, RpcRequest) -> RpcResponse
 
+pub fn has_runtime_handle(String) -> Bool
+
+pub fn has_runtime_shared_node(String) -> Bool
+
 pub fn init_quickjs() -> @core.Any
+
+pub fn input_dispatch_key_action(String, String, Bool, Bool, Bool, Bool) -> Unit
+
+pub fn input_dispatch_pointer_event(String, String, Double, Double, Int, Int, String, Bool, Bool, Bool, Bool) -> Unit
+
+pub fn input_dispatch_wheel_event(String, Double, Double, Double, Double, Bool, Bool, Bool, Bool) -> Unit
+
+pub fn input_is_single_grapheme(String) -> Bool
 
 pub fn is_quickjs_initialized() -> Bool
 
@@ -67,6 +89,8 @@ pub fn quickjs_fetch(String) -> @core.Any
 
 pub fn quickjs_load(String) -> @core.Any
 
+pub fn reset_runtime_event_buffers(String) -> Unit
+
 pub fn rpc_error(RpcId, RpcErrorCode, String) -> RpcResponse
 
 pub fn rpc_error_with_data(RpcId, RpcErrorCode, String, String) -> RpcResponse
@@ -81,6 +105,12 @@ pub fn rpc_success_number(RpcId, Double) -> RpcResponse
 
 pub fn rpc_success_string(RpcId, String) -> RpcResponse
 
+pub fn runtime_shared_node_is_element(String) -> Bool
+
+pub fn set_runtime_context(String) -> Unit
+
+pub fn set_runtime_context_frames(String, Array[String]) -> Unit
+
 pub fn success_bool(Bool) -> WebDriverResponse
 
 pub fn success_element(String) -> WebDriverResponse
@@ -90,6 +120,12 @@ pub fn success_null() -> WebDriverResponse
 pub fn success_object(Map[String, WebDriverValue]) -> WebDriverResponse
 
 pub fn success_string(String) -> WebDriverResponse
+
+pub fn sync_runtime_html(String, String, Bool) -> Unit
+
+pub fn sync_runtime_page(String) -> Unit
+
+pub fn take_channel_messages_json() -> String
 
 // Errors
 
@@ -214,19 +250,28 @@ pub struct BidiProtocol {
   context_parent : Map[String, String]
   context_children : Map[String, Array[String]]
   context_client_window : Map[String, String]
+  input_pressed_keys : Map[String, Array[String]]
+  input_pointer_x : Map[String, Double]
+  input_pointer_y : Map[String, Double]
+  input_pointer_buttons : Map[String, Int]
+  input_pointer_type : Map[String, String]
+  input_pointer_target_shared : Map[String, String]
   mut socket : @core.Any?
+  mut socket_epoch : Int
   mut use_quickjs : Bool
   mut dom_initialized : Bool
 }
 pub fn BidiProtocol::clear_socket(Self) -> Unit
 pub fn BidiProtocol::disable_quickjs(Self) -> Unit
-pub fn BidiProtocol::emit_log_entry(Self, String, String, String, String) -> Unit
+pub fn BidiProtocol::emit_log_entry(Self, String, String, String, String, Array[Json], Double) -> Unit
 pub fn BidiProtocol::enable_quickjs(Self) -> Unit
+pub fn BidiProtocol::is_current_socket_epoch(Self, Int) -> Bool
 pub fn BidiProtocol::is_quickjs_enabled(Self) -> Bool
 pub fn BidiProtocol::new() -> Self
 pub fn BidiProtocol::process_message(Self, String) -> Result[Unit, String]
+pub fn BidiProtocol::reset_session_runtime_state(Self) -> Unit
 pub fn BidiProtocol::reset_subscription_state(Self) -> Unit
-pub fn BidiProtocol::set_socket(Self, @core.Any) -> Unit
+pub fn BidiProtocol::set_socket(Self, @core.Any) -> Int
 pub fn BidiProtocol::take_messages(Self) -> Array[BidiOutMessage]
 
 pub struct BidiRequest {

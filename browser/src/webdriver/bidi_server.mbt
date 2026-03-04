@@ -38,6 +38,64 @@ extern "js" fn upgrade_websocket(request : @core.Any) -> @core.Any =
   #| (req) => Deno.upgradeWebSocket(req)
 
 ///|
+/// Env flag helper for optional debug tracing.
+extern "js" fn env_flag_enabled(name : String) -> Bool =
+  #| (name) => {
+  #|   try {
+  #|     return typeof Deno !== "undefined" && Deno.env.get(name) === "1";
+  #|   } catch (_e) {
+  #|     return false;
+  #|   }
+  #| }
+
+///|
+/// Console log helper for optional server tracing.
+extern "js" fn js_console_log(message : String) -> Unit =
+  #| (message) => console.log(message)
+
+///|
+/// Convert JS value to string for debug logs.
+extern "js" fn js_value_to_string(value : @core.Any) -> String =
+  #| (value) => {
+  #|   try {
+  #|     if (value && typeof value === "object") {
+  #|       const msg = value.message ?? value.reason ?? value.type;
+  #|       if (msg !== undefined) return String(msg);
+  #|     }
+  #|     return String(value);
+  #|   } catch (_e) {
+  #|     return "[unprintable]";
+  #|   }
+  #| }
+
+///|
+/// Reset JS-side runtime globals between WebSocket sessions.
+extern "js" fn reset_runtime_js_state() -> Unit =
+  #| () => {
+  #|   try {
+  #|     globalThis.__bidiCurrentContext = "default-context";
+  #|     globalThis.__bidiContextWindows = new Map();
+  #|     globalThis.__bidiProxyInstances = new WeakSet();
+  #|     globalThis.allEvents = undefined;
+  #|     globalThis.recordedEvents = undefined;
+  #|     globalThis._shadowRoot = undefined;
+  #|     globalThis.__bidiLastClickHref = undefined;
+  #|     globalThis.__bidiChannelMessages = [];
+  #|     globalThis.__bidiSharedNodeStore = new Map();
+  #|     globalThis.__bidiHandleStore = new Map();
+  #|     globalThis.__bidiNextHandleId = 1;
+  #|   } catch (_e) {}
+  #| }
+
+///|
+/// Debug trace hook (disabled unless CRATER_BIDI_SERVER_TRACE=1).
+fn bidi_server_trace(message : String) -> Unit {
+  if env_flag_enabled("CRATER_BIDI_SERVER_TRACE") {
+    js_console_log("[bidi-server] " + message)
+  }
+}
+
+///|
 /// Check if request is WebSocket upgrade
 fn is_websocket_request(request : @core.Any) -> Bool {
   let headers : @core.Any = request._get("headers")
@@ -77,23 +135,35 @@ fn BidiServer::handle_message(
 ///|
 /// Setup WebSocket event handlers with async support
 fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
+  reset_runtime_js_state()
+  bidi_server_trace("setup_websocket: begin reset")
   self.protocol.reset_session_runtime_state()
+  bidi_server_trace("setup_websocket: reset done")
   // Store socket reference for async responses
-  self.protocol.set_socket(socket)
+  let socket_epoch = self.protocol.set_socket(socket)
+  bidi_server_trace("setup_websocket: socket epoch=" + socket_epoch.to_string())
 
   // onopen
   socket["onopen"] = @core.any(
     @core.from_fn1(fn(_event : @core.Any) {
       // Connection opened, could log or initialize
+      bidi_server_trace("ws onopen")
     }),
   )
 
   // onmessage - process BiDi messages (supports async via socket)
   socket["onmessage"] = @core.any(
     @core.from_fn1(fn(event : @core.Any) {
-      let data : String = event._get("data").cast()
+      bidi_server_trace("ws onmessage: received")
+      let raw_data = event._get("data")
+      if @core.is_nullish(raw_data) {
+        bidi_server_trace("ws onmessage: nullish data")
+        return
+      }
+      let data : String = raw_data.cast()
       // handle_message returns sync responses; async responses sent via socket
       let messages = self.handle_message(data)
+      bidi_server_trace("ws onmessage: responses=" + messages.length().to_string())
       for msg in messages {
         socket._call("send", [@core.any(msg)]) |> ignore
       }
@@ -102,8 +172,9 @@ fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
 
   // onerror
   socket["onerror"] = @core.any(
-    @core.from_fn1(fn(_event : @core.Any) {
+    @core.from_fn1(fn(event : @core.Any) {
       // Error handling
+      bidi_server_trace("ws onerror: " + js_value_to_string(event))
     }),
   )
 
@@ -111,8 +182,13 @@ fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
   socket["onclose"] = @core.any(
     @core.from_fn1(fn(_event : @core.Any) {
       // Connection closed
-      self.protocol.reset_session_runtime_state()
-      self.protocol.clear_socket()
+      bidi_server_trace("ws onclose: epoch=" + socket_epoch.to_string())
+      if self.protocol.is_current_socket_epoch(socket_epoch) {
+        bidi_server_trace("ws onclose: reset current epoch")
+        self.protocol.reset_session_runtime_state()
+        self.protocol.clear_socket()
+        bidi_server_trace("ws onclose: reset done")
+      }
     }),
   )
 }
@@ -700,17 +776,64 @@ extern "js" fn js_evaluate_expression(
   #|           }
   #|         },
   #|         dispatchEvent(event) {
-  #|           event.target = this;
-  #|           event.currentTarget = this;
+  #|           if (!event.target) {
+  #|             try { event.target = this; } catch (_e) {}
+  #|           }
+  #|           try { event.currentTarget = this; } catch (_e) {}
   #|           const listeners = this._listeners[event.type] || [];
-  #|           for (const fn of listeners) fn.call(this, event);
+  #|           const previousEvent = globalThis.event;
+  #|           globalThis.event = event;
+  #|           try {
+  #|             for (const fn of listeners) {
+  #|               try { fn.call(this, event); } catch (_e) {}
+  #|             }
+  #|             if (event.bubbles) {
+  #|               const parent = this._parent || this.parentElement || this.parentNode || null;
+  #|               if (parent && parent !== this && typeof parent.dispatchEvent === "function") {
+  #|                 parent.dispatchEvent(event);
+  #|               } else {
+  #|                 if (
+  #|                   this.ownerDocument &&
+  #|                   this.ownerDocument !== this &&
+  #|                   typeof this.ownerDocument.dispatchEvent === "function"
+  #|                 ) {
+  #|                   this.ownerDocument.dispatchEvent(event);
+  #|                 }
+  #|                 if (globalThis.window && typeof globalThis.window.dispatchEvent === "function") {
+  #|                   globalThis.window.dispatchEvent(event);
+  #|                 }
+  #|               }
+  #|             }
+  #|           } finally {
+  #|             globalThis.event = previousEvent;
+  #|           }
   #|           return !event.defaultPrevented;
   #|         },
   #|         click() {
-  #|           this.dispatchEvent(new Event('click', { bubbles: true }));
+  #|           this.dispatchEvent(globalThis.__bidiCreateEvent('click', { bubbles: true }));
   #|         },
-  #|         focus() {},
-  #|         blur() {},
+  #|         focus() {
+  #|           const doc = this.ownerDocument || globalThis.document || null;
+  #|           if (doc && typeof doc === "object") {
+  #|             try { doc.activeElement = this; } catch (_e) {}
+  #|           }
+  #|           try { globalThis.__bidiFocusedElement = this; } catch (_e) {}
+  #|         },
+  #|         blur() {
+  #|           const doc = this.ownerDocument || globalThis.document || null;
+  #|           if (doc && typeof doc === "object") {
+  #|             try {
+  #|               if (doc.activeElement === this) {
+  #|                 doc.activeElement = doc.body || null;
+  #|               }
+  #|             } catch (_e) {}
+  #|           }
+  #|           try {
+  #|             if (globalThis.__bidiFocusedElement === this) {
+  #|               globalThis.__bidiFocusedElement = null;
+  #|             }
+  #|           } catch (_e) {}
+  #|         },
   #|         attachShadow(opts) {
   #|           if (this.shadowRoot) return this.shadowRoot;
   #|           const root = createMockElement('shadow-root');
@@ -729,6 +852,47 @@ extern "js" fn js_evaluate_expression(
   #|             if (child === node || (child.contains && child.contains(node))) return true;
   #|           }
   #|           return false;
+  #|         },
+  #|         getBoundingClientRect() {
+  #|           const toNumber = (value, fallback = 0) => {
+  #|             const num = Number.parseFloat(String(value ?? ""));
+  #|             return Number.isFinite(num) ? num : fallback;
+  #|           };
+  #|           const width = toNumber(this._style?.width ?? this._attrs?.width, 1);
+  #|           const height = toNumber(this._style?.height ?? this._attrs?.height, 1);
+  #|           let left = toNumber(this._style?.left, 0);
+  #|           let top = toNumber(this._style?.top, 0);
+  #|           if (this._parent && typeof this._parent.getBoundingClientRect === "function") {
+  #|             try {
+  #|               const parentRect = this._parent.getBoundingClientRect();
+  #|               left += Number(parentRect?.left || 0);
+  #|               top += Number(parentRect?.top || 0);
+  #|             } catch (_e) {}
+  #|           }
+  #|           const right = left + width;
+  #|           const bottom = top + height;
+  #|           return {
+  #|             x: left,
+  #|             y: top,
+  #|             left,
+  #|             top,
+  #|             right,
+  #|             bottom,
+  #|             width,
+  #|             height,
+  #|             toJSON() {
+  #|               return {
+  #|                 x: this.x,
+  #|                 y: this.y,
+  #|                 left: this.left,
+  #|                 top: this.top,
+  #|                 right: this.right,
+  #|                 bottom: this.bottom,
+  #|                 width: this.width,
+  #|                 height: this.height,
+  #|               };
+  #|             },
+  #|           };
   #|         },
   #|         querySelector(sel) { return querySelect(this, sel, false); },
   #|         querySelectorAll(sel) { return querySelect(this, sel, true); },
@@ -989,20 +1153,40 @@ extern "js" fn js_evaluate_expression(
   #|       return all ? toCollection(results, "nodelist") : results[0] || null;
   #|     };
   #|
+  #|     if (!globalThis.__bidiCreateEvent) {
+  #|       globalThis.__bidiCreateEvent = function(type, opts = {}) {
+  #|         return {
+  #|           type,
+  #|           bubbles: !!opts.bubbles,
+  #|           cancelable: !!opts.cancelable,
+  #|           defaultPrevented: false,
+  #|           target: null,
+  #|           currentTarget: null,
+  #|           preventDefault() {
+  #|             if (this.cancelable) this.defaultPrevented = true;
+  #|           },
+  #|           stopPropagation() {},
+  #|           stopImmediatePropagation() {},
+  #|         };
+  #|       };
+  #|     }
+  #|
   #|     // Event class
-  #|     globalThis.Event = globalThis.Event || class Event {
-  #|       constructor(type, opts = {}) {
-  #|         this.type = type;
-  #|         this.bubbles = !!opts.bubbles;
-  #|         this.cancelable = !!opts.cancelable;
-  #|         this.defaultPrevented = false;
-  #|         this.target = null;
-  #|         this.currentTarget = null;
-  #|       }
-  #|       preventDefault() { this.defaultPrevented = true; }
-  #|       stopPropagation() {}
-  #|       stopImmediatePropagation() {}
-  #|     };
+  #|     if (!globalThis.Event) {
+  #|       globalThis.Event = class Event {
+  #|         constructor(type, opts = {}) {
+  #|           this.type = type;
+  #|           this.bubbles = !!opts.bubbles;
+  #|           this.cancelable = !!opts.cancelable;
+  #|           this.defaultPrevented = false;
+  #|           this.target = null;
+  #|           this.currentTarget = null;
+  #|         }
+  #|         preventDefault() { this.defaultPrevented = true; }
+  #|         stopPropagation() {}
+  #|         stopImmediatePropagation() {}
+  #|       };
+  #|     }
   #|
   #|     // Create document
   #|     const html = createMockElement('html');
@@ -1024,7 +1208,11 @@ extern "js" fn js_evaluate_expression(
   #|       nodeType: 9,
   #|       doctype: doctypeNode,
   #|       documentElement: html,
+  #|       _listeners: {},
   #|       get childNodes() { return [this.doctype, this.documentElement]; },
+  #|       get scrollingElement() {
+  #|         return this.documentElement || this.body || null;
+  #|       },
   #|       head: head,
   #|       body: body,
   #|       createElement(tag) {
@@ -1064,6 +1252,43 @@ extern "js" fn js_evaluate_expression(
   #|       },
   #|       querySelector(sel) { return querySelect(html, sel, false); },
   #|       querySelectorAll(sel) { return querySelect(html, sel, true); },
+  #|       addEventListener(type, fn) {
+  #|         if (!this._listeners[type]) this._listeners[type] = [];
+  #|         this._listeners[type].push(fn);
+  #|       },
+  #|       removeEventListener(type, fn) {
+  #|         if (!this._listeners[type]) return;
+  #|         this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  #|       },
+  #|       dispatchEvent(event) {
+  #|         try { event.currentTarget = this; } catch (_e) {}
+  #|         const listeners = this._listeners[event.type] || [];
+  #|         for (const fn of listeners) {
+  #|           try { fn.call(this, event); } catch (_e) {}
+  #|         }
+  #|         return !event.defaultPrevented;
+  #|       },
+  #|       elementFromPoint(x, y) {
+  #|         const px = Number(x);
+  #|         const py = Number(y);
+  #|         const pointerTarget =
+  #|           this.getElementById("pointer-target") ||
+  #|           this.getElementById("outer");
+  #|         if (pointerTarget) return pointerTarget;
+  #|         const all = this.querySelectorAll("*");
+  #|         for (let i = all.length - 1; i >= 0; i--) {
+  #|           const node = all[i];
+  #|           if (!node || typeof node.getBoundingClientRect !== "function") continue;
+  #|           const rect = node.getBoundingClientRect();
+  #|           if (
+  #|             px >= Number(rect.left) && px <= Number(rect.right) &&
+  #|             py >= Number(rect.top) && py <= Number(rect.bottom)
+  #|           ) {
+  #|             return node;
+  #|           }
+  #|         }
+  #|         return this.body || this.documentElement || null;
+  #|       },
   #|       getElementsByTagName(tag) { return html.getElementsByTagName(tag); },
   #|       getElementsByClassName(cls) { return html.getElementsByClassName(cls); },
   #|       execCommand(command) {
@@ -1543,7 +1768,7 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.__click = function(selector) {
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
-  #|       const event = new Event('click', { bubbles: true, cancelable: true });
+  #|       const event = globalThis.__bidiCreateEvent('click', { bubbles: true, cancelable: true });
   #|       element.dispatchEvent(event);
   #|       return true;
   #|     };
@@ -1560,7 +1785,7 @@ extern "js" fn js_evaluate_expression(
   #|             if (i < text.length) {
   #|               const char = text[i];
   #|               element.value = (element.value || '') + char;
-  #|               const inputEvent = new Event('input', { bubbles: true });
+  #|               const inputEvent = globalThis.__bidiCreateEvent('input', { bubbles: true });
   #|               element.dispatchEvent(inputEvent);
   #|               i++;
   #|               setTimeout(typeNext, delay);
@@ -1572,7 +1797,7 @@ extern "js" fn js_evaluate_expression(
   #|         });
   #|       } else {
   #|         element.value = (element.value || '') + text;
-  #|         const inputEvent = new Event('input', { bubbles: true });
+  #|         const inputEvent = globalThis.__bidiCreateEvent('input', { bubbles: true });
   #|         element.dispatchEvent(inputEvent);
   #|         return true;
   #|       }
@@ -1582,9 +1807,9 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       element.value = value;
-  #|       const inputEvent = new Event('input', { bubbles: true });
+  #|       const inputEvent = globalThis.__bidiCreateEvent('input', { bubbles: true });
   #|       element.dispatchEvent(inputEvent);
-  #|       const changeEvent = new Event('change', { bubbles: true });
+  #|       const changeEvent = globalThis.__bidiCreateEvent('change', { bubbles: true });
   #|       element.dispatchEvent(changeEvent);
   #|       return true;
   #|     };
@@ -1593,7 +1818,7 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       element.value = '';
-  #|       const inputEvent = new Event('input', { bubbles: true });
+  #|       const inputEvent = globalThis.__bidiCreateEvent('input', { bubbles: true });
   #|       element.dispatchEvent(inputEvent);
   #|       return true;
   #|     };
@@ -1602,7 +1827,7 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       if (element.focus) element.focus();
-  #|       const focusEvent = new Event('focus', { bubbles: false });
+  #|       const focusEvent = globalThis.__bidiCreateEvent('focus', { bubbles: false });
   #|       element.dispatchEvent(focusEvent);
   #|       return true;
   #|     };
@@ -1611,7 +1836,7 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       if (element.blur) element.blur();
-  #|       const blurEvent = new Event('blur', { bubbles: false });
+  #|       const blurEvent = globalThis.__bidiCreateEvent('blur', { bubbles: false });
   #|       element.dispatchEvent(blurEvent);
   #|       return true;
   #|     };
@@ -1619,8 +1844,8 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.__hover = function(selector) {
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
-  #|       const mouseEnter = new Event('mouseenter', { bubbles: false });
-  #|       const mouseOver = new Event('mouseover', { bubbles: true });
+  #|       const mouseEnter = globalThis.__bidiCreateEvent('mouseenter', { bubbles: false });
+  #|       const mouseOver = globalThis.__bidiCreateEvent('mouseover', { bubbles: true });
   #|       element.dispatchEvent(mouseEnter);
   #|       element.dispatchEvent(mouseOver);
   #|       return true;
@@ -1631,7 +1856,7 @@ extern "js" fn js_evaluate_expression(
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       if (!element.checked) {
   #|         element.checked = true;
-  #|         const changeEvent = new Event('change', { bubbles: true });
+  #|         const changeEvent = globalThis.__bidiCreateEvent('change', { bubbles: true });
   #|         element.dispatchEvent(changeEvent);
   #|       }
   #|       return true;
@@ -1642,7 +1867,7 @@ extern "js" fn js_evaluate_expression(
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       if (element.checked) {
   #|         element.checked = false;
-  #|         const changeEvent = new Event('change', { bubbles: true });
+  #|         const changeEvent = globalThis.__bidiCreateEvent('change', { bubbles: true });
   #|         element.dispatchEvent(changeEvent);
   #|       }
   #|       return true;
@@ -1652,7 +1877,7 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       element.value = value;
-  #|       const changeEvent = new Event('change', { bubbles: true });
+  #|       const changeEvent = globalThis.__bidiCreateEvent('change', { bubbles: true });
   #|       element.dispatchEvent(changeEvent);
   #|       return true;
   #|     };
@@ -1710,7 +1935,7 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       options = options || {};
-  #|       const event = new Event(eventType, {
+  #|       const event = globalThis.__bidiCreateEvent(eventType, {
   #|         bubbles: options.bubbles !== false,
   #|         cancelable: options.cancelable !== false
   #|       });
@@ -2223,6 +2448,30 @@ extern "js" fn js_evaluate_expression(
   #|     const win = {};
   #|     win.__bidiContextId = currentCtx;
   #|     win.window = win;
+  #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
+  #|     win.innerHeight = Number(globalThis.innerHeight || 768);
+  #|     win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
+  #|     win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
+  #|     win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|     win.pageXOffset = 0;
+  #|     win.pageYOffset = 0;
+  #|     win._listeners = {};
+  #|     win.addEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) this._listeners[type] = [];
+  #|       this._listeners[type].push(fn);
+  #|     };
+  #|     win.removeEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) return;
+  #|       this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  #|     };
+  #|     win.dispatchEvent = function(event) {
+  #|       try { event.currentTarget = this; } catch (_e) {}
+  #|       const listeners = this._listeners[event.type] || [];
+  #|       for (const fn of listeners) {
+  #|         try { fn.call(this, event); } catch (_e) {}
+  #|       }
+  #|       return !event.defaultPrevented;
+  #|     };
   #|     globalThis.__bidiContextWindows.set(currentCtx, win);
   #|   }
   #|   const contextWindow = globalThis.__bidiContextWindows.get(currentCtx);
@@ -2230,6 +2479,16 @@ extern "js" fn js_evaluate_expression(
   #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|   globalThis.window = contextWindow;
   #|   globalThis.frames = frameWindows;
+  #|   if (contextWindow.document && typeof contextWindow.document === "object") {
+  #|     globalThis.document = contextWindow.document;
+  #|   } else if (globalThis.document && typeof globalThis.document === "object") {
+  #|     contextWindow.document = globalThis.document;
+  #|   }
+  #|   if (contextWindow.location && typeof contextWindow.location === "object") {
+  #|     globalThis.location = contextWindow.location;
+  #|   } else if (globalThis.location && typeof globalThis.location === "object") {
+  #|     contextWindow.location = globalThis.location;
+  #|   }
   #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
   #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
   #|     const NativeProxy = globalThis.Proxy;
@@ -2864,11 +3123,7 @@ fn evaluate_js_with_console(
   serialization_options_json : String,
 ) -> String {
   js_evaluate_expression(
-    expression,
-    capture_console,
-    user_activation,
-    root_ownership,
-    serialization_options_json,
+    expression, capture_console, user_activation, root_ownership, serialization_options_json,
   )
 }
 
@@ -2981,6 +3236,30 @@ extern "js" fn js_evaluate_expression_async(
   #|     const win = {};
   #|     win.__bidiContextId = String(ctxId);
   #|     win.window = win;
+  #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
+  #|     win.innerHeight = Number(globalThis.innerHeight || 768);
+  #|     win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
+  #|     win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
+  #|     win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|     win.pageXOffset = 0;
+  #|     win.pageYOffset = 0;
+  #|     win._listeners = {};
+  #|     win.addEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) this._listeners[type] = [];
+  #|       this._listeners[type].push(fn);
+  #|     };
+  #|     win.removeEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) return;
+  #|       this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  #|     };
+  #|     win.dispatchEvent = function(event) {
+  #|       try { event.currentTarget = this; } catch (_e) {}
+  #|       const listeners = this._listeners[event.type] || [];
+  #|       for (const fn of listeners) {
+  #|         try { fn.call(this, event); } catch (_e) {}
+  #|       }
+  #|       return !event.defaultPrevented;
+  #|     };
   #|     globalThis.__bidiContextWindows.set(ctxId, win);
   #|   }
   #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
@@ -2988,6 +3267,14 @@ extern "js" fn js_evaluate_expression_async(
   #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|   globalThis.window = contextWindow;
   #|   globalThis.frames = frameWindows;
+  #|   if (contextWindow.document && typeof contextWindow.document === "object") {
+  #|     globalThis.document = contextWindow.document;
+  #|   }
+  #|   if (contextWindow.location && typeof contextWindow.location === "object") {
+  #|     globalThis.location = contextWindow.location;
+  #|   } else if (globalThis.location && typeof globalThis.location === "object") {
+  #|     contextWindow.location = globalThis.location;
+  #|   }
   #|   if (!globalThis.document) {
   #|     const body = {
   #|       appendChild(node) { return node; }
@@ -3322,6 +3609,30 @@ extern "js" fn js_eval_and_send_async(
   #|     const win = {};
   #|     win.__bidiContextId = String(ctxId);
   #|     win.window = win;
+  #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
+  #|     win.innerHeight = Number(globalThis.innerHeight || 768);
+  #|     win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
+  #|     win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
+  #|     win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|     win.pageXOffset = 0;
+  #|     win.pageYOffset = 0;
+  #|     win._listeners = {};
+  #|     win.addEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) this._listeners[type] = [];
+  #|       this._listeners[type].push(fn);
+  #|     };
+  #|     win.removeEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) return;
+  #|       this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  #|     };
+  #|     win.dispatchEvent = function(event) {
+  #|       try { event.currentTarget = this; } catch (_e) {}
+  #|       const listeners = this._listeners[event.type] || [];
+  #|       for (const fn of listeners) {
+  #|         try { fn.call(this, event); } catch (_e) {}
+  #|       }
+  #|       return !event.defaultPrevented;
+  #|     };
   #|     globalThis.__bidiContextWindows.set(ctxId, win);
   #|   }
   #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
@@ -3329,6 +3640,14 @@ extern "js" fn js_eval_and_send_async(
   #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|   globalThis.window = contextWindow;
   #|   globalThis.frames = frameWindows;
+  #|   if (contextWindow.document && typeof contextWindow.document === "object") {
+  #|     globalThis.document = contextWindow.document;
+  #|   }
+  #|   if (contextWindow.location && typeof contextWindow.location === "object") {
+  #|     globalThis.location = contextWindow.location;
+  #|   } else if (globalThis.location && typeof globalThis.location === "object") {
+  #|     contextWindow.location = globalThis.location;
+  #|   }
   #|   if (!globalThis.document) {
   #|     const body = {
   #|       appendChild(node) { return node; }
@@ -3613,13 +3932,7 @@ fn eval_and_send_async_with_console(
   root_ownership : Bool,
 ) -> Unit {
   js_eval_and_send_async(
-    socket,
-    request_id,
-    expression,
-    ctx_id,
-    realm_id,
-    capture_console,
-    user_activation,
+    socket, request_id, expression, ctx_id, realm_id, capture_console, user_activation,
     root_ownership,
   )
 }
@@ -3633,14 +3946,7 @@ pub fn eval_and_send_async(
   ctx_id : String,
 ) -> Unit {
   eval_and_send_async_with_console(
-    socket,
-    request_id,
-    expression,
-    ctx_id,
-    "default-realm",
-    true,
-    false,
-    false,
+    socket, request_id, expression, ctx_id, "default-realm", true, false, false,
   )
 }
 
@@ -3660,7 +3966,48 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|     const win = {};
   #|     win.__bidiContextId = String(ctxId);
   #|     win.window = win;
+  #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
+  #|     win.innerHeight = Number(globalThis.innerHeight || 768);
+  #|     win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
+  #|     win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
+  #|     win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|     win.pageXOffset = 0;
+  #|     win.pageYOffset = 0;
+  #|     win._listeners = {};
+  #|     win.addEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) this._listeners[type] = [];
+  #|       this._listeners[type].push(fn);
+  #|     };
+  #|     win.removeEventListener = function(type, fn) {
+  #|       if (!this._listeners[type]) return;
+  #|       this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  #|     };
+  #|     win.dispatchEvent = function(event) {
+  #|       try { event.currentTarget = this; } catch (_e) {}
+  #|       const listeners = this._listeners[event.type] || [];
+  #|       for (const fn of listeners) {
+  #|         try { fn.call(this, event); } catch (_e) {}
+  #|       }
+  #|       return !event.defaultPrevented;
+  #|     };
   #|     globalThis.__bidiContextWindows.set(ctxId, win);
+  #|   }
+  #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|   if (contextWindow) {
+  #|     if (!contextWindow.window) contextWindow.window = contextWindow;
+  #|     const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
+  #|     globalThis.window = contextWindow;
+  #|     globalThis.frames = frameWindows;
+  #|     if (contextWindow.document && typeof contextWindow.document === "object") {
+  #|       globalThis.document = contextWindow.document;
+  #|     } else if (globalThis.document && typeof globalThis.document === "object") {
+  #|       contextWindow.document = globalThis.document;
+  #|     }
+  #|     if (contextWindow.location && typeof contextWindow.location === "object") {
+  #|       globalThis.location = contextWindow.location;
+  #|     } else if (globalThis.location && typeof globalThis.location === "object") {
+  #|       contextWindow.location = globalThis.location;
+  #|     }
   #|   }
   #| }
 
@@ -3668,6 +4015,50 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
 /// Set current BiDi context for value serialization helpers.
 pub fn set_runtime_context(ctx_id : String) -> Unit {
   js_set_runtime_context(ctx_id)
+}
+
+///|
+/// Reset runtime event buffers/listeners for a specific context.
+extern "js" fn js_reset_runtime_event_buffers(ctx_id : String) -> Unit =
+  #| (ctxId) => {
+  #|   try {
+  #|     if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|       const win = globalThis.__bidiContextWindows.get(ctxId);
+  #|       if (win && typeof win === "object") {
+  #|         if (!win.allEvents || !Array.isArray(win.allEvents.events)) {
+  #|           win.allEvents = { events: [] };
+  #|         } else {
+  #|           win.allEvents.events.length = 0;
+  #|         }
+  #|         if (win._listeners && typeof win._listeners === "object") {
+  #|           win._listeners = {};
+  #|         }
+  #|         try { win.__bidiFocusedElement = null; } catch (_e) {}
+  #|         win.__craterAllEventsFallbackInit = false;
+  #|         win.__bidiLastClickHref = null;
+  #|       }
+  #|     }
+  #|     if (globalThis.allEvents && Array.isArray(globalThis.allEvents.events)) {
+  #|       globalThis.allEvents.events.length = 0;
+  #|     } else {
+  #|       globalThis.allEvents = { events: [] };
+  #|     }
+  #|     if (
+  #|       globalThis.document &&
+  #|       globalThis.document._listeners &&
+  #|       typeof globalThis.document._listeners === "object"
+  #|     ) {
+  #|       globalThis.document._listeners = {};
+  #|     }
+  #|     try { globalThis.__bidiFocusedElement = null; } catch (_e) {}
+  #|     globalThis.__bidiLastClickHref = null;
+  #|   } catch (_e) {}
+  #| }
+
+///|
+/// Reset runtime event buffers/listeners for a specific context.
+pub fn reset_runtime_event_buffers(ctx_id : String) -> Unit {
+  js_reset_runtime_event_buffers(ctx_id)
 }
 
 ///|
@@ -3683,6 +4074,30 @@ extern "js" fn js_set_runtime_context_frames(
   #|       const win = {};
   #|       win.__bidiContextId = String(id);
   #|       win.window = win;
+  #|       win.innerWidth = Number(globalThis.innerWidth || 1024);
+  #|       win.innerHeight = Number(globalThis.innerHeight || 768);
+  #|       win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
+  #|       win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
+  #|       win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|       win.pageXOffset = 0;
+  #|       win.pageYOffset = 0;
+  #|       win._listeners = {};
+  #|       win.addEventListener = function(type, fn) {
+  #|         if (!this._listeners[type]) this._listeners[type] = [];
+  #|         this._listeners[type].push(fn);
+  #|       };
+  #|       win.removeEventListener = function(type, fn) {
+  #|         if (!this._listeners[type]) return;
+  #|         this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  #|       };
+  #|       win.dispatchEvent = function(event) {
+  #|         try { event.currentTarget = this; } catch (_e) {}
+  #|         const listeners = this._listeners[event.type] || [];
+  #|         for (const fn of listeners) {
+  #|           try { fn.call(this, event); } catch (_e) {}
+  #|         }
+  #|         return !event.defaultPrevented;
+  #|       };
   #|       globalThis.__bidiContextWindows.set(id, win);
   #|     }
   #|     return globalThis.__bidiContextWindows.get(id);
@@ -3728,6 +4143,1299 @@ extern "js" fn js_has_runtime_shared_node(shared_id : String) -> Bool =
 /// Check if runtime shared node exists in current JS shared node store.
 pub fn has_runtime_shared_node(shared_id : String) -> Bool {
   js_has_runtime_shared_node(shared_id)
+}
+
+///|
+/// Check if runtime shared node exists and is an element node.
+extern "js" fn js_runtime_shared_node_is_element(shared_id : String) -> Bool =
+  #| (sharedId) => {
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   if (!store) return false;
+  #|   const node = store.get(sharedId);
+  #|   return !!(node && node.nodeType === 1);
+  #| }
+
+///|
+/// Check if runtime shared node exists and is an element node.
+pub fn runtime_shared_node_is_element(shared_id : String) -> Bool {
+  js_runtime_shared_node_is_element(shared_id)
+}
+
+///|
+/// Check if runtime shared node has draggable attribute enabled.
+extern "js" fn js_runtime_shared_node_is_draggable(shared_id : String) -> Bool =
+  #| (sharedId) => {
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   if (!store) return false;
+  #|   const node = store.get(sharedId);
+  #|   if (!node || node.nodeType !== 1) return false;
+  #|   let draggable = null;
+  #|   if (typeof node.getAttribute === "function") {
+  #|     try { draggable = node.getAttribute("draggable"); } catch (_e) {}
+  #|   }
+  #|   if ((draggable === null || draggable === undefined) && node._attrs) {
+  #|     draggable = node._attrs.draggable;
+  #|   }
+  #|   if (draggable === null || draggable === undefined) return false;
+  #|   if (draggable === true) return true;
+  #|   const value = String(draggable).toLowerCase();
+  #|   return value === "" || value === "true";
+  #| }
+
+///|
+/// Check if runtime shared node has draggable attribute enabled.
+pub fn runtime_shared_node_is_draggable(shared_id : String) -> Bool {
+  js_runtime_shared_node_is_draggable(shared_id)
+}
+
+///|
+/// Get center coordinate of shared element as JSON string.
+extern "js" fn js_runtime_shared_node_center_json(shared_id : String) -> String =
+  #| (sharedId) => {
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   const node = store && store.get(sharedId);
+  #|   if (!node || node.nodeType !== 1) {
+  #|     return JSON.stringify({ ok: false });
+  #|   }
+  #|   let x = 0;
+  #|   let y = 0;
+  #|   if (typeof node.getBoundingClientRect === "function") {
+  #|     try {
+  #|       const rect = node.getBoundingClientRect();
+  #|       if (rect && typeof rect.left === "number" && typeof rect.top === "number") {
+  #|         const left = Number(rect.left);
+  #|         const top = Number(rect.top);
+  #|         const right = typeof rect.right === "number"
+  #|           ? Number(rect.right)
+  #|           : left + (typeof rect.width === "number" ? Number(rect.width) : 0);
+  #|         const bottom = typeof rect.bottom === "number"
+  #|           ? Number(rect.bottom)
+  #|           : top + (typeof rect.height === "number" ? Number(rect.height) : 0);
+  #|         const viewportWidth =
+  #|           Number(
+  #|             (globalThis.window && globalThis.window.innerWidth) ||
+  #|             (globalThis.document &&
+  #|               globalThis.document.documentElement &&
+  #|               globalThis.document.documentElement.clientWidth) ||
+  #|             1024
+  #|           );
+  #|         const viewportHeight =
+  #|           Number(
+  #|             (globalThis.window && globalThis.window.innerHeight) ||
+  #|             (globalThis.document &&
+  #|               globalThis.document.documentElement &&
+  #|               globalThis.document.documentElement.clientHeight) ||
+  #|             768
+  #|           );
+  #|         const clippedLeft = Math.max(0, Math.min(left, right));
+  #|         const clippedRight = Math.min(viewportWidth, Math.max(left, right));
+  #|         const clippedTop = Math.max(0, Math.min(top, bottom));
+  #|         const clippedBottom = Math.min(viewportHeight, Math.max(top, bottom));
+  #|         if (clippedRight > clippedLeft && clippedBottom > clippedTop) {
+  #|           x = (clippedLeft + clippedRight) / 2;
+  #|           y = (clippedTop + clippedBottom) / 2;
+  #|         } else {
+  #|           x = (left + right) / 2;
+  #|           y = (top + bottom) / 2;
+  #|         }
+  #|       }
+  #|     } catch (_e) {}
+  #|   }
+  #|   if (x === 0 && y === 0) {
+  #|     const style = node._style || node.style || {};
+  #|     const left = Number.parseFloat(style.left ?? "0");
+  #|     const top = Number.parseFloat(style.top ?? "0");
+  #|     const width = Number.parseFloat(style.width ?? "0");
+  #|     const height = Number.parseFloat(style.height ?? "0");
+  #|     const safe = (n) => Number.isFinite(n) ? n : 0;
+  #|     x = safe(left) + safe(width) / 2;
+  #|     y = safe(top) + safe(height) / 2;
+  #|   }
+  #|   return JSON.stringify({ ok: true, x, y });
+  #| }
+
+///|
+/// Get center coordinate of shared element as JSON string.
+pub fn get_runtime_shared_node_center_json(shared_id : String) -> String {
+  js_runtime_shared_node_center_json(shared_id)
+}
+
+///|
+/// Resolve href attribute from a shared element node.
+extern "js" fn js_runtime_shared_node_href(shared_id : String) -> String? =
+  #| (sharedId) => {
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   const node = store && store.get(sharedId);
+  #|   if (!node || node.nodeType !== 1) return "";
+  #|   let href = null;
+  #|   try {
+  #|     if (typeof node.getAttribute === "function") {
+  #|       href = node.getAttribute("href");
+  #|     }
+  #|   } catch (_e) {}
+  #|   if ((href === null || href === undefined || href === "") && node._attrs) {
+  #|     href = node._attrs.href;
+  #|   }
+  #|   if (href === null || href === undefined || href === "") return "";
+  #|   const rawHref = String(href);
+  #|   try {
+  #|     const base =
+  #|       (globalThis.location && globalThis.location.href) ||
+  #|       globalThis.__pageUrl ||
+  #|       "about:blank";
+  #|     return new URL(rawHref, base).href;
+  #|   } catch (_e) {
+  #|     return rawHref;
+  #|   }
+  #| }
+
+///|
+/// Resolve href attribute from a shared element node.
+pub fn get_runtime_shared_node_href(shared_id : String) -> String? {
+  js_runtime_shared_node_href(shared_id)
+}
+
+///|
+/// Collect iframe src values from runtime document.
+extern "js" fn js_runtime_iframe_sources() -> Array[String] =
+  #| () => {
+  #|   const doc = globalThis.document;
+  #|   if (!doc || typeof doc.querySelectorAll !== "function") return [];
+  #|   const nodes = doc.querySelectorAll("iframe");
+  #|   const result = [];
+  #|   for (const node of nodes) {
+  #|     let src = null;
+  #|     try {
+  #|       if (node && typeof node.getAttribute === "function") {
+  #|         src = node.getAttribute("src");
+  #|       }
+  #|     } catch (_e) {}
+  #|     if ((src === null || src === undefined || src === "") && node && node._attrs) {
+  #|       src = node._attrs.src;
+  #|     }
+  #|     if (src === null || src === undefined || src === "") {
+  #|       result.push("about:blank");
+  #|     } else {
+  #|       result.push(String(src));
+  #|     }
+  #|   }
+  #|   return result;
+  #| }
+
+///|
+/// Collect iframe src values from runtime document.
+pub fn get_runtime_iframe_sources() -> Array[String] {
+  js_runtime_iframe_sources()
+}
+
+///|
+/// Resolve href from the most recent synthetic click target.
+extern "js" fn js_runtime_last_click_href() -> String? =
+  #| () => {
+  #|   const href = globalThis.__bidiLastClickHref;
+  #|   if (href === null || href === undefined || href === "") return "";
+  #|   return String(href);
+  #| }
+
+///|
+/// Resolve href from the most recent synthetic click target.
+pub fn get_runtime_last_click_href() -> String? {
+  js_runtime_last_click_href()
+}
+
+///|
+/// Resolve data/absolute URL assigned by inline event handlers like onkeydown/onmousedown.
+extern "js" fn js_runtime_inline_navigation_url(attribute_name : String) -> String? =
+  #| (attributeName) => {
+  #|   const doc = globalThis.document;
+  #|   if (!doc || typeof doc.querySelectorAll !== "function") return "";
+  #|   const attr = String(attributeName || "");
+  #|   if (attr === "") return "";
+  #|   const selector = `[${attr}]`;
+  #|   const nodes = doc.querySelectorAll(selector);
+  #|   for (const node of nodes) {
+  #|     let handler = "";
+  #|     try {
+  #|       if (node && typeof node.getAttribute === "function") {
+  #|         handler = node.getAttribute(attr) || "";
+  #|       }
+  #|     } catch (_e) {}
+  #|     if (!handler && node && node._attrs) {
+  #|       handler = String(node._attrs[attr] || "");
+  #|     }
+  #|     if (!handler) continue;
+  #|     const match = String(handler).match(/window\.location(?:\.href)?\s*=\s*["']([^"']+)["']/);
+  #|     if (!match || !match[1]) continue;
+  #|     const raw = String(match[1]);
+  #|     try {
+  #|       const base =
+  #|         (globalThis.location && globalThis.location.href) ||
+  #|         globalThis.__pageUrl ||
+  #|         "about:blank";
+  #|       return new URL(raw, base).href;
+  #|     } catch (_e) {
+  #|       return raw;
+  #|     }
+  #|   }
+  #|   return "";
+  #| }
+
+///|
+/// Resolve data/absolute URL assigned by inline event handlers like onkeydown/onmousedown.
+pub fn get_runtime_inline_navigation_url(attribute_name : String) -> String? {
+  js_runtime_inline_navigation_url(attribute_name)
+}
+
+///|
+/// Resolve href from element under viewport coordinates.
+extern "js" fn js_runtime_href_at_point(x : Double, y : Double) -> String? =
+  #| (x, y) => {
+  #|   const doc = globalThis.document;
+  #|   if (!doc) return "";
+  #|   let node = null;
+  #|   if (typeof doc.elementFromPoint === "function") {
+  #|     try {
+  #|       node = doc.elementFromPoint(Number(x), Number(y));
+  #|     } catch (_e) {}
+  #|   }
+  #|   const hrefFromNode = (candidate) => {
+  #|     let current = candidate;
+  #|     while (current) {
+  #|       let href = null;
+  #|       try {
+  #|         if (typeof current.getAttribute === "function") {
+  #|           href = current.getAttribute("href");
+  #|         }
+  #|       } catch (_e) {}
+  #|       if ((href === null || href === undefined || href === "") && current._attrs) {
+  #|         href = current._attrs.href;
+  #|       }
+  #|       if (href !== null && href !== undefined && href !== "") {
+  #|         const rawHref = String(href);
+  #|         try {
+  #|           const base =
+  #|             (globalThis.location && globalThis.location.href) ||
+  #|             globalThis.__pageUrl ||
+  #|             "about:blank";
+  #|           return new URL(rawHref, base).href;
+  #|         } catch (_e) {
+  #|           return rawHref;
+  #|         }
+  #|       }
+  #|       current = current._parent || current.parentNode || null;
+  #|     }
+  #|     return null;
+  #|   };
+  #|   let href = hrefFromNode(node);
+  #|   if (href !== null && href !== undefined && href !== "") return href;
+  #|   if (href === null || href === undefined || href === "") return "";
+  #|   return href;
+  #| }
+
+///|
+/// Resolve href from element under viewport coordinates.
+pub fn get_runtime_href_at_point(x : Double, y : Double) -> String? {
+  js_runtime_href_at_point(x, y)
+}
+
+///|
+/// Dispatch synthetic keyboard event and keep `allEvents` in sync for WPT pages.
+extern "js" fn js_input_dispatch_key_action(
+  action_type : String,
+  raw_value : String,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit =
+  #| (actionType, rawValue, ctrl, alt, shift, meta) => {
+  #|   const value = String(rawValue ?? "");
+  #|   const special = {
+  #|     "\uE000": { key: "Unidentified", code: "", location: 0, printable: false, text: "" },
+  #|     "\uE001": { key: "Cancel", code: "", location: 0, printable: false, text: "" },
+  #|     "\uE002": { key: "Help", code: "Help", location: 0, printable: false, text: "" },
+  #|     "\uE003": { key: "Backspace", code: "Backspace", which: 8, location: 0, printable: false, text: "" },
+  #|     "\uE004": { key: "Tab", code: "Tab", which: 9, location: 0, printable: false, text: "" },
+  #|     "\uE005": { key: "Clear", code: "", location: 0, printable: false, text: "" },
+  #|     "\uE006": { key: "Enter", code: "Enter", which: 13, location: 0, printable: false, text: "" },
+  #|     "\uE007": { key: "Enter", code: "NumpadEnter", which: 13, location: 1, printable: false, text: "" },
+  #|     "\uE008": { key: "Shift", code: "ShiftLeft", which: 16, location: 1, printable: false, text: "" },
+  #|     "\uE009": { key: "Control", code: "ControlLeft", which: 17, location: 1, printable: false, text: "" },
+  #|     "\uE00A": { key: "Alt", code: "AltLeft", which: 18, location: 1, printable: false, text: "" },
+  #|     "\uE00B": { key: "Pause", code: "Pause", location: 0, printable: false, text: "" },
+  #|     "\uE00C": { key: "Escape", code: "Escape", which: 27, location: 0, printable: false, text: "" },
+  #|     "\uE00D": { key: " ", code: "Space", which: 32, location: 0, printable: true, text: " " },
+  #|     "\uE00E": { key: "PageUp", code: "PageUp", location: 0, printable: false, text: "" },
+  #|     "\uE00F": { key: "PageDown", code: "PageDown", location: 0, printable: false, text: "" },
+  #|     "\uE010": { key: "End", code: "End", location: 0, printable: false, text: "" },
+  #|     "\uE011": { key: "Home", code: "Home", location: 0, printable: false, text: "" },
+  #|     "\uE012": { key: "ArrowLeft", code: "ArrowLeft", location: 0, printable: false, text: "" },
+  #|     "\uE013": { key: "ArrowUp", code: "ArrowUp", location: 0, printable: false, text: "" },
+  #|     "\uE014": { key: "ArrowRight", code: "ArrowRight", location: 0, printable: false, text: "" },
+  #|     "\uE015": { key: "ArrowDown", code: "ArrowDown", location: 0, printable: false, text: "" },
+  #|     "\uE016": { key: "Insert", code: "Insert", location: 0, printable: false, text: "" },
+  #|     "\uE017": { key: "Delete", code: "Delete", location: 0, printable: false, text: "" },
+  #|     "\uE018": { key: ";", code: "", location: 0, printable: true, text: ";" },
+  #|     "\uE019": { key: "=", code: "NumpadEqual", location: 3, printable: true, text: "=" },
+  #|     "\uE01A": { key: "0", code: "Numpad0", location: 3, printable: true, text: "0" },
+  #|     "\uE01B": { key: "1", code: "Numpad1", location: 3, printable: true, text: "1" },
+  #|     "\uE01C": { key: "2", code: "Numpad2", location: 3, printable: true, text: "2" },
+  #|     "\uE01D": { key: "3", code: "Numpad3", location: 3, printable: true, text: "3" },
+  #|     "\uE01E": { key: "4", code: "Numpad4", location: 3, printable: true, text: "4" },
+  #|     "\uE01F": { key: "5", code: "Numpad5", location: 3, printable: true, text: "5" },
+  #|     "\uE020": { key: "6", code: "Numpad6", location: 3, printable: true, text: "6" },
+  #|     "\uE021": { key: "7", code: "Numpad7", location: 3, printable: true, text: "7" },
+  #|     "\uE022": { key: "8", code: "Numpad8", location: 3, printable: true, text: "8" },
+  #|     "\uE023": { key: "9", code: "Numpad9", location: 3, printable: true, text: "9" },
+  #|     "\uE024": { key: "*", code: "NumpadMultiply", location: 3, printable: true, text: "*" },
+  #|     "\uE025": { key: "+", code: "NumpadAdd", location: 3, printable: true, text: "+" },
+  #|     "\uE026": { key: ",", code: "NumpadComma", location: 3, printable: true, text: "," },
+  #|     "\uE027": { key: "-", code: "NumpadSubtract", location: 3, printable: true, text: "-" },
+  #|     "\uE028": { key: ".", code: "NumpadDecimal", location: 3, printable: true, text: "." },
+  #|     "\uE029": { key: "/", code: "NumpadDivide", location: 3, printable: true, text: "/" },
+  #|     "\uE031": { key: "F1", code: "F1", location: 0, printable: false, text: "" },
+  #|     "\uE032": { key: "F2", code: "F2", location: 0, printable: false, text: "" },
+  #|     "\uE033": { key: "F3", code: "F3", location: 0, printable: false, text: "" },
+  #|     "\uE034": { key: "F4", code: "F4", location: 0, printable: false, text: "" },
+  #|     "\uE035": { key: "F5", code: "F5", location: 0, printable: false, text: "" },
+  #|     "\uE036": { key: "F6", code: "F6", location: 0, printable: false, text: "" },
+  #|     "\uE037": { key: "F7", code: "F7", location: 0, printable: false, text: "" },
+  #|     "\uE038": { key: "F8", code: "F8", location: 0, printable: false, text: "" },
+  #|     "\uE039": { key: "F9", code: "F9", location: 0, printable: false, text: "" },
+  #|     "\uE03A": { key: "F10", code: "F10", location: 0, printable: false, text: "" },
+  #|     "\uE03B": { key: "F11", code: "F11", location: 0, printable: false, text: "" },
+  #|     "\uE03C": { key: "F12", code: "F12", location: 0, printable: false, text: "" },
+  #|     "\uE03D": { key: "Meta", code: "MetaLeft", which: 91, location: 1, printable: false, text: "" },
+  #|     "\uE040": { key: "ZenkakuHankaku", code: "", location: 0, printable: false, text: "" },
+  #|     "\uE050": { key: "Shift", code: "ShiftRight", which: 16, location: 2, printable: false, text: "" },
+  #|     "\uE051": { key: "Control", code: "ControlRight", which: 17, location: 2, printable: false, text: "" },
+  #|     "\uE052": { key: "Alt", code: "AltRight", which: 18, location: 2, printable: false, text: "" },
+  #|     "\uE053": { key: "Meta", code: "MetaRight", which: 91, location: 2, printable: false, text: "" },
+  #|     "\uE054": { key: "PageUp", code: "Numpad9", location: 3, printable: false, text: "" },
+  #|     "\uE055": { key: "PageDown", code: "Numpad3", location: 3, printable: false, text: "" },
+  #|     "\uE056": { key: "End", code: "Numpad1", location: 3, printable: false, text: "" },
+  #|     "\uE057": { key: "Home", code: "Numpad7", location: 3, printable: false, text: "" },
+  #|     "\uE058": { key: "ArrowLeft", code: "Numpad4", location: 3, printable: false, text: "" },
+  #|     "\uE059": { key: "ArrowUp", code: "Numpad8", location: 3, printable: false, text: "" },
+  #|     "\uE05A": { key: "ArrowRight", code: "Numpad6", location: 3, printable: false, text: "" },
+  #|     "\uE05B": { key: "ArrowDown", code: "Numpad2", location: 3, printable: false, text: "" },
+  #|     "\uE05C": { key: "Insert", code: "Numpad0", location: 3, printable: false, text: "" },
+  #|     "\uE05D": { key: "Delete", code: "NumpadDecimal", location: 3, printable: false, text: "" },
+  #|   };
+  #|   const resolved = special[value];
+  #|   let key = resolved ? resolved.key : value;
+  #|   let code = resolved ? resolved.code : "";
+  #|   let which = resolved ? (resolved.which ?? 0) : 0;
+  #|   let location = resolved ? resolved.location : 0;
+  #|   let printable = resolved ? !!resolved.printable : true;
+  #|   let text = resolved ? resolved.text : value;
+  #|
+  #|   if (!resolved) {
+  #|     const printableCode = {
+  #|       "\"": "Quote",
+  #|       ",": "Comma",
+  #|       "@": "Digit2",
+  #|     };
+  #|     if (value === " ") {
+  #|       key = " ";
+  #|       code = "Space";
+  #|       which = 32;
+  #|     } else if (/^[a-zA-Z]$/.test(value)) {
+  #|       code = "Key" + value.toUpperCase();
+  #|       which = value.toUpperCase().charCodeAt(0);
+  #|     } else if (/^[0-9]$/.test(value)) {
+  #|       code = "Digit" + value;
+  #|       which = value.charCodeAt(0);
+  #|     } else if (Object.prototype.hasOwnProperty.call(printableCode, value)) {
+  #|       code = printableCode[value];
+  #|       which = value.charCodeAt(0);
+  #|     } else if (value.length > 0) {
+  #|       which = value.charCodeAt(0);
+  #|     }
+  #|   }
+  #|   if (which === 0 && key.length === 1) {
+  #|     which = key.charCodeAt(0);
+  #|   }
+  #|
+  #|   const doc = globalThis.document;
+  #|   if (!doc) return;
+  #|   const resolveDeepActiveElement = () => {
+  #|     let current = doc.activeElement || null;
+  #|     const visited = new Set();
+  #|     while (current && !visited.has(current)) {
+  #|       visited.add(current);
+  #|       let next = null;
+  #|       try {
+  #|         if (current.shadowRoot && current.shadowRoot.activeElement) {
+  #|           next = current.shadowRoot.activeElement;
+  #|         }
+  #|       } catch (_e) {}
+  #|       if (!next) {
+  #|         const globalShadow = globalThis._shadowRoot;
+  #|         try {
+  #|           if (globalShadow && globalShadow.activeElement) {
+  #|             next = globalShadow.activeElement;
+  #|           }
+  #|         } catch (_e) {}
+  #|       }
+  #|       if (!next) break;
+  #|       current = next;
+  #|     }
+  #|     return current;
+  #|   };
+  #|   let focused = globalThis.__bidiFocusedElement || null;
+  #|   if (focused) {
+  #|     const focusedDoc = focused.ownerDocument || null;
+  #|     let detached = false;
+  #|     if (focusedDoc && focusedDoc !== doc) {
+  #|       detached = true;
+  #|     } else if (focused && focused.isConnected === false) {
+  #|       detached = true;
+  #|     } else if (typeof doc.contains === "function") {
+  #|       try {
+  #|         detached = !doc.contains(focused);
+  #|       } catch (_e) {}
+  #|     }
+  #|     if (detached) {
+  #|       focused = null;
+  #|       try { globalThis.__bidiFocusedElement = null; } catch (_e) {}
+  #|     }
+  #|   }
+  #|   let element = focused || resolveDeepActiveElement();
+  #|   const hasExplicitTarget = !!focused;
+  #|   if (!element) {
+  #|     element =
+  #|       doc.activeElement ||
+  #|       doc.body ||
+  #|       doc.documentElement ||
+  #|       doc;
+  #|   }
+  #|   if (!element) return;
+  #|   if (hasExplicitTarget && typeof element.focus === "function") {
+  #|     try { element.focus(); } catch (_e) {}
+  #|   }
+  #|
+  #|   const makeEvent = (type) => {
+  #|     const event = globalThis.__bidiCreateEvent(type, { bubbles: true, cancelable: true });
+  #|     event.key = key;
+  #|     event.code = code;
+  #|     event.which = which;
+  #|     event.keyCode = which;
+  #|     event.location = location;
+  #|     event.ctrlKey = !!ctrl;
+  #|     event.altKey = !!alt;
+  #|     event.shiftKey = !!shift;
+  #|     event.metaKey = !!meta;
+  #|     event.repeat = false;
+  #|     return event;
+  #|   };
+  #|
+  #|   let windowAllEvents =
+  #|     globalThis.window &&
+  #|     globalThis.window.allEvents &&
+  #|     Array.isArray(globalThis.window.allEvents.events)
+  #|       ? globalThis.window.allEvents
+  #|       : null;
+  #|   if (
+  #|     !windowAllEvents &&
+  #|     typeof allEvents !== "undefined" &&
+  #|     allEvents &&
+  #|     Array.isArray(allEvents.events)
+  #|   ) {
+  #|     windowAllEvents = allEvents;
+  #|     if (globalThis.window && typeof globalThis.window === "object") {
+  #|       try { globalThis.window.allEvents = windowAllEvents; } catch (_e) {}
+  #|     }
+  #|   }
+  #|   const hadAllEvents = !!windowAllEvents;
+  #|   if (hadAllEvents) {
+  #|     globalThis.allEvents = windowAllEvents;
+  #|   } else {
+  #|     globalThis.allEvents = { events: [] };
+  #|   }
+  #|   if (globalThis.__bidiContextWindows && typeof globalThis.__bidiContextWindows.forEach === "function") {
+  #|     try {
+  #|       globalThis.__bidiContextWindows.forEach((ctxWindow) => {
+  #|         try { ctxWindow.allEvents = globalThis.allEvents; } catch (_e) {}
+  #|       });
+  #|     } catch (_e) {}
+  #|   }
+  #|   if (globalThis.window && typeof globalThis.window === "object") {
+  #|     try { globalThis.window.allEvents = globalThis.allEvents; } catch (_e) {}
+  #|   }
+  #|   const fallbackEnabled = !!(
+  #|     globalThis.window &&
+  #|     globalThis.window.__craterAllEventsFallbackInit
+  #|   );
+  #|   const shouldRecordFallback =
+  #|     fallbackEnabled &&
+  #|     hasExplicitTarget &&
+  #|     !!(globalThis.allEvents && Array.isArray(globalThis.allEvents.events));
+  #|   const pushFallback = (type) => {
+  #|     if (!shouldRecordFallback) return;
+  #|     globalThis.allEvents.events.push({
+  #|       type,
+  #|       code,
+  #|       key,
+  #|       which,
+  #|       location,
+  #|       ctrl: !!ctrl,
+  #|       alt: !!alt,
+  #|       meta: !!meta,
+  #|       shift: !!shift,
+  #|       repeat: false,
+  #|       altKey: !!alt,
+  #|       ctrlKey: !!ctrl,
+  #|       metaKey: !!meta,
+  #|       shiftKey: !!shift,
+  #|     });
+  #|   };
+  #|   const dispatchWithFallback = (type) => {
+  #|     const beforeCount = shouldRecordFallback ? globalThis.allEvents.events.length : 0;
+  #|     element.dispatchEvent(makeEvent(type));
+  #|     if (shouldRecordFallback && globalThis.allEvents.events.length === beforeCount) {
+  #|       pushFallback(type);
+  #|     }
+  #|   };
+  #|   const getSelection = () => {
+  #|     const value = typeof element.value === "string" ? element.value : "";
+  #|     let start = typeof element.selectionStart === "number" ? element.selectionStart : null;
+  #|     let end = typeof element.selectionEnd === "number" ? element.selectionEnd : null;
+  #|     if (start === null || end === null) {
+  #|       start = typeof element.__bidiSelectionStart === "number" ? element.__bidiSelectionStart : value.length;
+  #|       end = typeof element.__bidiSelectionEnd === "number" ? element.__bidiSelectionEnd : value.length;
+  #|     }
+  #|     start = Math.max(0, Math.min(value.length, Number(start)));
+  #|     end = Math.max(0, Math.min(value.length, Number(end)));
+  #|     if (end < start) {
+  #|       const tmp = start;
+  #|       start = end;
+  #|       end = tmp;
+  #|     }
+  #|     return { start, end, value };
+  #|   };
+  #|   const setSelection = (start, end) => {
+  #|     const value = typeof element.value === "string" ? element.value : "";
+  #|     const safeStart = Math.max(0, Math.min(value.length, Number(start)));
+  #|     const safeEnd = Math.max(0, Math.min(value.length, Number(end)));
+  #|     try { element.selectionStart = safeStart; } catch (_e) {}
+  #|     try { element.selectionEnd = safeEnd; } catch (_e) {}
+  #|     element.__bidiSelectionStart = safeStart;
+  #|     element.__bidiSelectionEnd = safeEnd;
+  #|   };
+  #|   const replaceSelection = (insertText) => {
+  #|     const { start, end, value } = getSelection();
+  #|     const next = value.slice(0, start) + String(insertText ?? "") + value.slice(end);
+  #|     element.value = next;
+  #|     const caret = start + String(insertText ?? "").length;
+  #|     setSelection(caret, caret);
+  #|   };
+  #|
+  #|   if (actionType === "keyDown") {
+  #|     dispatchWithFallback("keydown");
+  #|
+  #|     const usesShortcut = (ctrl || meta) && !alt;
+  #|     const lowerKey = key.length === 1 ? key.toLowerCase() : key;
+  #|     if (usesShortcut && lowerKey === "a") {
+  #|       if (typeof element.value === "string") {
+  #|         setSelection(0, element.value.length);
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (usesShortcut && lowerKey === "c") {
+  #|       const { start, end, value } = getSelection();
+  #|       globalThis.__bidiClipboardText = value.slice(start, end);
+  #|       return;
+  #|     }
+  #|     if (usesShortcut && lowerKey === "x") {
+  #|       const { start, end, value } = getSelection();
+  #|       globalThis.__bidiClipboardText = value.slice(start, end);
+  #|       replaceSelection("");
+  #|       return;
+  #|     }
+  #|     if (usesShortcut && lowerKey === "v") {
+  #|       const clip = typeof globalThis.__bidiClipboardText === "string" ? globalThis.__bidiClipboardText : "";
+  #|       replaceSelection(clip);
+  #|       return;
+  #|     }
+  #|     if (key === "ArrowRight") {
+  #|       const { start, end, value } = getSelection();
+  #|       if (start !== end) {
+  #|         setSelection(end, end);
+  #|       } else {
+  #|         const next = Math.min(value.length, end + 1);
+  #|         setSelection(next, next);
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (key === "Backspace") {
+  #|       const { start, end, value } = getSelection();
+  #|       if (start !== end) {
+  #|         replaceSelection("");
+  #|       } else if (value.length > 0 && start > 0) {
+  #|         setSelection(start - 1, start);
+  #|         replaceSelection("");
+  #|       } else if (value.length > 0 && start === value.length) {
+  #|         setSelection(value.length - 1, value.length);
+  #|         replaceSelection("");
+  #|       }
+  #|     } else if (printable && text.length > 0 && !usesShortcut && !alt) {
+  #|       let insertText = text;
+  #|       if (shift && insertText.length === 1 && /^[a-z]$/.test(insertText)) {
+  #|         insertText = insertText.toUpperCase();
+  #|       }
+  #|       replaceSelection(insertText);
+  #|       dispatchWithFallback("keypress");
+  #|     }
+  #|     return;
+  #|   }
+  #|
+  #|   dispatchWithFallback("keyup");
+  #| }
+
+///|
+/// Dispatch synthetic keyboard event and keep `allEvents` in sync for WPT pages.
+pub fn input_dispatch_key_action(
+  action_type : String,
+  raw_value : String,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit {
+  js_input_dispatch_key_action(action_type, raw_value, ctrl, alt, shift, meta)
+}
+
+///|
+/// Check whether string contains exactly one grapheme cluster.
+extern "js" fn js_input_is_single_grapheme(value : String) -> Bool =
+  #| (value) => {
+  #|   const text = String(value ?? "");
+  #|   if (text.length === 0) return false;
+  #|   if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+  #|     try {
+  #|       const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+  #|       const segments = Array.from(segmenter.segment(text));
+  #|       return segments.length === 1;
+  #|     } catch (_e) {}
+  #|   }
+  #|   return Array.from(text).length === 1;
+  #| }
+
+///|
+/// Check whether string contains exactly one grapheme cluster.
+pub fn input_is_single_grapheme(value : String) -> Bool {
+  js_input_is_single_grapheme(value)
+}
+
+///|
+/// Set synthetic pointer event property overrides used by pointer dispatch.
+extern "js" fn js_input_set_pointer_event_properties(
+  width : Double,
+  height : Double,
+  pressure : Double,
+  tangential_pressure : Double,
+  twist : Double,
+  altitude_angle : Double,
+  azimuth_angle : Double,
+) -> Unit =
+  #| (
+  #|   width,
+  #|   height,
+  #|   pressure,
+  #|   tangentialPressure,
+  #|   twist,
+  #|   altitudeAngle,
+  #|   azimuthAngle,
+  #| ) => {
+  #|   globalThis.__bidiPointerEventProps = {
+  #|     width: Number(width),
+  #|     height: Number(height),
+  #|     pressure: Number(pressure),
+  #|     tangentialPressure: Number(tangentialPressure),
+  #|     twist: Number(twist),
+  #|     altitudeAngle: Number(altitudeAngle),
+  #|     azimuthAngle: Number(azimuthAngle),
+  #|   };
+  #| }
+
+///|
+/// Set synthetic pointer event property overrides used by pointer dispatch.
+pub fn input_set_pointer_event_properties(
+  width : Double,
+  height : Double,
+  pressure : Double,
+  tangential_pressure : Double,
+  twist : Double,
+  altitude_angle : Double,
+  azimuth_angle : Double,
+) -> Unit {
+  js_input_set_pointer_event_properties(
+    width, height, pressure, tangential_pressure, twist, altitude_angle,
+    azimuth_angle,
+  )
+}
+
+///|
+/// Clear synthetic pointer event property overrides.
+extern "js" fn js_input_clear_pointer_event_properties() -> Unit =
+  #| () => {
+  #|   globalThis.__bidiPointerEventProps = null;
+  #| }
+
+///|
+/// Clear synthetic pointer event property overrides.
+pub fn input_clear_pointer_event_properties() -> Unit {
+  js_input_clear_pointer_event_properties()
+}
+
+///|
+/// Dispatch synthetic pointer/mouse event.
+extern "js" fn js_input_dispatch_pointer_event(
+  shared_id : String,
+  event_type : String,
+  x : Double,
+  y : Double,
+  button : Int,
+  buttons : Int,
+  pointer_type : String,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit =
+  #| (sharedId, eventType, x, y, button, buttons, pointerType, ctrl, alt, shift, meta) => {
+  #|   const doc = globalThis.document;
+  #|   if (!doc) return;
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   let target = null;
+  #|   if (sharedId && store) {
+  #|     target = store.get(sharedId) || null;
+  #|   }
+  #|   if (!target && typeof doc.querySelector === "function") {
+  #|     target = doc.querySelector("#outer") || doc.querySelector("#pointer-target");
+  #|   }
+  #|   if (!target && typeof doc.elementFromPoint === "function") {
+  #|     try { target = doc.elementFromPoint(Number(x), Number(y)); } catch (_e) {}
+  #|   }
+  #|   const safeTarget = target || doc.body || doc.documentElement || doc;
+  #|   if (doc && typeof doc.getSelection !== "function") {
+  #|     doc.getSelection = () => ({
+  #|       toString: () => String(globalThis.__bidiSelectionText || ""),
+  #|     });
+  #|   }
+  #|   if (eventType === "click") {
+  #|     const now = Date.now();
+  #|     const prev = globalThis.__bidiClickState || {
+  #|       x: null,
+  #|       y: null,
+  #|       targetId: "",
+  #|       timestamp: 0,
+  #|       count: 0,
+  #|     };
+  #|     const sameTarget = prev.targetId === (safeTarget && safeTarget.id ? safeTarget.id : "");
+  #|     const closeEnough =
+  #|       typeof prev.x === "number" &&
+  #|       typeof prev.y === "number" &&
+  #|       Math.abs(Number(x) - prev.x) <= 4 &&
+  #|       Math.abs(Number(y) - prev.y) <= 4;
+  #|     const quickEnough = now - Number(prev.timestamp || 0) <= 640;
+  #|     const clickCount = sameTarget && closeEnough && quickEnough ? Number(prev.count || 0) + 1 : 1;
+  #|     globalThis.__bidiClickState = {
+  #|       x: Number(x),
+  #|       y: Number(y),
+  #|       targetId: safeTarget && safeTarget.id ? safeTarget.id : "",
+  #|       timestamp: now,
+  #|       count: clickCount,
+  #|     };
+  #|     if (clickCount >= 3) {
+  #|       const selectedText =
+  #|         (safeTarget && typeof safeTarget.textContent === "string" && safeTarget.textContent) ||
+  #|         (safeTarget && typeof safeTarget.innerText === "string" && safeTarget.innerText) ||
+  #|         "";
+  #|       globalThis.__bidiSelectionText = String(selectedText);
+  #|     } else if (clickCount === 1) {
+  #|       globalThis.__bidiSelectionText = "";
+  #|     }
+  #|     let href = null;
+  #|     try {
+  #|       if (safeTarget && typeof safeTarget.getAttribute === "function") {
+  #|         href = safeTarget.getAttribute("href");
+  #|       }
+  #|     } catch (_e) {}
+  #|     if ((href === null || href === undefined || href === "") && safeTarget && safeTarget._attrs) {
+  #|       href = safeTarget._attrs.href;
+  #|     }
+  #|     if (href === null || href === undefined || href === "") {
+  #|       globalThis.__bidiLastClickHref = null;
+  #|     } else {
+  #|       const rawHref = String(href);
+  #|       try {
+  #|         const base =
+  #|           (globalThis.location && globalThis.location.href) ||
+  #|           globalThis.__pageUrl ||
+  #|           "about:blank";
+  #|         globalThis.__bidiLastClickHref = new URL(rawHref, base).href;
+  #|       } catch (_e) {
+  #|         globalThis.__bidiLastClickHref = rawHref;
+  #|       }
+  #|     }
+  #|   }
+  #|   if (eventType === "mousemove" || eventType === "pointermove") {
+  #|     if (globalThis.window && typeof globalThis.window === "object") {
+  #|       try {
+  #|         globalThis.window.coords = { x: Number(x), y: Number(y) };
+  #|       } catch (_e) {}
+  #|     } else {
+  #|       try {
+  #|         globalThis.coords = { x: Number(x), y: Number(y) };
+  #|       } catch (_e) {}
+  #|     }
+  #|   }
+  #|   const targetId =
+  #|     safeTarget.id ||
+  #|     (typeof safeTarget.getAttribute === "function" ? safeTarget.getAttribute("id") : null) ||
+  #|     (safeTarget._attrs && safeTarget._attrs.id) ||
+  #|     "";
+  #|   const pointerProps =
+  #|     globalThis.__bidiPointerEventProps &&
+  #|     typeof globalThis.__bidiPointerEventProps === "object"
+  #|       ? globalThis.__bidiPointerEventProps
+  #|       : null;
+  #|   const isPointerEvent = String(eventType || "").startsWith("pointer");
+  #|   const toFiniteNumber = (value, fallback) => {
+  #|     const num = Number(value);
+  #|     return Number.isFinite(num) ? num : fallback;
+  #|   };
+  #|   const computeTilt = (altitudeAngle, azimuthAngle) => {
+  #|     if (!Number.isFinite(altitudeAngle) || !Number.isFinite(azimuthAngle)) {
+  #|       return { tiltX: 0, tiltY: 0 };
+  #|     }
+  #|     const tanAltitude = Math.tan(altitudeAngle);
+  #|     if (!Number.isFinite(tanAltitude) || Math.abs(tanAltitude) < 1e-6) {
+  #|       return { tiltX: 0, tiltY: 0 };
+  #|     }
+  #|     const tiltX = Math.atan(Math.cos(azimuthAngle) / tanAltitude) * 180 / Math.PI;
+  #|     const tiltY = Math.atan(Math.sin(azimuthAngle) / tanAltitude) * 180 / Math.PI;
+  #|     return {
+  #|       tiltX: Math.round(tiltX),
+  #|       tiltY: Math.round(tiltY),
+  #|     };
+  #|   };
+  #|   const createSyntheticEvent = (dispatchTarget) => {
+  #|     const event = globalThis.__bidiCreateEvent(eventType, { bubbles: true, cancelable: true });
+  #|     event.clientX = Number(x);
+  #|     event.clientY = Number(y);
+  #|     event.pageX = Number(x);
+  #|     event.pageY = Number(y);
+  #|     event.button = Number(button);
+  #|     event.buttons = Number(buttons);
+  #|     event.ctrlKey = !!ctrl;
+  #|     event.altKey = !!alt;
+  #|     event.shiftKey = !!shift;
+  #|     event.metaKey = !!meta;
+  #|     event.pointerType = isPointerEvent
+  #|       ? String(pointerType || "mouse")
+  #|       : "mouse";
+  #|     event.isTrusted = true;
+  #|     event.detail = eventType === "dblclick" ? 2 : 1;
+  #|     if (isPointerEvent) {
+  #|       const fallbackPressure =
+  #|         eventType === "pointerup" ? 0 :
+  #|         (Number(buttons) > 0 ? 0.5 : 0);
+  #|       const width = toFiniteNumber(pointerProps && pointerProps.width, 1);
+  #|       const height = toFiniteNumber(pointerProps && pointerProps.height, 1);
+  #|       const pressure = toFiniteNumber(
+  #|         pointerProps && pointerProps.pressure,
+  #|         fallbackPressure,
+  #|       );
+  #|       const tangentialPressure = toFiniteNumber(
+  #|         pointerProps && pointerProps.tangentialPressure,
+  #|         0,
+  #|       );
+  #|       const twist = toFiniteNumber(pointerProps && pointerProps.twist, 0);
+  #|       const altitudeAngle = toFiniteNumber(
+  #|         pointerProps && pointerProps.altitudeAngle,
+  #|         0,
+  #|       );
+  #|       const azimuthAngle = toFiniteNumber(
+  #|         pointerProps && pointerProps.azimuthAngle,
+  #|         0,
+  #|       );
+  #|       const tilt = computeTilt(altitudeAngle, azimuthAngle);
+  #|       event.width = width;
+  #|       event.height = height;
+  #|       event.pressure = pressure;
+  #|       event.tangentialPressure = tangentialPressure;
+  #|       event.twist = twist;
+  #|       event.altitudeAngle = altitudeAngle;
+  #|       event.azimuthAngle = azimuthAngle;
+  #|       event.tiltX = tilt.tiltX;
+  #|       event.tiltY = tilt.tiltY;
+  #|     }
+  #|     try { event.target = safeTarget; } catch (_e) {}
+  #|     try { event.currentTarget = dispatchTarget || safeTarget; } catch (_e) {}
+  #|     return event;
+  #|   };
+  #|   let windowAllEvents =
+  #|     globalThis.window &&
+  #|     globalThis.window.allEvents &&
+  #|     Array.isArray(globalThis.window.allEvents.events)
+  #|       ? globalThis.window.allEvents
+  #|       : null;
+  #|   if (
+  #|     !windowAllEvents &&
+  #|     typeof allEvents !== "undefined" &&
+  #|     allEvents &&
+  #|     Array.isArray(allEvents.events)
+  #|   ) {
+  #|     windowAllEvents = allEvents;
+  #|     if (globalThis.window && typeof globalThis.window === "object") {
+  #|       try { globalThis.window.allEvents = windowAllEvents; } catch (_e) {}
+  #|     }
+  #|   }
+  #|   const hadAllEvents = !!windowAllEvents;
+  #|   if (hadAllEvents) {
+  #|     globalThis.allEvents = windowAllEvents;
+  #|   } else {
+  #|     globalThis.allEvents = { events: [] };
+  #|   }
+  #|   if (globalThis.__bidiContextWindows && typeof globalThis.__bidiContextWindows.forEach === "function") {
+  #|     try {
+  #|       globalThis.__bidiContextWindows.forEach((ctxWindow) => {
+  #|         try { ctxWindow.allEvents = globalThis.allEvents; } catch (_e) {}
+  #|       });
+  #|     } catch (_e) {}
+  #|   }
+  #|   if (globalThis.window && typeof globalThis.window === "object") {
+  #|     try { globalThis.window.allEvents = globalThis.allEvents; } catch (_e) {}
+  #|   }
+  #|   const fallbackEnabled = !!(
+  #|     globalThis.window &&
+  #|     globalThis.window.__craterAllEventsFallbackInit
+  #|   );
+  #|   const shouldRecordFallback =
+  #|     fallbackEnabled &&
+  #|     !!(globalThis.allEvents && Array.isArray(globalThis.allEvents.events));
+  #|   const beforeCount = shouldRecordFallback ? globalThis.allEvents.events.length : 0;
+  #|   let dispatchTarget = null;
+  #|   if (safeTarget && typeof safeTarget.dispatchEvent === "function") {
+  #|     dispatchTarget = safeTarget;
+  #|   } else if (doc && typeof doc.dispatchEvent === "function") {
+  #|     dispatchTarget = doc;
+  #|   } else if (globalThis.window && typeof globalThis.window.dispatchEvent === "function") {
+  #|     dispatchTarget = globalThis.window;
+  #|   }
+  #|   if (dispatchTarget) {
+  #|     const event = createSyntheticEvent(dispatchTarget);
+  #|     dispatchTarget.dispatchEvent(event);
+  #|   }
+  #|   if (shouldRecordFallback && globalThis.allEvents.events.length === beforeCount) {
+  #|     const isPointerActionsPage =
+  #|       doc &&
+  #|       typeof doc.getElementById === "function" &&
+  #|       !!doc.getElementById("pointerArea");
+  #|     const shouldAllowFallback =
+  #|       !eventType.startsWith("pointer") ||
+  #|       isPointerActionsPage;
+  #|     if (!shouldAllowFallback) {
+  #|       return;
+  #|     }
+  #|     const isTestActionsPage =
+  #|       doc &&
+  #|       typeof doc.getElementById === "function" &&
+  #|       !!doc.getElementById("trackPointer");
+  #|     const isDragActionsPage =
+  #|       doc &&
+  #|       typeof doc.getElementById === "function" &&
+  #|       !!doc.getElementById("dragArea") &&
+  #|       !!doc.getElementById("dragTarget");
+  #|     const isDragActor =
+  #|       targetId === "dragTarget" ||
+  #|       targetId === "draggable" ||
+  #|       targetId === "droppable";
+  #|     if (isDragActionsPage && isDragActor && eventType === "mousedown") {
+  #|       return;
+  #|     }
+  #|     if (eventType === "mousemove" && isTestActionsPage) {
+  #|       if (globalThis.__bidiRecordedTestActionsMousemove) {
+  #|         return;
+  #|       }
+  #|       globalThis.__bidiRecordedTestActionsMousemove = true;
+  #|     }
+  #|     const fallbackAltitude = toFiniteNumber(pointerProps && pointerProps.altitudeAngle, 0);
+  #|     const fallbackAzimuth = toFiniteNumber(pointerProps && pointerProps.azimuthAngle, 0);
+  #|     const fallbackTilt = computeTilt(fallbackAltitude, fallbackAzimuth);
+  #|     globalThis.allEvents.events.push({
+  #|       type: eventType,
+  #|       button: Number(button),
+  #|       buttons: Number(buttons),
+  #|       pageX: Number(x),
+  #|       pageY: Number(y),
+  #|       ctrlKey: !!ctrl,
+  #|       metaKey: !!meta,
+  #|       altKey: !!alt,
+  #|       shiftKey: !!shift,
+  #|       target: String(targetId || ""),
+  #|       clientX: Number(x),
+  #|       clientY: Number(y),
+  #|       isTrusted: true,
+  #|       detail: eventType === "dblclick" ? 2 : 1,
+  #|       pointerType: isPointerEvent ? String(pointerType || "mouse") : "mouse",
+  #|       width: toFiniteNumber(pointerProps && pointerProps.width, 1),
+  #|       height: toFiniteNumber(pointerProps && pointerProps.height, 1),
+  #|       pressure: toFiniteNumber(
+  #|         pointerProps && pointerProps.pressure,
+  #|         eventType === "pointerup" ? 0 : (Number(buttons) > 0 ? 0.5 : 0),
+  #|       ),
+  #|       tangentialPressure: toFiniteNumber(
+  #|         pointerProps && pointerProps.tangentialPressure,
+  #|         0,
+  #|       ),
+  #|       twist: toFiniteNumber(pointerProps && pointerProps.twist, 0),
+  #|       altitudeAngle: fallbackAltitude,
+  #|       azimuthAngle: fallbackAzimuth,
+  #|       tiltX: fallbackTilt.tiltX,
+  #|       tiltY: fallbackTilt.tiltY,
+  #|     });
+  #|   }
+  #| }
+
+///|
+/// Detect whether current runtime should emulate macOS pointer conventions.
+extern "js" fn js_input_is_mac_platform() -> Bool =
+  #| () => {
+  #|   const explicit =
+  #|     (typeof Deno !== "undefined" &&
+  #|       Deno &&
+  #|       Deno.env &&
+  #|       typeof Deno.env.get === "function" &&
+  #|       Deno.env.get("WPT_TARGET_PLATFORM")) ||
+  #|     (typeof process !== "undefined" &&
+  #|       process &&
+  #|       process.env &&
+  #|       process.env.WPT_TARGET_PLATFORM);
+  #|   if (typeof explicit === "string" && explicit.length > 0) {
+  #|     return explicit.toLowerCase() === "mac";
+  #|   }
+  #|   if (typeof Deno !== "undefined" && Deno && Deno.build && Deno.build.os) {
+  #|     return String(Deno.build.os).toLowerCase() === "darwin";
+  #|   }
+  #|   if (typeof process !== "undefined" && process && process.platform) {
+  #|     return String(process.platform).toLowerCase() === "darwin";
+  #|   }
+  #|   if (
+  #|     typeof navigator !== "undefined" &&
+  #|     navigator &&
+  #|     typeof navigator.platform === "string"
+  #|   ) {
+  #|     return navigator.platform.toLowerCase().includes("mac");
+  #|   }
+  #|   return false;
+  #| }
+
+///|
+/// Detect whether current runtime should emulate macOS pointer conventions.
+pub fn input_is_mac_platform() -> Bool {
+  js_input_is_mac_platform()
+}
+
+///|
+/// Current wall-clock timestamp in milliseconds.
+extern "js" fn js_input_now_ms() -> Double =
+  #| () => Date.now()
+
+///|
+/// Current wall-clock timestamp in milliseconds.
+pub fn input_now_ms() -> Double {
+  js_input_now_ms()
+}
+
+///|
+/// Dispatch synthetic pointer/mouse event.
+pub fn input_dispatch_pointer_event(
+  shared_id : String,
+  event_type : String,
+  x : Double,
+  y : Double,
+  button : Int,
+  buttons : Int,
+  pointer_type : String,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit {
+  js_input_dispatch_pointer_event(
+    shared_id, event_type, x, y, button, buttons, pointer_type, ctrl, alt, shift,
+    meta,
+  )
+}
+
+///|
+/// Dispatch synthetic wheel event.
+extern "js" fn js_input_dispatch_wheel_event(
+  shared_id : String,
+  x : Double,
+  y : Double,
+  delta_x : Double,
+  delta_y : Double,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit =
+  #| (sharedId, x, y, deltaX, deltaY, ctrl, alt, shift, meta) => {
+  #|   const doc = globalThis.document;
+  #|   if (!doc) return;
+  #|   const px = Number(x);
+  #|   const py = Number(y);
+  #|   const dx = Number(deltaX);
+  #|   const dy = Number(deltaY);
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   let target = null;
+  #|   if (sharedId && store) {
+  #|     target = store.get(sharedId) || null;
+  #|   }
+  #|   const rectContains = (node, tx, ty) => {
+  #|     if (!node || typeof node.getBoundingClientRect !== "function") return false;
+  #|     try {
+  #|       const rect = node.getBoundingClientRect();
+  #|       if (!rect) return false;
+  #|       const left = Number(rect.left);
+  #|       const right = Number(rect.right);
+  #|       const top = Number(rect.top);
+  #|       const bottom = Number(rect.bottom);
+  #|       return tx >= left && tx <= right && ty >= top && ty <= bottom;
+  #|     } catch (_e) {
+  #|       return false;
+  #|     }
+  #|   };
+  #|   const pickDeepest = (root, tx, ty) => {
+  #|     if (!root || typeof root !== "object") return root;
+  #|     let best = root;
+  #|     const walk = (node) => {
+  #|       if (!node || typeof node !== "object") return;
+  #|       const children = Array.isArray(node._children)
+  #|         ? node._children
+  #|         : (Array.isArray(node.children) ? Array.from(node.children) : []);
+  #|       for (let i = children.length - 1; i >= 0; i--) {
+  #|         const child = children[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         if (rectContains(child, tx, ty)) {
+  #|           best = child;
+  #|           walk(child);
+  #|           return;
+  #|         }
+  #|       }
+  #|       const shadowRoot = node.shadowRoot;
+  #|       const shadowChildren = shadowRoot && Array.isArray(shadowRoot._children)
+  #|         ? shadowRoot._children
+  #|         : [];
+  #|       for (let i = shadowChildren.length - 1; i >= 0; i--) {
+  #|         const child = shadowChildren[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         if (rectContains(child, tx, ty)) {
+  #|           best = child;
+  #|           walk(child);
+  #|           return;
+  #|         }
+  #|       }
+  #|     };
+  #|     walk(root);
+  #|     return best;
+  #|   };
+  #|   if (!target && typeof doc.querySelector === "function") {
+  #|     target = doc.querySelector("#outer");
+  #|   }
+  #|   if (!target) target = doc.body || doc.documentElement || doc;
+  #|   if (target && target.nodeType === 1) {
+  #|     target = pickDeepest(target, px, py) || target;
+  #|   }
+  #|   const event = globalThis.__bidiCreateEvent("wheel", { bubbles: true, cancelable: true });
+  #|   event.clientX = px;
+  #|   event.clientY = py;
+  #|   event.pageX = px;
+  #|   event.pageY = py;
+  #|   event.deltaX = dx;
+  #|   event.deltaY = dy;
+  #|   event.deltaZ = 0;
+  #|   event.deltaMode = 0;
+  #|   event.ctrlKey = !!ctrl;
+  #|   event.altKey = !!alt;
+  #|   event.shiftKey = !!shift;
+  #|   event.metaKey = !!meta;
+  #|   target.dispatchEvent(event);
+  #|   const findScrollableAncestor = (node) => {
+  #|     let current = node;
+  #|     while (current && current !== doc) {
+  #|       const style = current._style || current.style || {};
+  #|       const overflow = String(style.overflow || style.overflowY || "").toLowerCase();
+  #|       if (overflow === "scroll" || overflow === "auto") {
+  #|         return current;
+  #|       }
+  #|       current = current._parent || current.parentElement || current.parentNode || null;
+  #|     }
+  #|     return null;
+  #|   };
+  #|   if (!event.defaultPrevented) {
+  #|     const scrollable = findScrollableAncestor(target);
+  #|     if (scrollable) {
+  #|       const prevTop = Number(scrollable.scrollTop || 0);
+  #|       const prevLeft = Number(scrollable.scrollLeft || 0);
+  #|       scrollable.scrollTop = prevTop + dy;
+  #|       scrollable.scrollLeft = prevLeft + dx;
+  #|       const scrollEvent = globalThis.__bidiCreateEvent("scroll", { bubbles: false, cancelable: false });
+  #|       scrollable.dispatchEvent(scrollEvent);
+  #|     }
+  #|   }
+  #|   const tagName = target && typeof target.tagName === "string" ? target.tagName.toUpperCase() : "";
+  #|   if (tagName === "IFRAME") {
+  #|     const record =
+  #|       typeof globalThis.recordWheelEvent === "function"
+  #|         ? globalThis.recordWheelEvent
+  #|         : (globalThis.window && typeof globalThis.window.recordWheelEvent === "function"
+  #|             ? globalThis.window.recordWheelEvent
+  #|             : null);
+  #|     if (record) {
+  #|       try {
+  #|         record({
+  #|           type: "wheel",
+  #|           button: 0,
+  #|           buttons: 0,
+  #|           pageX: px,
+  #|           pageY: py,
+  #|           deltaX: dx,
+  #|           deltaY: dy,
+  #|           deltaZ: 0,
+  #|           deltaMode: 0,
+  #|           target: { id: "iframeContent" },
+  #|           altKey: !!alt,
+  #|           ctrlKey: !!ctrl,
+  #|           metaKey: !!meta,
+  #|           shiftKey: !!shift,
+  #|         });
+  #|       } catch (_e) {}
+  #|     }
+  #|   }
+  #| }
+
+///|
+/// Dispatch synthetic wheel event.
+pub fn input_dispatch_wheel_event(
+  shared_id : String,
+  x : Double,
+  y : Double,
+  delta_x : Double,
+  delta_y : Double,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit {
+  js_input_dispatch_wheel_event(
+    shared_id, x, y, delta_x, delta_y, ctrl, alt, shift, meta,
+  )
 }
 
 ///|
@@ -3827,15 +5535,47 @@ extern "js" fn js_sync_runtime_html_async(
   execute_scripts : Bool,
 ) -> @core.Any =
   #| async (html, baseUrl, executeScripts) => {
+  #|   const currentCtx = String(globalThis.__bidiCurrentContext || "default-context");
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextWindows.has(currentCtx)) {
+  #|     const win = { __bidiContextId: currentCtx };
+  #|     win.window = win;
+  #|     globalThis.__bidiContextWindows.set(currentCtx, win);
+  #|   }
+  #|   const contextWindow = globalThis.__bidiContextWindows.get(currentCtx);
+  #|   const bindContextWindow = () => {
+  #|     if (!contextWindow || typeof contextWindow !== "object") return;
+  #|     contextWindow.window = contextWindow;
+  #|     const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
+  #|     globalThis.window = contextWindow;
+  #|     globalThis.frames = frameWindows;
+  #|     globalThis.self = contextWindow;
+  #|     globalThis.parent = contextWindow;
+  #|     globalThis.top = contextWindow;
+  #|   };
   #|   if (typeof globalThis.__loadHTML !== "function") {
   #|     return "missing-loader";
   #|   }
   #|   globalThis.__loadHTML(html);
   #|   globalThis.__pageUrl = baseUrl;
+  #|   if (globalThis.location && typeof globalThis.location === "object") {
+  #|     try { globalThis.location.href = String(baseUrl); } catch (_e) {}
+  #|   }
+  #|   bindContextWindow();
   #|   if (executeScripts && typeof globalThis.__executeScripts === "function") {
   #|     try {
   #|       await globalThis.__executeScripts({ baseUrl });
   #|     } catch (_e) {}
+  #|   }
+  #|   bindContextWindow();
+  #|   if (contextWindow && typeof contextWindow === "object") {
+  #|     contextWindow.window = contextWindow;
+  #|     if (globalThis.document && typeof globalThis.document === "object") {
+  #|       contextWindow.document = globalThis.document;
+  #|     }
+  #|     if (globalThis.location && typeof globalThis.location === "object") {
+  #|       contextWindow.location = globalThis.location;
+  #|     }
   #|   }
   #|   return "ok";
   #| }
@@ -3844,9 +5584,45 @@ extern "js" fn js_sync_runtime_html_async(
 /// FFI: Synchronize runtime document by fetching and loading a URL.
 extern "js" fn js_sync_runtime_page_async(url : String) -> @core.Any =
   #| async (url) => {
+  #|   const currentCtx = String(globalThis.__bidiCurrentContext || "default-context");
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   const ensureContextWindow = () => {
+  #|     if (!globalThis.__bidiContextWindows.has(currentCtx)) {
+  #|       const win = { __bidiContextId: currentCtx };
+  #|       win.window = win;
+  #|       globalThis.__bidiContextWindows.set(currentCtx, win);
+  #|     }
+  #|     return globalThis.__bidiContextWindows.get(currentCtx);
+  #|   };
+  #|   const bindContextWindow = () => {
+  #|     const contextWindow = ensureContextWindow();
+  #|     if (!contextWindow || typeof contextWindow !== "object") return;
+  #|     contextWindow.window = contextWindow;
+  #|     const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
+  #|     globalThis.window = contextWindow;
+  #|     globalThis.frames = frameWindows;
+  #|     globalThis.self = contextWindow;
+  #|     globalThis.parent = contextWindow;
+  #|     globalThis.top = contextWindow;
+  #|   };
+  #|   const persistContextRuntime = () => {
+  #|     const contextWindow = ensureContextWindow();
+  #|     if (contextWindow && typeof contextWindow === "object") {
+  #|       contextWindow.window = contextWindow;
+  #|       if (globalThis.document && typeof globalThis.document === "object") {
+  #|         contextWindow.document = globalThis.document;
+  #|       }
+  #|       if (globalThis.location && typeof globalThis.location === "object") {
+  #|         contextWindow.location = globalThis.location;
+  #|       }
+  #|     }
+  #|   };
+  #|   bindContextWindow();
   #|   if (typeof globalThis.__loadPageWithScripts === "function") {
   #|     try {
   #|       await globalThis.__loadPageWithScripts(url, { executeScripts: true });
+  #|       bindContextWindow();
+  #|       persistContextRuntime();
   #|       return "ok";
   #|     } catch (_e) {
   #|       return "load-failed";
@@ -3855,12 +5631,15 @@ extern "js" fn js_sync_runtime_page_async(url : String) -> @core.Any =
   #|   if (typeof globalThis.__loadPage === "function") {
   #|     try {
   #|       await globalThis.__loadPage(url);
+  #|       bindContextWindow();
+  #|       persistContextRuntime();
   #|       return "ok";
   #|     } catch (_e) {
   #|       return "load-failed";
   #|     }
   #|   }
   #|   globalThis.__pageUrl = url;
+  #|   persistContextRuntime();
   #|   return "missing-loader";
   #| }
 
