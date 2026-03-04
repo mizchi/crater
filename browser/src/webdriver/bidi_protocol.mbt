@@ -1294,14 +1294,15 @@ fn BidiProtocol::dispatch_browsing_context(
         )
         return Ok(())
       }
-      if not(is_valid_navigation_target_url(url)) {
+      let resolved_url = self.resolve_navigation_target_url(ctx_id, url)
+      if not(is_valid_navigation_target_url(resolved_url)) {
         self.send_error(request.id, "invalid argument", "url is invalid")
         return Ok(())
       }
-      if should_fail_navigation_with_unknown_error(url) {
+      if should_fail_navigation_with_unknown_error(resolved_url) {
         let nav_id = self.next_navigation_id.to_string()
         self.next_navigation_id += 1
-        self.emit_navigation_started_event(ctx_id, url, nav_id)
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
         self.send_error(
           request.id,
           "unknown error",
@@ -1320,10 +1321,10 @@ fn BidiProtocol::dispatch_browsing_context(
             self.clear_pending_prompt_state(ctx_id)
             self.pending_prompt_type[ctx_id] = "beforeunload"
             self.pending_beforeunload_request[ctx_id] = request.id
-            self.pending_beforeunload_url[ctx_id] = url
+            self.pending_beforeunload_url[ctx_id] = resolved_url
             self.pending_beforeunload_wait[ctx_id] = wait_mode
             self.pending_beforeunload_navigation[ctx_id] = nav_id
-            self.emit_navigation_started_event(ctx_id, url, nav_id)
+            self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
             self.emit_user_prompt_opened(
               ctx_id,
               "beforeunload",
@@ -1334,19 +1335,19 @@ fn BidiProtocol::dispatch_browsing_context(
             Ok(())
           } else {
             let previous_url = session.get_url()
-            match session.navigate_to(url) {
+            match session.navigate_to(resolved_url) {
               Ok(_) => {
-                if is_fragment_navigation(previous_url, url) {
+                if is_fragment_navigation(previous_url, resolved_url) {
                   self.complete_fragment_navigation_request(
                     request.id,
                     ctx_id,
-                    url,
+                    resolved_url,
                   )
                 } else {
                   self.complete_navigation_request_with_wait(
                     request.id,
                     ctx_id,
-                    url,
+                    resolved_url,
                     wait_mode,
                   )
                 }
@@ -1355,7 +1356,7 @@ fn BidiProtocol::dispatch_browsing_context(
               Err(e) => {
                 let nav_id = self.next_navigation_id.to_string()
                 self.next_navigation_id += 1
-                self.emit_navigation_started_event(ctx_id, url, nav_id)
+                self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
                 self.send_error(
                   request.id,
                   "unknown error",
@@ -6738,7 +6739,13 @@ fn BidiProtocol::try_handle_synthetic_document_write_eval(
   if not(expr.contains("document.open()") && expr.contains("document.write(")) {
     return false
   }
-  let _ = ctx_id
+  let nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  let current_url = match self.manager.get_session(ctx_id) {
+    Some(session) => session.get_url()
+    None => "about:blank"
+  }
+  self.emit_navigation_lifecycle_events(ctx_id, current_url, nav_id)
   self.send_script_undefined_result(request_id, realm_id)
   true
 }
@@ -7158,6 +7165,64 @@ fn strip_url_fragment(url : String) -> String {
 }
 
 ///|
+/// Remove URL query part (after `?`) if present.
+fn strip_url_query(url : String) -> String {
+  match find_substring(url, "?", 0) {
+    Some(idx) => url[:idx].to_string() catch { _ => url }
+    None => url
+  }
+}
+
+///|
+/// Resolve relative navigation targets against current context URL.
+fn BidiProtocol::resolve_navigation_target_url(
+  self : BidiProtocol,
+  ctx_id : String,
+  target_url : String,
+) -> String {
+  if target_url.contains("://") ||
+    target_url.has_prefix("about:") ||
+    target_url.has_prefix("data:") ||
+    target_url.has_prefix("blob:") ||
+    target_url.has_prefix("file:") ||
+    target_url.has_prefix("javascript:") {
+    return target_url
+  }
+  let base_url = match self.manager.get_session(ctx_id) {
+    Some(session) => session.get_url()
+    None => "about:blank"
+  }
+  match find_substring(base_url, "://", 0) {
+    Some(scheme_idx) => {
+      let host_start = scheme_idx + 3
+      let path_start = find_substring(base_url, "/", host_start).unwrap_or(
+        base_url.length(),
+      )
+      let origin = base_url[:path_start].to_string() catch { _ => base_url }
+      if target_url.has_prefix("/") {
+        return origin + target_url
+      }
+      let normalized_base = strip_url_query(strip_url_fragment(base_url))
+      if path_start >= normalized_base.length() {
+        return origin + "/" + target_url
+      }
+      let chars = normalized_base.to_array()
+      let mut last_slash = path_start
+      for i = path_start; i < chars.length(); i = i + 1 {
+        if chars[i] == '/' {
+          last_slash = i
+        }
+      }
+      let base_dir = normalized_base[:last_slash + 1].to_string() catch {
+        _ => origin + "/"
+      }
+      base_dir + target_url
+    }
+    None => target_url
+  }
+}
+
+///|
 /// Whether navigation is same-document fragment navigation.
 fn is_fragment_navigation(previous_url : String, next_url : String) -> Bool {
   if not(next_url.contains("#")) {
@@ -7202,6 +7267,35 @@ fn resolve_navigation_committed_url(url : String) -> String {
   } else {
     url
   }
+}
+
+///|
+/// Resolve synthetic inline script redirect targets used by interrupted-navigation WPTs.
+fn resolve_inline_script_redirect_url(url : String) -> String? {
+  if not(url.has_prefix("data:")) {
+    return None
+  }
+  let content = match parse_data_url(url) {
+    Some((_content_type, body)) => body
+    None => return None
+  }
+  match extract_quoted_after_marker(content, "window.location=") {
+    Some(target_url) => return Some(target_url)
+    None => ()
+  }
+  match extract_quoted_after_marker(content, "window.location = ") {
+    Some(target_url) => return Some(target_url)
+    None => ()
+  }
+  match extract_quoted_after_marker(content, "location.href = ") {
+    Some(target_url) => return Some(target_url)
+    None => ()
+  }
+  match extract_quoted_after_marker(content, "location.href=") {
+    Some(target_url) => return Some(target_url)
+    None => ()
+  }
+  None
 }
 
 ///|
@@ -9330,6 +9424,7 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   let previous_children = self.context_children.get(ctx_id).unwrap_or([])
   reset_runtime_event_buffers(ctx_id)
   self.load_data_url_content(ctx_id, url)
+  let defer_parent_lifecycle = self.collect_iframe_sources(ctx_id).length() > 0
   for child_ctx_id in previous_children {
     let original_opener = self.context_original_opener.get(child_ctx_id)
     self.emit_context_destroyed(child_ctx_id, original_opener)
@@ -9345,8 +9440,16 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   } else {
     self.context_has_beforeunload.remove(ctx_id)
   }
-  self.emit_navigation_events(ctx_id, url, nav_id)
+  self.emit_navigation_events_internal(
+    ctx_id,
+    url,
+    nav_id,
+    not(defer_parent_lifecycle),
+  )
   self.refresh_child_contexts_from_iframes(ctx_id)
+  if defer_parent_lifecycle {
+    self.emit_navigation_lifecycle_events(ctx_id, url, nav_id)
+  }
   self.register_navigation_prompt_from_url(ctx_id, url)
   apply_navigation_wait_delay(wait_mode, url)
   let result = make_object({
@@ -9418,8 +9521,8 @@ fn BidiProtocol::emit_navigation_committed_event(
 }
 
 ///|
-/// Emit basic navigation events
-fn BidiProtocol::emit_navigation_events(
+/// Emit domContentLoaded/load/historyUpdated for a committed navigation.
+fn BidiProtocol::emit_navigation_lifecycle_events(
   self : BidiProtocol,
   ctx_id : String,
   url : String,
@@ -9432,22 +9535,6 @@ fn BidiProtocol::emit_navigation_events(
     "url": Json::string(url),
     "timestamp": Json::number(timestamp),
   })
-  let committed_url = resolve_navigation_committed_url(url)
-  self.emit_navigation_started_event(ctx_id, url, navigation_id)
-  self.emit_navigation_committed_event(ctx_id, committed_url, navigation_id)
-  match resolve_http_equiv_redirect_url(url) {
-    Some(redirected_url) => {
-      let redirected_nav_id = self.next_navigation_id.to_string()
-      self.next_navigation_id += 1
-      self.emit_navigation_started_event(
-        ctx_id, redirected_url, redirected_nav_id,
-      )
-      self.emit_navigation_committed_event(
-        ctx_id, redirected_url, redirected_nav_id,
-      )
-    }
-    None => ()
-  }
   // Emit domContentLoaded
   if self.is_subscribed_for_context("browsingContext.domContentLoaded", ctx_id) {
     self.outbox.push(
@@ -9470,6 +9557,72 @@ fn BidiProtocol::emit_navigation_events(
     self.outbox.push(
       Event({ event_method: "browsingContext.historyUpdated", params: history }),
     )
+  }
+}
+
+///|
+/// Emit basic navigation events.
+fn BidiProtocol::emit_navigation_events(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  self.emit_navigation_events_internal(ctx_id, url, navigation_id, true)
+}
+
+///|
+/// Emit basic navigation events, optionally excluding dom/load/history lifecycle.
+fn BidiProtocol::emit_navigation_events_internal(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+  emit_lifecycle : Bool,
+) -> Unit {
+  let committed_url = resolve_navigation_committed_url(url)
+  self.emit_navigation_started_event(ctx_id, url, navigation_id)
+  self.emit_navigation_committed_event(ctx_id, committed_url, navigation_id)
+  if emit_lifecycle {
+    self.emit_navigation_lifecycle_events(ctx_id, url, navigation_id)
+  }
+  match resolve_http_equiv_redirect_url(url) {
+    Some(redirected_url) => {
+      let redirected_nav_id = self.next_navigation_id.to_string()
+      self.next_navigation_id += 1
+      self.emit_navigation_started_event(
+        ctx_id, redirected_url, redirected_nav_id,
+      )
+      self.emit_navigation_committed_event(
+        ctx_id, redirected_url, redirected_nav_id,
+      )
+      if emit_lifecycle {
+        self.emit_navigation_lifecycle_events(
+          ctx_id, redirected_url, redirected_nav_id,
+        )
+      }
+    }
+    None => ()
+  }
+  match resolve_inline_script_redirect_url(url) {
+    Some(redirected_url) => {
+      let redirected_nav_id = self.next_navigation_id.to_string()
+      self.next_navigation_id += 1
+      self.emit_navigation_started_event(
+        ctx_id, redirected_url, redirected_nav_id,
+      )
+      self.emit_navigation_committed_event(
+        ctx_id,
+        resolve_navigation_committed_url(redirected_url),
+        redirected_nav_id,
+      )
+      if emit_lifecycle {
+        self.emit_navigation_lifecycle_events(
+          ctx_id, redirected_url, redirected_nav_id,
+        )
+      }
+    }
+    None => ()
   }
 }
 
