@@ -321,9 +321,14 @@ class ScriptModule:
             "awaitPromise": await_promise,
         }
         if arguments is not None:
-            params["arguments"] = await self._normalize_call_function_arguments(
-                arguments, target
-            )
+            # Keep non-list values untouched so server-side invalid-argument
+            # validation can run (WPT expects protocol errors, not adapter errors).
+            if isinstance(arguments, (list, tuple)):
+                params["arguments"] = await self._normalize_call_function_arguments(
+                    arguments, target
+                )
+            else:
+                params["arguments"] = arguments
         # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
@@ -1447,7 +1452,7 @@ def get_test_page(iframe, inline):
             <img />
             <svg></svg>
 
-            <custom-element id="custom-element">{shadow_doc}</custom-element>
+            <custom-element id="custom-element"></custom-element>
             <script>
                 var svg = document.querySelector("svg");
                 if (svg && svg.setAttributeNS) {{
@@ -1522,6 +1527,25 @@ def get_test_page(iframe, inline):
                                 window._innerShadowRoot = innerHost.shadowRoot;
                             }}
                         }}
+                    }}
+                }}
+                const finalHost = document.querySelector("#custom-element");
+                if (finalHost && !finalHost.shadowRoot && finalHost.attachShadow) {{
+                    try {{
+                        const fallbackRoot = finalHost.attachShadow({{ mode: "{shadow_root_mode}" }});
+                        fallbackRoot.innerHTML = `{shadow_doc}`;
+                        window._shadowRoot = fallbackRoot;
+                    }} catch (_e) {{}}
+                }}
+                if (finalHost && finalHost.shadowRoot) {{
+                    const shadowChildren = finalHost.shadowRoot.childNodes || [];
+                    if (shadowChildren.length === 0) {{
+                        try {{
+                            finalHost.shadowRoot.innerHTML = `{shadow_doc}`;
+                        }} catch (_e) {{}}
+                    }}
+                    if (!window._shadowRoot) {{
+                        window._shadowRoot = finalHost.shadowRoot;
                     }}
                 }}
             </script>

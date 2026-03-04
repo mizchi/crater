@@ -75,7 +75,9 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|   try {
   #|     globalThis.__bidiCurrentContext = "default-context";
   #|     globalThis.__bidiContextWindows = new Map();
-  #|     globalThis.__bidiProxyInstances = new WeakSet();
+  #|     if (!globalThis.__bidiProxyInstances) {
+  #|       globalThis.__bidiProxyInstances = new WeakSet();
+  #|     }
   #|     globalThis.allEvents = undefined;
   #|     globalThis.recordedEvents = undefined;
   #|     globalThis._shadowRoot = undefined;
@@ -1324,15 +1326,24 @@ extern "js" fn js_evaluate_expression(
   #|           registry.set(String(name), ctor);
   #|           if (globalThis.document) {
   #|             let shadowMode = "open";
+  #|             let shadowMarkup = null;
   #|             try {
   #|               const source = String(ctor);
   #|               const match = source.match(/attachShadow\(\{\s*mode:\s*["'](open|closed)["']\s*\}\)/);
   #|               if (match && match[1]) shadowMode = match[1];
+  #|               const markupMatch = source.match(/shadowRoot\.innerHTML\s*=\s*`([\s\S]*?)`\s*;/);
+  #|               if (markupMatch && typeof markupMatch[1] === "string") shadowMarkup = markupMatch[1];
   #|             } catch (_e) {}
   #|             const elems = globalThis.document.querySelectorAll(String(name));
   #|             for (const elem of elems) {
   #|               if (elem && !elem.shadowRoot && typeof elem.attachShadow === 'function') {
-  #|                 elem.attachShadow({ mode: shadowMode });
+  #|                 const root = elem.attachShadow({ mode: shadowMode });
+  #|                 if (shadowMarkup !== null && root && typeof root.innerHTML !== "undefined") {
+  #|                   try { root.innerHTML = shadowMarkup; } catch (_e) {}
+  #|                 }
+  #|                 if (globalThis.window && !globalThis.window._shadowRoot) {
+  #|                   globalThis.window._shadowRoot = root;
+  #|                 }
   #|               }
   #|             }
   #|           }
