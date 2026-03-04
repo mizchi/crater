@@ -18,6 +18,7 @@ uv.lock
 # WPT test temp directories
 .wpt-temp/
 .wpt-crater-conftest/
+.wpt-reports/
 
 # MoonBit generated files (tracked for publishing)
 # *.generated.mbti
