@@ -1294,7 +1294,7 @@ fn BidiProtocol::dispatch_browsing_context(
       }
       match self.manager.get_session(ctx_id) {
         Some(session) =>
-          if self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
+          if self.has_beforeunload_prompt_in_scope(ctx_id) {
             let handler = self.resolve_unhandled_prompt_handler(
               ctx_id, "beforeunload",
             )
@@ -1417,7 +1417,7 @@ fn BidiProtocol::dispatch_browsing_context(
       match self.manager.get_session(ctx_id) {
         Some(session) => {
           let url = session.get_url()
-          if self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
+          if self.has_beforeunload_prompt_in_scope(ctx_id) {
             let handler = self.resolve_unhandled_prompt_handler(
               ctx_id, "beforeunload",
             )
@@ -1526,8 +1526,7 @@ fn BidiProtocol::dispatch_browsing_context(
             return Ok(())
           }
 
-          if prompt_unload &&
-            self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
+          if prompt_unload && self.has_beforeunload_prompt_in_scope(ctx_id) {
             let handler = self.resolve_unhandled_prompt_handler(
               ctx_id, "beforeunload",
             )
@@ -7229,6 +7228,23 @@ fn BidiProtocol::resolve_pending_prompt_context(
     }
   }
   None
+}
+
+///|
+/// Determine whether a context or any of its descendant contexts has beforeunload prompt state.
+fn BidiProtocol::has_beforeunload_prompt_in_scope(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  if self.context_has_beforeunload.get(ctx_id).unwrap_or(false) {
+    return true
+  }
+  for child_ctx_id in self.context_children.get(ctx_id).unwrap_or([]) {
+    if self.has_beforeunload_prompt_in_scope(child_ctx_id) {
+      return true
+    }
+  }
+  false
 }
 
 ///|
