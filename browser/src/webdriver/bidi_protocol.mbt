@@ -199,6 +199,100 @@ pub fn BidiProtocol::reset_subscription_state(self : BidiProtocol) -> Unit {
 }
 
 ///|
+/// Reset per-session browsing-context and realm state.
+pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
+  self.reset_subscription_state()
+
+  for ctx_id in self.manager.list_sessions() {
+    self.manager.close_session(ctx_id) |> ignore
+  }
+
+  self.default_context_id = None
+  self.session_id = None
+
+  let user_context_keys : Array[String] = []
+  for key, _ in self.user_contexts {
+    user_context_keys.push(key)
+  }
+  for key in user_context_keys {
+    self.user_contexts.remove(key)
+  }
+  self.user_contexts["default"] = true
+
+  let context_user_keys : Array[String] = []
+  for key, _ in self.context_user_context {
+    context_user_keys.push(key)
+  }
+  for key in context_user_keys {
+    self.context_user_context.remove(key)
+  }
+
+  let context_original_opener_keys : Array[String] = []
+  for key, _ in self.context_original_opener {
+    context_original_opener_keys.push(key)
+  }
+  for key in context_original_opener_keys {
+    self.context_original_opener.remove(key)
+  }
+
+  let context_realm_keys : Array[String] = []
+  for key, _ in self.context_realm {
+    context_realm_keys.push(key)
+  }
+  for key in context_realm_keys {
+    self.context_realm.remove(key)
+  }
+
+  let context_sandbox_realm_keys : Array[String] = []
+  for key, _ in self.context_sandbox_realm {
+    context_sandbox_realm_keys.push(key)
+  }
+  for key in context_sandbox_realm_keys {
+    self.context_sandbox_realm.remove(key)
+  }
+
+  let realm_context_keys : Array[String] = []
+  for key, _ in self.realm_context {
+    realm_context_keys.push(key)
+  }
+  for key in realm_context_keys {
+    self.realm_context.remove(key)
+  }
+
+  let realm_sandbox_keys : Array[String] = []
+  for key, _ in self.realm_sandbox {
+    realm_sandbox_keys.push(key)
+  }
+  for key in realm_sandbox_keys {
+    self.realm_sandbox.remove(key)
+  }
+
+  let context_parent_keys : Array[String] = []
+  for key, _ in self.context_parent {
+    context_parent_keys.push(key)
+  }
+  for key in context_parent_keys {
+    self.context_parent.remove(key)
+  }
+
+  let context_children_keys : Array[String] = []
+  for key, _ in self.context_children {
+    context_children_keys.push(key)
+  }
+  for key in context_children_keys {
+    self.context_children.remove(key)
+  }
+
+  let context_client_window_keys : Array[String] = []
+  for key, _ in self.context_client_window {
+    context_client_window_keys.push(key)
+  }
+  for key in context_client_window_keys {
+    self.context_client_window.remove(key)
+  }
+}
+
+///|
 /// Process incoming JSON message
 pub fn BidiProtocol::process_message(
   self : BidiProtocol,
@@ -293,6 +387,7 @@ fn BidiProtocol::dispatch_session(
       Ok(())
     }
     "new" => {
+      self.reset_session_runtime_state()
       let session_id = "bidi-" + request.id.to_string()
       self.session_id = Some(session_id)
       let ctx_id = self.ensure_default_context()
@@ -330,7 +425,7 @@ fn BidiProtocol::dispatch_session(
       Ok(())
     }
     "end" => {
-      self.session_id = None
+      self.reset_session_runtime_state()
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }

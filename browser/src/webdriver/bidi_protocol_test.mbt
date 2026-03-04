@@ -15,6 +15,45 @@ test "bidi session status" {
 }
 
 ///|
+test "bidi session new resets stale contexts for getRealms" {
+  let proto = BidiProtocol::new()
+
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.create\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.getRealms\",\"params\":{}}",
+  )
+  let before_msgs = proto.take_messages()
+  assert_eq(before_msgs.length(), 1)
+  let before_json = before_msgs[0].to_json()
+  assert_true(before_json.contains("\"context\":\"session-1\""))
+  assert_true(before_json.contains("\"context\":\"session-2\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"script.getRealms\",\"params\":{}}",
+  )
+  let after_msgs = proto.take_messages()
+  assert_eq(after_msgs.length(), 1)
+  let after_json = after_msgs[0].to_json()
+  assert_false(after_json.contains("\"context\":\"session-1\""))
+  assert_false(after_json.contains("\"context\":\"session-2\""))
+  assert_true(after_json.contains("\"context\":\"session-3\""))
+}
+
+///|
 test "bidi browsingContext create emits events before response" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

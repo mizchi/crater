@@ -77,7 +77,7 @@ fn BidiServer::handle_message(
 ///|
 /// Setup WebSocket event handlers with async support
 fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
-  self.protocol.reset_subscription_state()
+  self.protocol.reset_session_runtime_state()
   // Store socket reference for async responses
   self.protocol.set_socket(socket)
 
@@ -111,7 +111,7 @@ fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
   socket["onclose"] = @core.any(
     @core.from_fn1(fn(_event : @core.Any) {
       // Connection closed
-      self.protocol.reset_subscription_state()
+      self.protocol.reset_session_runtime_state()
       self.protocol.clear_socket()
     }),
   )
