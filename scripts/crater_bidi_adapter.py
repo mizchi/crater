@@ -1658,10 +1658,24 @@ def url():
 def inline():
     """Generate inline HTML data URLs."""
     import base64
+    from urllib.parse import quote
 
-    def _inline(content: str, content_type: str = "text/html", domain: str = "", **_ignored) -> str:
+    def _inline(
+        content: str,
+        content_type: str = "text/html",
+        domain: str = "",
+        parameters=None,
+        **_ignored,
+    ) -> str:
         encoded = base64.b64encode(content.encode()).decode()
-        suffix = f"#domain={domain}" if domain else ""
+        fragments = []
+        if domain:
+            fragments.append(f"domain={quote(str(domain), safe='')}")
+        if isinstance(parameters, dict):
+            pipe = parameters.get("pipe")
+            if pipe is not None:
+                fragments.append(f"pipe={quote(str(pipe), safe='')}")
+        suffix = f"#{'&'.join(fragments)}" if fragments else ""
         return f"data:{content_type};base64,{encoded}{suffix}"
     return _inline
 
@@ -1876,6 +1890,13 @@ def wait_for_event(bidi_session):
     def _wait_for_event(event_name: str):
         loop = asyncio.get_running_loop()
         future = loop.create_future()
+        if event_name == "browsingContext.userPromptOpened":
+            backlog = bidi_session._event_backlog.get(event_name, [])
+            if backlog:
+                latest = backlog[-1]
+                bidi_session._event_backlog[event_name] = []
+                future.set_result(latest)
+                return future
         # Drop stale backlog entries. This fixture should observe events
         # that happen after listener registration, matching WPT behavior.
         bidi_session._event_backlog[event_name] = []

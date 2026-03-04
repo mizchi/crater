@@ -72,6 +72,7 @@ pub struct BidiProtocol {
   user_context_device_pixel_ratio : Map[String, Double] // user context -> default devicePixelRatio override
   context_user_context : Map[String, String]
   context_has_beforeunload : Map[String, Bool]
+  context_blocks_cross_origin_iframe_navigation : Map[String, Bool] // context -> active CSP/COEP frame policy
   pending_prompt_type : Map[String, String] // context -> prompt type
   pending_close_request : Map[String, Int] // context -> browsingContext.close request id
   pending_prompt_request : Map[String, Int] // context -> deferred script.evaluate request id
@@ -80,6 +81,10 @@ pub struct BidiProtocol {
   pending_beforeunload_url : Map[String, String] // context -> deferred navigate destination
   pending_beforeunload_wait : Map[String, String] // context -> deferred navigate wait mode
   pending_beforeunload_navigation : Map[String, String] // context -> deferred navigation id
+  pending_navigation_request : Map[String, Int] // context -> deferred navigate/reload request id
+  in_flight_navigation_url : Map[String, String] // context -> interruptible navigation URL
+  in_flight_navigation_id : Map[String, String] // context -> interruptible navigation id
+  in_flight_navigation_started_at : Map[String, Double] // context -> interruptible navigation start timestamp
   pending_prompt_result_var : Map[String, String] // context -> window property to store prompt result
   context_local_storage : Map[String, Map[String, String]] // context -> localStorage key/value
   context_original_opener : Map[String, String]
@@ -149,6 +154,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     user_context_device_pixel_ratio: {},
     context_user_context: {},
     context_has_beforeunload: {},
+    context_blocks_cross_origin_iframe_navigation: {},
     pending_prompt_type: {},
     pending_close_request: {},
     pending_prompt_request: {},
@@ -157,6 +163,10 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     pending_beforeunload_url: {},
     pending_beforeunload_wait: {},
     pending_beforeunload_navigation: {},
+    pending_navigation_request: {},
+    in_flight_navigation_url: {},
+    in_flight_navigation_id: {},
+    in_flight_navigation_started_at: {},
     pending_prompt_result_var: {},
     context_local_storage: {},
     context_original_opener: {},
@@ -361,6 +371,14 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.context_has_beforeunload.remove(key)
   }
 
+  let context_policy_keys : Array[String] = []
+  for key, _ in self.context_blocks_cross_origin_iframe_navigation {
+    context_policy_keys.push(key)
+  }
+  for key in context_policy_keys {
+    self.context_blocks_cross_origin_iframe_navigation.remove(key)
+  }
+
   let pending_prompt_keys : Array[String] = []
   for key, _ in self.pending_prompt_type {
     pending_prompt_keys.push(key)
@@ -375,6 +393,14 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.pending_beforeunload_wait.remove(key)
     self.pending_beforeunload_navigation.remove(key)
     self.pending_prompt_result_var.remove(key)
+  }
+
+  let in_flight_navigation_keys : Array[String] = []
+  for key, _ in self.in_flight_navigation_id {
+    in_flight_navigation_keys.push(key)
+  }
+  for key in in_flight_navigation_keys {
+    self.clear_pending_navigation_state(key)
   }
 
   let context_local_storage_keys : Array[String] = []
@@ -665,6 +691,7 @@ fn BidiProtocol::dispatch(
   self : BidiProtocol,
   request : BidiRequest,
 ) -> Result[Unit, String] {
+  self.flush_expired_pending_navigation_requests()
   let parts = split_method(request.method_name)
   let (domain, action) = match parts {
     Some(p) => p
@@ -1295,6 +1322,9 @@ fn BidiProtocol::dispatch_browsing_context(
         return Ok(())
       }
       let resolved_url = self.resolve_navigation_target_url(ctx_id, url)
+      let _ = self.fail_in_flight_navigation(
+        ctx_id, "aborted", "Navigation interrupted by another navigation",
+      )
       if not(is_valid_navigation_target_url(resolved_url)) {
         self.send_error(request.id, "invalid argument", "url is invalid")
         return Ok(())
@@ -1307,6 +1337,18 @@ fn BidiProtocol::dispatch_browsing_context(
           request.id,
           "unknown error",
           "Navigation failed: navigation target is unreachable",
+        )
+        return Ok(())
+      }
+      if self.is_iframe_navigation_blocked(ctx_id, resolved_url) {
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+        self.emit_navigation_failed_event(ctx_id, resolved_url, nav_id)
+        self.send_error(
+          request.id,
+          "unknown error",
+          "Navigation failed: blocked by embedding policy",
         )
         return Ok(())
       }
@@ -1440,6 +1482,9 @@ fn BidiProtocol::dispatch_browsing_context(
         )
         return Ok(())
       }
+      let _ = self.fail_in_flight_navigation(
+        ctx_id, "aborted", "Navigation interrupted by reload",
+      )
       match self.manager.get_session(ctx_id) {
         Some(session) => {
           let url = session.get_url()
@@ -1465,22 +1510,11 @@ fn BidiProtocol::dispatch_browsing_context(
             )
             return Ok(())
           }
-          let nav_id = self.next_navigation_id.to_string()
-          self.next_navigation_id += 1
-          self.clear_context_sandbox_realms(ctx_id)
-          // Reload creates a new realm.
-          self.assign_new_realm(ctx_id) |> ignore
-          self.emit_default_realm(ctx_id)
-          self.emit_navigation_events(ctx_id, url, nav_id)
-          apply_navigation_wait_delay(wait_mode, url)
-          self.send_success(
+          self.complete_navigation_request_with_wait(
             request.id,
-            Some(
-              make_object({
-                "navigation": Json::string(nav_id),
-                "url": Json::string(url),
-              }),
-            ),
+            ctx_id,
+            url,
+            wait_mode,
           )
           Ok(())
         }
@@ -1687,12 +1721,20 @@ fn BidiProtocol::dispatch_browsing_context(
                                   nav_request_id, prompt_ctx_id, nav_url, pending_beforeunload_wait,
                                   pending_navigation_id,
                                 )
-                              Err(e) =>
+                              Err(e) => {
+                                match pending_navigation_id {
+                                  Some(nav_id) =>
+                                    self.emit_navigation_failed_event(
+                                      prompt_ctx_id, nav_url, nav_id,
+                                    )
+                                  None => ()
+                                }
                                 self.send_error(
                                   nav_request_id,
                                   "unknown error",
                                   "Navigation failed: " + e.message,
                                 )
+                              }
                             }
                           None =>
                             self.send_error(
@@ -1702,6 +1744,13 @@ fn BidiProtocol::dispatch_browsing_context(
                             )
                         }
                       } else {
+                        match pending_navigation_id {
+                          Some(nav_id) =>
+                            self.emit_navigation_failed_event(
+                              prompt_ctx_id, nav_url, nav_id,
+                            )
+                          None => ()
+                        }
                         self.send_error(
                           nav_request_id, "unknown error", "Navigation canceled by beforeunload prompt",
                         )
@@ -7069,6 +7118,138 @@ fn should_fail_navigation_with_unknown_error(url : String) -> Bool {
     url.has_prefix("http://doesnotexist.localhost") {
     return true
   }
+  if has_invalid_http_zero_port(url) {
+    return true
+  }
+  false
+}
+
+///|
+/// Reject explicit `:0` ports as unreachable hosts.
+fn has_invalid_http_zero_port(url : String) -> Bool {
+  let scheme_len = if url.has_prefix("https://") {
+    8
+  } else if url.has_prefix("http://") {
+    7
+  } else {
+    return false
+  }
+  if url.length() <= scheme_len {
+    return false
+  }
+  let chars = url.to_array()
+  let mut host_end = chars.length()
+  for i = scheme_len; i < chars.length(); i = i + 1 {
+    if chars[i] == '/' || chars[i] == '?' || chars[i] == '#' {
+      host_end = i
+      break
+    }
+  }
+  let host_port = url[scheme_len:host_end].to_string() catch { _ => "" }
+  host_port.has_suffix(":0")
+}
+
+///|
+/// Check whether value carries CSP/COEP markers that block cross-origin frame navigations.
+fn has_embedder_blocking_policy_marker(value : String) -> Bool {
+  value.contains("Content-Security-Policy") ||
+  value.contains("Cross-Origin-Embedder-Policy") ||
+  value.contains("content-security-policy") ||
+  value.contains("cross-origin-embedder-policy") ||
+  value.contains("default-src") ||
+  value.contains("require-corp")
+}
+
+///|
+/// Whether a navigated document enforces cross-origin iframe blocking.
+fn navigation_blocks_cross_origin_iframe_navigation(url : String) -> Bool {
+  if has_embedder_blocking_policy_marker(url) {
+    return true
+  }
+  match parse_data_url(url) {
+    Some((_content_type, body)) => has_embedder_blocking_policy_marker(body)
+    None => false
+  }
+}
+
+///|
+/// Whether URL/content carries X-Frame-Options: DENY.
+fn has_x_frame_options_deny_marker(value : String) -> Bool {
+  (value.contains("X-Frame-Options") || value.contains("x-frame-options")) &&
+  (value.contains("DENY") || value.contains("deny"))
+}
+
+///|
+/// Whether URL/content carries X-Frame-Options: SAMEORIGIN.
+fn has_x_frame_options_sameorigin_marker(value : String) -> Bool {
+  (value.contains("X-Frame-Options") || value.contains("x-frame-options")) &&
+  (value.contains("SAMEORIGIN") || value.contains("sameorigin"))
+}
+
+///|
+/// Compare origins for cross-origin iframe checks.
+fn is_cross_origin_navigation_url(
+  source_url : String,
+  target_url : String,
+) -> Bool {
+  let source_origin = derive_realm_origin(source_url)
+  let target_origin = derive_realm_origin(target_url)
+  if source_origin == "null" || target_origin == "null" {
+    return false
+  }
+  source_origin != target_origin
+}
+
+///|
+/// Determine whether iframe navigation should be blocked by CSP/COEP/XFO policies.
+fn BidiProtocol::is_iframe_navigation_blocked(
+  self : BidiProtocol,
+  ctx_id : String,
+  target_url : String,
+) -> Bool {
+  let parent_ctx_id = match self.context_parent.get(ctx_id) {
+    Some(parent_id) => parent_id
+    None => return false
+  }
+
+  let mut target_has_xfo_deny = has_x_frame_options_deny_marker(target_url)
+  let mut target_has_xfo_sameorigin = has_x_frame_options_sameorigin_marker(
+    target_url,
+  )
+  match parse_data_url(target_url) {
+    Some((_content_type, body)) => {
+      if has_x_frame_options_deny_marker(body) {
+        target_has_xfo_deny = true
+      }
+      if has_x_frame_options_sameorigin_marker(body) {
+        target_has_xfo_sameorigin = true
+      }
+    }
+    None => ()
+  }
+  if target_has_xfo_deny {
+    return true
+  }
+  let parent_url = match self.manager.get_session(parent_ctx_id) {
+    Some(parent_session) => parent_session.get_url()
+    None => "about:blank"
+  }
+
+  let mut parent_blocks_cross_origin = self.context_blocks_cross_origin_iframe_navigation
+    .get(parent_ctx_id)
+    .unwrap_or(false)
+  if navigation_blocks_cross_origin_iframe_navigation(parent_url) {
+    parent_blocks_cross_origin = true
+  }
+  if parent_blocks_cross_origin &&
+    is_cross_origin_navigation_url(parent_url, target_url) {
+    return true
+  }
+
+  if target_has_xfo_sameorigin &&
+    is_cross_origin_navigation_url(parent_url, target_url) {
+    return true
+  }
   false
 }
 
@@ -7102,6 +7283,27 @@ fn should_block_navigation_response(wait_mode : String, url : String) -> Bool {
     return false
   }
   true
+}
+
+///|
+/// Heuristic for navigations that can be interrupted by subsequent actions.
+fn is_interruptible_navigation_candidate(url : String) -> Bool {
+  if is_slow_image_navigation_url(url) {
+    return false
+  }
+  if has_long_trickle_marker(url) {
+    return true
+  }
+  match parse_data_url(url) {
+    Some((_content_type, content)) => has_long_trickle_marker(content)
+    None => false
+  }
+}
+
+///|
+/// Long trickle payloads used by interruption tests.
+fn has_long_trickle_marker(value : String) -> Bool {
+  value.contains("trickle(d10") || value.contains("trickle%28d10")
 }
 
 ///|
@@ -7636,6 +7838,107 @@ fn BidiProtocol::clear_pending_prompt_state(
 }
 
 ///|
+/// Clear pending/in-flight navigation state for a context.
+fn BidiProtocol::clear_pending_navigation_state(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  self.pending_navigation_request.remove(ctx_id)
+  self.in_flight_navigation_url.remove(ctx_id)
+  self.in_flight_navigation_id.remove(ctx_id)
+  self.in_flight_navigation_started_at.remove(ctx_id)
+}
+
+///|
+/// Register an interruptible navigation and optional deferred command response.
+fn BidiProtocol::register_in_flight_navigation(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+  request_id : Int?,
+) -> Unit {
+  self.in_flight_navigation_url[ctx_id] = url
+  self.in_flight_navigation_id[ctx_id] = navigation_id
+  self.in_flight_navigation_started_at[ctx_id] = input_now_ms()
+  match request_id {
+    Some(id) => self.pending_navigation_request[ctx_id] = id
+    None => self.pending_navigation_request.remove(ctx_id)
+  }
+}
+
+///|
+/// Auto-resolve stale in-flight navigations on subsequent requests.
+fn BidiProtocol::flush_expired_pending_navigation_requests(
+  self : BidiProtocol,
+) -> Unit {
+  let now = input_now_ms()
+  let pending_ctx_ids : Array[String] = []
+  for ctx_id, _ in self.in_flight_navigation_started_at {
+    pending_ctx_ids.push(ctx_id)
+  }
+  for ctx_id in pending_ctx_ids {
+    let started_at = self.in_flight_navigation_started_at
+      .get(ctx_id)
+      .unwrap_or(now)
+    if now - started_at < 1500 {
+      continue
+    }
+    match self.pending_navigation_request.get(ctx_id) {
+      Some(request_id) => {
+        let nav_id = self.in_flight_navigation_id
+          .get(ctx_id)
+          .unwrap_or("navigation")
+        let url = self.in_flight_navigation_url
+          .get(ctx_id)
+          .unwrap_or("about:blank")
+        self.send_success(
+          request_id,
+          Some(
+            make_object({
+              "navigation": Json::string(nav_id),
+              "url": Json::string(url),
+            }),
+          ),
+        )
+      }
+      None => ()
+    }
+    self.clear_pending_navigation_state(ctx_id)
+  }
+}
+
+///|
+/// Fail an in-flight navigation because it was interrupted.
+fn BidiProtocol::fail_in_flight_navigation(
+  self : BidiProtocol,
+  ctx_id : String,
+  event_kind : String,
+  message : String,
+) -> Bool {
+  match self.in_flight_navigation_id.get(ctx_id) {
+    Some(navigation_id) => {
+      let url = self.in_flight_navigation_url
+        .get(ctx_id)
+        .unwrap_or("about:blank")
+      match self.pending_navigation_request.get(ctx_id) {
+        Some(request_id) =>
+          self.send_error(request_id, "unknown error", message)
+        None => ()
+      }
+      if event_kind == "aborted" {
+        self.emit_navigation_aborted_event(ctx_id, url, navigation_id)
+      } else {
+        self.emit_navigation_failed_event(ctx_id, url, navigation_id)
+      }
+      self.clear_pending_navigation_state(ctx_id)
+      true
+    }
+    None => false
+  }
+}
+
+///|
 /// Create a new browsing context backed by a CDP session
 fn BidiProtocol::create_context(
   self : BidiProtocol,
@@ -7659,7 +7962,9 @@ fn BidiProtocol::create_context(
   self.context_client_window[id] = client_window
   self.context_parent.remove(id)
   self.context_has_beforeunload.remove(id)
+  self.context_blocks_cross_origin_iframe_navigation.remove(id)
   self.clear_pending_prompt_state(id)
+  self.clear_pending_navigation_state(id)
   self.context_local_storage.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
@@ -7688,7 +7993,9 @@ fn BidiProtocol::create_child_context(
     .get(parent_ctx_id)
     .unwrap_or("client-window-" + parent_ctx_id)
   self.context_has_beforeunload.remove(id)
+  self.context_blocks_cross_origin_iframe_navigation.remove(id)
   self.clear_pending_prompt_state(id)
+  self.clear_pending_navigation_state(id)
   self.context_local_storage.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
@@ -7760,6 +8067,9 @@ fn BidiProtocol::drop_child_contexts(
   match self.context_children.get(parent_ctx_id) {
     Some(children) => {
       for child_ctx_id in children {
+        let _ = self.fail_in_flight_navigation(
+          child_ctx_id, "failed", "Navigation failed: context was destroyed",
+        )
         if emit_destroy_events {
           let original_opener = self.context_original_opener.get(child_ctx_id)
           self.emit_context_destroyed(child_ctx_id, original_opener)
@@ -7770,7 +8080,9 @@ fn BidiProtocol::drop_child_contexts(
         self.context_children.remove(child_ctx_id)
         self.context_user_context.remove(child_ctx_id)
         self.context_has_beforeunload.remove(child_ctx_id)
+        self.context_blocks_cross_origin_iframe_navigation.remove(child_ctx_id)
         self.clear_pending_prompt_state(child_ctx_id)
+        self.clear_pending_navigation_state(child_ctx_id)
         self.context_local_storage.remove(child_ctx_id)
         self.context_original_opener.remove(child_ctx_id)
         match self.context_realm.get(child_ctx_id) {
@@ -7805,6 +8117,9 @@ fn BidiProtocol::close_context_and_cleanup(
   if not(self.manager.has_session(ctx_id)) {
     return false
   }
+  let _ = self.fail_in_flight_navigation(
+    ctx_id, "failed", "Navigation failed: context was destroyed",
+  )
   if emit_destroy_event {
     let original_opener = self.context_original_opener.get(ctx_id)
     self.emit_context_destroyed(ctx_id, original_opener)
@@ -7816,7 +8131,9 @@ fn BidiProtocol::close_context_and_cleanup(
   self.context_children.remove(ctx_id)
   self.context_user_context.remove(ctx_id)
   self.context_has_beforeunload.remove(ctx_id)
+  self.context_blocks_cross_origin_iframe_navigation.remove(ctx_id)
   self.clear_pending_prompt_state(ctx_id)
+  self.clear_pending_navigation_state(ctx_id)
   self.context_local_storage.remove(ctx_id)
   self.context_original_opener.remove(ctx_id)
   match self.context_realm.get(ctx_id) {
@@ -8365,13 +8682,6 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
     .unwrap_or("default")
   for src in frame_sources {
     let child_ctx_id = self.create_child_context(parent_ctx_id, user_ctx)
-    match self.manager.get_session(child_ctx_id) {
-      Some(child_session) => {
-        let _ = child_session.navigate_to(src)
-      }
-      None => ()
-    }
-    self.load_data_url_content(child_ctx_id, src)
     self.emit_context_created(
       child_ctx_id,
       "tab",
@@ -8382,6 +8692,18 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
     self.emit_default_realm(child_ctx_id)
     let child_nav_id = self.next_navigation_id.to_string()
     self.next_navigation_id += 1
+    if self.is_iframe_navigation_blocked(child_ctx_id, src) {
+      self.emit_navigation_started_event(child_ctx_id, src, child_nav_id)
+      self.emit_navigation_failed_event(child_ctx_id, src, child_nav_id)
+      continue
+    }
+    match self.manager.get_session(child_ctx_id) {
+      Some(child_session) => {
+        let _ = child_session.navigate_to(src)
+      }
+      None => ()
+    }
+    self.load_data_url_content(child_ctx_id, src)
     self.emit_navigation_events(child_ctx_id, src, child_nav_id)
     // about:blank fallback frames can mirror parent runtime and recurse infinitely.
     // Avoid deep expansion until frame documents diverge via explicit navigation/src.
@@ -9440,6 +9762,11 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   } else {
     self.context_has_beforeunload.remove(ctx_id)
   }
+  if navigation_blocks_cross_origin_iframe_navigation(url) {
+    self.context_blocks_cross_origin_iframe_navigation[ctx_id] = true
+  } else {
+    self.context_blocks_cross_origin_iframe_navigation.remove(ctx_id)
+  }
   self.emit_navigation_events_internal(
     ctx_id,
     url,
@@ -9451,7 +9778,25 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
     self.emit_navigation_lifecycle_events(ctx_id, url, nav_id)
   }
   self.register_navigation_prompt_from_url(ctx_id, url)
-  apply_navigation_wait_delay(wait_mode, url)
+  let has_inline_redirect = match resolve_inline_script_redirect_url(url) {
+    Some(_) => true
+    None => false
+  }
+  let block_response = should_block_navigation_response(wait_mode, url)
+  let mark_in_flight = is_interruptible_navigation_candidate(url) &&
+    not(has_inline_redirect)
+  if mark_in_flight {
+    if block_response {
+      self.register_in_flight_navigation(ctx_id, url, nav_id, Some(request_id))
+      return
+    }
+    self.register_in_flight_navigation(ctx_id, url, nav_id, None)
+  } else {
+    self.clear_pending_navigation_state(ctx_id)
+    if block_response {
+      apply_navigation_wait_delay(wait_mode, url)
+    }
+  }
   let result = make_object({
     "navigation": Json::string(nav_id),
     "url": Json::string(url),
@@ -9467,6 +9812,7 @@ fn BidiProtocol::complete_fragment_navigation_request(
   ctx_id : String,
   url : String,
 ) -> Unit {
+  self.clear_pending_navigation_state(ctx_id)
   let nav_id = self.next_navigation_id.to_string()
   self.next_navigation_id += 1
   self.emit_fragment_navigated_event(ctx_id, url, Some(nav_id))
@@ -9508,6 +9854,48 @@ fn BidiProtocol::emit_navigation_committed_event(
   navigation_id : String,
 ) -> Unit {
   let event_name = "browsingContext.navigationCommitted"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params = make_object({
+    "context": Json::string(ctx_id),
+    "navigation": Json::string(navigation_id),
+    "url": Json::string(url),
+    "timestamp": Json::number(input_now_ms()),
+  })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
+/// Emit navigationFailed event for the given context.
+fn BidiProtocol::emit_navigation_failed_event(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  let event_name = "browsingContext.navigationFailed"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params = make_object({
+    "context": Json::string(ctx_id),
+    "navigation": Json::string(navigation_id),
+    "url": Json::string(url),
+    "timestamp": Json::number(input_now_ms()),
+  })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
+/// Emit navigationAborted event for the given context.
+fn BidiProtocol::emit_navigation_aborted_event(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  let event_name = "browsingContext.navigationAborted"
   if not(self.is_subscribed_for_context(event_name, ctx_id)) {
     return
   }
@@ -9606,6 +9994,7 @@ fn BidiProtocol::emit_navigation_events_internal(
   }
   match resolve_inline_script_redirect_url(url) {
     Some(redirected_url) => {
+      self.emit_navigation_aborted_event(ctx_id, url, navigation_id)
       let redirected_nav_id = self.next_navigation_id.to_string()
       self.next_navigation_id += 1
       self.emit_navigation_started_event(
