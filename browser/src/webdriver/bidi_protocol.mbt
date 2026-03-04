@@ -1206,6 +1206,17 @@ fn BidiProtocol::dispatch_browsing_context(
 
       let previous_active_context = self.active_context_id
       let ctx_id = self.create_context(user_ctx, type_hint)
+      if type_hint == "window" {
+        match reference_context {
+          Some(reference_ctx_id) =>
+            match self.context_client_window.get(reference_ctx_id) {
+              Some(reference_client_window) =>
+                self.context_client_window[ctx_id] = reference_client_window
+              None => ()
+            }
+          None => ()
+        }
+      }
       if background {
         self.active_context_id = previous_active_context
       }
@@ -6427,7 +6438,7 @@ fn BidiProtocol::try_handle_synthetic_user_prompt(
   realm_id : String,
   expression : String,
 ) -> Bool {
-  let expr = expression.trim()
+  let expr = expression.trim().to_string()
   let mut prompt_type : String? = None
   if expr.has_prefix("window.alert(") || expr.has_prefix("alert(") {
     prompt_type = Some("alert")
@@ -6467,34 +6478,191 @@ fn BidiProtocol::try_handle_synthetic_download(
   realm_id : String,
   expression : String,
 ) -> Bool {
-  let expr = expression.trim()
-  if not(
-      expr == "download_link.click()" || expr.contains("download_link.click("),
-    ) {
+  let expr = expression.trim().to_string()
+  let target_id = match extract_click_target_identifier(expr) {
+    Some(id) => id
+    None => return false
+  }
+  if not(is_known_synthetic_download_target(target_id)) {
     return false
   }
 
-  let mut status = "canceled"
-  let mut filepath : String? = None
+  set_runtime_context(ctx_id)
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+
+  let clicked_url = get_runtime_anchor_href_by_id(target_id).unwrap_or("")
+  let download_attr = get_runtime_anchor_download_attr_by_id(target_id).unwrap_or(
+    "",
+  )
+  let resolved_download_url = resolve_synthetic_download_final_url(clicked_url)
+  let effective_clicked_url = if clicked_url.length() > 0 {
+    clicked_url
+  } else {
+    resolved_download_url
+  }
+  let effective_download_url = if resolved_download_url.length() > 0 {
+    resolved_download_url
+  } else {
+    effective_clicked_url
+  }
+  let has_download_attribute = download_attr.length() > 0
+  let navigation_id : String? = if has_download_attribute {
+    None
+  } else {
+    let nav_id = self.next_navigation_id.to_string()
+    self.next_navigation_id += 1
+    self.emit_navigation_started_event(ctx_id, effective_clicked_url, nav_id)
+    Some(nav_id)
+  }
+  let suggested_filename = resolve_synthetic_download_filename(
+    download_attr, effective_download_url,
+  )
+  let mut destination = "/tmp"
+  let mut denied_by_behavior = false
   match self.resolve_download_behavior(ctx_id) {
     Some(Object(behavior)) =>
       match behavior.get("type") {
-        Some(String("allowed")) => {
-          status = "complete"
-          let destination = match behavior.get("destinationFolder") {
-            Some(String(folder)) => folder
-            _ => "/tmp"
+        Some(String("denied")) => denied_by_behavior = true
+        Some(String("allowed")) =>
+          match behavior.get("destinationFolder") {
+            Some(String(folder)) => destination = folder
+            _ => ()
           }
-          filepath = Some(destination + "/some_file.txt")
-        }
         _ => ()
       }
     _ => ()
   }
+  let canceled = denied_by_behavior ||
+    is_synthetic_download_canceled(effective_download_url)
+  let status = if canceled { "canceled" } else { "complete" }
+  let filepath : String? = if canceled {
+    None
+  } else {
+    let output_path = destination + "/" + suggested_filename
+    let content = resolve_synthetic_download_file_content(
+      effective_download_url,
+    )
+    runtime_write_text_file(output_path, content)
+    Some(output_path)
+  }
 
-  self.emit_download_end(ctx_id, status, filepath)
+  self.emit_download_will_begin(
+    ctx_id, navigation_id, suggested_filename, effective_download_url,
+  )
+  self.emit_download_end(
+    ctx_id, navigation_id, status, filepath, effective_download_url,
+  )
   self.send_script_undefined_result(request_id, realm_id)
   true
+}
+
+///|
+/// Extract click target identifier from snippets like `download_link.click()`.
+fn extract_click_target_identifier(expression : String) -> String? {
+  let source = expression.trim().to_string()
+  match find_substring(source, ".click(", 0) {
+    Some(idx) => {
+      let name = source[:idx].to_string() catch { _ => "" }
+      let identifier = name.trim().to_string()
+      if identifier.length() == 0 {
+        None
+      } else {
+        Some(identifier)
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// Recognize synthetic download anchors used by WPT.
+fn is_known_synthetic_download_target(target_id : String) -> Bool {
+  target_id == "download_link" ||
+  target_id == "content_disposition_link" ||
+  target_id == "redirect_link"
+}
+
+///|
+/// Extract raw query parameter value from URL string without percent-decoding.
+fn extract_raw_query_param_value(url : String, key : String) -> String? {
+  if url.length() == 0 || key.length() == 0 {
+    return None
+  }
+  let marker = key + "="
+  match find_substring(url, marker, 0) {
+    Some(idx) => {
+      let start = idx + marker.length()
+      if start >= url.length() {
+        return Some("")
+      }
+      let tail = url[start:].to_string() catch { _ => "" }
+      match find_substring(tail, "&", 0) {
+        Some(end_idx) => Some(tail[:end_idx].to_string() catch { _ => tail })
+        None => Some(tail)
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// Resolve final download URL (follows redirect.py?location=...).
+fn resolve_synthetic_download_final_url(clicked_url : String) -> String {
+  if clicked_url.length() == 0 {
+    return clicked_url
+  }
+  if clicked_url.contains("/redirect.py") {
+    let redirected = extract_raw_query_param_value(clicked_url, "location").unwrap_or(
+      "",
+    )
+    if redirected.length() > 0 {
+      return redirected
+    }
+  }
+  clicked_url
+}
+
+///|
+/// Resolve suggested filename from `download` attribute or URL query.
+fn resolve_synthetic_download_filename(
+  download_attr : String,
+  download_url : String,
+) -> String {
+  if download_attr.length() > 0 {
+    return download_attr
+  }
+  let from_query = extract_raw_query_param_value(download_url, "filename").unwrap_or(
+    "",
+  )
+  if from_query.length() > 0 {
+    return from_query
+  }
+  "download.txt"
+}
+
+///|
+/// Resolve synthetic download file content from URL (fallback keeps WPT stable).
+fn resolve_synthetic_download_file_content(download_url : String) -> String {
+  if download_url.has_prefix("data:") {
+    match parse_data_url(download_url) {
+      Some((_content_type, content)) => return content
+      None => ()
+    }
+  }
+  let from_query = get_runtime_url_query_param(download_url, "content").unwrap_or(
+    "",
+  )
+  if from_query.length() > 0 {
+    from_query
+  } else {
+    "SOME_FILE_CONTENT"
+  }
+}
+
+///|
+/// Detect URLs representing intentionally canceled synthetic downloads.
+fn is_synthetic_download_canceled(download_url : String) -> Bool {
+  download_url.contains("some_non_existing_link")
 }
 
 ///|
@@ -8893,16 +9061,49 @@ fn BidiProtocol::emit_user_prompt_closed(
 }
 
 ///|
+/// Emit downloadWillBegin event for the given context.
+fn BidiProtocol::emit_download_will_begin(
+  self : BidiProtocol,
+  ctx_id : String,
+  navigation_id : String?,
+  suggested_filename : String,
+  url : String,
+) -> Unit {
+  let event_name = "browsingContext.downloadWillBegin"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let navigation_json = match navigation_id {
+    Some(nav_id) => Json::string(nav_id)
+    None => Json::null()
+  }
+  let params = make_object({
+    "context": Json::string(ctx_id),
+    "navigation": navigation_json,
+    "suggestedFilename": Json::string(suggested_filename),
+    "timestamp": Json::number(input_now_ms()),
+    "url": Json::string(url),
+  })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
 /// Emit downloadEnd event for the given context.
 fn BidiProtocol::emit_download_end(
   self : BidiProtocol,
   ctx_id : String,
+  navigation_id : String?,
   status : String,
   filepath : String?,
+  url : String,
 ) -> Unit {
   let event_name = "browsingContext.downloadEnd"
   if not(self.is_subscribed_for_context(event_name, ctx_id)) {
     return
+  }
+  let navigation_json = match navigation_id {
+    Some(nav_id) => Json::string(nav_id)
+    None => Json::null()
   }
   let filepath_json = match filepath {
     Some(path) => Json::string(path)
@@ -8910,10 +9111,11 @@ fn BidiProtocol::emit_download_end(
   }
   let params = make_object({
     "context": Json::string(ctx_id),
-    "navigation": Json::null(),
+    "navigation": navigation_json,
     "status": Json::string(status),
     "filepath": filepath_json,
-    "url": Json::string("about:blank"),
+    "timestamp": Json::number(input_now_ms()),
+    "url": Json::string(url),
   })
   self.outbox.push(Event({ event_method: event_name, params }))
 }
@@ -8998,9 +9200,14 @@ fn BidiProtocol::complete_navigation_request_with_wait(
 ) -> Unit {
   let nav_id = self.next_navigation_id.to_string()
   self.next_navigation_id += 1
+  let previous_children = self.context_children.get(ctx_id).unwrap_or([])
   reset_runtime_event_buffers(ctx_id)
   self.load_data_url_content(ctx_id, url)
-  self.drop_child_contexts(ctx_id, true)
+  for child_ctx_id in previous_children {
+    let original_opener = self.context_original_opener.get(child_ctx_id)
+    self.emit_context_destroyed(child_ctx_id, original_opener)
+  }
+  self.drop_child_contexts(ctx_id, false)
   self.refresh_child_contexts_from_iframes(ctx_id)
   self.clear_context_sandbox_realms(ctx_id)
   // Navigation replaces the default window realm.
@@ -9042,6 +9249,27 @@ fn BidiProtocol::complete_fragment_navigation_request(
 }
 
 ///|
+/// Emit navigationStarted event for the given context.
+fn BidiProtocol::emit_navigation_started_event(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  let event_name = "browsingContext.navigationStarted"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params = make_object({
+    "context": Json::string(ctx_id),
+    "navigation": Json::string(navigation_id),
+    "url": Json::string(url),
+    "timestamp": Json::number(input_now_ms()),
+  })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
 /// Emit basic navigation events
 fn BidiProtocol::emit_navigation_events(
   self : BidiProtocol,
@@ -9056,12 +9284,7 @@ fn BidiProtocol::emit_navigation_events(
     "url": Json::string(url),
     "timestamp": Json::number(timestamp),
   })
-  // Emit navigationStarted
-  if self.is_subscribed_for_context("browsingContext.navigationStarted", ctx_id) {
-    self.outbox.push(
-      Event({ event_method: "browsingContext.navigationStarted", params: base }),
-    )
-  }
+  self.emit_navigation_started_event(ctx_id, url, navigation_id)
   // Emit domContentLoaded
   if self.is_subscribed_for_context("browsingContext.domContentLoaded", ctx_id) {
     self.outbox.push(

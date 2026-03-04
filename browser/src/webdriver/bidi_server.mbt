@@ -4522,6 +4522,158 @@ pub fn get_runtime_shared_node_href(shared_id : String) -> String? {
 }
 
 ///|
+/// Resolve absolute href from an anchor identified by id or global symbol.
+extern "js" fn js_runtime_anchor_href_by_id(anchor_id : String) -> String? =
+  #| (anchorId) => {
+  #|   const id = String(anchorId || "");
+  #|   if (!id) return "";
+  #|   const doc = globalThis.document;
+  #|   if (!doc) return "";
+  #|   let node = null;
+  #|   try {
+  #|     if (typeof doc.getElementById === "function") {
+  #|       node = doc.getElementById(id);
+  #|     }
+  #|   } catch (_e) {}
+  #|   if (!node) {
+  #|     try {
+  #|       const candidate = globalThis[id];
+  #|       if (candidate && typeof candidate === "object") {
+  #|         node = candidate;
+  #|       }
+  #|     } catch (_e) {}
+  #|   }
+  #|   if (!node) return "";
+  #|   let href = null;
+  #|   try {
+  #|     if (typeof node.getAttribute === "function") {
+  #|       href = node.getAttribute("href");
+  #|     }
+  #|   } catch (_e) {}
+  #|   if ((href === null || href === undefined || href === "") && node._attrs) {
+  #|     href = node._attrs.href;
+  #|   }
+  #|   if (href === null || href === undefined || href === "") return "";
+  #|   const rawHref = String(href);
+  #|   try {
+  #|     const base =
+  #|       (globalThis.location && globalThis.location.href) ||
+  #|       globalThis.__pageUrl ||
+  #|       "about:blank";
+  #|     return new URL(rawHref, base).href;
+  #|   } catch (_e) {
+  #|     return rawHref;
+  #|   }
+  #| }
+
+///|
+/// Resolve absolute href from an anchor identified by id or global symbol.
+pub fn get_runtime_anchor_href_by_id(anchor_id : String) -> String? {
+  js_runtime_anchor_href_by_id(anchor_id)
+}
+
+///|
+/// Resolve `download` attribute value from an anchor identified by id or global symbol.
+extern "js" fn js_runtime_anchor_download_attr_by_id(
+  anchor_id : String,
+) -> String? =
+  #| (anchorId) => {
+  #|   const id = String(anchorId || "");
+  #|   if (!id) return "";
+  #|   const doc = globalThis.document;
+  #|   if (!doc) return "";
+  #|   let node = null;
+  #|   try {
+  #|     if (typeof doc.getElementById === "function") {
+  #|       node = doc.getElementById(id);
+  #|     }
+  #|   } catch (_e) {}
+  #|   if (!node) {
+  #|     try {
+  #|       const candidate = globalThis[id];
+  #|       if (candidate && typeof candidate === "object") {
+  #|         node = candidate;
+  #|       }
+  #|     } catch (_e) {}
+  #|   }
+  #|   if (!node) return "";
+  #|   let value = null;
+  #|   try {
+  #|     if (typeof node.getAttribute === "function") {
+  #|       value = node.getAttribute("download");
+  #|     }
+  #|   } catch (_e) {}
+  #|   if ((value === null || value === undefined) && node._attrs) {
+  #|     value = node._attrs.download;
+  #|   }
+  #|   if (value === null || value === undefined) return "";
+  #|   return String(value);
+  #| }
+
+///|
+/// Resolve `download` attribute value from an anchor identified by id or global symbol.
+pub fn get_runtime_anchor_download_attr_by_id(anchor_id : String) -> String? {
+  js_runtime_anchor_download_attr_by_id(anchor_id)
+}
+
+///|
+/// Extract query parameter value from an URL string.
+extern "js" fn js_runtime_url_query_param(
+  url : String,
+  key : String,
+) -> String? =
+  #| (url, key) => {
+  #|   const rawUrl = String(url || "");
+  #|   const rawKey = String(key || "");
+  #|   if (!rawUrl || !rawKey) return "";
+  #|   try {
+  #|     const base =
+  #|       (globalThis.location && globalThis.location.href) ||
+  #|       globalThis.__pageUrl ||
+  #|       "about:blank";
+  #|     const parsed = new URL(rawUrl, base);
+  #|     const value = parsed.searchParams.get(rawKey);
+  #|     if (value === null || value === undefined) return "";
+  #|     return String(value);
+  #|   } catch (_e) {
+  #|     return "";
+  #|   }
+  #| }
+
+///|
+/// Extract query parameter value from an URL string.
+pub fn get_runtime_url_query_param(url : String, key : String) -> String? {
+  js_runtime_url_query_param(url, key)
+}
+
+///|
+/// Write UTF-8 text file for synthetic download tests.
+extern "js" fn js_runtime_write_text_file(
+  path : String,
+  content : String,
+) -> Unit =
+  #| (path, content) => {
+  #|   const filePath = String(path || "");
+  #|   if (!filePath) return;
+  #|   try {
+  #|     const deno = globalThis.Deno;
+  #|     if (!deno || typeof deno.writeTextFileSync !== "function") return;
+  #|     const sep = filePath.lastIndexOf("/");
+  #|     if (sep > 0 && typeof deno.mkdirSync === "function") {
+  #|       const dir = filePath.slice(0, sep);
+  #|       try { deno.mkdirSync(dir, { recursive: true }); } catch (_e) {}
+  #|     }
+  #|     deno.writeTextFileSync(filePath, String(content ?? ""));
+  #|   } catch (_e) {}
+  #| }
+
+///|
+/// Write UTF-8 text file for synthetic download tests.
+pub fn runtime_write_text_file(path : String, content : String) -> Unit {
+  js_runtime_write_text_file(path, content)
+}
+
+///|
 /// Collect iframe src values from runtime document.
 extern "js" fn js_runtime_iframe_sources() -> Array[String] =
   #| () => {
