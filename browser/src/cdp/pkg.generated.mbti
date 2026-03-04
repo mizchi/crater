@@ -229,7 +229,9 @@ pub fn PageDomain::go_back(Self) -> Result[Bool, CdpError]
 pub fn PageDomain::go_forward(Self) -> Result[Bool, CdpError]
 pub fn PageDomain::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
 pub fn PageDomain::new(@dom.DomTree) -> Self
+pub fn PageDomain::push_history_url(Self, String) -> Unit
 pub fn PageDomain::reload(Self) -> Result[Unit, CdpError]
+pub fn PageDomain::replace_history_url(Self, String) -> Unit
 pub fn PageDomain::set_title(Self, String) -> Unit
 
 pub struct TargetDomain {

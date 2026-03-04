@@ -75,6 +75,7 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|   try {
   #|     globalThis.__bidiCurrentContext = "default-context";
   #|     globalThis.__bidiContextWindows = new Map();
+  #|     globalThis.__bidiContextViewportState = new Map();
   #|     if (!globalThis.__bidiProxyInstances) {
   #|       globalThis.__bidiProxyInstances = new WeakSet();
   #|     }
@@ -165,7 +166,9 @@ fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
       let data : String = raw_data.cast()
       // handle_message returns sync responses; async responses sent via socket
       let messages = self.handle_message(data)
-      bidi_server_trace("ws onmessage: responses=" + messages.length().to_string())
+      bidi_server_trace(
+        "ws onmessage: responses=" + messages.length().to_string(),
+      )
       for msg in messages {
         socket._call("send", [@core.any(msg)]) |> ignore
       }
@@ -589,6 +592,52 @@ extern "js" fn js_evaluate_expression(
   #|         set type(v) { this._attrs.type = v; },
   #|         get hidden() { return 'hidden' in this._attrs; },
   #|         set hidden(v) { if (v) this._attrs.hidden = ''; else delete this._attrs.hidden; },
+  #|         get clientWidth() {
+  #|           if (this.tagName === "HTML" || this.tagName === "BODY") {
+  #|             return Number(
+  #|               (globalThis.window && globalThis.window.innerWidth) ||
+  #|               globalThis.innerWidth ||
+  #|               1024,
+  #|             );
+  #|           }
+  #|           const rect = this.getBoundingClientRect ? this.getBoundingClientRect() : null;
+  #|           return Number(rect && rect.width ? rect.width : 0);
+  #|         },
+  #|         get clientHeight() {
+  #|           if (this.tagName === "HTML" || this.tagName === "BODY") {
+  #|             return Number(
+  #|               (globalThis.window && globalThis.window.innerHeight) ||
+  #|               globalThis.innerHeight ||
+  #|               768,
+  #|             );
+  #|           }
+  #|           const rect = this.getBoundingClientRect ? this.getBoundingClientRect() : null;
+  #|           return Number(rect && rect.height ? rect.height : 0);
+  #|         },
+  #|         get scrollWidth() {
+  #|           let maxWidth = Number(this.clientWidth || 0);
+  #|           if (Array.isArray(this._children)) {
+  #|             for (const child of this._children) {
+  #|               if (!child || typeof child.getBoundingClientRect !== "function") continue;
+  #|               const rect = child.getBoundingClientRect();
+  #|               const right = Number(rect && rect.right ? rect.right : rect && rect.width ? rect.width : 0);
+  #|               if (right > maxWidth) maxWidth = right;
+  #|             }
+  #|           }
+  #|           return maxWidth;
+  #|         },
+  #|         get scrollHeight() {
+  #|           let maxHeight = Number(this.clientHeight || 0);
+  #|           if (Array.isArray(this._children)) {
+  #|             for (const child of this._children) {
+  #|               if (!child || typeof child.getBoundingClientRect !== "function") continue;
+  #|               const rect = child.getBoundingClientRect();
+  #|               const bottom = Number(rect && rect.bottom ? rect.bottom : rect && rect.height ? rect.height : 0);
+  #|               if (bottom > maxHeight) maxHeight = bottom;
+  #|             }
+  #|           }
+  #|           return maxHeight;
+  #|         },
   #|         get attributes() {
   #|           const attrs = Object.entries(this._attrs).map(([name, value]) => ({
   #|             localName: String(name).includes(":") ? String(name).split(":").pop() : String(name),
@@ -1032,6 +1081,13 @@ extern "js" fn js_evaluate_expression(
   #|         const tagName = rawTagName.toLowerCase();
   #|         const element = createMockElement(tagName);
   #|         element.ownerDocument = ownerDocument;
+  #|         const parentNode = stack[stack.length - 1] || null;
+  #|         const parentNs = parentNode && typeof parentNode.namespaceURI === "string"
+  #|           ? String(parentNode.namespaceURI)
+  #|           : "";
+  #|         if (tagName === "svg" || parentNs === "http://www.w3.org/2000/svg") {
+  #|           element.namespaceURI = "http://www.w3.org/2000/svg";
+  #|         }
   #|         const attrChunk = token.slice(
   #|           tagMatch[0].length,
   #|           token.length - (selfClosing ? 2 : 1),
@@ -3973,15 +4029,31 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #| (ctxId) => {
   #|   globalThis.__bidiCurrentContext = ctxId;
   #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextViewportState) globalThis.__bidiContextViewportState = new Map();
+  #|   const resolveViewportState = (id) => {
+  #|     const fallback = { width: 1024, height: 768, devicePixelRatio: 1 };
+  #|     const map = globalThis.__bidiContextViewportState;
+  #|     if (!map || !map.has(id)) return fallback;
+  #|     const raw = map.get(id) || {};
+  #|     const width = Number(raw.width);
+  #|     const height = Number(raw.height);
+  #|     const dpr = Number(raw.devicePixelRatio);
+  #|     return {
+  #|       width: Number.isFinite(width) && width >= 0 ? width : fallback.width,
+  #|       height: Number.isFinite(height) && height >= 0 ? height : fallback.height,
+  #|       devicePixelRatio: Number.isFinite(dpr) && dpr > 0 ? dpr : fallback.devicePixelRatio,
+  #|     };
+  #|   };
+  #|   const metrics = resolveViewportState(String(ctxId));
   #|   if (!globalThis.__bidiContextWindows.has(ctxId)) {
   #|     const win = {};
   #|     win.__bidiContextId = String(ctxId);
   #|     win.window = win;
-  #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
-  #|     win.innerHeight = Number(globalThis.innerHeight || 768);
-  #|     win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
-  #|     win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
-  #|     win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|     win.innerWidth = metrics.width;
+  #|     win.innerHeight = metrics.height;
+  #|     win.outerWidth = metrics.width;
+  #|     win.outerHeight = metrics.height;
+  #|     win.devicePixelRatio = metrics.devicePixelRatio;
   #|     win.pageXOffset = 0;
   #|     win.pageYOffset = 0;
   #|     win._listeners = {};
@@ -4006,9 +4078,71 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
   #|   if (contextWindow) {
   #|     if (!contextWindow.window) contextWindow.window = contextWindow;
+  #|     contextWindow.innerWidth = metrics.width;
+  #|     contextWindow.innerHeight = metrics.height;
+  #|     contextWindow.outerWidth = metrics.width;
+  #|     contextWindow.outerHeight = metrics.height;
+  #|     contextWindow.devicePixelRatio = metrics.devicePixelRatio;
   #|     const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|     globalThis.window = contextWindow;
   #|     globalThis.frames = frameWindows;
+  #|     globalThis.innerWidth = metrics.width;
+  #|     globalThis.innerHeight = metrics.height;
+  #|     globalThis.outerWidth = metrics.width;
+  #|     globalThis.outerHeight = metrics.height;
+  #|     globalThis.devicePixelRatio = metrics.devicePixelRatio;
+  #|     if (!globalThis.__bidiContextStorage) globalThis.__bidiContextStorage = new Map();
+  #|     const ensureStorage = (kind) => {
+  #|       const key = String(ctxId) + ":" + String(kind);
+  #|       if (!globalThis.__bidiContextStorage.has(key)) {
+  #|         globalThis.__bidiContextStorage.set(key, {});
+  #|       }
+  #|       const backing = globalThis.__bidiContextStorage.get(key);
+  #|       return {
+  #|         getItem(name) {
+  #|           const storageKey = String(name);
+  #|           return Object.prototype.hasOwnProperty.call(backing, storageKey)
+  #|             ? backing[storageKey]
+  #|             : null;
+  #|         },
+  #|         setItem(name, value) {
+  #|           backing[String(name)] = String(value);
+  #|         },
+  #|         removeItem(name) {
+  #|           delete backing[String(name)];
+  #|         },
+  #|         clear() {
+  #|           for (const storageKey of Object.keys(backing)) {
+  #|             delete backing[storageKey];
+  #|           }
+  #|         },
+  #|         get length() {
+  #|           return Object.keys(backing).length;
+  #|         },
+  #|         key(index) {
+  #|           const keys = Object.keys(backing);
+  #|           return keys[Number(index)] || null;
+  #|         }
+  #|       };
+  #|     };
+  #|     if (!contextWindow.localStorage) contextWindow.localStorage = ensureStorage("localStorage");
+  #|     if (!contextWindow.sessionStorage) contextWindow.sessionStorage = ensureStorage("sessionStorage");
+  #|     globalThis.localStorage = contextWindow.localStorage;
+  #|     globalThis.sessionStorage = contextWindow.sessionStorage;
+  #|     if (typeof contextWindow.alert !== "function") {
+  #|       contextWindow.alert = function(_message) { return undefined; };
+  #|     }
+  #|     if (typeof contextWindow.confirm !== "function") {
+  #|       contextWindow.confirm = function(_message) { return false; };
+  #|     }
+  #|     if (typeof contextWindow.prompt !== "function") {
+  #|       contextWindow.prompt = function(_message, defaultValue) {
+  #|         return defaultValue === undefined ? "" : String(defaultValue);
+  #|       };
+  #|     }
+  #|     globalThis.alert = contextWindow.alert.bind(contextWindow);
+  #|     globalThis.confirm = contextWindow.confirm.bind(contextWindow);
+  #|     globalThis.prompt = contextWindow.prompt.bind(contextWindow);
   #|     if (contextWindow.document && typeof contextWindow.document === "object") {
   #|       globalThis.document = contextWindow.document;
   #|     } else if (globalThis.document && typeof globalThis.document === "object") {
@@ -4080,16 +4214,32 @@ extern "js" fn js_set_runtime_context_frames(
 ) -> Unit =
   #| (ctxId, frameCtxIds) => {
   #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextViewportState) globalThis.__bidiContextViewportState = new Map();
+  #|   const resolveViewportState = (id) => {
+  #|     const fallback = { width: 1024, height: 768, devicePixelRatio: 1 };
+  #|     const map = globalThis.__bidiContextViewportState;
+  #|     if (!map || !map.has(id)) return fallback;
+  #|     const raw = map.get(id) || {};
+  #|     const width = Number(raw.width);
+  #|     const height = Number(raw.height);
+  #|     const dpr = Number(raw.devicePixelRatio);
+  #|     return {
+  #|       width: Number.isFinite(width) && width >= 0 ? width : fallback.width,
+  #|       height: Number.isFinite(height) && height >= 0 ? height : fallback.height,
+  #|       devicePixelRatio: Number.isFinite(dpr) && dpr > 0 ? dpr : fallback.devicePixelRatio,
+  #|     };
+  #|   };
   #|   const ensureWindow = (id) => {
   #|     if (!globalThis.__bidiContextWindows.has(id)) {
+  #|       const metrics = resolveViewportState(String(id));
   #|       const win = {};
   #|       win.__bidiContextId = String(id);
   #|       win.window = win;
-  #|       win.innerWidth = Number(globalThis.innerWidth || 1024);
-  #|       win.innerHeight = Number(globalThis.innerHeight || 768);
-  #|       win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
-  #|       win.outerHeight = Number(globalThis.outerHeight || win.innerHeight);
-  #|       win.devicePixelRatio = Number(globalThis.devicePixelRatio || 1);
+  #|       win.innerWidth = metrics.width;
+  #|       win.innerHeight = metrics.height;
+  #|       win.outerWidth = metrics.width;
+  #|       win.outerHeight = metrics.height;
+  #|       win.devicePixelRatio = metrics.devicePixelRatio;
   #|       win.pageXOffset = 0;
   #|       win.pageYOffset = 0;
   #|       win._listeners = {};
@@ -4128,6 +4278,55 @@ pub fn set_runtime_context_frames(
   frame_ctx_ids : Array[String],
 ) -> Unit {
   js_set_runtime_context_frames(ctx_id, frame_ctx_ids)
+}
+
+///|
+/// Set runtime viewport metrics for a specific context.
+extern "js" fn js_set_runtime_context_viewport(
+  ctx_id : String,
+  width : Int,
+  height : Int,
+  device_pixel_ratio : Double,
+) -> Unit =
+  #| (ctxId, width, height, devicePixelRatio) => {
+  #|   if (!globalThis.__bidiContextViewportState) globalThis.__bidiContextViewportState = new Map();
+  #|   const w = Number(width);
+  #|   const h = Number(height);
+  #|   const dpr = Number(devicePixelRatio);
+  #|   const normalized = {
+  #|     width: Number.isFinite(w) && w >= 0 ? w : 1024,
+  #|     height: Number.isFinite(h) && h >= 0 ? h : 768,
+  #|     devicePixelRatio: Number.isFinite(dpr) && dpr > 0 ? dpr : 1,
+  #|   };
+  #|   globalThis.__bidiContextViewportState.set(String(ctxId), normalized);
+  #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     const win = globalThis.__bidiContextWindows.get(ctxId);
+  #|     if (win && typeof win === "object") {
+  #|       win.innerWidth = normalized.width;
+  #|       win.innerHeight = normalized.height;
+  #|       win.outerWidth = normalized.width;
+  #|       win.outerHeight = normalized.height;
+  #|       win.devicePixelRatio = normalized.devicePixelRatio;
+  #|     }
+  #|   }
+  #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
+  #|     globalThis.innerWidth = normalized.width;
+  #|     globalThis.innerHeight = normalized.height;
+  #|     globalThis.outerWidth = normalized.width;
+  #|     globalThis.outerHeight = normalized.height;
+  #|     globalThis.devicePixelRatio = normalized.devicePixelRatio;
+  #|   }
+  #| }
+
+///|
+/// Set runtime viewport metrics for a specific context.
+pub fn set_runtime_context_viewport(
+  ctx_id : String,
+  width : Int,
+  height : Int,
+  device_pixel_ratio : Double,
+) -> Unit {
+  js_set_runtime_context_viewport(ctx_id, width, height, device_pixel_ratio)
 }
 
 ///|
@@ -4170,6 +4369,22 @@ extern "js" fn js_runtime_shared_node_is_element(shared_id : String) -> Bool =
 /// Check if runtime shared node exists and is an element node.
 pub fn runtime_shared_node_is_element(shared_id : String) -> Bool {
   js_runtime_shared_node_is_element(shared_id)
+}
+
+///|
+/// Check if runtime shared node exists and is a document node.
+extern "js" fn js_runtime_shared_node_is_document(shared_id : String) -> Bool =
+  #| (sharedId) => {
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   if (!store) return false;
+  #|   const node = store.get(sharedId);
+  #|   return !!(node && node.nodeType === 9);
+  #| }
+
+///|
+/// Check if runtime shared node exists and is a document node.
+pub fn runtime_shared_node_is_document(shared_id : String) -> Bool {
+  js_runtime_shared_node_is_document(shared_id)
 }
 
 ///|
@@ -4356,7 +4571,9 @@ pub fn get_runtime_last_click_href() -> String? {
 
 ///|
 /// Resolve data/absolute URL assigned by inline event handlers like onkeydown/onmousedown.
-extern "js" fn js_runtime_inline_navigation_url(attribute_name : String) -> String? =
+extern "js" fn js_runtime_inline_navigation_url(
+  attribute_name : String,
+) -> String? =
   #| (attributeName) => {
   #|   const doc = globalThis.document;
   #|   if (!doc || typeof doc.querySelectorAll !== "function") return "";
@@ -4882,8 +5099,7 @@ pub fn input_set_pointer_event_properties(
   azimuth_angle : Double,
 ) -> Unit {
   js_input_set_pointer_event_properties(
-    width, height, pressure, tangential_pressure, twist, altitude_angle,
-    azimuth_angle,
+    width, height, pressure, tangential_pressure, twist, altitude_angle, azimuth_angle,
   )
 }
 

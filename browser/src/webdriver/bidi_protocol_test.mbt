@@ -71,6 +71,95 @@ test "bidi browsingContext create emits events before response" {
 }
 
 ///|
+test "bidi browsingContext close unknown context returns no such frame" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.close\",\"params\":{\"context\":\"foo\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"error\":\"no such frame\""))
+}
+
+///|
+test "bidi browsingContext close rejects child context" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<iframe src='about:blank'></iframe>\",\"wait\":\"complete\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.close\",\"params\":{\"context\":\"session-2\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"error\":\"invalid argument\""))
+}
+
+///|
+test "bidi browsingContext close promptUnload waits for handleUserPrompt" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\",\"browsingContext.contextDestroyed\"]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\",\"wait\":\"complete\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.close\",\"params\":{\"context\":\"session-1\",\"promptUnload\":true}}",
+  )
+  let close_msgs = proto.take_messages()
+  assert_eq(close_msgs.length(), 1)
+  let close_json = close_msgs[0].to_json()
+  assert_true(close_json.contains("browsingContext.userPromptOpened"))
+  assert_false(close_json.contains("\"id\":4"))
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"browsingContext.handleUserPrompt\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  let mut has_close_success = false
+  let mut has_handle_success = false
+  let mut has_destroyed = false
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("\"id\":4") && json.contains("\"type\":\"success\"") {
+      has_close_success = true
+    }
+    if json.contains("\"id\":5") && json.contains("\"type\":\"success\"") {
+      has_handle_success = true
+    }
+    if json.contains("browsingContext.contextDestroyed") {
+      has_destroyed = true
+    }
+  }
+  assert_true(has_close_success)
+  assert_true(has_handle_success)
+  assert_true(has_destroyed)
+}
+
+///|
 test "bidi session subscribe returns subscription id" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -82,6 +171,28 @@ test "bidi session subscribe returns subscription id" {
   assert_true(
     json.contains("\"subscription\":\"00000000000000000000000000000001\""),
   )
+}
+
+///|
+test "bidi event subscription does not subscribe sibling module events" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\"]}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.create\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let msgs = proto.take_messages()
+  let mut has_context_created = false
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("browsingContext.contextCreated") {
+      has_context_created = true
+    }
+  }
+  assert_false(has_context_created)
 }
 
 ///|

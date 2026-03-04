@@ -68,6 +68,42 @@ pub fn PageDomain::navigate(
 }
 
 ///|
+/// Update URL/history for History API pushState without full navigation.
+pub fn PageDomain::push_history_url(self : PageDomain, url : String) -> Unit {
+  self.current_url = url
+  self.history_index += 1
+  while self.history.length() > self.history_index {
+    let _ = self.history.pop()
+  }
+  self.history.push({
+    id: self.history_index,
+    url,
+    title: self.title,
+    transition_type: "pushState",
+  })
+}
+
+///|
+/// Update URL/history for History API replaceState without adding an entry.
+pub fn PageDomain::replace_history_url(self : PageDomain, url : String) -> Unit {
+  self.current_url = url
+  if self.history_index >= 0 && self.history_index < self.history.length() {
+    self.history[self.history_index] = {
+      ..self.history[self.history_index],
+      url,
+    }
+    return
+  }
+  self.history.push({
+    id: 0,
+    url,
+    title: self.title,
+    transition_type: "replaceState",
+  })
+  self.history_index = self.history.length() - 1
+}
+
+///|
 /// Page.reload - Reloads the current page
 pub fn PageDomain::reload(self : PageDomain) -> Result[Unit, CdpError] {
   // Increment loader ID

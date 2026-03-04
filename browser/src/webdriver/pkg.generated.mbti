@@ -25,6 +25,8 @@ pub fn get_runtime_href_at_point(Double, Double) -> String?
 
 pub fn get_runtime_iframe_sources() -> Array[String]
 
+pub fn get_runtime_inline_navigation_url(String) -> String?
+
 pub fn get_runtime_last_click_href() -> String?
 
 pub fn get_runtime_shared_node_center_json(String) -> String
@@ -57,13 +59,21 @@ pub fn has_runtime_shared_node(String) -> Bool
 
 pub fn init_quickjs() -> @core.Any
 
+pub fn input_clear_pointer_event_properties() -> Unit
+
 pub fn input_dispatch_key_action(String, String, Bool, Bool, Bool, Bool) -> Unit
 
 pub fn input_dispatch_pointer_event(String, String, Double, Double, Int, Int, String, Bool, Bool, Bool, Bool) -> Unit
 
 pub fn input_dispatch_wheel_event(String, Double, Double, Double, Double, Bool, Bool, Bool, Bool) -> Unit
 
+pub fn input_is_mac_platform() -> Bool
+
 pub fn input_is_single_grapheme(String) -> Bool
+
+pub fn input_now_ms() -> Double
+
+pub fn input_set_pointer_event_properties(Double, Double, Double, Double, Double, Double, Double) -> Unit
 
 pub fn is_quickjs_initialized() -> Bool
 
@@ -105,11 +115,17 @@ pub fn rpc_success_number(RpcId, Double) -> RpcResponse
 
 pub fn rpc_success_string(RpcId, String) -> RpcResponse
 
+pub fn runtime_shared_node_is_document(String) -> Bool
+
+pub fn runtime_shared_node_is_draggable(String) -> Bool
+
 pub fn runtime_shared_node_is_element(String) -> Bool
 
 pub fn set_runtime_context(String) -> Unit
 
 pub fn set_runtime_context_frames(String, Array[String]) -> Unit
+
+pub fn set_runtime_context_viewport(String, Int, Int, Double) -> Unit
 
 pub fn success_bool(Bool) -> WebDriverResponse
 
@@ -228,6 +244,7 @@ pub struct BidiProtocol {
   mut outbox : Array[BidiOutMessage]
   mut session_id : String?
   mut default_context_id : String?
+  mut active_context_id : String?
   mut next_navigation_id : Int
   mut next_realm_id : Int
   subscriptions : Map[String, Bool]
@@ -241,7 +258,22 @@ pub struct BidiProtocol {
   mut next_subscription_id : Int
   pending_log_entries : Map[String, Array[Json]]
   user_contexts : Map[String, Bool]
+  user_context_prompt_behavior : Map[String, Json]
+  mut global_download_behavior : Json?
+  user_context_download_behavior : Map[String, Json]
+  user_context_viewport_width : Map[String, Int]
+  user_context_viewport_height : Map[String, Int]
+  user_context_device_pixel_ratio : Map[String, Double]
   context_user_context : Map[String, String]
+  context_has_beforeunload : Map[String, Bool]
+  pending_prompt_type : Map[String, String]
+  pending_close_request : Map[String, Int]
+  pending_prompt_request : Map[String, Int]
+  pending_prompt_realm : Map[String, String]
+  pending_beforeunload_request : Map[String, Int]
+  pending_beforeunload_url : Map[String, String]
+  pending_prompt_result_var : Map[String, String]
+  context_local_storage : Map[String, Map[String, String]]
   context_original_opener : Map[String, String]
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String]
@@ -250,12 +282,27 @@ pub struct BidiProtocol {
   context_parent : Map[String, String]
   context_children : Map[String, Array[String]]
   context_client_window : Map[String, String]
+  context_viewport_width : Map[String, Int]
+  context_viewport_height : Map[String, Int]
+  context_device_pixel_ratio : Map[String, Double]
   input_pressed_keys : Map[String, Array[String]]
   input_pointer_x : Map[String, Double]
   input_pointer_y : Map[String, Double]
   input_pointer_buttons : Map[String, Int]
   input_pointer_type : Map[String, String]
   input_pointer_target_shared : Map[String, String]
+  input_pointer_down_x : Map[String, Double]
+  input_pointer_down_y : Map[String, Double]
+  input_pointer_down_target_shared : Map[String, String]
+  input_pointer_dragged : Map[String, Bool]
+  input_html_drag_source_shared : Map[String, String]
+  input_html_drag_active : Map[String, Bool]
+  input_last_click_time : Map[String, Double]
+  input_last_click_x : Map[String, Double]
+  input_last_click_y : Map[String, Double]
+  input_last_click_target_shared : Map[String, String]
+  input_pending_double_click : Map[String, Bool]
+  input_action_clock_ms : Map[String, Double]
   mut socket : @core.Any?
   mut socket_epoch : Int
   mut use_quickjs : Bool
