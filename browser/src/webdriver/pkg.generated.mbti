@@ -196,7 +196,14 @@ pub struct BidiProtocol {
   mut next_realm_id : Int
   subscriptions : Map[String, Bool]
   context_subscriptions : Map[String, Array[String]]
+  user_context_subscriptions : Map[String, Array[String]]
   mut global_subscriptions : Array[String]
+  mut global_unsubscribed_events : Array[String]
+  subscription_events : Map[String, Array[String]]
+  subscription_contexts : Map[String, Array[String]]
+  subscription_user_contexts : Map[String, Array[String]]
+  mut next_subscription_id : Int
+  pending_log_entries : Map[String, Array[Json]]
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
   context_original_opener : Map[String, String]
@@ -218,6 +225,7 @@ pub fn BidiProtocol::enable_quickjs(Self) -> Unit
 pub fn BidiProtocol::is_quickjs_enabled(Self) -> Bool
 pub fn BidiProtocol::new() -> Self
 pub fn BidiProtocol::process_message(Self, String) -> Result[Unit, String]
+pub fn BidiProtocol::reset_subscription_state(Self) -> Unit
 pub fn BidiProtocol::set_socket(Self, @core.Any) -> Unit
 pub fn BidiProtocol::take_messages(Self) -> Array[BidiOutMessage]
 

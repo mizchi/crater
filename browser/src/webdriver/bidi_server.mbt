@@ -77,6 +77,7 @@ fn BidiServer::handle_message(
 ///|
 /// Setup WebSocket event handlers with async support
 fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
+  self.protocol.reset_subscription_state()
   // Store socket reference for async responses
   self.protocol.set_socket(socket)
 
@@ -110,6 +111,7 @@ fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
   socket["onclose"] = @core.any(
     @core.from_fn1(fn(_event : @core.Any) {
       // Connection closed
+      self.protocol.reset_subscription_state()
       self.protocol.clear_socket()
     }),
   )
@@ -174,8 +176,10 @@ extern "js" fn js_evaluate_expression(
   expression : String,
   capture_console : Bool,
   user_activation : Bool,
+  root_ownership : Bool,
+  serialization_options_json : String,
 ) -> String =
-  #| (expression, captureConsole, userActivation) => {
+  #| (expression, captureConsole, userActivation, rootOwnership, serializationOptionsJson) => {
   #|   const consoleEntries = [];
   #|   let originalConsole = null;
   #|   if (captureConsole) {
@@ -184,17 +188,38 @@ extern "js" fn js_evaluate_expression(
   #|       warn: console.warn,
   #|       error: console.error,
   #|       info: console.info,
-  #|       debug: console.debug
+  #|       debug: console.debug,
+  #|       assert: console.assert,
+  #|       table: console.table,
+  #|       trace: console.trace,
+  #|       time: console.time,
+  #|       timeEnd: console.timeEnd
+  #|     };
+  #|
+  #|     const consoleArgToText = (arg) => {
+  #|       if (typeof arg === "string") return arg;
+  #|       if (arg === undefined) return "undefined";
+  #|       if (typeof arg === "bigint") return `${arg}n`;
+  #|       try {
+  #|         const json = JSON.stringify(arg);
+  #|         if (json !== undefined) return json;
+  #|       } catch (_e) {}
+  #|       return String(arg);
+  #|     };
+  #|
+  #|     const pushConsoleEntry = (level, method, args, textArgs = args) => {
+  #|       consoleEntries.push({
+  #|         level,
+  #|         method,
+  #|         text: textArgs.map(consoleArgToText).join(" "),
+  #|         args: args.map(toBidiValue),
+  #|         timestamp: Date.now()
+  #|       });
   #|     };
   #|
   #|     // Intercept console calls
   #|     const makeInterceptor = (level, method) => (...args) => {
-  #|       consoleEntries.push({
-  #|         level,
-  #|         method,
-  #|         text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
-  #|         timestamp: Date.now()
-  #|       });
+  #|       pushConsoleEntry(level, method, args);
   #|       originalConsole[method](...args);
   #|     };
   #|
@@ -203,7 +228,51 @@ extern "js" fn js_evaluate_expression(
   #|     console.error = makeInterceptor('error', 'error');
   #|     console.info = makeInterceptor('info', 'info');
   #|     console.debug = makeInterceptor('debug', 'debug');
+  #|     console.table = makeInterceptor('info', 'table');
+  #|     console.trace = makeInterceptor('debug', 'trace');
+  #|     console.assert = (...args) => {
+  #|       if (args.length > 0 && args[0]) {
+  #|         return;
+  #|       }
+  #|       const textArgs = args.length > 1 ? args.slice(1) : ["Assertion failed"];
+  #|       pushConsoleEntry("error", "assert", textArgs);
+  #|       originalConsole.assert(...args);
+  #|     };
+  #|     console.time = (...args) => {
+  #|       originalConsole.time(...args);
+  #|     };
+  #|     console.timeEnd = (...args) => {
+  #|       const textArgs = args.length > 0 ? args : ["default"];
+  #|       pushConsoleEntry("info", "timeEnd", textArgs);
+  #|       originalConsole.timeEnd(...args);
+  #|     };
   #|   }
+  #|
+  #|   let serializationOptions = {};
+  #|   try {
+  #|     serializationOptions =
+  #|       serializationOptionsJson && serializationOptionsJson.length > 0
+  #|         ? JSON.parse(serializationOptionsJson)
+  #|         : {};
+  #|   } catch (_e) {
+  #|     serializationOptions = {};
+  #|   }
+  #|   const hasMaxDomDepth = Object.prototype.hasOwnProperty.call(serializationOptions, "maxDomDepth");
+  #|   const hasMaxObjectDepth = Object.prototype.hasOwnProperty.call(serializationOptions, "maxObjectDepth");
+  #|   const rawMaxDomDepth = hasMaxDomDepth ? serializationOptions.maxDomDepth : undefined;
+  #|   const rawMaxObjectDepth = hasMaxObjectDepth ? serializationOptions.maxObjectDepth : undefined;
+  #|   const maxDomDepth =
+  #|     rawMaxDomDepth === null
+  #|       ? null
+  #|       : (typeof rawMaxDomDepth === "number" && rawMaxDomDepth >= 0 ? rawMaxDomDepth : undefined);
+  #|   const maxObjectDepth =
+  #|     rawMaxObjectDepth === null
+  #|       ? null
+  #|       : (typeof rawMaxObjectDepth === "number" && rawMaxObjectDepth >= 0 ? rawMaxObjectDepth : undefined);
+  #|   const includeShadowTree =
+  #|     serializationOptions.includeShadowTree === "open" || serializationOptions.includeShadowTree === "all"
+  #|       ? serializationOptions.includeShadowTree
+  #|       : "none";
   #|
   #|   const applyUserActivation = (active) => {
   #|     const isActive = !!active;
@@ -313,19 +382,46 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|     };
   #|
+  #|     const toCollection = (items, collectionType) => {
+  #|       if (!Array.isArray(items)) return items;
+  #|       if (collectionType) {
+  #|         Object.defineProperty(items, "__bidiCollectionType", {
+  #|           value: String(collectionType),
+  #|           configurable: true,
+  #|           enumerable: false,
+  #|           writable: true
+  #|         });
+  #|       }
+  #|       if (typeof items.item !== "function") {
+  #|         items.item = function(index) {
+  #|           return this[index] ?? null;
+  #|         };
+  #|       }
+  #|       return items;
+  #|     };
+  #|
   #|     // Minimal Mock DOM for Preact compatibility
   #|     const createMockElement = (tagName) => {
+  #|       const lowerTag = String(tagName || "").toLowerCase();
+  #|       const defaultNamespace =
+  #|         lowerTag === "svg"
+  #|           ? "http://www.w3.org/2000/svg"
+  #|           : "http://www.w3.org/1999/xhtml";
   #|       const el = {
   #|         tagName: tagName.toUpperCase(),
   #|         nodeName: tagName.toUpperCase(),
   #|         nodeType: 1,
+  #|         namespaceURI: defaultNamespace,
   #|         _attrs: {},
+  #|         _attrNamespaces: {},
   #|         _children: [],
   #|         _parent: null,
   #|         _textContent: '',
   #|         _listeners: {},
   #|         _style: {},
+  #|         shadowRoot: null,
   #|         ownerDocument: null, // Set after document is created
+  #|         get localName() { return this.tagName.toLowerCase(); },
   #|         get parentNode() { return this._parent; },
   #|         get parentElement() { return this._parent; },
   #|         get childNodes() { return this._children; },
@@ -367,11 +463,22 @@ extern "js" fn js_evaluate_expression(
   #|         },
   #|         set innerHTML(v) {
   #|           this._children = [];
-  #|           // Simple innerHTML parsing (for basic cases)
-  #|           if (v) {
+  #|           if (!v) return;
+  #|           const nodes = parseHTMLFragment(
+  #|             String(v),
+  #|             this.ownerDocument || globalThis.document || null,
+  #|           );
+  #|           if (nodes.length === 0) {
   #|             const text = createMockTextNode(v);
   #|             text._parent = this;
+  #|             text.ownerDocument = this.ownerDocument || null;
   #|             this._children.push(text);
+  #|             return;
+  #|           }
+  #|           for (const node of nodes) {
+  #|             node._parent = this;
+  #|             node.ownerDocument = this.ownerDocument || node.ownerDocument || null;
+  #|             this._children.push(node);
   #|           }
   #|         },
   #|         get id() { return this._attrs.id || ''; },
@@ -404,6 +511,35 @@ extern "js" fn js_evaluate_expression(
   #|         set type(v) { this._attrs.type = v; },
   #|         get hidden() { return 'hidden' in this._attrs; },
   #|         set hidden(v) { if (v) this._attrs.hidden = ''; else delete this._attrs.hidden; },
+  #|         get attributes() {
+  #|           const attrs = Object.entries(this._attrs).map(([name, value]) => ({
+  #|             localName: String(name).includes(":") ? String(name).split(":").pop() : String(name),
+  #|             namespaceURI:
+  #|               this._attrNamespaces?.[name] ??
+  #|               (String(name).startsWith("svg:") ? "http://www.w3.org/2000/svg" : null),
+  #|             nodeType: 2,
+  #|             nodeName: String(name),
+  #|             name: String(name),
+  #|             value: String(value),
+  #|             nodeValue: String(value),
+  #|             ownerElement: this,
+  #|             ownerDocument: this.ownerDocument,
+  #|             parentNode: null,
+  #|             cloneNode() {
+  #|               return {
+  #|                 nodeType: 2,
+  #|                 nodeName: this.nodeName,
+  #|                 name: this.name,
+  #|                 value: this.value,
+  #|                 nodeValue: this.nodeValue,
+  #|                 ownerElement: this.ownerElement,
+  #|                 ownerDocument: this.ownerDocument,
+  #|                 parentNode: null
+  #|               };
+  #|             }
+  #|           }));
+  #|           return toCollection(attrs, "namednodemap");
+  #|         },
   #|         get dataset() {
   #|           const self = this;
   #|           // Convert data-foo-bar to fooBar
@@ -451,6 +587,14 @@ extern "js" fn js_evaluate_expression(
   #|         setAttribute(name, value) {
   #|           const oldValue = this._attrs[name];
   #|           this._attrs[name] = String(value);
+  #|           this._attrNamespaces[name] = null;
+  #|           if (typeof name === "string" && name.toLowerCase().startsWith("on")) {
+  #|             try {
+  #|               this[name.toLowerCase()] = Function("event", String(value));
+  #|             } catch (_e) {
+  #|               this[name.toLowerCase()] = function() { return undefined; };
+  #|             }
+  #|           }
   #|           // Parse style attribute into _style object
   #|           if (name === 'style') {
   #|             this._style = {};
@@ -466,10 +610,26 @@ extern "js" fn js_evaluate_expression(
   #|           }
   #|           notifyMutation(createMutationRecord('attributes', this, { attributeName: name, oldValue }));
   #|         },
+  #|         setAttributeNS(namespace, name, value) {
+  #|           const attrName = String(name);
+  #|           const oldValue = this._attrs[attrName];
+  #|           this._attrs[attrName] = String(value);
+  #|           this._attrNamespaces[attrName] = namespace ?? null;
+  #|           notifyMutation(
+  #|             createMutationRecord('attributes', this, {
+  #|               attributeName: attrName,
+  #|               oldValue,
+  #|             }),
+  #|           );
+  #|         },
   #|         getAttribute(name) { return this._attrs[name] ?? null; },
   #|         removeAttribute(name) {
   #|           const oldValue = this._attrs[name];
   #|           delete this._attrs[name];
+  #|           delete this._attrNamespaces[name];
+  #|           if (typeof name === "string" && name.toLowerCase().startsWith("on")) {
+  #|             delete this[name.toLowerCase()];
+  #|           }
   #|           notifyMutation(createMutationRecord('attributes', this, { attributeName: name, oldValue }));
   #|         },
   #|         hasAttribute(name) { return name in this._attrs; },
@@ -521,6 +681,7 @@ extern "js" fn js_evaluate_expression(
   #|         cloneNode(deep) {
   #|           const clone = createMockElement(this.tagName);
   #|           clone._attrs = { ...this._attrs };
+  #|           clone._attrNamespaces = { ...this._attrNamespaces };
   #|           clone._style = { ...this._style };
   #|           if (deep) {
   #|             for (const child of this._children) {
@@ -550,6 +711,18 @@ extern "js" fn js_evaluate_expression(
   #|         },
   #|         focus() {},
   #|         blur() {},
+  #|         attachShadow(opts) {
+  #|           if (this.shadowRoot) return this.shadowRoot;
+  #|           const root = createMockElement('shadow-root');
+  #|           root.nodeType = 11;
+  #|           root.nodeName = '#document-fragment';
+  #|           root.mode = opts && typeof opts.mode === "string" ? String(opts.mode) : "open";
+  #|           root._parent = this;
+  #|           root.host = this;
+  #|           root.ownerDocument = this.ownerDocument;
+  #|           this.shadowRoot = root;
+  #|           return root;
+  #|         },
   #|         contains(node) {
   #|           if (node === this) return true;
   #|           for (const child of this._children) {
@@ -570,7 +743,7 @@ extern "js" fn js_evaluate_expression(
   #|             }
   #|           };
   #|           search(this);
-  #|           return results;
+  #|           return toCollection(results, "htmlcollection");
   #|         },
   #|         getElementsByClassName(cls) {
   #|           const results = [];
@@ -583,7 +756,7 @@ extern "js" fn js_evaluate_expression(
   #|             }
   #|           };
   #|           search(this);
-  #|           return results;
+  #|           return toCollection(results, "htmlcollection");
   #|         }
   #|       };
   #|       return el;
@@ -602,6 +775,120 @@ extern "js" fn js_evaluate_expression(
   #|       get parentNode() { return this._parent; },
   #|       cloneNode() { return createMockTextNode(this._textContent); }
   #|     });
+  #|
+  #|     const createMockCommentNode = (text) => ({
+  #|       nodeType: 8,
+  #|       nodeName: '#comment',
+  #|       _textContent: String(text),
+  #|       _parent: null,
+  #|       ownerDocument: null,
+  #|       get textContent() { return this._textContent; },
+  #|       set textContent(v) { this._textContent = String(v); },
+  #|       get nodeValue() { return this._textContent; },
+  #|       set nodeValue(v) { this._textContent = String(v); },
+  #|       get parentNode() { return this._parent; },
+  #|       cloneNode() { return createMockCommentNode(this._textContent); }
+  #|     });
+  #|
+  #|     const createMockCDataNode = (text) => ({
+  #|       nodeType: 4,
+  #|       nodeName: '#cdata-section',
+  #|       _textContent: String(text),
+  #|       _parent: null,
+  #|       ownerDocument: null,
+  #|       get textContent() { return this._textContent; },
+  #|       set textContent(v) { this._textContent = String(v); },
+  #|       get nodeValue() { return this._textContent; },
+  #|       set nodeValue(v) { this._textContent = String(v); },
+  #|       get parentNode() { return this._parent; },
+  #|       cloneNode() { return createMockCDataNode(this._textContent); }
+  #|     });
+  #|
+  #|     const createMockProcessingInstruction = (target, data) => ({
+  #|       nodeType: 7,
+  #|       nodeName: String(target),
+  #|       target: String(target),
+  #|       data: String(data),
+  #|       _textContent: String(data),
+  #|       _parent: null,
+  #|       ownerDocument: null,
+  #|       get textContent() { return this._textContent; },
+  #|       set textContent(v) { this._textContent = String(v); this.data = String(v); },
+  #|       get nodeValue() { return this._textContent; },
+  #|       set nodeValue(v) { this._textContent = String(v); this.data = String(v); },
+  #|       get parentNode() { return this._parent; },
+  #|       cloneNode() { return createMockProcessingInstruction(this.target, this.data); }
+  #|     });
+  #|
+  #|     const parseHTMLFragment = (fragmentHtml, ownerDocument) => {
+  #|       const source = String(fragmentHtml || "");
+  #|       const root = { _children: [] };
+  #|       const stack = [root];
+  #|       const voidElements = new Set([
+  #|         "area", "base", "br", "col", "embed", "hr", "img", "input",
+  #|         "link", "meta", "param", "source", "track", "wbr"
+  #|       ]);
+  #|       const pushNode = (parent, node) => {
+  #|         if (parent && typeof parent.appendChild === "function") {
+  #|           parent.appendChild(node);
+  #|           return;
+  #|         }
+  #|         node._parent = null;
+  #|         root._children.push(node);
+  #|       };
+  #|       const tokenRe = /<!--[\s\S]*?-->|<\/?[a-zA-Z][^>]*>|[^<]+/g;
+  #|       let tokenMatch;
+  #|       while ((tokenMatch = tokenRe.exec(source))) {
+  #|         const token = tokenMatch[0];
+  #|         if (!token) continue;
+  #|         if (token.startsWith("<!--")) {
+  #|           const commentText = token.slice(4, -3);
+  #|           const commentNode = createMockCommentNode(commentText);
+  #|           commentNode.ownerDocument = ownerDocument;
+  #|           pushNode(stack[stack.length - 1], commentNode);
+  #|           continue;
+  #|         }
+  #|         if (token[0] !== "<") {
+  #|           if (token.trim() === "") continue;
+  #|           const textNode = createMockTextNode(token);
+  #|           textNode.ownerDocument = ownerDocument;
+  #|           pushNode(stack[stack.length - 1], textNode);
+  #|           continue;
+  #|         }
+  #|         if (token[1] === "/") {
+  #|           if (stack.length > 1) stack.pop();
+  #|           continue;
+  #|         }
+  #|         const selfClosing = token.endsWith("/>");
+  #|         const tagMatch = token.match(/^<([a-zA-Z][\w:-]*)/);
+  #|         if (!tagMatch) continue;
+  #|         const rawTagName = tagMatch[1];
+  #|         const tagName = rawTagName.toLowerCase();
+  #|         const element = createMockElement(tagName);
+  #|         element.ownerDocument = ownerDocument;
+  #|         const attrChunk = token.slice(
+  #|           tagMatch[0].length,
+  #|           token.length - (selfClosing ? 2 : 1),
+  #|         );
+  #|         const attrRe = /([^\s=\/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\/>]+)))?/g;
+  #|         let attrMatch;
+  #|         while ((attrMatch = attrRe.exec(attrChunk))) {
+  #|           const attrName = String(attrMatch[1]);
+  #|           const attrValue = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? attrName;
+  #|           if (attrName.includes(":") && typeof element.setAttributeNS === "function") {
+  #|             const ns = attrName.startsWith("svg:") ? "http://www.w3.org/2000/svg" : null;
+  #|             element.setAttributeNS(ns, attrName, attrValue);
+  #|           } else {
+  #|             element.setAttribute(attrName, attrValue);
+  #|           }
+  #|         }
+  #|         pushNode(stack[stack.length - 1], element);
+  #|         if (!selfClosing && !voidElements.has(tagName)) {
+  #|           stack.push(element);
+  #|         }
+  #|       }
+  #|       return root._children;
+  #|     };
   #|
   #|     // Selector parsing cache for performance
   #|     const selectorCache = new Map();
@@ -626,10 +913,16 @@ extern "js" fn js_evaluate_expression(
   #|         if (compoundAttrMatch) {
   #|           parsed = { type: 4, tag: compoundAttrMatch[1] ? compoundAttrMatch[1].toUpperCase() : null,
   #|             attr: compoundAttrMatch[2], contains: !!compoundAttrMatch[3], value: compoundAttrMatch[4] };
-  #|         } else if (sel.indexOf('.') !== -1 && sel.indexOf('[') === -1) {
+  #|         } else {
+  #|           const tagIdMatch = sel.match(/^([a-zA-Z][a-zA-Z0-9_-]*)#([a-zA-Z][\w-]*)$/);
+  #|           if (tagIdMatch) {
+  #|             parsed = { type: 7, tag: tagIdMatch[1].toUpperCase(), id: tagIdMatch[2] };
+  #|           }
+  #|         }
+  #|         if (!parsed && sel.indexOf('.') !== -1 && sel.indexOf('[') === -1) {
   #|           const parts = sel.split('.');
   #|           parsed = { type: 5, tag: parts[0] ? parts[0].toUpperCase() : null, classes: parts.slice(1) };
-  #|         } else {
+  #|         } else if (!parsed) {
   #|           parsed = { type: 6, tag: sel.toUpperCase() };
   #|         }
   #|       }
@@ -669,6 +962,7 @@ extern "js" fn js_evaluate_expression(
   #|           return true;
   #|         }
   #|         case 6: return el.tagName === p.tag;
+  #|         case 7: return el.tagName === p.tag && attrs.id === p.id;
   #|       }
   #|       return false;
   #|     };
@@ -692,7 +986,7 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|       };
   #|       search(root);
-  #|       return all ? results : results[0] || null;
+  #|       return all ? toCollection(results, "nodelist") : results[0] || null;
   #|     };
   #|
   #|     // Event class
@@ -717,9 +1011,20 @@ extern "js" fn js_evaluate_expression(
   #|     html.appendChild(head);
   #|     html.appendChild(body);
   #|
+  #|     const doctypeNode = {
+  #|       nodeType: 10,
+  #|       nodeName: 'html',
+  #|       name: 'html',
+  #|       publicId: '',
+  #|       systemId: '',
+  #|       ownerDocument: null,
+  #|       parentNode: null
+  #|     };
   #|     globalThis.document = {
   #|       nodeType: 9,
+  #|       doctype: doctypeNode,
   #|       documentElement: html,
+  #|       get childNodes() { return [this.doctype, this.documentElement]; },
   #|       head: head,
   #|       body: body,
   #|       createElement(tag) {
@@ -732,9 +1037,25 @@ extern "js" fn js_evaluate_expression(
   #|         node.ownerDocument = this;
   #|         return node;
   #|       },
+  #|       createComment(text) {
+  #|         const node = createMockCommentNode(text);
+  #|         node.ownerDocument = this;
+  #|         return node;
+  #|       },
+  #|       createCDATASection(text) {
+  #|         const node = createMockCDataNode(text);
+  #|         node.ownerDocument = this;
+  #|         return node;
+  #|       },
+  #|       createProcessingInstruction(target, data) {
+  #|         const node = createMockProcessingInstruction(target, data);
+  #|         node.ownerDocument = this;
+  #|         return node;
+  #|       },
   #|       createDocumentFragment() {
   #|         const frag = createMockElement('fragment');
   #|         frag.nodeType = 11;
+  #|         frag.nodeName = '#document-fragment';
   #|         frag.ownerDocument = this;
   #|         return frag;
   #|       },
@@ -756,6 +1077,8 @@ extern "js" fn js_evaluate_expression(
   #|     html.ownerDocument = globalThis.document;
   #|     head.ownerDocument = globalThis.document;
   #|     body.ownerDocument = globalThis.document;
+  #|     doctypeNode.ownerDocument = globalThis.document;
+  #|     doctypeNode.parentNode = globalThis.document;
   #|
   #|     // Create default root div
   #|     const root = createMockElement('div');
@@ -768,6 +1091,32 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.self = globalThis;
   #|     globalThis.parent = globalThis;
   #|     globalThis.top = globalThis;
+  #|     globalThis.HTMLElement = globalThis.HTMLElement || class HTMLElement {};
+  #|     if (!globalThis.customElements) {
+  #|       const registry = new Map();
+  #|       globalThis.customElements = {
+  #|         define(name, ctor) {
+  #|           registry.set(String(name), ctor);
+  #|           if (globalThis.document) {
+  #|             let shadowMode = "open";
+  #|             try {
+  #|               const source = String(ctor);
+  #|               const match = source.match(/attachShadow\(\{\s*mode:\s*["'](open|closed)["']\s*\}\)/);
+  #|               if (match && match[1]) shadowMode = match[1];
+  #|             } catch (_e) {}
+  #|             const elems = globalThis.document.querySelectorAll(String(name));
+  #|             for (const elem of elems) {
+  #|               if (elem && !elem.shadowRoot && typeof elem.attachShadow === 'function') {
+  #|                 elem.attachShadow({ mode: shadowMode });
+  #|               }
+  #|             }
+  #|           }
+  #|         },
+  #|         get(name) {
+  #|           return registry.get(String(name));
+  #|         }
+  #|       };
+  #|     }
   #|     globalThis.__bidiUserActivation = false;
   #|     globalThis.location = {
   #|       href: 'about:blank',
@@ -1501,7 +1850,12 @@ extern "js" fn js_evaluate_expression(
   #|
   #|         const isWhitespaceCode = (code) => code === 32 || code === 9 || code === 10 || code === 12 || code === 13;
   #|         const isNameCode = (code) =>
-  #|           (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 45;
+  #|           (code >= 48 && code <= 57) ||
+  #|           (code >= 65 && code <= 90) ||
+  #|           (code >= 97 && code <= 122) ||
+  #|           code === 45 ||
+  #|           code === 58 ||
+  #|           code === 95;
   #|
   #|         const getLowerHtml = () => {
   #|           if (!lowerHtml) lowerHtml = htmlStr.toLowerCase();
@@ -1573,8 +1927,17 @@ extern "js" fn js_evaluate_expression(
   #|           // Comment
   #|           if (htmlStr.slice(i, i + 3) === '!--') {
   #|             const endIdx = htmlStr.indexOf('-->', i);
+  #|             const text = endIdx >= 0 ? htmlStr.slice(i + 3, endIdx) : "";
   #|             i = endIdx >= 0 ? endIdx + 3 : len;
-  #|             return null;
+  #|             return globalThis.document.createComment(text);
+  #|           }
+  #|
+  #|           // CDATA
+  #|           if (htmlStr.slice(i, i + 8) === '![CDATA[') {
+  #|             const endIdx = htmlStr.indexOf(']]>', i + 8);
+  #|             const text = endIdx >= 0 ? htmlStr.slice(i + 8, endIdx) : "";
+  #|             i = endIdx >= 0 ? endIdx + 3 : len;
+  #|             return globalThis.document.createCDATASection(text);
   #|           }
   #|
   #|           // DOCTYPE
@@ -1720,6 +2083,11 @@ extern "js" fn js_evaluate_expression(
   #|
   #|       // Move body children to document.body
   #|       if (bodyEl) {
+  #|         if (body && typeof body.setAttribute === "function" && bodyEl._attrs) {
+  #|           for (const [k, v] of Object.entries(bodyEl._attrs)) {
+  #|             body.setAttribute(k, v);
+  #|           }
+  #|         }
   #|         const bodyChildren = Array.from(bodyEl.childNodes);
   #|         for (const child of bodyChildren) {
   #|           const cloned = cloneNodeFast(child);
@@ -1849,38 +2217,373 @@ extern "js" fn js_evaluate_expression(
   #|   }
   #|
   #|   applyUserActivation(userActivation);
+  #|   const currentCtx = String(globalThis.__bidiCurrentContext || "default-context");
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextWindows.has(currentCtx)) {
+  #|     const win = {};
+  #|     win.__bidiContextId = currentCtx;
+  #|     win.window = win;
+  #|     globalThis.__bidiContextWindows.set(currentCtx, win);
+  #|   }
+  #|   const contextWindow = globalThis.__bidiContextWindows.get(currentCtx);
+  #|   if (!contextWindow.window) contextWindow.window = contextWindow;
+  #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
+  #|   globalThis.window = contextWindow;
+  #|   globalThis.frames = frameWindows;
+  #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
+  #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
+  #|     const NativeProxy = globalThis.Proxy;
+  #|     const tracked = globalThis.__bidiProxyInstances;
+  #|     function TrackedProxy(target, handler) {
+  #|       const proxied = new NativeProxy(target, handler);
+  #|       tracked.add(proxied);
+  #|       return proxied;
+  #|     }
+  #|     TrackedProxy.revocable = function(target, handler) {
+  #|       const revocable = NativeProxy.revocable(target, handler);
+  #|       tracked.add(revocable.proxy);
+  #|       return revocable;
+  #|     };
+  #|     globalThis.__bidiNativeProxy = NativeProxy;
+  #|     globalThis.Proxy = TrackedProxy;
+  #|   }
   #|
-  #|   // Store toBidiValue in global scope for async use
-  #|   const toBidiValueFn = toBidiValue;
+  #|   if (!globalThis.__bidiHandleStore) globalThis.__bidiHandleStore = new Map();
+  #|   if (typeof globalThis.__bidiNextHandleId !== "number") {
+  #|     globalThis.__bidiNextHandleId = 1;
+  #|   }
+  #|   const attachHandle = (value, serialized, includeHandle) => {
+  #|     if (!includeHandle) return serialized;
+  #|     if (value === null || value === undefined) return serialized;
+  #|     const valueType = typeof value;
+  #|     if (valueType !== "object" && valueType !== "function" && valueType !== "symbol") return serialized;
+  #|     if (!serialized || typeof serialized !== "object" || serialized.handle) return serialized;
+  #|     const handle = `handle-${globalThis.__bidiNextHandleId++}`;
+  #|     globalThis.__bidiHandleStore.set(handle, value);
+  #|     return { ...serialized, handle };
+  #|   };
+  #|   const toBidiValueFn = (value, includeHandle = false) =>
+  #|     attachHandle(value, toBidiValue(value), includeHandle);
+  #|
+  #|   function getNodeSharedId(node) {
+  #|     const sharedIds = globalThis.__bidiNodeSharedIds || (globalThis.__bidiNodeSharedIds = new WeakMap());
+  #|     const nodeStore = globalThis.__bidiSharedNodeStore || (globalThis.__bidiSharedNodeStore = new Map());
+  #|     if (typeof globalThis.__bidiNextNodeSharedId !== "number") {
+  #|       globalThis.__bidiNextNodeSharedId = 1;
+  #|     }
+  #|     let sharedId = sharedIds.get(node);
+  #|     if (!sharedId) {
+  #|       sharedId = `node-${globalThis.__bidiNextNodeSharedId++}`;
+  #|       sharedIds.set(node, sharedId);
+  #|     }
+  #|     nodeStore.set(sharedId, node);
+  #|     return sharedId;
+  #|   }
+  #|
+  #|   function getNodeAttributes(node) {
+  #|     const attrs = {};
+  #|     if (!node || typeof node !== "object") return attrs;
+  #|     if (node._attrs && typeof node._attrs === "object") {
+  #|       for (const [k, v] of Object.entries(node._attrs)) attrs[k] = String(v);
+  #|       return attrs;
+  #|     }
+  #|     if (node.attributes && typeof node.attributes.length === "number") {
+  #|       for (const attr of Array.from(node.attributes)) {
+  #|         if (attr && typeof attr.name === "string") attrs[attr.name] = String(attr.value ?? "");
+  #|       }
+  #|     }
+  #|     return attrs;
+  #|   }
+  #|
+  #|   function getNodeChildren(node) {
+  #|     if (Array.isArray(node?._children)) return node._children;
+  #|     if (Array.isArray(node?.childNodes)) return node.childNodes;
+  #|     return [];
+  #|   }
+  #|
+  #|   function shouldIncludeDomChildren(depth) {
+  #|     if (maxDomDepth === null) return true;
+  #|     if (typeof maxDomDepth === "number") return depth < maxDomDepth;
+  #|     return false;
+  #|   }
+  #|
+  #|   function getShadowMode(node) {
+  #|     if (!node || typeof node !== "object") return "open";
+  #|     if (typeof node.mode === "string") return String(node.mode);
+  #|     if (typeof node._mode === "string") return String(node._mode);
+  #|     return "open";
+  #|   }
+  #|
+  #|   function serializeShadowRootReference(root, depth) {
+  #|     const childNodes = getNodeChildren(root);
+  #|     const mode = getShadowMode(root);
+  #|     const includeTree =
+  #|       includeShadowTree === "all" ||
+  #|       (includeShadowTree === "open" && mode === "open");
+  #|     const value = {
+  #|       nodeType: 11,
+  #|       childNodeCount: childNodes.length,
+  #|     };
+  #|     if (includeTree) {
+  #|       value.mode = mode;
+  #|       if (shouldIncludeDomChildren(depth)) {
+  #|         value.children = childNodes.map((child) => toBidiNodeValue(child, depth + 1));
+  #|       }
+  #|     } else if (!hasMaxDomDepth && !hasMaxObjectDepth && includeShadowTree === "none") {
+  #|       // Default (without serialization options) keeps mode for compatibility tests.
+  #|       value.mode = mode;
+  #|     }
+  #|     return {
+  #|       type: "node",
+  #|       sharedId: getNodeSharedId(root),
+  #|       value,
+  #|     };
+  #|   }
+  #|
+  #|   function toBidiNodeValue(node, domDepth = 0) {
+  #|     const childNodes = getNodeChildren(node);
+  #|     const nodeType = typeof node?.nodeType === "number" ? node.nodeType : 1;
+  #|     const value = {
+  #|       nodeType,
+  #|       childNodeCount: childNodes.length,
+  #|     };
+  #|
+  #|     if (nodeType === 1) {
+  #|       const localName =
+  #|         node.localName ||
+  #|         node._tagName ||
+  #|         (node.tagName ? String(node.tagName).toLowerCase() : "");
+  #|       value.localName = String(localName);
+  #|       value.namespaceURI = node.namespaceURI || "http://www.w3.org/1999/xhtml";
+  #|       value.attributes = getNodeAttributes(node);
+  #|       if (shouldIncludeDomChildren(domDepth)) {
+  #|         value.children = childNodes.map((child) => toBidiNodeValue(child, domDepth + 1));
+  #|       }
+  #|       value.shadowRoot = node.shadowRoot
+  #|         ? serializeShadowRootReference(node.shadowRoot, domDepth)
+  #|         : null;
+  #|     } else if (nodeType === 2) {
+  #|       const attrName = String(node.name || node.nodeName || "");
+  #|       value.localName = attrName.includes(":") ? attrName.split(":").pop() : attrName;
+  #|       value.namespaceURI =
+  #|         node.namespaceURI ??
+  #|         (attrName.startsWith("svg:") ? "http://www.w3.org/2000/svg" : null);
+  #|       value.nodeValue = String(node.nodeValue ?? node.value ?? "");
+  #|     } else if (nodeType === 3 || nodeType === 4 || nodeType === 7 || nodeType === 8) {
+  #|       value.nodeValue = String(node.nodeValue ?? node.textContent ?? "");
+  #|     } else if (nodeType === 9) {
+  #|       if (shouldIncludeDomChildren(domDepth)) {
+  #|         value.children = childNodes.map((child) => toBidiNodeValue(child, domDepth + 1));
+  #|       }
+  #|     } else if (nodeType === 11) {
+  #|       const isShadowRoot = !!node.host;
+  #|       if (isShadowRoot) {
+  #|         value.mode = getShadowMode(node);
+  #|         const includeShadowChildren =
+  #|           shouldIncludeDomChildren(domDepth) &&
+  #|           (includeShadowTree === "all" || includeShadowTree === "open");
+  #|         if (includeShadowChildren) {
+  #|           value.children = childNodes.map((child) => toBidiNodeValue(child, domDepth + 1));
+  #|         }
+  #|       } else if (shouldIncludeDomChildren(domDepth)) {
+  #|         value.children = childNodes.map((child) => toBidiNodeValue(child, domDepth + 1));
+  #|       }
+  #|     }
+  #|
+  #|     return {
+  #|       type: "node",
+  #|       sharedId: getNodeSharedId(node),
+  #|       value,
+  #|     };
+  #|   }
+  #|
+  #|   const internalIds = new WeakMap();
+  #|   const referenceCounts = new WeakMap();
+  #|   let nextInternalId = 1;
+  #|
+  #|   const trackReference = (obj) => {
+  #|     const prev = referenceCounts.get(obj) || 0;
+  #|     referenceCounts.set(obj, prev + 1);
+  #|   };
+  #|
+  #|   const collectReferences = (value, seen = new WeakSet()) => {
+  #|     if (!value || typeof value !== "object") return;
+  #|     if (typeof value.nodeType === "number") return;
+  #|     if (
+  #|       value instanceof Date ||
+  #|       value instanceof RegExp ||
+  #|       value instanceof Error ||
+  #|       value instanceof Promise ||
+  #|       value instanceof WeakMap ||
+  #|       value instanceof WeakSet ||
+  #|       value instanceof ArrayBuffer ||
+  #|       ArrayBuffer.isView(value)
+  #|     ) {
+  #|       return;
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) return;
+  #|
+  #|     const isContainer =
+  #|       Array.isArray(value) ||
+  #|       value instanceof Map ||
+  #|       value instanceof Set ||
+  #|       value.constructor === Object;
+  #|     if (!isContainer) return;
+  #|
+  #|     trackReference(value);
+  #|     if (seen.has(value)) return;
+  #|     seen.add(value);
+  #|
+  #|     if (Array.isArray(value)) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     if (value instanceof Map) {
+  #|       for (const [k, v] of value) {
+  #|         if (typeof k !== "string") collectReferences(k, seen);
+  #|         collectReferences(v, seen);
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (value instanceof Set) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     for (const entryValue of Object.values(value)) {
+  #|       collectReferences(entryValue, seen);
+  #|     }
+  #|   };
+  #|
+  #|   const withInternalId = (originalValue, serialized) => {
+  #|     if (!serialized || typeof serialized !== "object") return serialized;
+  #|     if (maxObjectDepth !== undefined) return serialized;
+  #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
+  #|       return serialized;
+  #|     }
+  #|     const serializedType = serialized.type;
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|       return serialized;
+  #|     }
+  #|     const count = referenceCounts.get(originalValue) || 0;
+  #|     if (count <= 1) return serialized;
+  #|     let internalId = internalIds.get(originalValue);
+  #|     if (!internalId) {
+  #|       internalId = `internal-${nextInternalId++}`;
+  #|       internalIds.set(originalValue, internalId);
+  #|     }
+  #|     if (serialized.internalId) return serialized;
+  #|     return { ...serialized, internalId };
+  #|   };
+  #|
+  #|   function toBidiValue(value, objectDepth = 0, domDepth = 0) {
+  #|     if (value === undefined) return { type: "undefined" };
+  #|     if (value === null) return { type: "null" };
+  #|
+  #|     const type = typeof value;
+  #|     if (type === "boolean") return { type: "boolean", value };
+  #|     if (type === "number") {
+  #|       if (Number.isNaN(value)) return { type: "number", value: "NaN" };
+  #|       if (!Number.isFinite(value)) return { type: "number", value: value > 0 ? "Infinity" : "-Infinity" };
+  #|       if (Object.is(value, -0)) return { type: "number", value: "-0" };
+  #|       return { type: "number", value };
+  #|     }
+  #|     if (type === "string") return { type: "string", value };
+  #|     if (type === "bigint") return { type: "bigint", value: String(value) };
+  #|     if (type === "symbol") return { type: "symbol" };
+  #|     if (type === "function") return { type: "function" };
+  #|
+  #|     const limitReached =
+  #|       typeof maxObjectDepth === "number" &&
+  #|       objectDepth >= maxObjectDepth;
+  #|
+  #|     const objectTag = type === "object" ? Object.prototype.toString.call(value) : "";
+  #|     if (objectTag === "[object Generator]" || objectTag === "[object AsyncGenerator]") {
+  #|       return { type: "generator" };
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) {
+  #|       return { type: "proxy" };
+  #|     }
+  #|     if (value && type === "object" && typeof value.__bidiContextId === "string") {
+  #|       return { type: "window", value: { context: String(value.__bidiContextId) } };
+  #|     }
+  #|     if (value === globalThis || value === globalThis.window) {
+  #|       return {
+  #|         type: "window",
+  #|         value: { context: String(globalThis.__bidiCurrentContext || "default-context") }
+  #|       };
+  #|     }
+  #|     if (value && type === "object" && typeof value.nodeType === "number") {
+  #|       return toBidiNodeValue(value, domDepth);
+  #|     }
+  #|
+  #|     if (value instanceof RegExp) {
+  #|       return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
+  #|     }
+  #|     if (value instanceof Date) {
+  #|       return { type: "date", value: value.toISOString() };
+  #|     }
+  #|     if (value instanceof Error) return { type: "error" };
+  #|     if (value instanceof Promise) return { type: "promise" };
+  #|     if (value instanceof WeakMap) return { type: "weakmap" };
+  #|     if (value instanceof WeakSet) return { type: "weakset" };
+  #|     if (ArrayBuffer.isView(value)) return { type: "typedarray" };
+  #|     if (value instanceof ArrayBuffer) return { type: "arraybuffer" };
+  #|
+  #|     if (Array.isArray(value) && value.__bidiCollectionType === "htmlcollection") {
+  #|       const items = value.map((item) => toBidiValue(item, objectDepth + 1, domDepth));
+  #|       return { type: "htmlcollection", value: items };
+  #|     }
+  #|     if (Array.isArray(value) && value.__bidiCollectionType === "nodelist") {
+  #|       const items = value.map((item) => toBidiValue(item, objectDepth + 1, domDepth));
+  #|       return { type: "nodelist", value: items };
+  #|     }
+  #|
+  #|     if (value instanceof Map) {
+  #|       if (limitReached) return { type: "map" };
+  #|       const entries = [];
+  #|       for (const [k, v] of value) {
+  #|         entries.push([
+  #|           typeof k === "string" ? k : toBidiValue(k, objectDepth + 1, domDepth),
+  #|           toBidiValue(v, objectDepth + 1, domDepth),
+  #|         ]);
+  #|       }
+  #|       return withInternalId(value, { type: "map", value: entries });
+  #|     }
+  #|     if (value instanceof Set) {
+  #|       if (limitReached) return { type: "set" };
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "set", value: Array.from(value).map((item) => toBidiValue(item, objectDepth + 1, domDepth)) },
+  #|       );
+  #|     }
+  #|     if (Array.isArray(value)) {
+  #|       if (limitReached) return { type: "array" };
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "array", value: value.map((item) => toBidiValue(item, objectDepth + 1, domDepth)) },
+  #|       );
+  #|     }
+  #|
+  #|     if (value && value.constructor === Object) {
+  #|       if (limitReached) return { type: "object" };
+  #|       const entries = Object.entries(value).map(([k, v]) => [
+  #|         k,
+  #|         toBidiValue(v, objectDepth + 1, domDepth),
+  #|       ]);
+  #|       return withInternalId(value, { type: "object", value: entries });
+  #|     }
+  #|
+  #|     return { type: "object" };
+  #|   }
   #|
   #|   try {
   #|     let result = (0, eval)(expression);  // Indirect eval for global scope
-  #|     // If result is a Promise, await it
-  #|     if (result instanceof Promise) {
-  #|       return result.then(
-  #|         (resolved) => JSON.stringify({ type: "success", result: toBidiValueFn(resolved), consoleEntries }),
-  #|         (rejected) => JSON.stringify({
-  #|           type: "exception",
-  #|           exceptionDetails: {
-  #|             columnNumber: 0,
-  #|             lineNumber: 0,
-  #|             text: String(rejected),
-  #|             exception: { type: "error", value: { type: String(rejected?.name || "Error") } },
-  #|             stackTrace: { callFrames: [] }
-  #|           },
-  #|           consoleEntries
-  #|         })
-  #|       ).finally(() => {
-  #|         if (captureConsole && originalConsole) {
-  #|           console.log = originalConsole.log;
-  #|           console.warn = originalConsole.warn;
-  #|           console.error = originalConsole.error;
-  #|           console.info = originalConsole.info;
-  #|           console.debug = originalConsole.debug;
-  #|         }
-  #|       });
-  #|     }
-  #|     return JSON.stringify({ type: "success", result: toBidiValueFn(result), consoleEntries });
+  #|     collectReferences(result);
+  #|     return JSON.stringify({
+  #|       type: "success",
+  #|       result: toBidiValueFn(result, !!rootOwnership),
+  #|       consoleEntries,
+  #|     });
   #|   } catch (e) {
   #|     return JSON.stringify({
   #|       type: "exception",
@@ -1888,7 +2591,7 @@ extern "js" fn js_evaluate_expression(
   #|         columnNumber: 0,
   #|         lineNumber: 0,
   #|         text: String(e),
-  #|         exception: { type: "error", value: { type: String(e.name || "Error") } },
+  #|         exception: toBidiValueFn(e, !!rootOwnership),
   #|         stackTrace: { callFrames: [] }
   #|       },
   #|       consoleEntries
@@ -1902,67 +2605,12 @@ extern "js" fn js_evaluate_expression(
   #|       console.error = originalConsole.error;
   #|       console.info = originalConsole.info;
   #|       console.debug = originalConsole.debug;
+  #|       console.assert = originalConsole.assert;
+  #|       console.table = originalConsole.table;
+  #|       console.trace = originalConsole.trace;
+  #|       console.time = originalConsole.time;
+  #|       console.timeEnd = originalConsole.timeEnd;
   #|     }
-  #|   }
-  #|
-  #|   function toBidiValue(value) {
-  #|     if (value === undefined) return { type: "undefined" };
-  #|     if (value === null) return { type: "null" };
-  #|
-  #|     const type = typeof value;
-  #|
-  #|     if (type === "boolean") return { type: "boolean", value };
-  #|
-  #|     if (type === "number") {
-  #|       if (Number.isNaN(value)) return { type: "number", value: "NaN" };
-  #|       if (!Number.isFinite(value)) return { type: "number", value: value > 0 ? "Infinity" : "-Infinity" };
-  #|       if (Object.is(value, -0)) return { type: "number", value: "-0" };
-  #|       return { type: "number", value };
-  #|     }
-  #|
-  #|     if (type === "string") return { type: "string", value };
-  #|
-  #|     if (type === "bigint") return { type: "bigint", value: String(value) };
-  #|
-  #|     if (type === "symbol") return { type: "symbol" };
-  #|
-  #|     if (type === "function") return { type: "function" };
-  #|
-  #|     // Objects
-  #|     if (value instanceof RegExp) {
-  #|       return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
-  #|     }
-  #|     if (value instanceof Date) {
-  #|       return { type: "date", value: value.toISOString() };
-  #|     }
-  #|     if (value instanceof Error) return { type: "error" };
-  #|     if (value instanceof Promise) return { type: "promise" };
-  #|     if (value instanceof Map) {
-  #|       const entries = [];
-  #|       for (const [k, v] of value) {
-  #|         entries.push([typeof k === "string" ? k : toBidiValue(k), toBidiValue(v)]);
-  #|       }
-  #|       return { type: "map", value: entries };
-  #|     }
-  #|     if (value instanceof Set) {
-  #|       return { type: "set", value: Array.from(value).map(toBidiValue) };
-  #|     }
-  #|     if (value instanceof WeakMap) return { type: "weakmap" };
-  #|     if (value instanceof WeakSet) return { type: "weakset" };
-  #|     if (ArrayBuffer.isView(value)) return { type: "typedarray" };
-  #|     if (value instanceof ArrayBuffer) return { type: "arraybuffer" };
-  #|     if (Array.isArray(value)) {
-  #|       return { type: "array", value: value.map(toBidiValue) };
-  #|     }
-  #|
-  #|     // Plain object
-  #|     if (value.constructor === Object) {
-  #|       const entries = Object.entries(value).map(([k, v]) => [k, toBidiValue(v)]);
-  #|       return { type: "object", value: entries };
-  #|     }
-  #|
-  #|     // Other objects (proxy, generator, etc.)
-  #|     return { type: "object" };
   #|   }
   #| }
 
@@ -1977,6 +2625,24 @@ extern "js" fn js_evaluate_expression_fast(
   #| (id, expression, userActivation, realmId) => {
   #|   const isActive = !!userActivation;
   #|   globalThis.__bidiUserActivation = isActive;
+  #|   globalThis.__bidiCurrentContext = ctxId;
+  #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
+  #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
+  #|     const NativeProxy = globalThis.Proxy;
+  #|     const tracked = globalThis.__bidiProxyInstances;
+  #|     function TrackedProxy(target, handler) {
+  #|       const proxied = new NativeProxy(target, handler);
+  #|       tracked.add(proxied);
+  #|       return proxied;
+  #|     }
+  #|     TrackedProxy.revocable = function(target, handler) {
+  #|       const revocable = NativeProxy.revocable(target, handler);
+  #|       tracked.add(revocable.proxy);
+  #|       return revocable;
+  #|     };
+  #|     globalThis.__bidiNativeProxy = NativeProxy;
+  #|     globalThis.Proxy = TrackedProxy;
+  #|   }
   #|   if (!globalThis.navigator) globalThis.navigator = {};
   #|   globalThis.navigator.userActivation = {
   #|     isActive,
@@ -1990,6 +2656,81 @@ extern "js" fn js_evaluate_expression_fast(
   #|       return false;
   #|     };
   #|   }
+  #|
+  #|   function getNodeSharedId(node) {
+  #|     const sharedIds = globalThis.__bidiNodeSharedIds || (globalThis.__bidiNodeSharedIds = new WeakMap());
+  #|     const nodeStore = globalThis.__bidiSharedNodeStore || (globalThis.__bidiSharedNodeStore = new Map());
+  #|     if (typeof globalThis.__bidiNextNodeSharedId !== "number") {
+  #|       globalThis.__bidiNextNodeSharedId = 1;
+  #|     }
+  #|     let sharedId = sharedIds.get(node);
+  #|     if (!sharedId) {
+  #|       sharedId = `node-${globalThis.__bidiNextNodeSharedId++}`;
+  #|       sharedIds.set(node, sharedId);
+  #|     }
+  #|     nodeStore.set(sharedId, node);
+  #|     return sharedId;
+  #|   }
+  #|
+  #|   function getNodeAttributes(node) {
+  #|     const attrs = {};
+  #|     if (!node || typeof node !== "object") return attrs;
+  #|     if (node._attrs && typeof node._attrs === "object") {
+  #|       for (const [k, v] of Object.entries(node._attrs)) attrs[k] = String(v);
+  #|       return attrs;
+  #|     }
+  #|     if (node.attributes && typeof node.attributes.length === "number") {
+  #|       for (const attr of Array.from(node.attributes)) {
+  #|         if (attr && typeof attr.name === "string") attrs[attr.name] = String(attr.value ?? "");
+  #|       }
+  #|     }
+  #|     return attrs;
+  #|   }
+  #|
+  #|   function toBidiNodeValue(node) {
+  #|     const childNodes = Array.isArray(node._children)
+  #|       ? node._children
+  #|       : (Array.isArray(node.childNodes) ? node.childNodes : []);
+  #|     const nodeType = typeof node.nodeType === "number" ? node.nodeType : 1;
+  #|     const localName = node.localName || node._tagName || (node.tagName ? String(node.tagName).toLowerCase() : "");
+  #|     const namespaceURI = node.namespaceURI || "http://www.w3.org/1999/xhtml";
+  #|     const shadowRoot = node.shadowRoot
+  #|       ? { type: "node", sharedId: getNodeSharedId(node.shadowRoot) }
+  #|       : null;
+  #|     return {
+  #|       type: "node",
+  #|       sharedId: getNodeSharedId(node),
+  #|       value: {
+  #|         nodeType,
+  #|         localName: String(localName),
+  #|         namespaceURI: String(namespaceURI),
+  #|         childNodeCount: childNodes.length,
+  #|         children: [],
+  #|         attributes: getNodeAttributes(node),
+  #|         shadowRoot
+  #|       }
+  #|     };
+  #|   }
+  #|
+  #|   const internalIds = new WeakMap();
+  #|   let nextInternalId = 1;
+  #|   const withInternalId = (originalValue, serialized) => {
+  #|     if (!serialized || typeof serialized !== "object") return serialized;
+  #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
+  #|       return serialized;
+  #|     }
+  #|     const serializedType = serialized.type;
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|       return serialized;
+  #|     }
+  #|     let internalId = internalIds.get(originalValue);
+  #|     if (!internalId) {
+  #|       internalId = `internal-${nextInternalId++}`;
+  #|       internalIds.set(originalValue, internalId);
+  #|     }
+  #|     if (serialized.internalId) return serialized;
+  #|     return { ...serialized, internalId };
+  #|   };
   #|
   #|   function toBidiValue(value) {
   #|     if (value === undefined) return { type: "undefined" };
@@ -2006,6 +2747,25 @@ extern "js" fn js_evaluate_expression_fast(
   #|     if (type === "bigint") return { type: "bigint", value: String(value) };
   #|     if (type === "symbol") return { type: "symbol" };
   #|     if (type === "function") return { type: "function" };
+  #|     const objectTag = type === "object" ? Object.prototype.toString.call(value) : "";
+  #|     if (objectTag === "[object Generator]" || objectTag === "[object AsyncGenerator]") {
+  #|       return { type: "generator" };
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) {
+  #|       return { type: "proxy" };
+  #|     }
+  #|     if (value && type === "object" && typeof value.__bidiContextId === "string") {
+  #|       return { type: "window", value: { context: String(value.__bidiContextId) } };
+  #|     }
+  #|     if (value === globalThis || value === globalThis.window) {
+  #|       return {
+  #|         type: "window",
+  #|         value: { context: String(globalThis.__bidiCurrentContext || "default-context") }
+  #|       };
+  #|     }
+  #|     if (value && type === "object" && typeof value.nodeType === "number") {
+  #|       return toBidiNodeValue(value);
+  #|     }
   #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
   #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
   #|     if (value instanceof Error) return { type: "error" };
@@ -2015,17 +2775,27 @@ extern "js" fn js_evaluate_expression_fast(
   #|       for (const [k, v] of value) {
   #|         entries.push([typeof k === "string" ? k : toBidiValue(k), toBidiValue(v)]);
   #|       }
-  #|       return { type: "map", value: entries };
+  #|       return withInternalId(value, { type: "map", value: entries });
   #|     }
-  #|     if (value instanceof Set) return { type: "set", value: Array.from(value).map(toBidiValue) };
+  #|     if (value instanceof Set) {
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "set", value: Array.from(value).map(toBidiValue) },
+  #|       );
+  #|     }
   #|     if (value instanceof WeakMap) return { type: "weakmap" };
   #|     if (value instanceof WeakSet) return { type: "weakset" };
   #|     if (ArrayBuffer.isView(value)) return { type: "typedarray" };
   #|     if (value instanceof ArrayBuffer) return { type: "arraybuffer" };
-  #|     if (Array.isArray(value)) return { type: "array", value: value.map(toBidiValue) };
+  #|     if (Array.isArray(value)) {
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "array", value: value.map(toBidiValue) },
+  #|       );
+  #|     }
   #|     if (value && value.constructor === Object) {
   #|       const entries = Object.entries(value).map(([k, v]) => [k, toBidiValue(v)]);
-  #|       return { type: "object", value: entries };
+  #|       return withInternalId(value, { type: "object", value: entries });
   #|     }
   #|     return { type: "object" };
   #|   }
@@ -2076,7 +2846,7 @@ extern "js" fn js_evaluate_expression_fast(
   #|         columnNumber: 0,
   #|         lineNumber: 0,
   #|         text: String(e),
-  #|         exception: { type: "error", value: { type: String(e.name || "Error") } },
+  #|         exception: toBidiValue(e),
   #|         stackTrace: { callFrames: [] }
   #|       }
   #|     };
@@ -2090,14 +2860,22 @@ fn evaluate_js_with_console(
   expression : String,
   capture_console : Bool,
   user_activation : Bool,
+  root_ownership : Bool,
+  serialization_options_json : String,
 ) -> String {
-  js_evaluate_expression(expression, capture_console, user_activation)
+  js_evaluate_expression(
+    expression,
+    capture_console,
+    user_activation,
+    root_ownership,
+    serialization_options_json,
+  )
 }
 
 ///|
 /// Evaluate JavaScript expression and return result as JSON (sync)
 pub fn evaluate_js(expression : String) -> String {
-  evaluate_js_with_console(expression, true, false)
+  evaluate_js_with_console(expression, true, false, false, "{}")
 }
 
 ///|
@@ -2115,16 +2893,37 @@ extern "js" fn js_evaluate_expression_async(
   #|     warn: console.warn,
   #|     error: console.error,
   #|     info: console.info,
-  #|     debug: console.debug
+  #|     debug: console.debug,
+  #|     assert: console.assert,
+  #|     table: console.table,
+  #|     trace: console.trace,
+  #|     time: console.time,
+  #|     timeEnd: console.timeEnd
   #|   };
   #|
-  #|   const makeInterceptor = (level, method) => (...args) => {
+  #|   const consoleArgToText = (arg) => {
+  #|     if (typeof arg === "string") return arg;
+  #|     if (arg === undefined) return "undefined";
+  #|     if (typeof arg === "bigint") return `${arg}n`;
+  #|     try {
+  #|       const json = JSON.stringify(arg);
+  #|       if (json !== undefined) return json;
+  #|     } catch (_e) {}
+  #|     return String(arg);
+  #|   };
+  #|
+  #|   const pushConsoleEntry = (level, method, args, textArgs = args) => {
   #|     consoleEntries.push({
   #|       level,
   #|       method,
-  #|       text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
+  #|       text: textArgs.map(consoleArgToText).join(" "),
+  #|       args: args.map(toBidiValue),
   #|       timestamp: Date.now()
   #|     });
+  #|   };
+  #|
+  #|   const makeInterceptor = (level, method) => (...args) => {
+  #|     pushConsoleEntry(level, method, args);
   #|     originalConsole[method](...args);
   #|   };
   #|
@@ -2133,20 +2932,83 @@ extern "js" fn js_evaluate_expression_async(
   #|   console.error = makeInterceptor('error', 'error');
   #|   console.info = makeInterceptor('info', 'info');
   #|   console.debug = makeInterceptor('debug', 'debug');
+  #|   console.table = makeInterceptor('info', 'table');
+  #|   console.trace = makeInterceptor('debug', 'trace');
+  #|   console.assert = (...args) => {
+  #|     if (args.length > 0 && args[0]) {
+  #|       return;
+  #|     }
+  #|     const textArgs = args.length > 1 ? args.slice(1) : ["Assertion failed"];
+  #|     pushConsoleEntry("error", "assert", textArgs);
+  #|     originalConsole.assert(...args);
+  #|   };
+  #|   console.time = (...args) => {
+  #|     originalConsole.time(...args);
+  #|   };
+  #|   console.timeEnd = (...args) => {
+  #|     const textArgs = args.length > 0 ? args : ["default"];
+  #|     pushConsoleEntry("info", "timeEnd", textArgs);
+  #|     originalConsole.timeEnd(...args);
+  #|   };
   #|
   #|   const isActive = !!userActivation;
   #|   globalThis.__bidiUserActivation = isActive;
+  #|   globalThis.__bidiCurrentContext = ctxId;
+  #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
+  #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
+  #|     const NativeProxy = globalThis.Proxy;
+  #|     const tracked = globalThis.__bidiProxyInstances;
+  #|     function TrackedProxy(target, handler) {
+  #|       const proxied = new NativeProxy(target, handler);
+  #|       tracked.add(proxied);
+  #|       return proxied;
+  #|     }
+  #|     TrackedProxy.revocable = function(target, handler) {
+  #|       const revocable = NativeProxy.revocable(target, handler);
+  #|       tracked.add(revocable.proxy);
+  #|       return revocable;
+  #|     };
+  #|     globalThis.__bidiNativeProxy = NativeProxy;
+  #|     globalThis.Proxy = TrackedProxy;
+  #|   }
   #|   if (!globalThis.navigator) globalThis.navigator = {};
   #|   globalThis.navigator.userActivation = {
   #|     isActive,
   #|     hasBeenActive: isActive
   #|   };
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     const win = {};
+  #|     win.__bidiContextId = String(ctxId);
+  #|     win.window = win;
+  #|     globalThis.__bidiContextWindows.set(ctxId, win);
+  #|   }
+  #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|   if (!contextWindow.window) contextWindow.window = contextWindow;
+  #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
+  #|   globalThis.window = contextWindow;
+  #|   globalThis.frames = frameWindows;
   #|   if (!globalThis.document) {
   #|     const body = {
   #|       appendChild(node) { return node; }
   #|     };
+  #|     const createElement = (tagName) => {
+  #|       const name = String(tagName || "div");
+  #|       return {
+  #|         tagName: name.toUpperCase(),
+  #|         localName: name.toLowerCase(),
+  #|         nodeType: 1,
+  #|         namespaceURI: "http://www.w3.org/1999/xhtml",
+  #|         _attrs: {},
+  #|         _children: [],
+  #|         childNodes: [],
+  #|         shadowRoot: null,
+  #|         setAttribute(name, value) { this._attrs[String(name)] = String(value); },
+  #|       };
+  #|     };
   #|     globalThis.document = {
   #|       body,
+  #|       createElement,
   #|       createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
   #|       execCommand(command) {
   #|         const cmd = String(command || '').toLowerCase();
@@ -2156,6 +3018,9 @@ extern "js" fn js_evaluate_expression_async(
   #|       }
   #|     };
   #|   }
+  #|   if (globalThis.document && !globalThis.window.document) {
+  #|     contextWindow.document = globalThis.document;
+  #|   }
   #|   if (globalThis.document) {
   #|     globalThis.document.execCommand = function(command) {
   #|       const cmd = String(command || '').toLowerCase();
@@ -2164,6 +3029,81 @@ extern "js" fn js_evaluate_expression_async(
   #|       return false;
   #|     };
   #|   }
+  #|
+  #|   function getNodeSharedId(node) {
+  #|     const sharedIds = globalThis.__bidiNodeSharedIds || (globalThis.__bidiNodeSharedIds = new WeakMap());
+  #|     const nodeStore = globalThis.__bidiSharedNodeStore || (globalThis.__bidiSharedNodeStore = new Map());
+  #|     if (typeof globalThis.__bidiNextNodeSharedId !== "number") {
+  #|       globalThis.__bidiNextNodeSharedId = 1;
+  #|     }
+  #|     let sharedId = sharedIds.get(node);
+  #|     if (!sharedId) {
+  #|       sharedId = `node-${globalThis.__bidiNextNodeSharedId++}`;
+  #|       sharedIds.set(node, sharedId);
+  #|     }
+  #|     nodeStore.set(sharedId, node);
+  #|     return sharedId;
+  #|   }
+  #|
+  #|   function getNodeAttributes(node) {
+  #|     const attrs = {};
+  #|     if (!node || typeof node !== "object") return attrs;
+  #|     if (node._attrs && typeof node._attrs === "object") {
+  #|       for (const [k, v] of Object.entries(node._attrs)) attrs[k] = String(v);
+  #|       return attrs;
+  #|     }
+  #|     if (node.attributes && typeof node.attributes.length === "number") {
+  #|       for (const attr of Array.from(node.attributes)) {
+  #|         if (attr && typeof attr.name === "string") attrs[attr.name] = String(attr.value ?? "");
+  #|       }
+  #|     }
+  #|     return attrs;
+  #|   }
+  #|
+  #|   function toBidiNodeValue(node) {
+  #|     const childNodes = Array.isArray(node._children)
+  #|       ? node._children
+  #|       : (Array.isArray(node.childNodes) ? node.childNodes : []);
+  #|     const nodeType = typeof node.nodeType === "number" ? node.nodeType : 1;
+  #|     const localName = node.localName || node._tagName || (node.tagName ? String(node.tagName).toLowerCase() : "");
+  #|     const namespaceURI = node.namespaceURI || "http://www.w3.org/1999/xhtml";
+  #|     const shadowRoot = node.shadowRoot
+  #|       ? { type: "node", sharedId: getNodeSharedId(node.shadowRoot) }
+  #|       : null;
+  #|     return {
+  #|       type: "node",
+  #|       sharedId: getNodeSharedId(node),
+  #|       value: {
+  #|         nodeType,
+  #|         localName: String(localName),
+  #|         namespaceURI: String(namespaceURI),
+  #|         childNodeCount: childNodes.length,
+  #|         children: [],
+  #|         attributes: getNodeAttributes(node),
+  #|         shadowRoot
+  #|       }
+  #|     };
+  #|   }
+  #|
+  #|   const internalIds = new WeakMap();
+  #|   let nextInternalId = 1;
+  #|   const withInternalId = (originalValue, serialized) => {
+  #|     if (!serialized || typeof serialized !== "object") return serialized;
+  #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
+  #|       return serialized;
+  #|     }
+  #|     const serializedType = serialized.type;
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|       return serialized;
+  #|     }
+  #|     let internalId = internalIds.get(originalValue);
+  #|     if (!internalId) {
+  #|       internalId = `internal-${nextInternalId++}`;
+  #|       internalIds.set(originalValue, internalId);
+  #|     }
+  #|     if (serialized.internalId) return serialized;
+  #|     return { ...serialized, internalId };
+  #|   };
   #|
   #|   function toBidiValue(value) {
   #|     if (value === undefined) return { type: "undefined" };
@@ -2180,6 +3120,25 @@ extern "js" fn js_evaluate_expression_async(
   #|     if (type === "bigint") return { type: "bigint", value: String(value) };
   #|     if (type === "symbol") return { type: "symbol" };
   #|     if (type === "function") return { type: "function" };
+  #|     const objectTag = type === "object" ? Object.prototype.toString.call(value) : "";
+  #|     if (objectTag === "[object Generator]" || objectTag === "[object AsyncGenerator]") {
+  #|       return { type: "generator" };
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) {
+  #|       return { type: "proxy" };
+  #|     }
+  #|     if (value && type === "object" && typeof value.__bidiContextId === "string") {
+  #|       return { type: "window", value: { context: String(value.__bidiContextId) } };
+  #|     }
+  #|     if (value === globalThis || value === globalThis.window) {
+  #|       return {
+  #|         type: "window",
+  #|         value: { context: String(globalThis.__bidiCurrentContext || "default-context") }
+  #|       };
+  #|     }
+  #|     if (value && type === "object" && typeof value.nodeType === "number") {
+  #|       return toBidiNodeValue(value);
+  #|     }
   #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
   #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
   #|     if (value instanceof Error) return { type: "error" };
@@ -2187,17 +3146,27 @@ extern "js" fn js_evaluate_expression_async(
   #|     if (value instanceof Map) {
   #|       const entries = [];
   #|       for (const [k, v] of value) entries.push([typeof k === "string" ? k : toBidiValue(k), toBidiValue(v)]);
-  #|       return { type: "map", value: entries };
+  #|       return withInternalId(value, { type: "map", value: entries });
   #|     }
-  #|     if (value instanceof Set) return { type: "set", value: Array.from(value).map(toBidiValue) };
+  #|     if (value instanceof Set) {
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "set", value: Array.from(value).map(toBidiValue) },
+  #|       );
+  #|     }
   #|     if (value instanceof WeakMap) return { type: "weakmap" };
   #|     if (value instanceof WeakSet) return { type: "weakset" };
   #|     if (ArrayBuffer.isView(value)) return { type: "typedarray" };
   #|     if (value instanceof ArrayBuffer) return { type: "arraybuffer" };
-  #|     if (Array.isArray(value)) return { type: "array", value: value.map(toBidiValue) };
+  #|     if (Array.isArray(value)) {
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "array", value: value.map(toBidiValue) },
+  #|       );
+  #|     }
   #|     if (value.constructor === Object) {
   #|       const entries = Object.entries(value).map(([k, v]) => [k, toBidiValue(v)]);
-  #|       return { type: "object", value: entries };
+  #|       return withInternalId(value, { type: "object", value: entries });
   #|     }
   #|     return { type: "object" };
   #|   }
@@ -2216,7 +3185,7 @@ extern "js" fn js_evaluate_expression_async(
   #|         columnNumber: 0,
   #|         lineNumber: 0,
   #|         text: String(e),
-  #|         exception: { type: "error", value: { type: String(e.name || "Error") } },
+  #|         exception: toBidiValue(e),
   #|         stackTrace: { callFrames: [] }
   #|       },
   #|       consoleEntries
@@ -2228,6 +3197,11 @@ extern "js" fn js_evaluate_expression_async(
   #|       console.error = originalConsole.error;
   #|       console.info = originalConsole.info;
   #|       console.debug = originalConsole.debug;
+  #|       console.assert = originalConsole.assert;
+  #|       console.table = originalConsole.table;
+  #|       console.trace = originalConsole.trace;
+  #|       console.time = originalConsole.time;
+  #|       console.timeEnd = originalConsole.timeEnd;
   #|     }
   #|   }
   #| }
@@ -2252,24 +3226,44 @@ extern "js" fn js_eval_and_send_async(
   request_id : Int,
   expression : String,
   ctx_id : String,
+  realm_id : String,
   capture_console : Bool,
   user_activation : Bool,
+  root_ownership : Bool,
 ) -> Unit =
-  #| async (socket, requestId, expression, ctxId, captureConsole, userActivation) => {
+  #| async (socket, requestId, expression, ctxId, realmId, captureConsole, userActivation, rootOwnership) => {
   #|   const consoleEntries = [];
   #|   let originalConsole = null;
   #|   if (captureConsole) {
   #|     originalConsole = {
   #|       log: console.log, warn: console.warn, error: console.error,
-  #|       info: console.info, debug: console.debug
+  #|       info: console.info, debug: console.debug,
+  #|       assert: console.assert, table: console.table, trace: console.trace,
+  #|       time: console.time, timeEnd: console.timeEnd
+  #|     };
+  #|
+  #|     const consoleArgToText = (arg) => {
+  #|       if (typeof arg === "string") return arg;
+  #|       if (arg === undefined) return "undefined";
+  #|       if (typeof arg === "bigint") return `${arg}n`;
+  #|       try {
+  #|         const json = JSON.stringify(arg);
+  #|         if (json !== undefined) return json;
+  #|       } catch (_e) {}
+  #|       return String(arg);
+  #|     };
+  #|
+  #|     const pushConsoleEntry = (level, method, args, textArgs = args) => {
+  #|       consoleEntries.push({
+  #|         level, method,
+  #|         text: textArgs.map(consoleArgToText).join(" "),
+  #|         args: args.map(toBidiValue),
+  #|         timestamp: Date.now()
+  #|       });
   #|     };
   #|
   #|     const makeInterceptor = (level, method) => (...args) => {
-  #|       consoleEntries.push({
-  #|         level, method,
-  #|         text: args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '),
-  #|         timestamp: Date.now()
-  #|       });
+  #|       pushConsoleEntry(level, method, args);
   #|       originalConsole[method](...args);
   #|     };
   #|
@@ -2278,21 +3272,84 @@ extern "js" fn js_eval_and_send_async(
   #|     console.error = makeInterceptor('error', 'error');
   #|     console.info = makeInterceptor('info', 'info');
   #|     console.debug = makeInterceptor('debug', 'debug');
+  #|     console.table = makeInterceptor('info', 'table');
+  #|     console.trace = makeInterceptor('debug', 'trace');
+  #|     console.assert = (...args) => {
+  #|       if (args.length > 0 && args[0]) {
+  #|         return;
+  #|       }
+  #|       const textArgs = args.length > 1 ? args.slice(1) : ["Assertion failed"];
+  #|       pushConsoleEntry("error", "assert", textArgs);
+  #|       originalConsole.assert(...args);
+  #|     };
+  #|     console.time = (...args) => {
+  #|       originalConsole.time(...args);
+  #|     };
+  #|     console.timeEnd = (...args) => {
+  #|       const textArgs = args.length > 0 ? args : ["default"];
+  #|       pushConsoleEntry("info", "timeEnd", textArgs);
+  #|       originalConsole.timeEnd(...args);
+  #|     };
   #|   }
   #|
   #|   const isActive = !!userActivation;
   #|   globalThis.__bidiUserActivation = isActive;
+  #|   globalThis.__bidiCurrentContext = ctxId;
+  #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
+  #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
+  #|     const NativeProxy = globalThis.Proxy;
+  #|     const tracked = globalThis.__bidiProxyInstances;
+  #|     function TrackedProxy(target, handler) {
+  #|       const proxied = new NativeProxy(target, handler);
+  #|       tracked.add(proxied);
+  #|       return proxied;
+  #|     }
+  #|     TrackedProxy.revocable = function(target, handler) {
+  #|       const revocable = NativeProxy.revocable(target, handler);
+  #|       tracked.add(revocable.proxy);
+  #|       return revocable;
+  #|     };
+  #|     globalThis.__bidiNativeProxy = NativeProxy;
+  #|     globalThis.Proxy = TrackedProxy;
+  #|   }
   #|   if (!globalThis.navigator) globalThis.navigator = {};
   #|   globalThis.navigator.userActivation = {
   #|     isActive,
   #|     hasBeenActive: isActive
   #|   };
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     const win = {};
+  #|     win.__bidiContextId = String(ctxId);
+  #|     win.window = win;
+  #|     globalThis.__bidiContextWindows.set(ctxId, win);
+  #|   }
+  #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|   if (!contextWindow.window) contextWindow.window = contextWindow;
+  #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
+  #|   globalThis.window = contextWindow;
+  #|   globalThis.frames = frameWindows;
   #|   if (!globalThis.document) {
   #|     const body = {
   #|       appendChild(node) { return node; }
   #|     };
+  #|     const createElement = (tagName) => {
+  #|       const name = String(tagName || "div");
+  #|       return {
+  #|         tagName: name.toUpperCase(),
+  #|         localName: name.toLowerCase(),
+  #|         nodeType: 1,
+  #|         namespaceURI: "http://www.w3.org/1999/xhtml",
+  #|         _attrs: {},
+  #|         _children: [],
+  #|         childNodes: [],
+  #|         shadowRoot: null,
+  #|         setAttribute(name, value) { this._attrs[String(name)] = String(value); },
+  #|       };
+  #|     };
   #|     globalThis.document = {
   #|       body,
+  #|       createElement,
   #|       createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
   #|       execCommand(command) {
   #|         const cmd = String(command || '').toLowerCase();
@@ -2310,6 +3367,84 @@ extern "js" fn js_eval_and_send_async(
   #|       return false;
   #|     };
   #|   }
+  #|   if (globalThis.document && !contextWindow.document) {
+  #|     contextWindow.document = globalThis.document;
+  #|   }
+  #|
+  #|   function getNodeSharedId(node) {
+  #|     const sharedIds = globalThis.__bidiNodeSharedIds || (globalThis.__bidiNodeSharedIds = new WeakMap());
+  #|     const nodeStore = globalThis.__bidiSharedNodeStore || (globalThis.__bidiSharedNodeStore = new Map());
+  #|     if (typeof globalThis.__bidiNextNodeSharedId !== "number") {
+  #|       globalThis.__bidiNextNodeSharedId = 1;
+  #|     }
+  #|     let sharedId = sharedIds.get(node);
+  #|     if (!sharedId) {
+  #|       sharedId = `node-${globalThis.__bidiNextNodeSharedId++}`;
+  #|       sharedIds.set(node, sharedId);
+  #|     }
+  #|     nodeStore.set(sharedId, node);
+  #|     return sharedId;
+  #|   }
+  #|
+  #|   function getNodeAttributes(node) {
+  #|     const attrs = {};
+  #|     if (!node || typeof node !== "object") return attrs;
+  #|     if (node._attrs && typeof node._attrs === "object") {
+  #|       for (const [k, v] of Object.entries(node._attrs)) attrs[k] = String(v);
+  #|       return attrs;
+  #|     }
+  #|     if (node.attributes && typeof node.attributes.length === "number") {
+  #|       for (const attr of Array.from(node.attributes)) {
+  #|         if (attr && typeof attr.name === "string") attrs[attr.name] = String(attr.value ?? "");
+  #|       }
+  #|     }
+  #|     return attrs;
+  #|   }
+  #|
+  #|   function toBidiNodeValue(node) {
+  #|     const childNodes = Array.isArray(node._children)
+  #|       ? node._children
+  #|       : (Array.isArray(node.childNodes) ? node.childNodes : []);
+  #|     const nodeType = typeof node.nodeType === "number" ? node.nodeType : 1;
+  #|     const localName = node.localName || node._tagName || (node.tagName ? String(node.tagName).toLowerCase() : "");
+  #|     const namespaceURI = node.namespaceURI || "http://www.w3.org/1999/xhtml";
+  #|     const shadowRoot = node.shadowRoot
+  #|       ? { type: "node", sharedId: getNodeSharedId(node.shadowRoot) }
+  #|       : null;
+  #|     return {
+  #|       type: "node",
+  #|       sharedId: getNodeSharedId(node),
+  #|       value: {
+  #|         nodeType,
+  #|         localName: String(localName),
+  #|         namespaceURI: String(namespaceURI),
+  #|         childNodeCount: childNodes.length,
+  #|         children: [],
+  #|         attributes: getNodeAttributes(node),
+  #|         shadowRoot
+  #|       }
+  #|     };
+  #|   }
+  #|
+  #|   const internalIds = new WeakMap();
+  #|   let nextInternalId = 1;
+  #|   const withInternalId = (originalValue, serialized) => {
+  #|     if (!serialized || typeof serialized !== "object") return serialized;
+  #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
+  #|       return serialized;
+  #|     }
+  #|     const serializedType = serialized.type;
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|       return serialized;
+  #|     }
+  #|     let internalId = internalIds.get(originalValue);
+  #|     if (!internalId) {
+  #|       internalId = `internal-${nextInternalId++}`;
+  #|       internalIds.set(originalValue, internalId);
+  #|     }
+  #|     if (serialized.internalId) return serialized;
+  #|     return { ...serialized, internalId };
+  #|   };
   #|
   #|   function toBidiValue(value) {
   #|     if (value === undefined) return { type: "undefined" };
@@ -2326,6 +3461,25 @@ extern "js" fn js_eval_and_send_async(
   #|     if (type === "bigint") return { type: "bigint", value: String(value) };
   #|     if (type === "symbol") return { type: "symbol" };
   #|     if (type === "function") return { type: "function" };
+  #|     const objectTag = type === "object" ? Object.prototype.toString.call(value) : "";
+  #|     if (objectTag === "[object Generator]" || objectTag === "[object AsyncGenerator]") {
+  #|       return { type: "generator" };
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) {
+  #|       return { type: "proxy" };
+  #|     }
+  #|     if (value && type === "object" && typeof value.__bidiContextId === "string") {
+  #|       return { type: "window", value: { context: String(value.__bidiContextId) } };
+  #|     }
+  #|     if (value === globalThis || value === globalThis.window) {
+  #|       return {
+  #|         type: "window",
+  #|         value: { context: String(globalThis.__bidiCurrentContext || "default-context") }
+  #|       };
+  #|     }
+  #|     if (value && type === "object" && typeof value.nodeType === "number") {
+  #|       return toBidiNodeValue(value);
+  #|     }
   #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
   #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
   #|     if (value instanceof Error) return { type: "error" };
@@ -2333,24 +3487,55 @@ extern "js" fn js_eval_and_send_async(
   #|     if (value instanceof Map) {
   #|       const entries = [];
   #|       for (const [k, v] of value) entries.push([typeof k === "string" ? k : toBidiValue(k), toBidiValue(v)]);
-  #|       return { type: "map", value: entries };
+  #|       return withInternalId(value, { type: "map", value: entries });
   #|     }
-  #|     if (value instanceof Set) return { type: "set", value: Array.from(value).map(toBidiValue) };
+  #|     if (value instanceof Set) {
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "set", value: Array.from(value).map(toBidiValue) },
+  #|       );
+  #|     }
   #|     if (value instanceof WeakMap) return { type: "weakmap" };
   #|     if (value instanceof WeakSet) return { type: "weakset" };
   #|     if (ArrayBuffer.isView(value)) return { type: "typedarray" };
   #|     if (value instanceof ArrayBuffer) return { type: "arraybuffer" };
-  #|     if (Array.isArray(value)) return { type: "array", value: value.map(toBidiValue) };
+  #|     if (Array.isArray(value)) {
+  #|       return withInternalId(
+  #|         value,
+  #|         { type: "array", value: value.map(toBidiValue) },
+  #|       );
+  #|     }
   #|     if (value.constructor === Object) {
   #|       const entries = Object.entries(value).map(([k, v]) => [k, toBidiValue(v)]);
-  #|       return { type: "object", value: entries };
+  #|       return withInternalId(value, { type: "object", value: entries });
   #|     }
   #|     return { type: "object" };
   #|   }
+  #|   if (!globalThis.__bidiHandleStore) globalThis.__bidiHandleStore = new Map();
+  #|   if (typeof globalThis.__bidiNextHandleId !== "number") {
+  #|     globalThis.__bidiNextHandleId = 1;
+  #|   }
+  #|   const attachHandle = (value, serialized, includeHandle) => {
+  #|     if (!includeHandle) return serialized;
+  #|     if (value === null || value === undefined) return serialized;
+  #|     const valueType = typeof value;
+  #|     if (valueType !== "object" && valueType !== "function" && valueType !== "symbol") return serialized;
+  #|     if (!serialized || typeof serialized !== "object" || serialized.handle) return serialized;
+  #|     const handle = `handle-${globalThis.__bidiNextHandleId++}`;
+  #|     globalThis.__bidiHandleStore.set(handle, value);
+  #|     return { ...serialized, handle };
+  #|   };
+  #|   const toBidiValueFn = (value, includeHandle = false) =>
+  #|     attachHandle(value, toBidiValue(value), includeHandle);
   #|
   #|   let response;
   #|   try {
-  #|     let result = (0, eval)(expression);
+  #|     const runInContext = (code) => {
+  #|       return (function(window, document, __code) {
+  #|         return eval(__code);
+  #|       })(contextWindow, contextWindow.document || globalThis.document, code);
+  #|     };
+  #|     let result = runInContext(expression);
   #|     // Await if result is a Promise
   #|     if (result instanceof Promise) {
   #|       result = await result;
@@ -2359,8 +3544,8 @@ extern "js" fn js_eval_and_send_async(
   #|       id: requestId,
   #|       type: "success",
   #|       result: {
-  #|         realm: "default-realm",
-  #|         result: toBidiValue(result)
+  #|         realm: realmId,
+  #|         result: toBidiValueFn(result, !!rootOwnership)
   #|       }
   #|     };
   #|   } catch (e) {
@@ -2368,12 +3553,12 @@ extern "js" fn js_eval_and_send_async(
   #|       id: requestId,
   #|       type: "success",
   #|       result: {
-  #|         realm: "default-realm",
+  #|         realm: realmId,
   #|         exceptionDetails: {
   #|           columnNumber: 0,
   #|           lineNumber: 0,
   #|           text: String(e),
-  #|           exception: { type: "error", value: { type: String(e.name || "Error") } },
+  #|           exception: toBidiValueFn(e, !!rootOwnership),
   #|           stackTrace: { callFrames: [] }
   #|         }
   #|       }
@@ -2385,6 +3570,11 @@ extern "js" fn js_eval_and_send_async(
   #|       console.error = originalConsole.error;
   #|       console.info = originalConsole.info;
   #|       console.debug = originalConsole.debug;
+  #|       console.assert = originalConsole.assert;
+  #|       console.table = originalConsole.table;
+  #|       console.trace = originalConsole.trace;
+  #|       console.time = originalConsole.time;
+  #|       console.timeEnd = originalConsole.timeEnd;
   #|     }
   #|   }
   #|
@@ -2395,11 +3585,12 @@ extern "js" fn js_eval_and_send_async(
   #|       method: "log.entryAdded",
   #|       params: {
   #|         level: entry.level,
-  #|         source: { realm: "default-realm", context: ctxId },
+  #|         source: { realm: realmId, context: ctxId },
   #|         text: entry.text,
   #|         timestamp: entry.timestamp,
   #|         method: entry.method,
-  #|         args: []
+  #|         args: entry.args || [],
+  #|         type: "console"
   #|       }
   #|     };
   #|     socket.send(JSON.stringify(logEvent));
@@ -2416,11 +3607,20 @@ fn eval_and_send_async_with_console(
   request_id : Int,
   expression : String,
   ctx_id : String,
+  realm_id : String,
   capture_console : Bool,
   user_activation : Bool,
+  root_ownership : Bool,
 ) -> Unit {
   js_eval_and_send_async(
-    socket, request_id, expression, ctx_id, capture_console, user_activation,
+    socket,
+    request_id,
+    expression,
+    ctx_id,
+    realm_id,
+    capture_console,
+    user_activation,
+    root_ownership,
   )
 }
 
@@ -2433,7 +3633,14 @@ pub fn eval_and_send_async(
   ctx_id : String,
 ) -> Unit {
   eval_and_send_async_with_console(
-    socket, request_id, expression, ctx_id, true, false,
+    socket,
+    request_id,
+    expression,
+    ctx_id,
+    "default-realm",
+    true,
+    false,
+    false,
   )
 }
 
@@ -2441,6 +3648,241 @@ pub fn eval_and_send_async(
 /// Await a Promise and return result as String
 pub fn await_promise(promise : @core.Any) -> String {
   js_await_promise(promise)
+}
+
+///|
+/// Set current BiDi context for value serialization helpers.
+extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
+  #| (ctxId) => {
+  #|   globalThis.__bidiCurrentContext = ctxId;
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   if (!globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     const win = {};
+  #|     win.__bidiContextId = String(ctxId);
+  #|     win.window = win;
+  #|     globalThis.__bidiContextWindows.set(ctxId, win);
+  #|   }
+  #| }
+
+///|
+/// Set current BiDi context for value serialization helpers.
+pub fn set_runtime_context(ctx_id : String) -> Unit {
+  js_set_runtime_context(ctx_id)
+}
+
+///|
+/// Set frame window contexts for current runtime context.
+extern "js" fn js_set_runtime_context_frames(
+  ctx_id : String,
+  frame_ctx_ids : Array[String],
+) -> Unit =
+  #| (ctxId, frameCtxIds) => {
+  #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+  #|   const ensureWindow = (id) => {
+  #|     if (!globalThis.__bidiContextWindows.has(id)) {
+  #|       const win = {};
+  #|       win.__bidiContextId = String(id);
+  #|       win.window = win;
+  #|       globalThis.__bidiContextWindows.set(id, win);
+  #|     }
+  #|     return globalThis.__bidiContextWindows.get(id);
+  #|   };
+  #|   const currentWindow = ensureWindow(ctxId);
+  #|   const frames = Array.isArray(frameCtxIds)
+  #|     ? frameCtxIds.map((id) => ensureWindow(String(id)))
+  #|     : [];
+  #|   currentWindow.frames = frames;
+  #|   globalThis.frames = frames;
+  #| }
+
+///|
+/// Set frame window contexts for current runtime context.
+pub fn set_runtime_context_frames(
+  ctx_id : String,
+  frame_ctx_ids : Array[String],
+) -> Unit {
+  js_set_runtime_context_frames(ctx_id, frame_ctx_ids)
+}
+
+///|
+/// Check if runtime handle exists in current JS handle store.
+extern "js" fn js_has_runtime_handle(handle_id : String) -> Bool =
+  #| (handleId) => {
+  #|   return !!(globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.has(handleId));
+  #| }
+
+///|
+/// Check if runtime handle exists in current JS handle store.
+pub fn has_runtime_handle(handle_id : String) -> Bool {
+  js_has_runtime_handle(handle_id)
+}
+
+///|
+/// Check if runtime shared node exists in current JS shared node store.
+extern "js" fn js_has_runtime_shared_node(shared_id : String) -> Bool =
+  #| (sharedId) => {
+  #|   return !!(globalThis.__bidiSharedNodeStore && globalThis.__bidiSharedNodeStore.has(sharedId));
+  #| }
+
+///|
+/// Check if runtime shared node exists in current JS shared node store.
+pub fn has_runtime_shared_node(shared_id : String) -> Bool {
+  js_has_runtime_shared_node(shared_id)
+}
+
+///|
+/// Drain queued script channel callback payloads as serialized BiDi values.
+extern "js" fn js_take_channel_messages() -> String =
+  #| () => {
+  #|   const queue = Array.isArray(globalThis.__bidiChannelMessages)
+  #|     ? globalThis.__bidiChannelMessages
+  #|     : [];
+  #|   globalThis.__bidiChannelMessages = [];
+  #|   if (typeof globalThis.__bidiNextChannelHandleId !== "number") {
+  #|     globalThis.__bidiNextChannelHandleId = 1;
+  #|   }
+  #|
+  #|   const serialize = (value, maxObjectDepth, depth = 0) => {
+  #|     if (value === undefined) return { type: "undefined" };
+  #|     if (value === null) return { type: "null" };
+  #|     const type = typeof value;
+  #|     if (type === "boolean") return { type: "boolean", value };
+  #|     if (type === "number") {
+  #|       if (Number.isNaN(value)) return { type: "number", value: "NaN" };
+  #|       if (!Number.isFinite(value)) return { type: "number", value: value > 0 ? "Infinity" : "-Infinity" };
+  #|       if (Object.is(value, -0)) return { type: "number", value: "-0" };
+  #|       return { type: "number", value };
+  #|     }
+  #|     if (type === "string") return { type: "string", value };
+  #|     if (type === "bigint") return { type: "bigint", value: String(value) };
+  #|     if (type === "symbol") return { type: "symbol" };
+  #|     if (type === "function") return { type: "function" };
+  #|
+  #|     const limitReached =
+  #|       typeof maxObjectDepth === "number" &&
+  #|       maxObjectDepth >= 0 &&
+  #|       depth >= maxObjectDepth;
+  #|
+  #|     if (Array.isArray(value)) {
+  #|       if (limitReached) return { type: "array" };
+  #|       return { type: "array", value: value.map((v) => serialize(v, maxObjectDepth, depth + 1)) };
+  #|     }
+  #|     if (value instanceof Map) {
+  #|       if (limitReached) return { type: "map" };
+  #|       const entries = [];
+  #|       for (const [k, v] of value) {
+  #|         entries.push([typeof k === "string" ? k : serialize(k, maxObjectDepth, depth + 1), serialize(v, maxObjectDepth, depth + 1)]);
+  #|       }
+  #|       return { type: "map", value: entries };
+  #|     }
+  #|     if (value instanceof Set) {
+  #|       if (limitReached) return { type: "set" };
+  #|       return { type: "set", value: Array.from(value).map((v) => serialize(v, maxObjectDepth, depth + 1)) };
+  #|     }
+  #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
+  #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
+  #|
+  #|     if (value && type === "object" && typeof value.nodeType === "number") {
+  #|       return { type: "node" };
+  #|     }
+  #|     if (value && value.constructor === Object) {
+  #|       if (limitReached) return { type: "object" };
+  #|       const entries = Object.entries(value).map(([k, v]) => [k, serialize(v, maxObjectDepth, depth + 1)]);
+  #|       return { type: "object", value: entries };
+  #|     }
+  #|     return { type: "object" };
+  #|   };
+  #|
+  #|   const events = queue.map((entry) => {
+  #|     const channel = entry && typeof entry.channel === "string" ? entry.channel : "";
+  #|     const ownership = entry && entry.ownership === "root" ? "root" : "none";
+  #|     const maxObjectDepth =
+  #|       entry && typeof entry.maxObjectDepth === "number"
+  #|         ? entry.maxObjectDepth
+  #|         : -1;
+  #|     let data = serialize(entry ? entry.data : undefined, maxObjectDepth, 0);
+  #|     if (ownership === "root" && data && typeof data === "object") {
+  #|       data = {
+  #|         ...data,
+  #|         handle: `channel-handle-${globalThis.__bidiNextChannelHandleId++}`,
+  #|       };
+  #|     }
+  #|     return { channel, data };
+  #|   }).filter((entry) => !!entry.channel);
+  #|
+  #|   return JSON.stringify(events);
+  #| }
+
+///|
+/// Drain queued script channel callback payloads as JSON.
+pub fn take_channel_messages_json() -> String {
+  js_take_channel_messages()
+}
+
+///|
+/// FFI: Synchronize HTML content into JS runtime document used by script.evaluate.
+extern "js" fn js_sync_runtime_html_async(
+  html : String,
+  base_url : String,
+  execute_scripts : Bool,
+) -> @core.Any =
+  #| async (html, baseUrl, executeScripts) => {
+  #|   if (typeof globalThis.__loadHTML !== "function") {
+  #|     return "missing-loader";
+  #|   }
+  #|   globalThis.__loadHTML(html);
+  #|   globalThis.__pageUrl = baseUrl;
+  #|   if (executeScripts && typeof globalThis.__executeScripts === "function") {
+  #|     try {
+  #|       await globalThis.__executeScripts({ baseUrl });
+  #|     } catch (_e) {}
+  #|   }
+  #|   return "ok";
+  #| }
+
+///|
+/// FFI: Synchronize runtime document by fetching and loading a URL.
+extern "js" fn js_sync_runtime_page_async(url : String) -> @core.Any =
+  #| async (url) => {
+  #|   if (typeof globalThis.__loadPageWithScripts === "function") {
+  #|     try {
+  #|       await globalThis.__loadPageWithScripts(url, { executeScripts: true });
+  #|       return "ok";
+  #|     } catch (_e) {
+  #|       return "load-failed";
+  #|     }
+  #|   }
+  #|   if (typeof globalThis.__loadPage === "function") {
+  #|     try {
+  #|       await globalThis.__loadPage(url);
+  #|       return "ok";
+  #|     } catch (_e) {
+  #|       return "load-failed";
+  #|     }
+  #|   }
+  #|   globalThis.__pageUrl = url;
+  #|   return "missing-loader";
+  #| }
+
+///|
+/// Synchronize runtime page by URL.
+pub fn sync_runtime_page(url : String) -> Unit {
+  let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+  let promise = js_sync_runtime_page_async(url)
+  let _ = js_await_promise(promise)
+}
+
+///|
+/// Synchronize HTML content into the JS runtime document.
+pub fn sync_runtime_html(
+  html : String,
+  base_url : String,
+  execute_scripts : Bool,
+) -> Unit {
+  // Ensure runtime helpers are initialized.
+  let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+  let promise = js_sync_runtime_html_async(html, base_url, execute_scripts)
+  let _ = js_await_promise(promise)
 }
 
 // =============================================================================

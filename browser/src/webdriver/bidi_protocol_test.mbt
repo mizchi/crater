@@ -32,6 +32,20 @@ test "bidi browsingContext create emits events before response" {
 }
 
 ///|
+test "bidi session subscribe returns subscription id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"log.entryAdded\"]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(
+    json.contains("\"subscription\":\"00000000000000000000000000000001\""),
+  )
+}
+
+///|
 test "bidi unsubscribe one browsingContext event from module subscription" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -63,4 +77,53 @@ test "bidi unsubscribe one browsingContext event from module subscription" {
   }
   assert_true(has_load)
   assert_false(has_dom_content_loaded)
+}
+
+///|
+test "bidi unsubscribe by subscription id keeps duplicate subscription" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.load\"]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.load\"]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.unsubscribe\",\"params\":{\"subscriptions\":[\"00000000000000000000000000000001\"]}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.create\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"about:blank\",\"wait\":\"complete\"}}",
+  )
+  let msgs_after_first_unsub = proto.take_messages()
+  let mut has_load_after_first_unsub = false
+  for msg in msgs_after_first_unsub {
+    if msg.to_json().contains("browsingContext.load") {
+      has_load_after_first_unsub = true
+    }
+  }
+  assert_true(has_load_after_first_unsub)
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"session.unsubscribe\",\"params\":{\"subscriptions\":[\"00000000000000000000000000000002\"]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":7,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"about:blank\",\"wait\":\"complete\"}}",
+  )
+  let msgs_after_second_unsub = proto.take_messages()
+  let mut has_load_after_second_unsub = false
+  for msg in msgs_after_second_unsub {
+    if msg.to_json().contains("browsingContext.load") {
+      has_load_after_second_unsub = true
+    }
+  }
+  assert_false(has_load_after_second_unsub)
 }

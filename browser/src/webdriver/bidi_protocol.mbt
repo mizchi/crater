@@ -54,8 +54,14 @@ pub struct BidiProtocol {
   mut next_realm_id : Int
   subscriptions : Map[String, Bool] // module-level subscriptions (legacy)
   context_subscriptions : Map[String, Array[String]] // context -> events
+  user_context_subscriptions : Map[String, Array[String]] // user context -> events
   mut global_subscriptions : Array[String] // events subscribed globally
   mut global_unsubscribed_events : Array[String] // event-level overrides for module subscriptions
+  subscription_events : Map[String, Array[String]] // subscription id -> events
+  subscription_contexts : Map[String, Array[String]] // subscription id -> contexts
+  subscription_user_contexts : Map[String, Array[String]] // subscription id -> user contexts
+  mut next_subscription_id : Int
+  pending_log_entries : Map[String, Array[Json]] // context -> buffered log.entryAdded params
   user_contexts : Map[String, Bool]
   context_user_context : Map[String, String]
   context_original_opener : Map[String, String]
@@ -85,8 +91,14 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     next_realm_id: 1,
     subscriptions: {},
     context_subscriptions: {},
+    user_context_subscriptions: {},
     global_subscriptions: [],
     global_unsubscribed_events: [],
+    subscription_events: {},
+    subscription_contexts: {},
+    subscription_user_contexts: {},
+    next_subscription_id: 1,
+    pending_log_entries: {},
     user_contexts,
     context_user_context: {},
     context_original_opener: {},
@@ -134,6 +146,56 @@ pub fn BidiProtocol::set_socket(
 /// Clear WebSocket reference
 pub fn BidiProtocol::clear_socket(self : BidiProtocol) -> Unit {
   self.socket = None
+}
+
+///|
+/// Reset per-connection subscription state.
+pub fn BidiProtocol::reset_subscription_state(self : BidiProtocol) -> Unit {
+  let legacy_keys : Array[String] = []
+  for key, _ in self.subscriptions {
+    legacy_keys.push(key)
+  }
+  for key in legacy_keys {
+    self.subscriptions.remove(key)
+  }
+
+  let context_keys : Array[String] = []
+  for key, _ in self.context_subscriptions {
+    context_keys.push(key)
+  }
+  for key in context_keys {
+    self.context_subscriptions.remove(key)
+  }
+
+  let user_context_keys : Array[String] = []
+  for key, _ in self.user_context_subscriptions {
+    user_context_keys.push(key)
+  }
+  for key in user_context_keys {
+    self.user_context_subscriptions.remove(key)
+  }
+
+  let subscription_keys : Array[String] = []
+  for key, _ in self.subscription_events {
+    subscription_keys.push(key)
+  }
+  for key in subscription_keys {
+    self.subscription_events.remove(key)
+    self.subscription_contexts.remove(key)
+    self.subscription_user_contexts.remove(key)
+  }
+
+  let pending_log_keys : Array[String] = []
+  for key, _ in self.pending_log_entries {
+    pending_log_keys.push(key)
+  }
+  for key in pending_log_keys {
+    self.pending_log_entries.remove(key)
+  }
+
+  self.global_subscriptions = []
+  self.global_unsubscribed_events = []
+  self.next_subscription_id = 1
 }
 
 ///|
@@ -247,11 +309,22 @@ fn BidiProtocol::dispatch_session(
       Ok(())
     }
     "subscribe" => {
-      self.handle_subscribe(request.params)
-      self.send_success(request.id, Some(make_object({})))
+      match self.validate_session_subscribe_params(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
+      let subscription_id = self.handle_subscribe(request.params)
+      self.send_success(
+        request.id,
+        Some(make_object({ "subscription": Json::string(subscription_id) })),
+      )
       Ok(())
     }
     "unsubscribe" => {
+      match self.validate_session_unsubscribe_params(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
       self.handle_unsubscribe(request.params)
       self.send_success(request.id, Some(make_object({})))
       Ok(())
@@ -459,9 +532,8 @@ fn BidiProtocol::dispatch_browsing_context(
                     "navigation": Json::string(nav_id),
                     "url": Json::string(url),
                   })
-                  // Send response BEFORE events (BiDi protocol requirement)
-                  self.send_success(request.id, Some(result))
                   self.emit_navigation_events(ctx_id, url, nav_id)
+                  self.send_success(request.id, Some(result))
                   Ok(())
                 }
                 Err(e) => {
@@ -541,6 +613,7 @@ fn BidiProtocol::dispatch_browsing_context(
             self.context_realm.remove(ctx_id)
             self.clear_context_sandbox_realms(ctx_id)
             self.context_client_window.remove(ctx_id)
+            self.pending_log_entries.remove(ctx_id)
             match self.default_context_id {
               Some(default_ctx) =>
                 if default_ctx == ctx_id {
@@ -630,21 +703,38 @@ fn BidiProtocol::dispatch_script(
       }
       // Resolve target context/realm for evaluation.
       let (ctx_id, realm_id) = self.resolve_target_context_realm(request.params)
+      let runtime_ctx_id = resolve_runtime_context_id(
+        request.params,
+        ctx_id,
+        realm_id,
+        self.realm_sandbox.get(realm_id) != None,
+      )
       // Check if awaitPromise is true
       let await_promise = match get_param_raw(request.params, "awaitPromise") {
         Some(True) => true
         _ => false
       }
+      let root_ownership = match
+        get_param_raw(request.params, "resultOwnership") {
+        Some(String("root")) => true
+        _ => false
+      }
       let user_activation = get_user_activation_value(request.params)
       let expr = get_string_param(request.params, "expression").unwrap()
+      let serialization_options_json = get_serialization_options_json(request.params)
+      let has_serialization_options = has_serialization_options_param(
+        request.params,
+      )
+      set_runtime_context(runtime_ctx_id)
+      set_runtime_context_frames(
+        runtime_ctx_id,
+        self.context_children.get(ctx_id).unwrap_or([]),
+      )
       // Handle window.open directly so browsing context state stays in sync.
       if self.try_handle_window_open(request.id, ctx_id, expr) {
         return Ok(())
       }
-      let capture_console = self.is_subscribed_for_context(
-          "log.entryAdded", ctx_id,
-        ) ||
-        self.is_subscribed("log")
+      let capture_console = self.should_capture_console(ctx_id)
       // Use QuickJS for sandboxed execution if enabled
       if self.use_quickjs && is_quickjs_initialized() {
         match self.socket {
@@ -665,7 +755,11 @@ fn BidiProtocol::dispatch_script(
         }
       }
       // Fast path: no console capture, no awaitPromise, no QuickJS
-      if self.dom_initialized && not(capture_console) && not(await_promise) {
+      if self.dom_initialized &&
+        not(capture_console) &&
+        not(await_promise) &&
+        not(root_ownership) &&
+        not(has_serialization_options) {
         let raw = js_evaluate_expression_fast(
           request.id,
           expr,
@@ -677,6 +771,16 @@ fn BidiProtocol::dispatch_script(
       }
       // If awaitPromise is true and we have a socket, use async evaluation
       if await_promise {
+        if not(self.dom_initialized) {
+          let _ = evaluate_js_with_console(
+            "undefined",
+            false,
+            false,
+            false,
+            "{}",
+          )
+          self.dom_initialized = true
+        }
         match self.socket {
           Some(socket) => {
             // Async evaluation - response sent directly via WebSocket
@@ -684,9 +788,11 @@ fn BidiProtocol::dispatch_script(
               socket,
               request.id,
               expr,
-              ctx_id,
+              runtime_ctx_id,
+              realm_id,
               capture_console,
               user_activation,
+              root_ownership,
             )
             return Ok(()) // No sync response needed
           }
@@ -695,7 +801,11 @@ fn BidiProtocol::dispatch_script(
       }
       // Synchronous evaluation (Deno eval)
       let eval_result_json = evaluate_js_with_console(
-        expr, capture_console, user_activation,
+        expr,
+        capture_console,
+        user_activation,
+        root_ownership,
+        serialization_options_json,
       )
       self.dom_initialized = true
       let eval_result = @json.parse(eval_result_json) catch {
@@ -804,17 +914,36 @@ fn BidiProtocol::dispatch_script(
       let (ctx_id_call, realm_id_call) = self.resolve_target_context_realm(
         request.params,
       )
-      let capture_console_call = self.is_subscribed_for_context(
-          "log.entryAdded", ctx_id_call,
-        ) ||
-        self.is_subscribed("log")
+      let runtime_ctx_id_call = resolve_runtime_context_id(
+        request.params,
+        ctx_id_call,
+        realm_id_call,
+        self.realm_sandbox.get(realm_id_call) != None,
+      )
+      let capture_console_call = self.should_capture_console(ctx_id_call)
       // Check if awaitPromise is true
       let await_promise_call = match
         get_param_raw(request.params, "awaitPromise") {
         Some(True) => true
         _ => false
       }
+      let root_ownership_call = match
+        get_param_raw(request.params, "resultOwnership") {
+        Some(String("root")) => true
+        _ => false
+      }
       let user_activation_call = get_user_activation_value(request.params)
+      let serialization_options_json_call = get_serialization_options_json(
+        request.params,
+      )
+      let has_serialization_options_call = has_serialization_options_param(
+        request.params,
+      )
+      set_runtime_context(runtime_ctx_id_call)
+      set_runtime_context_frames(
+        runtime_ctx_id_call,
+        self.context_children.get(ctx_id_call).unwrap_or([]),
+      )
       // Get arguments if provided
       let args_json = match get_param_raw(request.params, "arguments") {
         Some(Array(args)) => {
@@ -827,9 +956,18 @@ fn BidiProtocol::dispatch_script(
         }
         _ => ""
       }
+      let this_json = match get_param_raw(request.params, "this") {
+        Some(value) => bidi_value_to_js_literal(value)
+        None => "undefined"
+      }
       // Wrap function declaration and call it
       let func = get_string_param(request.params, "functionDeclaration").unwrap()
-      let call_expr = "(" + func + ")(" + args_json + ")"
+      let function_is_async = func.trim().has_prefix("async")
+      let call_expr = if args_json == "" {
+        "(" + func + ").call(" + this_json + ")"
+      } else {
+        "(" + func + ").call(" + this_json + ", " + args_json + ")"
+      }
       // Use QuickJS for sandboxed execution if enabled
       if self.use_quickjs && is_quickjs_initialized() {
         match self.socket {
@@ -849,7 +987,18 @@ fn BidiProtocol::dispatch_script(
         }
       }
       // If awaitPromise is true and we have a socket, use async evaluation
-      if await_promise_call {
+      if await_promise_call &&
+        (not(has_serialization_options_call) || function_is_async) {
+        if not(self.dom_initialized) {
+          let _ = evaluate_js_with_console(
+            "undefined",
+            false,
+            false,
+            false,
+            "{}",
+          )
+          self.dom_initialized = true
+        }
         match self.socket {
           Some(socket) => {
             // Async evaluation - response sent directly via WebSocket
@@ -857,9 +1006,11 @@ fn BidiProtocol::dispatch_script(
               socket,
               request.id,
               call_expr,
-              ctx_id_call,
+              runtime_ctx_id_call,
+              realm_id_call,
               capture_console_call,
               user_activation_call,
+              root_ownership_call,
             )
             return Ok(()) // No sync response needed
           }
@@ -867,7 +1018,11 @@ fn BidiProtocol::dispatch_script(
         }
       }
       let eval_result_json = evaluate_js_with_console(
-        call_expr, capture_console_call, user_activation_call,
+        call_expr,
+        capture_console_call,
+        user_activation_call,
+        root_ownership_call,
+        serialization_options_json_call,
       )
       let eval_result = @json.parse(eval_result_json) catch {
         _ => {
@@ -883,6 +1038,8 @@ fn BidiProtocol::dispatch_script(
       if capture_console_call {
         self.process_console_entries(eval_result, ctx_id_call)
       }
+      // Process channel callback entries and emit script.message BEFORE response
+      self.process_channel_messages(ctx_id_call, realm_id_call)
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
@@ -1098,11 +1255,9 @@ pub fn BidiProtocol::emit_log_entry(
   level : String,
   text : String,
   console_method : String,
+  args : Array[Json],
+  timestamp : Double,
 ) -> Unit {
-  if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
-    return
-  }
-  let timestamp = 0.0 // Would be actual timestamp in real impl
   let params = make_object({
     "level": Json::string(level),
     "source": make_object({
@@ -1112,9 +1267,15 @@ pub fn BidiProtocol::emit_log_entry(
     "text": Json::string(text),
     "timestamp": Json::number(timestamp),
     "method": Json::string(console_method),
-    "args": Json::array([]),
+    "args": Json::array(args),
     "type": Json::string("console"),
   })
+  if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
+    let pending = self.pending_log_entries.get(ctx_id).unwrap_or([])
+    pending.push(params)
+    self.pending_log_entries[ctx_id] = pending
+    return
+  }
   self.outbox.push(Event({ event_method: "log.entryAdded", params }))
 }
 
@@ -1135,7 +1296,84 @@ fn BidiProtocol::process_console_entries(
               "log",
             )
             let text = get_string_field(entry, "text").unwrap_or("")
-            self.emit_log_entry(ctx_id, level, text, console_method)
+            let args = match get_field(entry, "args") {
+              Some(Array(values)) => values
+              _ => []
+            }
+            let timestamp = match get_field(entry, "timestamp") {
+              Some(Number(n, ..)) => n
+              _ => 0.0
+            }
+            self.emit_log_entry(
+              ctx_id,
+              level,
+              text,
+              console_method,
+              args,
+              timestamp,
+            )
+          }
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+}
+
+///|
+/// Emit script.message event.
+fn BidiProtocol::emit_script_message(
+  self : BidiProtocol,
+  ctx_id : String,
+  realm_id : String,
+  channel : String,
+  data : Json,
+) -> Unit {
+  let event_name = "script.message"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params = make_object({
+    "channel": Json::string(channel),
+    "data": data,
+    "source": make_object({
+      "realm": Json::string(realm_id),
+      "context": Json::string(ctx_id),
+    }),
+  })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
+/// Drain pending channel callback messages from JS runtime and emit script.message.
+fn BidiProtocol::process_channel_messages(
+  self : BidiProtocol,
+  ctx_id : String,
+  realm_id : String,
+) -> Unit {
+  let channel_messages = @json.parse(take_channel_messages_json()) catch {
+    _ => Json::array([])
+  }
+  match channel_messages {
+    Array(entries) =>
+      for entry in entries {
+        match entry {
+          Object(msg_map) => {
+            let channel = match msg_map.get("channel") {
+              Some(String(s)) => s
+              _ => ""
+            }
+            if channel != "" {
+              let data = msg_map.get("data").unwrap_or(
+                make_object({ "type": Json::string("undefined") }),
+              )
+              self.emit_script_message(
+                ctx_id,
+                realm_id,
+                channel,
+                data,
+              )
+            }
           }
           _ => ()
         }
@@ -1254,6 +1492,7 @@ fn BidiProtocol::drop_child_contexts(
         self.context_realm.remove(child_ctx_id)
         self.clear_context_sandbox_realms(child_ctx_id)
         self.context_client_window.remove(child_ctx_id)
+        self.pending_log_entries.remove(child_ctx_id)
       }
       self.context_children[parent_ctx_id] = []
     }
@@ -1268,19 +1507,29 @@ fn BidiProtocol::load_data_url_content(
   ctx_id : String,
   url : String,
 ) -> Unit {
+  let is_child_context = self.context_parent.get(ctx_id) != None
   if not(url.has_prefix("data:")) {
-    match self.manager.get_session(ctx_id) {
-      Some(session) => session.load_html("")
-      None => ()
+    // Runtime DOM is global; avoid overriding top-level context with iframe content.
+    if not(is_child_context) {
+      // For non-data URLs, keep the browser session DOM loaded by navigate_to
+      // and mirror the fetched page into script runtime.
+      sync_runtime_page(url)
     }
     return
   }
   match parse_data_url(url) {
     Some((content_type, content)) =>
-      if content_type.has_prefix("text/html") || content_type == "" {
+      if content_type.has_prefix("text/html") ||
+        content_type.has_prefix("text/xml") ||
+        content_type.has_prefix("application/xml") ||
+        content_type.has_prefix("application/xhtml+xml") ||
+        content_type == "" {
         match self.manager.get_session(ctx_id) {
           Some(session) => session.load_html(content)
           None => ()
+        }
+        if not(is_child_context) {
+          sync_runtime_html(content, url, true)
         }
       }
     None => ()
@@ -1721,16 +1970,43 @@ fn extract_http_origin(url : String, scheme : String, start : Int) -> String {
 
 ///|
 /// Handle session.subscribe params
-fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
+fn BidiProtocol::handle_subscribe(
+  self : BidiProtocol,
+  params : Json?,
+) -> String {
+  let events_to_sub : Array[String] = []
+  let contexts_to_sub : Array[String] = []
+  let user_contexts_to_sub : Array[String] = []
   match params {
     Some(Object(map)) => {
-      // Get events to subscribe to
-      let events_to_sub : Array[String] = []
       match map.get("events") {
         Some(Array(events)) =>
           for evt in events {
             match evt {
               String(s) => events_to_sub.push(s)
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      match map.get("contexts") {
+        Some(Array(contexts)) =>
+          for ctx in contexts {
+            match ctx {
+              String(ctx_id) =>
+                contexts_to_sub.push(
+                  self.normalize_subscription_context(ctx_id),
+                )
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      match map.get("userContexts") {
+        Some(Array(user_contexts)) =>
+          for user_ctx in user_contexts {
+            match user_ctx {
+              String(user_ctx_id) => user_contexts_to_sub.push(user_ctx_id)
               _ => ()
             }
           }
@@ -1743,61 +2019,78 @@ fn BidiProtocol::handle_subscribe(self : BidiProtocol, params : Json?) -> Unit {
           break
         }
       }
-      // Check if contexts are specified
-      match map.get("contexts") {
-        Some(Array(contexts)) =>
-          // Context-specific subscription
-          for ctx in contexts {
-            match ctx {
-              String(ctx_id) => {
-                let existing = self.context_subscriptions
-                  .get(ctx_id)
-                  .unwrap_or([])
-                for evt in events_to_sub {
-                  if not(array_contains(existing, evt)) {
-                    existing.push(evt)
-                  }
-                }
-                self.context_subscriptions[ctx_id] = existing
-                if wants_realm_created {
-                  self.emit_existing_realms_for_context(ctx_id)
-                }
-              }
-              _ => ()
-            }
-          }
-        // Global subscription (no contexts specified)
-        _ => {
+      let has_context_targets = contexts_to_sub.length() > 0
+      let has_user_context_targets = user_contexts_to_sub.length() > 0
+      if has_context_targets {
+        for ctx_id in contexts_to_sub {
+          let existing = self.context_subscriptions.get(ctx_id).unwrap_or([])
           for evt in events_to_sub {
-            let module_key = get_subscription_key(evt)
-            if module_key == evt {
-              self.global_unsubscribed_events = array_filter_by_module(
-                self.global_unsubscribed_events,
-                module_key,
-              )
-            } else {
-              self.global_unsubscribed_events = array_filter_not(
-                self.global_unsubscribed_events,
-                [evt],
-              )
-            }
-            if not(array_contains(self.global_subscriptions, evt)) {
-              self.global_subscriptions.push(evt)
-            }
-            self.subscriptions[module_key] = true
+            existing.push(evt)
           }
+          self.context_subscriptions[ctx_id] = existing
+          if wants_realm_created {
+            self.emit_existing_realms_for_context(ctx_id)
+          }
+        }
+      }
+      if has_user_context_targets {
+        for user_ctx_id in user_contexts_to_sub {
+          let existing = self.user_context_subscriptions
+            .get(user_ctx_id)
+            .unwrap_or([])
+          for evt in events_to_sub {
+            existing.push(evt)
+          }
+          self.user_context_subscriptions[user_ctx_id] = existing
           if wants_realm_created {
             for ctx_id in self.manager.list_sessions() {
-              if self.context_parent.get(ctx_id) == None {
+              let ctx_user_ctx = self.context_user_context
+                .get(ctx_id)
+                .unwrap_or("default")
+              if ctx_user_ctx == user_ctx_id &&
+                self.context_parent.get(ctx_id) == None {
                 self.emit_existing_realms_for_context(ctx_id)
               }
             }
           }
         }
       }
+      if not(has_context_targets) && not(has_user_context_targets) {
+        for evt in events_to_sub {
+          let module_key = get_subscription_key(evt)
+          if module_key == evt {
+            self.global_unsubscribed_events = array_filter_by_module(
+              self.global_unsubscribed_events,
+              module_key,
+            )
+          } else {
+            self.global_unsubscribed_events = array_filter_not(
+              self.global_unsubscribed_events,
+              [evt],
+            )
+          }
+          self.global_subscriptions.push(evt)
+          self.subscriptions[module_key] = true
+        }
+        if wants_realm_created {
+          for ctx_id in self.manager.list_sessions() {
+            if self.context_parent.get(ctx_id) == None {
+              self.emit_existing_realms_for_context(ctx_id)
+            }
+          }
+        }
+      }
+      if has_log_subscription(events_to_sub) {
+        self.flush_pending_log_entries()
+      }
     }
     _ => ()
   }
+  let subscription_id = self.generate_subscription_id()
+  self.subscription_events[subscription_id] = events_to_sub
+  self.subscription_contexts[subscription_id] = contexts_to_sub
+  self.subscription_user_contexts[subscription_id] = user_contexts_to_sub
+  subscription_id
 }
 
 ///|
@@ -1808,6 +2101,25 @@ fn BidiProtocol::handle_unsubscribe(
 ) -> Unit {
   match params {
     Some(Object(map)) => {
+      // Subscription-based unsubscription takes precedence over event filters.
+      let subscriptions_to_unsub : Array[String] = []
+      match map.get("subscriptions") {
+        Some(Array(subscriptions)) =>
+          for sub in subscriptions {
+            match sub {
+              String(subscription_id) =>
+                subscriptions_to_unsub.push(subscription_id)
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      if subscriptions_to_unsub.length() > 0 {
+        for subscription_id in subscriptions_to_unsub {
+          self.remove_subscription_by_id(subscription_id)
+        }
+        return
+      }
       // Get events to unsubscribe from
       let events_to_unsub : Array[String] = []
       match map.get("events") {
@@ -1820,55 +2132,284 @@ fn BidiProtocol::handle_unsubscribe(
           }
         _ => ()
       }
-      // Check if contexts are specified
+      let contexts_to_unsub : Array[String] = []
       match map.get("contexts") {
         Some(Array(contexts)) =>
-          // Context-specific unsubscription
           for ctx in contexts {
             match ctx {
               String(ctx_id) =>
-                match self.context_subscriptions.get(ctx_id) {
-                  Some(existing) => {
-                    let filtered = array_filter_not(existing, events_to_unsub)
-                    self.context_subscriptions[ctx_id] = filtered
-                  }
-                  None => ()
-                }
+                contexts_to_unsub.push(
+                  self.normalize_subscription_context(ctx_id),
+                )
               _ => ()
             }
           }
-        // Global unsubscription
-        _ => {
-          self.global_subscriptions = array_filter_not(
-            self.global_subscriptions,
-            events_to_unsub,
-          )
-          for evt in events_to_unsub {
-            let module_key = get_subscription_key(evt)
-            if module_key == evt {
-              self.global_unsubscribed_events = array_filter_by_module(
-                self.global_unsubscribed_events,
-                module_key,
-              )
-            } else if not(array_contains(self.global_unsubscribed_events, evt)) {
-              self.global_unsubscribed_events.push(evt)
-            }
-            let mut has_same_module = false
-            for sub in self.global_subscriptions {
-              if sub == evt || get_subscription_key(sub) == module_key {
-                has_same_module = true
-                break
-              }
-            }
-            if not(has_same_module) {
-              self.subscriptions.remove(module_key)
+        _ => ()
+      }
+      let user_contexts_to_unsub : Array[String] = []
+      match map.get("userContexts") {
+        Some(Array(user_contexts)) =>
+          for user_ctx in user_contexts {
+            match user_ctx {
+              String(user_ctx_id) => user_contexts_to_unsub.push(user_ctx_id)
+              _ => ()
             }
           }
+        _ => ()
+      }
+      let has_context_targets = contexts_to_unsub.length() > 0
+      let has_user_context_targets = user_contexts_to_unsub.length() > 0
+      if has_context_targets {
+        for ctx_id in contexts_to_unsub {
+          match self.context_subscriptions.get(ctx_id) {
+            Some(existing) => {
+              let filtered = array_filter_not(existing, events_to_unsub)
+              self.context_subscriptions[ctx_id] = filtered
+            }
+            None => ()
+          }
+        }
+      }
+      if has_user_context_targets {
+        for user_ctx_id in user_contexts_to_unsub {
+          match self.user_context_subscriptions.get(user_ctx_id) {
+            Some(existing) => {
+              let filtered = array_filter_not(existing, events_to_unsub)
+              self.user_context_subscriptions[user_ctx_id] = filtered
+            }
+            None => ()
+          }
+        }
+      }
+      if not(has_context_targets) && not(has_user_context_targets) {
+        self.global_subscriptions = array_filter_not(
+          self.global_subscriptions,
+          events_to_unsub,
+        )
+        for evt in events_to_unsub {
+          let module_key = get_subscription_key(evt)
+          if module_key == evt {
+            self.global_unsubscribed_events = array_filter_by_module(
+              self.global_unsubscribed_events,
+              module_key,
+            )
+          } else if not(array_contains(self.global_unsubscribed_events, evt)) {
+            self.global_unsubscribed_events.push(evt)
+          }
+          self.update_legacy_module_subscription(module_key)
         }
       }
     }
     _ => ()
   }
+}
+
+///|
+/// Remove a single stored subscription by id.
+fn BidiProtocol::remove_subscription_by_id(
+  self : BidiProtocol,
+  subscription_id : String,
+) -> Unit {
+  let events = self.subscription_events.get(subscription_id).unwrap_or([])
+  let contexts = self.subscription_contexts.get(subscription_id).unwrap_or([])
+  let user_contexts = self.subscription_user_contexts
+    .get(subscription_id)
+    .unwrap_or([])
+  if events.length() == 0 {
+    self.subscription_events.remove(subscription_id)
+    self.subscription_contexts.remove(subscription_id)
+    self.subscription_user_contexts.remove(subscription_id)
+    return
+  }
+  if contexts.length() > 0 {
+    for ctx_id in contexts {
+      match self.context_subscriptions.get(ctx_id) {
+        Some(existing) => {
+          let filtered = array_remove_events_once(existing, events)
+          if filtered.length() == 0 {
+            self.context_subscriptions.remove(ctx_id)
+          } else {
+            self.context_subscriptions[ctx_id] = filtered
+          }
+        }
+        None => ()
+      }
+    }
+  } else if user_contexts.length() > 0 {
+    for user_ctx_id in user_contexts {
+      match self.user_context_subscriptions.get(user_ctx_id) {
+        Some(existing) => {
+          let filtered = array_remove_events_once(existing, events)
+          if filtered.length() == 0 {
+            self.user_context_subscriptions.remove(user_ctx_id)
+          } else {
+            self.user_context_subscriptions[user_ctx_id] = filtered
+          }
+        }
+        None => ()
+      }
+    }
+  } else {
+    for evt in events {
+      self.global_subscriptions = array_remove_first(
+        self.global_subscriptions,
+        evt,
+      )
+      let module_key = get_subscription_key(evt)
+      self.update_legacy_module_subscription(module_key)
+    }
+  }
+  self.subscription_events.remove(subscription_id)
+  self.subscription_contexts.remove(subscription_id)
+  self.subscription_user_contexts.remove(subscription_id)
+}
+
+///|
+/// Normalize a subscribed context to its top-level browsing context.
+fn BidiProtocol::normalize_subscription_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  match self.context_parent.get(ctx_id) {
+    Some(parent_ctx_id) => self.normalize_subscription_context(parent_ctx_id)
+    None => ctx_id
+  }
+}
+
+///|
+/// Check whether events contain log subscriptions.
+fn has_log_subscription(events : Array[String]) -> Bool {
+  for evt in events {
+    if evt == "log.entryAdded" || get_subscription_key(evt) == "log" {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Check whether console output should be captured for this context.
+fn BidiProtocol::should_capture_console(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  if self.is_subscribed_for_context("log.entryAdded", ctx_id) ||
+    self.has_any_log_subscription() {
+    return true
+  }
+  // Keep capturing even when not currently subscribed so log.entryAdded
+  // can be buffered and delivered after a later session.subscribe call.
+  true
+}
+
+///|
+/// Check whether any log subscription exists in any scope.
+fn BidiProtocol::has_any_log_subscription(self : BidiProtocol) -> Bool {
+  if self.subscriptions.get("log").unwrap_or(false) {
+    return true
+  }
+  if has_log_subscription(self.global_subscriptions) {
+    return true
+  }
+  for _, events in self.context_subscriptions {
+    if has_log_subscription(events) {
+      return true
+    }
+  }
+  for _, events in self.user_context_subscriptions {
+    if has_log_subscription(events) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Flush buffered log.entryAdded events that are now subscribed.
+fn BidiProtocol::flush_pending_log_entries(self : BidiProtocol) -> Unit {
+  let contexts : Array[String] = []
+  for ctx_id, _ in self.pending_log_entries {
+    contexts.push(ctx_id)
+  }
+  for ctx_id in contexts {
+    if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
+      continue
+    }
+    match self.pending_log_entries.get(ctx_id) {
+      Some(entries) =>
+        for params in entries {
+          self.outbox.push(Event({ event_method: "log.entryAdded", params }))
+        }
+      None => ()
+    }
+    self.pending_log_entries.remove(ctx_id)
+  }
+}
+
+///|
+/// Keep legacy module-level map in sync with current global subscriptions.
+fn BidiProtocol::update_legacy_module_subscription(
+  self : BidiProtocol,
+  module_key : String,
+) -> Unit {
+  let mut has_same_module = false
+  for sub in self.global_subscriptions {
+    if sub == module_key || get_subscription_key(sub) == module_key {
+      has_same_module = true
+      break
+    }
+  }
+  if has_same_module {
+    self.subscriptions[module_key] = true
+  } else {
+    self.subscriptions.remove(module_key)
+  }
+}
+
+///|
+/// Generate a deterministic 32-digit subscription id string.
+fn BidiProtocol::generate_subscription_id(self : BidiProtocol) -> String {
+  let id_num = self.next_subscription_id
+  self.next_subscription_id += 1
+  left_pad_with_zero(id_num.to_string(), 32)
+}
+
+///|
+/// Left-pad a string with '0' up to min_length.
+fn left_pad_with_zero(value : String, min_length : Int) -> String {
+  let mut result = value
+  while result.length() < min_length {
+    result = "0" + result
+  }
+  result
+}
+
+///|
+/// Remove one occurrence for each event in `events_to_remove`.
+fn array_remove_events_once(
+  arr : Array[String],
+  events_to_remove : Array[String],
+) -> Array[String] {
+  let mut result = arr
+  for evt in events_to_remove {
+    result = array_remove_first(result, evt)
+  }
+  result
+}
+
+///|
+/// Remove the first matching item from array.
+fn array_remove_first(arr : Array[String], target : String) -> Array[String] {
+  let result : Array[String] = []
+  let mut removed = false
+  for item in arr {
+    if not(removed) && item == target {
+      removed = true
+      continue
+    }
+    result.push(item)
+  }
+  result
 }
 
 ///|
@@ -1899,7 +2440,10 @@ fn array_filter_not(
 
 ///|
 /// Filter array to keep events outside the given module
-fn array_filter_by_module(arr : Array[String], module_key : String) -> Array[String] {
+fn array_filter_by_module(
+  arr : Array[String],
+  module_key : String,
+) -> Array[String] {
   let result : Array[String] = []
   for s in arr {
     if get_subscription_key(s) != module_key {
@@ -2088,8 +2632,7 @@ fn BidiProtocol::is_subscribed_for_context(
   let module_key = get_subscription_key(event)
   let blocked_global = array_contains(self.global_unsubscribed_events, event)
   // Check legacy module-level subscription
-  if not(blocked_global) &&
-    self.subscriptions.get(module_key).unwrap_or(false) {
+  if not(blocked_global) && self.subscriptions.get(module_key).unwrap_or(false) {
     return true
   }
   // Check global subscriptions (exact event match or module match)
@@ -2102,7 +2645,21 @@ fn BidiProtocol::is_subscribed_for_context(
     }
   }
   // Check context-specific subscriptions (including ancestors).
-  self.is_subscribed_for_context_chain(event, module_key, ctx_id)
+  if self.is_subscribed_for_context_chain(event, module_key, ctx_id) {
+    return true
+  }
+  // Check user-context subscriptions for this browsing context.
+  let user_ctx = self.context_user_context.get(ctx_id).unwrap_or("default")
+  match self.user_context_subscriptions.get(user_ctx) {
+    Some(events) =>
+      for sub in events {
+        if sub == event || get_subscription_key(sub) == module_key {
+          return true
+        }
+      }
+    None => ()
+  }
+  false
 }
 
 ///|
@@ -2202,6 +2759,468 @@ fn get_subscription_key(name : String) -> String {
 }
 
 ///|
+/// Validate session.subscribe params.
+/// Returns Some(()) when an error response was already sent.
+fn BidiProtocol::validate_session_subscribe_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(request_id, "invalid argument", "params must be an object")
+      return Some(())
+    }
+  }
+
+  match map.get("events") {
+    Some(Array(raw_events)) => {
+      if raw_events.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "events must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_event in raw_events {
+        match raw_event {
+          String(event_name) =>
+            if not(is_valid_session_subscription_event_name(event_name)) {
+              self.send_error(
+                request_id,
+                "invalid argument",
+                "Unknown event name: " + event_name,
+              )
+              return Some(())
+            }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "events entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "events must be an array")
+      return Some(())
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing events")
+      return Some(())
+    }
+  }
+
+  let mut has_context_targets = false
+  match map.get("contexts") {
+    Some(Array(raw_contexts)) => {
+      has_context_targets = true
+      if raw_contexts.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "contexts must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_context in raw_contexts {
+        match raw_context {
+          String(ctx_id) =>
+            if not(self.manager.has_session(ctx_id)) {
+              self.send_error(
+                request_id,
+                "no such frame",
+                "Unknown context: " + ctx_id,
+              )
+              return Some(())
+            }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "contexts entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "contexts must be an array")
+      return Some(())
+    }
+    None => ()
+  }
+
+  let mut has_user_context_targets = false
+  match map.get("userContexts") {
+    Some(Array(raw_user_contexts)) => {
+      has_user_context_targets = true
+      if raw_user_contexts.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "userContexts must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_user_context in raw_user_contexts {
+        match raw_user_context {
+          String(user_context_id) =>
+            if not(self.user_contexts.get(user_context_id).unwrap_or(false)) {
+              self.send_error(
+                request_id,
+                "no such user context",
+                "Unknown user context: " + user_context_id,
+              )
+              return Some(())
+            }
+          _ => {
+            self.send_error(
+              request_id,
+              "invalid argument",
+              "userContexts entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContexts must be an array",
+      )
+      return Some(())
+    }
+    None => ()
+  }
+
+  if has_context_targets && has_user_context_targets {
+    self.send_error(
+      request_id, "invalid argument", "contexts and userContexts are mutually exclusive",
+    )
+    return Some(())
+  }
+
+  None
+}
+
+///|
+/// Validate session.unsubscribe params.
+/// Returns Some(()) when an error response was already sent.
+fn BidiProtocol::validate_session_unsubscribe_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(request_id, "invalid argument", "params must be an object")
+      return Some(())
+    }
+  }
+
+  let mut has_subscriptions_field = false
+  match map.get("subscriptions") {
+    Some(Array(raw_subscriptions)) => {
+      has_subscriptions_field = true
+      if raw_subscriptions.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "subscriptions must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_subscription in raw_subscriptions {
+        match raw_subscription {
+          String(subscription_id) => {
+            if not(is_valid_subscription_id_format(subscription_id)) {
+              self.send_error(
+                request_id,
+                "invalid argument",
+                "Invalid subscription id format: " + subscription_id,
+              )
+              return Some(())
+            }
+            if not(self.subscription_events.contains(subscription_id)) {
+              self.send_error(
+                request_id,
+                "invalid argument",
+                "Unknown subscription id: " + subscription_id,
+              )
+              return Some(())
+            }
+          }
+          _ => {
+            self.send_error(
+              request_id,
+              "invalid argument",
+              "subscriptions entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "subscriptions must be an array",
+      )
+      return Some(())
+    }
+    None => ()
+  }
+
+  if has_subscriptions_field {
+    // When subscriptions are provided they take precedence over event filters.
+    return None
+  }
+
+  let events_to_unsub : Array[String] = []
+  match map.get("events") {
+    Some(Array(raw_events)) => {
+      if raw_events.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "events must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_event in raw_events {
+        match raw_event {
+          String(event_name) =>
+            if not(is_valid_session_subscription_event_name(event_name)) {
+              self.send_error(
+                request_id,
+                "invalid argument",
+                "Unknown event name: " + event_name,
+              )
+              return Some(())
+            } else {
+              events_to_unsub.push(event_name)
+            }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "events entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "events must be an array")
+      return Some(())
+    }
+    None => {
+      self.send_error(
+        request_id,
+        "invalid argument",
+        "Either events or subscriptions must be provided",
+      )
+      return Some(())
+    }
+  }
+
+  let mut has_context_targets = false
+  match map.get("contexts") {
+    Some(Array(raw_contexts)) => {
+      has_context_targets = true
+      if raw_contexts.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "contexts must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_context in raw_contexts {
+        match raw_context {
+          String(_) => ()
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "contexts entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "contexts must be an array")
+      return Some(())
+    }
+    None => ()
+  }
+
+  let mut has_user_context_targets = false
+  match map.get("userContexts") {
+    Some(Array(raw_user_contexts)) => {
+      has_user_context_targets = true
+      if raw_user_contexts.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "userContexts must not be an empty array",
+        )
+        return Some(())
+      }
+      for raw_user_context in raw_user_contexts {
+        match raw_user_context {
+          String(_) => ()
+          _ => {
+            self.send_error(
+              request_id,
+              "invalid argument",
+              "userContexts entries must be strings",
+            )
+            return Some(())
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContexts must be an array",
+      )
+      return Some(())
+    }
+    None => ()
+  }
+
+  if not(has_context_targets) && not(has_user_context_targets) {
+    for event_name in events_to_unsub {
+      let module_key = get_subscription_key(event_name)
+      if module_key == event_name {
+        if not(self.has_global_module_subscription(module_key)) {
+          self.send_error(
+            request_id,
+            "invalid argument",
+            "No global subscription for module: " + module_key,
+          )
+          return Some(())
+        }
+        if self.has_global_event_override_for_module(module_key) {
+          self.send_error(
+            request_id,
+            "invalid argument",
+            "Cannot unsubscribe module after partial event unsubscription: " +
+            module_key,
+          )
+          return Some(())
+        }
+      } else if not(self.has_global_event_subscription(event_name)) {
+        self.send_error(
+          request_id,
+          "invalid argument",
+          "No global subscription for event: " + event_name,
+        )
+        return Some(())
+      }
+    }
+  }
+
+  None
+}
+
+///|
+/// Supported event/module names accepted by session.{subscribe,unsubscribe}.
+fn is_valid_session_subscription_event_name(name : String) -> Bool {
+  if name == "browsingContext" ||
+    name == "script" ||
+    name == "log" ||
+    name == "network" ||
+    name == "input" ||
+    name == "storage" ||
+    name == "browser" ||
+    name == "bluetooth" ||
+    name == "permissions" ||
+    name == "session" ||
+    name == "webExtension" ||
+    name == "speculation" {
+    return true
+  }
+
+  match name {
+    "browsingContext.contextCreated" => true
+    "browsingContext.contextDestroyed" => true
+    "browsingContext.domContentLoaded" => true
+    "browsingContext.load" => true
+    "browsingContext.navigationStarted" => true
+    "browsingContext.navigationFailed" => true
+    "browsingContext.navigationAborted" => true
+    "browsingContext.navigationCommitted" => true
+    "browsingContext.fragmentNavigated" => true
+    "browsingContext.historyUpdated" => true
+    "browsingContext.downloadWillBegin" => true
+    "browsingContext.downloadEnd" => true
+    "browsingContext.userPromptOpened" => true
+    "browsingContext.userPromptClosed" => true
+    "log.entryAdded" => true
+    "script.realmCreated" => true
+    "script.realmDestroyed" => true
+    "script.message" => true
+    "network.beforeRequestSent" => true
+    "network.responseStarted" => true
+    "network.responseCompleted" => true
+    "network.fetchError" => true
+    "network.authRequired" => true
+    "input.fileDialogOpened" => true
+    "speculation.prefetchStatusUpdated" => true
+    _ => false
+  }
+}
+
+///|
+/// Validate 32-char hex subscription id format.
+fn is_valid_subscription_id_format(subscription_id : String) -> Bool {
+  if subscription_id.length() != 32 {
+    return false
+  }
+  for c in subscription_id.iter() {
+    if not(
+      (c >= '0' && c <= '9') ||
+      (c >= 'a' && c <= 'f') ||
+      (c >= 'A' && c <= 'F')
+    ) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// Check whether module is globally subscribed as a module key.
+fn BidiProtocol::has_global_module_subscription(
+  self : BidiProtocol,
+  module_key : String,
+) -> Bool {
+  array_contains(self.global_subscriptions, module_key)
+}
+
+///|
+/// Check whether event is effectively globally subscribed.
+fn BidiProtocol::has_global_event_subscription(
+  self : BidiProtocol,
+  event_name : String,
+) -> Bool {
+  if array_contains(self.global_unsubscribed_events, event_name) {
+    return false
+  }
+  let module_key = get_subscription_key(event_name)
+  for sub in self.global_subscriptions {
+    if sub == event_name || sub == module_key {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Check whether module has any event-level global overrides.
+fn BidiProtocol::has_global_event_override_for_module(
+  self : BidiProtocol,
+  module_key : String,
+) -> Bool {
+  for event_name in self.global_unsubscribed_events {
+    if get_subscription_key(event_name) == module_key {
+      return true
+    }
+  }
+  false
+}
+
+///|
 /// JSON helpers
 fn make_object(map : Map[String, Json]) -> Json {
   Json::object(map)
@@ -2249,6 +3268,42 @@ fn get_param_raw(params : Json?, key : String) -> Json? {
   match params {
     Some(Object(map)) => map.get(key)
     _ => None
+  }
+}
+
+///|
+/// Get serializationOptions as JSON string.
+fn get_serialization_options_json(params : Json?) -> String {
+  match get_param_raw(params, "serializationOptions") {
+    Some(Object(opts)) => make_object(opts).stringify()
+    _ => "{}"
+  }
+}
+
+///|
+/// Check if serializationOptions parameter is present.
+fn has_serialization_options_param(params : Json?) -> Bool {
+  match get_param_raw(params, "serializationOptions") {
+    Some(Object(_)) => true
+    _ => false
+  }
+}
+
+///|
+/// Determine runtime context key used by JS evaluator.
+fn resolve_runtime_context_id(
+  params : Json?,
+  ctx_id : String,
+  realm_id : String,
+  realm_is_sandbox : Bool,
+) -> String {
+  match get_param_raw(params, "target") {
+    Some(Object(target_map)) =>
+      match target_map.get("sandbox") {
+        Some(String(name)) => if name == "" { ctx_id } else { realm_id }
+        _ => if realm_is_sandbox { realm_id } else { ctx_id }
+      }
+    _ => if realm_is_sandbox { realm_id } else { ctx_id }
   }
 }
 
@@ -2509,28 +3564,35 @@ fn BidiProtocol::resolve_target_context_realm(
         Some(String(name)) => Some(name)
         _ => None
       }
-      match realm_id {
-        Some(realm) => {
-          let fallback_ctx = self.default_context_id.unwrap_or(
-            self.ensure_default_context(),
-          )
-          let resolved_ctx = self.realm_context
-            .get(realm)
-            .unwrap_or(context_id.unwrap_or(fallback_ctx))
-          (resolved_ctx, realm)
-        }
-        None =>
-          match context_id {
-            Some(ctx_id) =>
-              match sandbox_name {
-                Some(name) =>
-                  (ctx_id, self.get_or_create_sandbox_realm(ctx_id, name))
-                None =>
-                  (
-                    ctx_id,
-                    self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id),
-                  )
+      match context_id {
+        Some(ctx_id) =>
+          match sandbox_name {
+            Some(name) =>
+              if name == "" {
+                (
+                  ctx_id,
+                  self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id),
+                )
+              } else {
+                (ctx_id, self.get_or_create_sandbox_realm(ctx_id, name))
               }
+            None =>
+              (
+                ctx_id,
+                self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id),
+              )
+          }
+        None =>
+          match realm_id {
+            Some(realm) => {
+              let fallback_ctx = self.default_context_id.unwrap_or(
+                self.ensure_default_context(),
+              )
+              let resolved_ctx = self.realm_context
+                .get(realm)
+                .unwrap_or(fallback_ctx)
+              (resolved_ctx, realm)
+            }
             None => {
               let fallback_ctx = self.default_context_id.unwrap_or(
                 self.ensure_default_context(),
@@ -2624,7 +3686,50 @@ fn BidiProtocol::validate_this_param(
   params : Json?,
 ) -> Unit? {
   match get_param_raw(params, "this") {
-    Some(Object(_)) => () // Valid serialized value
+    Some(Object(value_map)) => {
+      if not(is_valid_serialized_value_map(value_map)) {
+        self.send_error(
+          request_id, "invalid argument", "this must be a serialized value",
+        )
+        return Some(())
+      }
+      match value_map.get("sharedId") {
+        Some(String(shared_id)) =>
+          if not(has_runtime_shared_node(shared_id)) {
+            self.send_error(
+              request_id,
+              "no such node",
+              "Unknown sharedId: " + shared_id,
+            )
+            return Some(())
+          }
+        Some(_) => {
+          self.send_error(
+            request_id, "invalid argument", "sharedId must be a string",
+          )
+          return Some(())
+        }
+        None => ()
+      }
+      match value_map.get("handle") {
+        Some(String(handle_id)) =>
+          if not(has_runtime_handle(handle_id)) {
+            self.send_error(
+              request_id,
+              "no such handle",
+              "Unknown handle: " + handle_id,
+            )
+            return Some(())
+          }
+        Some(_) => {
+          self.send_error(
+            request_id, "invalid argument", "handle must be a string",
+          )
+          return Some(())
+        }
+        None => ()
+      }
+    }
     None => () // Optional
     Some(_) => {
       self.send_error(
@@ -2649,6 +3754,12 @@ fn BidiProtocol::validate_arguments_param(
       for arg in args {
         match arg {
           Object(arg_map) => {
+            if not(is_valid_serialized_value_map(arg_map)) {
+              self.send_error(
+                request_id, "invalid argument", "arguments entries must be serialized values",
+              )
+              return Some(())
+            }
             // Check for channel type special validation
             match arg_map.get("type") {
               Some(String("channel")) =>
@@ -2767,7 +3878,15 @@ fn BidiProtocol::validate_arguments_param(
             }
             // Validate handle if present
             match arg_map.get("handle") {
-              Some(String(_)) => () // Will be validated during execution
+              Some(String(handle_id)) =>
+                if not(has_runtime_handle(handle_id)) {
+                  self.send_error(
+                    request_id,
+                    "no such handle",
+                    "Unknown handle: " + handle_id,
+                  )
+                  return Some(())
+                }
               Some(_) => {
                 self.send_error(
                   request_id, "invalid argument", "handle must be a string",
@@ -2778,7 +3897,15 @@ fn BidiProtocol::validate_arguments_param(
             }
             // Validate sharedId if present
             match arg_map.get("sharedId") {
-              Some(String(_)) => ()
+              Some(String(shared_id)) =>
+                if not(has_runtime_shared_node(shared_id)) {
+                  self.send_error(
+                    request_id,
+                    "no such node",
+                    "Unknown sharedId: " + shared_id,
+                  )
+                  return Some(())
+                }
               Some(_) => {
                 self.send_error(
                   request_id, "invalid argument", "sharedId must be a string",
@@ -2808,11 +3935,31 @@ fn BidiProtocol::validate_arguments_param(
 }
 
 ///|
+/// Serialized value object must include at least one discriminator key.
+fn is_valid_serialized_value_map(value_map : Map[String, Json]) -> Bool {
+  value_map.contains("type") ||
+  value_map.contains("handle") ||
+  value_map.contains("sharedId")
+}
+
+///|
 /// Convert BiDi remote value to JS literal for function arguments
 fn bidi_value_to_js_literal(value : Json) -> String {
   match value {
     Object(map) =>
-      match map.get("type") {
+      match map.get("sharedId") {
+        Some(String(shared_id)) =>
+          "((globalThis.__bidiSharedNodeStore && globalThis.__bidiSharedNodeStore.get(\"" +
+          escape_js_string(shared_id) +
+          "\")) ?? undefined)"
+        _ =>
+          match map.get("handle") {
+        Some(String(handle_id)) =>
+          "((globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.get(\"" +
+          escape_js_string(handle_id) +
+          "\")) ?? undefined)"
+        _ =>
+          match map.get("type") {
         Some(String("undefined")) => "undefined"
         Some(String("null")) => "null"
         Some(String("boolean")) =>
@@ -2837,6 +3984,63 @@ fn bidi_value_to_js_literal(value : Json) -> String {
             Some(String(s)) => s + "n"
             _ => "0n"
           }
+        Some(String("channel")) =>
+          match map.get("value") {
+            Some(Object(channel_map)) => {
+              let channel_name = match channel_map.get("channel") {
+                Some(String(s)) => s
+                _ => "channel"
+              }
+              let ownership = match channel_map.get("ownership") {
+                Some(String(s)) => s
+                _ => "none"
+              }
+              let max_object_depth = match
+                channel_map.get("serializationOptions") {
+                Some(Object(ser_opts)) =>
+                  match ser_opts.get("maxObjectDepth") {
+                    Some(Number(n, ..)) => n.to_string()
+                    _ => "-1"
+                  }
+                _ => "-1"
+              }
+              "((...__args) => {" +
+              "if (!globalThis.__bidiChannelMessages) globalThis.__bidiChannelMessages = [];" +
+              "globalThis.__bidiChannelMessages.push({" +
+              "channel: \"" +
+              escape_js_string(channel_name) +
+              "\"," +
+              "data: (__args.length > 0 ? __args[0] : undefined)," +
+              "ownership: \"" +
+              escape_js_string(ownership) +
+              "\"," +
+              "maxObjectDepth: " +
+              max_object_depth +
+              "});" +
+              "})"
+            }
+            _ => "(() => {})"
+          }
+        Some(String("date")) =>
+          match map.get("value") {
+            Some(String(s)) => "new Date(\"" + escape_js_string(s) + "\")"
+            _ => "new Date(0)"
+          }
+        Some(String("regexp")) =>
+          match map.get("value") {
+            Some(Object(regexp_map)) => {
+              let pattern = match regexp_map.get("pattern") {
+                Some(String(s)) => "\"" + escape_js_string(s) + "\""
+                _ => "\"\""
+              }
+              let flags = match regexp_map.get("flags") {
+                Some(String(s)) => "\"" + escape_js_string(s) + "\""
+                _ => "\"\""
+              }
+              "new RegExp(" + pattern + ", " + flags + ")"
+            }
+            _ => "new RegExp(\"\", \"\")"
+          }
         Some(String("array")) =>
           match map.get("value") {
             Some(Array(items)) => {
@@ -2847,6 +4051,35 @@ fn bidi_value_to_js_literal(value : Json) -> String {
               "[" + parts.join(", ") + "]"
             }
             _ => "[]"
+          }
+        Some(String("map")) =>
+          match map.get("value") {
+            Some(Array(entries)) => {
+              let parts : Array[String] = []
+              for entry in entries {
+                match entry {
+                  Array(kv) if kv.length() >= 2 => {
+                    let key = bidi_value_to_js_literal(kv[0])
+                    let val = bidi_value_to_js_literal(kv[1])
+                    parts.push("[" + key + ", " + val + "]")
+                  }
+                  _ => ()
+                }
+              }
+              "new Map([" + parts.join(", ") + "])"
+            }
+            _ => "new Map()"
+          }
+        Some(String("set")) =>
+          match map.get("value") {
+            Some(Array(items)) => {
+              let parts : Array[String] = []
+              for item in items {
+                parts.push(bidi_value_to_js_literal(item))
+              }
+              "new Set([" + parts.join(", ") + "])"
+            }
+            _ => "new Set()"
           }
         Some(String("object")) =>
           match map.get("value") {
@@ -2870,7 +4103,14 @@ fn bidi_value_to_js_literal(value : Json) -> String {
             _ => "{}"
           }
         _ => "undefined"
+          }
+          }
       }
+    String(s) => "\"" + escape_js_string(s) + "\""
+    Number(n, ..) => n.to_string()
+    True => "true"
+    False => "false"
+    Null => "null"
     _ => "undefined"
   }
 }
