@@ -21,6 +21,10 @@ pub fn evaluate_js(String) -> String
 
 pub fn evaluate_js_async(String) -> @core.Any
 
+pub fn get_runtime_anchor_download_attr_by_id(String) -> String?
+
+pub fn get_runtime_anchor_href_by_id(String) -> String?
+
 pub fn get_runtime_href_at_point(Double, Double) -> String?
 
 pub fn get_runtime_iframe_sources() -> Array[String]
@@ -32,6 +36,8 @@ pub fn get_runtime_last_click_href() -> String?
 pub fn get_runtime_shared_node_center_json(String) -> String
 
 pub fn get_runtime_shared_node_href(String) -> String?
+
+pub fn get_runtime_url_query_param(String, String) -> String?
 
 pub fn handle_element_click(@cdp.CdpSession, Int) -> Result[Unit, CdpHandlerError]
 
@@ -120,6 +126,8 @@ pub fn runtime_shared_node_is_document(String) -> Bool
 pub fn runtime_shared_node_is_draggable(String) -> Bool
 
 pub fn runtime_shared_node_is_element(String) -> Bool
+
+pub fn runtime_write_text_file(String, String) -> Unit
 
 pub fn set_runtime_context(String) -> Unit
 
@@ -266,12 +274,19 @@ pub struct BidiProtocol {
   user_context_device_pixel_ratio : Map[String, Double]
   context_user_context : Map[String, String]
   context_has_beforeunload : Map[String, Bool]
+  context_blocks_cross_origin_iframe_navigation : Map[String, Bool]
   pending_prompt_type : Map[String, String]
   pending_close_request : Map[String, Int]
   pending_prompt_request : Map[String, Int]
   pending_prompt_realm : Map[String, String]
   pending_beforeunload_request : Map[String, Int]
   pending_beforeunload_url : Map[String, String]
+  pending_beforeunload_wait : Map[String, String]
+  pending_beforeunload_navigation : Map[String, String]
+  pending_navigation_request : Map[String, Int]
+  in_flight_navigation_url : Map[String, String]
+  in_flight_navigation_id : Map[String, String]
+  in_flight_navigation_started_at : Map[String, Double]
   pending_prompt_result_var : Map[String, String]
   context_local_storage : Map[String, Map[String, String]]
   context_original_opener : Map[String, String]
@@ -303,6 +318,10 @@ pub struct BidiProtocol {
   input_last_click_target_shared : Map[String, String]
   input_pending_double_click : Map[String, Bool]
   input_action_clock_ms : Map[String, Double]
+  network_intercepts : Map[String, Json]
+  mut next_network_intercept_id : Int
+  network_data_collectors : Map[String, Json]
+  mut next_network_data_collector_id : Int
   mut socket : @core.Any?
   mut socket_epoch : Int
   mut use_quickjs : Bool

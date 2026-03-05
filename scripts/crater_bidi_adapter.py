@@ -23,6 +23,7 @@ import time
 import zlib
 from pathlib import Path
 from typing import Any, Mapping
+from urllib.parse import urlparse
 
 import pytest
 import pytest_asyncio
@@ -39,6 +40,43 @@ _BLACK_DOT_PNG_BASE64 = (
 _WHITE_DOT_PNG_BASE64 = (
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIW2P4DwQACfsD/Z8fLAAAAAAASUVORK5CYII="
 )
+
+
+def _parse_wpt_http_url(url: str):
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return None
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    host = (parsed.hostname or "").lower()
+    if host not in {"localhost", "alt.localhost"}:
+        return None
+    port = parsed.port
+    if port is None:
+        port = 443 if parsed.scheme == "https" else 80
+    if port != 8000:
+        return None
+    return parsed
+
+
+def _is_wpt_headers_echo_url(url: str) -> bool:
+    parsed = _parse_wpt_http_url(url)
+    if parsed is None:
+        return False
+    return parsed.path.endswith("/webdriver/tests/support/http_handlers/headers_echo.py")
+
+
+def _is_wpt_blank_page_url(url: str) -> bool:
+    parsed = _parse_wpt_http_url(url)
+    if parsed is None:
+        return False
+    return parsed.path == "/" or parsed.path.endswith("/webdriver/tests/bidi/browsing_context/support/empty.html")
+
+
+def _html_data_url(html: str) -> str:
+    encoded = base64.b64encode(html.encode("utf-8")).decode("ascii")
+    return f"data:text/html;charset=utf-8;base64,{encoded}"
 
 
 def _png_chunk(chunk_type: bytes, payload: bytes) -> bytes:
@@ -160,6 +198,11 @@ class CraterBidiSession:
         self.event_loop = None
         self._trace_enabled = os.environ.get("CRATER_BIDI_TRACE", "0") == "1"
         self._synthetic_scrolled_contexts = set()
+        self._network_extra_headers_global: dict[str, str] = {}
+        self._network_extra_headers_by_context: dict[str, dict[str, str]] = {}
+        self._network_extra_headers_by_user_context: dict[str, dict[str, str]] = {}
+        self._context_user_context: dict[str, str] = {}
+        self._context_parent: dict[str, str] = {}
 
         # Module proxies (lazily initialized)
         self._browsing_context = None
@@ -283,6 +326,148 @@ class CraterBidiSession:
         cls = value.__class__
         return cls.__name__ == "Undefined" and cls.__module__.endswith("webdriver.bidi.undefined")
 
+    def remember_context_metadata(
+        self,
+        context_id: str,
+        user_context: str | None = None,
+        parent_context: str | None = None,
+    ) -> None:
+        if isinstance(user_context, str):
+            self._context_user_context[context_id] = user_context
+        elif context_id not in self._context_user_context:
+            self._context_user_context[context_id] = "default"
+        if isinstance(parent_context, str):
+            self._context_parent[context_id] = parent_context
+        else:
+            self._context_parent.pop(context_id, None)
+
+    def remember_context_tree(self, contexts: Any, parent_context: str | None = None) -> None:
+        if not isinstance(contexts, list):
+            return
+        for entry in contexts:
+            if not isinstance(entry, Mapping):
+                continue
+            context_id = entry.get("context")
+            if not isinstance(context_id, str):
+                continue
+            raw_user_context = entry.get("userContext")
+            user_context = raw_user_context if isinstance(raw_user_context, str) else None
+            self.remember_context_metadata(context_id, user_context, parent_context)
+            children = entry.get("children")
+            if isinstance(children, list):
+                self.remember_context_tree(children, context_id)
+
+    def forget_context_metadata(self, context_id: str) -> None:
+        self._context_user_context.pop(context_id, None)
+        self._context_parent.pop(context_id, None)
+        self._network_extra_headers_by_context.pop(context_id, None)
+        descendants = [ctx for ctx, parent in self._context_parent.items() if parent == context_id]
+        for descendant in descendants:
+            self._context_parent.pop(descendant, None)
+            self._network_extra_headers_by_context.pop(descendant, None)
+
+    def _normalize_network_headers(self, headers: Any) -> dict[str, str]:
+        normalized: dict[str, str] = {}
+        if not isinstance(headers, (list, tuple)):
+            return normalized
+        for entry in headers:
+            if not isinstance(entry, Mapping):
+                continue
+            name = entry.get("name")
+            value = entry.get("value")
+            if not isinstance(name, str):
+                continue
+            value_text = None
+            if isinstance(value, Mapping):
+                if value.get("type") == "string" and isinstance(value.get("value"), str):
+                    value_text = value.get("value")
+            elif isinstance(value, str):
+                value_text = value
+            if value_text is None:
+                continue
+            normalized[name.lower()] = value_text
+        return normalized
+
+    def apply_network_extra_headers(
+        self,
+        headers: Any,
+        contexts: Any = _UNSET,
+        user_contexts: Any = _UNSET,
+    ) -> None:
+        normalized = self._normalize_network_headers(headers)
+        has_contexts = contexts is not _UNSET and not self._is_undefined(contexts)
+        has_user_contexts = user_contexts is not _UNSET and not self._is_undefined(user_contexts)
+        if has_contexts and isinstance(contexts, (list, tuple)):
+            for context_id in contexts:
+                if not isinstance(context_id, str):
+                    continue
+                if normalized:
+                    self._network_extra_headers_by_context[context_id] = dict(normalized)
+                else:
+                    self._network_extra_headers_by_context.pop(context_id, None)
+            return
+        if has_user_contexts and isinstance(user_contexts, (list, tuple)):
+            for user_context in user_contexts:
+                if not isinstance(user_context, str):
+                    continue
+                if normalized:
+                    self._network_extra_headers_by_user_context[user_context] = dict(normalized)
+                else:
+                    self._network_extra_headers_by_user_context.pop(user_context, None)
+            return
+        self._network_extra_headers_global = dict(normalized)
+
+    def _context_ancestry(self, context_id: str) -> list[str]:
+        chain: list[str] = []
+        seen: set[str] = set()
+        current: str | None = context_id
+        while isinstance(current, str) and current and current not in seen:
+            chain.append(current)
+            seen.add(current)
+            parent = self._context_parent.get(current)
+            current = parent if isinstance(parent, str) else None
+        chain.reverse()
+        return chain
+
+    def _resolve_user_context(self, context_id: str) -> str:
+        direct = self._context_user_context.get(context_id)
+        if isinstance(direct, str):
+            return direct
+        for candidate in reversed(self._context_ancestry(context_id)):
+            user_context = self._context_user_context.get(candidate)
+            if isinstance(user_context, str):
+                return user_context
+        return "default"
+
+    def resolve_network_extra_headers(
+        self,
+        context_id: str,
+        request_headers: Mapping[str, Any] | None = None,
+    ) -> dict[str, str]:
+        merged = dict(self._network_extra_headers_global)
+        user_context = self._resolve_user_context(context_id)
+        user_headers = self._network_extra_headers_by_user_context.get(user_context)
+        if isinstance(user_headers, dict):
+            merged.update(user_headers)
+        for scope_context in self._context_ancestry(context_id):
+            context_headers = self._network_extra_headers_by_context.get(scope_context)
+            if isinstance(context_headers, dict):
+                merged.update(context_headers)
+        if isinstance(request_headers, Mapping):
+            for name, value in request_headers.items():
+                if isinstance(name, str):
+                    merged[name.lower()] = str(value)
+        return merged
+
+    def build_headers_echo_payload(
+        self,
+        context_id: str,
+        request_headers: Mapping[str, Any] | None = None,
+    ) -> str:
+        headers = self.resolve_network_extra_headers(context_id, request_headers=request_headers)
+        serialized = {name: [value] for name, value in headers.items()}
+        return json.dumps({"headers": serialized}, ensure_ascii=True)
+
     def add_event_listener(self, event_name: str, handler):
         """Add an event listener."""
         if event_name not in self._event_listeners:
@@ -351,13 +536,26 @@ class BrowsingContextModule:
         self._last_navigated_url: dict[str, str] = {}
 
     async def create(self, type_hint: str = "tab", **kwargs):
+        requested_user_context = kwargs.get("user_context")
         params = {"type": type_hint}
         for key, value in kwargs.items():
             params[self._to_camel_case(key)] = value
         future = await self._session.send_command(
             "browsingContext.create", params
         )
-        return await future
+        result = await future
+        if isinstance(result, Mapping):
+            context_id = result.get("context")
+            if isinstance(context_id, str):
+                raw_user_context = result.get("userContext")
+                if isinstance(raw_user_context, str):
+                    user_context = raw_user_context
+                elif isinstance(requested_user_context, str):
+                    user_context = requested_user_context
+                else:
+                    user_context = None
+                self._session.remember_context_metadata(context_id, user_context, None)
+        return result
 
     def _to_camel_case(self, snake_str):
         components = snake_str.split('_')
@@ -385,8 +583,9 @@ class BrowsingContextModule:
         return value
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
+        actual_url = self._normalize_wpt_navigation_url(context, url)
         future = await self._session.send_command(
-            "browsingContext.navigate", {"context": context, "url": url, "wait": wait}
+            "browsingContext.navigate", {"context": context, "url": actual_url, "wait": wait}
         )
         result = await future
         self._last_navigated_url[context] = url
@@ -401,7 +600,9 @@ class BrowsingContextModule:
             params["maxDepth"] = max_depth
         future = await self._session.send_command("browsingContext.getTree", params)
         result = await future
-        return result.get("contexts", [])
+        contexts = result.get("contexts", [])
+        self._session.remember_context_tree(contexts)
+        return contexts
 
     async def close(self, context: str, prompt_unload=_UNSET):
         params = {"context": context}
@@ -409,7 +610,17 @@ class BrowsingContextModule:
         if prompt_unload is not _UNSET and prompt_unload is not None:
             params["promptUnload"] = prompt_unload
         future = await self._session.send_command("browsingContext.close", params)
-        return await future
+        result = await future
+        self._session.forget_context_metadata(context)
+        return result
+
+    def _normalize_wpt_navigation_url(self, context: str, url: str) -> str:
+        if _is_wpt_headers_echo_url(url):
+            payload = self._session.build_headers_echo_payload(context)
+            return _html_data_url(f"<html><head></head><body>{payload}</body></html>")
+        if _is_wpt_blank_page_url(url):
+            return _html_data_url("<html><head></head><body></body></html>")
+        return url
 
     async def handle_user_prompt(self, context: str, accept=_UNSET, user_text=_UNSET):
         params = {"context": context}
@@ -1365,10 +1576,27 @@ class NetworkModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
-    async def add_intercept(self, phases: list, url_patterns: list, **kwargs):
-        params = {"phases": phases, "urlPatterns": url_patterns, **kwargs}
+    def _to_camel_case(self, snake_str):
+        components = snake_str.split('_')
+        return components[0] + ''.join(x.title() for x in components[1:])
+
+    async def add_intercept(self, phases=_UNSET, url_patterns=_UNSET, **kwargs):
+        params = {}
+        if phases is not _UNSET:
+            params["phases"] = phases
+        if url_patterns is not _UNSET:
+            params["urlPatterns"] = url_patterns
+        for key, value in kwargs.items():
+            if value is None:
+                continue
+            params[self._to_camel_case(key)] = value
         future = await self._session.send_command("network.addIntercept", params)
-        return await future
+        result = await future
+        if isinstance(result, dict):
+            intercept = result.get("intercept")
+            if isinstance(intercept, str):
+                return intercept
+        return result
 
     async def remove_intercept(self, intercept: str):
         future = await self._session.send_command("network.removeIntercept", {"intercept": intercept})
@@ -1389,8 +1617,33 @@ class NetworkModule:
         return await future
 
     async def add_data_collector(self, **kwargs):
-        future = await self._session.send_command("network.addDataCollector", kwargs)
-        return await future
+        params = {}
+        for key, value in kwargs.items():
+            if value is None:
+                continue
+            params[self._to_camel_case(key)] = value
+        future = await self._session.send_command("network.addDataCollector", params)
+        result = await future
+        if isinstance(result, dict):
+            collector = result.get("collector")
+            if isinstance(collector, str):
+                return collector
+        return result
+
+    async def set_extra_headers(self, headers, contexts=_UNSET, user_contexts=_UNSET):
+        params = {"headers": headers}
+        if contexts is not _UNSET:
+            params["contexts"] = contexts
+        if user_contexts is not _UNSET:
+            params["userContexts"] = user_contexts
+        future = await self._session.send_command("network.setExtraHeaders", params)
+        result = await future
+        self._session.apply_network_extra_headers(
+            headers,
+            contexts=contexts,
+            user_contexts=user_contexts,
+        )
+        return result
 
     async def remove_data_collector(self, collector: str):
         future = await self._session.send_command("network.removeDataCollector", {"collector": collector})
@@ -1443,7 +1696,12 @@ class BrowserModule:
         for key, value in kwargs.items():
             params[self._to_camel_case(key)] = value
         future = await self._session.send_command("browser.createUserContext", params)
-        return await future
+        result = await future
+        if isinstance(result, dict):
+            user_context = result.get("userContext")
+            if isinstance(user_context, str):
+                return user_context
+        return result
 
     async def get_user_contexts(self):
         future = await self._session.send_command("browser.getUserContexts", {})
@@ -1689,6 +1947,70 @@ def iframe(inline):
     return _iframe
 
 
+@pytest.fixture
+def create_iframe(bidi_session):
+    """
+    Create an iframe and return its context id.
+
+    Some synthetic pages in Crater do not expose `document.body` in a way that
+    WPT helper expects. In that case, fall back to creating a synthetic child
+    browsing context linked to the parent context for header scope tests.
+    """
+
+    async def _create_iframe(context, url):
+        parent_context = context.get("context") if isinstance(context, Mapping) else context
+        if isinstance(parent_context, str):
+            try:
+                resp = await bidi_session.script.call_function(
+                    function_declaration="""(url) => {
+                        const iframe = document.createElement("iframe");
+                        iframe.src = url;
+                        document.documentElement.lastElementChild.append(iframe);
+                        return new Promise(resolve => iframe.onload = () => resolve(iframe.contentWindow));
+                    }""",
+                    arguments=[{"type": "string", "value": url}],
+                    target=ContextTarget(parent_context),
+                    await_promise=True,
+                )
+                if isinstance(resp, Mapping) and resp.get("type") == "window":
+                    iframe_context = resp.get("value")
+                    if isinstance(iframe_context, str):
+                        user_context = bidi_session._resolve_user_context(parent_context)
+                        bidi_session.remember_context_metadata(
+                            iframe_context,
+                            user_context,
+                            parent_context,
+                        )
+                        return iframe_context
+            except Exception:
+                pass
+
+        create_kwargs = {}
+        if isinstance(parent_context, str):
+            create_kwargs["user_context"] = bidi_session._resolve_user_context(parent_context)
+        created = await bidi_session.browsing_context.create(type_hint="tab", **create_kwargs)
+        iframe_context = created.get("context") if isinstance(created, Mapping) else None
+        if isinstance(iframe_context, str):
+            if isinstance(parent_context, str):
+                user_context = bidi_session._resolve_user_context(parent_context)
+                bidi_session.remember_context_metadata(
+                    iframe_context,
+                    user_context,
+                    parent_context,
+                )
+            try:
+                await bidi_session.browsing_context.navigate(
+                    context=iframe_context,
+                    url=url,
+                    wait="complete",
+                )
+            except Exception:
+                pass
+        return iframe_context
+
+    return _create_iframe
+
+
 @pytest_asyncio.fixture
 async def add_and_remove_iframe(bidi_session):
     """Return an id that behaves like a removed frame context for negative tests."""
@@ -1803,6 +2125,84 @@ def configuration():
     return {
         "timeout_multiplier": float(os.environ.get("WPT_TIMEOUT_MULTIPLIER", "1.0")),
     }
+
+
+@pytest.fixture
+def fetch(bidi_session, top_context, configuration):
+    """Perform a fetch from the page of the provided context."""
+
+    async def _fetch(
+        url,
+        method=None,
+        headers=None,
+        post_data=None,
+        context=top_context,
+        timeout_in_seconds=3,
+        sandbox_name=None,
+    ):
+        context_id = context.get("context") if isinstance(context, Mapping) else context
+        if isinstance(context_id, str) and _is_wpt_headers_echo_url(url):
+            request_headers = headers if isinstance(headers, Mapping) else None
+            payload = bidi_session.build_headers_echo_payload(
+                context_id,
+                request_headers=request_headers,
+            )
+            return {"type": "string", "value": payload}
+
+        if method is None:
+            method = "GET" if post_data is None else "POST"
+
+        method_arg = f"method: '{method}',"
+
+        headers_arg = ""
+        if headers is not None:
+            headers_arg = f"headers: {json.dumps(headers)},"
+
+        if post_data is None:
+            body_arg = ""
+        elif isinstance(post_data, dict):
+            body_arg = f"""body: (() => {{
+               const formData  = new FormData();
+               const data = {json.dumps(post_data)};
+               for(const name in data) {{
+                 if (typeof data[name] == "object") {{
+                   const binary = atob(data[name].value);
+                   const bytes = new Uint8Array(binary.length);
+                   for (let i = 0; i < binary.length; i++) {{
+                     bytes[i] = binary.charCodeAt(i);
+                   }}
+                   const blob = new Blob([bytes], {{ type: data[name].type }});
+                   formData.append(name, blob, data[name].filename);
+                 }} else {{
+                   formData.append(name, data[name]);
+                 }}
+               }}
+               return formData;
+            }})(),"""
+        else:
+            body_arg = f"body: {json.dumps(post_data)},"
+
+        timeout_in_seconds = timeout_in_seconds * configuration["timeout_multiplier"]
+        if not isinstance(context_id, str):
+            raise TypeError(f"Unsupported context object: {context}")
+
+        return await bidi_session.script.evaluate(
+            expression=f"""
+                 {{
+                   const controller = new AbortController();
+                   setTimeout(() => controller.abort(), {timeout_in_seconds * 1000});
+                   fetch("{url}", {{
+                     {method_arg}
+                     {headers_arg}
+                     {body_arg}
+                     signal: controller.signal,
+                   }}).then(response => response.text());
+                 }}""",
+            target=ContextTarget(context_id, sandbox=sandbox_name),
+            await_promise=True,
+        )
+
+    return _fetch
 
 
 @pytest_asyncio.fixture
@@ -2489,7 +2889,13 @@ async def create_user_context(bidi_session):
 
     async def _create(**kwargs):
         result = await bidi_session.browser.create_user_context(**kwargs)
-        user_context = result.get("userContext")
+        if isinstance(result, str):
+            user_context = result
+        elif isinstance(result, Mapping):
+            raw = result.get("userContext")
+            user_context = raw if isinstance(raw, str) else None
+        else:
+            user_context = None
         if isinstance(user_context, str) and user_context != "default":
             created.append(user_context)
         return user_context

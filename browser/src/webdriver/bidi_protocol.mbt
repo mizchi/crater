@@ -116,6 +116,10 @@ pub struct BidiProtocol {
   input_last_click_target_shared : Map[String, String] // context -> target of last primary click release
   input_pending_double_click : Map[String, Bool] // context -> whether current click sequence should emit dblclick
   input_action_clock_ms : Map[String, Double] // context -> virtual input clock advanced by pause durations
+  network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
+  mut next_network_intercept_id : Int
+  network_data_collectors : Map[String, Json] // collector id -> network.addDataCollector options
+  mut next_network_data_collector_id : Int
   mut socket : @core.Any? // WebSocket for async responses
   mut socket_epoch : Int // Monotonic epoch for active WebSocket
   mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
@@ -198,6 +202,10 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     input_last_click_target_shared: {},
     input_pending_double_click: {},
     input_action_clock_ms: {},
+    network_intercepts: {},
+    next_network_intercept_id: 1,
+    network_data_collectors: {},
+    next_network_data_collector_id: 1,
     socket: None,
     socket_epoch: 0,
     use_quickjs: false,
@@ -639,6 +647,24 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   for key in input_action_clock_keys {
     self.input_action_clock_ms.remove(key)
   }
+
+  let intercept_keys : Array[String] = []
+  for key, _ in self.network_intercepts {
+    intercept_keys.push(key)
+  }
+  for key in intercept_keys {
+    self.network_intercepts.remove(key)
+  }
+  self.next_network_intercept_id = 1
+
+  let collector_keys : Array[String] = []
+  for key, _ in self.network_data_collectors {
+    collector_keys.push(key)
+  }
+  for key in collector_keys {
+    self.network_data_collectors.remove(key)
+  }
+  self.next_network_data_collector_id = 1
 }
 
 ///|
@@ -6146,7 +6172,27 @@ fn BidiProtocol::dispatch_network(
   action : String,
 ) -> Result[Unit, String] {
   match action {
-    "addDataCollector" | "setCacheBehavior" => {
+    "addIntercept" => {
+      self.handle_network_add_intercept(request.id, request.params)
+      Ok(())
+    }
+    "removeIntercept" => {
+      self.handle_network_remove_intercept(request.id, request.params)
+      Ok(())
+    }
+    "addDataCollector" => {
+      self.handle_network_add_data_collector(request.id, request.params)
+      Ok(())
+    }
+    "setExtraHeaders" => {
+      self.handle_network_set_extra_headers(request.id, request.params)
+      Ok(())
+    }
+    "removeDataCollector" => {
+      self.handle_network_remove_data_collector(request.id, request.params)
+      Ok(())
+    }
+    "setCacheBehavior" => {
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
@@ -6159,6 +6205,679 @@ fn BidiProtocol::dispatch_network(
       Ok(())
     }
   }
+}
+
+///|
+/// Handle network.addIntercept
+fn BidiProtocol::handle_network_add_intercept(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let options = match
+    self.validate_network_add_intercept_params(request_id, params) {
+    Some(options) => options
+    None => return
+  }
+  let intercept_id = left_pad_with_zero(
+    self.next_network_intercept_id.to_string(),
+    32,
+  )
+  self.next_network_intercept_id += 1
+  self.network_intercepts[intercept_id] = make_object(options)
+  self.send_success(
+    request_id,
+    Some(make_object({ "intercept": Json::string(intercept_id) })),
+  )
+}
+
+///|
+/// Validate network.addIntercept parameters.
+/// Returns None when an error response has already been sent.
+fn BidiProtocol::validate_network_add_intercept_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Map[String, Json]? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+
+  let options : Map[String, Json] = {}
+
+  let raw_phases = match map.get("phases") {
+    Some(raw) => raw
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing phases")
+      return None
+    }
+  }
+  let phases : Array[Json] = []
+  match raw_phases {
+    Array(items) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "phases must not be an empty array",
+        )
+        return None
+      } else {
+        for item in items {
+          match item {
+            String(phase_name) =>
+              if is_valid_network_intercept_phase(phase_name) {
+                phases.push(Json::string(phase_name))
+              } else {
+                self.send_error(
+                  request_id, "invalid argument", "phase is invalid",
+                )
+                return None
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "phases entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+      }
+    _ => {
+      self.send_error(request_id, "invalid argument", "phases must be an array")
+      return None
+    }
+  }
+  options["phases"] = Json::array(phases)
+
+  let raw_url_patterns = get_map_field_with_alias(
+    map, "urlPatterns", "url_patterns",
+  )
+  let url_patterns : Array[Json] = []
+  match raw_url_patterns {
+    Some(Array(items)) =>
+      for item in items {
+        let validated = match
+          validate_network_intercept_url_pattern_entry(item) {
+          Some(validated) => validated
+          None => {
+            self.send_error(
+              request_id, "invalid argument", "urlPatterns entry is invalid",
+            )
+            return None
+          }
+        }
+        url_patterns.push(validated)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "urlPatterns must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+  options["urlPatterns"] = Json::array(url_patterns)
+
+  let raw_contexts : Json? = match map.get("contexts") {
+    Some(Null) => None
+    Some(raw) => Some(raw)
+    None => None
+  }
+  match raw_contexts {
+    Some(Array(items)) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "contexts must not be an empty array",
+        )
+        return None
+      } else {
+        let contexts : Array[Json] = []
+        for item in items {
+          match item {
+            String(ctx_id) =>
+              if not(self.manager.has_session(ctx_id)) {
+                self.send_error(
+                  request_id,
+                  "no such frame",
+                  "Unknown context: " + ctx_id,
+                )
+                return None
+              } else if self.context_parent.contains(ctx_id) {
+                self.send_error(
+                  request_id, "invalid argument", "context must be top-level",
+                )
+                return None
+              } else {
+                contexts.push(Json::string(ctx_id))
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "contexts entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+        options["contexts"] = Json::array(contexts)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "contexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  Some(options)
+}
+
+///|
+/// Handle network.removeIntercept
+fn BidiProtocol::handle_network_remove_intercept(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let intercept_id = match map.get("intercept") {
+    Some(String(id)) => id
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "intercept must be a string",
+      )
+      return
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing intercept")
+      return
+    }
+  }
+  if not(self.network_intercepts.contains(intercept_id)) {
+    self.send_error(
+      request_id,
+      "no such intercept",
+      "Unknown intercept: " + intercept_id,
+    )
+    return
+  }
+  self.network_intercepts.remove(intercept_id)
+  self.send_success(request_id, Some(make_object({})))
+}
+
+///|
+/// Handle network.addDataCollector
+fn BidiProtocol::handle_network_add_data_collector(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let options = match
+    self.validate_network_add_data_collector_params(request_id, params) {
+    Some(options) => options
+    None => return
+  }
+  let collector_id = "collector-" +
+    self.next_network_data_collector_id.to_string()
+  self.next_network_data_collector_id += 1
+  self.network_data_collectors[collector_id] = make_object(options)
+  self.send_success(
+    request_id,
+    Some(make_object({ "collector": Json::string(collector_id) })),
+  )
+}
+
+///|
+/// Validate network.addDataCollector parameters.
+/// Returns None when an error response has already been sent.
+fn BidiProtocol::validate_network_add_data_collector_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Map[String, Json]? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+
+  let raw_contexts : Json? = match map.get("contexts") {
+    Some(Null) => None
+    Some(raw) => Some(raw)
+    None => None
+  }
+  let raw_user_contexts : Json? = match
+    get_map_field_with_alias(map, "userContexts", "user_contexts") {
+    Some(Null) => None
+    Some(raw) => Some(raw)
+    None => None
+  }
+  if raw_contexts is Some(_) && raw_user_contexts is Some(_) {
+    self.send_error(
+      request_id, "invalid argument", "contexts and userContexts are mutually exclusive",
+    )
+    return None
+  }
+
+  let options : Map[String, Json] = {}
+
+  let raw_data_types = match
+    get_map_field_with_alias(map, "dataTypes", "data_types") {
+    Some(raw) => raw
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing dataTypes")
+      return None
+    }
+  }
+  let data_types : Array[Json] = []
+  match raw_data_types {
+    Array(items) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "dataTypes must not be an empty array",
+        )
+        return None
+      } else {
+        for item in items {
+          match item {
+            String(name) =>
+              if name == "request" || name == "response" {
+                data_types.push(Json::string(name))
+              } else {
+                self.send_error(
+                  request_id, "invalid argument", "dataTypes entry is invalid",
+                )
+                return None
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "dataTypes entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "dataTypes must be an array",
+      )
+      return None
+    }
+  }
+  options["dataTypes"] = Json::array(data_types)
+
+  let raw_max_encoded_data_size = match
+    get_map_field_with_alias(map, "maxEncodedDataSize", "max_encoded_data_size") {
+    Some(raw) => raw
+    None => {
+      self.send_error(
+        request_id, "invalid argument", "Missing maxEncodedDataSize",
+      )
+      return None
+    }
+  }
+  let max_encoded_data_size = match raw_max_encoded_data_size {
+    Number(n, ..) => {
+      let as_int = n.to_int()
+      if as_int.to_double() != n || as_int <= 0 {
+        self.send_error(
+          request_id, "invalid argument", "maxEncodedDataSize must be a positive integer",
+        )
+        return None
+      }
+      if as_int > 1000000000 {
+        self.send_error(
+          request_id, "invalid argument", "maxEncodedDataSize exceeds the implementation limit",
+        )
+        return None
+      }
+      as_int
+    }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "maxEncodedDataSize must be a positive integer",
+      )
+      return None
+    }
+  }
+  options["maxEncodedDataSize"] = Json::number(
+    max_encoded_data_size.to_double(),
+  )
+
+  let collector_type = match
+    get_map_field_with_alias(map, "collectorType", "collector_type") {
+    Some(String(name)) =>
+      if name == "blob" || name == "base64" {
+        name
+      } else {
+        self.send_error(
+          request_id, "invalid argument", "collectorType is invalid",
+        )
+        return None
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "collectorType must be a string",
+      )
+      return None
+    }
+    None => "blob"
+  }
+  options["collectorType"] = Json::string(collector_type)
+
+  match raw_contexts {
+    Some(Array(items)) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "contexts must not be an empty array",
+        )
+        return None
+      } else {
+        let contexts : Array[Json] = []
+        for item in items {
+          match item {
+            String(ctx_id) =>
+              if not(self.manager.has_session(ctx_id)) {
+                self.send_error(
+                  request_id,
+                  "no such frame",
+                  "Unknown context: " + ctx_id,
+                )
+                return None
+              } else if self.context_parent.contains(ctx_id) {
+                self.send_error(
+                  request_id, "invalid argument", "context must be top-level",
+                )
+                return None
+              } else {
+                contexts.push(Json::string(ctx_id))
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "contexts entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+        options["contexts"] = Json::array(contexts)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "contexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  match raw_user_contexts {
+    Some(Array(items)) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "userContexts must not be an empty array",
+        )
+        return None
+      } else {
+        let user_contexts : Array[Json] = []
+        for item in items {
+          match item {
+            String(user_context_id) =>
+              if not(self.user_contexts.get(user_context_id).unwrap_or(false)) {
+                self.send_error(
+                  request_id,
+                  "no such user context",
+                  "Unknown user context: " + user_context_id,
+                )
+                return None
+              } else {
+                user_contexts.push(Json::string(user_context_id))
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "userContexts entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+        options["userContexts"] = Json::array(user_contexts)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  Some(options)
+}
+
+///|
+/// Handle network.setExtraHeaders
+fn BidiProtocol::handle_network_set_extra_headers(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.validate_network_set_extra_headers_params(request_id, params) {
+    Some(_) => self.send_success(request_id, Some(make_object({})))
+    None => ()
+  }
+}
+
+///|
+/// Validate network.setExtraHeaders parameters.
+/// Returns None when an error response has already been sent.
+fn BidiProtocol::validate_network_set_extra_headers_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Map[String, Json]? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+
+  let raw_contexts = map.get("contexts")
+  let raw_user_contexts = get_map_field_with_alias(
+    map, "userContexts", "user_contexts",
+  )
+  if raw_contexts is Some(_) && raw_user_contexts is Some(_) {
+    self.send_error(
+      request_id, "invalid argument", "contexts and userContexts are mutually exclusive",
+    )
+    return None
+  }
+
+  let raw_headers = match map.get("headers") {
+    Some(raw) => raw
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing headers")
+      return None
+    }
+  }
+
+  let options : Map[String, Json] = {}
+
+  let headers : Array[Json] = []
+  match raw_headers {
+    Array(items) =>
+      for item in items {
+        let header = match validate_network_extra_header_entry(item) {
+          Some(header) => header
+          None => {
+            self.send_error(
+              request_id, "invalid argument", "headers entry is invalid",
+            )
+            return None
+          }
+        }
+        headers.push(header)
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "headers must be an array",
+      )
+      return None
+    }
+  }
+  options["headers"] = Json::array(headers)
+
+  match raw_contexts {
+    Some(Array(items)) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "contexts must not be an empty array",
+        )
+        return None
+      } else {
+        let contexts : Array[Json] = []
+        for item in items {
+          match item {
+            String(ctx_id) =>
+              if not(self.manager.has_session(ctx_id)) {
+                self.send_error(
+                  request_id,
+                  "no such frame",
+                  "Unknown context: " + ctx_id,
+                )
+                return None
+              } else if self.context_parent.contains(ctx_id) {
+                self.send_error(
+                  request_id, "invalid argument", "context must be top-level",
+                )
+                return None
+              } else {
+                contexts.push(Json::string(ctx_id))
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "contexts entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+        options["contexts"] = Json::array(contexts)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "contexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  match raw_user_contexts {
+    Some(Array(items)) =>
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "userContexts must not be an empty array",
+        )
+        return None
+      } else {
+        let user_contexts : Array[Json] = []
+        for item in items {
+          match item {
+            String(user_context_id) =>
+              if not(self.user_contexts.get(user_context_id).unwrap_or(false)) {
+                self.send_error(
+                  request_id,
+                  "no such user context",
+                  "Unknown user context: " + user_context_id,
+                )
+                return None
+              } else {
+                user_contexts.push(Json::string(user_context_id))
+              }
+            _ => {
+              self.send_error(
+                request_id, "invalid argument", "userContexts entries must be strings",
+              )
+              return None
+            }
+          }
+        }
+        options["userContexts"] = Json::array(user_contexts)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  Some(options)
+}
+
+///|
+/// Handle network.removeDataCollector
+fn BidiProtocol::handle_network_remove_data_collector(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let collector_id = match map.get("collector") {
+    Some(String(id)) => id
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "collector must be a string",
+      )
+      return
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing collector")
+      return
+    }
+  }
+  if not(self.network_data_collectors.contains(collector_id)) {
+    self.send_error(
+      request_id,
+      "no such network collector",
+      "Unknown network collector: " + collector_id,
+    )
+    return
+  }
+  self.network_data_collectors.remove(collector_id)
+  self.send_success(request_id, Some(make_object({})))
 }
 
 ///|
@@ -10970,6 +11689,491 @@ fn parse_decimal_string(value : String) -> Int? {
 }
 
 ///|
+/// Valid network.addIntercept phase names.
+fn is_valid_network_intercept_phase(name : String) -> Bool {
+  name == "beforeRequestSent" ||
+  name == "responseStarted" ||
+  name == "authRequired"
+}
+
+///|
+/// Validate one `network.Header` entry.
+fn validate_network_extra_header_entry(entry : Json) -> Json? {
+  let map = match entry {
+    Object(map) => map
+    _ => return None
+  }
+  let name = match map.get("name") {
+    Some(String(name)) =>
+      if is_valid_network_header_name_token(name) {
+        name
+      } else {
+        return None
+      }
+    _ => return None
+  }
+  let value = match map.get("value") {
+    Some(value) =>
+      match validate_network_extra_header_value(value) {
+        Some(value) => value
+        None => return None
+      }
+    None => return None
+  }
+  Some(make_object({ "name": Json::string(name), "value": value }))
+}
+
+///|
+/// Validate one `network.BytesValue` for headers.
+fn validate_network_extra_header_value(value : Json) -> Json? {
+  let map = match value {
+    Object(map) => map
+    _ => return None
+  }
+  let value_type = match map.get("type") {
+    Some(String(value_type)) => value_type
+    _ => return None
+  }
+  if value_type != "string" {
+    return None
+  }
+  let raw_value = match map.get("value") {
+    Some(String(raw_value)) => raw_value
+    _ => return None
+  }
+  if not(is_valid_network_header_string_value(raw_value)) {
+    return None
+  }
+  Some(
+    make_object({
+      "type": Json::string("string"),
+      "value": Json::string(raw_value),
+    }),
+  )
+}
+
+///|
+/// Validate HTTP header name token (`field-name`).
+fn is_valid_network_header_name_token(name : String) -> Bool {
+  if name.length() == 0 {
+    return false
+  }
+  for c in name.iter() {
+    if not(is_valid_network_header_name_token_char(c)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// Validate one `tchar` in RFC9110 token grammar.
+fn is_valid_network_header_name_token_char(c : Char) -> Bool {
+  let code = c.to_int()
+  if (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) {
+    return true
+  }
+  match code {
+    33 => true // !
+    35 => true // #
+    36 => true // $
+    37 => true // %
+    38 => true // &
+    39 => true // '
+    42 => true // *
+    43 => true // +
+    45 => true // -
+    46 => true // .
+    94 => true // ^
+    95 => true // _
+    96 => true // `
+    124 => true // |
+    126 => true // ~
+    _ => false
+  }
+}
+
+///|
+/// Validate string header value for current WPT constraints.
+fn is_valid_network_header_string_value(value : String) -> Bool {
+  let chars = value.to_array()
+  if chars.length() > 0 {
+    let first = chars[0]
+    let last = chars[chars.length() - 1]
+    if first == ' ' || first == '\t' || last == ' ' || last == '\t' {
+      return false
+    }
+  }
+  for c in chars {
+    let code = c.to_int()
+    if code == 0 || code == 10 || code == 13 {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// Validate one network urlPatterns entry.
+fn validate_network_intercept_url_pattern_entry(entry : Json) -> Json? {
+  let map = match entry {
+    Object(map) => map
+    _ => return None
+  }
+  let pattern_type = match map.get("type") {
+    Some(String(name)) => name
+    _ => return None
+  }
+  if pattern_type == "string" {
+    match map.get("pattern") {
+      Some(String(pattern)) =>
+        if is_valid_network_string_url_pattern(pattern) {
+          return Some(entry)
+        } else {
+          return None
+        }
+      _ => return None
+    }
+  }
+  if pattern_type == "pattern" {
+    if is_valid_network_pattern_url_pattern(map) {
+      return Some(entry)
+    }
+  }
+  None
+}
+
+///|
+/// Validate `{"type":"string","pattern":"..."}` URL pattern.
+fn is_valid_network_string_url_pattern(pattern : String) -> Bool {
+  if has_unescaped_pattern_special_char(pattern) || pattern.contains("\\") {
+    return false
+  }
+  let scheme_sep = match find_substring(pattern, "://", 0) {
+    Some(idx) => idx
+    None => return false
+  }
+  let scheme = pattern[:scheme_sep].to_string() catch { _ => "" }
+  if not(is_valid_network_pattern_protocol_value(scheme)) {
+    return false
+  }
+  let authority_and_path = pattern[scheme_sep + 3:].to_string() catch {
+    _ => ""
+  }
+  if authority_and_path.length() == 0 {
+    return false
+  }
+  let chars = authority_and_path.to_array()
+  let mut authority_end = chars.length()
+  for i = 0; i < chars.length(); i = i + 1 {
+    if chars[i] == '/' || chars[i] == '?' || chars[i] == '#' {
+      authority_end = i
+      break
+    }
+  }
+  let authority = authority_and_path[:authority_end].to_string() catch {
+    _ => ""
+  }
+  if authority.length() == 0 {
+    return false
+  }
+  let host_port = extract_authority_host_port(authority)
+  if host_port.length() == 0 {
+    return false
+  }
+  validate_host_port_pattern(host_port)
+}
+
+///|
+/// Extract host[:port] from authority, dropping optional userinfo.
+fn extract_authority_host_port(authority : String) -> String {
+  let chars = authority.to_array()
+  let mut at_index = -1
+  for i = 0; i < chars.length(); i = i + 1 {
+    if chars[i] == '@' {
+      at_index = i
+    }
+  }
+  if at_index < 0 {
+    return authority
+  }
+  authority[at_index + 1:].to_string() catch {
+    _ => ""
+  }
+}
+
+///|
+/// Validate host[:port] syntax for string URL patterns.
+fn validate_host_port_pattern(host_port : String) -> Bool {
+  if host_port.length() == 0 {
+    return false
+  }
+  let chars = host_port.to_array()
+  let mut colon_idx = -1
+  let mut colon_count = 0
+  for i = 0; i < chars.length(); i = i + 1 {
+    if chars[i] == ':' {
+      colon_idx = i
+      colon_count += 1
+    }
+  }
+  // Keep IPv6 out of scope for now; invalid suite only covers host:port.
+  if colon_count > 1 {
+    return false
+  }
+  if colon_idx < 0 {
+    return true
+  }
+  let host = host_port[:colon_idx].to_string() catch { _ => "" }
+  if host.length() == 0 || colon_idx >= chars.length() - 1 {
+    return false
+  }
+  let port_text = host_port[colon_idx + 1:].to_string() catch { _ => "" }
+  let port = match parse_decimal_string(port_text) {
+    Some(port) => port
+    None => return false
+  }
+  port >= 0 && port <= 65535
+}
+
+///|
+/// Validate `{"type":"pattern", ...}` URL pattern object.
+fn is_valid_network_pattern_url_pattern(map : Map[String, Json]) -> Bool {
+  let protocol = match map.get("protocol") {
+    Some(String(value)) => Some(value)
+    Some(_) => return false
+    None => None
+  }
+  let hostname = match map.get("hostname") {
+    Some(String(value)) => Some(value)
+    Some(_) => return false
+    None => None
+  }
+  let port = match map.get("port") {
+    Some(String(value)) => Some(value)
+    Some(_) => return false
+    None => None
+  }
+  let pathname = match map.get("pathname") {
+    Some(String(value)) => Some(value)
+    Some(_) => return false
+    None => None
+  }
+  let search = match map.get("search") {
+    Some(String(value)) => Some(value)
+    Some(_) => return false
+    None => None
+  }
+
+  match protocol {
+    Some(value) =>
+      if has_unescaped_pattern_special_char(value) ||
+        not(is_valid_network_pattern_protocol_value(value)) {
+        return false
+      } else {
+        match hostname {
+          Some(_) => if is_network_file_protocol(value) { return false }
+          None => ()
+        }
+      }
+    None => ()
+  }
+
+  match hostname {
+    Some(value) =>
+      if has_unescaped_pattern_special_char(value) ||
+        not(is_valid_network_pattern_hostname(value)) {
+        return false
+      }
+    None => ()
+  }
+
+  match port {
+    Some(value) =>
+      if has_unescaped_pattern_special_char(value) ||
+        not(is_valid_network_pattern_port(value)) {
+        return false
+      }
+    None => ()
+  }
+
+  match pathname {
+    Some(value) =>
+      if has_unescaped_pattern_special_char(value) ||
+        not(is_valid_network_pattern_pathname(value)) {
+        return false
+      }
+    None => ()
+  }
+
+  match search {
+    Some(value) =>
+      if has_unescaped_pattern_special_char(value) ||
+        not(is_valid_network_pattern_search(value)) {
+        return false
+      }
+    None => ()
+  }
+
+  true
+}
+
+///|
+/// Reject reserved wildcard-like characters when not escaped.
+fn has_unescaped_pattern_special_char(value : String) -> Bool {
+  value.contains("*") ||
+  value.contains("(") ||
+  value.contains(")") ||
+  value.contains("{") ||
+  value.contains("}")
+}
+
+///|
+/// Validate protocol token (`http`, `HTTPS`, optional trailing `:`).
+fn is_valid_network_pattern_protocol_value(value : String) -> Bool {
+  if value.length() == 0 {
+    return false
+  }
+  if value.contains("\\") ||
+    value.contains("/") ||
+    value.contains("#") ||
+    value.contains("@") ||
+    value.contains("%") {
+    return false
+  }
+  let chars = value.to_array()
+  let mut colon_count = 0
+  let mut colon_idx = -1
+  for i = 0; i < chars.length(); i = i + 1 {
+    if chars[i] == ':' {
+      colon_count += 1
+      colon_idx = i
+    }
+  }
+  if colon_count > 1 {
+    return false
+  }
+  let scheme = if colon_count == 1 {
+    if colon_idx != chars.length() - 1 {
+      return false
+    }
+    value[:colon_idx].to_string() catch {
+      _ => ""
+    }
+  } else {
+    value
+  }
+  if scheme.length() == 0 {
+    return false
+  }
+  let scheme_chars = scheme.to_array()
+  if not(is_ascii_alpha(scheme_chars[0])) {
+    return false
+  }
+  for i = 1; i < scheme_chars.length(); i = i + 1 {
+    let c = scheme_chars[i]
+    if not(is_ascii_alnum(c) || c == '+' || c == '-' || c == '.') {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// True when protocol token represents `file` (case-insensitive, optional `:`).
+fn is_network_file_protocol(value : String) -> Bool {
+  let scheme = if value.has_suffix(":") {
+    value[:value.length() - 1].to_string() catch {
+      _ => ""
+    }
+  } else {
+    value
+  }
+  is_ascii_case_insensitive_equal(scheme, "file")
+}
+
+///|
+/// Validate hostname token for url pattern object.
+fn is_valid_network_pattern_hostname(value : String) -> Bool {
+  if value.length() == 0 {
+    return false
+  }
+  if value.contains("/") ||
+    value.contains("?") ||
+    value.contains("#") ||
+    value.contains(":") {
+    return false
+  }
+  not(value.contains("::"))
+}
+
+///|
+/// Validate port token (`0`..`65535` digits only).
+fn is_valid_network_pattern_port(value : String) -> Bool {
+  if value.length() == 0 || value.contains(":") || value.contains(" ") {
+    return false
+  }
+  let parsed = match parse_decimal_string(value) {
+    Some(parsed) => parsed
+    None => return false
+  }
+  parsed >= 0 && parsed <= 65535
+}
+
+///|
+/// Validate pathname token (must not include `?` or `#`).
+fn is_valid_network_pattern_pathname(value : String) -> Bool {
+  not(value.contains("?")) && not(value.contains("#"))
+}
+
+///|
+/// Validate search token (must not include `#`).
+fn is_valid_network_pattern_search(value : String) -> Bool {
+  not(value.contains("#"))
+}
+
+///|
+/// ASCII alphabetic helper.
+fn is_ascii_alpha(c : Char) -> Bool {
+  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+///|
+/// ASCII alphanumeric helper.
+fn is_ascii_alnum(c : Char) -> Bool {
+  is_ascii_alpha(c) || (c >= '0' && c <= '9')
+}
+
+///|
+/// Case-insensitive ASCII equality.
+fn is_ascii_case_insensitive_equal(lhs : String, rhs : String) -> Bool {
+  if lhs.length() != rhs.length() {
+    return false
+  }
+  let lhs_chars = lhs.to_array()
+  let rhs_chars = rhs.to_array()
+  for i = 0; i < lhs_chars.length(); i = i + 1 {
+    let l = lhs_chars[i]
+    let r = rhs_chars[i]
+    if l == r {
+      continue
+    }
+    let l_is_upper = l >= 'A' && l <= 'Z'
+    let r_is_upper = r >= 'A' && r <= 'Z'
+    if l_is_upper && l.to_int() + 32 == r.to_int() {
+      continue
+    }
+    if r_is_upper && r.to_int() + 32 == l.to_int() {
+      continue
+    }
+    return false
+  }
+  true
+}
+
+///|
 /// Supported event/module names accepted by session.{subscribe,unsubscribe}.
 fn is_valid_session_subscription_event_name(name : String) -> Bool {
   if name == "browsingContext" ||
@@ -11124,6 +12328,19 @@ fn get_param_raw(params : Json?, key : String) -> Json? {
   match params {
     Some(Object(map)) => map.get(key)
     _ => None
+  }
+}
+
+///|
+/// Get map entry by primary key, then fallback alias.
+fn get_map_field_with_alias(
+  map : Map[String, Json],
+  key : String,
+  alias_key : String,
+) -> Json? {
+  match map.get(key) {
+    Some(value) => Some(value)
+    None => map.get(alias_key)
   }
 }
 

@@ -503,11 +503,6 @@ function copySupportModules(testsRoot: string): void {
 
   for (const file of [...files, ...inits]) {
     const rel = path.relative(supportRoot, file);
-    const normalized = normalizePathForGlob(rel);
-    // Avoid WDSPEC fixture dependencies for now.
-    if (normalized === "fixtures.py" || normalized === "fixtures_bidi.py" || normalized === "fixtures_http.py") {
-      continue;
-    }
     copyFileEnsuringDir(file, path.join(testsRoot, "support", rel));
   }
 }
@@ -630,6 +625,8 @@ async function runTests(
         runPath,
         "-v",
         `--timeout=${timeout}`,
+        "-p", "tests.support.fixtures_bidi",
+        "-p", "tests.support.fixtures_http",
         "-p", "crater_bidi_adapter",
         "-c", path.join(process.cwd(), "pyproject.toml"),
         "--tb=short",
