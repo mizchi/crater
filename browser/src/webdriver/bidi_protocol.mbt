@@ -9408,10 +9408,10 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
       None,
       Some(parent_ctx_id),
     )
-    self.emit_default_realm(child_ctx_id)
     let child_nav_id = self.next_navigation_id.to_string()
     self.next_navigation_id += 1
     if self.is_iframe_navigation_blocked(child_ctx_id, src) {
+      self.emit_default_realm(child_ctx_id)
       self.emit_navigation_started_event(child_ctx_id, src, child_nav_id)
       self.emit_navigation_failed_event(child_ctx_id, src, child_nav_id)
       continue
@@ -9423,6 +9423,9 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
       None => ()
     }
     self.load_data_url_content(child_ctx_id, src)
+    let window_realm_id = self.assign_new_realm(child_ctx_id)
+    self.emit_default_realm(child_ctx_id)
+    self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
     self.emit_navigation_events(child_ctx_id, src, child_nav_id)
     // about:blank fallback frames can mirror parent runtime and recurse infinitely.
     // Avoid deep expansion until frame documents diverge via explicit navigation/src.

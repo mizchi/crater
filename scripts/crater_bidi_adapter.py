@@ -444,9 +444,6 @@ class CraterBidiSession:
         self._network_cache_behavior_global = "default"
         self._network_cache_behavior_by_context: dict[str, str] = {}
         self._network_cached_requests_by_context: dict[str, set[str]] = {}
-        # Keep a stable object per realm id so later updates rewrite earlier
-        # references seen by listeners/tests.
-        self._realm_created_event_by_realm: dict[str, dict[str, Any]] = {}
 
         # Module proxies (lazily initialized)
         self._browsing_context = None
@@ -507,22 +504,6 @@ class CraterBidiSession:
                     if method:
                         self._trace(f"<- event {method}")
                         params = data.get("params", {})
-                        if method == "script.realmCreated" and isinstance(params, dict):
-                            realm_id = params.get("realm")
-                            if isinstance(realm_id, str) and realm_id != "":
-                                existing = self._realm_created_event_by_realm.get(realm_id)
-                                if isinstance(existing, dict):
-                                    existing.clear()
-                                    existing.update(params)
-                                    params = existing
-                                else:
-                                    self._realm_created_event_by_realm[realm_id] = params
-                                self._trace(
-                                    "realmCreated "
-                                    f"realm={realm_id} "
-                                    f"context={params.get('context')} "
-                                    f"origin={params.get('origin')}"
-                                )
                         if method not in self._event_backlog:
                             self._event_backlog[method] = []
                         self._event_backlog[method].append(params)
@@ -3343,29 +3324,7 @@ class ScriptModule:
             params[self._to_camel_case(key)] = value
         future = await self._session.send_command("script.getRealms", params)
         result = await future
-        realms = result.get("realms", [])
-        if isinstance(realms, list):
-            for realm in realms:
-                if not isinstance(realm, Mapping):
-                    continue
-                realm_id = realm.get("realm")
-                if not isinstance(realm_id, str) or realm_id == "":
-                    continue
-                existing_event = self._session._realm_created_event_by_realm.get(realm_id)
-                if isinstance(existing_event, dict):
-                    for key, value in realm.items():
-                        existing_event[key] = value
-        if self._session._trace_enabled and isinstance(realms, list):
-            for realm in realms:
-                if not isinstance(realm, Mapping):
-                    continue
-                self._session._trace(
-                    "getRealms "
-                    f"realm={realm.get('realm')} "
-                    f"context={realm.get('context')} "
-                    f"origin={realm.get('origin')}"
-                )
-        return realms
+        return result.get("realms", [])
 
 
 class NetworkModule:
