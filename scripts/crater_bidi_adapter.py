@@ -502,8 +502,16 @@ class CraterBidiSession:
                     # Event
                     method = data.get("method")
                     if method:
-                        self._trace(f"<- event {method}")
                         params = data.get("params", {})
+                        if self._trace_enabled and method in (
+                            "script.realmCreated",
+                            "script.realmDestroyed",
+                        ):
+                            self._trace(
+                                f"<- event {method} {json.dumps(params, sort_keys=True)}"
+                            )
+                        else:
+                            self._trace(f"<- event {method}")
                         if method not in self._event_backlog:
                             self._event_backlog[method] = []
                         self._event_backlog[method].append(params)
@@ -1821,11 +1829,15 @@ class BrowsingContextModule:
         return result
 
     def _normalize_wpt_navigation_url(self, context: str, url: str) -> str:
+        parsed = _parse_wpt_http_url(url)
+        fragment_suffix = f"#{parsed.fragment}" if parsed and parsed.fragment else ""
         if _is_wpt_headers_echo_url(url):
             payload = self._session.build_headers_echo_payload(context)
-            return _html_data_url(f"<html><head></head><body>{payload}</body></html>")
+            return _html_data_url(
+                f"<html><head></head><body>{payload}</body></html>"
+            ) + fragment_suffix
         if _is_wpt_blank_page_url(url):
-            return _html_data_url("<html><head></head><body></body></html>")
+            return url
         return url
 
     async def _emit_synthetic_network_event_sequence(
@@ -3309,12 +3321,30 @@ class ScriptModule:
         except Exception:
             pass
 
-    async def add_preload_script(self, function_declaration: str, **kwargs):
-        params = {"functionDeclaration": function_declaration, **kwargs}
-        future = await self._session.send_command("script.addPreloadScript", params)
+    async def disown(self, handles, target):
+        future = await self._session.send_command(
+            "script.disown",
+            {"handles": handles, "target": target},
+        )
         return await future
 
+    async def add_preload_script(self, function_declaration: str, **kwargs):
+        params = {"functionDeclaration": function_declaration}
+        for key, value in kwargs.items():
+            if value is None or self._session._is_undefined(value):
+                continue
+            params[self._to_camel_case(key)] = value
+        future = await self._session.send_command("script.addPreloadScript", params)
+        result = await future
+        if isinstance(result, Mapping):
+            script_id = result.get("script")
+            if isinstance(script_id, str):
+                return script_id
+        return result
+
     async def remove_preload_script(self, script: str):
+        if isinstance(script, Mapping):
+            script = script.get("script")
         future = await self._session.send_command("script.removePreloadScript", {"script": script})
         return await future
 
@@ -4937,6 +4967,17 @@ async def bidi_session(capabilities):
     await session.end()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_context_state_per_test(bidi_session):
+    """
+    Enforce browsing context cleanup for every test regardless of which
+    plugin-provided `bidi_session` fixture gets selected.
+    """
+    await _trim_contexts_for_test(bidi_session)
+    yield
+    await _trim_contexts_for_test(bidi_session)
+
+
 def _context_sort_key(context_info: dict):
     ctx_id = context_info.get("context", "")
     if ctx_id.startswith("session-"):
@@ -4949,33 +4990,47 @@ def _context_sort_key(context_info: dict):
 
 async def _trim_contexts_for_test(session: CraterBidiSession):
     """
-    Keep at most one baseline browsing context between tests.
+    Keep one fresh baseline browsing context between tests.
     Crater's BiDi server is long-lived across the pytest process, so
     contexts created in one test would otherwise leak into later tests.
     """
+    baseline_ctx_id = None
+    existing_ctx_ids = []
+
     try:
         contexts = await session.browsing_context.get_tree()
     except Exception:
-        return
+        contexts = []
 
-    if not contexts:
-        await session.browsing_context.create(type_hint="tab")
-        return
+    if contexts:
+        sorted_contexts = sorted(contexts, key=_context_sort_key)
+        for context_info in sorted_contexts:
+            ctx_id = context_info.get("context")
+            if isinstance(ctx_id, str):
+                existing_ctx_ids.append(ctx_id)
 
-    sorted_contexts = sorted(contexts, key=_context_sort_key)
-    for context_info in reversed(sorted_contexts[1:]):
-        ctx_id = context_info.get("context")
-        if not ctx_id:
+    # Always try to create a fresh context so each test gets a clean global.
+    try:
+        created = await session.browsing_context.create(type_hint="tab")
+        ctx = created.get("context")
+        if isinstance(ctx, str):
+            baseline_ctx_id = ctx
+    except Exception:
+        baseline_ctx_id = None
+
+    if not isinstance(baseline_ctx_id, str) and existing_ctx_ids:
+        baseline_ctx_id = existing_ctx_ids[0]
+
+    # Close stale top-level contexts from previous tests.
+    for ctx_id in existing_ctx_ids:
+        if ctx_id == baseline_ctx_id:
             continue
         try:
             await session.browsing_context.close(context=ctx_id)
         except Exception:
             pass
 
-    # Reset the baseline top-level context to about:blank so child frame
-    # contexts created in previous tests are dropped.
-    baseline_ctx_id = sorted_contexts[0].get("context")
-    if baseline_ctx_id:
+    if isinstance(baseline_ctx_id, str):
         # Force-close any non-baseline contexts, including leaked child
         # contexts that are not exposed by browsingContext.getTree(root=None).
         try:
@@ -5006,16 +5061,87 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
             )
         except Exception:
             pass
+        try:
+            future = await session.send_command(
+                "script.evaluate",
+                {
+                    "expression": "window.location.href = 'about:blank'",
+                    "target": {"context": baseline_ctx_id},
+                    "awaitPromise": True,
+                },
+            )
+            await future
+        except Exception:
+            pass
+        try:
+            future = await session.send_command(
+                "script.evaluate",
+                {
+                    "expression": "try { delete globalThis.SOME_VARIABLE; } catch (_) {}",
+                    "target": {"context": baseline_ctx_id},
+                    "awaitPromise": True,
+                },
+            )
+            await future
+        except Exception:
+            pass
+
+    if not isinstance(baseline_ctx_id, str):
+        try:
+            created = await session.browsing_context.create(type_hint="tab")
+            ctx = created.get("context")
+            if isinstance(ctx, str):
+                baseline_ctx_id = ctx
+        except Exception:
+            baseline_ctx_id = None
+
+    session._baseline_context_id = baseline_ctx_id
 
 
 @pytest_asyncio.fixture
 async def top_context(bidi_session):
     """Get the top-level browsing context."""
+    baseline_ctx_id = getattr(bidi_session, "_baseline_context_id", None)
+    if isinstance(baseline_ctx_id, str):
+        contexts = await bidi_session.browsing_context.get_tree(
+            root=baseline_ctx_id, max_depth=0
+        )
+        if contexts:
+            try:
+                await bidi_session.browsing_context.navigate(
+                    context=baseline_ctx_id,
+                    url="about:blank",
+                    wait="complete",
+                )
+            except Exception:
+                pass
+            return contexts[0]
+
     contexts = await bidi_session.browsing_context.get_tree()
     if contexts:
-        return contexts[0]
+        sorted_contexts = sorted(contexts, key=_context_sort_key)
+        baseline_context = sorted_contexts[-1]
+        baseline_ctx_id = baseline_context.get("context")
+        bidi_session._baseline_context_id = baseline_ctx_id
+        if isinstance(baseline_ctx_id, str):
+            try:
+                await bidi_session.browsing_context.navigate(
+                    context=baseline_ctx_id,
+                    url="about:blank",
+                    wait="complete",
+                )
+            except Exception:
+                pass
+            refreshed = await bidi_session.browsing_context.get_tree(
+                root=baseline_ctx_id, max_depth=0
+            )
+            if refreshed:
+                return refreshed[0]
+        return baseline_context
     # Create a context if none exists
     result = await bidi_session.browsing_context.create(type_hint="tab")
+    if isinstance(result, dict):
+        bidi_session._baseline_context_id = result.get("context")
     contexts = await bidi_session.browsing_context.get_tree(
         root=result["context"], max_depth=0
     )
@@ -5769,29 +5895,12 @@ async def add_preload_script(bidi_session):
     created_scripts = []
 
     async def _add_preload_script(function_declaration: str, **kwargs):
-        result = await bidi_session.script.add_preload_script(
+        script_id = await bidi_session.script.add_preload_script(
             function_declaration=function_declaration,
             **kwargs,
         )
-        script_id = result.get("script")
         if isinstance(script_id, str):
             created_scripts.append(script_id)
-
-        # Crater does not yet persist preload scripts across navigations.
-        # Emulate current behavior by executing once in target contexts.
-        contexts = kwargs.get("contexts")
-        if isinstance(contexts, list):
-            for context in contexts:
-                if not isinstance(context, str):
-                    continue
-                try:
-                    await bidi_session.script.call_function(
-                        function_declaration=function_declaration,
-                        target=ContextTarget(context),
-                        await_promise=True,
-                    )
-                except Exception:
-                    pass
         return script_id
 
     yield _add_preload_script
@@ -6462,6 +6571,21 @@ async def setup_beforeunload_page(bidi_session, url):
 def wait_for_future_safe():
     """Wait for a future with timeout while preserving remote exceptions."""
     async def _wait_for_future_safe(future, timeout: float = 5.0):
+        if isinstance(future, asyncio.Future):
+            try:
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+            future_loop = future.get_loop()
+            if running_loop is not None and future_loop is not running_loop:
+                deadline = time.monotonic() + timeout
+                while True:
+                    if future.done():
+                        return future.result()
+                    if time.monotonic() >= deadline:
+                        future.cancel()
+                        raise TimeoutError("Future did not resolve within the given timeout")
+                    await asyncio.sleep(0.01)
         try:
             return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
         except asyncio.TimeoutError as exc:

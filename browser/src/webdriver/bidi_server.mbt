@@ -1356,6 +1356,20 @@ extern "js" fn js_evaluate_expression(
   #|         return false;
   #|       }
   #|     };
+  #|     if (!globalThis.DocumentFragment) {
+  #|       globalThis.DocumentFragment = class DocumentFragment {
+  #|         constructor() {
+  #|           const doc = globalThis.document;
+  #|           if (doc && typeof doc.createDocumentFragment === "function") {
+  #|             return doc.createDocumentFragment();
+  #|           }
+  #|           const frag = createMockElement("fragment");
+  #|           frag.nodeType = 11;
+  #|           frag.nodeName = "#document-fragment";
+  #|           return frag;
+  #|         }
+  #|       };
+  #|     }
   #|
   #|     html.ownerDocument = globalThis.document;
   #|     head.ownerDocument = globalThis.document;
@@ -2553,8 +2567,25 @@ extern "js" fn js_evaluate_expression(
   #|   }
   #|   if (contextWindow.location && typeof contextWindow.location === "object") {
   #|     globalThis.location = contextWindow.location;
-  #|   } else if (globalThis.location && typeof globalThis.location === "object") {
-  #|     contextWindow.location = globalThis.location;
+  #|     try { globalThis.__pageUrl = String(contextWindow.location.href || "about:blank"); } catch (_e) {}
+  #|   } else {
+  #|     const locationHref = "about:blank";
+  #|     contextWindow.location = {
+  #|       href: locationHref,
+  #|       origin: '',
+  #|       protocol: 'about:',
+  #|       host: '',
+  #|       hostname: '',
+  #|       port: '',
+  #|       pathname: 'blank',
+  #|       search: '',
+  #|       hash: '',
+  #|       assign: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|       replace: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|       reload: function() {}
+  #|     };
+  #|     globalThis.location = contextWindow.location;
+  #|     globalThis.__pageUrl = locationHref;
   #|   }
   #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
   #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
@@ -2575,6 +2606,7 @@ extern "js" fn js_evaluate_expression(
   #|   }
   #|
   #|   if (!globalThis.__bidiHandleStore) globalThis.__bidiHandleStore = new Map();
+  #|   if (!globalThis.__bidiHandleContextStore) globalThis.__bidiHandleContextStore = new Map();
   #|   if (typeof globalThis.__bidiNextHandleId !== "number") {
   #|     globalThis.__bidiNextHandleId = 1;
   #|   }
@@ -2586,6 +2618,10 @@ extern "js" fn js_evaluate_expression(
   #|     if (!serialized || typeof serialized !== "object" || serialized.handle) return serialized;
   #|     const handle = `handle-${globalThis.__bidiNextHandleId++}`;
   #|     globalThis.__bidiHandleStore.set(handle, value);
+  #|     globalThis.__bidiHandleContextStore.set(
+  #|       handle,
+  #|       String(globalThis.__bidiCurrentContext || ""),
+  #|     );
   #|     return { ...serialized, handle };
   #|   };
   #|   const toBidiValueFn = (value, includeHandle = false) =>
@@ -2734,7 +2770,10 @@ extern "js" fn js_evaluate_expression(
   #|
   #|   const collectReferences = (value, seen = new WeakSet()) => {
   #|     if (!value || typeof value !== "object") return;
-  #|     if (typeof value.nodeType === "number") return;
+  #|     if (typeof value.nodeType === "number") {
+  #|       trackReference(value);
+  #|       return;
+  #|     }
   #|     if (
   #|       value instanceof Date ||
   #|       value instanceof RegExp ||
@@ -2787,7 +2826,7 @@ extern "js" fn js_evaluate_expression(
   #|       return serialized;
   #|     }
   #|     const serializedType = serialized.type;
-  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object" && serializedType !== "node") {
   #|       return serialized;
   #|     }
   #|     const count = referenceCounts.get(originalValue) || 0;
@@ -2839,7 +2878,7 @@ extern "js" fn js_evaluate_expression(
   #|       };
   #|     }
   #|     if (value && type === "object" && typeof value.nodeType === "number") {
-  #|       return toBidiNodeValue(value, domDepth);
+  #|       return withInternalId(value, toBidiNodeValue(value, domDepth));
   #|     }
   #|
   #|     if (value instanceof RegExp) {
@@ -2904,6 +2943,10 @@ extern "js" fn js_evaluate_expression(
   #|
   #|   try {
   #|     let result = (0, eval)(expression);  // Indirect eval for global scope
+  #|     if (result instanceof Promise) {
+  #|       // Avoid process-level unhandled rejection when awaitPromise=false.
+  #|       result.catch(() => {});
+  #|     }
   #|     collectReferences(result);
   #|     return JSON.stringify({
   #|       type: "success",
@@ -3039,16 +3082,70 @@ extern "js" fn js_evaluate_expression_fast(
   #|   }
   #|
   #|   const internalIds = new WeakMap();
+  #|   const referenceCounts = new WeakMap();
   #|   let nextInternalId = 1;
+  #|   const trackReference = (obj) => {
+  #|     const prev = referenceCounts.get(obj) || 0;
+  #|     referenceCounts.set(obj, prev + 1);
+  #|   };
+  #|   const collectReferences = (value, seen = new WeakSet()) => {
+  #|     if (!value || typeof value !== "object") return;
+  #|     if (typeof value.nodeType === "number") {
+  #|       trackReference(value);
+  #|       return;
+  #|     }
+  #|     if (
+  #|       value instanceof Date ||
+  #|       value instanceof RegExp ||
+  #|       value instanceof Error ||
+  #|       value instanceof Promise ||
+  #|       value instanceof WeakMap ||
+  #|       value instanceof WeakSet ||
+  #|       value instanceof ArrayBuffer ||
+  #|       ArrayBuffer.isView(value)
+  #|     ) {
+  #|       return;
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) return;
+  #|     const isContainer =
+  #|       Array.isArray(value) ||
+  #|       value instanceof Map ||
+  #|       value instanceof Set ||
+  #|       value.constructor === Object;
+  #|     if (!isContainer) return;
+  #|     trackReference(value);
+  #|     if (seen.has(value)) return;
+  #|     seen.add(value);
+  #|     if (Array.isArray(value)) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     if (value instanceof Map) {
+  #|       for (const [k, v] of value) {
+  #|         if (typeof k !== "string") collectReferences(k, seen);
+  #|         collectReferences(v, seen);
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (value instanceof Set) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     for (const entryValue of Object.values(value)) {
+  #|       collectReferences(entryValue, seen);
+  #|     }
+  #|   };
   #|   const withInternalId = (originalValue, serialized) => {
   #|     if (!serialized || typeof serialized !== "object") return serialized;
   #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
   #|       return serialized;
   #|     }
   #|     const serializedType = serialized.type;
-  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object" && serializedType !== "node") {
   #|       return serialized;
   #|     }
+  #|     const count = referenceCounts.get(originalValue) || 0;
+  #|     if (count <= 1) return serialized;
   #|     let internalId = internalIds.get(originalValue);
   #|     if (!internalId) {
   #|       internalId = `internal-${nextInternalId++}`;
@@ -3090,7 +3187,7 @@ extern "js" fn js_evaluate_expression_fast(
   #|       };
   #|     }
   #|     if (value && type === "object" && typeof value.nodeType === "number") {
-  #|       return toBidiNodeValue(value);
+  #|       return withInternalId(value, toBidiNodeValue(value));
   #|     }
   #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
   #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
@@ -3131,6 +3228,11 @@ extern "js" fn js_evaluate_expression_fast(
   #|     `{"id":${id},"type":"success","result":{"realm":${JSON.stringify(realm)},"result":${valueJson}}}`;
   #|   try {
   #|     const result = (0, eval)(expression);
+  #|     if (result instanceof Promise) {
+  #|       // Avoid process-level unhandled rejection when awaitPromise=false.
+  #|       result.catch(() => {});
+  #|     }
+  #|     collectReferences(result);
   #|     if (result === undefined) return wrapResult('{"type":"undefined"}');
   #|     if (result === null) return wrapResult('{"type":"null"}');
   #|     const type = typeof result;
@@ -3339,8 +3441,25 @@ extern "js" fn js_evaluate_expression_async(
   #|   }
   #|   if (contextWindow.location && typeof contextWindow.location === "object") {
   #|     globalThis.location = contextWindow.location;
-  #|   } else if (globalThis.location && typeof globalThis.location === "object") {
-  #|     contextWindow.location = globalThis.location;
+  #|     try { globalThis.__pageUrl = String(contextWindow.location.href || "about:blank"); } catch (_e) {}
+  #|   } else {
+  #|     const locationHref = "about:blank";
+  #|     contextWindow.location = {
+  #|       href: locationHref,
+  #|       origin: '',
+  #|       protocol: 'about:',
+  #|       host: '',
+  #|       hostname: '',
+  #|       port: '',
+  #|       pathname: 'blank',
+  #|       search: '',
+  #|       hash: '',
+  #|       assign: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|       replace: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|       reload: function() {}
+  #|     };
+  #|     globalThis.location = contextWindow.location;
+  #|     globalThis.__pageUrl = locationHref;
   #|   }
   #|   if (!globalThis.document) {
   #|     const body = {
@@ -3364,6 +3483,14 @@ extern "js" fn js_evaluate_expression_async(
   #|       body,
   #|       createElement,
   #|       createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
+  #|       createDocumentFragment() {
+  #|         return {
+  #|           nodeType: 11,
+  #|           nodeName: "#document-fragment",
+  #|           _children: [],
+  #|           childNodes: [],
+  #|         };
+  #|       },
   #|       execCommand(command) {
   #|         const cmd = String(command || '').toLowerCase();
   #|         if (cmd === 'selectall') return true;
@@ -3371,6 +3498,13 @@ extern "js" fn js_evaluate_expression_async(
   #|         return false;
   #|       }
   #|     };
+  #|     if (!globalThis.DocumentFragment) {
+  #|       globalThis.DocumentFragment = class DocumentFragment {
+  #|         constructor() {
+  #|           return globalThis.document.createDocumentFragment();
+  #|         }
+  #|       };
+  #|     }
   #|   }
   #|   if (globalThis.document && !globalThis.window.document) {
   #|     contextWindow.document = globalThis.document;
@@ -3440,16 +3574,70 @@ extern "js" fn js_evaluate_expression_async(
   #|   }
   #|
   #|   const internalIds = new WeakMap();
+  #|   const referenceCounts = new WeakMap();
   #|   let nextInternalId = 1;
+  #|   const trackReference = (obj) => {
+  #|     const prev = referenceCounts.get(obj) || 0;
+  #|     referenceCounts.set(obj, prev + 1);
+  #|   };
+  #|   const collectReferences = (value, seen = new WeakSet()) => {
+  #|     if (!value || typeof value !== "object") return;
+  #|     if (typeof value.nodeType === "number") {
+  #|       trackReference(value);
+  #|       return;
+  #|     }
+  #|     if (
+  #|       value instanceof Date ||
+  #|       value instanceof RegExp ||
+  #|       value instanceof Error ||
+  #|       value instanceof Promise ||
+  #|       value instanceof WeakMap ||
+  #|       value instanceof WeakSet ||
+  #|       value instanceof ArrayBuffer ||
+  #|       ArrayBuffer.isView(value)
+  #|     ) {
+  #|       return;
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) return;
+  #|     const isContainer =
+  #|       Array.isArray(value) ||
+  #|       value instanceof Map ||
+  #|       value instanceof Set ||
+  #|       value.constructor === Object;
+  #|     if (!isContainer) return;
+  #|     trackReference(value);
+  #|     if (seen.has(value)) return;
+  #|     seen.add(value);
+  #|     if (Array.isArray(value)) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     if (value instanceof Map) {
+  #|       for (const [k, v] of value) {
+  #|         if (typeof k !== "string") collectReferences(k, seen);
+  #|         collectReferences(v, seen);
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (value instanceof Set) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     for (const entryValue of Object.values(value)) {
+  #|       collectReferences(entryValue, seen);
+  #|     }
+  #|   };
   #|   const withInternalId = (originalValue, serialized) => {
   #|     if (!serialized || typeof serialized !== "object") return serialized;
   #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
   #|       return serialized;
   #|     }
   #|     const serializedType = serialized.type;
-  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object" && serializedType !== "node") {
   #|       return serialized;
   #|     }
+  #|     const count = referenceCounts.get(originalValue) || 0;
+  #|     if (count <= 1) return serialized;
   #|     let internalId = internalIds.get(originalValue);
   #|     if (!internalId) {
   #|       internalId = `internal-${nextInternalId++}`;
@@ -3491,7 +3679,7 @@ extern "js" fn js_evaluate_expression_async(
   #|       };
   #|     }
   #|     if (value && type === "object" && typeof value.nodeType === "number") {
-  #|       return toBidiNodeValue(value);
+  #|       return withInternalId(value, toBidiNodeValue(value));
   #|     }
   #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
   #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
@@ -3531,6 +3719,7 @@ extern "js" fn js_evaluate_expression_async(
   #|     if (result instanceof Promise) {
   #|       result = await result;
   #|     }
+  #|     collectReferences(result);
   #|     return JSON.stringify({ type: "success", result: toBidiValue(result), consoleEntries });
   #|   } catch (e) {
   #|     return JSON.stringify({
@@ -3712,8 +3901,25 @@ extern "js" fn js_eval_and_send_async(
   #|   }
   #|   if (contextWindow.location && typeof contextWindow.location === "object") {
   #|     globalThis.location = contextWindow.location;
-  #|   } else if (globalThis.location && typeof globalThis.location === "object") {
-  #|     contextWindow.location = globalThis.location;
+  #|     try { globalThis.__pageUrl = String(contextWindow.location.href || "about:blank"); } catch (_e) {}
+  #|   } else {
+  #|     const locationHref = "about:blank";
+  #|     contextWindow.location = {
+  #|       href: locationHref,
+  #|       origin: '',
+  #|       protocol: 'about:',
+  #|       host: '',
+  #|       hostname: '',
+  #|       port: '',
+  #|       pathname: 'blank',
+  #|       search: '',
+  #|       hash: '',
+  #|       assign: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|       replace: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|       reload: function() {}
+  #|     };
+  #|     globalThis.location = contextWindow.location;
+  #|     globalThis.__pageUrl = locationHref;
   #|   }
   #|   if (!globalThis.document) {
   #|     const body = {
@@ -3737,6 +3943,14 @@ extern "js" fn js_eval_and_send_async(
   #|       body,
   #|       createElement,
   #|       createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
+  #|       createDocumentFragment() {
+  #|         return {
+  #|           nodeType: 11,
+  #|           nodeName: "#document-fragment",
+  #|           _children: [],
+  #|           childNodes: [],
+  #|         };
+  #|       },
   #|       execCommand(command) {
   #|         const cmd = String(command || '').toLowerCase();
   #|         if (cmd === 'selectall') return true;
@@ -3744,6 +3958,13 @@ extern "js" fn js_eval_and_send_async(
   #|         return false;
   #|       }
   #|     };
+  #|     if (!globalThis.DocumentFragment) {
+  #|       globalThis.DocumentFragment = class DocumentFragment {
+  #|         constructor() {
+  #|           return globalThis.document.createDocumentFragment();
+  #|         }
+  #|       };
+  #|     }
   #|   }
   #|   if (globalThis.document) {
   #|     globalThis.document.execCommand = function(command) {
@@ -3813,16 +4034,70 @@ extern "js" fn js_eval_and_send_async(
   #|   }
   #|
   #|   const internalIds = new WeakMap();
+  #|   const referenceCounts = new WeakMap();
   #|   let nextInternalId = 1;
+  #|   const trackReference = (obj) => {
+  #|     const prev = referenceCounts.get(obj) || 0;
+  #|     referenceCounts.set(obj, prev + 1);
+  #|   };
+  #|   const collectReferences = (value, seen = new WeakSet()) => {
+  #|     if (!value || typeof value !== "object") return;
+  #|     if (typeof value.nodeType === "number") {
+  #|       trackReference(value);
+  #|       return;
+  #|     }
+  #|     if (
+  #|       value instanceof Date ||
+  #|       value instanceof RegExp ||
+  #|       value instanceof Error ||
+  #|       value instanceof Promise ||
+  #|       value instanceof WeakMap ||
+  #|       value instanceof WeakSet ||
+  #|       value instanceof ArrayBuffer ||
+  #|       ArrayBuffer.isView(value)
+  #|     ) {
+  #|       return;
+  #|     }
+  #|     if (globalThis.__bidiProxyInstances && globalThis.__bidiProxyInstances.has(value)) return;
+  #|     const isContainer =
+  #|       Array.isArray(value) ||
+  #|       value instanceof Map ||
+  #|       value instanceof Set ||
+  #|       value.constructor === Object;
+  #|     if (!isContainer) return;
+  #|     trackReference(value);
+  #|     if (seen.has(value)) return;
+  #|     seen.add(value);
+  #|     if (Array.isArray(value)) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     if (value instanceof Map) {
+  #|       for (const [k, v] of value) {
+  #|         if (typeof k !== "string") collectReferences(k, seen);
+  #|         collectReferences(v, seen);
+  #|       }
+  #|       return;
+  #|     }
+  #|     if (value instanceof Set) {
+  #|       for (const item of value) collectReferences(item, seen);
+  #|       return;
+  #|     }
+  #|     for (const entryValue of Object.values(value)) {
+  #|       collectReferences(entryValue, seen);
+  #|     }
+  #|   };
   #|   const withInternalId = (originalValue, serialized) => {
   #|     if (!serialized || typeof serialized !== "object") return serialized;
   #|     if (!originalValue || (typeof originalValue !== "object" && typeof originalValue !== "function")) {
   #|       return serialized;
   #|     }
   #|     const serializedType = serialized.type;
-  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object") {
+  #|     if (serializedType !== "array" && serializedType !== "map" && serializedType !== "set" && serializedType !== "object" && serializedType !== "node") {
   #|       return serialized;
   #|     }
+  #|     const count = referenceCounts.get(originalValue) || 0;
+  #|     if (count <= 1) return serialized;
   #|     let internalId = internalIds.get(originalValue);
   #|     if (!internalId) {
   #|       internalId = `internal-${nextInternalId++}`;
@@ -3864,7 +4139,7 @@ extern "js" fn js_eval_and_send_async(
   #|       };
   #|     }
   #|     if (value && type === "object" && typeof value.nodeType === "number") {
-  #|       return toBidiNodeValue(value);
+  #|       return withInternalId(value, toBidiNodeValue(value));
   #|     }
   #|     if (value instanceof RegExp) return { type: "regexp", value: { pattern: value.source, flags: value.flags } };
   #|     if (value instanceof Date) return { type: "date", value: value.toISOString() };
@@ -3898,6 +4173,7 @@ extern "js" fn js_eval_and_send_async(
   #|     return { type: "object" };
   #|   }
   #|   if (!globalThis.__bidiHandleStore) globalThis.__bidiHandleStore = new Map();
+  #|   if (!globalThis.__bidiHandleContextStore) globalThis.__bidiHandleContextStore = new Map();
   #|   if (typeof globalThis.__bidiNextHandleId !== "number") {
   #|     globalThis.__bidiNextHandleId = 1;
   #|   }
@@ -3909,6 +4185,10 @@ extern "js" fn js_eval_and_send_async(
   #|     if (!serialized || typeof serialized !== "object" || serialized.handle) return serialized;
   #|     const handle = `handle-${globalThis.__bidiNextHandleId++}`;
   #|     globalThis.__bidiHandleStore.set(handle, value);
+  #|     globalThis.__bidiHandleContextStore.set(
+  #|       handle,
+  #|       String(globalThis.__bidiCurrentContext || ""),
+  #|     );
   #|     return { ...serialized, handle };
   #|   };
   #|   const toBidiValueFn = (value, includeHandle = false) =>
@@ -3926,6 +4206,7 @@ extern "js" fn js_eval_and_send_async(
   #|     if (result instanceof Promise) {
   #|       result = await result;
   #|     }
+  #|     collectReferences(result);
   #|     response = {
   #|       id: requestId,
   #|       type: "success",
@@ -4150,8 +4431,25 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|     }
   #|     if (contextWindow.location && typeof contextWindow.location === "object") {
   #|       globalThis.location = contextWindow.location;
-  #|     } else if (globalThis.location && typeof globalThis.location === "object") {
-  #|       contextWindow.location = globalThis.location;
+  #|       try { globalThis.__pageUrl = String(contextWindow.location.href || "about:blank"); } catch (_e) {}
+  #|     } else {
+  #|       const locationHref = "about:blank";
+  #|       contextWindow.location = {
+  #|         href: locationHref,
+  #|         origin: '',
+  #|         protocol: 'about:',
+  #|         host: '',
+  #|         hostname: '',
+  #|         port: '',
+  #|         pathname: 'blank',
+  #|         search: '',
+  #|         hash: '',
+  #|         assign: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|         replace: function(url) { const next = String(url); globalThis.__pageUrl = next; this.href = next; },
+  #|         reload: function() {}
+  #|       };
+  #|       globalThis.location = contextWindow.location;
+  #|       globalThis.__pageUrl = locationHref;
   #|     }
   #|   }
   #| }
@@ -4333,13 +4631,42 @@ pub fn set_runtime_context_viewport(
 /// Check if runtime handle exists in current JS handle store.
 extern "js" fn js_has_runtime_handle(handle_id : String) -> Bool =
   #| (handleId) => {
-  #|   return !!(globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.has(handleId));
+  #|   const store = globalThis.__bidiHandleStore;
+  #|   if (!store || !store.has(handleId)) return false;
+  #|   const contextStore = globalThis.__bidiHandleContextStore;
+  #|   if (!contextStore || !contextStore.has(handleId)) return true;
+  #|   return (
+  #|     String(contextStore.get(handleId)) ===
+  #|     String(globalThis.__bidiCurrentContext || "")
+  #|   );
   #| }
 
 ///|
 /// Check if runtime handle exists in current JS handle store.
 pub fn has_runtime_handle(handle_id : String) -> Bool {
   js_has_runtime_handle(handle_id)
+}
+
+///|
+/// Remove handle from current JS handle store (no-op when absent).
+extern "js" fn js_delete_runtime_handle(handle_id : String) -> Unit =
+  #| (handleId) => {
+  #|   const store = globalThis.__bidiHandleStore;
+  #|   if (!store) return;
+  #|   const contextStore = globalThis.__bidiHandleContextStore;
+  #|   if (contextStore && contextStore.has(handleId)) {
+  #|     const owner = String(contextStore.get(handleId));
+  #|     const current = String(globalThis.__bidiCurrentContext || "");
+  #|     if (owner !== current) return;
+  #|     contextStore.delete(handleId);
+  #|   }
+  #|   store.delete(handleId);
+  #| }
+
+///|
+/// Remove handle from current JS handle store (no-op when absent).
+pub fn delete_runtime_handle(handle_id : String) -> Unit {
+  js_delete_runtime_handle(handle_id)
 }
 
 ///|

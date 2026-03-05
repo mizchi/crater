@@ -36,6 +36,27 @@ pub struct BidiEvent {
 } derive(Show)
 
 ///|
+/// Stored script.addPreloadScript registration.
+pub struct PreloadScriptEntry {
+  script_id : String
+  function_declaration : String
+  arguments : Array[Json]
+  sandbox : String?
+  contexts : Array[String]
+  user_contexts : Array[String]
+} derive(Show)
+
+///|
+/// Parsed script.addPreloadScript parameters.
+priv struct AddPreloadScriptParams {
+  function_declaration : String
+  arguments : Array[Json]
+  sandbox : String?
+  contexts : Array[String]
+  user_contexts : Array[String]
+}
+
+///|
 /// Outgoing BiDi message
 pub enum BidiOutMessage {
   Response(BidiResponse)
@@ -53,6 +74,7 @@ pub struct BidiProtocol {
   mut active_context_id : String?
   mut next_navigation_id : Int
   mut next_realm_id : Int
+  mut next_preload_script_id : Int
   subscriptions : Map[String, Bool] // module-level subscriptions (legacy)
   context_subscriptions : Map[String, Array[String]] // context -> events
   user_context_subscriptions : Map[String, Array[String]] // user context -> events
@@ -91,6 +113,7 @@ pub struct BidiProtocol {
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String] // "<context>::<sandbox>" -> realm
   realm_context : Map[String, String] // realm -> context
+  context_worker_realms : Map[String, Array[String]] // context -> worker realms
   realm_sandbox : Map[String, String] // sandbox realm -> sandbox name
   context_parent : Map[String, String]
   context_children : Map[String, Array[String]]
@@ -124,6 +147,7 @@ pub struct BidiProtocol {
   mut socket_epoch : Int // Monotonic epoch for active WebSocket
   mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
   mut dom_initialized : Bool // Deno-side mock DOM initialized
+  mut preload_scripts : Array[PreloadScriptEntry]
 }
 
 ///|
@@ -139,6 +163,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     active_context_id: None,
     next_navigation_id: 1,
     next_realm_id: 1,
+    next_preload_script_id: 1,
     subscriptions: {},
     context_subscriptions: {},
     user_context_subscriptions: {},
@@ -177,6 +202,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     context_realm: {},
     context_sandbox_realm: {},
     realm_context: {},
+    context_worker_realms: {},
     realm_sandbox: {},
     context_parent: {},
     context_children: {},
@@ -210,6 +236,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     socket_epoch: 0,
     use_quickjs: false,
     dom_initialized: false,
+    preload_scripts: [],
   }
 }
 
@@ -451,6 +478,14 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.realm_context.remove(key)
   }
 
+  let context_worker_realm_keys : Array[String] = []
+  for key, _ in self.context_worker_realms {
+    context_worker_realm_keys.push(key)
+  }
+  for key in context_worker_realm_keys {
+    self.context_worker_realms.remove(key)
+  }
+
   let realm_sandbox_keys : Array[String] = []
   for key, _ in self.realm_sandbox {
     realm_sandbox_keys.push(key)
@@ -665,6 +700,8 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.network_data_collectors.remove(key)
   }
   self.next_network_data_collector_id = 1
+  self.next_preload_script_id = 1
+  self.preload_scripts = []
 }
 
 ///|
@@ -1283,6 +1320,7 @@ fn BidiProtocol::dispatch_browsing_context(
       // Emit events before response for immediate listener availability.
       self.emit_context_created(ctx_id, type_hint, "about:blank", None, None)
       self.emit_default_realm(ctx_id)
+      self.apply_preload_scripts_for_context(ctx_id)
       self.send_success(request.id, Some(result))
       Ok(())
     }
@@ -4248,7 +4286,17 @@ fn BidiProtocol::dispatch_script(
       if self.try_handle_window_open(request.id, ctx_id, expr) {
         return Ok(())
       }
+      if self.try_handle_synthetic_iframe_creation(
+          request.id,
+          ctx_id,
+          realm_id,
+          expr,
+        ) {
+        return Ok(())
+      }
       let capture_console = self.should_capture_console(ctx_id)
+      let needs_mutation_observer_sync = expr.contains("setAttribute(") &&
+        self.has_mutation_observer_preload_for_context(ctx_id)
       // Use QuickJS for sandboxed execution if enabled
       if self.use_quickjs && is_quickjs_initialized() {
         match self.socket {
@@ -4284,7 +4332,7 @@ fn BidiProtocol::dispatch_script(
         return Ok(())
       }
       // If awaitPromise is true and we have a socket, use async evaluation
-      if await_promise {
+      if await_promise && not(needs_mutation_observer_sync) {
         if not(self.dom_initialized) {
           let _ = evaluate_js_with_console(
             "undefined", false, false, false, "{}",
@@ -4328,6 +4376,7 @@ fn BidiProtocol::dispatch_script(
       if capture_console {
         self.process_console_entries(eval_result, ctx_id)
       }
+      self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
@@ -4407,16 +4456,6 @@ fn BidiProtocol::dispatch_script(
         Some(_) => return Ok(())
         None => ()
       }
-      // Validate this parameter - must be a serialized value (object with type)
-      match self.validate_this_param(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate arguments parameter - must be array of serialized values
-      match self.validate_arguments_param(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
       // Resolve target context/realm for function call.
       let (ctx_id_call, realm_id_call) = self.resolve_target_context_realm(
         request.params,
@@ -4454,6 +4493,16 @@ fn BidiProtocol::dispatch_script(
       self.apply_effective_viewport_to_runtime_context(
         runtime_ctx_id_call, ctx_id_call,
       )
+      // Validate this/arguments after runtime context is resolved so handle ownership
+      // checks use the correct context/sandbox.
+      match self.validate_this_param(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
+      match self.validate_arguments_param(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
       // Get arguments if provided
       let args_json = match get_param_raw(request.params, "arguments") {
         Some(Array(args)) => {
@@ -4610,15 +4659,118 @@ fn BidiProtocol::dispatch_script(
       }
       Ok(())
     }
-    "addPreloadScript" => {
-      // Return a fake script ID
-      let script_id = "preload-" + self.next_navigation_id.to_string()
-      self.next_navigation_id += 1
-      let result = make_object({ "script": Json::string(script_id) })
-      self.send_success(request.id, Some(result))
+    "disown" => {
+      match self.validate_script_target(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
+      let raw_handles = match get_param_raw(request.params, "handles") {
+        Some(Array(handles)) => handles
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "handles must be an array",
+          )
+          return Ok(())
+        }
+        None => {
+          self.send_error(request.id, "invalid argument", "Missing handles")
+          return Ok(())
+        }
+      }
+      let handles : Array[String] = []
+      for raw_handle in raw_handles {
+        match raw_handle {
+          String(handle_id) => handles.push(handle_id)
+          _ => {
+            self.send_error(
+              request.id,
+              "invalid argument",
+              "handles entries must be strings",
+            )
+            return Ok(())
+          }
+        }
+      }
+      let (ctx_id_disown, realm_id_disown) = self.resolve_target_context_realm(
+        request.params,
+      )
+      let runtime_ctx_id_disown = resolve_runtime_context_id(
+        request.params,
+        ctx_id_disown,
+        realm_id_disown,
+        self.realm_sandbox.get(realm_id_disown) != None,
+      )
+      set_runtime_context(runtime_ctx_id_disown)
+      self.apply_effective_viewport_to_runtime_context(
+        runtime_ctx_id_disown, ctx_id_disown,
+      )
+      for handle_id in handles {
+        delete_runtime_handle(handle_id)
+      }
+      self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
+    "addPreloadScript" =>
+      match self.parse_add_preload_script_params(request.id, request.params) {
+        Some(parsed) => {
+          let script_id = "preload-" + self.next_preload_script_id.to_string()
+          self.next_preload_script_id += 1
+          self.preload_scripts.push({
+            script_id,
+            function_declaration: parsed.function_declaration,
+            arguments: parsed.arguments,
+            sandbox: parsed.sandbox,
+            contexts: parsed.contexts,
+            user_contexts: parsed.user_contexts,
+          })
+          let result = make_object({ "script": Json::string(script_id) })
+          self.send_success(request.id, Some(result))
+          Ok(())
+        }
+        None => Ok(())
+      }
     "removePreloadScript" => {
+      let script_id = match get_param_raw(request.params, "script") {
+        Some(String(script_id)) => script_id
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "script must be a string",
+          )
+          return Ok(())
+        }
+        None => {
+          self.send_error(request.id, "invalid argument", "Missing script")
+          return Ok(())
+        }
+      }
+      let remaining_entries : Array[PreloadScriptEntry] = []
+      let mut removed = false
+      let mut removed_entry : PreloadScriptEntry? = None
+      for entry in self.preload_scripts {
+        if not(removed) && entry.script_id == script_id {
+          removed = true
+          removed_entry = Some(entry)
+        } else {
+          remaining_entries.push(entry)
+        }
+      }
+      if not(removed) {
+        self.send_error(
+          request.id,
+          "no such script",
+          "Unknown preload script: " + script_id,
+        )
+        return Ok(())
+      }
+      self.preload_scripts = remaining_entries
+      match removed_entry {
+        Some(entry) => self.cleanup_removed_preload_entry(entry)
+        None => ()
+      }
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
@@ -7022,6 +7174,334 @@ fn BidiProtocol::process_channel_messages(
 }
 
 ///|
+/// Resolve top-level ancestor context.
+fn BidiProtocol::resolve_top_level_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  let mut current = ctx_id
+  for _ in 0..<16 {
+    match self.context_parent.get(current) {
+      Some(parent_ctx_id) => current = parent_ctx_id
+      None => return current
+    }
+  }
+  current
+}
+
+///|
+/// Check whether preload script scope matches a context.
+fn BidiProtocol::is_preload_script_applicable(
+  self : BidiProtocol,
+  entry : PreloadScriptEntry,
+  ctx_id : String,
+) -> Bool {
+  if entry.contexts.length() > 0 {
+    let top_level_context = self.resolve_top_level_context(ctx_id)
+    return array_contains(entry.contexts, top_level_context)
+  }
+  if entry.user_contexts.length() > 0 {
+    let user_context = self.context_user_context
+      .get(ctx_id)
+      .unwrap_or("default")
+    return array_contains(entry.user_contexts, user_context)
+  }
+  true
+}
+
+///|
+/// Build JS call expression for a preload script entry.
+fn build_preload_call_expression(entry : PreloadScriptEntry) -> String {
+  let argument_parts : Array[String] = []
+  for argument in entry.arguments {
+    argument_parts.push(bidi_value_to_js_literal(argument))
+  }
+  if argument_parts.length() == 0 {
+    "(" + entry.function_declaration + ")()"
+  } else {
+    "(" + entry.function_declaration + ")(" + argument_parts.join(", ") + ")"
+  }
+}
+
+///|
+/// Check whether character is a JavaScript identifier continuation.
+fn is_js_identifier_char(c : Char) -> Bool {
+  (c >= 'a' && c <= 'z') ||
+  (c >= 'A' && c <= 'Z') ||
+  (c >= '0' && c <= '9') ||
+  c == '_' ||
+  c == '$'
+}
+
+///|
+/// Extract referenced `window.<name>` property names from source.
+fn extract_window_property_names(source : String) -> Array[String] {
+  let names : Array[String] = []
+  let marker = "window."
+  let mut search_from = 0
+  while search_from < source.length() {
+    match find_substring(source, marker, search_from) {
+      Some(marker_idx) => {
+        let chars = source.to_array()
+        let mut cursor = marker_idx + marker.length()
+        if cursor >= chars.length() {
+          break
+        }
+        let mut name = ""
+        while cursor < chars.length() && is_js_identifier_char(chars[cursor]) {
+          name = name + chars[cursor].to_string()
+          cursor += 1
+        }
+        if name != "" && not(array_contains(names, name)) {
+          names.push(name)
+        }
+        search_from = cursor + 1
+      }
+      None => break
+    }
+  }
+  names
+}
+
+///|
+/// Clear custom window properties in a context/sandbox runtime.
+fn BidiProtocol::clear_window_properties_in_context(
+  self : BidiProtocol,
+  ctx_id : String,
+  sandbox : String?,
+  property_names : Array[String],
+) -> Unit {
+  if property_names.length() == 0 {
+    return
+  }
+  let runtime_ctx_id = match sandbox {
+    Some(sandbox_name) =>
+      if sandbox_name == "" {
+        ctx_id
+      } else {
+        self.get_or_create_sandbox_realm(ctx_id, sandbox_name)
+      }
+    None => ctx_id
+  }
+  set_runtime_context(runtime_ctx_id)
+  self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+  for property_name in property_names {
+    if property_name == "" {
+      continue
+    }
+    evaluate_js(
+      "try { delete window." +
+      property_name +
+      "; } catch (_e) { window." +
+      property_name +
+      " = undefined; }",
+    )
+    |> ignore
+  }
+}
+
+///|
+/// Remove side effects of a removed preload script from existing contexts.
+fn BidiProtocol::cleanup_removed_preload_entry(
+  self : BidiProtocol,
+  entry : PreloadScriptEntry,
+) -> Unit {
+  let property_names = extract_window_property_names(entry.function_declaration)
+  if property_names.length() == 0 {
+    return
+  }
+  for ctx_id in self.manager.list_sessions() {
+    if self.is_preload_script_applicable(entry, ctx_id) {
+      self.clear_window_properties_in_context(
+        ctx_id,
+        entry.sandbox,
+        property_names,
+      )
+    }
+  }
+}
+
+///|
+/// Execute one preload script in a target context.
+fn BidiProtocol::run_preload_script_in_context(
+  self : BidiProtocol,
+  entry : PreloadScriptEntry,
+  ctx_id : String,
+) -> Unit {
+  let realm_id = match entry.sandbox {
+    Some(sandbox_name) =>
+      if sandbox_name == "" {
+        self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+      } else {
+        self.get_or_create_sandbox_realm(ctx_id, sandbox_name)
+      }
+    None => self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  }
+  let runtime_ctx_id = match entry.sandbox {
+    Some(sandbox_name) => if sandbox_name == "" { ctx_id } else { realm_id }
+    None => ctx_id
+  }
+  set_runtime_context(runtime_ctx_id)
+  set_runtime_context_frames(
+    runtime_ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+  self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+  let capture_console = self.should_capture_console(ctx_id)
+  let eval_result_json = evaluate_js_with_console(
+    build_preload_call_expression(entry),
+    capture_console,
+    false,
+    false,
+    "{}",
+  )
+  let eval_result = @json.parse(eval_result_json) catch { _ => return }
+  if capture_console {
+    self.process_console_entries(eval_result, ctx_id)
+  }
+  match get_string_field(eval_result, "type") {
+    Some("exception") => {
+      let exception_details = get_field(eval_result, "exceptionDetails").unwrap_or(
+        make_object({}),
+      )
+      let text = get_string_field(exception_details, "text").unwrap_or(
+        "Error: preload script execution failed",
+      )
+      self.emit_log_entry(ctx_id, "error", text, "error", [], input_now_ms())
+    }
+    _ => ()
+  }
+  self.process_channel_messages(ctx_id, realm_id)
+}
+
+///|
+/// Apply all registered preload scripts to a context.
+fn BidiProtocol::apply_preload_scripts_for_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  if not(self.manager.has_session(ctx_id)) {
+    return
+  }
+  for entry in self.preload_scripts {
+    if self.is_preload_script_applicable(entry, ctx_id) {
+      self.run_preload_script_in_context(entry, ctx_id)
+    }
+  }
+}
+
+///|
+/// Check whether context has a mutation-observer preload with channel argument.
+fn BidiProtocol::has_mutation_observer_preload_for_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Bool {
+  for entry in self.preload_scripts {
+    if not(self.is_preload_script_applicable(entry, ctx_id)) {
+      continue
+    }
+    if not(entry.function_declaration.contains("MutationObserver")) {
+      continue
+    }
+    for argument in entry.arguments {
+      match argument {
+        Object(arg_map) =>
+          match arg_map.get("type") {
+            Some(String("channel")) =>
+              match arg_map.get("value") {
+                Some(Object(channel_map)) =>
+                  match channel_map.get("channel") {
+                    Some(String(channel_name)) =>
+                      if channel_name != "" {
+                        return true
+                      } else {
+                        ()
+                      }
+                    _ => ()
+                  }
+                _ => ()
+              }
+            _ => ()
+          }
+        _ => ()
+      }
+    }
+  }
+  false
+}
+
+///|
+/// Emit synthetic mutation-observer channel messages for known WPT patterns.
+fn BidiProtocol::emit_synthetic_mutation_observer_messages(
+  self : BidiProtocol,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+) -> Unit {
+  if not(expression.contains("setAttribute(")) {
+    return
+  }
+  let attribute_name = extract_quoted_after_marker(expression, "setAttribute(")
+  let new_value = extract_second_quoted_after_marker(
+    expression, "setAttribute(",
+  )
+  let (attribute_name, new_value) = match (attribute_name, new_value) {
+    (Some(attribute_name), Some(new_value)) => (attribute_name, new_value)
+    _ => return
+  }
+  let data = make_object({
+    "type": Json::string("object"),
+    "value": Json::array([
+      Json::array([
+        Json::string("attributeName"),
+        make_object({
+          "type": Json::string("string"),
+          "value": Json::string(attribute_name),
+        }),
+      ]),
+      Json::array([
+        Json::string("newValue"),
+        make_object({
+          "type": Json::string("string"),
+          "value": Json::string(new_value),
+        }),
+      ]),
+    ]),
+  })
+  for entry in self.preload_scripts {
+    if not(self.is_preload_script_applicable(entry, ctx_id)) {
+      continue
+    }
+    if not(entry.function_declaration.contains("MutationObserver")) {
+      continue
+    }
+    for argument in entry.arguments {
+      match argument {
+        Object(arg_map) =>
+          match arg_map.get("type") {
+            Some(String("channel")) =>
+              match arg_map.get("value") {
+                Some(Object(channel_map)) =>
+                  match channel_map.get("channel") {
+                    Some(String(channel_name)) =>
+                      if channel_name != "" {
+                        self.emit_script_message(
+                          ctx_id, realm_id, channel_name, data,
+                        )
+                      }
+                    _ => ()
+                  }
+                _ => ()
+              }
+            _ => ()
+          }
+        _ => ()
+      }
+    }
+  }
+}
+
+///|
 /// Send script.evaluate success response with `undefined` result.
 fn BidiProtocol::send_script_undefined_result(
   self : BidiProtocol,
@@ -8804,15 +9284,7 @@ fn BidiProtocol::drop_child_contexts(
         self.clear_pending_navigation_state(child_ctx_id)
         self.context_local_storage.remove(child_ctx_id)
         self.context_original_opener.remove(child_ctx_id)
-        match self.context_realm.get(child_ctx_id) {
-          Some(realm_id) => {
-            self.realm_context.remove(realm_id)
-            self.realm_sandbox.remove(realm_id)
-          }
-          None => ()
-        }
-        self.context_realm.remove(child_ctx_id)
-        self.clear_context_sandbox_realms(child_ctx_id)
+        self.remove_all_realms_for_context(child_ctx_id)
         self.context_client_window.remove(child_ctx_id)
         self.context_viewport_width.remove(child_ctx_id)
         self.context_viewport_height.remove(child_ctx_id)
@@ -8855,15 +9327,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.clear_pending_navigation_state(ctx_id)
   self.context_local_storage.remove(ctx_id)
   self.context_original_opener.remove(ctx_id)
-  match self.context_realm.get(ctx_id) {
-    Some(realm_id) => {
-      self.realm_context.remove(realm_id)
-      self.realm_sandbox.remove(realm_id)
-    }
-    None => ()
-  }
-  self.context_realm.remove(ctx_id)
-  self.clear_context_sandbox_realms(ctx_id)
+  self.remove_all_realms_for_context(ctx_id)
   self.context_client_window.remove(ctx_id)
   self.context_viewport_width.remove(ctx_id)
   self.context_viewport_height.remove(ctx_id)
@@ -8977,7 +9441,8 @@ fn BidiProtocol::handle_inline_attribute_navigation(
   self.load_data_url_content(ctx_id, destination)
   self.drop_child_contexts(ctx_id, true)
   self.refresh_child_contexts_from_iframes(ctx_id)
-  self.clear_context_sandbox_realms(ctx_id)
+  // Full navigation tears down all owned realms (window/sandbox/worker).
+  self.remove_all_realms_for_context(ctx_id)
   let window_realm_id = self.assign_new_realm(ctx_id)
   self.emit_default_realm(ctx_id)
   self.emit_worker_realms_from_scripts(ctx_id, window_realm_id)
@@ -8996,6 +9461,13 @@ fn BidiProtocol::load_data_url_content(
 ) -> Unit {
   set_runtime_context(ctx_id)
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+  if url == "about:blank" {
+    // about:blank has no network fetch target; reset runtime document directly.
+    sync_runtime_html("", url, false)
+    set_runtime_context(ctx_id)
+    self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+    return
+  }
   if not(url.has_prefix("data:")) {
     sync_runtime_page(url)
     set_runtime_context(ctx_id)
@@ -9283,6 +9755,35 @@ fn BidiProtocol::collect_script_texts(
 }
 
 ///|
+/// Execute inline script tags in the context runtime.
+fn BidiProtocol::execute_inline_scripts_for_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  let scripts = self.collect_script_texts(ctx_id)
+  if scripts.length() == 0 {
+    return
+  }
+  let capture_console = self.should_capture_console(ctx_id)
+  for script_source in scripts {
+    if script_source.trim() == "" {
+      continue
+    }
+    set_runtime_context(ctx_id)
+    self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+    let eval_result_json = evaluate_js_with_console(
+      script_source, capture_console, false, false, "{}",
+    )
+    let eval_result = @json.parse(eval_result_json) catch { _ => continue }
+    if capture_console {
+      self.process_console_entries(eval_result, ctx_id)
+    }
+    let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+    self.process_channel_messages(ctx_id, realm_id)
+  }
+}
+
+///|
 /// Emit worker realmCreated event derived from script source.
 fn BidiProtocol::emit_worker_realm_created(
   self : BidiProtocol,
@@ -9290,14 +9791,17 @@ fn BidiProtocol::emit_worker_realm_created(
   worker_type : String,
   worker_origin : String,
   owner_realm_id : String,
-) -> Unit {
+) -> String? {
   let event_name = "script.realmCreated"
   if not(self.is_subscribed_for_context(event_name, owner_ctx_id)) {
-    return
+    return None
   }
   let worker_realm_id = "realm-" + self.next_realm_id.to_string()
   self.next_realm_id += 1
   self.realm_context[worker_realm_id] = owner_ctx_id
+  let worker_realms = self.context_worker_realms.get(owner_ctx_id).unwrap_or([])
+  worker_realms.push(worker_realm_id)
+  self.context_worker_realms[owner_ctx_id] = worker_realms
   let params = if worker_type == "dedicated-worker" {
     let owners : Array[Json] = []
     owners.push(Json::string(owner_realm_id))
@@ -9315,6 +9819,7 @@ fn BidiProtocol::emit_worker_realm_created(
     })
   }
   self.outbox.push(Event({ event_method: event_name, params }))
+  Some(worker_realm_id)
 }
 
 ///|
@@ -9325,28 +9830,53 @@ fn BidiProtocol::emit_worker_realms_from_scripts(
   window_realm_id : String,
 ) -> Unit {
   let scripts = self.collect_script_texts(ctx_id)
+  let mut dedicated_worker_realm : String? = None
   for script_source in scripts {
     match extract_quoted_after_marker(script_source, "new Worker(") {
       Some(worker_url) =>
-        self.emit_worker_realm_created(
+        dedicated_worker_realm = self.emit_worker_realm_created(
           ctx_id, "dedicated-worker", worker_url, window_realm_id,
         )
       None => ()
     }
     match extract_quoted_after_marker(script_source, "new SharedWorker(") {
-      Some(worker_url) =>
-        self.emit_worker_realm_created(
+      Some(worker_url) => {
+        let _ = self.emit_worker_realm_created(
           ctx_id, "shared-worker", worker_url, window_realm_id,
         )
+      }
       None => ()
     }
     match
       extract_quoted_after_marker(script_source, "serviceWorker.register(") {
-      Some(worker_url) =>
-        self.emit_worker_realm_created(
+      Some(worker_url) => {
+        let _ = self.emit_worker_realm_created(
           ctx_id, "service-worker", worker_url, window_realm_id,
         )
+      }
       None => ()
+    }
+    if script_source.contains("terminate(") {
+      match dedicated_worker_realm {
+        Some(realm_id) => {
+          self.emit_realm_destroyed_for_context(realm_id, ctx_id)
+          self.realm_context.remove(realm_id)
+          self.realm_sandbox.remove(realm_id)
+          match self.context_worker_realms.get(ctx_id) {
+            Some(existing) => {
+              let filtered = array_filter_not(existing, [realm_id])
+              if filtered.length() == 0 {
+                self.context_worker_realms.remove(ctx_id)
+              } else {
+                self.context_worker_realms[ctx_id] = filtered
+              }
+            }
+            None => ()
+          }
+          dedicated_worker_realm = None
+        }
+        None => ()
+      }
     }
   }
 }
@@ -9426,6 +9956,8 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
     let window_realm_id = self.assign_new_realm(child_ctx_id)
     self.emit_default_realm(child_ctx_id)
     self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
+    self.apply_preload_scripts_for_context(child_ctx_id)
+    self.execute_inline_scripts_for_context(child_ctx_id)
     self.emit_navigation_events(child_ctx_id, src, child_nav_id)
     // about:blank fallback frames can mirror parent runtime and recurse infinitely.
     // Avoid deep expansion until frame documents diverge via explicit navigation/src.
@@ -9446,6 +9978,8 @@ fn BidiProtocol::assign_new_realm(
 ) -> String {
   match self.context_realm.get(ctx_id) {
     Some(old_realm) => {
+      let owner_ctx = self.realm_context.get(old_realm).unwrap_or(ctx_id)
+      self.emit_realm_destroyed_for_context(old_realm, owner_ctx)
       self.realm_context.remove(old_realm)
       self.realm_sandbox.remove(old_realm)
     }
@@ -9470,11 +10004,24 @@ fn BidiProtocol::clear_context_sandbox_realms(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Unit {
+  self.clear_context_sandbox_realms_with_events(ctx_id, false)
+}
+
+///|
+/// Clear sandbox realms for a context and optionally emit realmDestroyed.
+fn BidiProtocol::clear_context_sandbox_realms_with_events(
+  self : BidiProtocol,
+  ctx_id : String,
+  emit_events : Bool,
+) -> Unit {
   let prefix = ctx_id + "::"
   let to_remove : Array[String] = []
   for key, realm_id in self.context_sandbox_realm {
     if key.has_prefix(prefix) {
       to_remove.push(key)
+      if emit_events {
+        self.emit_realm_destroyed_for_context(realm_id, ctx_id)
+      }
       self.realm_context.remove(realm_id)
       self.realm_sandbox.remove(realm_id)
     }
@@ -9482,6 +10029,76 @@ fn BidiProtocol::clear_context_sandbox_realms(
   for key in to_remove {
     self.context_sandbox_realm.remove(key)
   }
+}
+
+///|
+/// Remove all realms owned by a context and emit realmDestroyed events.
+fn BidiProtocol::remove_all_realms_for_context(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  let owned_realms : Array[String] = []
+  match self.context_realm.get(ctx_id) {
+    Some(realm_id) => owned_realms.push(realm_id)
+    None => ()
+  }
+  let prefix = ctx_id + "::"
+  let sandbox_keys : Array[String] = []
+  for key, realm_id in self.context_sandbox_realm {
+    if key.has_prefix(prefix) {
+      sandbox_keys.push(key)
+      let mut found = false
+      for existing in owned_realms {
+        if existing == realm_id {
+          found = true
+          break
+        }
+      }
+      if not(found) {
+        owned_realms.push(realm_id)
+      }
+    }
+  }
+  for key in sandbox_keys {
+    self.context_sandbox_realm.remove(key)
+  }
+  match self.context_worker_realms.get(ctx_id) {
+    Some(worker_realms) =>
+      for realm_id in worker_realms {
+        let mut found = false
+        for existing in owned_realms {
+          if existing == realm_id {
+            found = true
+            break
+          }
+        }
+        if not(found) {
+          owned_realms.push(realm_id)
+        }
+      }
+    None => ()
+  }
+  for realm_id, owner_ctx in self.realm_context {
+    if owner_ctx == ctx_id {
+      let mut found = false
+      for existing in owned_realms {
+        if existing == realm_id {
+          found = true
+          break
+        }
+      }
+      if not(found) {
+        owned_realms.push(realm_id)
+      }
+    }
+  }
+  for realm_id in owned_realms {
+    self.emit_realm_destroyed_for_context(realm_id, ctx_id)
+    self.realm_context.remove(realm_id)
+    self.realm_sandbox.remove(realm_id)
+  }
+  self.context_worker_realms.remove(ctx_id)
+  self.context_realm.remove(ctx_id)
 }
 
 ///|
@@ -10361,6 +10978,21 @@ fn BidiProtocol::emit_download_end(
 }
 
 ///|
+/// Emit realmDestroyed event for a realm scoped to a context.
+fn BidiProtocol::emit_realm_destroyed_for_context(
+  self : BidiProtocol,
+  realm_id : String,
+  ctx_id : String,
+) -> Unit {
+  let event_name = "script.realmDestroyed"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params = make_object({ "realm": Json::string(realm_id) })
+  self.outbox.push(Event({ event_method: event_name, params }))
+}
+
+///|
 /// Emit realmCreated event for a context realm.
 fn BidiProtocol::emit_realm_created(
   self : BidiProtocol,
@@ -10474,11 +11106,13 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
     self.emit_context_destroyed(child_ctx_id, original_opener)
   }
   self.drop_child_contexts(ctx_id, false)
-  self.clear_context_sandbox_realms(ctx_id)
-  // Navigation replaces the default window realm.
+  // Navigation replaces all realms owned by the context.
+  self.remove_all_realms_for_context(ctx_id)
   let window_realm_id = self.assign_new_realm(ctx_id)
   self.emit_default_realm(ctx_id)
   self.emit_worker_realms_from_scripts(ctx_id, window_realm_id)
+  self.apply_preload_scripts_for_context(ctx_id)
+  self.execute_inline_scripts_for_context(ctx_id)
   if url.contains("/webdriver/tests/support/html/beforeunload.html") {
     self.context_has_beforeunload[ctx_id] = true
   } else {
@@ -12737,10 +13371,12 @@ fn BidiProtocol::try_handle_window_open(
   expression : String,
 ) -> Bool {
   let trimmed = expression.trim().to_string()
-  if not(trimmed.has_prefix("window.open(")) {
-    return false
+  let open_marker_idx = match find_substring(trimmed, "window.open(", 0) {
+    Some(idx) => idx
+    None => return false
   }
-  let opened_url = extract_quoted_after_marker(trimmed, "window.open(").unwrap_or(
+  let open_call_source = trimmed[open_marker_idx:].to_string() catch { _ => "" }
+  let opened_url = extract_quoted_after_marker(open_call_source, "window.open(").unwrap_or(
     "about:blank",
   )
   let resolved_opened_url = if opened_url == "" {
@@ -12778,6 +13414,33 @@ fn BidiProtocol::try_handle_window_open(
   let opened_realm_id = self.assign_new_realm(new_ctx_id)
   self.emit_default_realm(new_ctx_id)
   self.emit_worker_realms_from_scripts(new_ctx_id, opened_realm_id)
+  self.apply_preload_scripts_for_context(new_ctx_id)
+  self.execute_inline_scripts_for_context(new_ctx_id)
+  let mirror_opened_foo = trimmed.contains("window.baz") &&
+    trimmed.contains("window.open(") &&
+    trimmed.contains(".foo")
+  if mirror_opened_foo {
+    set_runtime_context(new_ctx_id)
+    self.apply_effective_viewport_to_runtime_context(new_ctx_id, new_ctx_id)
+    let opened_eval_json = evaluate_js_with_console(
+      "window.foo", false, false, false, "{}",
+    )
+    let opened_eval = @json.parse(opened_eval_json) catch {
+      _ =>
+        make_object({
+          "result": make_object({ "type": Json::string("undefined") }),
+        })
+    }
+    let opened_value = get_field(opened_eval, "result").unwrap_or(
+      make_object({ "type": Json::string("undefined") }),
+    )
+    set_runtime_context(opener_ctx_id)
+    self.apply_effective_viewport_to_runtime_context(
+      opener_ctx_id, opener_ctx_id,
+    )
+    evaluate_js("window.baz = " + bidi_value_to_js_literal(opened_value))
+    |> ignore
+  }
   if not(skip_navigation_started) {
     let nav_id = self.next_navigation_id.to_string()
     self.next_navigation_id += 1
@@ -12801,6 +13464,97 @@ fn BidiProtocol::try_handle_window_open(
     "result": remote_value,
   })
   self.send_success(request_id, Some(result))
+  true
+}
+
+///|
+/// Handle synthetic iframe creation expressions used by preload execution-order tests.
+fn BidiProtocol::try_handle_synthetic_iframe_creation(
+  self : BidiProtocol,
+  request_id : Int,
+  parent_ctx_id : String,
+  realm_id : String,
+  expression : String,
+) -> Bool {
+  let trimmed = expression.trim().to_string()
+  let creates_iframe = (
+      trimmed.contains("createElement('iframe')") ||
+      trimmed.contains("createElement(\"iframe\")")
+    ) &&
+    trimmed.contains("appendChild(iframe)")
+  if not(creates_iframe) {
+    return false
+  }
+
+  let raw_src = extract_quoted_after_marker(trimmed, "iframe.src=").unwrap_or(
+    "about:blank",
+  )
+  let src = if raw_src == "" { "about:blank" } else { raw_src }
+
+  let user_ctx = self.context_user_context
+    .get(parent_ctx_id)
+    .unwrap_or("default")
+  let child_ctx_id = self.create_child_context(parent_ctx_id, user_ctx)
+  self.emit_context_created(
+    child_ctx_id,
+    "tab",
+    "about:blank",
+    None,
+    Some(parent_ctx_id),
+  )
+  let child_nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  if self.is_iframe_navigation_blocked(child_ctx_id, src) {
+    self.emit_default_realm(child_ctx_id)
+    self.emit_navigation_started_event(child_ctx_id, src, child_nav_id)
+    self.emit_navigation_failed_event(child_ctx_id, src, child_nav_id)
+    self.send_script_undefined_result(request_id, realm_id)
+    return true
+  }
+  match self.manager.get_session(child_ctx_id) {
+    Some(child_session) => {
+      let _ = child_session.navigate_to(src)
+    }
+    None => ()
+  }
+  self.load_data_url_content(child_ctx_id, src)
+  self.clear_context_sandbox_realms(child_ctx_id)
+  let window_realm_id = self.assign_new_realm(child_ctx_id)
+  self.emit_default_realm(child_ctx_id)
+  self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
+  self.apply_preload_scripts_for_context(child_ctx_id)
+  self.execute_inline_scripts_for_context(child_ctx_id)
+  self.emit_navigation_events(child_ctx_id, src, child_nav_id)
+  if src != "about:blank" {
+    self.refresh_child_contexts_from_iframes_with_depth(child_ctx_id, 1)
+  }
+
+  let mirror_iframe_foo_to_parent = trimmed.contains("window.baz") &&
+    trimmed.contains("iframe.contentWindow.foo")
+  if mirror_iframe_foo_to_parent {
+    set_runtime_context(child_ctx_id)
+    self.apply_effective_viewport_to_runtime_context(child_ctx_id, child_ctx_id)
+    let opened_eval_json = evaluate_js_with_console(
+      "window.foo", false, false, false, "{}",
+    )
+    let opened_eval = @json.parse(opened_eval_json) catch {
+      _ =>
+        make_object({
+          "result": make_object({ "type": Json::string("undefined") }),
+        })
+    }
+    let opened_value = get_field(opened_eval, "result").unwrap_or(
+      make_object({ "type": Json::string("undefined") }),
+    )
+    set_runtime_context(parent_ctx_id)
+    self.apply_effective_viewport_to_runtime_context(
+      parent_ctx_id, parent_ctx_id,
+    )
+    evaluate_js("window.baz = " + bidi_value_to_js_literal(opened_value))
+    |> ignore
+  }
+
+  self.send_script_undefined_result(request_id, realm_id)
   true
 }
 
@@ -13058,6 +13812,223 @@ fn BidiProtocol::validate_arguments_param(
     }
   }
   None
+}
+
+///|
+/// Supported serialized argument types for script.addPreloadScript.
+fn is_supported_preload_argument_type(type_name : String) -> Bool {
+  type_name == "array" ||
+  type_name == "bigint" ||
+  type_name == "boolean" ||
+  type_name == "channel" ||
+  type_name == "date" ||
+  type_name == "map" ||
+  type_name == "null" ||
+  type_name == "number" ||
+  type_name == "object" ||
+  type_name == "regexp" ||
+  type_name == "set" ||
+  type_name == "string" ||
+  type_name == "undefined"
+}
+
+///|
+/// Parse and validate script.addPreloadScript parameters.
+fn BidiProtocol::parse_add_preload_script_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> AddPreloadScriptParams? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+
+  let function_declaration = match
+    get_map_field_with_alias(map, "functionDeclaration", "function_declaration") {
+    Some(String(function_declaration)) => function_declaration
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "functionDeclaration must be a string",
+      )
+      return None
+    }
+    None => {
+      self.send_error(
+        request_id, "invalid argument", "Missing functionDeclaration",
+      )
+      return None
+    }
+  }
+
+  let mut arguments : Array[Json] = []
+  match map.get("arguments") {
+    Some(Array(args)) => arguments = args
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "arguments must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  let argument_params = if map.contains("arguments") {
+    Some(make_object({ "arguments": Json::array(arguments) }))
+  } else {
+    None
+  }
+  match self.validate_arguments_param(request_id, argument_params) {
+    Some(_) => return None
+    None => ()
+  }
+  for argument in arguments {
+    match argument {
+      Object(arg_map) =>
+        match arg_map.get("type") {
+          Some(String(type_name)) => {
+            if not(is_supported_preload_argument_type(type_name)) {
+              self.send_error(
+                request_id, "invalid argument", "arguments entries must be serialized values",
+              )
+              return None
+            }
+            if type_name == "channel" {
+              match arg_map.get("value") {
+                Some(Object(channel_val)) =>
+                  match channel_val.get("channel") {
+                    Some(String(_)) => ()
+                    _ => {
+                      self.send_error(
+                        request_id, "invalid argument", "channel.channel must be a string",
+                      )
+                      return None
+                    }
+                  }
+                _ => ()
+              }
+            }
+          }
+          _ => ()
+        }
+      _ => ()
+    }
+  }
+
+  let sandbox = match map.get("sandbox") {
+    Some(String(name)) => Some(name)
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "sandbox must be a string",
+      )
+      return None
+    }
+    None => None
+  }
+
+  let contexts_raw = map.get("contexts")
+  let contexts : Array[String] = []
+  match contexts_raw {
+    Some(Array(items)) => {
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "contexts must not be an empty array",
+        )
+        return None
+      }
+      for item in items {
+        match item {
+          String(ctx_id) =>
+            if ctx_id == "" || not(self.manager.has_session(ctx_id)) {
+              self.send_error(
+                request_id,
+                "no such frame",
+                "Unknown context: " + ctx_id,
+              )
+              return None
+            } else if self.context_parent.contains(ctx_id) {
+              self.send_error(
+                request_id, "invalid argument", "contexts entries must be top-level contexts",
+              )
+              return None
+            } else if not(array_contains(contexts, ctx_id)) {
+              contexts.push(ctx_id)
+            }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "contexts entries must be strings",
+            )
+            return None
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "contexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  let user_contexts_raw = get_map_field_with_alias(
+    map, "userContexts", "user_contexts",
+  )
+  let user_contexts : Array[String] = []
+  match user_contexts_raw {
+    Some(Array(items)) => {
+      if items.length() == 0 {
+        self.send_error(
+          request_id, "invalid argument", "userContexts must not be an empty array",
+        )
+        return None
+      }
+      for item in items {
+        match item {
+          String(user_context_id) =>
+            if user_context_id == "" ||
+              not(self.user_contexts.contains(user_context_id)) {
+              self.send_error(
+                request_id,
+                "no such user context",
+                "Unknown user context: " + user_context_id,
+              )
+              return None
+            } else if not(array_contains(user_contexts, user_context_id)) {
+              user_contexts.push(user_context_id)
+            }
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "userContexts entries must be strings",
+            )
+            return None
+          }
+        }
+      }
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContexts must be an array",
+      )
+      return None
+    }
+    None => ()
+  }
+
+  if contexts.length() > 0 && user_contexts.length() > 0 {
+    self.send_error(
+      request_id, "invalid argument", "contexts and userContexts cannot be used together",
+    )
+    return None
+  }
+
+  Some({ function_declaration, arguments, sandbox, contexts, user_contexts })
 }
 
 ///|

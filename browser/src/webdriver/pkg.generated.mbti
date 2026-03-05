@@ -13,6 +13,8 @@ pub fn await_promise(@core.Any) -> String
 
 pub fn decode_base64(String) -> String
 
+pub fn delete_runtime_handle(String) -> Unit
+
 pub fn error_response(ErrorCode, String) -> WebDriverResponse
 
 pub fn eval_and_send_async(@core.Any, Int, String, String) -> Unit
@@ -255,6 +257,7 @@ pub struct BidiProtocol {
   mut active_context_id : String?
   mut next_navigation_id : Int
   mut next_realm_id : Int
+  mut next_preload_script_id : Int
   subscriptions : Map[String, Bool]
   context_subscriptions : Map[String, Array[String]]
   user_context_subscriptions : Map[String, Array[String]]
@@ -293,6 +296,7 @@ pub struct BidiProtocol {
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String]
   realm_context : Map[String, String]
+  context_worker_realms : Map[String, Array[String]]
   realm_sandbox : Map[String, String]
   context_parent : Map[String, String]
   context_children : Map[String, Array[String]]
@@ -326,6 +330,7 @@ pub struct BidiProtocol {
   mut socket_epoch : Int
   mut use_quickjs : Bool
   mut dom_initialized : Bool
+  mut preload_scripts : Array[PreloadScriptEntry]
 }
 pub fn BidiProtocol::clear_socket(Self) -> Unit
 pub fn BidiProtocol::disable_quickjs(Self) -> Unit
@@ -536,6 +541,16 @@ pub(all) struct Point {
   y : Double
 }
 pub impl Show for Point
+
+pub struct PreloadScriptEntry {
+  script_id : String
+  function_declaration : String
+  arguments : Array[Json]
+  sandbox : String?
+  contexts : Array[String]
+  user_contexts : Array[String]
+}
+pub impl Show for PreloadScriptEntry
 
 pub(all) struct ProxyConfig {
   proxy_type : String
