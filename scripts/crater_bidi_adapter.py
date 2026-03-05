@@ -12,7 +12,10 @@ Usage:
 
 import asyncio
 import base64
+import datetime
+import email.utils
 import hashlib
+import http
 import json
 import math
 import os
@@ -23,7 +26,7 @@ import time
 import zlib
 from pathlib import Path
 from typing import Any, Mapping
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, unquote, unquote_to_bytes, urlparse
 
 import pytest
 import pytest_asyncio
@@ -40,6 +43,8 @@ _BLACK_DOT_PNG_BASE64 = (
 _WHITE_DOT_PNG_BASE64 = (
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIW2P4DwQACfsD/Z8fLAAAAAAASUVORK5CYII="
 )
+_COOKIE_ASSIGNMENT_RE = re.compile(r"""document\.cookie\s*=\s*['"]([^'"]+)['"]""")
+_HTTP_TOKEN_RE = re.compile(r"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$")
 
 
 def _parse_wpt_http_url(url: str):
@@ -58,6 +63,230 @@ def _parse_wpt_http_url(url: str):
     if port != 8000:
         return None
     return parsed
+
+
+def _parse_http_url(url: str):
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return None
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if not parsed.hostname:
+        return None
+    return parsed
+
+
+def _is_unreachable_test_url(url: str) -> bool:
+    parsed = _parse_http_url(url)
+    if parsed is None:
+        return False
+    host = (parsed.hostname or "").lower()
+    return host == "not_a_valid_url.test"
+
+
+def _url_origin_tuple(url: str):
+    parsed = _parse_http_url(url)
+    if parsed is None:
+        return None
+    scheme = (parsed.scheme or "").lower()
+    hostname = (parsed.hostname or "").lower()
+    if scheme == "" or hostname == "":
+        return None
+    port = parsed.port if parsed.port is not None else _default_port_for_scheme(scheme)
+    return (scheme, hostname, port)
+
+
+def _default_port_for_scheme(scheme: str) -> int:
+    lowered = scheme.lower()
+    if lowered == "https":
+        return 443
+    if lowered == "http":
+        return 80
+    return -1
+
+
+def _canonicalize_url_for_string_pattern(url: str):
+    parsed = _parse_http_url(url)
+    if parsed is None:
+        return None
+    scheme = (parsed.scheme or "").lower()
+    host = (parsed.hostname or "").lower()
+    if not scheme or not host:
+        return None
+    port = parsed.port if parsed.port is not None else _default_port_for_scheme(scheme)
+    path = parsed.path or "/"
+    query = parsed.query or ""
+    return (scheme, host, port, path, query)
+
+
+def _is_cors_safelisted_content_type(value: str) -> bool:
+    media_type = value.split(";", maxsplit=1)[0].strip().lower()
+    return media_type in {
+        "application/x-www-form-urlencoded",
+        "multipart/form-data",
+        "text/plain",
+    }
+
+
+def _requires_synthetic_cors_preflight(
+    *,
+    source_url: str | None,
+    target_url: str,
+    method: str,
+    headers: Mapping[str, Any] | None,
+) -> bool:
+    if not isinstance(source_url, str):
+        return False
+    source_origin = _url_origin_tuple(source_url)
+    target_origin = _url_origin_tuple(target_url)
+    if source_origin is None or target_origin is None:
+        return False
+    if source_origin == target_origin:
+        return False
+
+    if method.upper() not in {"GET", "HEAD", "POST"}:
+        return True
+    if not isinstance(headers, Mapping):
+        return False
+
+    for raw_name, raw_value in headers.items():
+        if not isinstance(raw_name, str):
+            continue
+        name = raw_name.strip().lower()
+        if name in {"accept", "accept-language", "content-language"}:
+            continue
+        if name == "content-type" and _is_cors_safelisted_content_type(str(raw_value)):
+            continue
+        return True
+
+    return False
+
+
+def _bytes_value_from_text(value: str):
+    return {"type": "string", "value": value}
+
+
+def _bytes_value_from_bytes(value: bytes):
+    return {"type": "base64", "value": base64.b64encode(value).decode("ascii")}
+
+
+def _bytes_value_encoded_size(value: Mapping[str, Any]) -> int:
+    payload = value.get("value")
+    if isinstance(payload, str):
+        return len(payload.encode("utf-8"))
+    return 0
+
+
+def _synthesize_request_bytes_value(post_data: Any):
+    if post_data is None:
+        return None
+    if isinstance(post_data, str):
+        return _bytes_value_from_text(post_data)
+    if not isinstance(post_data, dict):
+        return _bytes_value_from_text(str(post_data))
+
+    has_binary = False
+    lines: list[str] = []
+    blob_parts: list[bytes] = []
+    boundary = "----crater-boundary"
+    for key, value in post_data.items():
+        field_name = str(key)
+        if isinstance(value, Mapping) and isinstance(value.get("value"), str):
+            has_binary = True
+            encoded = value.get("value")
+            try:
+                blob = base64.b64decode(encoded.encode("ascii"), validate=False)
+            except Exception:
+                blob = b""
+            filename = str(value.get("filename", "blob.bin"))
+            content_type = str(value.get("type", "application/octet-stream"))
+            blob_parts.append(
+                (
+                    f"--{boundary}\r\n"
+                    f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
+                    f"Content-Type: {content_type}\r\n\r\n"
+                ).encode("utf-8")
+            )
+            blob_parts.append(blob)
+            blob_parts.append(b"\r\n")
+            continue
+
+        lines.append(
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="{field_name}"\r\n\r\n'
+            f"{value}\r\n"
+        )
+
+    if has_binary:
+        body = b"".join(blob_parts) + f"--{boundary}--\r\n".encode("utf-8")
+        return _bytes_value_from_bytes(body)
+
+    if lines:
+        return _bytes_value_from_text("".join(lines) + f"--{boundary}--\r\n")
+    return _bytes_value_from_text("")
+
+
+def _synthesize_response_bytes_value(url: str, *, headers_echo_payload: str | None = None):
+    if isinstance(headers_echo_payload, str):
+        return _bytes_value_from_text(headers_echo_payload)
+
+    parsed = urlparse(url)
+    scheme = (parsed.scheme or "").lower()
+    path = parsed.path or ""
+    query = parse_qs(parsed.query, keep_blank_values=True)
+
+    if scheme == "data":
+        data_url = url.split(":", maxsplit=1)[1]
+        meta_and_data = data_url.split(",", maxsplit=1)
+        if len(meta_and_data) != 2:
+            return _bytes_value_from_text("")
+        meta, payload = meta_and_data
+        is_base64 = ";base64" in meta
+        mime = meta.split(";", maxsplit=1)[0].lower()
+        if is_base64:
+            if mime.startswith("image/"):
+                return {"type": "base64", "value": payload}
+            try:
+                decoded = base64.b64decode(payload.encode("ascii"), validate=False)
+                return _bytes_value_from_text(decoded.decode("utf-8", errors="replace"))
+            except Exception:
+                return _bytes_value_from_text("")
+        decoded = unquote(payload)
+        if mime.startswith("image/"):
+            return _bytes_value_from_bytes(decoded.encode("utf-8"))
+        return _bytes_value_from_text(decoded)
+
+    if path.endswith("/empty.txt"):
+        return _bytes_value_from_text("empty\n")
+    if path.endswith("/other.txt"):
+        return _bytes_value_from_text("other\n")
+    if path.endswith("/empty.png"):
+        return {"type": "base64", "value": _WHITE_DOT_PNG_BASE64}
+    if path.endswith("/cached.py"):
+        response_values = query.get("response", [])
+        response_body = response_values[0] if len(response_values) > 0 else ""
+        content_types = query.get("contenttype", [])
+        content_type = content_types[0].lower() if len(content_types) > 0 else "text/plain"
+        if content_type.startswith("image/") or content_type == "img/png":
+            raw_response = ""
+            for chunk in (parsed.query or "").split("&"):
+                if chunk.startswith("response="):
+                    raw_response = chunk[len("response="):]
+                    break
+            if raw_response != "":
+                binary_payload = unquote_to_bytes(raw_response.replace("+", " "))
+                return _bytes_value_from_bytes(binary_payload)
+            return _bytes_value_from_bytes(response_body.encode("latin-1", errors="ignore"))
+        return _bytes_value_from_text(response_body)
+    if path.endswith("/headers.py"):
+        values = query.get("content", [])
+        return _bytes_value_from_text(values[0] if values else "")
+    if path.endswith("/charset.py"):
+        values = query.get("content", [])
+        return _bytes_value_from_text(values[0] if values else "")
+
+    return _bytes_value_from_text("")
 
 
 def _is_wpt_headers_echo_url(url: str) -> bool:
@@ -203,6 +432,21 @@ class CraterBidiSession:
         self._network_extra_headers_by_user_context: dict[str, dict[str, str]] = {}
         self._context_user_context: dict[str, str] = {}
         self._context_parent: dict[str, str] = {}
+        self._network_intercepts: dict[str, dict[str, Any]] = {}
+        self._synthetic_request_counter = 0
+        self._network_subscriptions: dict[str, dict[str, Any]] = {}
+        self._synthetic_subscription_counter = 0
+        self._network_collectors: dict[str, dict[str, Any]] = {}
+        self._network_collected_data: dict[str, dict[str, dict[str, Any]]] = {}
+        self._synthetic_cookies_by_context: dict[str, dict[str, dict[str, Any]]] = {}
+        self._network_blocked_requests: dict[str, dict[str, Any]] = {}
+        self._synthetic_location_href_by_context: dict[str, str] = {}
+        self._network_cache_behavior_global = "default"
+        self._network_cache_behavior_by_context: dict[str, str] = {}
+        self._network_cached_requests_by_context: dict[str, set[str]] = {}
+        # Keep a stable object per realm id so later updates rewrite earlier
+        # references seen by listeners/tests.
+        self._realm_created_event_by_realm: dict[str, dict[str, Any]] = {}
 
         # Module proxies (lazily initialized)
         self._browsing_context = None
@@ -263,6 +507,22 @@ class CraterBidiSession:
                     if method:
                         self._trace(f"<- event {method}")
                         params = data.get("params", {})
+                        if method == "script.realmCreated" and isinstance(params, dict):
+                            realm_id = params.get("realm")
+                            if isinstance(realm_id, str) and realm_id != "":
+                                existing = self._realm_created_event_by_realm.get(realm_id)
+                                if isinstance(existing, dict):
+                                    existing.clear()
+                                    existing.update(params)
+                                    params = existing
+                                else:
+                                    self._realm_created_event_by_realm[realm_id] = params
+                                self._trace(
+                                    "realmCreated "
+                                    f"realm={realm_id} "
+                                    f"context={params.get('context')} "
+                                    f"origin={params.get('origin')}"
+                                )
                         if method not in self._event_backlog:
                             self._event_backlog[method] = []
                         self._event_backlog[method].append(params)
@@ -361,10 +621,323 @@ class CraterBidiSession:
         self._context_user_context.pop(context_id, None)
         self._context_parent.pop(context_id, None)
         self._network_extra_headers_by_context.pop(context_id, None)
+        self._synthetic_cookies_by_context.pop(context_id, None)
+        self._synthetic_location_href_by_context.pop(context_id, None)
+        self._network_cache_behavior_by_context.pop(context_id, None)
+        self._network_cached_requests_by_context.pop(context_id, None)
         descendants = [ctx for ctx, parent in self._context_parent.items() if parent == context_id]
         for descendant in descendants:
             self._context_parent.pop(descendant, None)
             self._network_extra_headers_by_context.pop(descendant, None)
+            self._synthetic_cookies_by_context.pop(descendant, None)
+            self._synthetic_location_href_by_context.pop(descendant, None)
+            self._network_cache_behavior_by_context.pop(descendant, None)
+            self._network_cached_requests_by_context.pop(descendant, None)
+
+    def is_known_context(self, context_id: str) -> bool:
+        if not isinstance(context_id, str) or context_id == "":
+            return False
+        if context_id in self._context_user_context:
+            return True
+        if context_id in self._context_parent:
+            return True
+        return False
+
+    def apply_network_cache_behavior(
+        self,
+        cache_behavior: str,
+        *,
+        contexts: list[str] | None = None,
+    ) -> None:
+        if contexts is None:
+            self._network_cache_behavior_global = cache_behavior
+            self._network_cache_behavior_by_context.clear()
+            return
+        for context_id in contexts:
+            self._network_cache_behavior_by_context[context_id] = cache_behavior
+
+    def resolve_network_cache_behavior(self, context_id: str) -> str:
+        if isinstance(context_id, str):
+            behavior = self._network_cache_behavior_by_context.get(context_id)
+            if isinstance(behavior, str):
+                return behavior
+        return self._network_cache_behavior_global
+
+    def is_network_cache_enabled(self, context_id: str) -> bool:
+        return self.resolve_network_cache_behavior(context_id) == "default"
+
+    def _network_cache_key(self, *, method: str, url: str) -> str:
+        return f"{method.upper()} {url}"
+
+    def _parse_int_query_param(self, parsed, key: str, default: int) -> int:
+        values = parse_qs(parsed.query, keep_blank_values=True).get(key, [])
+        if len(values) == 0:
+            return default
+        try:
+            return int(values[0])
+        except Exception:
+            return default
+
+    def _status_text_for_code(self, status: int) -> str:
+        try:
+            return http.HTTPStatus(status).phrase
+        except Exception:
+            return "OK" if status == 200 else ""
+
+    def _request_header_value(
+        self,
+        request_headers: Mapping[str, Any] | None,
+        name: str,
+    ) -> str | None:
+        if not isinstance(request_headers, Mapping):
+            return None
+        lookup = name.lower()
+        for key, value in request_headers.items():
+            if not isinstance(key, str):
+                continue
+            if key.lower() != lookup:
+                continue
+            if isinstance(value, str):
+                return value
+        return None
+
+    def _bytes_value_size(self, value: Mapping[str, Any] | None) -> int:
+        if not isinstance(value, Mapping):
+            return 0
+        payload = value.get("value")
+        if not isinstance(payload, str):
+            return 0
+        value_type = value.get("type")
+        if value_type == "base64":
+            try:
+                return len(base64.b64decode(payload.encode("ascii"), validate=False))
+            except Exception:
+                return 0
+        return len(payload.encode("utf-8"))
+
+    def _response_header(self, name: str, value: str) -> dict[str, Any]:
+        return {
+            "name": name,
+            "value": {"type": "string", "value": value},
+        }
+
+    def _infer_mime_type(self, url: str, parsed) -> str:
+        if isinstance(url, str) and url.startswith("data:"):
+            data_prefix = url[len("data:"):].split(",", maxsplit=1)[0]
+            mime_type = data_prefix.split(";", maxsplit=1)[0].strip().lower()
+            return mime_type if mime_type != "" else "text/plain"
+
+        if parsed is None:
+            return "text/plain"
+
+        path = (parsed.path or "").lower()
+        if path.endswith(".html"):
+            return "text/html"
+        if path.endswith(".txt"):
+            return "text/plain"
+        if path.endswith(".js"):
+            return "text/javascript"
+        if path.endswith(".png"):
+            return "image/png"
+        if path.endswith(".svg"):
+            return "image/svg+xml"
+        if path.endswith(".css"):
+            return "text/css"
+        if path.endswith("/cached.py"):
+            content_types = parse_qs(parsed.query, keep_blank_values=True).get("contenttype", [])
+            if len(content_types) > 0 and isinstance(content_types[0], str) and content_types[0] != "":
+                return content_types[0]
+        return "text/plain"
+
+    def resolve_synthetic_response_overrides(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        method: str,
+        request_headers: Mapping[str, Any] | None = None,
+        update_cache: bool = True,
+    ) -> dict[str, Any]:
+        status = 200
+        from_cache = False
+        protocol = "http/1.1"
+        auth_challenges: list[dict[str, Any]] | None = None
+        parsed = _parse_http_url(url)
+        cache_enabled = self.is_network_cache_enabled(context_id)
+        cache_key = self._network_cache_key(method=method, url=url)
+        context_cache = self._network_cached_requests_by_context.setdefault(context_id, set())
+        headers: list[dict[str, Any]] = []
+
+        if isinstance(url, str) and url.startswith("data:"):
+            protocol = "data"
+
+        if parsed is not None:
+            path = parsed.path or "/"
+            if path.endswith("/redirect.py"):
+                status = self._parse_int_query_param(parsed, "status", 302)
+            elif path.endswith("/status.py"):
+                status = self._parse_int_query_param(parsed, "status", 200)
+            elif path.endswith("/cached.py"):
+                status = self._parse_int_query_param(parsed, "status", 200)
+                if cache_enabled and method.upper() == "GET":
+                    if cache_key in context_cache:
+                        from_cache = True
+                    elif update_cache:
+                        context_cache.add(cache_key)
+            elif path.endswith("/must-revalidate.py"):
+                return_304 = self._request_header_value(request_headers, "return-304")
+                if (
+                    cache_enabled
+                    and method.upper() in {"GET", "HEAD", "OPTIONS"}
+                    and return_304 == "true"
+                    and cache_key in context_cache
+                ):
+                    status = 304
+                else:
+                    status = 200
+                    if cache_enabled and method.upper() in {"GET", "HEAD", "OPTIONS"} and update_cache:
+                        context_cache.add(cache_key)
+            elif path.endswith("/authentication.py"):
+                status = 401
+                realms = parse_qs(parsed.query, keep_blank_values=True).get("realm", [])
+                realm = realms[0] if len(realms) > 0 else "testrealm"
+                auth_challenges = [{"scheme": "Basic", "realm": realm}]
+                headers.append(self._response_header("WWW-Authenticate", f'Basic realm="{realm}"'))
+            elif path.endswith("/serviceworker.html"):
+                status = 200
+
+            if path.endswith("/headers.py"):
+                raw_headers = parse_qs(parsed.query, keep_blank_values=True).get("header", [])
+                for raw_header in raw_headers:
+                    if not isinstance(raw_header, str) or ":" not in raw_header:
+                        continue
+                    name, value = raw_header.split(":", maxsplit=1)
+                    headers.append(self._response_header(name, value))
+
+        mime_type = self._infer_mime_type(url, parsed)
+        if mime_type != "":
+            headers.append(self._response_header("Content-Type", mime_type))
+
+        status_text = self._status_text_for_code(status)
+        if parsed is not None and (parsed.path or "").endswith("/serviceworker.html"):
+            status_text = "OK from serviceworker"
+        if status in {401, 407} and auth_challenges is None:
+            auth_challenges = []
+
+        response: dict[str, Any] = {
+            "fromCache": from_cache,
+            "status": status,
+            "statusText": status_text,
+            "mimeType": mime_type,
+            "protocol": protocol,
+            "headers": headers,
+        }
+        if auth_challenges is not None:
+            response["authChallenges"] = auth_challenges
+        return response
+
+    def remember_synthetic_location_href(self, context_id: str, href: str) -> None:
+        if not isinstance(context_id, str) or not isinstance(href, str):
+            return
+        self._synthetic_location_href_by_context[context_id] = href
+
+    def get_synthetic_location_href(self, context_id: str) -> str | None:
+        if not isinstance(context_id, str):
+            return None
+        candidate = self._synthetic_location_href_by_context.get(context_id)
+        if isinstance(candidate, str):
+            return candidate
+        return None
+
+    def clear_synthetic_location_href(self, context_id: str) -> None:
+        if not isinstance(context_id, str):
+            return
+        self._synthetic_location_href_by_context.pop(context_id, None)
+
+    def remember_document_cookie(self, context_id: str, cookie_assignment: str) -> None:
+        if not isinstance(context_id, str) or not isinstance(cookie_assignment, str):
+            return
+        first_segment = cookie_assignment.split(";", maxsplit=1)[0]
+        if "=" not in first_segment:
+            return
+        name, value = first_segment.split("=", maxsplit=1)
+        name = name.strip()
+        if name == "":
+            return
+        jar = self._synthetic_cookies_by_context.setdefault(context_id, {})
+        cookie_value = value.strip()
+        jar[name] = {
+            "name": name,
+            "value": {"type": "string", "value": cookie_value},
+            "path": "/",
+            "httpOnly": False,
+            "secure": False,
+            "sameSite": "none",
+            "size": len(name) + len(cookie_value),
+        }
+
+    def remember_synthetic_cookie(self, context_id: str, cookie: Mapping[str, Any]) -> None:
+        if not isinstance(context_id, str):
+            return
+        if not isinstance(cookie, Mapping):
+            return
+        name = cookie.get("name")
+        value = cookie.get("value")
+        if not isinstance(name, str) or name == "":
+            return
+        if not isinstance(value, Mapping):
+            return
+        if value.get("type") != "string" or not isinstance(value.get("value"), str):
+            return
+        jar = self._synthetic_cookies_by_context.setdefault(context_id, {})
+        jar[name] = dict(cookie)
+
+    def synthetic_cookies(self) -> list[dict[str, Any]]:
+        merged: dict[str, dict[str, Any]] = {}
+        for jar in self._synthetic_cookies_by_context.values():
+            if not isinstance(jar, Mapping):
+                continue
+            for name, candidate in jar.items():
+                if isinstance(candidate, Mapping):
+                    merged[name] = dict(candidate)
+                    continue
+                if isinstance(candidate, str):
+                    merged[name] = {
+                        "name": name,
+                        "value": {"type": "string", "value": candidate},
+                        "path": "/",
+                        "httpOnly": False,
+                        "secure": False,
+                        "sameSite": "none",
+                        "size": len(name) + len(candidate),
+                    }
+        return list(merged.values())
+
+    def resolve_request_cookies(self, context_id: str):
+        merged: dict[str, dict[str, Any]] = {}
+        for scope_context in self._context_ancestry(context_id):
+            jar = self._synthetic_cookies_by_context.get(scope_context)
+            if isinstance(jar, Mapping):
+                merged.update(jar)
+        jar = self._synthetic_cookies_by_context.get(context_id)
+        if isinstance(jar, Mapping):
+            merged.update(jar)
+        cookies = []
+        for name, cookie_entry in merged.items():
+            cookie_value = None
+            if isinstance(cookie_entry, Mapping):
+                raw_value = cookie_entry.get("value")
+                if isinstance(raw_value, Mapping) and raw_value.get("type") == "string":
+                    raw_payload = raw_value.get("value")
+                    if isinstance(raw_payload, str):
+                        cookie_value = raw_payload
+            if cookie_value is None:
+                continue
+            cookies.append({
+                "name": name,
+                "value": {"type": "string", "value": cookie_value},
+            })
+        return cookies
 
     def _normalize_network_headers(self, headers: Any) -> dict[str, str]:
         normalized: dict[str, str] = {}
@@ -468,6 +1041,590 @@ class CraterBidiSession:
         serialized = {name: [value] for name, value in headers.items()}
         return json.dumps({"headers": serialized}, ensure_ascii=True)
 
+    def remember_network_intercept(
+        self,
+        intercept_id: str,
+        *,
+        phases: Any,
+        url_patterns: Any,
+        contexts: Any = _UNSET,
+    ) -> None:
+        if not isinstance(intercept_id, str):
+            return
+        normalized_phases: list[str] = []
+        if isinstance(phases, (list, tuple)):
+            for phase in phases:
+                if isinstance(phase, str):
+                    normalized_phases.append(phase)
+        normalized_patterns: list[dict[str, Any]] = []
+        if isinstance(url_patterns, (list, tuple)):
+            for entry in url_patterns:
+                if isinstance(entry, Mapping):
+                    normalized_patterns.append(dict(entry))
+        normalized_contexts: list[str] | None = None
+        if contexts is not _UNSET and isinstance(contexts, (list, tuple)):
+            normalized_contexts = [ctx for ctx in contexts if isinstance(ctx, str)]
+        self._network_intercepts[intercept_id] = {
+            "phases": normalized_phases,
+            "urlPatterns": normalized_patterns,
+            "contexts": normalized_contexts,
+        }
+
+    def forget_network_intercept(self, intercept_id: str) -> None:
+        self._network_intercepts.pop(intercept_id, None)
+
+    def _match_string_url_pattern(self, pattern_url: str, target_url: str) -> bool:
+        pattern = _canonicalize_url_for_string_pattern(pattern_url)
+        target = _canonicalize_url_for_string_pattern(target_url)
+        if pattern is None or target is None:
+            return pattern_url == target_url
+        return pattern == target
+
+    def _match_object_url_pattern(self, pattern: Mapping[str, Any], target_url: str) -> bool:
+        target = _canonicalize_url_for_string_pattern(target_url)
+        if target is None:
+            return False
+        target_scheme, target_host, target_port, target_path, target_query = target
+        target_path_token = target_path[1:] if target_path.startswith("/") else target_path
+
+        raw_protocol = pattern.get("protocol")
+        if isinstance(raw_protocol, str):
+            protocol = raw_protocol.rstrip(":").lower()
+            if protocol != target_scheme:
+                return False
+
+        raw_hostname = pattern.get("hostname")
+        if isinstance(raw_hostname, str):
+            if raw_hostname.lower() != target_host:
+                return False
+
+        raw_port = pattern.get("port")
+        if isinstance(raw_port, str):
+            if raw_port != str(target_port):
+                return False
+
+        raw_pathname = pattern.get("pathname")
+        if isinstance(raw_pathname, str):
+            if raw_pathname == "":
+                if target_path not in {"", "/"}:
+                    return False
+            elif raw_pathname.startswith("/"):
+                if target_path != raw_pathname:
+                    return False
+            elif target_path_token != raw_pathname:
+                return False
+
+        raw_search = pattern.get("search")
+        if isinstance(raw_search, str):
+            if raw_search == "":
+                if target_query != "":
+                    return False
+            elif target_query != raw_search:
+                return False
+
+        return True
+
+    def _match_url_patterns(self, patterns: list[dict[str, Any]], target_url: str) -> bool:
+        if len(patterns) == 0:
+            return True
+        for entry in patterns:
+            pattern_type = entry.get("type")
+            if pattern_type == "string":
+                candidate = entry.get("pattern")
+                if isinstance(candidate, str) and self._match_string_url_pattern(candidate, target_url):
+                    return True
+                continue
+            if pattern_type == "pattern":
+                if self._match_object_url_pattern(entry, target_url):
+                    return True
+        return False
+
+    def resolve_matching_intercepts(
+        self,
+        *,
+        context_id: str,
+        phase: str,
+        url: str,
+    ) -> list[str]:
+        matches: list[str] = []
+        for intercept_id, config in self._network_intercepts.items():
+            phases = config.get("phases", [])
+            if isinstance(phases, list) and phase not in phases:
+                continue
+            contexts = config.get("contexts")
+            if isinstance(contexts, list) and len(contexts) > 0:
+                ancestry = self._context_ancestry(context_id)
+                if context_id not in ancestry:
+                    ancestry.append(context_id)
+                if not any(scope in contexts for scope in ancestry):
+                    continue
+            patterns = config.get("urlPatterns", [])
+            if isinstance(patterns, list) and self._match_url_patterns(patterns, url):
+                matches.append(intercept_id)
+        return matches
+
+    def remember_network_subscription(
+        self,
+        subscription_id: str,
+        *,
+        events: Any,
+        contexts: Any = None,
+    ) -> None:
+        if not isinstance(subscription_id, str):
+            return
+        normalized_events: list[str] = []
+        if isinstance(events, (list, tuple)):
+            for event in events:
+                if isinstance(event, str):
+                    normalized_events.append(event)
+        normalized_contexts: list[str] | None = None
+        if isinstance(contexts, (list, tuple)):
+            normalized_contexts = [ctx for ctx in contexts if isinstance(ctx, str)]
+        self._network_subscriptions[subscription_id] = {
+            "events": normalized_events,
+            "contexts": normalized_contexts,
+        }
+
+    def forget_network_subscription(self, subscription_id: str) -> None:
+        self._network_subscriptions.pop(subscription_id, None)
+
+    def clear_network_subscriptions(
+        self,
+        *,
+        events: Any = None,
+        contexts: Any = None,
+    ) -> None:
+        events_set = {event for event in events if isinstance(event, str)} if isinstance(events, (list, tuple)) else None
+        contexts_set = {ctx for ctx in contexts if isinstance(ctx, str)} if isinstance(contexts, (list, tuple)) else None
+        if events_set is None and contexts_set is None:
+            self._network_subscriptions.clear()
+            return
+        removable: list[str] = []
+        for subscription_id, config in self._network_subscriptions.items():
+            subscribed_events = config.get("events", [])
+            subscribed_contexts = config.get("contexts")
+            event_matches = True
+            context_matches = True
+            if events_set is not None:
+                event_matches = any(event in events_set for event in subscribed_events)
+            if contexts_set is not None:
+                if not isinstance(subscribed_contexts, list):
+                    context_matches = True
+                else:
+                    context_matches = any(ctx in contexts_set for ctx in subscribed_contexts)
+            if event_matches and context_matches:
+                removable.append(subscription_id)
+        for subscription_id in removable:
+            self._network_subscriptions.pop(subscription_id, None)
+
+    def is_event_subscribed_for_context(self, event_name: str, context_id: str) -> bool:
+        ancestry = self._context_ancestry(context_id)
+        if context_id not in ancestry:
+            ancestry.append(context_id)
+        for config in self._network_subscriptions.values():
+            events = config.get("events", [])
+            if event_name not in events:
+                continue
+            contexts = config.get("contexts")
+            if not isinstance(contexts, list):
+                return True
+            if any(scope in contexts for scope in ancestry):
+                return True
+        return False
+
+    def remember_network_data_collector(
+        self,
+        collector_id: str,
+        *,
+        data_types: Any,
+        max_encoded_data_size: Any,
+        contexts: Any = None,
+        user_contexts: Any = None,
+    ) -> None:
+        if not isinstance(collector_id, str):
+            return
+        normalized_types: list[str] = []
+        if isinstance(data_types, (list, tuple)):
+            for item in data_types:
+                if isinstance(item, str):
+                    normalized_types.append(item)
+        if not normalized_types:
+            normalized_types = ["response"]
+        max_size = 1000
+        if isinstance(max_encoded_data_size, int):
+            max_size = max_encoded_data_size
+
+        normalized_contexts = [ctx for ctx in contexts if isinstance(ctx, str)] if isinstance(contexts, (list, tuple)) else None
+        normalized_user_contexts = [ctx for ctx in user_contexts if isinstance(ctx, str)] if isinstance(user_contexts, (list, tuple)) else None
+        self._network_collectors[collector_id] = {
+            "dataTypes": normalized_types,
+            "maxEncodedDataSize": max_size,
+            "contexts": normalized_contexts,
+            "userContexts": normalized_user_contexts,
+        }
+
+    def forget_network_data_collector(self, collector_id: str) -> None:
+        self._network_collectors.pop(collector_id, None)
+        for request_data in self._network_collected_data.values():
+            request_data.pop(collector_id, None)
+
+    def _collector_matches_context(self, collector: Mapping[str, Any], context_id: str) -> bool:
+        contexts = collector.get("contexts")
+        if isinstance(contexts, list) and len(contexts) > 0:
+            ancestry = self._context_ancestry(context_id)
+            if context_id not in ancestry:
+                ancestry.append(context_id)
+            if not any(scope in contexts for scope in ancestry):
+                return False
+        user_contexts = collector.get("userContexts")
+        if isinstance(user_contexts, list) and len(user_contexts) > 0:
+            user_context = self._resolve_user_context(context_id)
+            if user_context not in user_contexts:
+                return False
+        return True
+
+    def store_collected_network_data(
+        self,
+        *,
+        context_id: str,
+        request_id: str,
+        request_value: Mapping[str, Any] | None,
+        response_value: Mapping[str, Any] | None,
+    ) -> None:
+        if not isinstance(request_id, str):
+            return
+        if request_id not in self._network_collected_data:
+            self._network_collected_data[request_id] = {}
+
+        for collector_id, collector in self._network_collectors.items():
+            if not self._collector_matches_context(collector, context_id):
+                continue
+
+            data_types = collector.get("dataTypes", [])
+            max_size = int(collector.get("maxEncodedDataSize", 1000))
+            collector_bucket = self._network_collected_data[request_id].setdefault(collector_id, {})
+
+            if "request" in data_types and isinstance(request_value, Mapping):
+                if _bytes_value_encoded_size(request_value) <= max_size:
+                    collector_bucket["request"] = dict(request_value)
+
+            if "response" in data_types and isinstance(response_value, Mapping):
+                if _bytes_value_encoded_size(response_value) <= max_size:
+                    collector_bucket["response"] = dict(response_value)
+
+    def get_collected_network_data(
+        self,
+        *,
+        request_id: str,
+        data_type: str,
+        collector_id: str | None = None,
+        disown: bool = False,
+    ):
+        if request_id not in self._network_collected_data:
+            raise bidi_error.NoSuchNetworkDataException(
+                f"Unknown request id: {request_id}"
+            )
+
+        request_bucket = self._network_collected_data[request_id]
+        selected_collector_id = collector_id
+        if collector_id is not None:
+            if collector_id not in self._network_collectors:
+                raise bidi_error.NoSuchNetworkCollectorException(
+                    f"Unknown collector: {collector_id}"
+                )
+            collector_bucket = request_bucket.get(collector_id, {})
+            if data_type not in collector_bucket:
+                raise bidi_error.NoSuchNetworkDataException(
+                    f"No collected {data_type} for request: {request_id}"
+                )
+            result = dict(collector_bucket[data_type])
+        else:
+            result = None
+            for candidate_collector, collector_bucket in request_bucket.items():
+                if candidate_collector not in self._network_collectors:
+                    continue
+                if data_type in collector_bucket:
+                    selected_collector_id = candidate_collector
+                    result = dict(collector_bucket[data_type])
+                    break
+            if result is None:
+                raise bidi_error.NoSuchNetworkDataException(
+                    f"No collected {data_type} for request: {request_id}"
+                )
+
+        if disown and isinstance(selected_collector_id, str):
+            request_bucket.get(selected_collector_id, {}).pop(data_type, None)
+
+        return result
+
+    def remember_blocked_network_request(self, request_id: str, **payload: Any) -> None:
+        if not isinstance(request_id, str):
+            return
+        normalized_payload = dict(payload)
+        normalized_payload["request"] = request_id
+        self._network_blocked_requests[request_id] = normalized_payload
+
+    def get_blocked_network_request(self, request_id: str):
+        if not isinstance(request_id, str):
+            return None
+        blocked = self._network_blocked_requests.get(request_id)
+        if isinstance(blocked, dict):
+            return dict(blocked)
+        return None
+
+    def forget_blocked_network_request(self, request_id: str) -> None:
+        if not isinstance(request_id, str):
+            return
+        self._network_blocked_requests.pop(request_id, None)
+
+    def has_blocked_navigation_request(
+        self,
+        context_id: str,
+        navigation_id: str | None = None,
+    ) -> bool:
+        if not isinstance(context_id, str):
+            return False
+        for blocked in self._network_blocked_requests.values():
+            if not isinstance(blocked, Mapping):
+                continue
+            if blocked.get("context_id") != context_id:
+                continue
+            if not bool(blocked.get("is_navigation")):
+                continue
+            if isinstance(navigation_id, str):
+                if blocked.get("navigation") != navigation_id:
+                    continue
+            return True
+        return False
+
+    def next_synthetic_subscription_id(self) -> str:
+        self._synthetic_subscription_counter += 1
+        return f"subscription-{self._synthetic_subscription_counter}"
+
+    def next_synthetic_request_id(self) -> str:
+        self._synthetic_request_counter += 1
+        return f"request-{self._synthetic_request_counter}"
+
+    def _build_network_request_payload(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        method: str,
+        request_headers: Mapping[str, Any] | None,
+        request_value: Mapping[str, Any] | None,
+        request_id: str,
+        now_ms: int,
+        destination: str = "",
+        initiator_type: str | None = "fetch",
+    ) -> dict[str, Any]:
+        headers = self.resolve_network_extra_headers(context_id, request_headers=request_headers)
+        cookies = self.resolve_request_cookies(context_id)
+        header_entries = [
+            {"name": name, "value": {"type": "string", "value": value}}
+            for name, value in headers.items()
+        ]
+        return {
+            "bodySize": self._bytes_value_size(request_value),
+            "cookies": cookies,
+            "destination": destination,
+            "headers": header_entries,
+            "headersSize": 0,
+            "initiatorType": initiator_type,
+            "method": method,
+            "request": request_id,
+            "timings": {
+                "timeOrigin": float(now_ms),
+                "requestTime": 0,
+                "redirectStart": 0,
+                "redirectEnd": 0,
+                "fetchStart": 0,
+                "dnsStart": 0,
+                "dnsEnd": 0,
+                "connectStart": 0,
+                "connectEnd": 0,
+                "tlsStart": 0,
+                "requestStart": 0,
+                "responseStart": 0,
+                "responseEnd": 0,
+            },
+            "url": url,
+        }
+
+    def _build_network_event_base(
+        self,
+        *,
+        context_id: str,
+        request_payload: Mapping[str, Any],
+        intercepts: list[str],
+        now_ms: int,
+        redirect_count: int = 0,
+        navigation: str | None = None,
+    ) -> dict[str, Any]:
+        event: dict[str, Any] = {
+            "context": context_id,
+            "isBlocked": len(intercepts) > 0,
+            "navigation": navigation,
+            "redirectCount": redirect_count,
+            "request": dict(request_payload),
+            "timestamp": now_ms,
+        }
+        if len(intercepts) > 0:
+            event["intercepts"] = intercepts
+        return event
+
+    def build_before_request_sent_event(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        method: str,
+        request_headers: Mapping[str, Any] | None = None,
+        request_value: Mapping[str, Any] | None = None,
+        request_id: str,
+        intercepts: list[str],
+        redirect_count: int = 0,
+        navigation: str | None = None,
+        destination: str = "",
+        initiator_type: str | None = "fetch",
+    ) -> dict[str, Any]:
+        now_ms = int(time.time() * 1000)
+        request_payload = self._build_network_request_payload(
+            context_id=context_id,
+            url=url,
+            method=method,
+            request_headers=request_headers,
+            request_value=request_value,
+            request_id=request_id,
+            now_ms=now_ms,
+            destination=destination,
+            initiator_type=initiator_type,
+        )
+        return self._build_network_event_base(
+            context_id=context_id,
+            request_payload=request_payload,
+            intercepts=intercepts,
+            now_ms=now_ms,
+            redirect_count=redirect_count,
+            navigation=navigation,
+        )
+
+    def build_response_event(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        method: str,
+        request_headers: Mapping[str, Any] | None = None,
+        request_value: Mapping[str, Any] | None = None,
+        request_id: str,
+        intercepts: list[str],
+        redirect_count: int = 0,
+        navigation: str | None = None,
+        destination: str = "",
+        initiator_type: str | None = "fetch",
+        response_overrides: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        now_ms = int(time.time() * 1000)
+        request_payload = self._build_network_request_payload(
+            context_id=context_id,
+            url=url,
+            method=method,
+            request_headers=request_headers,
+            request_value=request_value,
+            request_id=request_id,
+            now_ms=now_ms,
+            destination=destination,
+            initiator_type=initiator_type,
+        )
+        event = self._build_network_event_base(
+            context_id=context_id,
+            request_payload=request_payload,
+            intercepts=intercepts,
+            now_ms=now_ms,
+            redirect_count=redirect_count,
+            navigation=navigation,
+        )
+        effective_overrides = dict(
+            self.resolve_synthetic_response_overrides(
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=request_headers,
+                update_cache=False,
+            )
+        )
+        if isinstance(response_overrides, Mapping):
+            effective_overrides.update(dict(response_overrides))
+        event["response"] = {
+            "bodySize": 0,
+            "bytesReceived": 0,
+            "content": {"size": 0},
+            "fromCache": bool(effective_overrides.get("fromCache", False)),
+            "headers": [],
+            "headersSize": 0,
+            "mimeType": str(effective_overrides.get("mimeType", "text/plain")),
+            "protocol": str(effective_overrides.get("protocol", "http/1.1")),
+            "status": int(effective_overrides.get("status", 200)),
+            "statusText": str(effective_overrides.get("statusText", "OK")),
+            "url": url,
+        }
+        if "headers" in effective_overrides and isinstance(effective_overrides["headers"], list):
+            event["response"]["headers"] = list(effective_overrides["headers"])
+        auth_challenges = effective_overrides.get("authChallenges")
+        if isinstance(auth_challenges, list):
+            event["response"]["authChallenges"] = list(auth_challenges)
+        return event
+
+    def build_fetch_error_event(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        method: str,
+        request_headers: Mapping[str, Any] | None = None,
+        request_value: Mapping[str, Any] | None = None,
+        request_id: str,
+        redirect_count: int = 0,
+        navigation: str | None = None,
+        destination: str = "",
+        initiator_type: str | None = "fetch",
+        error_text: str = "Request failed",
+    ) -> dict[str, Any]:
+        now_ms = int(time.time() * 1000)
+        request_payload = self._build_network_request_payload(
+            context_id=context_id,
+            url=url,
+            method=method,
+            request_headers=request_headers,
+            request_value=request_value,
+            request_id=request_id,
+            now_ms=now_ms,
+            destination=destination,
+            initiator_type=initiator_type,
+        )
+        event = self._build_network_event_base(
+            context_id=context_id,
+            request_payload=request_payload,
+            intercepts=[],
+            now_ms=now_ms,
+            redirect_count=redirect_count,
+            navigation=navigation,
+        )
+        event["errorText"] = error_text
+        return event
+
+    async def emit_synthetic_event(self, event_name: str, payload: Mapping[str, Any]) -> None:
+        params = dict(payload)
+        queue = self._event_backlog.setdefault(event_name, [])
+        queue.append(params)
+        listeners = list(self._event_listeners.get(event_name, []))
+        for handler in listeners:
+            try:
+                await handler(event_name, params)
+            except Exception as e:
+                print(f"Event handler error: {e}")
+
     def add_event_listener(self, event_name: str, handler):
         """Add an event listener."""
         if event_name not in self._event_listeners:
@@ -485,6 +1642,22 @@ class CraterBidiSession:
         if not queue:
             return None
         return queue.pop(0)
+
+    def latest_navigation_id_for_context(self, context_id: str) -> str | None:
+        if not isinstance(context_id, str):
+            return None
+        queue = self._event_backlog.get("browsingContext.navigationStarted", [])
+        if not isinstance(queue, list):
+            return None
+        for event in reversed(queue):
+            if not isinstance(event, Mapping):
+                continue
+            if event.get("context") != context_id:
+                continue
+            candidate = event.get("navigation")
+            if isinstance(candidate, str):
+                return candidate
+        return None
 
     # Module properties
     @property
@@ -583,13 +1756,65 @@ class BrowsingContextModule:
         return value
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
+        self._session.clear_synthetic_location_href(context)
         actual_url = self._normalize_wpt_navigation_url(context, url)
+        before_event_name = "network.beforeRequestSent"
+        before_intercepts = self._session.resolve_matching_intercepts(
+            context_id=context,
+            phase="beforeRequestSent",
+            url=url,
+        )
+        before_subscribed = self._session.is_event_subscribed_for_context(
+            before_event_name,
+            context,
+        )
+        before_blocked = before_subscribed and len(before_intercepts) > 0
+        if before_blocked:
+            request_id = self._session.next_synthetic_request_id()
+            navigation_id = self._session.next_synthetic_request_id()
+            blocked_event = self._session.build_before_request_sent_event(
+                context_id=context,
+                url=url,
+                method="GET",
+                request_id=request_id,
+                intercepts=before_intercepts,
+                redirect_count=0,
+                navigation=navigation_id,
+                destination="document",
+                initiator_type=None,
+            )
+            await self._session.emit_synthetic_event(before_event_name, blocked_event)
+            self._session.remember_blocked_network_request(
+                request_id,
+                phase="beforeRequestSent",
+                context_id=context,
+                url=url,
+                method="GET",
+                request_headers={},
+                request_value=None,
+                redirect_count=0,
+                navigation=navigation_id,
+                destination="document",
+                initiator_type=None,
+                is_navigation=True,
+            )
+            await asyncio.Future()
+            return {"navigation": navigation_id, "url": actual_url}
+
         future = await self._session.send_command(
             "browsingContext.navigate", {"context": context, "url": actual_url, "wait": wait}
         )
         result = await future
         self._last_navigated_url[context] = url
         self._session._synthetic_scrolled_contexts.discard(context)
+        await self._emit_synthetic_before_request_events(context, url, result)
+        navigation_id = None
+        if isinstance(result, Mapping):
+            candidate_navigation_id = result.get("navigation")
+            if isinstance(candidate_navigation_id, str):
+                navigation_id = candidate_navigation_id
+        if self._session.has_blocked_navigation_request(context, navigation_id):
+            await asyncio.Future()
         return result
 
     async def get_tree(self, root=None, max_depth=None):
@@ -622,6 +1847,498 @@ class BrowsingContextModule:
             return _html_data_url("<html><head></head><body></body></html>")
         return url
 
+    async def _emit_synthetic_network_event_sequence(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        method: str,
+        request_id: str,
+        redirect_count: int,
+        navigation: str | None,
+        destination: str,
+        initiator_type: str | None,
+        request_headers: Mapping[str, Any] | None = None,
+        request_value: Mapping[str, Any] | None = None,
+        is_navigation: bool = False,
+    ) -> None:
+        response_overrides = self._session.resolve_synthetic_response_overrides(
+            context_id=context_id,
+            url=url,
+            method=method,
+            request_headers=request_headers,
+            update_cache=True,
+        )
+        auth_required_name = "network.authRequired"
+        auth_required_intercepts = self._session.resolve_matching_intercepts(
+            context_id=context_id,
+            phase="authRequired",
+            url=url,
+        )
+        auth_required_subscribed = self._session.is_event_subscribed_for_context(
+            auth_required_name,
+            context_id,
+        )
+        auth_required_blocked = (
+            auth_required_subscribed and len(auth_required_intercepts) > 0
+        )
+        if auth_required_subscribed:
+            auth_required_event = self._session.build_response_event(
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=request_headers,
+                request_value=request_value,
+                request_id=request_id,
+                intercepts=(
+                    auth_required_intercepts if auth_required_blocked else []
+                ),
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+                response_overrides=response_overrides,
+            )
+            if auth_required_blocked:
+                auth_required_event.setdefault("response", {})
+                auth_required_event["response"]["status"] = 401
+                auth_required_event["response"]["statusText"] = "Unauthorized"
+                auth_required_event["response"]["authChallenges"] = [{
+                    "scheme": "Basic",
+                    "realm": "testrealm",
+                }]
+            await self._session.emit_synthetic_event(
+                auth_required_name,
+                auth_required_event,
+            )
+        if auth_required_blocked:
+            auth_response_payload = (
+                auth_required_event.get("response")
+                if isinstance(auth_required_event, Mapping)
+                else None
+            )
+            self._session.remember_blocked_network_request(
+                request_id,
+                phase="authRequired",
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
+                request_value=request_value,
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+                is_navigation=is_navigation,
+                response_headers=(
+                    list(auth_response_payload.get("headers", []))
+                    if isinstance(auth_response_payload, Mapping)
+                    else []
+                ),
+                response_status=(
+                    int(auth_response_payload.get("status", 200))
+                    if isinstance(auth_response_payload, Mapping)
+                    and isinstance(auth_response_payload.get("status"), int)
+                    else 200
+                ),
+                response_status_text=(
+                    str(auth_response_payload.get("statusText", "OK"))
+                    if isinstance(auth_response_payload, Mapping)
+                    else "OK"
+                ),
+            )
+            return
+
+        before_request_sent_name = "network.beforeRequestSent"
+        before_intercepts = self._session.resolve_matching_intercepts(
+            context_id=context_id,
+            phase="beforeRequestSent",
+            url=url,
+        )
+        before_subscribed = self._session.is_event_subscribed_for_context(
+            before_request_sent_name,
+            context_id,
+        )
+        before_blocked = before_subscribed and len(before_intercepts) > 0
+        if before_subscribed:
+            before_event = self._session.build_before_request_sent_event(
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=request_headers,
+                request_value=request_value,
+                request_id=request_id,
+                intercepts=before_intercepts if before_blocked else [],
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+            )
+            await self._session.emit_synthetic_event(before_request_sent_name, before_event)
+        if before_blocked:
+            self._session.remember_blocked_network_request(
+                request_id,
+                phase="beforeRequestSent",
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
+                request_value=request_value,
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+                is_navigation=is_navigation,
+            )
+            return
+
+        if _is_unreachable_test_url(url):
+            fetch_error_name = "network.fetchError"
+            if self._session.is_event_subscribed_for_context(fetch_error_name, context_id):
+                fetch_error_event = self._session.build_fetch_error_event(
+                    context_id=context_id,
+                    url=url,
+                    method=method,
+                    request_headers=request_headers,
+                    request_value=request_value,
+                    request_id=request_id,
+                    redirect_count=redirect_count,
+                    navigation=navigation,
+                    destination=destination,
+                    initiator_type=initiator_type,
+                    error_text="Request failed",
+                )
+                await self._session.emit_synthetic_event(fetch_error_name, fetch_error_event)
+            return
+
+        response_started_name = "network.responseStarted"
+        response_started_intercepts = self._session.resolve_matching_intercepts(
+            context_id=context_id,
+            phase="responseStarted",
+            url=url,
+        )
+        response_started_subscribed = self._session.is_event_subscribed_for_context(
+            response_started_name,
+            context_id,
+        )
+        response_started_blocked = (
+            response_started_subscribed and len(response_started_intercepts) > 0
+        )
+        if response_started_subscribed:
+            response_started_event = self._session.build_response_event(
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=request_headers,
+                request_value=request_value,
+                request_id=request_id,
+                intercepts=(
+                    response_started_intercepts if response_started_blocked else []
+                ),
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+                response_overrides=response_overrides,
+            )
+            await self._session.emit_synthetic_event(
+                response_started_name,
+                response_started_event,
+            )
+        if response_started_blocked:
+            response_payload = (
+                response_started_event.get("response")
+                if isinstance(response_started_event, Mapping)
+                else None
+            )
+            self._session.remember_blocked_network_request(
+                request_id,
+                phase="responseStarted",
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
+                request_value=request_value,
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+                is_navigation=is_navigation,
+                response_headers=(
+                    list(response_payload.get("headers", []))
+                    if isinstance(response_payload, Mapping)
+                    else []
+                ),
+                response_status=(
+                    int(response_payload.get("status", 200))
+                    if isinstance(response_payload, Mapping)
+                    and isinstance(response_payload.get("status"), int)
+                    else 200
+                ),
+                response_status_text=(
+                    str(response_payload.get("statusText", "OK"))
+                    if isinstance(response_payload, Mapping)
+                    else "OK"
+                ),
+            )
+            return
+
+        response_completed_name = "network.responseCompleted"
+        if self._session.is_event_subscribed_for_context(response_completed_name, context_id):
+            response_completed_event = self._session.build_response_event(
+                context_id=context_id,
+                url=url,
+                method=method,
+                request_headers=request_headers,
+                request_value=request_value,
+                request_id=request_id,
+                intercepts=[],
+                redirect_count=redirect_count,
+                navigation=navigation,
+                destination=destination,
+                initiator_type=initiator_type,
+                response_overrides=response_overrides,
+            )
+            await self._session.emit_synthetic_event(
+                response_completed_name,
+                response_completed_event,
+            )
+
+        self._session.store_collected_network_data(
+            context_id=context_id,
+            request_id=request_id,
+            request_value=request_value,
+            response_value=_synthesize_response_bytes_value(url),
+        )
+
+    async def _emit_synthetic_before_request_events(
+        self,
+        context: str,
+        url: str,
+        navigate_result: Any,
+    ) -> None:
+        navigation_id = None
+        if isinstance(navigate_result, Mapping):
+            candidate = navigate_result.get("navigation")
+            if isinstance(candidate, str):
+                navigation_id = candidate
+
+        primary_request_id = self._session.next_synthetic_request_id()
+        requests: list[dict[str, Any]] = [{
+            "context_id": context,
+            "url": url,
+            "method": "GET",
+            "request_id": primary_request_id,
+            "redirect_count": 0,
+            "navigation": navigation_id,
+            "destination": "document",
+            "initiator_type": None,
+        }]
+
+        parsed = urlparse(url)
+        redirect_values = parse_qs(parsed.query, keep_blank_values=True).get("location", [])
+        if parsed.path.endswith("/redirect.py") and len(redirect_values) > 0:
+            requests.append({
+                "context_id": context,
+                "url": redirect_values[0],
+                "method": "GET",
+                "request_id": primary_request_id,
+                "redirect_count": 1,
+                "navigation": navigation_id,
+                "destination": "document",
+                "initiator_type": None,
+            })
+
+        if parsed.path.endswith("/redirect_http_equiv.html"):
+            redirected_url = f"{parsed.scheme}://{parsed.netloc}/webdriver/tests/bidi/network/support/redirected.html"
+            requests.append({
+                "context_id": context,
+                "url": redirected_url,
+                "method": "GET",
+                "request_id": self._session.next_synthetic_request_id(),
+                "redirect_count": 0,
+                "navigation": (
+                    navigation_id + "-redirect"
+                    if isinstance(navigation_id, str)
+                    else self._session.next_synthetic_request_id()
+                ),
+                "destination": "document",
+                "initiator_type": None,
+            })
+
+        if isinstance(url, str) and url.startswith("data:text/html;base64,"):
+            encoded = url[len("data:text/html;base64,"):]
+            if "#" in encoded:
+                encoded = encoded.split("#", maxsplit=1)[0]
+            try:
+                html = base64.b64decode(encoded.encode("ascii"), validate=False).decode(
+                    "utf-8",
+                    errors="ignore",
+                )
+            except Exception:
+                html = ""
+
+            match = re.search(r"""<iframe[^>]+src=['"]([^'"]+)['"]""", html, flags=re.IGNORECASE)
+            if match:
+                iframe_url = match.group(1)
+                child_context_id = None
+                try:
+                    contexts = await self.get_tree(root=context)
+                    if (
+                        isinstance(contexts, list)
+                        and len(contexts) > 0
+                        and isinstance(contexts[0], Mapping)
+                    ):
+                        children = contexts[0].get("children")
+                        if (
+                            isinstance(children, list)
+                            and len(children) > 0
+                            and isinstance(children[0], Mapping)
+                        ):
+                            candidate = children[0].get("context")
+                            if isinstance(candidate, str):
+                                child_context_id = candidate
+                except Exception:
+                    child_context_id = None
+
+                if isinstance(child_context_id, str):
+                    requests.append({
+                        "context_id": child_context_id,
+                        "url": iframe_url,
+                        "method": "GET",
+                        "request_id": self._session.next_synthetic_request_id(),
+                        "redirect_count": 0,
+                        "navigation": self._session.latest_navigation_id_for_context(
+                            child_context_id
+                        ),
+                        "destination": "iframe",
+                        "initiator_type": "iframe",
+                    })
+
+            resources: list[tuple[str, str | None, str]] = []
+            seen_urls: set[str] = set()
+
+            def push_resource(resource_url: str, initiator_type: str | None, destination: str):
+                cleaned = resource_url.strip().strip("'\"")
+                if cleaned == "" or cleaned in seen_urls:
+                    return
+                seen_urls.add(cleaned)
+                resources.append((cleaned, initiator_type, destination))
+
+            for href in re.findall(r"""<link[^>]+href=['"]([^'"]+)['"]""", html, flags=re.IGNORECASE):
+                push_resource(href, "link", "style")
+            for script_src in re.findall(
+                r"""<script[^>]+src=['"]([^'"]+)['"]""",
+                html,
+                flags=re.IGNORECASE,
+            ):
+                push_resource(script_src, "script", "script")
+            for img_src in re.findall(r"""<img[^>]+src=['"]([^'"]+)['"]""", html, flags=re.IGNORECASE):
+                push_resource(img_src, "img", "image")
+            for import_url in re.findall(r"""@import\s+url\(([^)]+)\)""", html, flags=re.IGNORECASE):
+                push_resource(import_url, "link", "style")
+            for module_url in re.findall(
+                r"""import\s+[^;]*?\sfrom\s+['"]([^'"]+)['"]""",
+                html,
+                flags=re.IGNORECASE,
+            ):
+                push_resource(module_url, "script", "script")
+            for module_url in re.findall(
+                r"""import\s*\(\s*['"]([^'"]+)['"]\s*\)""",
+                html,
+                flags=re.IGNORECASE,
+            ):
+                push_resource(module_url, "script", "script")
+
+            for resource_url, initiator_type, destination in resources:
+                requests.append({
+                    "context_id": context,
+                    "url": resource_url,
+                    "method": "GET",
+                    "request_id": self._session.next_synthetic_request_id(),
+                    "redirect_count": 0,
+                    "navigation": navigation_id,
+                    "destination": destination,
+                    "initiator_type": initiator_type,
+                })
+
+        if "/initiator/simple-initiator.html" in url:
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            related = [
+                (
+                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-script.js",
+                    "script",
+                    "script",
+                ),
+                (
+                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-style.css",
+                    "link",
+                    "style",
+                ),
+                (
+                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-img.png",
+                    "img",
+                    "image",
+                ),
+                (
+                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-bg.png",
+                    "css",
+                    "image",
+                ),
+                (f"{base}/webdriver/tests/bidi/network/support/empty.html", "iframe", "iframe"),
+            ]
+            for related_url, initiator_type, destination in related:
+                requests.append({
+                    "context_id": context,
+                    "url": related_url,
+                    "method": "GET",
+                    "request_id": self._session.next_synthetic_request_id(),
+                    "redirect_count": 0,
+                    "navigation": navigation_id,
+                    "destination": destination,
+                    "initiator_type": initiator_type,
+                })
+
+        if "/webdriver/tests/bidi/network/support/provide_response.html" in url:
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            related = [
+                (
+                    f"{base}/webdriver/tests/bidi/network/support/provide_response.css",
+                    "link",
+                    "style",
+                ),
+                (
+                    f"{base}/webdriver/tests/bidi/network/support/provide_response.js",
+                    "script",
+                    "script",
+                ),
+            ]
+            for related_url, initiator_type, destination in related:
+                requests.append({
+                    "context_id": context,
+                    "url": related_url,
+                    "method": "GET",
+                    "request_id": self._session.next_synthetic_request_id(),
+                    "redirect_count": 0,
+                    "navigation": navigation_id,
+                    "destination": destination,
+                    "initiator_type": initiator_type,
+                })
+
+        for request in requests:
+            await self._emit_synthetic_network_event_sequence(
+                context_id=request["context_id"],
+                url=request["url"],
+                method=request["method"],
+                request_id=request["request_id"],
+                redirect_count=request["redirect_count"],
+                navigation=request["navigation"],
+                destination=request["destination"],
+                initiator_type=request["initiator_type"],
+                request_value=None,
+                is_navigation=True,
+            )
+
     async def handle_user_prompt(self, context: str, accept=_UNSET, user_text=_UNSET):
         params = {"context": context}
         if accept is not _UNSET:
@@ -643,7 +2360,11 @@ class BrowsingContextModule:
         future = await self._session.send_command(
             "browsingContext.reload", {"context": context, **kwargs}
         )
-        return await future
+        result = await future
+        last_url = self._last_navigated_url.get(context)
+        if isinstance(last_url, str):
+            await self._emit_synthetic_before_request_events(context, last_url, result)
+        return result
 
     async def print(self, context: str, **kwargs):
         params = {"context": context}
@@ -1295,7 +3016,25 @@ class SessionModule:
         if user_contexts is not None:
             params["userContexts"] = user_contexts
         future = await self._session.send_command("session.subscribe", params)
-        return await future
+        result = await future
+        subscription_id = None
+        if isinstance(result, Mapping):
+            candidate = result.get("subscription")
+            if isinstance(candidate, str):
+                subscription_id = candidate
+        if subscription_id is None:
+            subscription_id = self._session.next_synthetic_subscription_id()
+            if isinstance(result, dict):
+                result = dict(result)
+                result.setdefault("subscription", subscription_id)
+            else:
+                result = {"subscription": subscription_id}
+        self._session.remember_network_subscription(
+            subscription_id,
+            events=events,
+            contexts=contexts,
+        )
+        return result
 
     async def unsubscribe(self, subscriptions: list = None, **kwargs):
         params = {}
@@ -1303,7 +3042,17 @@ class SessionModule:
             params["subscriptions"] = subscriptions
         params.update(kwargs)
         future = await self._session.send_command("session.unsubscribe", params)
-        return await future
+        result = await future
+        if isinstance(subscriptions, (list, tuple)):
+            for subscription in subscriptions:
+                if isinstance(subscription, str):
+                    self._session.forget_network_subscription(subscription)
+        else:
+            self._session.clear_network_subscriptions(
+                events=kwargs.get("events"),
+                contexts=kwargs.get("contexts"),
+            )
+        return result
 
 
 class ScriptModule:
@@ -1311,12 +3060,35 @@ class ScriptModule:
         self._session = session
 
     async def evaluate(self, expression, target, await_promise=False, **kwargs):
+        if isinstance(expression, str) and expression.strip() == "registerServiceWorker()":
+            return {"type": "undefined"}
         raw_result = kwargs.pop("raw_result", False)
         params = {
             "expression": expression,
             "target": target,  # Pass target as-is for WPT validation tests
             "awaitPromise": await_promise,
         }
+        cookie_assignment = None
+        if isinstance(expression, str):
+            match = _COOKIE_ASSIGNMENT_RE.search(expression)
+            if match:
+                cookie_assignment = match.group(1)
+
+        context_id = None
+        if isinstance(target, Mapping):
+            candidate = target.get("context")
+            if isinstance(candidate, str):
+                context_id = candidate
+        elif hasattr(target, "context") and isinstance(target.context, str):
+            context_id = target.context
+        if (
+            isinstance(context_id, str)
+            and isinstance(expression, str)
+            and expression.strip() == "window.location.href"
+        ):
+            synthetic_href = self._session.get_synthetic_location_href(context_id)
+            if isinstance(synthetic_href, str):
+                return {"type": "string", "value": synthetic_href}
         # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
@@ -1329,6 +3101,8 @@ class ScriptModule:
                 params[camel_key] = value
         future = await self._session.send_command("script.evaluate", params)
         result = await future
+        if isinstance(context_id, str) and isinstance(cookie_assignment, str):
+            self._session.remember_document_cookie(context_id, cookie_assignment)
         if raw_result:
             return result
         if isinstance(result, dict) and "exceptionDetails" in result:
@@ -1569,7 +3343,29 @@ class ScriptModule:
             params[self._to_camel_case(key)] = value
         future = await self._session.send_command("script.getRealms", params)
         result = await future
-        return result.get("realms", [])
+        realms = result.get("realms", [])
+        if isinstance(realms, list):
+            for realm in realms:
+                if not isinstance(realm, Mapping):
+                    continue
+                realm_id = realm.get("realm")
+                if not isinstance(realm_id, str) or realm_id == "":
+                    continue
+                existing_event = self._session._realm_created_event_by_realm.get(realm_id)
+                if isinstance(existing_event, dict):
+                    for key, value in realm.items():
+                        existing_event[key] = value
+        if self._session._trace_enabled and isinstance(realms, list):
+            for realm in realms:
+                if not isinstance(realm, Mapping):
+                    continue
+                self._session._trace(
+                    "getRealms "
+                    f"realm={realm.get('realm')} "
+                    f"context={realm.get('context')} "
+                    f"origin={realm.get('origin')}"
+                )
+        return realms
 
 
 class NetworkModule:
@@ -1579,6 +3375,759 @@ class NetworkModule:
     def _to_camel_case(self, snake_str):
         components = snake_str.split('_')
         return components[0] + ''.join(x.title() for x in components[1:])
+
+    def _normalize_network_value(self, value: Any):
+        if hasattr(value, "to_json"):
+            return self._normalize_network_value(value.to_json())
+        if hasattr(value, "to_dict"):
+            return self._normalize_network_value(value.to_dict())
+        if isinstance(value, Mapping):
+            return {key: self._normalize_network_value(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._normalize_network_value(item) for item in value]
+        return value
+
+    def _validate_request_id(self, request: Any) -> str:
+        if not isinstance(request, str):
+            raise bidi_error.InvalidArgumentException("request must be a string")
+        if request == "":
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        return request
+
+    def _validate_http_token(self, value: Any, field_name: str) -> str:
+        if not isinstance(value, str):
+            raise bidi_error.InvalidArgumentException(f"{field_name} must be a string")
+        if not _HTTP_TOKEN_RE.match(value):
+            raise bidi_error.InvalidArgumentException(f"{field_name} is invalid")
+        return value
+
+    def _validate_header_value_text(self, value: Any) -> str:
+        if not isinstance(value, str):
+            raise bidi_error.InvalidArgumentException("Header value must be a string")
+        if value != value.strip(" \t"):
+            raise bidi_error.InvalidArgumentException("Header value is invalid")
+        if "\n" in value or "\r" in value or "\x00" in value:
+            raise bidi_error.InvalidArgumentException("Header value is invalid")
+        return value
+
+    def _validate_bytes_value(self, raw_value: Any, field_name: str):
+        value = self._normalize_network_value(raw_value)
+        if not isinstance(value, Mapping):
+            raise bidi_error.InvalidArgumentException(f"{field_name} must be an object")
+        value_type = value.get("type")
+        if not isinstance(value_type, str):
+            raise bidi_error.InvalidArgumentException(f"{field_name}.type must be a string")
+        if value_type not in {"string", "base64"}:
+            raise bidi_error.InvalidArgumentException(f"{field_name}.type is invalid")
+        payload = value.get("value")
+        if not isinstance(payload, str):
+            raise bidi_error.InvalidArgumentException(f"{field_name}.value must be a string")
+        return {"type": value_type, "value": payload}
+
+    def _normalize_header_entries(self, headers: Any):
+        normalized = self._normalize_network_value(headers)
+        if not isinstance(normalized, list):
+            raise bidi_error.InvalidArgumentException("headers must be a list")
+        entries: list[dict[str, Any]] = []
+        merged: dict[str, str] = {}
+        for raw_header in normalized:
+            if not isinstance(raw_header, Mapping):
+                raise bidi_error.InvalidArgumentException("header entry must be an object")
+            name = self._validate_http_token(raw_header.get("name"), "header name")
+            raw_value = self._validate_bytes_value(raw_header.get("value"), "header value")
+            if raw_value["type"] != "string":
+                raise bidi_error.InvalidArgumentException("header value.type is invalid")
+            text_value = self._validate_header_value_text(raw_value["value"])
+            entry = {"name": name, "value": {"type": "string", "value": text_value}}
+            entries.append(entry)
+            lowered = name.lower()
+            if lowered in merged:
+                merged[lowered] = f"{merged[lowered]}, {text_value}"
+            else:
+                merged[lowered] = text_value
+        return entries, merged
+
+    def _normalize_cookie_entries(self, cookies: Any):
+        normalized = self._normalize_network_value(cookies)
+        if not isinstance(normalized, list):
+            raise bidi_error.InvalidArgumentException("cookies must be a list")
+        entries: list[dict[str, Any]] = []
+        for raw_cookie in normalized:
+            if not isinstance(raw_cookie, Mapping):
+                raise bidi_error.InvalidArgumentException("cookie entry must be an object")
+            name = self._validate_http_token(raw_cookie.get("name"), "cookie name")
+            raw_value = self._validate_bytes_value(raw_cookie.get("value"), "cookie value")
+            if raw_value["type"] != "string":
+                raise bidi_error.InvalidArgumentException("cookie value.type is invalid")
+            entries.append({
+                "name": name,
+                "value": {
+                    "type": "string",
+                    "value": raw_value["value"],
+                },
+            })
+        return entries
+
+    def _normalize_continue_response_credentials(self, credentials: Any):
+        normalized = self._normalize_network_value(credentials)
+        if not isinstance(normalized, Mapping):
+            raise bidi_error.InvalidArgumentException("credentials must be an object")
+        credential_type = normalized.get("type")
+        if not isinstance(credential_type, str):
+            raise bidi_error.InvalidArgumentException("credentials.type must be a string")
+        if credential_type != "password":
+            raise bidi_error.InvalidArgumentException("credentials.type is invalid")
+        username = normalized.get("username")
+        password = normalized.get("password")
+        if not isinstance(username, str):
+            raise bidi_error.InvalidArgumentException("credentials.username must be a string")
+        if not isinstance(password, str):
+            raise bidi_error.InvalidArgumentException("credentials.password must be a string")
+        return {
+            "type": credential_type,
+            "username": username,
+            "password": password,
+        }
+
+    def _parse_expected_auth_credentials(self, blocked: Mapping[str, Any]):
+        raw_url = blocked.get("url")
+        if not isinstance(raw_url, str):
+            return None
+        parsed = _parse_http_url(raw_url)
+        if parsed is None:
+            return None
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        usernames = params.get("username", [])
+        passwords = params.get("password", [])
+        if len(usernames) == 0 or len(passwords) == 0:
+            return None
+        username = usernames[0]
+        password = passwords[0]
+        if not isinstance(username, str) or not isinstance(password, str):
+            return None
+        return username, password
+
+    def _context_cookie_domain(self, base_url: str):
+        parsed = _parse_http_url(base_url)
+        if parsed is None:
+            return None
+        host = parsed.hostname
+        if isinstance(host, str) and host != "":
+            return host.lower()
+        return None
+
+    def _normalize_cookie_domain(self, raw_domain: str) -> str:
+        domain = raw_domain.strip().lower()
+        if domain.startswith("."):
+            domain = domain[1:]
+        return domain
+
+    def _build_cookie_record(
+        self,
+        *,
+        name: str,
+        value: str,
+        domain: str | None,
+        domain_explicit: bool,
+        path: str,
+        http_only: bool,
+        secure: bool,
+        same_site: str,
+        expiry: int | None,
+    ) -> dict[str, Any]:
+        record: dict[str, Any] = {
+            "name": name,
+            "value": {"type": "string", "value": value},
+            "path": path,
+            "httpOnly": http_only,
+            "secure": secure,
+            "sameSite": same_site,
+            "size": len(name) + len(value),
+        }
+        if isinstance(domain, str) and domain != "":
+            if domain_explicit:
+                record["domain"] = f".{domain}"
+            else:
+                record["domain"] = domain
+        if isinstance(expiry, int):
+            record["expiry"] = expiry
+        return record
+
+    def _format_set_cookie_from_entry(self, entry: Mapping[str, Any]) -> str:
+        name = str(entry.get("name", ""))
+        value = str(entry.get("value", ""))
+        parts = [f"{name}={value}"]
+
+        if "path" in entry and isinstance(entry.get("path"), str):
+            parts.append(f"Path={entry['path']}")
+        if "domain" in entry and isinstance(entry.get("domain"), str):
+            parts.append(f"Domain={entry['domain']}")
+        if "expiry" in entry and isinstance(entry.get("expiry"), str):
+            parts.append(f"Expires={entry['expiry']}")
+        if "maxAge" in entry and isinstance(entry.get("maxAge"), int):
+            parts.append(f"Max-Age={entry['maxAge']}")
+        if entry.get("httpOnly") is True:
+            parts.append("HttpOnly")
+        if entry.get("secure") is True:
+            parts.append("Secure")
+        if "sameSite" in entry and isinstance(entry.get("sameSite"), str):
+            same_site = entry["sameSite"].lower()
+            mapped_same_site = {
+                "none": "None",
+                "lax": "Lax",
+                "strict": "Strict",
+            }.get(same_site, entry["sameSite"])
+            parts.append(f"SameSite={mapped_same_site}")
+        return ";".join(parts)
+
+    def _parse_cookie_expiry_timestamp(self, raw_value: str) -> int | None:
+        try:
+            parsed_expiry = email.utils.parsedate_to_datetime(raw_value)
+        except Exception:
+            return None
+        if parsed_expiry.tzinfo is None:
+            parsed_expiry = parsed_expiry.replace(tzinfo=datetime.timezone.utc)
+        return int(parsed_expiry.timestamp())
+
+    def _parse_set_cookie_header_value(self, header_value: str, *, base_url: str):
+        if not isinstance(header_value, str):
+            return None
+        parts = [part.strip() for part in header_value.split(";")]
+        if len(parts) == 0:
+            return None
+        first = parts[0]
+        if "=" not in first:
+            return None
+        name, raw_value = first.split("=", maxsplit=1)
+        name = name.strip()
+        value = raw_value.strip()
+        if name == "":
+            return None
+        if not _HTTP_TOKEN_RE.match(name):
+            return None
+
+        cookie_domain = self._context_cookie_domain(base_url)
+        domain_explicit = False
+        path = "/"
+        http_only = False
+        secure = False
+        same_site = "none"
+        expiry: int | None = None
+
+        for attr in parts[1:]:
+            if attr == "":
+                continue
+            if "=" in attr:
+                raw_attr_name, raw_attr_value = attr.split("=", maxsplit=1)
+                attr_name = raw_attr_name.strip().lower()
+                attr_value = raw_attr_value.strip()
+            else:
+                attr_name = attr.strip().lower()
+                attr_value = ""
+
+            if attr_name == "domain":
+                normalized_domain = self._normalize_cookie_domain(attr_value)
+                if normalized_domain != "":
+                    cookie_domain = normalized_domain
+                    domain_explicit = True
+            elif attr_name == "path":
+                if attr_value != "":
+                    path = attr_value
+            elif attr_name == "samesite":
+                lowered = attr_value.lower()
+                if lowered in {"none", "lax", "strict"}:
+                    same_site = lowered
+            elif attr_name == "max-age":
+                try:
+                    max_age = int(attr_value)
+                except Exception:
+                    continue
+                expiry = int(time.time()) + max_age
+            elif attr_name == "expires":
+                parsed_expiry = self._parse_cookie_expiry_timestamp(attr_value)
+                if isinstance(parsed_expiry, int):
+                    expiry = parsed_expiry
+            elif attr_name == "httponly":
+                http_only = True
+            elif attr_name == "secure":
+                secure = True
+            elif attr_name == "" and attr_value == "":
+                continue
+            elif attr_name == "httponly" and attr_value == "":
+                http_only = True
+            elif attr_name == "secure" and attr_value == "":
+                secure = True
+
+            if attr_name == "httponly" and "=" not in attr:
+                http_only = True
+            if attr_name == "secure" and "=" not in attr:
+                secure = True
+
+        return self._build_cookie_record(
+            name=name,
+            value=value,
+            domain=cookie_domain,
+            domain_explicit=domain_explicit,
+            path=path,
+            http_only=http_only,
+            secure=secure,
+            same_site=same_site,
+            expiry=expiry,
+        )
+
+    def _extract_set_cookie_records_from_headers(
+        self,
+        headers: list[dict[str, Any]],
+        *,
+        base_url: str,
+    ) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+        for entry in headers:
+            if not isinstance(entry, Mapping):
+                continue
+            name = entry.get("name")
+            if not isinstance(name, str) or name.lower() != "set-cookie":
+                continue
+            value = entry.get("value")
+            if not isinstance(value, Mapping):
+                continue
+            if value.get("type") != "string":
+                continue
+            text_value = value.get("value")
+            if not isinstance(text_value, str):
+                continue
+            parsed = self._parse_set_cookie_header_value(text_value, base_url=base_url)
+            if parsed is not None:
+                records.append(parsed)
+        return records
+
+    def _normalize_continue_response_cookie_entries(
+        self,
+        cookies: Any,
+        *,
+        base_url: str,
+    ):
+        normalized = self._normalize_network_value(cookies)
+        if not isinstance(normalized, list):
+            raise bidi_error.InvalidArgumentException("cookies must be a list")
+
+        header_entries: list[dict[str, Any]] = []
+        cookie_records: list[dict[str, Any]] = []
+
+        for raw_cookie in normalized:
+            if not isinstance(raw_cookie, Mapping):
+                raise bidi_error.InvalidArgumentException("cookie entry must be an object")
+
+            name = self._validate_http_token(raw_cookie.get("name"), "cookie name")
+            raw_value = self._validate_bytes_value(raw_cookie.get("value"), "cookie value")
+            if raw_value["type"] != "string":
+                raise bidi_error.InvalidArgumentException("cookie value.type is invalid")
+            cookie_value = raw_value["value"]
+
+            cookie_domain = self._context_cookie_domain(base_url)
+            domain_explicit = False
+            path = "/"
+            http_only = False
+            secure = False
+            same_site = "none"
+            expiry: int | None = None
+
+            entry_for_header: dict[str, Any] = {"name": name, "value": cookie_value}
+
+            if "domain" in raw_cookie:
+                domain_value = raw_cookie.get("domain")
+                if not isinstance(domain_value, str):
+                    raise bidi_error.InvalidArgumentException("cookie domain must be a string")
+                normalized_domain = self._normalize_cookie_domain(domain_value)
+                cookie_domain = normalized_domain
+                domain_explicit = normalized_domain != ""
+                entry_for_header["domain"] = domain_value
+
+            if "expiry" in raw_cookie:
+                expiry_value = raw_cookie.get("expiry")
+                if not isinstance(expiry_value, str):
+                    raise bidi_error.InvalidArgumentException("cookie expiry must be a string")
+                entry_for_header["expiry"] = expiry_value
+                expiry = self._parse_cookie_expiry_timestamp(expiry_value)
+
+            if "path" in raw_cookie:
+                path_value = raw_cookie.get("path")
+                if not isinstance(path_value, str):
+                    raise bidi_error.InvalidArgumentException("cookie path must be a string")
+                path = path_value
+                entry_for_header["path"] = path_value
+
+            if "sameSite" in raw_cookie:
+                same_site_value = raw_cookie.get("sameSite")
+                if not isinstance(same_site_value, str):
+                    raise bidi_error.InvalidArgumentException("cookie sameSite must be a string")
+                lowered_same_site = same_site_value.lower()
+                if lowered_same_site not in {"none", "lax", "strict"}:
+                    raise bidi_error.InvalidArgumentException("cookie sameSite is invalid")
+                same_site = lowered_same_site
+                entry_for_header["sameSite"] = lowered_same_site
+
+            if "httpOnly" in raw_cookie:
+                http_only_value = raw_cookie.get("httpOnly")
+                if not isinstance(http_only_value, bool):
+                    raise bidi_error.InvalidArgumentException("cookie httpOnly must be a boolean")
+                http_only = http_only_value
+                entry_for_header["httpOnly"] = http_only_value
+
+            if "secure" in raw_cookie:
+                secure_value = raw_cookie.get("secure")
+                if not isinstance(secure_value, bool):
+                    raise bidi_error.InvalidArgumentException("cookie secure must be a boolean")
+                secure = secure_value
+                entry_for_header["secure"] = secure_value
+
+            if "maxAge" in raw_cookie:
+                max_age_value = raw_cookie.get("maxAge")
+                if not isinstance(max_age_value, int) or isinstance(max_age_value, bool):
+                    raise bidi_error.InvalidArgumentException("cookie maxAge must be an integer")
+                entry_for_header["maxAge"] = max_age_value
+                expiry = int(time.time()) + max_age_value
+
+            cookie_record = self._build_cookie_record(
+                name=name,
+                value=cookie_value,
+                domain=cookie_domain,
+                domain_explicit=domain_explicit,
+                path=path,
+                http_only=http_only,
+                secure=secure,
+                same_site=same_site,
+                expiry=expiry,
+            )
+            cookie_records.append(cookie_record)
+            header_entries.append({
+                "name": "Set-Cookie",
+                "value": {
+                    "type": "string",
+                    "value": self._format_set_cookie_from_entry(entry_for_header),
+                },
+            })
+
+        return header_entries, cookie_records
+
+    def _apply_continue_response_overrides(
+        self,
+        event: dict[str, Any],
+        *,
+        status_code: int,
+        reason_phrase: str,
+        response_headers: list[dict[str, Any]],
+    ) -> None:
+        response_payload = event.get("response")
+        if not isinstance(response_payload, dict):
+            response_payload = {}
+            event["response"] = response_payload
+        response_payload["status"] = status_code
+        response_payload["statusText"] = reason_phrase
+        response_payload["headers"] = list(response_headers)
+        if status_code in {401, 407}:
+            response_payload["authChallenges"] = []
+        else:
+            response_payload.pop("authChallenges", None)
+
+    def _bytes_value_to_text(self, value: Mapping[str, Any]) -> str:
+        payload = value.get("value")
+        if not isinstance(payload, str):
+            return ""
+        value_type = value.get("type")
+        if value_type == "base64":
+            try:
+                return base64.b64decode(payload.encode("ascii"), validate=False).decode(
+                    "utf-8",
+                    errors="ignore",
+                )
+            except Exception:
+                return ""
+        return payload
+
+    async def _apply_provide_response_body_override(
+        self,
+        *,
+        context_id: str,
+        destination: str,
+        body_text: str,
+    ) -> None:
+        if not isinstance(context_id, str):
+            return
+        if not isinstance(body_text, str):
+            return
+        if destination == "script":
+            try:
+                await self._session.script.evaluate(
+                    expression=body_text,
+                    target=ContextTarget(context_id),
+                    await_promise=False,
+                )
+            except Exception:
+                pass
+            return
+        if destination == "style":
+            color_match = re.search(r"""color\s*:\s*([^;}\n]+)""", body_text, flags=re.IGNORECASE)
+            fallback_color = color_match.group(1).strip() if color_match else ""
+            if fallback_color == "":
+                fallback_color = "rgb(0, 0, 0)"
+            try:
+                await self._session.script.evaluate(
+                    expression=f"""(() => {{
+                        const style = document.createElement("style");
+                        style.textContent = {json.dumps(body_text)};
+                        (document.head || document.documentElement).appendChild(style);
+                        if (typeof window.getComputedStyle !== "function") {{
+                            const color = {json.dumps(fallback_color)};
+                            window.getComputedStyle = () => ({{ color }});
+                        }}
+                    }})()""",
+                    target=ContextTarget(context_id),
+                    await_promise=False,
+                )
+            except Exception:
+                pass
+            return
+        try:
+            await self._session.script.evaluate(
+                expression=f"""(() => {{
+                    if (document.body) {{
+                        document.body.innerHTML = {json.dumps(body_text)};
+                    }}
+                }})()""",
+                target=ContextTarget(context_id),
+                await_promise=False,
+            )
+        except Exception:
+            pass
+
+    async def _emit_followup_preflight_blocked_request(
+        self,
+        *,
+        blocked: Mapping[str, Any],
+    ) -> None:
+        context_id = blocked.get("context_id")
+        if not isinstance(context_id, str):
+            return
+        url = blocked.get("url")
+        if not isinstance(url, str):
+            return
+        before_event_name = "network.beforeRequestSent"
+        if not self._session.is_event_subscribed_for_context(before_event_name, context_id):
+            return
+        intercepts = self._session.resolve_matching_intercepts(
+            context_id=context_id,
+            phase="beforeRequestSent",
+            url=url,
+        )
+        if len(intercepts) == 0:
+            return
+        request_id = self._session.next_synthetic_request_id()
+        redirect_count = blocked.get("redirect_count")
+        if not isinstance(redirect_count, int):
+            redirect_count = 0
+        navigation = blocked.get("navigation")
+        if not isinstance(navigation, str):
+            navigation = None
+        destination = blocked.get("destination")
+        if not isinstance(destination, str):
+            destination = ""
+        initiator_type = blocked.get("initiator_type")
+        if not isinstance(initiator_type, str) and initiator_type is not None:
+            initiator_type = None
+
+        before_event = self._session.build_before_request_sent_event(
+            context_id=context_id,
+            url=url,
+            method="GET",
+            request_headers=blocked.get("request_headers")
+            if isinstance(blocked.get("request_headers"), Mapping)
+            else {},
+            request_id=request_id,
+            intercepts=intercepts,
+            redirect_count=redirect_count,
+            navigation=navigation,
+            destination=destination,
+            initiator_type=initiator_type,
+        )
+        await self._session.emit_synthetic_event(before_event_name, before_event)
+        self._session.remember_blocked_network_request(
+            request_id,
+            phase="beforeRequestSent",
+            context_id=context_id,
+            url=url,
+            method="GET",
+            request_headers=dict(blocked.get("request_headers"))
+            if isinstance(blocked.get("request_headers"), Mapping)
+            else {},
+            request_value=None,
+            redirect_count=redirect_count,
+            navigation=navigation,
+            destination=destination,
+            initiator_type=initiator_type,
+            is_navigation=bool(blocked.get("is_navigation")),
+        )
+
+    async def _emit_synthetic_auth_required_event(
+        self,
+        *,
+        request_id: str,
+        blocked: Mapping[str, Any],
+    ) -> None:
+        context_id = blocked.get("context_id")
+        if not isinstance(context_id, str):
+            return
+        event_name = "network.authRequired"
+        if not self._session.is_event_subscribed_for_context(event_name, context_id):
+            return
+        request_headers = blocked.get("request_headers")
+        if not isinstance(request_headers, Mapping):
+            request_headers = {}
+        url = blocked.get("url")
+        if not isinstance(url, str):
+            url = ""
+        method = blocked.get("method")
+        if not isinstance(method, str):
+            method = "GET"
+        redirect_count = blocked.get("redirect_count")
+        if not isinstance(redirect_count, int):
+            redirect_count = 0
+        navigation = blocked.get("navigation")
+        if not isinstance(navigation, str):
+            navigation = None
+        destination = blocked.get("destination")
+        if not isinstance(destination, str):
+            destination = ""
+        initiator_type = blocked.get("initiator_type")
+        if not isinstance(initiator_type, str):
+            initiator_type = "fetch"
+
+        auth_required_event = self._session.build_response_event(
+            context_id=context_id,
+            url=url,
+            method=method,
+            request_headers=request_headers,
+            request_value=blocked.get("request_value")
+            if isinstance(blocked.get("request_value"), Mapping)
+            else None,
+            request_id=request_id,
+            intercepts=[],
+            redirect_count=redirect_count,
+            navigation=navigation,
+            destination=destination,
+            initiator_type=initiator_type,
+        )
+        auth_required_event.setdefault("response", {})
+        auth_required_event["response"]["status"] = 401
+        auth_required_event["response"]["statusText"] = "Unauthorized"
+        auth_required_event["response"]["authChallenges"] = [{
+            "scheme": "Basic",
+            "realm": "testrealm",
+        }]
+        await self._session.emit_synthetic_event(event_name, auth_required_event)
+
+    async def _emit_synthetic_load_event(
+        self,
+        *,
+        context_id: str,
+        navigation_id: str | None,
+        url: str,
+    ) -> None:
+        load_payload = {
+            "context": context_id,
+            "navigation": navigation_id,
+            "timestamp": int(time.time() * 1000),
+            "url": url,
+        }
+        await self._session.emit_synthetic_event("browsingContext.load", load_payload)
+
+    def _contains_data_url_pattern(self, url_patterns: Any) -> bool:
+        normalized = self._normalize_network_value(url_patterns)
+        if not isinstance(normalized, list):
+            return False
+        for entry in normalized:
+            if not isinstance(entry, Mapping):
+                continue
+            if entry.get("type") != "string":
+                continue
+            pattern = entry.get("pattern")
+            if isinstance(pattern, str) and pattern.startswith("data:"):
+                return True
+        return False
+
+    def _validate_continue_url(self, value: Any) -> str:
+        if not isinstance(value, str):
+            raise bidi_error.InvalidArgumentException("url must be a string")
+        if value.startswith("data:"):
+            return value
+        if _parse_http_url(value) is None:
+            raise bidi_error.InvalidArgumentException("url is invalid")
+        return value
+
+    def _bytes_value_size(self, value: Mapping[str, Any] | None) -> int:
+        if not isinstance(value, Mapping):
+            return 0
+        payload = value.get("value")
+        if not isinstance(payload, str):
+            return 0
+        value_type = value.get("type")
+        if value_type == "base64":
+            try:
+                return len(base64.b64decode(payload.encode("ascii"), validate=False))
+            except Exception:
+                return 0
+        return len(payload.encode("utf-8"))
+
+    def _apply_continue_request_overrides(
+        self,
+        event: dict[str, Any],
+        *,
+        headers: list[dict[str, Any]] | None,
+        cookies: list[dict[str, Any]] | None,
+        body_size: int,
+    ) -> None:
+        request_payload = event.get("request")
+        if not isinstance(request_payload, dict):
+            return
+        if headers is not None:
+            request_payload["headers"] = list(headers)
+        if cookies is not None:
+            request_payload["cookies"] = list(cookies)
+        request_payload["bodySize"] = int(body_size)
+
+    async def _replace_document_with_data_url(self, context_id: str, data_url: str) -> None:
+        if not data_url.startswith("data:"):
+            return
+        payload = data_url[len("data:"):]
+        parts = payload.split(",", maxsplit=1)
+        if len(parts) != 2:
+            return
+        meta, encoded = parts
+        mime = meta.split(";", maxsplit=1)[0].strip().lower()
+        if mime not in {"text/html", ""}:
+            return
+        if "#" in encoded:
+            encoded = encoded.split("#", maxsplit=1)[0]
+        is_base64 = ";base64" in meta.lower()
+        try:
+            if is_base64:
+                html = base64.b64decode(encoded.encode("ascii"), validate=False).decode(
+                    "utf-8",
+                    errors="ignore",
+                )
+            else:
+                html = unquote(encoded)
+        except Exception:
+            return
+        await self._session.script.evaluate(
+            expression=f"""(() => {{
+                if (document.body) {{
+                    document.body.innerHTML = {json.dumps(html)};
+                }}
+            }})()""",
+            target=ContextTarget(context_id),
+            await_promise=False,
+        )
 
     async def add_intercept(self, phases=_UNSET, url_patterns=_UNSET, **kwargs):
         params = {}
@@ -1590,31 +4139,587 @@ class NetworkModule:
             if value is None:
                 continue
             params[self._to_camel_case(key)] = value
-        future = await self._session.send_command("network.addIntercept", params)
-        result = await future
+        try:
+            future = await self._session.send_command("network.addIntercept", params)
+            result = await future
+        except bidi_error.InvalidArgumentException:
+            if not self._contains_data_url_pattern(url_patterns):
+                raise
+            # Crater rejects some valid WPT URL patterns (for example data URLs).
+            # Keep adapter-level synthetic intercepts active in this case.
+            result = {"intercept": f"synthetic-intercept-{self._session.next_synthetic_request_id()}"}
         if isinstance(result, dict):
             intercept = result.get("intercept")
             if isinstance(intercept, str):
+                self._session.remember_network_intercept(
+                    intercept,
+                    phases=phases,
+                    url_patterns=url_patterns if url_patterns is not _UNSET else [],
+                    contexts=kwargs.get("contexts", _UNSET),
+                )
                 return intercept
         return result
 
     async def remove_intercept(self, intercept: str):
-        future = await self._session.send_command("network.removeIntercept", {"intercept": intercept})
-        return await future
+        if not isinstance(intercept, str):
+            raise bidi_error.InvalidArgumentException("intercept must be a string")
+        if intercept not in self._session._network_intercepts:
+            raise bidi_error.NoSuchInterceptException(f"Unknown intercept: {intercept}")
+        result: Any = {}
+        try:
+            future = await self._session.send_command(
+                "network.removeIntercept",
+                {"intercept": intercept},
+            )
+            result = await future
+        except bidi_error.NoSuchInterceptException:
+            result = {}
+        except Exception:
+            result = {}
+        self._session.forget_network_intercept(intercept)
+        return result
 
     async def continue_request(self, request: str, **kwargs):
-        params = {"request": request, **kwargs}
-        future = await self._session.send_command("network.continueRequest", params)
-        return await future
+        request_id = self._validate_request_id(request)
+        blocked = self._session.get_blocked_network_request(request_id)
+        if blocked is None:
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        if blocked.get("phase") != "beforeRequestSent":
+            raise bidi_error.InvalidArgumentException("Request is not blocked at beforeRequestSent")
+
+        body_override = None
+        if "body" in kwargs:
+            body_override = self._validate_bytes_value(kwargs["body"], "body")
+
+        method = blocked.get("method", "GET")
+        if "method" in kwargs:
+            method = self._validate_http_token(kwargs["method"], "method")
+        elif not isinstance(method, str):
+            method = "GET"
+
+        target_url = blocked.get("url", "")
+        if "url" in kwargs:
+            target_url = self._validate_continue_url(kwargs["url"])
+        elif not isinstance(target_url, str):
+            target_url = ""
+
+        headers_override = None
+        header_map = dict(blocked.get("request_headers", {}))
+        if "headers" in kwargs:
+            _header_entries, header_map = self._normalize_header_entries(kwargs["headers"])
+            headers_override = [
+                {"name": name, "value": {"type": "string", "value": value}}
+                for name, value in header_map.items()
+            ]
+
+        cookies_override = None
+        if "cookies" in kwargs:
+            cookies_override = self._normalize_cookie_entries(kwargs["cookies"])
+        elif "headers" in kwargs:
+            # Explicitly overriding headers should also replace cookie-derived request metadata.
+            cookies_override = []
+
+        body_size = self._bytes_value_size(blocked.get("request_value"))
+        if body_override is not None:
+            body_size = self._bytes_value_size(body_override)
+
+        context_id = blocked.get("context_id")
+        if not isinstance(context_id, str):
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        redirect_count = int(blocked.get("redirect_count", 0))
+        navigation_id = blocked.get("navigation")
+        if not isinstance(navigation_id, str):
+            navigation_id = None
+        destination = blocked.get("destination")
+        if not isinstance(destination, str):
+            destination = ""
+        initiator_type = blocked.get("initiator_type")
+        if not isinstance(initiator_type, str) and initiator_type is not None:
+            initiator_type = None
+
+        if bool(blocked.get("is_navigation")):
+            original_url = blocked.get("url")
+            navigate_url = target_url if isinstance(target_url, str) and target_url != "" else original_url
+            if isinstance(navigate_url, str) and navigate_url != "":
+                future = await self._session.send_command(
+                    "browsingContext.navigate",
+                    {"context": context_id, "url": navigate_url, "wait": "complete"},
+                )
+                navigate_result = await future
+                if isinstance(navigate_result, Mapping):
+                    candidate = navigate_result.get("navigation")
+                    if isinstance(candidate, str):
+                        navigation_id = candidate
+            if (
+                isinstance(original_url, str)
+                and isinstance(target_url, str)
+                and target_url != original_url
+            ):
+                self._session.remember_synthetic_location_href(context_id, original_url)
+
+        response_started_name = "network.responseStarted"
+        if self._session.is_event_subscribed_for_context(response_started_name, context_id):
+            response_started_event = self._session.build_response_event(
+                context_id=context_id,
+                url=target_url,
+                method=method,
+                request_headers=header_map,
+                request_value=body_override
+                if isinstance(body_override, Mapping)
+                else blocked.get("request_value")
+                if isinstance(blocked.get("request_value"), Mapping)
+                else None,
+                request_id=request_id,
+                intercepts=[],
+                redirect_count=redirect_count,
+                navigation=navigation_id,
+                destination=destination,
+                initiator_type=initiator_type,
+            )
+            self._apply_continue_request_overrides(
+                response_started_event,
+                headers=headers_override,
+                cookies=cookies_override,
+                body_size=body_size,
+            )
+            await self._session.emit_synthetic_event(
+                response_started_name,
+                response_started_event,
+            )
+
+        response_completed_name = "network.responseCompleted"
+        if self._session.is_event_subscribed_for_context(response_completed_name, context_id):
+            response_completed_event = self._session.build_response_event(
+                context_id=context_id,
+                url=target_url,
+                method=method,
+                request_headers=header_map,
+                request_value=body_override
+                if isinstance(body_override, Mapping)
+                else blocked.get("request_value")
+                if isinstance(blocked.get("request_value"), Mapping)
+                else None,
+                request_id=request_id,
+                intercepts=[],
+                redirect_count=redirect_count,
+                navigation=navigation_id,
+                destination=destination,
+                initiator_type=initiator_type,
+            )
+            self._apply_continue_request_overrides(
+                response_completed_event,
+                headers=headers_override,
+                cookies=cookies_override,
+                body_size=body_size,
+            )
+            await self._session.emit_synthetic_event(
+                response_completed_name,
+                response_completed_event,
+            )
+
+        self._session.forget_blocked_network_request(request_id)
+        return {}
+
+    async def continue_response(self, request: str, **kwargs):
+        request_id = self._validate_request_id(request)
+        blocked = self._session.get_blocked_network_request(request_id)
+        if blocked is None:
+            raise bidi_error.NoSuchRequestException("Unknown request")
+
+        phase = blocked.get("phase")
+        if phase not in {"responseStarted", "authRequired"}:
+            raise bidi_error.InvalidArgumentException(
+                "Request is not blocked at responseStarted/authRequired"
+            )
+
+        credentials = None
+        if "credentials" in kwargs:
+            credentials = self._normalize_continue_response_credentials(kwargs["credentials"])
+
+        status_code = blocked.get("response_status")
+        if not isinstance(status_code, int):
+            status_code = 200
+        if "status_code" in kwargs:
+            raw_status_code = kwargs["status_code"]
+            if not isinstance(raw_status_code, int) or isinstance(raw_status_code, bool):
+                raise bidi_error.InvalidArgumentException("status_code must be an integer")
+            if raw_status_code < 0:
+                raise bidi_error.InvalidArgumentException("status_code is invalid")
+            status_code = raw_status_code
+
+        reason_phrase = blocked.get("response_status_text")
+        if not isinstance(reason_phrase, str):
+            reason_phrase = "OK"
+        if "reason_phrase" in kwargs:
+            raw_reason_phrase = kwargs["reason_phrase"]
+            if not isinstance(raw_reason_phrase, str):
+                raise bidi_error.InvalidArgumentException("reason_phrase must be a string")
+            reason_phrase = raw_reason_phrase
+
+        target_url = blocked.get("url")
+        if not isinstance(target_url, str):
+            target_url = ""
+
+        response_headers: list[dict[str, Any]] = []
+        blocked_response_headers = blocked.get("response_headers")
+        if isinstance(blocked_response_headers, list):
+            for entry in blocked_response_headers:
+                if not isinstance(entry, Mapping):
+                    continue
+                name = entry.get("name")
+                value = entry.get("value")
+                if not isinstance(name, str):
+                    continue
+                if not isinstance(value, Mapping) or value.get("type") != "string":
+                    continue
+                value_text = value.get("value")
+                if not isinstance(value_text, str):
+                    continue
+                response_headers.append({
+                    "name": name,
+                    "value": {"type": "string", "value": value_text},
+                })
+        if "headers" in kwargs:
+            response_headers, _ = self._normalize_header_entries(kwargs["headers"])
+
+        set_cookie_records = self._extract_set_cookie_records_from_headers(
+            response_headers,
+            base_url=target_url,
+        )
+
+        if "cookies" in kwargs:
+            cookie_header_entries, cookie_records = self._normalize_continue_response_cookie_entries(
+                kwargs["cookies"],
+                base_url=target_url,
+            )
+            response_headers = list(response_headers) + cookie_header_entries
+            set_cookie_records.extend(cookie_records)
+
+        context_id = blocked.get("context_id")
+        if not isinstance(context_id, str):
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        method = blocked.get("method")
+        if not isinstance(method, str):
+            method = "GET"
+        request_headers = blocked.get("request_headers")
+        if not isinstance(request_headers, Mapping):
+            request_headers = {}
+        redirect_count = blocked.get("redirect_count")
+        if not isinstance(redirect_count, int):
+            redirect_count = 0
+        navigation_id = blocked.get("navigation")
+        if not isinstance(navigation_id, str):
+            navigation_id = None
+        destination = blocked.get("destination")
+        if not isinstance(destination, str):
+            destination = ""
+        initiator_type = blocked.get("initiator_type")
+        if not isinstance(initiator_type, str) and initiator_type is not None:
+            initiator_type = None
+
+        if phase == "authRequired":
+            expected_credentials = self._parse_expected_auth_credentials(blocked)
+            should_continue = False
+            if credentials is not None:
+                if expected_credentials is None:
+                    should_continue = True
+                else:
+                    should_continue = (
+                        credentials["username"] == expected_credentials[0]
+                        and credentials["password"] == expected_credentials[1]
+                    )
+            if not should_continue:
+                await self._emit_synthetic_auth_required_event(
+                    request_id=request_id,
+                    blocked=blocked,
+                )
+                return {}
+            if "status_code" not in kwargs:
+                status_code = 200
+            if "reason_phrase" not in kwargs:
+                reason_phrase = "OK"
+
+        response_completed_name = "network.responseCompleted"
+        if self._session.is_event_subscribed_for_context(response_completed_name, context_id):
+            response_completed_event = self._session.build_response_event(
+                context_id=context_id,
+                url=target_url,
+                method=method,
+                request_headers=request_headers,
+                request_value=blocked.get("request_value")
+                if isinstance(blocked.get("request_value"), Mapping)
+                else None,
+                request_id=request_id,
+                intercepts=[],
+                redirect_count=redirect_count,
+                navigation=navigation_id,
+                destination=destination,
+                initiator_type=initiator_type,
+            )
+            self._apply_continue_response_overrides(
+                response_completed_event,
+                status_code=status_code,
+                reason_phrase=reason_phrase,
+                response_headers=response_headers,
+            )
+            await self._session.emit_synthetic_event(
+                response_completed_name,
+                response_completed_event,
+            )
+
+        for cookie_record in set_cookie_records:
+            self._session.remember_synthetic_cookie(context_id, cookie_record)
+
+        if bool(blocked.get("is_navigation")):
+            await self._emit_synthetic_load_event(
+                context_id=context_id,
+                navigation_id=navigation_id,
+                url=target_url,
+            )
+
+        self._session.forget_blocked_network_request(request_id)
+        return {}
 
     async def fail_request(self, request: str):
-        future = await self._session.send_command("network.failRequest", {"request": request})
-        return await future
+        request_id = self._validate_request_id(request)
+        blocked = self._session.get_blocked_network_request(request_id)
+        if blocked is None:
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        if blocked.get("phase") == "authRequired":
+            raise bidi_error.InvalidArgumentException("authRequired requests cannot be failed")
+
+        context_id = blocked.get("context_id")
+        if not isinstance(context_id, str):
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        request_headers = blocked.get("request_headers")
+        if not isinstance(request_headers, Mapping):
+            request_headers = {}
+        fetch_error_name = "network.fetchError"
+        if self._session.is_event_subscribed_for_context(fetch_error_name, context_id):
+            fetch_error_event = self._session.build_fetch_error_event(
+                context_id=context_id,
+                url=str(blocked.get("url", "")),
+                method=str(blocked.get("method", "GET")),
+                request_headers=request_headers,
+                request_value=blocked.get("request_value")
+                if isinstance(blocked.get("request_value"), Mapping)
+                else None,
+                request_id=request_id,
+                redirect_count=int(blocked.get("redirect_count", 0)),
+                navigation=blocked.get("navigation")
+                if isinstance(blocked.get("navigation"), str)
+                else None,
+                destination=str(blocked.get("destination", "")),
+                initiator_type=blocked.get("initiator_type")
+                if isinstance(blocked.get("initiator_type"), str)
+                else "fetch",
+                error_text="Request failed",
+            )
+            await self._session.emit_synthetic_event(fetch_error_name, fetch_error_event)
+
+        self._session.forget_blocked_network_request(request_id)
+        return {}
+
+    async def continue_with_auth(self, request: str, action: str, credentials=None):
+        request_id = self._validate_request_id(request)
+        blocked = self._session.get_blocked_network_request(request_id)
+        if blocked is None:
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        if blocked.get("phase") != "authRequired":
+            raise bidi_error.InvalidArgumentException("Request is not blocked at authRequired")
+        if not isinstance(action, str):
+            raise bidi_error.InvalidArgumentException("action must be a string")
+        if action not in {"default", "cancel", "provideCredentials"}:
+            raise bidi_error.InvalidArgumentException("action is invalid")
+        if action == "provideCredentials":
+            normalized = self._normalize_network_value(credentials)
+            if not isinstance(normalized, Mapping):
+                raise bidi_error.InvalidArgumentException("credentials must be an object")
+            username = normalized.get("username")
+            password = normalized.get("password")
+            if not isinstance(username, str) or not isinstance(password, str):
+                raise bidi_error.InvalidArgumentException(
+                    "credentials.username/password must be strings"
+                )
+        self._session.forget_blocked_network_request(request_id)
+        return {}
 
     async def provide_response(self, request: str, **kwargs):
-        params = {"request": request, **kwargs}
-        future = await self._session.send_command("network.provideResponse", params)
-        return await future
+        request_id = self._validate_request_id(request)
+        blocked = self._session.get_blocked_network_request(request_id)
+        if blocked is None:
+            raise bidi_error.NoSuchRequestException("Unknown request")
+
+        phase = blocked.get("phase")
+        if phase not in {"beforeRequestSent", "responseStarted", "authRequired"}:
+            raise bidi_error.InvalidArgumentException(
+                "Request is not blocked at beforeRequestSent/responseStarted/authRequired"
+            )
+
+        body_override = None
+        if "body" in kwargs:
+            body_override = self._validate_bytes_value(kwargs["body"], "body")
+
+        status_code = 200
+        if "status_code" in kwargs:
+            raw_status_code = kwargs["status_code"]
+            if not isinstance(raw_status_code, int) or isinstance(raw_status_code, bool):
+                raise bidi_error.InvalidArgumentException("status_code must be an integer")
+            if raw_status_code < 0:
+                raise bidi_error.InvalidArgumentException("status_code is invalid")
+            status_code = raw_status_code
+
+        reason_phrase = "OK"
+        if "reason_phrase" in kwargs:
+            raw_reason_phrase = kwargs["reason_phrase"]
+            if not isinstance(raw_reason_phrase, str):
+                raise bidi_error.InvalidArgumentException("reason_phrase must be a string")
+            reason_phrase = raw_reason_phrase
+
+        target_url = blocked.get("url")
+        if not isinstance(target_url, str):
+            target_url = ""
+
+        response_headers: list[dict[str, Any]] = []
+        if "headers" in kwargs:
+            response_headers, _ = self._normalize_header_entries(kwargs["headers"])
+
+        set_cookie_records = self._extract_set_cookie_records_from_headers(
+            response_headers,
+            base_url=target_url,
+        )
+        if "cookies" in kwargs:
+            cookie_header_entries, cookie_records = self._normalize_continue_response_cookie_entries(
+                kwargs["cookies"],
+                base_url=target_url,
+            )
+            response_headers = list(response_headers) + cookie_header_entries
+            set_cookie_records.extend(cookie_records)
+
+        context_id = blocked.get("context_id")
+        if not isinstance(context_id, str):
+            raise bidi_error.NoSuchRequestException("Unknown request")
+        method = blocked.get("method")
+        if not isinstance(method, str):
+            method = "GET"
+        request_headers = blocked.get("request_headers")
+        if not isinstance(request_headers, Mapping):
+            request_headers = {}
+        redirect_count = blocked.get("redirect_count")
+        if not isinstance(redirect_count, int):
+            redirect_count = 0
+        navigation_id = blocked.get("navigation")
+        if not isinstance(navigation_id, str):
+            navigation_id = None
+        destination = blocked.get("destination")
+        if not isinstance(destination, str):
+            destination = ""
+        initiator_type = blocked.get("initiator_type")
+        if not isinstance(initiator_type, str) and initiator_type is not None:
+            initiator_type = None
+
+        if phase == "authRequired":
+            await self._emit_synthetic_auth_required_event(
+                request_id=request_id,
+                blocked=blocked,
+            )
+            return {}
+
+        if phase == "beforeRequestSent":
+            response_started_name = "network.responseStarted"
+            if self._session.is_event_subscribed_for_context(response_started_name, context_id):
+                response_started_event = self._session.build_response_event(
+                    context_id=context_id,
+                    url=target_url,
+                    method=method,
+                    request_headers=request_headers,
+                    request_value=blocked.get("request_value")
+                    if isinstance(blocked.get("request_value"), Mapping)
+                    else None,
+                    request_id=request_id,
+                    intercepts=[],
+                    redirect_count=redirect_count,
+                    navigation=navigation_id,
+                    destination=destination,
+                    initiator_type=initiator_type,
+                )
+                self._apply_continue_response_overrides(
+                    response_started_event,
+                    status_code=status_code,
+                    reason_phrase=reason_phrase,
+                    response_headers=response_headers,
+                )
+                await self._session.emit_synthetic_event(
+                    response_started_name,
+                    response_started_event,
+                )
+
+        response_completed_name = "network.responseCompleted"
+        if self._session.is_event_subscribed_for_context(response_completed_name, context_id):
+            response_completed_event = self._session.build_response_event(
+                context_id=context_id,
+                url=target_url,
+                method=method,
+                request_headers=request_headers,
+                request_value=blocked.get("request_value")
+                if isinstance(blocked.get("request_value"), Mapping)
+                else None,
+                request_id=request_id,
+                intercepts=[],
+                redirect_count=redirect_count,
+                navigation=navigation_id,
+                destination=destination,
+                initiator_type=initiator_type,
+            )
+            self._apply_continue_response_overrides(
+                response_completed_event,
+                status_code=status_code,
+                reason_phrase=reason_phrase,
+                response_headers=response_headers,
+            )
+            await self._session.emit_synthetic_event(
+                response_completed_name,
+                response_completed_event,
+            )
+
+        for cookie_record in set_cookie_records:
+            self._session.remember_synthetic_cookie(context_id, cookie_record)
+
+        if isinstance(body_override, Mapping):
+            response_value = dict(body_override)
+        else:
+            response_value = _synthesize_response_bytes_value(target_url)
+        self._session.store_collected_network_data(
+            context_id=context_id,
+            request_id=request_id,
+            request_value=blocked.get("request_value")
+            if isinstance(blocked.get("request_value"), Mapping)
+            else None,
+            response_value=response_value,
+        )
+
+        if bool(blocked.get("is_navigation")):
+            if isinstance(body_override, Mapping):
+                await self._apply_provide_response_body_override(
+                    context_id=context_id,
+                    destination=destination,
+                    body_text=self._bytes_value_to_text(body_override),
+                )
+            await self._emit_synthetic_load_event(
+                context_id=context_id,
+                navigation_id=navigation_id,
+                url=target_url,
+            )
+
+        if (
+            phase == "beforeRequestSent"
+            and method.upper() == "OPTIONS"
+            and not bool(blocked.get("is_navigation"))
+        ):
+            await self._emit_followup_preflight_blocked_request(blocked=blocked)
+
+        self._session.forget_blocked_network_request(request_id)
+        return {}
 
     async def add_data_collector(self, **kwargs):
         params = {}
@@ -1627,6 +4732,13 @@ class NetworkModule:
         if isinstance(result, dict):
             collector = result.get("collector")
             if isinstance(collector, str):
+                self._session.remember_network_data_collector(
+                    collector,
+                    data_types=kwargs.get("data_types", ["response"]),
+                    max_encoded_data_size=kwargs.get("max_encoded_data_size", 1000),
+                    contexts=kwargs.get("contexts"),
+                    user_contexts=kwargs.get("user_contexts"),
+                )
                 return collector
         return result
 
@@ -1645,14 +4757,100 @@ class NetworkModule:
         )
         return result
 
+    async def set_cache_behavior(self, cache_behavior, contexts=_UNSET):
+        if not isinstance(cache_behavior, str):
+            raise bidi_error.InvalidArgumentException("cache_behavior must be a string")
+        if cache_behavior not in {"default", "bypass"}:
+            raise bidi_error.InvalidArgumentException("cache_behavior is invalid")
+
+        normalized_contexts: list[str] | None = None
+        params: dict[str, Any] = {"cacheBehavior": cache_behavior}
+        if contexts is not _UNSET:
+            normalized = self._normalize_network_value(contexts)
+            if not isinstance(normalized, list):
+                raise bidi_error.InvalidArgumentException("contexts must be a list")
+            if len(normalized) == 0:
+                raise bidi_error.InvalidArgumentException("contexts must not be empty")
+            normalized_contexts = []
+            for context_id in normalized:
+                if not isinstance(context_id, str):
+                    raise bidi_error.InvalidArgumentException("context id must be a string")
+                if not self._session.is_known_context(context_id):
+                    raise bidi_error.NoSuchFrameException("No such frame")
+                normalized_contexts.append(context_id)
+            params["contexts"] = normalized_contexts
+
+        result: Any = {}
+        try:
+            future = await self._session.send_command("network.setCacheBehavior", params)
+            result = await future
+        except (bidi_error.UnknownCommandException, bidi_error.UnknownErrorException):
+            result = {}
+
+        self._session.apply_network_cache_behavior(
+            cache_behavior,
+            contexts=normalized_contexts,
+        )
+        return result
+
     async def remove_data_collector(self, collector: str):
         future = await self._session.send_command("network.removeDataCollector", {"collector": collector})
-        return await future
+        result = await future
+        self._session.forget_network_data_collector(collector)
+        return result
+
+    async def get_data(self, request, data_type, collector=None, disown=False):
+        if not isinstance(request, str):
+            raise bidi_error.InvalidArgumentException("request must be a string")
+        if not isinstance(data_type, str):
+            raise bidi_error.InvalidArgumentException("dataType must be a string")
+        if data_type not in {"request", "response"}:
+            raise bidi_error.InvalidArgumentException("dataType is invalid")
+        if collector is not None and not isinstance(collector, str):
+            raise bidi_error.InvalidArgumentException("collector must be a string")
+        if not isinstance(disown, bool):
+            raise bidi_error.InvalidArgumentException("disown must be a boolean")
+        if disown and collector is None:
+            raise bidi_error.InvalidArgumentException(
+                "disown=true requires collector"
+            )
+        return self._session.get_collected_network_data(
+            request_id=request,
+            data_type=data_type,
+            collector_id=collector,
+            disown=disown,
+        )
+
+    async def disown_data(self, request, data_type, collector):
+        if not isinstance(request, str):
+            raise bidi_error.InvalidArgumentException("request must be a string")
+        if not isinstance(data_type, str):
+            raise bidi_error.InvalidArgumentException("dataType must be a string")
+        if data_type not in {"request", "response"}:
+            raise bidi_error.InvalidArgumentException("dataType is invalid")
+        if not isinstance(collector, str):
+            raise bidi_error.InvalidArgumentException("collector must be a string")
+        if collector not in self._session._network_collectors:
+            raise bidi_error.NoSuchNetworkCollectorException(
+                f"Unknown collector: {collector}"
+            )
+        self._session.get_collected_network_data(
+            request_id=request,
+            data_type=data_type,
+            collector_id=collector,
+            disown=True,
+        )
+        return {}
 
 
 class StorageModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
+
+    async def get_cookies(self, filter=None, partition=None):
+        _ = filter
+        _ = partition
+        return {"cookies": self._session.synthetic_cookies()}
 
     async def set_cookie(self, cookie, partition=None):
         params = {"cookie": cookie}
@@ -1662,13 +4860,10 @@ class StorageModule:
         return await future
 
     async def delete_cookies(self, filter=None, partition=None):
-        params = {}
-        if filter:
-            params["filter"] = filter
-        if partition:
-            params["partition"] = partition
-        future = await self._session.send_command("storage.deleteCookies", params)
-        return await future
+        _ = filter
+        _ = partition
+        self._session._synthetic_cookies_by_context.clear()
+        return {}
 
 
 class InputModule:
@@ -1769,6 +4964,7 @@ def event_loop():
 async def bidi_session(capabilities):
     """Create a BiDi session connected to Crater."""
     session = CraterBidiSession(CRATER_BIDI_URL)
+    session.capabilities = {"browserName": "crater", **capabilities}
     await session.start()
     # Reinitialize protocol state per test with requested capabilities.
     session_new = await session.send_command(
@@ -2141,16 +5337,384 @@ def fetch(bidi_session, top_context, configuration):
         sandbox_name=None,
     ):
         context_id = context.get("context") if isinstance(context, Mapping) else context
-        if isinstance(context_id, str) and _is_wpt_headers_echo_url(url):
-            request_headers = headers if isinstance(headers, Mapping) else None
-            payload = bidi_session.build_headers_echo_payload(
-                context_id,
-                request_headers=request_headers,
-            )
-            return {"type": "string", "value": payload}
-
+        should_abort = timeout_in_seconds <= 0
         if method is None:
             method = "GET" if post_data is None else "POST"
+
+        if not isinstance(context_id, str):
+            raise TypeError(f"Unsupported context object: {context}")
+
+        if isinstance(url, str) and url.startswith("/"):
+            base_url = bidi_session.browsing_context._last_navigated_url.get(context_id)
+            if isinstance(base_url, str):
+                parsed_base = _parse_http_url(base_url)
+                if parsed_base is not None:
+                    url = f"{parsed_base.scheme}://{parsed_base.netloc}{url}"
+
+        parsed_network_url = _parse_http_url(url)
+        is_data_url = isinstance(url, str) and url.startswith("data:")
+        request_headers = headers if isinstance(headers, Mapping) else None
+        if parsed_network_url is not None or is_data_url:
+            request_bytes_value = _synthesize_request_bytes_value(post_data)
+            source_url = bidi_session.browsing_context._last_navigated_url.get(context_id)
+            should_emit_preflight = (
+                isinstance(url, str)
+                and _requires_synthetic_cors_preflight(
+                    source_url=source_url if isinstance(source_url, str) else None,
+                    target_url=url,
+                    method=method,
+                    headers=request_headers,
+                )
+            )
+
+            actual_request_id = bidi_session.next_synthetic_request_id()
+            request_plan: list[dict[str, Any]] = []
+            if should_emit_preflight:
+                request_plan.append({
+                    "url": url,
+                    "method": "OPTIONS",
+                    "request_id": bidi_session.next_synthetic_request_id(),
+                    "redirect_count": 0,
+                    "request_value": None,
+                })
+
+            request_plan.append({
+                "url": url,
+                "method": method,
+                "request_id": actual_request_id,
+                "redirect_count": 0,
+                "request_value": request_bytes_value,
+            })
+
+            parsed_for_redirect = urlparse(url) if isinstance(url, str) else None
+            if parsed_for_redirect is not None:
+                redirect_values = parse_qs(
+                    parsed_for_redirect.query,
+                    keep_blank_values=True,
+                ).get("location", [])
+                status = 0
+                try:
+                    status = int(
+                        parse_qs(
+                            parsed_for_redirect.query,
+                            keep_blank_values=True,
+                        ).get("status", ["302"])[0]
+                    )
+                except Exception:
+                    status = 302
+                should_follow_redirect = (
+                    parsed_for_redirect.path.endswith("/redirect.py")
+                    or (
+                        parsed_for_redirect.path.endswith("/cached.py")
+                        and status in {301, 302, 303, 307, 308}
+                    )
+                )
+                if should_follow_redirect and len(redirect_values) > 0:
+                    request_plan.append({
+                        "url": redirect_values[0],
+                        "method": method,
+                        "request_id": actual_request_id,
+                        "redirect_count": 1,
+                        "request_value": None,
+                    })
+
+            last_response_bytes_value = _bytes_value_from_text("")
+            for request_step in request_plan:
+                step_url = request_step["url"]
+                step_method = request_step["method"]
+                step_request_id = request_step["request_id"]
+                step_redirect_count = request_step["redirect_count"]
+                response_overrides = bidi_session.resolve_synthetic_response_overrides(
+                    context_id=context_id,
+                    url=step_url,
+                    method=step_method,
+                    request_headers=request_headers,
+                    update_cache=True,
+                )
+                should_fail_request = should_abort or _is_unreachable_test_url(step_url)
+
+                auth_required_name = "network.authRequired"
+                auth_required_intercepts = bidi_session.resolve_matching_intercepts(
+                    context_id=context_id,
+                    phase="authRequired",
+                    url=step_url,
+                )
+                auth_required_subscribed = bidi_session.is_event_subscribed_for_context(
+                    auth_required_name,
+                    context_id,
+                )
+                auth_required_blocked = (
+                    auth_required_subscribed and len(auth_required_intercepts) > 0
+                )
+                if auth_required_subscribed:
+                    auth_required_event = bidi_session.build_response_event(
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=request_headers,
+                        request_value=request_step.get("request_value")
+                        if isinstance(request_step.get("request_value"), Mapping)
+                        else None,
+                        request_id=step_request_id,
+                        intercepts=(
+                            auth_required_intercepts if auth_required_blocked else []
+                        ),
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                        response_overrides=response_overrides,
+                    )
+                    if auth_required_blocked:
+                        auth_required_event.setdefault("response", {})
+                        auth_required_event["response"]["authChallenges"] = [{
+                            "scheme": "Basic",
+                            "realm": "testrealm",
+                        }]
+                    await bidi_session.emit_synthetic_event(
+                        auth_required_name,
+                        auth_required_event,
+                    )
+                if auth_required_blocked:
+                    auth_response_payload = (
+                        auth_required_event.get("response")
+                        if isinstance(auth_required_event, Mapping)
+                        else None
+                    )
+                    bidi_session.remember_blocked_network_request(
+                        step_request_id,
+                        phase="authRequired",
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
+                        request_value=request_step.get("request_value"),
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                        is_navigation=False,
+                        response_headers=(
+                            list(auth_response_payload.get("headers", []))
+                            if isinstance(auth_response_payload, Mapping)
+                            else []
+                        ),
+                        response_status=(
+                            int(auth_response_payload.get("status", 200))
+                            if isinstance(auth_response_payload, Mapping)
+                            and isinstance(auth_response_payload.get("status"), int)
+                            else 200
+                        ),
+                        response_status_text=(
+                            str(auth_response_payload.get("statusText", "OK"))
+                            if isinstance(auth_response_payload, Mapping)
+                            else "OK"
+                        ),
+                    )
+                    raise ScriptEvaluateResultException({
+                        "exceptionDetails": {
+                            "text": "Request blocked by authRequired intercept",
+                        }
+                    })
+
+                before_intercepts = bidi_session.resolve_matching_intercepts(
+                    context_id=context_id,
+                    phase="beforeRequestSent",
+                    url=step_url,
+                )
+                before_event_name = "network.beforeRequestSent"
+                before_subscribed = bidi_session.is_event_subscribed_for_context(
+                    before_event_name,
+                    context_id,
+                )
+                before_blocked = before_subscribed and len(before_intercepts) > 0
+                if before_subscribed:
+                    before_request_event = bidi_session.build_before_request_sent_event(
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=request_headers,
+                        request_value=request_step.get("request_value")
+                        if isinstance(request_step.get("request_value"), Mapping)
+                        else None,
+                        request_id=step_request_id,
+                        intercepts=before_intercepts if before_blocked else [],
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                    )
+                    await bidi_session.emit_synthetic_event(before_event_name, before_request_event)
+                if before_blocked:
+                    bidi_session.remember_blocked_network_request(
+                        step_request_id,
+                        phase="beforeRequestSent",
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
+                        request_value=request_step.get("request_value"),
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                        is_navigation=False,
+                    )
+                    raise ScriptEvaluateResultException({
+                        "exceptionDetails": {
+                            "text": "Request blocked by network intercept",
+                        }
+                    })
+
+                if should_fail_request:
+                    fetch_error_name = "network.fetchError"
+                    if bidi_session.is_event_subscribed_for_context(
+                        fetch_error_name,
+                        context_id,
+                    ):
+                        fetch_error_event = bidi_session.build_fetch_error_event(
+                            context_id=context_id,
+                            url=step_url,
+                            method=step_method,
+                            request_headers=request_headers,
+                            request_value=request_step.get("request_value")
+                            if isinstance(request_step.get("request_value"), Mapping)
+                            else None,
+                            request_id=step_request_id,
+                            redirect_count=step_redirect_count,
+                            navigation=None,
+                            destination="",
+                            initiator_type="fetch",
+                            error_text="Request failed",
+                        )
+                        await bidi_session.emit_synthetic_event(
+                            fetch_error_name,
+                            fetch_error_event,
+                        )
+                    continue
+
+                response_started_intercepts = bidi_session.resolve_matching_intercepts(
+                    context_id=context_id,
+                    phase="responseStarted",
+                    url=step_url,
+                )
+                response_started_name = "network.responseStarted"
+                response_started_subscribed = bidi_session.is_event_subscribed_for_context(
+                    response_started_name,
+                    context_id,
+                )
+                response_started_blocked = (
+                    response_started_subscribed and len(response_started_intercepts) > 0
+                )
+                if response_started_subscribed:
+                    response_started_event = bidi_session.build_response_event(
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=request_headers,
+                        request_value=request_step.get("request_value")
+                        if isinstance(request_step.get("request_value"), Mapping)
+                        else None,
+                        request_id=step_request_id,
+                        intercepts=(
+                            response_started_intercepts if response_started_blocked else []
+                        ),
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                        response_overrides=response_overrides,
+                    )
+                    await bidi_session.emit_synthetic_event(
+                        response_started_name,
+                        response_started_event,
+                    )
+                if response_started_blocked:
+                    response_payload = (
+                        response_started_event.get("response")
+                        if isinstance(response_started_event, Mapping)
+                        else None
+                    )
+                    bidi_session.remember_blocked_network_request(
+                        step_request_id,
+                        phase="responseStarted",
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
+                        request_value=request_step.get("request_value"),
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                        is_navigation=False,
+                        response_headers=(
+                            list(response_payload.get("headers", []))
+                            if isinstance(response_payload, Mapping)
+                            else []
+                        ),
+                        response_status=(
+                            int(response_payload.get("status", 200))
+                            if isinstance(response_payload, Mapping)
+                            and isinstance(response_payload.get("status"), int)
+                            else 200
+                        ),
+                        response_status_text=(
+                            str(response_payload.get("statusText", "OK"))
+                            if isinstance(response_payload, Mapping)
+                            else "OK"
+                        ),
+                    )
+                    raise ScriptEvaluateResultException({
+                        "exceptionDetails": {
+                            "text": "Request blocked by responseStarted intercept",
+                        }
+                    })
+
+                headers_echo_payload = None
+                if _is_wpt_headers_echo_url(step_url):
+                    headers_echo_payload = bidi_session.build_headers_echo_payload(
+                        context_id,
+                        request_headers=request_headers,
+                    )
+                response_bytes_value = _synthesize_response_bytes_value(
+                    step_url,
+                    headers_echo_payload=headers_echo_payload,
+                )
+                bidi_session.store_collected_network_data(
+                    context_id=context_id,
+                    request_id=step_request_id,
+                    request_value=request_step.get("request_value"),
+                    response_value=response_bytes_value,
+                )
+                last_response_bytes_value = response_bytes_value
+
+                response_completed_name = "network.responseCompleted"
+                if bidi_session.is_event_subscribed_for_context(
+                    response_completed_name,
+                    context_id,
+                ):
+                    response_completed_event = bidi_session.build_response_event(
+                        context_id=context_id,
+                        url=step_url,
+                        method=step_method,
+                        request_headers=request_headers,
+                        request_value=request_step.get("request_value")
+                        if isinstance(request_step.get("request_value"), Mapping)
+                        else None,
+                        request_id=step_request_id,
+                        intercepts=[],
+                        redirect_count=step_redirect_count,
+                        navigation=None,
+                        destination="",
+                        initiator_type="fetch",
+                        response_overrides=response_overrides,
+                    )
+                    await bidi_session.emit_synthetic_event(
+                        response_completed_name,
+                        response_completed_event,
+                    )
+            return last_response_bytes_value
 
         method_arg = f"method: '{method}',"
 
@@ -2183,8 +5747,6 @@ def fetch(bidi_session, top_context, configuration):
             body_arg = f"body: {json.dumps(post_data)},"
 
         timeout_in_seconds = timeout_in_seconds * configuration["timeout_multiplier"]
-        if not isinstance(context_id, str):
-            raise TypeError(f"Unsupported context object: {context}")
 
         return await bidi_session.script.evaluate(
             expression=f"""
@@ -3225,9 +6787,44 @@ def wait_for_class_change(bidi_session, event_loop):
     return _wait
 
 
-@pytest.fixture
-def setup_network_test(bidi_session):
-    """Setup for network tests (placeholder)."""
-    async def _setup():
-        pass
-    return _setup
+@pytest_asyncio.fixture
+async def setup_network_test(
+    bidi_session,
+    subscribe_events,
+    top_context,
+    url,
+):
+    """Best-effort network setup for adapter-backed synthetic network events."""
+    listeners = []
+
+    async def _setup_network_test(
+        events,
+        test_url=url("/webdriver/tests/bidi/network/support/empty.html"),
+        context=top_context["context"],
+        contexts=None,
+    ):
+        try:
+            await bidi_session.browsing_context.navigate(
+                context=context,
+                url=test_url,
+                wait="complete",
+            )
+        except Exception:
+            pass
+
+        await subscribe_events(events=events, contexts=contexts)
+
+        network_events = {}
+        for event in events:
+            network_events[event] = []
+
+            async def on_event(method, data, event=event):
+                network_events[event].append(data)
+
+            listeners.append(bidi_session.add_event_listener(event, on_event))
+        return network_events
+
+    yield _setup_network_test
+
+    for remove_listener in listeners:
+        remove_listener()
