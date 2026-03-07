@@ -6,45 +6,45 @@
 
 ///|
 /// BiDi request message
-pub struct BidiRequest {
+priv struct BidiRequest {
   id : Int
   method_name : String
   params : Json?
-} derive(Show)
+}
 
 ///|
 /// BiDi response message
-pub struct BidiResponse {
+priv struct BidiResponse {
   id : Int
   result : Json?
   error : BidiError?
-} derive(Show)
+}
 
 ///|
 /// BiDi error payload
-pub struct BidiError {
+priv struct BidiError {
   error : String
   message : String
   stacktrace : String
-} derive(Show)
+}
 
 ///|
 /// BiDi event message
-pub struct BidiEvent {
+priv struct BidiEvent {
   event_method : String
   params : Json
-} derive(Show)
+}
 
 ///|
 /// Stored script.addPreloadScript registration.
-pub struct PreloadScriptEntry {
+priv struct PreloadScriptEntry {
   script_id : String
   function_declaration : String
   arguments : Array[Json]
   sandbox : String?
   contexts : Array[String]
   user_contexts : Array[String]
-} derive(Show)
+}
 
 ///|
 /// Parsed script.addPreloadScript parameters.
@@ -58,18 +58,17 @@ priv struct AddPreloadScriptParams {
 
 ///|
 /// Outgoing BiDi message
-pub enum BidiOutMessage {
+priv enum BidiOutMessage {
   Response(BidiResponse)
   Event(BidiEvent)
   Raw(String)
-} derive(Show)
+}
 
 ///|
 /// BiDi protocol handler
-pub struct BidiProtocol {
+priv struct BidiProtocol {
   manager : CdpSessionManager
   mut outbox : Array[BidiOutMessage]
-  mut session_id : String?
   mut default_context_id : String?
   mut active_context_id : String?
   mut next_navigation_id : Int
@@ -109,6 +108,7 @@ pub struct BidiProtocol {
   in_flight_navigation_started_at : Map[String, Double] // context -> interruptible navigation start timestamp
   pending_prompt_result_var : Map[String, String] // context -> window property to store prompt result
   context_local_storage : Map[String, Map[String, String]] // context -> localStorage key/value
+  storage_cookies_by_scope : Map[String, Map[String, StoredCookie]] // scope -> stored cookies
   context_original_opener : Map[String, String]
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String] // "<context>::<sandbox>" -> realm
@@ -145,20 +145,19 @@ pub struct BidiProtocol {
   mut next_network_data_collector_id : Int
   mut socket : @core.Any? // WebSocket for async responses
   mut socket_epoch : Int // Monotonic epoch for active WebSocket
-  mut use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
+  use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
   mut dom_initialized : Bool // Deno-side mock DOM initialized
   mut preload_scripts : Array[PreloadScriptEntry]
 }
 
 ///|
 /// Create new BiDi protocol instance
-pub fn BidiProtocol::new() -> BidiProtocol {
+fn BidiProtocol::new() -> BidiProtocol {
   let user_contexts : Map[String, Bool] = {}
   user_contexts["default"] = true
   {
     manager: CdpSessionManager::new(),
     outbox: [],
-    session_id: None,
     default_context_id: None,
     active_context_id: None,
     next_navigation_id: 1,
@@ -198,6 +197,7 @@ pub fn BidiProtocol::new() -> BidiProtocol {
     in_flight_navigation_started_at: {},
     pending_prompt_result_var: {},
     context_local_storage: {},
+    storage_cookies_by_scope: {},
     context_original_opener: {},
     context_realm: {},
     context_sandbox_realm: {},
@@ -241,26 +241,8 @@ pub fn BidiProtocol::new() -> BidiProtocol {
 }
 
 ///|
-/// Enable QuickJS sandboxed runtime for script execution
-pub fn BidiProtocol::enable_quickjs(self : BidiProtocol) -> Unit {
-  self.use_quickjs = true
-}
-
-///|
-/// Disable QuickJS (use Deno eval)
-pub fn BidiProtocol::disable_quickjs(self : BidiProtocol) -> Unit {
-  self.use_quickjs = false
-}
-
-///|
-/// Check if QuickJS is enabled
-pub fn BidiProtocol::is_quickjs_enabled(self : BidiProtocol) -> Bool {
-  self.use_quickjs
-}
-
-///|
 /// Set WebSocket for async responses and return epoch token.
-pub fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Int {
+fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Int {
   self.socket_epoch += 1
   self.socket = Some(socket)
   self.socket_epoch
@@ -268,13 +250,13 @@ pub fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Int 
 
 ///|
 /// Clear WebSocket reference
-pub fn BidiProtocol::clear_socket(self : BidiProtocol) -> Unit {
+fn BidiProtocol::clear_socket(self : BidiProtocol) -> Unit {
   self.socket = None
 }
 
 ///|
 /// Check whether a captured WebSocket epoch is still active.
-pub fn BidiProtocol::is_current_socket_epoch(
+fn BidiProtocol::is_current_socket_epoch(
   self : BidiProtocol,
   epoch : Int,
 ) -> Bool {
@@ -283,7 +265,7 @@ pub fn BidiProtocol::is_current_socket_epoch(
 
 ///|
 /// Reset per-connection subscription state.
-pub fn BidiProtocol::reset_subscription_state(self : BidiProtocol) -> Unit {
+fn BidiProtocol::reset_subscription_state(self : BidiProtocol) -> Unit {
   let legacy_keys : Array[String] = []
   for key, _ in self.subscriptions {
     legacy_keys.push(key)
@@ -333,7 +315,7 @@ pub fn BidiProtocol::reset_subscription_state(self : BidiProtocol) -> Unit {
 
 ///|
 /// Reset per-session browsing-context and realm state.
-pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
+fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   self.reset_subscription_state()
 
   for ctx_id in self.manager.list_sessions() {
@@ -342,7 +324,6 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
 
   self.default_context_id = None
   self.active_context_id = None
-  self.session_id = None
 
   let user_context_keys : Array[String] = []
   for key, _ in self.user_contexts {
@@ -444,6 +425,14 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   for key in context_local_storage_keys {
     self.context_local_storage.remove(key)
+  }
+
+  let storage_cookie_scope_keys : Array[String] = []
+  for key, _ in self.storage_cookies_by_scope {
+    storage_cookie_scope_keys.push(key)
+  }
+  for key in storage_cookie_scope_keys {
+    self.storage_cookies_by_scope.remove(key)
   }
 
   let context_original_opener_keys : Array[String] = []
@@ -706,7 +695,7 @@ pub fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
 
 ///|
 /// Process incoming JSON message
-pub fn BidiProtocol::process_message(
+fn BidiProtocol::process_message(
   self : BidiProtocol,
   json_str : String,
 ) -> Result[Unit, String] {
@@ -726,9 +715,7 @@ pub fn BidiProtocol::process_message(
 
 ///|
 /// Take and clear outgoing messages
-pub fn BidiProtocol::take_messages(
-  self : BidiProtocol,
-) -> Array[BidiOutMessage] {
+fn BidiProtocol::take_messages(self : BidiProtocol) -> Array[BidiOutMessage] {
   let out = self.outbox
   self.outbox = []
   out
@@ -736,7 +723,7 @@ pub fn BidiProtocol::take_messages(
 
 ///|
 /// Convert outgoing message to JSON string
-pub fn BidiOutMessage::to_json(self : BidiOutMessage) -> String {
+fn BidiOutMessage::to_json(self : BidiOutMessage) -> String {
   match self {
     Response(resp) => response_to_json(resp)
     Event(evt) => event_to_json(evt)
@@ -767,6 +754,7 @@ fn BidiProtocol::dispatch(
     "script" => self.dispatch_script(request, action)
     "input" => self.dispatch_input(request, action)
     "network" => self.dispatch_network(request, action)
+    "storage" => self.dispatch_storage(request, action)
     "log" => self.dispatch_log(request, action)
     _ => {
       self.send_error(
@@ -855,7 +843,6 @@ fn BidiProtocol::dispatch_session(
         None => ()
       }
       let session_id = "bidi-" + request.id.to_string()
-      self.session_id = Some(session_id)
       let ctx_id = self.ensure_default_context()
       let caps = self.build_capabilities()
       let result = make_object({
@@ -1023,6 +1010,7 @@ fn BidiProtocol::dispatch_browser(
             for ctx_id in contexts_to_close {
               self.force_close_context_from_input(ctx_id) |> ignore
             }
+            self.remove_storage_cookies_for_user_context(id)
             self.user_contexts.remove(id)
             self.user_context_prompt_behavior.remove(id)
             self.user_context_download_behavior.remove(id)
@@ -4270,6 +4258,14 @@ fn BidiProtocol::dispatch_script(
         ) {
         return Ok(())
       }
+      if self.try_handle_synthetic_document_cookie_eval(
+          request.id,
+          ctx_id,
+          realm_id,
+          expr,
+        ) {
+        return Ok(())
+      }
       let serialization_options_json = get_serialization_options_json(
         request.params,
       )
@@ -4374,7 +4370,7 @@ fn BidiProtocol::dispatch_script(
       }
       // Process console entries and emit log events BEFORE response
       if capture_console {
-        self.process_console_entries(eval_result, ctx_id)
+        self.process_console_entries(eval_result, ctx_id, realm_id)
       }
       self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
       // Build response based on evaluation result
@@ -4613,7 +4609,7 @@ fn BidiProtocol::dispatch_script(
       }
       // Process console entries and emit log events BEFORE response
       if capture_console_call {
-        self.process_console_entries(eval_result, ctx_id_call)
+        self.process_console_entries(eval_result, ctx_id_call, realm_id_call)
       }
       // Process channel callback entries and emit script.message BEFORE response
       self.process_channel_messages(ctx_id_call, realm_id_call)
@@ -5322,10 +5318,6 @@ fn BidiProtocol::handle_input_perform_actions(
                 target_shared, "pointermove", final_x, final_y, 0, buttons, pointer_type,
                 ctrl, alt, shift, meta,
               )
-              input_dispatch_pointer_event(
-                target_shared, "mousemove", final_x, final_y, 0, buttons, pointer_type,
-                ctrl, alt, shift, meta,
-              )
             }
             if button_state_contains(buttons, button_to_mask(0)) {
               let drag_source = self.input_html_drag_source_shared
@@ -5784,10 +5776,11 @@ fn BidiProtocol::handle_input_release_actions(
   while idx > 0 {
     idx = idx - 1
     let key = pressed[idx]
+    let dispatch_key = restore_input_key_for_dispatch(key)
     let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
       ctx_id, "", false,
     )
-    input_dispatch_key_action("keyUp", key, ctrl, alt, shift, meta)
+    input_dispatch_key_action("keyUp", dispatch_key, ctrl, alt, shift, meta)
     self.remove_pressed_key(ctx_id, key)
   }
   self.input_pressed_keys.remove(ctx_id)
@@ -6175,6 +6168,20 @@ fn normalize_input_key(value : String) -> String {
     "\uE00A" | "\uE052" => "Alt"
     "\uE00C" => "Escape"
     "\uE03D" | "\uE053" => "Meta"
+    _ => value
+  }
+}
+
+///|
+/// Convert normalized key names back to WebDriver key values for dispatch.
+fn restore_input_key_for_dispatch(value : String) -> String {
+  match value {
+    "Shift" => "\uE008"
+    "Control" => "\uE009"
+    "Alt" => "\uE00A"
+    "Meta" => "\uE03D"
+    "Enter" => "\uE006"
+    "Escape" => "\uE00C"
     _ => value
   }
 }
@@ -7050,27 +7057,37 @@ fn BidiProtocol::dispatch_log(
 
 ///|
 /// Emit log.entryAdded event
-pub fn BidiProtocol::emit_log_entry(
+fn BidiProtocol::emit_log_entry_with_details(
   self : BidiProtocol,
   ctx_id : String,
+  realm_id : String,
+  entry_type : String,
   level : String,
   text : String,
-  console_method : String,
+  console_method : String?,
   args : Array[Json],
   timestamp : Double,
+  stack_trace : Json?,
 ) -> Unit {
-  let params = make_object({
+  let params_map : Map[String, Json] = {
     "level": Json::string(level),
     "source": make_object({
-      "realm": Json::string("realm-" + ctx_id),
+      "realm": Json::string(realm_id),
       "context": Json::string(ctx_id),
     }),
     "text": Json::string(text),
     "timestamp": Json::number(timestamp),
-    "method": Json::string(console_method),
-    "args": Json::array(args),
-    "type": Json::string("console"),
-  })
+    "type": Json::string(entry_type),
+  }
+  if entry_type == "console" {
+    params_map["method"] = Json::string(console_method.unwrap_or("log"))
+    params_map["args"] = Json::array(args)
+  }
+  match stack_trace {
+    Some(value) => params_map["stackTrace"] = value
+    None => ()
+  }
+  let params = make_object(params_map)
   if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
     let pending = self.pending_log_entries.get(ctx_id).unwrap_or([])
     pending.push(params)
@@ -7081,22 +7098,83 @@ pub fn BidiProtocol::emit_log_entry(
 }
 
 ///|
+/// Emit log.entryAdded event for console entries.
+fn BidiProtocol::emit_log_entry(
+  self : BidiProtocol,
+  ctx_id : String,
+  level : String,
+  text : String,
+  console_method : String,
+  args : Array[Json],
+  timestamp : Double,
+) -> Unit {
+  let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  self.emit_log_entry_with_details(
+    ctx_id,
+    realm_id,
+    "console",
+    level,
+    text,
+    Some(console_method),
+    args,
+    timestamp,
+    None,
+  )
+}
+
+///|
+/// Emit log.entryAdded event for javascript errors.
+fn BidiProtocol::emit_javascript_log_entry(
+  self : BidiProtocol,
+  ctx_id : String,
+  realm_id : String,
+  level : String,
+  text : String,
+  timestamp : Double,
+  stack_trace : Json?,
+) -> Unit {
+  self.emit_log_entry_with_details(
+    ctx_id,
+    realm_id,
+    "javascript",
+    level,
+    text,
+    None,
+    [],
+    timestamp,
+    stack_trace,
+  )
+}
+
+///|
 /// Process console entries from JS evaluation result and emit log events
 fn BidiProtocol::process_console_entries(
   self : BidiProtocol,
   eval_result : Json,
   ctx_id : String,
+  realm_id : String,
 ) -> Unit {
   match get_field(eval_result, "consoleEntries") {
     Some(Array(entries)) =>
       for entry in entries {
         match entry {
           Object(_) => {
+            let entry_type = get_string_field(entry, "type").unwrap_or(
+              "console",
+            )
             let level = get_string_field(entry, "level").unwrap_or("info")
             let console_method = get_string_field(entry, "method").unwrap_or(
               "log",
             )
             let text = get_string_field(entry, "text").unwrap_or("")
+            let entry_realm_raw = get_string_field(entry, "realm").unwrap_or(
+              realm_id,
+            )
+            let entry_realm = if entry_realm_raw == "" {
+              realm_id
+            } else {
+              entry_realm_raw
+            }
             let args = match get_field(entry, "args") {
               Some(Array(values)) => values
               _ => []
@@ -7105,9 +7183,27 @@ fn BidiProtocol::process_console_entries(
               Some(Number(n, ..)) => n
               _ => 0.0
             }
-            self.emit_log_entry(
-              ctx_id, level, text, console_method, args, timestamp,
-            )
+            let stack_trace = match get_field(entry, "stackTrace") {
+              Some(Object(_)) => get_field(entry, "stackTrace")
+              _ => None
+            }
+            if entry_type == "javascript" {
+              self.emit_javascript_log_entry(
+                ctx_id, entry_realm, level, text, timestamp, stack_trace,
+              )
+            } else {
+              self.emit_log_entry_with_details(
+                ctx_id,
+                entry_realm,
+                "console",
+                level,
+                text,
+                Some(console_method),
+                args,
+                timestamp,
+                stack_trace,
+              )
+            }
           }
           _ => ()
         }
@@ -7357,7 +7453,7 @@ fn BidiProtocol::run_preload_script_in_context(
   )
   let eval_result = @json.parse(eval_result_json) catch { _ => return }
   if capture_console {
-    self.process_console_entries(eval_result, ctx_id)
+    self.process_console_entries(eval_result, ctx_id, realm_id)
   }
   match get_string_field(eval_result, "type") {
     Some("exception") => {
@@ -8202,7 +8298,7 @@ fn BidiProtocol::apply_synthetic_history_state_from_expression(
   ctx_id : String,
   expression : String,
 ) -> Unit {
-  let source = expression.trim().to_string() catch { _ => "" }
+  let source = expression.trim().to_string()
 
   let mut push_cursor = 0
   let mut push_continue = true
@@ -9165,6 +9261,7 @@ fn BidiProtocol::create_context(
   self.clear_pending_prompt_state(id)
   self.clear_pending_navigation_state(id)
   self.context_local_storage.remove(id)
+  self.remove_storage_cookie_scope(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
@@ -9196,6 +9293,7 @@ fn BidiProtocol::create_child_context(
   self.clear_pending_prompt_state(id)
   self.clear_pending_navigation_state(id)
   self.context_local_storage.remove(id)
+  self.remove_storage_cookie_scope(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
@@ -9283,6 +9381,7 @@ fn BidiProtocol::drop_child_contexts(
         self.clear_pending_prompt_state(child_ctx_id)
         self.clear_pending_navigation_state(child_ctx_id)
         self.context_local_storage.remove(child_ctx_id)
+        self.remove_storage_cookie_scope(child_ctx_id)
         self.context_original_opener.remove(child_ctx_id)
         self.remove_all_realms_for_context(child_ctx_id)
         self.context_client_window.remove(child_ctx_id)
@@ -9326,6 +9425,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.clear_pending_prompt_state(ctx_id)
   self.clear_pending_navigation_state(ctx_id)
   self.context_local_storage.remove(ctx_id)
+  self.remove_storage_cookie_scope(ctx_id)
   self.context_original_opener.remove(ctx_id)
   self.remove_all_realms_for_context(ctx_id)
   self.context_client_window.remove(ctx_id)
@@ -9775,10 +9875,33 @@ fn BidiProtocol::execute_inline_scripts_for_context(
       script_source, capture_console, false, false, "{}",
     )
     let eval_result = @json.parse(eval_result_json) catch { _ => continue }
-    if capture_console {
-      self.process_console_entries(eval_result, ctx_id)
-    }
     let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+    if capture_console {
+      self.process_console_entries(eval_result, ctx_id, realm_id)
+    }
+    match get_string_field(eval_result, "type") {
+      Some("exception") => {
+        let exception_details = get_field(eval_result, "exceptionDetails").unwrap_or(
+          make_object({}),
+        )
+        let text = get_string_field(exception_details, "text").unwrap_or(
+          "Error: script execution failed",
+        )
+        let stack_trace = match get_field(exception_details, "stackTrace") {
+          Some(Object(_)) => get_field(exception_details, "stackTrace")
+          _ => None
+        }
+        self.emit_javascript_log_entry(
+          ctx_id,
+          realm_id,
+          "error",
+          text,
+          input_now_ms(),
+          stack_trace,
+        )
+      }
+      _ => ()
+    }
     self.process_channel_messages(ctx_id, realm_id)
   }
 }
@@ -11051,17 +11174,6 @@ fn BidiProtocol::emit_existing_realms_for_context(
 }
 
 ///|
-/// Complete navigation state update and send success response.
-fn BidiProtocol::complete_navigation_request(
-  self : BidiProtocol,
-  request_id : Int,
-  ctx_id : String,
-  url : String,
-) -> Unit {
-  self.complete_navigation_request_with_wait(request_id, ctx_id, url, "none")
-}
-
-///|
 /// Complete navigation state update and optionally defer success response by wait mode.
 fn BidiProtocol::complete_navigation_request_with_wait(
   self : BidiProtocol,
@@ -11369,12 +11481,6 @@ fn BidiProtocol::emit_navigation_events_internal(
     }
     None => ()
   }
-}
-
-///|
-/// Check subscription for module/event (legacy, global only)
-fn BidiProtocol::is_subscribed(self : BidiProtocol, key : String) -> Bool {
-  self.subscriptions.get(key).unwrap_or(false)
 }
 
 ///|

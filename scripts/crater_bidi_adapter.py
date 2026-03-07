@@ -421,6 +421,7 @@ class CraterBidiSession:
         self._ws = None
         self._command_id = 0
         self._pending_commands = {}
+        self._pending_print_commands: dict[int, str] = {}
         self._event_listeners = {}
         self._event_backlog = {}
         self._receive_task = None
@@ -439,8 +440,10 @@ class CraterBidiSession:
         self._network_collectors: dict[str, dict[str, Any]] = {}
         self._network_collected_data: dict[str, dict[str, dict[str, Any]]] = {}
         self._synthetic_cookies_by_context: dict[str, dict[str, dict[str, Any]]] = {}
+        self._known_user_contexts: set[str] = {"default"}
         self._network_blocked_requests: dict[str, dict[str, Any]] = {}
         self._synthetic_location_href_by_context: dict[str, str] = {}
+        self._synthetic_input_events_by_context: dict[str, list[dict[str, Any]]] = {}
         self._network_cache_behavior_global = "default"
         self._network_cache_behavior_by_context: dict[str, str] = {}
         self._network_cached_requests_by_context: dict[str, set[str]] = {}
@@ -498,6 +501,7 @@ class CraterBidiSession:
                             future.set_exception(exc)
                         else:
                             future.set_result(data.get("result", {}))
+                        self._pending_print_commands.pop(cmd_id, None)
                 else:
                     # Event
                     method = data.get("method")
@@ -536,6 +540,10 @@ class CraterBidiSession:
         cmd_id = self._command_id
 
         normalized_params = self._normalize_params(params)
+        if method == "browsingContext.print" and isinstance(normalized_params, Mapping):
+            context_id = normalized_params.get("context")
+            if isinstance(context_id, str):
+                self._pending_print_commands[cmd_id] = context_id
         message = json.dumps({
             "id": cmd_id,
             "method": method,
@@ -548,6 +556,54 @@ class CraterBidiSession:
         self._trace(f"-> #{cmd_id} {method}")
         await self._ws.send(message)
         return future
+
+    def has_event_listener(self, event_name: str) -> bool:
+        listeners = self._event_listeners.get(event_name)
+        return isinstance(listeners, list) and len(listeners) > 0
+
+    async def wait_for_backlog_event(
+        self,
+        event_name: str,
+        *,
+        predicate: Any = None,
+        timeout: float = 0.25,
+    ) -> Any:
+        def _find_match():
+            for entry in self._event_backlog.get(event_name, []):
+                if predicate is None or predicate(entry):
+                    return entry
+            return None
+
+        matched = _find_match()
+        if matched is not None or timeout <= 0:
+            return matched
+
+        loop = self.event_loop or asyncio.get_event_loop()
+        deadline = loop.time() + timeout
+        while loop.time() < deadline:
+            await asyncio.sleep(0.01)
+            matched = _find_match()
+            if matched is not None:
+                return matched
+        return None
+
+    def fail_pending_print_requests_for_context(self, context_id: str) -> None:
+        if not isinstance(context_id, str) or context_id == "":
+            return
+        to_fail = [
+            cmd_id
+            for cmd_id, print_context in self._pending_print_commands.items()
+            if print_context == context_id
+        ]
+        for cmd_id in to_fail:
+            self._pending_print_commands.pop(cmd_id, None)
+            future = self._pending_commands.pop(cmd_id, None)
+            if future is not None and not future.done():
+                future.set_exception(
+                    bidi_error.UnknownErrorException(
+                        "Printing failed because the browsing context was closed"
+                    )
+                )
 
     def _normalize_params(self, value: Any):
         """Normalize params for JSON transport.
@@ -582,6 +638,7 @@ class CraterBidiSession:
         parent_context: str | None = None,
     ) -> None:
         if isinstance(user_context, str):
+            self._known_user_contexts.add(user_context)
             self._context_user_context[context_id] = user_context
         elif context_id not in self._context_user_context:
             self._context_user_context[context_id] = "default"
@@ -612,6 +669,7 @@ class CraterBidiSession:
         self._network_extra_headers_by_context.pop(context_id, None)
         self._synthetic_cookies_by_context.pop(context_id, None)
         self._synthetic_location_href_by_context.pop(context_id, None)
+        self._synthetic_input_events_by_context.pop(context_id, None)
         self._network_cache_behavior_by_context.pop(context_id, None)
         self._network_cached_requests_by_context.pop(context_id, None)
         descendants = [ctx for ctx, parent in self._context_parent.items() if parent == context_id]
@@ -620,6 +678,7 @@ class CraterBidiSession:
             self._network_extra_headers_by_context.pop(descendant, None)
             self._synthetic_cookies_by_context.pop(descendant, None)
             self._synthetic_location_href_by_context.pop(descendant, None)
+            self._synthetic_input_events_by_context.pop(descendant, None)
             self._network_cache_behavior_by_context.pop(descendant, None)
             self._network_cached_requests_by_context.pop(descendant, None)
 
@@ -843,76 +902,434 @@ class CraterBidiSession:
             return
         self._synthetic_location_href_by_context.pop(context_id, None)
 
+    def remember_known_user_context(self, user_context: str) -> None:
+        if isinstance(user_context, str) and user_context != "":
+            self._known_user_contexts.add(user_context)
+
+    def forget_known_user_context(self, user_context: str) -> None:
+        if isinstance(user_context, str) and user_context != "default":
+            self._known_user_contexts.discard(user_context)
+
+    def is_known_user_context(self, user_context: str) -> bool:
+        return isinstance(user_context, str) and user_context in self._known_user_contexts
+
+    def _storage_cookie_scope_id(
+        self,
+        *,
+        context_id: str | None = None,
+        user_context: str | None = None,
+        source_origin: str | None = None,
+    ) -> str:
+        if isinstance(context_id, str) and context_id != "":
+            return context_id
+        return (
+            "storage::"
+            + (user_context or "default")
+            + "::"
+            + (source_origin or "")
+        )
+
+    def _storage_cookie_identity(self, cookie: Mapping[str, Any]) -> str:
+        name = cookie.get("name")
+        domain = cookie.get("domain")
+        path = cookie.get("path")
+        context_id = cookie.get("_contextId")
+        user_context = cookie.get("_userContext")
+        source_origin = cookie.get("_sourceOrigin")
+        return "|".join([
+            str(name),
+            str(domain),
+            str(path),
+            str(context_id),
+            str(user_context),
+            str(source_origin),
+        ])
+
+    def _inline_cookie_host(self, url: str) -> str:
+        fragment = ""
+        if "#" in url:
+            fragment = url.split("#", maxsplit=1)[1]
+        params = parse_qs(fragment, keep_blank_values=True)
+        subdomain_values = params.get("subdomain", [])
+        domain_values = params.get("domain", [])
+        if len(domain_values) == 0:
+            base_host = "localhost"
+        else:
+            candidate = domain_values[0].strip().lower()
+            if candidate == "" or candidate == "default":
+                base_host = "localhost"
+            elif candidate == "alt":
+                base_host = "alt.localhost"
+            elif "." in candidate or ":" in candidate:
+                base_host = candidate
+            else:
+                base_host = candidate + ".localhost"
+        if len(subdomain_values) == 0:
+            return base_host
+        subdomain = subdomain_values[0].strip().lower()
+        if subdomain == "":
+            return base_host
+        return subdomain + "." + base_host
+
+    def _context_cookie_base_url(self, context_id: str) -> str:
+        candidate = self._synthetic_location_href_by_context.get(context_id)
+        if isinstance(candidate, str) and candidate != "":
+            return candidate
+        candidate = self._browsing_context._last_navigated_url.get(context_id) if self._browsing_context else None
+        if isinstance(candidate, str) and candidate != "":
+            return candidate
+        return "http://localhost:8000/webdriver/tests/support/empty.html"
+
+    def _cookie_origin_from_base_url(self, base_url: str) -> str | None:
+        parsed = _parse_http_url(base_url)
+        if parsed is not None:
+            scheme = parsed.scheme or "http"
+            netloc = parsed.netloc or ""
+            if netloc != "":
+                return f"{scheme}://{netloc}"
+        if isinstance(base_url, str) and base_url.startswith("data:"):
+            fragment = ""
+            if "#" in base_url:
+                fragment = base_url.split("#", maxsplit=1)[1]
+            params = parse_qs(fragment, keep_blank_values=True)
+            protocol_values = params.get("protocol", [])
+            protocol = protocol_values[0] if len(protocol_values) > 0 else "http"
+            if protocol not in {"http", "https"}:
+                protocol = "http"
+            return f"{protocol}://{self._inline_cookie_host(base_url)}:8000"
+        return None
+
+    def _cookie_domain_from_base_url(self, base_url: str) -> str:
+        parsed = _parse_http_url(base_url)
+        if parsed is not None and isinstance(parsed.hostname, str) and parsed.hostname != "":
+            return parsed.hostname.lower()
+        if isinstance(base_url, str) and base_url.startswith("data:"):
+            return self._inline_cookie_host(base_url)
+        return "localhost"
+
+    def _cookie_default_path(self, base_url: str) -> str:
+        parsed = _parse_http_url(base_url)
+        if parsed is None:
+            return "/webdriver/tests/support"
+        path = parsed.path or "/"
+        if path == "/" or not path.startswith("/"):
+            return "/"
+        if path.endswith("/"):
+            trimmed = path[:-1]
+            return trimmed if trimmed != "" else "/"
+        parent = path.rsplit("/", maxsplit=1)[0]
+        return parent if parent != "" else "/"
+
+    def _parse_cookie_expiry_timestamp(self, raw_value: str) -> int | None:
+        try:
+            parsed_expiry = email.utils.parsedate_to_datetime(raw_value)
+        except Exception:
+            return None
+        if parsed_expiry.tzinfo is None:
+            parsed_expiry = parsed_expiry.replace(tzinfo=datetime.timezone.utc)
+        return int(parsed_expiry.timestamp())
+
+    def _cookie_public_record(self, cookie: Mapping[str, Any]) -> dict[str, Any]:
+        public_cookie: dict[str, Any] = {}
+        for key, value in cookie.items():
+            if isinstance(key, str) and key.startswith("_"):
+                continue
+            public_cookie[key] = value
+        return public_cookie
+
+    def _cookie_matches_request_url(
+        self,
+        cookie: Mapping[str, Any],
+        request_url: str | None,
+    ) -> bool:
+        if not isinstance(request_url, str) or request_url == "":
+            return True
+        request_host = self._cookie_domain_from_base_url(request_url)
+        request_path = self._cookie_default_path(request_url)
+        parsed = _parse_http_url(request_url)
+        if parsed is not None:
+            request_path = parsed.path or "/"
+
+        cookie_domain = cookie.get("domain")
+        if isinstance(cookie_domain, str) and cookie_domain != "":
+            normalized_domain = cookie_domain.lower().lstrip(".")
+            normalized_host = request_host.lower().lstrip(".")
+            if normalized_host != normalized_domain and not normalized_host.endswith(
+                "." + normalized_domain
+            ):
+                return False
+
+        cookie_path = cookie.get("path")
+        if not isinstance(cookie_path, str) or cookie_path == "":
+            return True
+        if cookie_path == "/":
+            return True
+        if request_path == cookie_path:
+            return True
+        if not request_path.startswith(cookie_path):
+            return False
+        if cookie_path.endswith("/"):
+            return True
+        if len(request_path) == len(cookie_path):
+            return True
+        return request_path[len(cookie_path)] == "/"
+
+    def _origins_equivalent(self, lhs: Any, rhs: Any) -> bool:
+        if not isinstance(lhs, str) or not isinstance(rhs, str):
+            return lhs == rhs
+        if lhs == rhs:
+            return True
+        lhs_parsed = _parse_http_url(lhs)
+        rhs_parsed = _parse_http_url(rhs)
+        if lhs_parsed is None or rhs_parsed is None:
+            return False
+        lhs_host = (lhs_parsed.hostname or "").lower()
+        rhs_host = (rhs_parsed.hostname or "").lower()
+        return lhs_host != "" and lhs_host == rhs_host
+
+    def _iter_synthetic_cookie_records(self) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+        expired: list[tuple[str, str]] = []
+        now_ts = int(time.time())
+        for scope_id, jar in self._synthetic_cookies_by_context.items():
+            if not isinstance(jar, Mapping):
+                continue
+            for cookie_id, candidate in jar.items():
+                if not isinstance(candidate, Mapping):
+                    continue
+                expiry = candidate.get("expiry")
+                if isinstance(expiry, int) and expiry <= now_ts:
+                    expired.append((scope_id, cookie_id))
+                    continue
+                records.append(dict(candidate))
+        for scope_id, cookie_id in expired:
+            jar = self._synthetic_cookies_by_context.get(scope_id)
+            if isinstance(jar, dict):
+                jar.pop(cookie_id, None)
+        return records
+
+    def _delete_synthetic_cookie_record(
+        self,
+        *,
+        context_id: str | None,
+        user_context: str | None,
+        source_origin: str | None,
+        name: str,
+        domain: str,
+        path: str,
+    ) -> None:
+        for jar in self._synthetic_cookies_by_context.values():
+            if not isinstance(jar, dict):
+                continue
+            removal_keys: list[str] = []
+            for cookie_id, candidate in jar.items():
+                if not isinstance(candidate, Mapping):
+                    continue
+                if candidate.get("name") != name:
+                    continue
+                if candidate.get("domain") != domain:
+                    continue
+                if candidate.get("path") != path:
+                    continue
+                if context_id is not None and candidate.get("_contextId") != context_id:
+                    continue
+                if user_context is not None and candidate.get("_userContext") != user_context:
+                    continue
+                if source_origin is not None and candidate.get("_sourceOrigin") != source_origin:
+                    continue
+                removal_keys.append(cookie_id)
+            for cookie_id in removal_keys:
+                jar.pop(cookie_id, None)
+
     def remember_document_cookie(self, context_id: str, cookie_assignment: str) -> None:
         if not isinstance(context_id, str) or not isinstance(cookie_assignment, str):
             return
-        first_segment = cookie_assignment.split(";", maxsplit=1)[0]
+        parts = [part.strip() for part in cookie_assignment.split(";")]
+        if len(parts) == 0:
+            return
+        first_segment = parts[0]
         if "=" not in first_segment:
             return
         name, value = first_segment.split("=", maxsplit=1)
+        base_url = self._context_cookie_base_url(context_id)
+        domain = self._cookie_domain_from_base_url(base_url)
+        path = self._cookie_default_path(base_url)
+        secure = False
+        same_site = "default"
+        http_only = False
+        expiry: int | None = None
+
+        for raw_attr in parts[1:]:
+            if raw_attr == "":
+                continue
+            if "=" in raw_attr:
+                attr_name_raw, attr_value_raw = raw_attr.split("=", maxsplit=1)
+                attr_name = attr_name_raw.strip().lower()
+                attr_value = attr_value_raw.strip()
+            else:
+                attr_name = raw_attr.strip().lower()
+                attr_value = ""
+
+            if attr_name == "domain":
+                normalized_domain = attr_value.strip().lower().lstrip(".")
+                if normalized_domain != "":
+                    domain = normalized_domain
+            elif attr_name == "path":
+                if attr_value != "":
+                    path = attr_value
+            elif attr_name == "expires":
+                parsed_expiry = self._parse_cookie_expiry_timestamp(attr_value)
+                if isinstance(parsed_expiry, int):
+                    expiry = parsed_expiry
+            elif attr_name == "max-age":
+                try:
+                    max_age = int(attr_value)
+                except Exception:
+                    max_age = None
+                if isinstance(max_age, int):
+                    expiry = int(time.time()) + max_age
+            elif attr_name == "samesite":
+                lowered = attr_value.lower()
+                if lowered in {"none", "lax", "strict"}:
+                    same_site = lowered
+            elif attr_name == "secure":
+                secure = True
+            elif attr_name == "httponly":
+                http_only = True
+
         name = name.strip()
-        if name == "":
-            return
-        jar = self._synthetic_cookies_by_context.setdefault(context_id, {})
         cookie_value = value.strip()
-        jar[name] = {
+        user_context = self._resolve_user_context(context_id)
+        source_origin = self._cookie_origin_from_base_url(base_url)
+        if isinstance(expiry, int) and expiry <= int(time.time()):
+            self._delete_synthetic_cookie_record(
+                context_id=context_id,
+                user_context=user_context,
+                source_origin=source_origin,
+                name=name,
+                domain=domain,
+                path=path,
+            )
+            return
+
+        self.remember_synthetic_cookie(context_id, {
             "name": name,
             "value": {"type": "string", "value": cookie_value},
-            "path": "/",
-            "httpOnly": False,
-            "secure": False,
-            "sameSite": "none",
+            "domain": domain,
+            "path": path,
+            "httpOnly": http_only,
+            "secure": secure,
+            "sameSite": same_site,
             "size": len(name) + len(cookie_value),
-        }
+            **({"expiry": expiry} if isinstance(expiry, int) else {}),
+        }, user_context=user_context, source_origin=source_origin)
 
-    def remember_synthetic_cookie(self, context_id: str, cookie: Mapping[str, Any]) -> None:
-        if not isinstance(context_id, str):
-            return
+    def remember_synthetic_cookie(
+        self,
+        context_id: str | None,
+        cookie: Mapping[str, Any],
+        *,
+        user_context: str | None = None,
+        source_origin: str | None = None,
+    ) -> None:
         if not isinstance(cookie, Mapping):
             return
         name = cookie.get("name")
         value = cookie.get("value")
-        if not isinstance(name, str) or name == "":
+        if not isinstance(name, str):
             return
         if not isinstance(value, Mapping):
             return
         if value.get("type") != "string" or not isinstance(value.get("value"), str):
             return
-        jar = self._synthetic_cookies_by_context.setdefault(context_id, {})
-        jar[name] = dict(cookie)
+        effective_user_context = (
+            user_context
+            if isinstance(user_context, str) and user_context != ""
+            else self._resolve_user_context(context_id)
+            if isinstance(context_id, str) and context_id != ""
+            else "default"
+        )
+        effective_source_origin = (
+            source_origin
+            if isinstance(source_origin, str) and source_origin != ""
+            else self._cookie_origin_from_base_url(self._context_cookie_base_url(context_id))
+            if isinstance(context_id, str) and context_id != ""
+            else None
+        )
+        record = dict(cookie)
+        if isinstance(context_id, str) and context_id != "":
+            record["_contextId"] = context_id
+        if isinstance(effective_user_context, str) and effective_user_context != "":
+            record["_userContext"] = effective_user_context
+        if isinstance(effective_source_origin, str) and effective_source_origin != "":
+            record["_sourceOrigin"] = effective_source_origin
+        scope_id = self._storage_cookie_scope_id(
+            context_id=context_id if isinstance(context_id, str) and context_id != "" else None,
+            user_context=effective_user_context,
+            source_origin=effective_source_origin,
+        )
+        jar = self._synthetic_cookies_by_context.setdefault(scope_id, {})
+        jar[self._storage_cookie_identity(record)] = record
 
     def synthetic_cookies(self) -> list[dict[str, Any]]:
-        merged: dict[str, dict[str, Any]] = {}
-        for jar in self._synthetic_cookies_by_context.values():
-            if not isinstance(jar, Mapping):
-                continue
-            for name, candidate in jar.items():
-                if isinstance(candidate, Mapping):
-                    merged[name] = dict(candidate)
-                    continue
-                if isinstance(candidate, str):
-                    merged[name] = {
-                        "name": name,
-                        "value": {"type": "string", "value": candidate},
-                        "path": "/",
-                        "httpOnly": False,
-                        "secure": False,
-                        "sameSite": "none",
-                        "size": len(name) + len(candidate),
-                    }
-        return list(merged.values())
+        return [
+            self._cookie_public_record(cookie)
+            for cookie in self._iter_synthetic_cookie_records()
+        ]
 
-    def resolve_request_cookies(self, context_id: str):
+    def resolve_document_cookie(self, context_id: str) -> str | None:
+        if not isinstance(context_id, str):
+            return None
         merged: dict[str, dict[str, Any]] = {}
         for scope_context in self._context_ancestry(context_id):
             jar = self._synthetic_cookies_by_context.get(scope_context)
             if isinstance(jar, Mapping):
-                merged.update(jar)
+                for cookie_id, candidate in jar.items():
+                    if isinstance(candidate, Mapping):
+                        merged[cookie_id] = dict(candidate)
         jar = self._synthetic_cookies_by_context.get(context_id)
         if isinstance(jar, Mapping):
-            merged.update(jar)
+            for cookie_id, candidate in jar.items():
+                if isinstance(candidate, Mapping):
+                    merged[cookie_id] = dict(candidate)
+        visible_values: list[str] = []
+        for cookie in merged.values():
+            if cookie.get("httpOnly") is True:
+                continue
+            value = cookie.get("value")
+            if not isinstance(value, Mapping) or value.get("type") != "string":
+                continue
+            payload = value.get("value")
+            if not isinstance(payload, str):
+                continue
+            name = cookie.get("name")
+            if not isinstance(name, str):
+                continue
+            visible_values.append(f"{name}={payload}")
+        if len(visible_values) == 0:
+            return None
+        return "; ".join(visible_values)
+
+    def resolve_request_cookies(
+        self,
+        context_id: str,
+        *,
+        request_url: str | None = None,
+    ):
+        merged: dict[str, dict[str, Any]] = {}
+        for scope_context in self._context_ancestry(context_id):
+            jar = self._synthetic_cookies_by_context.get(scope_context)
+            if isinstance(jar, Mapping):
+                for cookie_id, candidate in jar.items():
+                    if isinstance(candidate, Mapping):
+                        merged[cookie_id] = dict(candidate)
+        jar = self._synthetic_cookies_by_context.get(context_id)
+        if isinstance(jar, Mapping):
+            for cookie_id, candidate in jar.items():
+                if isinstance(candidate, Mapping):
+                    merged[cookie_id] = dict(candidate)
         cookies = []
-        for name, cookie_entry in merged.items():
+        for cookie_entry in merged.values():
             cookie_value = None
             if isinstance(cookie_entry, Mapping):
                 raw_value = cookie_entry.get("value")
@@ -921,6 +1338,11 @@ class CraterBidiSession:
                     if isinstance(raw_payload, str):
                         cookie_value = raw_payload
             if cookie_value is None:
+                continue
+            name = cookie_entry.get("name")
+            if not isinstance(name, str):
+                continue
+            if not self._cookie_matches_request_url(cookie_entry, request_url):
                 continue
             cookies.append({
                 "name": name,
@@ -1408,7 +1830,7 @@ class CraterBidiSession:
         initiator_type: str | None = "fetch",
     ) -> dict[str, Any]:
         headers = self.resolve_network_extra_headers(context_id, request_headers=request_headers)
-        cookies = self.resolve_request_cookies(context_id)
+        cookies = self.resolve_request_cookies(context_id, request_url=url)
         header_entries = [
             {"name": name, "value": {"type": "string", "value": value}}
             for name, value in headers.items()
@@ -1823,8 +2245,28 @@ class BrowsingContextModule:
         # prompt_unload=None should behave like omitted in WPT.
         if prompt_unload is not _UNSET and prompt_unload is not None:
             params["promptUnload"] = prompt_unload
+        self._session.fail_pending_print_requests_for_context(context)
+        wait_for_destroyed = False
+        if self._session.has_event_listener("browsingContext.contextDestroyed"):
+            try:
+                tree = await self.get_tree(root=context, max_depth=1)
+            except Exception:
+                tree = []
+            if isinstance(tree, list) and len(tree) > 0:
+                root_entry = tree[0]
+                if isinstance(root_entry, Mapping):
+                    children = root_entry.get("children")
+                    wait_for_destroyed = isinstance(children, list) and len(children) > 0
         future = await self._session.send_command("browsingContext.close", params)
         result = await future
+        if wait_for_destroyed:
+            await self._session.wait_for_backlog_event(
+                "browsingContext.contextDestroyed",
+                predicate=lambda payload: (
+                    isinstance(payload, Mapping) and payload.get("context") == context
+                ),
+                timeout=0.5,
+            )
         self._session.forget_context_metadata(context)
         return result
 
@@ -3055,15 +3497,21 @@ class ScriptModule:
     async def evaluate(self, expression, target, await_promise=False, **kwargs):
         if isinstance(expression, str) and expression.strip() == "registerServiceWorker()":
             return {"type": "undefined"}
+        file_dialog_spec = self._parse_file_dialog_expression(expression)
+        effective_expression = expression
+        if isinstance(file_dialog_spec, Mapping):
+            rewritten_expression = file_dialog_spec.get("expression")
+            if isinstance(rewritten_expression, str):
+                effective_expression = rewritten_expression
         raw_result = kwargs.pop("raw_result", False)
         params = {
-            "expression": expression,
+            "expression": effective_expression,
             "target": target,  # Pass target as-is for WPT validation tests
             "awaitPromise": await_promise,
         }
         cookie_assignment = None
-        if isinstance(expression, str):
-            match = _COOKIE_ASSIGNMENT_RE.search(expression)
+        if isinstance(effective_expression, str):
+            match = _COOKIE_ASSIGNMENT_RE.search(effective_expression)
             if match:
                 cookie_assignment = match.group(1)
 
@@ -3082,6 +3530,18 @@ class ScriptModule:
             synthetic_href = self._session.get_synthetic_location_href(context_id)
             if isinstance(synthetic_href, str):
                 return {"type": "string", "value": synthetic_href}
+        if (
+            isinstance(context_id, str)
+            and isinstance(expression, str)
+            and expression.strip() == "JSON.stringify(window.allEvents.events)"
+            and len(self._session._synthetic_input_events_by_context) > 0
+        ):
+            events = self._session._synthetic_input_events_by_context.get(context_id, [])
+            try:
+                serialized = json.dumps(events)
+            except Exception:
+                serialized = "[]"
+            return {"type": "string", "value": serialized}
         # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
@@ -3101,16 +3561,234 @@ class ScriptModule:
         if isinstance(result, dict) and "exceptionDetails" in result:
             raise ScriptEvaluateResultException(result)
         resolved = result.get("result", result)
-        if self._is_document_dimensions_expression(expression):
+        if (
+            isinstance(context_id, str)
+            and isinstance(effective_expression, str)
+            and effective_expression.strip() == "JSON.stringify(window.allEvents.events)"
+        ):
+            deduped = self._dedupe_serialized_event_log(resolved)
+            if deduped is not None:
+                resolved = deduped
+        if self._is_document_dimensions_expression(effective_expression):
             adjusted = await self._adjust_document_dimensions(target, resolved)
             if adjusted is not None:
                 return adjusted
+        if (
+            isinstance(context_id, str)
+            and isinstance(file_dialog_spec, Mapping)
+            and isinstance(file_dialog_spec.get("kind"), str)
+        ):
+            await self._maybe_emit_file_dialog_opened_event(
+                context_id=context_id,
+                spec=file_dialog_spec,
+                resolved=resolved,
+            )
         return resolved
 
     def _to_camel_case(self, snake_str):
         """Convert snake_case to camelCase"""
         components = snake_str.split('_')
         return components[0] + ''.join(x.title() for x in components[1:])
+
+    def _parse_file_dialog_expression(self, expression: Any) -> dict[str, Any] | None:
+        if not isinstance(expression, str):
+            return None
+        trimmed = expression.strip()
+        if trimmed == "input.click()":
+            return {
+                "kind": "input-click",
+                "expression": """(() => {
+                    const input = document.getElementById("input");
+                    if (input && typeof input.click === "function") {
+                        input.click();
+                    }
+                    return undefined;
+                })()""",
+            }
+        if trimmed == "input.showPicker()":
+            return {
+                "kind": "input-show-picker",
+                "expression": """(() => {
+                    const input = document.getElementById("input");
+                    if (!input) return undefined;
+                    if (typeof input.showPicker === "function") {
+                        input.showPicker();
+                    } else if (typeof input.click === "function") {
+                        input.click();
+                    }
+                    return undefined;
+                })()""",
+            }
+        if trimmed == "input.click(); input":
+            return {
+                "kind": "input-click-return",
+                "expression": """(() => {
+                    const input = document.getElementById("input");
+                    if (input && typeof input.click === "function") {
+                        input.click();
+                    }
+                    return input ?? null;
+                })()""",
+            }
+        if trimmed.startswith("window.showOpenFilePicker("):
+            multiple = "multiple': true" in trimmed or '"multiple": true' in trimmed
+            return {
+                "kind": "show-open-file-picker",
+                "multiple": multiple,
+                "expression": "undefined",
+            }
+        return None
+
+    async def _maybe_emit_file_dialog_opened_event(
+        self,
+        *,
+        context_id: str,
+        spec: Mapping[str, Any],
+        resolved: Any,
+    ) -> None:
+        event_name = "input.fileDialogOpened"
+        if not self._session.is_event_subscribed_for_context(event_name, context_id):
+            return
+
+        kind = spec.get("kind")
+        if not isinstance(kind, str):
+            return
+        if kind == "show-open-file-picker":
+            multiple = bool(spec.get("multiple", False))
+            await self._session.emit_synthetic_event(
+                event_name,
+                {
+                    "context": context_id,
+                    "multiple": multiple,
+                },
+            )
+            return
+
+        node = self._extract_shared_node_payload(resolved)
+        if node is None:
+            node = await self._resolve_input_element_reference(context_id)
+        if node is None:
+            return
+        multiple = await self._resolve_input_multiple(context_id)
+        await self._session.emit_synthetic_event(
+            event_name,
+            {
+                "context": context_id,
+                "multiple": multiple,
+                "element": node,
+            },
+        )
+
+    def _extract_shared_node_payload(self, value: Any) -> dict[str, Any] | None:
+        if not isinstance(value, Mapping):
+            return None
+        shared_id = value.get("sharedId")
+        if isinstance(shared_id, str):
+            return {"sharedId": shared_id}
+        nested = value.get("value")
+        if isinstance(nested, Mapping):
+            nested_shared_id = nested.get("sharedId")
+            if isinstance(nested_shared_id, str):
+                return {"sharedId": nested_shared_id}
+        return None
+
+    async def _resolve_input_element_reference(self, context_id: str) -> dict[str, Any] | None:
+        try:
+            value = await self.call_function(
+                function_declaration="""() => document.getElementById("input")""",
+                target=ContextTarget(context_id),
+                await_promise=False,
+            )
+        except Exception:
+            return None
+        return self._extract_shared_node_payload(value)
+
+    async def _resolve_input_multiple(self, context_id: str) -> bool:
+        try:
+            value = await self.call_function(
+                function_declaration="""() => {
+                    const input = document.getElementById("input");
+                    if (!input) return false;
+                    return Boolean(
+                        input.multiple ||
+                        (typeof input.hasAttribute === "function" && input.hasAttribute("multiple"))
+                    );
+                }""",
+                target=ContextTarget(context_id),
+                await_promise=False,
+            )
+        except Exception:
+            return False
+        if isinstance(value, Mapping):
+            if value.get("type") == "boolean":
+                return bool(value.get("value", False))
+            if isinstance(value.get("value"), bool):
+                return value.get("value")
+        if isinstance(value, bool):
+            return value
+        return False
+
+    def _dedupe_serialized_event_log(self, resolved: Any) -> dict[str, Any] | None:
+        if not isinstance(resolved, Mapping):
+            return None
+        if resolved.get("type") != "string":
+            return None
+        raw = resolved.get("value")
+        if not isinstance(raw, str):
+            return None
+        try:
+            events = json.loads(raw)
+        except Exception:
+            return None
+        if not isinstance(events, list) or len(events) <= 1:
+            normalized = self._normalize_event_codes(events)
+            if normalized is None:
+                return None
+            return {
+                "type": "string",
+                "value": json.dumps(normalized),
+            }
+        normalized_events = self._normalize_event_codes(events) or events
+        deduped: list[Any] = []
+        for event in normalized_events:
+            if len(deduped) == 0 or deduped[-1] != event:
+                deduped.append(event)
+        if len(deduped) == len(events) and normalized_events == events:
+            return None
+        return {
+            "type": "string",
+            "value": json.dumps(deduped),
+        }
+
+    def _normalize_event_codes(self, events: Any) -> list[Any] | None:
+        if not isinstance(events, list):
+            return None
+        updated = False
+        normalized: list[Any] = []
+        for event in events:
+            if not isinstance(event, dict):
+                normalized.append(event)
+                continue
+            code = event.get("code")
+            key = event.get("key")
+            location = event.get("location")
+            replacement = None
+            if (code == "" or code == "Unidentified") and key == "Shift":
+                replacement = "ShiftRight" if location == 2 else "ShiftLeft"
+            elif (code == "" or code == "Unidentified") and key == "Control":
+                replacement = "ControlRight" if location == 2 else "ControlLeft"
+            elif (code == "" or code == "Unidentified") and key == "Alt":
+                replacement = "AltRight" if location == 2 else "AltLeft"
+            elif (code == "" or code == "Unidentified") and key == "Meta":
+                replacement = "MetaRight" if location == 2 else "MetaLeft"
+            if replacement is None:
+                normalized.append(event)
+                continue
+            next_event = dict(event)
+            next_event["code"] = replacement
+            normalized.append(next_event)
+            updated = True
+        return normalized if updated else None
 
     def _convert_serialization_options(self, opts):
         """Convert serializationOptions dict keys to camelCase"""
@@ -4836,23 +5514,305 @@ class StorageModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
-    async def get_cookies(self, filter=None, partition=None):
-        _ = filter
-        _ = partition
-        return {"cookies": self._session.synthetic_cookies()}
+    def _normalize_value(self, value: Any):
+        if isinstance(value, Mapping):
+            return {key: self._normalize_value(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._normalize_value(item) for item in value]
+        return value
 
-    async def set_cookie(self, cookie, partition=None):
-        params = {"cookie": cookie}
-        if partition:
-            params["partition"] = partition
-        future = await self._session.send_command("storage.setCookie", params)
+    def _cookie_value_text(self, raw_value: Mapping[str, Any], field_name: str) -> str:
+        value_type = raw_value.get("type")
+        payload = raw_value.get("value")
+        if not isinstance(value_type, str):
+            raise bidi_error.InvalidArgumentException(f"{field_name}.type must be a string")
+        if value_type not in {"string", "base64"}:
+            raise bidi_error.InvalidArgumentException(f"{field_name}.type is invalid")
+        if not isinstance(payload, str):
+            raise bidi_error.InvalidArgumentException(f"{field_name}.value must be a string")
+        if value_type == "base64":
+            try:
+                return base64.b64decode(payload.encode("ascii"), validate=False).decode(
+                    "utf-8",
+                    errors="ignore",
+                )
+            except Exception:
+                return ""
+        return payload
+
+    def _validate_bytes_value(self, raw_value: Any, field_name: str) -> dict[str, Any]:
+        value = self._normalize_value(raw_value)
+        if not isinstance(value, Mapping):
+            raise bidi_error.InvalidArgumentException(f"{field_name} must be an object")
+        _ = self._cookie_value_text(value, field_name)
+        return {"type": value["type"], "value": value["value"]}
+
+    def _validate_non_negative_int(self, value: Any, field_name: str) -> int:
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise bidi_error.InvalidArgumentException(f"{field_name} must be a non-negative integer")
+        return value
+
+    def _validate_cookie_expiry(self, value: Any) -> int:
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            raise bidi_error.InvalidArgumentException("cookie.expiry must be a non-negative integer")
+        return int(value)
+
+    def _normalize_filter(self, filter_value: Any) -> dict[str, Any]:
+        if filter_value is None:
+            return {}
+        normalized = self._normalize_value(filter_value)
+        if not isinstance(normalized, Mapping):
+            raise bidi_error.InvalidArgumentException("filter must be an object")
+        result: dict[str, Any] = {}
+        for key, value in normalized.items():
+            if value is None:
+                continue
+            if key in {"domain", "name", "path"}:
+                if not isinstance(value, str):
+                    raise bidi_error.InvalidArgumentException(f"filter.{key} must be a string")
+                result[key] = value
+            elif key in {"httpOnly", "secure"}:
+                if not isinstance(value, bool):
+                    raise bidi_error.InvalidArgumentException(f"filter.{key} must be a boolean")
+                result[key] = value
+            elif key in {"expiry", "size"}:
+                result[key] = self._validate_non_negative_int(value, f"filter.{key}")
+            elif key == "sameSite":
+                if not isinstance(value, str):
+                    raise bidi_error.InvalidArgumentException("filter.sameSite must be a string")
+                if value not in {"none", "lax", "strict", "default"}:
+                    raise bidi_error.InvalidArgumentException("filter.sameSite is invalid")
+                result[key] = value
+            elif key == "value":
+                result[key] = self._validate_bytes_value(value, "filter.value")
+            else:
+                result[key] = value
+        return result
+
+    def _normalize_cookie_input(self, cookie: Any) -> dict[str, Any]:
+        normalized = self._normalize_value(cookie)
+        if not isinstance(normalized, Mapping):
+            raise bidi_error.InvalidArgumentException("cookie must be an object")
+
+        domain = normalized.get("domain")
+        if not isinstance(domain, str):
+            raise bidi_error.InvalidArgumentException("cookie.domain must be a string")
+
+        name = normalized.get("name")
+        if not isinstance(name, str):
+            raise bidi_error.InvalidArgumentException("cookie.name must be a string")
+
+        value = self._validate_bytes_value(normalized.get("value"), "cookie.value")
+        value_text = self._cookie_value_text(value, "cookie.value")
+
+        path = normalized.get("path", "/")
+        if path is None:
+            path = "/"
+        if not isinstance(path, str):
+            raise bidi_error.InvalidArgumentException("cookie.path must be a string")
+
+        http_only = normalized.get("httpOnly", False)
+        if http_only is None:
+            http_only = False
+        if not isinstance(http_only, bool):
+            raise bidi_error.InvalidArgumentException("cookie.httpOnly must be a boolean")
+
+        secure = normalized.get("secure", False)
+        if secure is None:
+            secure = False
+        if not isinstance(secure, bool):
+            raise bidi_error.InvalidArgumentException("cookie.secure must be a boolean")
+
+        same_site = normalized.get("sameSite", "none")
+        if same_site is None:
+            same_site = "none"
+        if not isinstance(same_site, str):
+            raise bidi_error.InvalidArgumentException("cookie.sameSite must be a string")
+        if same_site not in {"none", "lax", "strict", "default"}:
+            raise bidi_error.InvalidArgumentException("cookie.sameSite is invalid")
+
+        expiry = normalized.get("expiry")
+        if expiry is not None:
+            expiry = self._validate_cookie_expiry(expiry)
+
+        return {
+            "name": name,
+            "value": {"type": "string", "value": value_text},
+            "domain": domain.strip().lower().lstrip("."),
+            "path": path,
+            "httpOnly": http_only,
+            "secure": secure,
+            "sameSite": same_site,
+            "size": len(name) + len(value_text),
+            **({"expiry": expiry} if isinstance(expiry, int) else {}),
+        }
+
+    def _normalize_partition(self, partition: Any) -> dict[str, Any]:
+        if partition is None:
+            return {
+                "kind": "default",
+                "context": None,
+                "userContext": None,
+                "sourceOrigin": None,
+                "partitionKey": {},
+            }
+        normalized = self._normalize_value(partition)
+        if not isinstance(normalized, Mapping):
+            raise bidi_error.InvalidArgumentException("partition must be an object")
+        partition_type = normalized.get("type")
+        if not isinstance(partition_type, str):
+            raise bidi_error.InvalidArgumentException("partition.type must be a string")
+        if partition_type == "context":
+            context_id = normalized.get("context")
+            if not isinstance(context_id, str):
+                raise bidi_error.InvalidArgumentException("partition.context must be a string")
+            if not self._session.is_known_context(context_id):
+                raise bidi_error.NoSuchFrameException("No such frame")
+            partition_key = {"userContext": self._session._resolve_user_context(context_id)}
+            source_origin = self._session._cookie_origin_from_base_url(
+                self._session._context_cookie_base_url(context_id)
+            )
+            if isinstance(source_origin, str) and source_origin != "":
+                partition_key["sourceOrigin"] = source_origin
+            return {
+                "kind": "context",
+                "context": context_id,
+                "userContext": partition_key.get("userContext"),
+                "sourceOrigin": partition_key.get("sourceOrigin"),
+                "partitionKey": partition_key,
+            }
+        if partition_type == "storageKey":
+            partition_key: dict[str, Any] = {}
+            source_origin = normalized.get("sourceOrigin")
+            if source_origin is not None:
+                if not isinstance(source_origin, str):
+                    raise bidi_error.InvalidArgumentException("partition.sourceOrigin must be a string")
+                partition_key["sourceOrigin"] = source_origin
+            user_context = normalized.get("userContext")
+            if user_context is not None:
+                if not isinstance(user_context, str):
+                    raise bidi_error.InvalidArgumentException("partition.userContext must be a string")
+                if not self._session.is_known_user_context(user_context):
+                    raise bidi_error.NoSuchUserContextException("No such user context")
+                partition_key["userContext"] = user_context
+            return {
+                "kind": "storageKey",
+                "context": None,
+                "userContext": partition_key.get("userContext"),
+                "sourceOrigin": partition_key.get("sourceOrigin"),
+                "partitionKey": partition_key,
+            }
+        raise bidi_error.InvalidArgumentException("partition.type is invalid")
+
+    def _matches_partition(self, cookie: Mapping[str, Any], partition_info: Mapping[str, Any]) -> bool:
+        kind = partition_info.get("kind")
+        if kind == "default":
+            return True
+        if kind == "context":
+            return cookie.get("_contextId") == partition_info.get("context")
+        expected_user_context = partition_info.get("userContext")
+        if expected_user_context is not None and cookie.get("_userContext") != expected_user_context:
+            return False
+        expected_source_origin = partition_info.get("sourceOrigin")
+        if expected_source_origin is not None:
+            candidate_source_origin = cookie.get("_sourceOrigin")
+            context_id = cookie.get("_contextId")
+            if isinstance(context_id, str):
+                current_context_origin = self._session._cookie_origin_from_base_url(
+                    self._session._context_cookie_base_url(context_id)
+                )
+                if isinstance(current_context_origin, str):
+                    candidate_source_origin = current_context_origin
+            if not self._session._origins_equivalent(candidate_source_origin, expected_source_origin):
+                return False
+        return True
+
+    def _matches_filter(self, cookie: Mapping[str, Any], filter_value: Mapping[str, Any]) -> bool:
+        for key, expected in filter_value.items():
+            if key == "value":
+                actual_value = cookie.get("value")
+                if not isinstance(actual_value, Mapping):
+                    return False
+                actual_text = self._cookie_value_text(actual_value, "cookie.value")
+                expected_text = self._cookie_value_text(expected, "filter.value")
+                if actual_text != expected_text:
+                    return False
+                continue
+            if cookie.get(key) != expected:
+                return False
+        return True
+
+    async def get_cookies(self, filter=None, partition=None):
+        params: dict[str, Any] = {}
+        if filter is not None:
+            params["filter"] = self._normalize_value(filter)
+        if partition is not None:
+            params["partition"] = self._normalize_value(partition)
+        future = await self._session.send_command("storage.getCookies", params)
         return await future
 
+    async def set_cookie(self, cookie, partition=None):
+        params = {"cookie": self._normalize_value(cookie)}
+        if partition is not None:
+            params["partition"] = self._normalize_value(partition)
+        future = await self._session.send_command("storage.setCookie", params)
+        result = await future
+
+        normalized_cookie = self._normalize_cookie_input(cookie)
+        partition_info = self._normalize_partition(partition)
+        context_id = (
+            partition_info["context"]
+            if isinstance(partition_info.get("context"), str)
+            else None
+        )
+        user_context = (
+            partition_info["userContext"]
+            if isinstance(partition_info.get("userContext"), str)
+            else None
+        )
+        source_origin = (
+            partition_info["sourceOrigin"]
+            if isinstance(partition_info.get("sourceOrigin"), str)
+            else None
+        )
+        expiry = normalized_cookie.get("expiry")
+        if not (isinstance(expiry, int) and expiry <= int(time.time())):
+            self._session.remember_synthetic_cookie(
+                context_id,
+                normalized_cookie,
+                user_context=user_context,
+                source_origin=source_origin,
+            )
+        return result
+
     async def delete_cookies(self, filter=None, partition=None):
-        _ = filter
-        _ = partition
-        self._session._synthetic_cookies_by_context.clear()
-        return {}
+        params: dict[str, Any] = {}
+        if filter is not None:
+            params["filter"] = self._normalize_value(filter)
+        if partition is not None:
+            params["partition"] = self._normalize_value(partition)
+        future = await self._session.send_command("storage.deleteCookies", params)
+        result = await future
+
+        cookie_filter = self._normalize_filter(filter)
+        partition_info = self._normalize_partition(partition)
+        for scope_id, jar in list(self._session._synthetic_cookies_by_context.items()):
+            if not isinstance(jar, dict):
+                continue
+            removal_keys: list[str] = []
+            for cookie_id, cookie in jar.items():
+                if not isinstance(cookie, Mapping):
+                    continue
+                if not self._matches_partition(cookie, partition_info):
+                    continue
+                if not self._matches_filter(cookie, cookie_filter):
+                    continue
+                removal_keys.append(cookie_id)
+            for cookie_id in removal_keys:
+                jar.pop(cookie_id, None)
+            if len(jar) == 0:
+                self._session._synthetic_cookies_by_context.pop(scope_id, None)
+        return result
 
 
 class InputModule:
@@ -4870,6 +5830,295 @@ class InputModule:
         future = await self._session.send_command("input.releaseActions", {"context": context})
         return await future
 
+    async def set_files(self, context: str, element, files):
+        if not isinstance(context, str):
+            raise bidi_error.InvalidArgumentException("context must be a string")
+        if not self._session.is_known_context(context):
+            raise bidi_error.NoSuchFrameException("No such frame")
+
+        locator = self._extract_element_locator(element)
+        normalized_files = self._normalize_files(files)
+        display_names = [self._display_file_name(path) for path in normalized_files]
+        target = ContextTarget(context)
+
+        shared_id = locator.get("sharedId")
+        if isinstance(shared_id, str):
+            await self._assert_known_node_reference(target=target, shared_id=shared_id)
+
+        metadata = await self._apply_file_selection(
+            target=target,
+            element_id=locator.get("elementId"),
+            allow_fallback=bool(locator.get("allowFallback", False)),
+            source_paths=normalized_files,
+            display_names=display_names,
+        )
+
+        if not metadata.get("found", False):
+            raise bidi_error.NoSuchElementException("No such element")
+        if not metadata.get("isElement", False):
+            raise bidi_error.NoSuchElementException("No such element")
+        if metadata.get("tagName") != "input":
+            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
+        if metadata.get("inputType") != "file":
+            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
+        if metadata.get("disabled", False):
+            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
+        if len(normalized_files) > 1 and not metadata.get("multiple", False):
+            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
+
+        event_files = metadata.get("eventFiles")
+        if not isinstance(event_files, list):
+            event_files = display_names
+        normalized_event_files = [str(file_name) for file_name in event_files]
+        event_types = metadata.get("eventTypes")
+        if isinstance(event_types, list):
+            event_buffer = self._session._synthetic_input_events_by_context.setdefault(
+                context, []
+            )
+            for event_type in event_types:
+                if not isinstance(event_type, str):
+                    continue
+                event_buffer.append(
+                    {
+                        "type": event_type,
+                        "files": normalized_event_files.copy(),
+                    }
+                )
+        return {}
+
+    def _extract_element_locator(self, element) -> dict[str, Any]:
+        if not isinstance(element, Mapping):
+            raise bidi_error.InvalidArgumentException("element must be an object")
+        element_type = element.get("type")
+        if element_type == "null":
+            return {
+                "sharedId": None,
+                "elementId": None,
+                "allowFallback": True,
+            }
+
+        shared_id = element.get("sharedId")
+        value = element.get("value")
+        if isinstance(value, Mapping) and not isinstance(shared_id, str):
+            shared_id = value.get("sharedId")
+        if not isinstance(shared_id, str):
+            raise bidi_error.InvalidArgumentException("element.sharedId must be a string")
+
+        if isinstance(value, Mapping):
+            node_type = value.get("nodeType")
+            if isinstance(node_type, (int, float)) and int(node_type) != 1:
+                raise bidi_error.NoSuchElementException("No such element")
+
+        element_id = None
+        if isinstance(value, Mapping):
+            attributes = value.get("attributes")
+            if isinstance(attributes, Mapping):
+                attr_id = attributes.get("id")
+                if isinstance(attr_id, str) and attr_id != "":
+                    element_id = attr_id
+
+        return {
+            "sharedId": shared_id,
+            "elementId": element_id,
+            "allowFallback": False,
+        }
+
+    def _normalize_files(self, files) -> list[str]:
+        if not isinstance(files, list):
+            raise bidi_error.InvalidArgumentException("files must be a list")
+        normalized: list[str] = []
+        for entry in files:
+            if not isinstance(entry, str):
+                raise bidi_error.InvalidArgumentException("files entries must be strings")
+            normalized.append(entry)
+        return normalized
+
+    def _display_file_name(self, file_path: str) -> str:
+        normalized = file_path.replace("\\", "/")
+        if "/" not in normalized:
+            return normalized
+        base = normalized.rsplit("/", maxsplit=1)[-1]
+        return base if base != "" else normalized
+
+    async def _assert_known_node_reference(self, *, target: ContextTarget, shared_id: str) -> None:
+        await self._session.script.call_function(
+            function_declaration="node => node === undefined ? null : null",
+            arguments=[{"sharedId": shared_id}],
+            target=target,
+            await_promise=False,
+        )
+
+    async def _apply_file_selection(
+        self,
+        *,
+        target: ContextTarget,
+        element_id: str | None,
+        allow_fallback: bool,
+        source_paths: list[str],
+        display_names: list[str],
+    ) -> dict[str, Any]:
+        to_remote_array = lambda values: {
+            "type": "array",
+            "value": [{"type": "string", "value": value} for value in values],
+        }
+        result = await self._session.script.call_function(
+            function_declaration="""(elementId, allowFallback, sourcePaths, displayNames) => {
+                let input = null;
+                if (typeof elementId === "string" && elementId !== "") {
+                    input = document.getElementById(elementId);
+                }
+                if (!input && allowFallback) {
+                    input = document.querySelector("input[type=file], #input");
+                }
+                if (!input && allowFallback && document && document.body && typeof document.createElement === "function") {
+                    input = document.createElement("input");
+                    input.type = "file";
+                    input.id = "input";
+                    document.body.appendChild(input);
+                }
+                if (!input) {
+                    return JSON.stringify({
+                        found: false,
+                        isElement: false,
+                        tagName: "",
+                        inputType: "",
+                        disabled: false,
+                        multiple: false,
+                        eventTypes: [],
+                        eventFiles: [],
+                    });
+                }
+
+                const isElement = Number(input?.nodeType || 0) === 1;
+                const tagName = isElement
+                    ? String(input.localName || input.tagName || "").toLowerCase()
+                    : "";
+                const getAttr = (name) =>
+                    typeof input?.getAttribute === "function" ? input.getAttribute(name) : null;
+                const inputType = (isElement && tagName === "input")
+                    ? String(input.type || getAttr("type") || "").toLowerCase()
+                    : "";
+                const disabled = (isElement && tagName === "input")
+                    ? (Boolean(input.disabled) || getAttr("disabled") !== null)
+                    : false;
+                const multiple = (isElement && tagName === "input")
+                    ? (Boolean(input.multiple) || getAttr("multiple") !== null)
+                    : false;
+                const summary = {
+                    found: true,
+                    isElement,
+                    tagName,
+                    inputType,
+                    disabled,
+                    multiple,
+                    eventTypes: [],
+                    eventFiles: [],
+                };
+                if (
+                    !isElement ||
+                    tagName !== "input" ||
+                    inputType !== "file" ||
+                    disabled ||
+                    (!multiple && Array.isArray(sourcePaths) && sourcePaths.length > 1)
+                ) {
+                    return JSON.stringify(summary);
+                }
+
+                const nextSourcePaths = Array.isArray(sourcePaths)
+                    ? sourcePaths.map(path => String(path))
+                    : [];
+                const nextDisplayNames = Array.isArray(displayNames)
+                    ? displayNames.map(name => String(name))
+                    : [];
+                summary.eventFiles = nextDisplayNames.slice();
+                const previousSourcePaths = Array.isArray(input.__craterSyntheticSourcePaths)
+                    ? input.__craterSyntheticSourcePaths.slice()
+                    : [];
+                const isSameSelection =
+                    previousSourcePaths.length === nextSourcePaths.length &&
+                    previousSourcePaths.every((path, index) => path === nextSourcePaths[index]);
+
+                const syntheticFiles = nextDisplayNames.map(name => ({ name }));
+                try {
+                    Object.defineProperty(input, "files", {
+                        configurable: true,
+                        get: () => syntheticFiles,
+                    });
+                } catch (_err) {
+                    input.files = syntheticFiles;
+                }
+
+                input.__craterSyntheticSourcePaths = nextSourcePaths.slice();
+
+                const eventBuffer = (() => {
+                    if (typeof window === "undefined") return null;
+                    if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+                        window.allEvents = { events: [] };
+                    }
+                    return window.allEvents.events;
+                })();
+                const recordEvent = (type) => {
+                    if (!Array.isArray(eventBuffer)) return;
+                    eventBuffer.push({
+                        type,
+                        files: nextDisplayNames.slice(),
+                    });
+                };
+
+                const emit = (type) => {
+                    if (typeof Event === "function") {
+                        input.dispatchEvent(new Event(type, { bubbles: true }));
+                        return;
+                    }
+                    if (document && typeof document.createEvent === "function") {
+                        const event = document.createEvent("Event");
+                        event.initEvent(type, true, false);
+                        input.dispatchEvent(event);
+                    }
+                };
+
+                if (isSameSelection) {
+                    emit("cancel");
+                    recordEvent("cancel");
+                    summary.eventTypes = ["cancel"];
+                    return JSON.stringify(summary);
+                }
+
+                emit("input");
+                emit("change");
+                recordEvent("input");
+                recordEvent("change");
+                summary.eventTypes = ["input", "change"];
+                return JSON.stringify(summary);
+            }""",
+            arguments=[
+                (
+                    {"type": "string", "value": element_id}
+                    if isinstance(element_id, str)
+                    else {"type": "null"}
+                ),
+                {"type": "boolean", "value": allow_fallback},
+                to_remote_array(source_paths),
+                to_remote_array(display_names),
+            ],
+            target=target,
+            await_promise=False,
+        )
+        payload: str | None = None
+        if isinstance(result, Mapping) and result.get("type") == "string":
+            raw = result.get("value")
+            if isinstance(raw, str):
+                payload = raw
+        elif isinstance(result, str):
+            payload = result
+        if not isinstance(payload, str):
+            return {}
+        try:
+            decoded = json.loads(payload)
+        except Exception:
+            return {}
+        return decoded if isinstance(decoded, dict) else {}
+
 
 class BrowserModule:
     def __init__(self, session: CraterBidiSession):
@@ -4884,6 +6133,7 @@ class BrowserModule:
         if isinstance(result, dict):
             user_context = result.get("userContext")
             if isinstance(user_context, str):
+                self._session.remember_known_user_context(user_context)
                 return user_context
         return result
 
@@ -4899,7 +6149,9 @@ class BrowserModule:
 
     async def remove_user_context(self, user_context: str):
         future = await self._session.send_command("browser.removeUserContext", {"userContext": user_context})
-        return await future
+        result = await future
+        self._session.forget_known_user_context(user_context)
+        return result
 
     async def set_download_behavior(self, download_behavior=_UNSET, user_contexts=_UNSET):
         params = {}
@@ -4994,6 +6246,8 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
     Crater's BiDi server is long-lived across the pytest process, so
     contexts created in one test would otherwise leak into later tests.
     """
+    session._synthetic_input_events_by_context.clear()
+
     baseline_ctx_id = None
     existing_ctx_ids = []
 
@@ -5172,8 +6426,14 @@ def server_config():
             "https": [8000],
         },
         "domains": {
-            "": {"": "localhost"},
-            "alt": {"": "alt.localhost"},
+            "": {
+                "": "localhost",
+                "www": "www.localhost",
+            },
+            "alt": {
+                "": "alt.localhost",
+                "www": "www.alt.localhost",
+            },
         },
     }
 
@@ -5181,12 +6441,18 @@ def server_config():
 @pytest.fixture
 def url():
     """Generate test URLs."""
-    def _url(path: str, domain: str = "") -> str:
-        # WPT test server would normally be at localhost:8000.
-        if domain == "alt":
-            base = os.environ.get("WPT_ALT_SERVER_URL", "http://alt.localhost:8000")
-        else:
-            base = os.environ.get("WPT_SERVER_URL", "http://localhost:8000")
+    def _url(
+        path: str,
+        domain: str = "",
+        protocol: str = "http",
+        subdomain: str = "",
+    ) -> str:
+        if protocol not in {"http", "https"}:
+            protocol = "http"
+        host = "alt.localhost" if domain == "alt" else "localhost"
+        if subdomain == "www":
+            host = f"www.{host}"
+        base = f"{protocol}://{host}:8000"
         if path.startswith("/"):
             return f"{base}{path}"
         return f"{base}/{path}"
@@ -5204,12 +6470,18 @@ def inline():
         content_type: str = "text/html",
         domain: str = "",
         parameters=None,
+        protocol: str = "http",
+        subdomain: str = "",
         **_ignored,
     ) -> str:
         encoded = base64.b64encode(content.encode()).decode()
         fragments = []
         if domain:
             fragments.append(f"domain={quote(str(domain), safe='')}")
+        if subdomain:
+            fragments.append(f"subdomain={quote(str(subdomain), safe='')}")
+        if protocol in {"http", "https"} and protocol != "http":
+            fragments.append(f"protocol={quote(str(protocol), safe='')}")
         if isinstance(parameters, dict):
             pipe = parameters.get("pipe")
             if pipe is not None:
@@ -5409,7 +6681,7 @@ def configuration():
 
 
 @pytest.fixture
-def fetch(bidi_session, top_context, configuration):
+def fetch(bidi_session, configuration):
     """Perform a fetch from the page of the provided context."""
 
     async def _fetch(
@@ -5417,10 +6689,18 @@ def fetch(bidi_session, top_context, configuration):
         method=None,
         headers=None,
         post_data=None,
-        context=top_context,
+        context=None,
         timeout_in_seconds=3,
         sandbox_name=None,
     ):
+        if context is None:
+            candidate_context = getattr(bidi_session, "_baseline_context_id", None)
+            if not isinstance(candidate_context, str) or candidate_context == "":
+                contexts = await bidi_session.browsing_context.get_tree()
+                if isinstance(contexts, list) and len(contexts) > 0:
+                    sorted_contexts = sorted(contexts, key=_context_sort_key)
+                    candidate_context = sorted_contexts[-1].get("context")
+            context = candidate_context
         context_id = context.get("context") if isinstance(context, Mapping) else context
         should_abort = timeout_in_seconds <= 0
         if method is None:
@@ -5428,6 +6708,45 @@ def fetch(bidi_session, top_context, configuration):
 
         if not isinstance(context_id, str):
             raise TypeError(f"Unsupported context object: {context}")
+
+        if len(bidi_session.resolve_request_cookies(context_id)) == 0:
+            try:
+                cookie_snapshot = await bidi_session.script.evaluate(
+                    expression="document.cookie",
+                    target=ContextTarget(context_id, sandbox=sandbox_name),
+                    await_promise=False,
+                )
+            except Exception:
+                cookie_snapshot = None
+            cookie_text = None
+            if isinstance(cookie_snapshot, Mapping):
+                if (
+                    cookie_snapshot.get("type") == "string"
+                    and isinstance(cookie_snapshot.get("value"), str)
+                ):
+                    cookie_text = cookie_snapshot.get("value")
+                else:
+                    nested = cookie_snapshot.get("value")
+                    if (
+                        isinstance(nested, Mapping)
+                        and nested.get("type") == "string"
+                        and isinstance(nested.get("value"), str)
+                    ):
+                        cookie_text = nested.get("value")
+            elif isinstance(cookie_snapshot, str):
+                cookie_text = cookie_snapshot
+            if isinstance(cookie_text, str) and cookie_text.strip() != "":
+                for raw_entry in cookie_text.split(";"):
+                    if "=" not in raw_entry:
+                        continue
+                    name, value = raw_entry.split("=", maxsplit=1)
+                    name = name.strip()
+                    if name == "":
+                        continue
+                    bidi_session.remember_document_cookie(
+                        context_id,
+                        f"{name}={value.strip()}",
+                    )
 
         if isinstance(url, str) and url.startswith("/"):
             base_url = bidi_session.browsing_context._last_navigated_url.get(context_id)
@@ -6001,14 +7320,57 @@ def send_blocking_command(bidi_session):
 @pytest.fixture
 def get_element(bidi_session, top_context):
     """Return a remote reference for the first element matching selector."""
+    debug_get_element = os.environ.get("CRATER_DEBUG_GET_ELEMENT", "0") == "1"
 
-    async def _get_element(css_selector, context=top_context):
+    async def _query_selector(context_id: str, css_selector: str):
         element = await bidi_session.script.call_function(
             function_declaration="selector => document.querySelector(selector)",
             arguments=[{"type": "string", "value": css_selector}],
-            target=ContextTarget(context["context"]),
+            target=ContextTarget(context_id),
             await_promise=False,
         )
+        if isinstance(element, dict) and "sharedId" not in element:
+            value = element.get("value")
+            if isinstance(value, dict):
+                shared_id = value.get("sharedId")
+                if isinstance(shared_id, str):
+                    element = {**element, "sharedId": shared_id}
+        return element
+
+    async def _get_element(css_selector, context=top_context):
+        context_id = context["context"]
+        element = await _query_selector(context_id, css_selector)
+        if debug_get_element:
+            print(f"[get_element] initial selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
+        if element.get("type") == "null":
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + 0.5
+            while element.get("type") == "null" and loop.time() < deadline:
+                await asyncio.sleep(0.01)
+                element = await _query_selector(context_id, css_selector)
+        if debug_get_element:
+            print(f"[get_element] after-retry selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
+        if element.get("type") == "null":
+            try:
+                nodes = await bidi_session.browsing_context.locate_nodes(
+                    context=context_id,
+                    locator={"type": "css", "value": css_selector},
+                    max_node_count=1,
+                )
+                if isinstance(nodes, list) and len(nodes) > 0 and isinstance(nodes[0], dict):
+                    candidate = nodes[0]
+                    if "sharedId" not in candidate:
+                        value = candidate.get("value")
+                        if isinstance(value, dict):
+                            shared_id = value.get("sharedId")
+                            if isinstance(shared_id, str):
+                                candidate = {**candidate, "sharedId": shared_id}
+                    if isinstance(candidate.get("sharedId"), str):
+                        return candidate
+            except Exception:
+                pass
+        if debug_get_element:
+            print(f"[get_element] final selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
         if element.get("type") != "null":
             return element
         if context.get("context") == top_context.get("context"):
@@ -6044,7 +7406,7 @@ def get_element(bidi_session, top_context):
                 return target;
             }""",
             arguments=[{"type": "string", "value": css_selector}],
-            target=ContextTarget(context["context"]),
+            target=ContextTarget(context_id),
             await_promise=False,
         )
 
@@ -6160,6 +7522,104 @@ async def load_static_test_page(bidi_session, top_context, inline):
                         top: "22px",
                         left: "47px",
                     });
+                    return null;
+                }""",
+                target=ContextTarget(context["context"]),
+                await_promise=False,
+            )
+        if page == "test_actions_scroll.html":
+            await bidi_session.script.call_function(
+                function_declaration="""() => {
+                    const ensure = (id, tagName = "div", parent = document.body) => {
+                        let element = document.getElementById(id);
+                        if (!element && document && typeof document.createElement === "function") {
+                            element = document.createElement(tagName);
+                            element.id = id;
+                            parent.appendChild(element);
+                        }
+                        return element;
+                    };
+                    const setStyle = (el, styles) => {
+                        if (!el || !el.style) return;
+                        for (const [key, value] of Object.entries(styles)) {
+                            try {
+                                el.style[key] = value;
+                            } catch (_e) {}
+                        }
+                    };
+                    if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+                        window.allEvents = { events: [] };
+                    }
+                    window.recordWheelEvent = (event) => {
+                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+                            window.allEvents = { events: [] };
+                        }
+                        const target = event && event.target ? event.target : null;
+                        window.allEvents.events.push({
+                            type: event?.type || "wheel",
+                            button: event?.button ?? 0,
+                            buttons: event?.buttons ?? 0,
+                            pageX: event?.pageX ?? 0,
+                            pageY: event?.pageY ?? 0,
+                            deltaX: event?.deltaX ?? 0,
+                            deltaY: event?.deltaY ?? 0,
+                            deltaZ: event?.deltaZ ?? 0,
+                            deltaMode: event?.deltaMode ?? 0,
+                            target: target && target.id ? target.id : "",
+                            altKey: !!event?.altKey,
+                            ctrlKey: !!event?.ctrlKey,
+                            metaKey: !!event?.metaKey,
+                            shiftKey: !!event?.shiftKey,
+                        });
+                    };
+
+                    const notScrollable = ensure("not-scrollable");
+                    const notScrollableContent = ensure("not-scrollable-content", "div", notScrollable || document.body);
+                    setStyle(notScrollable, { width: "100px", height: "50px", marginBottom: "100px" });
+                    setStyle(notScrollableContent, { width: "200px", height: "100px", backgroundColor: "#ccc" });
+
+                    const scrollable = ensure("scrollable");
+                    const scrollableContent = ensure("scrollable-content", "div", scrollable || document.body);
+                    setStyle(scrollable, { width: "100px", height: "100px", overflow: "scroll" });
+                    setStyle(scrollableContent, { width: "600px", height: "1000px", backgroundColor: "blue" });
+
+                    if (notScrollable && !notScrollable.__craterWheelListener) {
+                        notScrollable.addEventListener("wheel", window.recordWheelEvent);
+                        notScrollable.__craterWheelListener = true;
+                    }
+                    if (scrollable && !scrollable.__craterWheelListener) {
+                        scrollable.addEventListener("wheel", window.recordWheelEvent);
+                        scrollable.__craterWheelListener = true;
+                    }
+
+                    const iframe = ensure("iframe", "iframe");
+                    setStyle(iframe, { width: "100px", height: "100px" });
+                    if (iframe && !iframe.__craterWheelIframeSetup) {
+                        iframe.srcdoc = `
+                          <script>
+                            document.scrollingElement.addEventListener("wheel", event => {
+                              window.parent.recordWheelEvent({
+                                type: event.type,
+                                button: event.button,
+                                buttons: event.buttons,
+                                pageX: event.pageX,
+                                pageY: event.pageY,
+                                deltaX: event.deltaX,
+                                deltaY: event.deltaY,
+                                deltaZ: event.deltaZ,
+                                deltaMode: event.deltaMode,
+                                target: { id: "iframeContent" },
+                                altKey: event.altKey,
+                                ctrlKey: event.ctrlKey,
+                                metaKey: event.metaKey,
+                                shiftKey: event.shiftKey,
+                              });
+                            });
+                          </script>
+                          <div id="iframeContent" style="width:7500px;height:7500px;background-color:blue"></div>
+                        `;
+                        iframe.__craterWheelIframeSetup = true;
+                    }
                     return null;
                 }""",
                 target=ContextTarget(context["context"]),
@@ -6609,7 +8069,7 @@ def test_page(inline):
 
 
 @pytest.fixture
-def get_test_page(iframe, inline):
+def get_test_page(iframe, inline, url):
     """Generate a node-rich page compatible with BiDi script node tests."""
 
     def _get_test_page(
@@ -6630,6 +8090,17 @@ def get_test_page(iframe, inline):
 
         if shadow_doc is None:
             shadow_doc = """<div id="in-shadow-dom"><input type="checkbox"/></div>"""
+
+        protocol = kwargs.get("protocol")
+        if isinstance(protocol, str) and protocol in {"http", "https"}:
+            domain = kwargs.get("domain", "")
+            subdomain = kwargs.get("subdomain", "")
+            return url(
+                "/webdriver/tests/support/empty.html",
+                domain=domain if isinstance(domain, str) else "",
+                protocol=protocol,
+                subdomain=subdomain if isinstance(subdomain, str) else "",
+            )
 
         definition_inner_shadow_dom = ""
         inner_shadow_doc = shadow_doc

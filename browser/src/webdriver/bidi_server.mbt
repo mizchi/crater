@@ -20,7 +20,7 @@ pub fn BidiServerConfig::default() -> BidiServerConfig {
 /// BiDi server state
 pub struct BidiServer {
   config : BidiServerConfig
-  protocol : BidiProtocol
+  priv protocol : BidiProtocol
   mut server : @core.Any?
 }
 
@@ -263,6 +263,132 @@ extern "js" fn js_evaluate_expression(
   #| (expression, captureConsole, userActivation, rootOwnership, serializationOptionsJson) => {
   #|   const consoleEntries = [];
   #|   let originalConsole = null;
+  #|   const resolveCurrentLogUrl = () => {
+  #|     try {
+  #|       if (globalThis.location && typeof globalThis.location.href === "string" && globalThis.location.href !== "") {
+  #|         return String(globalThis.location.href);
+  #|       }
+  #|     } catch (_e) {}
+  #|     try {
+  #|       if (typeof globalThis.__pageUrl === "string" && globalThis.__pageUrl !== "") {
+  #|         return String(globalThis.__pageUrl);
+  #|       }
+  #|     } catch (_e) {}
+  #|     return "about:blank";
+  #|   };
+  #|   const resolveInlineScriptOffsets = () => {
+  #|     const url = resolveCurrentLogUrl();
+  #|     if (!url.startsWith("data:")) {
+  #|       return { lineOffset: 0, columnOffset: 0 };
+  #|     }
+  #|     try {
+  #|       const comma = url.indexOf(",");
+  #|       if (comma < 0) return { lineOffset: 0, columnOffset: 0 };
+  #|       const meta = url.slice(0, comma).toLowerCase();
+  #|       const payload = url.slice(comma + 1);
+  #|       let decoded = "";
+  #|       if (meta.includes(";base64")) {
+  #|         decoded = atob(payload);
+  #|       } else {
+  #|         decoded = decodeURIComponent(payload);
+  #|       }
+  #|       const lines = decoded.replace(/\r\n/g, "\n").split("\n");
+  #|       let inScript = false;
+  #|       for (let index = 0; index < lines.length; index++) {
+  #|         const line = String(lines[index] || "");
+  #|         const lower = line.toLowerCase();
+  #|         if (!inScript) {
+  #|           if (lower.includes("<script")) {
+  #|             inScript = true;
+  #|           }
+  #|           continue;
+  #|         }
+  #|         if (lower.includes("</script")) break;
+  #|         if (line.trim() === "") continue;
+  #|         const indentMatch = line.match(/^(\s*)/);
+  #|         return {
+  #|           lineOffset: index + 1,
+  #|           columnOffset: indentMatch ? indentMatch[1].length : 0,
+  #|         };
+  #|       }
+  #|     } catch (_e) {}
+  #|     return { lineOffset: 0, columnOffset: 0 };
+  #|   };
+  #|   const inlineScriptOffsets = resolveInlineScriptOffsets();
+  #|   const buildStackTraceFromStack = (stackText) => {
+  #|     const frames = [];
+  #|     const stack = String(stackText || "");
+  #|     const lines = stack.split("\n");
+  #|     for (let i = 0; i < lines.length; i++) {
+  #|       const rawLine = String(lines[i] || "").trim();
+  #|       if (!rawLine.startsWith("at ")) continue;
+  #|       const body = rawLine.slice(3);
+  #|       let functionName = "";
+  #|       let location = body;
+  #|       const withParens = body.match(/^(.*?)\s+\((.*)\)$/);
+  #|       if (withParens) {
+  #|         functionName = String(withParens[1] || "");
+  #|         location = String(withParens[2] || "");
+  #|       } else {
+  #|         functionName = "";
+  #|         location = body;
+  #|       }
+  #|       if (
+  #|         functionName.includes("pushConsoleEntry") ||
+  #|         functionName.includes("makeInterceptor")
+  #|       ) {
+  #|         continue;
+  #|       }
+  #|       let lineNumber = 0;
+  #|       let columnNumber = 0;
+  #|       let url = resolveCurrentLogUrl();
+  #|       const anonymousLocationMatch = location.match(/<anonymous>:(\d+):(\d+)$/);
+  #|       if (anonymousLocationMatch) {
+  #|         const leadingColumnOffset = frames.length === 0
+  #|           ? Number(inlineScriptOffsets.columnOffset || 0)
+  #|           : 0;
+  #|         lineNumber = Number(anonymousLocationMatch[1]) + Number(inlineScriptOffsets.lineOffset || 0);
+  #|         columnNumber = Math.max(
+  #|           0,
+  #|           Number(anonymousLocationMatch[2]) + leadingColumnOffset - 1,
+  #|         );
+  #|       } else {
+  #|         const locationMatch = location.match(/^(.*):(\d+):(\d+)$/);
+  #|         if (!locationMatch) continue;
+  #|         url = String(locationMatch[1] || "");
+  #|         if (url.includes("bidi_main.js")) continue;
+  #|         lineNumber = Number(locationMatch[2]);
+  #|         columnNumber = Math.max(0, Number(locationMatch[3]) - 1);
+  #|       }
+  #|       if (functionName === "eval") {
+  #|         functionName = "";
+  #|       }
+  #|       frames.push({
+  #|         columnNumber,
+  #|         functionName,
+  #|         lineNumber,
+  #|         url,
+  #|       });
+  #|       if (frames.length >= 3) break;
+  #|     }
+  #|     return { callFrames: frames };
+  #|   };
+  #|   const pushJavascriptErrorEntry = (errorValue) => {
+  #|     if (!captureConsole) return;
+  #|     const stackTrace = buildStackTraceFromStack(errorValue && errorValue.stack ? errorValue.stack : "");
+  #|     const entry = {
+  #|       type: "javascript",
+  #|       level: "error",
+  #|       text: String(errorValue),
+  #|       timestamp: Date.now(),
+  #|       realm: String(globalThis.__bidiCurrentRealm || ""),
+  #|     };
+  #|     if (Array.isArray(stackTrace.callFrames) && stackTrace.callFrames.length > 0) {
+  #|       entry.stackTrace = stackTrace;
+  #|     }
+  #|     consoleEntries.push(entry);
+  #|   };
+  #|   globalThis.__bidiPushJavascriptErrorEntry = pushJavascriptErrorEntry;
   #|   if (captureConsole) {
   #|     originalConsole = {
   #|       log: console.log,
@@ -289,13 +415,20 @@ extern "js" fn js_evaluate_expression(
   #|     };
   #|
   #|     const pushConsoleEntry = (level, method, args, textArgs = args) => {
-  #|       consoleEntries.push({
+  #|       const stackTrace = buildStackTraceFromStack(new Error().stack || "");
+  #|       const entry = {
+  #|         type: "console",
   #|         level,
   #|         method,
   #|         text: textArgs.map(consoleArgToText).join(" "),
   #|         args: args.map(toBidiValue),
-  #|         timestamp: Date.now()
-  #|       });
+  #|         timestamp: Date.now(),
+  #|         realm: String(globalThis.__bidiCurrentRealm || ""),
+  #|       };
+  #|       if (Array.isArray(stackTrace.callFrames) && stackTrace.callFrames.length > 0) {
+  #|         entry.stackTrace = stackTrace;
+  #|       }
+  #|       consoleEntries.push(entry);
   #|     };
   #|
   #|     // Intercept console calls
@@ -767,7 +900,50 @@ extern "js" fn js_evaluate_expression(
   #|           child.ownerDocument = this.ownerDocument;
   #|           this._children.push(child);
   #|           notifyMutation(createMutationRecord('childList', this, { addedNodes: [child], previousSibling: prevSibling }));
+  #|           try {
+  #|             const childTag = String(child && child.tagName ? child.tagName : "").toUpperCase();
+  #|             const parentTag = String(this && this.tagName ? this.tagName : "").toUpperCase();
+  #|             if (
+  #|               childTag === "SCRIPT" &&
+  #|               (parentTag === "BODY" || parentTag === "HEAD" || parentTag === "HTML")
+  #|             ) {
+  #|               const code = String(child.textContent || "");
+  #|               if (code.trim() !== "") {
+  #|                 try {
+  #|                   (0, eval)(code);
+  #|                 } catch (scriptError) {
+  #|                   const pushError = globalThis.__bidiPushJavascriptErrorEntry;
+  #|                   if (typeof pushError === "function") {
+  #|                     pushError(scriptError);
+  #|                   }
+  #|                 }
+  #|               }
+  #|             }
+  #|           } catch (_e) {}
   #|           return child;
+  #|         },
+  #|         append(...nodes) {
+  #|           for (const node of nodes) {
+  #|             if (node === null || node === undefined) continue;
+  #|             if (
+  #|               typeof node === "string" ||
+  #|               typeof node === "number" ||
+  #|               typeof node === "boolean" ||
+  #|               typeof node === "bigint"
+  #|             ) {
+  #|               this.appendChild(createMockTextNode(String(node)));
+  #|               continue;
+  #|             }
+  #|             if (node.nodeType === 11 && Array.isArray(node._children)) {
+  #|               const fragmentChildren = Array.from(node._children);
+  #|               for (const fragmentChild of fragmentChildren) {
+  #|                 this.appendChild(fragmentChild);
+  #|               }
+  #|               node._children = [];
+  #|               continue;
+  #|             }
+  #|             this.appendChild(node);
+  #|           }
   #|         },
   #|         insertBefore(newChild, refChild) {
   #|           if (newChild._parent) newChild._parent.removeChild(newChild);
@@ -2954,14 +3130,18 @@ extern "js" fn js_evaluate_expression(
   #|       consoleEntries,
   #|     });
   #|   } catch (e) {
+  #|     const stackTrace = buildStackTraceFromStack(e && e.stack ? e.stack : "");
+  #|     const topFrame = Array.isArray(stackTrace.callFrames) && stackTrace.callFrames.length > 0
+  #|       ? stackTrace.callFrames[0]
+  #|       : null;
   #|     return JSON.stringify({
   #|       type: "exception",
   #|       exceptionDetails: {
-  #|         columnNumber: 0,
-  #|         lineNumber: 0,
+  #|         columnNumber: topFrame ? Number(topFrame.columnNumber || 0) : 0,
+  #|         lineNumber: topFrame ? Number(topFrame.lineNumber || 0) : 0,
   #|         text: String(e),
   #|         exception: toBidiValueFn(e, !!rootOwnership),
-  #|         stackTrace: { callFrames: [] }
+  #|         stackTrace
   #|       },
   #|       consoleEntries
   #|     });
@@ -5167,8 +5347,17 @@ extern "js" fn js_input_dispatch_key_action(
   #|     "\uE006": { key: "Enter", code: "Enter", which: 13, location: 0, printable: false, text: "" },
   #|     "\uE007": { key: "Enter", code: "NumpadEnter", which: 13, location: 1, printable: false, text: "" },
   #|     "\uE008": { key: "Shift", code: "ShiftLeft", which: 16, location: 1, printable: false, text: "" },
+  #|     "Shift": { key: "Shift", code: "ShiftLeft", which: 16, location: 1, printable: false, text: "" },
+  #|     "ShiftLeft": { key: "Shift", code: "ShiftLeft", which: 16, location: 1, printable: false, text: "" },
+  #|     "shift": { key: "Shift", code: "ShiftLeft", which: 16, location: 1, printable: false, text: "" },
   #|     "\uE009": { key: "Control", code: "ControlLeft", which: 17, location: 1, printable: false, text: "" },
+  #|     "Control": { key: "Control", code: "ControlLeft", which: 17, location: 1, printable: false, text: "" },
+  #|     "ControlLeft": { key: "Control", code: "ControlLeft", which: 17, location: 1, printable: false, text: "" },
+  #|     "control": { key: "Control", code: "ControlLeft", which: 17, location: 1, printable: false, text: "" },
   #|     "\uE00A": { key: "Alt", code: "AltLeft", which: 18, location: 1, printable: false, text: "" },
+  #|     "Alt": { key: "Alt", code: "AltLeft", which: 18, location: 1, printable: false, text: "" },
+  #|     "AltLeft": { key: "Alt", code: "AltLeft", which: 18, location: 1, printable: false, text: "" },
+  #|     "alt": { key: "Alt", code: "AltLeft", which: 18, location: 1, printable: false, text: "" },
   #|     "\uE00B": { key: "Pause", code: "Pause", location: 0, printable: false, text: "" },
   #|     "\uE00C": { key: "Escape", code: "Escape", which: 27, location: 0, printable: false, text: "" },
   #|     "\uE00D": { key: " ", code: "Space", which: 32, location: 0, printable: true, text: " " },
@@ -5213,6 +5402,9 @@ extern "js" fn js_input_dispatch_key_action(
   #|     "\uE03B": { key: "F11", code: "F11", location: 0, printable: false, text: "" },
   #|     "\uE03C": { key: "F12", code: "F12", location: 0, printable: false, text: "" },
   #|     "\uE03D": { key: "Meta", code: "MetaLeft", which: 91, location: 1, printable: false, text: "" },
+  #|     "Meta": { key: "Meta", code: "MetaLeft", which: 91, location: 1, printable: false, text: "" },
+  #|     "MetaLeft": { key: "Meta", code: "MetaLeft", which: 91, location: 1, printable: false, text: "" },
+  #|     "meta": { key: "Meta", code: "MetaLeft", which: 91, location: 1, printable: false, text: "" },
   #|     "\uE040": { key: "ZenkakuHankaku", code: "", location: 0, printable: false, text: "" },
   #|     "\uE050": { key: "Shift", code: "ShiftRight", which: 16, location: 2, printable: false, text: "" },
   #|     "\uE051": { key: "Control", code: "ControlRight", which: 17, location: 2, printable: false, text: "" },
