@@ -41,15 +41,19 @@
   - [x] context tree / userContext の仲介 state 削減
   - [x] preload / realm fixture cleanup (`session.resetForTest`, `script.removeAllPreloadScripts`)
   - [x] preload / realm / evaluate 補助の移行
+  - [x] `browsingContext.captureScreenshot` の synthetic output を MoonBit 化
+  - [x] `browsingContext.print` の synthetic output を MoonBit 化
   - [x] `script.evaluate` の file dialog synthetic glue を MoonBit 化
   - [x] `script.evaluate` の `registerServiceWorker()` no-op を MoonBit 化
   - [x] `script.evaluate` の document dimensions 補正を MoonBit 化
   - [x] `input.set_files` 用の context-scoped `window.allEvents.events` 補助を MoonBit 化
+  - [x] `script.callFunction` の focus / scroll fallback を MoonBit 化
 - [ ] P3: adapter を pytest plugin / fixture glue のみに縮小する
   - [x] `network.continueRequest / continueResponse / continueWithAuth / provideResponse / failRequest` を MoonBit 実装へ置換
   - [x] `network.failRequest` の blocked state consume / `fetchError` payload を MoonBit command 化
   - [ ] `browsingContext` / `script` / `session` の protocol command 実装を Python から除去
   - [ ] synthetic state を最小化
+    - [x] `_synthetic_scrolled_contexts` を削除して MoonBit state に統合
 - [ ] P4: tooling の `.ts` を整理する
   - [ ] runner を残すか MoonBit/just に寄せるか判断
   - [ ] CI 集計やレポート生成の責務を分離
@@ -80,9 +84,13 @@
 - [x] `script.evaluate` の `allEvents` normalize / dedupe を MoonBit に移行
 - [x] `network.resolveMatchingIntercepts` を MoonBit に追加して adapter の intercept mirror を削除
 - [x] `network.rememberCollectedData / getData / disownData` を MoonBit に追加して adapter の collector mirror を削除
+- [x] `browsingContext.captureScreenshot` の synthetic output を MoonBit に移行
+- [x] `browsingContext.print` の synthetic output を MoonBit に移行
+- [x] `script.callFunction` の focus / scroll fallback を MoonBit に移行
 - [x] `input/file_dialog_opened --quick` / `browsing_context/capture_screenshot --quick` / `network/{before_request_sent,response_started,response_completed} --quick` / `integration --quick` で回帰確認
 - [x] `input/set_files --quick` / `input/file_dialog_opened --quick` / `strict` で input synthetic event 移行の回帰確認
 - [x] `script/add_preload_script --quick` / `script/get_realms --quick` / `script/realm_created --quick` / `integration --quick` / `strict` で preload/realm fixture 移行の回帰確認
+- [x] `browsing_context/capture_screenshot --quick` / `browsing_context/print --quick` / `integration --quick` / `strict` で回帰確認
 
 ### 次の具体タスク
 
@@ -90,6 +98,7 @@
 - [x] WPT 向け URL 正規化を MoonBit 側へ移して adapter 依存を減らす
 - [x] `context_user_context / context_parent` の Python mirror を `browsingContext.getContextScopeInfo` / `session.isSubscribedForContext` ベースに削減する
 - [ ] `browsingContext` / `script` / `session` に残る local validation と fixture glue を MoonBit command に置き換える
+  - `captureScreenshot` / `print` / `script.callFunction` の主要な synthetic path は移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
 

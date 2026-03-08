@@ -141,6 +141,7 @@ priv struct BidiProtocol {
   input_pending_double_click : Map[String, Bool] // context -> whether current click sequence should emit dblclick
   input_action_clock_ms : Map[String, Double] // context -> virtual input clock advanced by pause durations
   input_synthetic_events_by_context : Map[String, Array[Json]] // context -> synthetic window.allEvents.events entries
+  context_synthetic_scrolled : Map[String, Bool] // context -> synthetic scroll fallback applied
   network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
   mut next_network_intercept_id : Int
   mut network_cache_behavior_global : String
@@ -240,6 +241,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     input_pending_double_click: {},
     input_action_clock_ms: {},
     input_synthetic_events_by_context: {},
+    context_synthetic_scrolled: {},
     network_intercepts: {},
     next_network_intercept_id: 1,
     network_cache_behavior_global: "default",
@@ -1455,6 +1457,7 @@ fn BidiProtocol::dispatch_browsing_context(
         ctx_id, url,
       )
       self.input_synthetic_events_by_context.remove(ctx_id)
+      self.context_synthetic_scrolled.remove(ctx_id)
       self.clear_synthetic_location_href(ctx_id)
       let _ = self.fail_in_flight_navigation(
         ctx_id, "aborted", "Navigation interrupted by another navigation",
@@ -1617,6 +1620,7 @@ fn BidiProtocol::dispatch_browsing_context(
         return Ok(())
       }
       self.input_synthetic_events_by_context.remove(ctx_id)
+      self.context_synthetic_scrolled.remove(ctx_id)
       self.clear_synthetic_location_href(ctx_id)
       let _ = self.fail_in_flight_navigation(
         ctx_id, "aborted", "Navigation interrupted by reload",
@@ -2771,14 +2775,11 @@ fn BidiProtocol::handle_capture_screenshot(
     return
   }
 
-  let mut format_type = "image/png"
-  let mut quality = 1.0
   match params.get("format") {
     None => ()
     Some(Object(format)) => {
-      format_type = match format.get("type") {
-        Some(String("image/png")) => "image/png"
-        Some(String("image/jpeg")) => "image/jpeg"
+      match format.get("type") {
+        Some(String("image/png")) | Some(String("image/jpeg")) => ()
         Some(String(_)) => {
           self.send_error(
             request.id,
@@ -2800,7 +2801,7 @@ fn BidiProtocol::handle_capture_screenshot(
       match format.get("quality") {
         Some(value) =>
           match json_as_safe_number(value, 0.0, 1.0) {
-            Some(parsed) => quality = parsed
+            Some(_) => ()
             None => {
               self.send_error(
                 request.id,
@@ -2823,13 +2824,37 @@ fn BidiProtocol::handle_capture_screenshot(
     }
   }
 
-  let data = if format_type == "image/jpeg" {
-    synthetic_capture_screenshot_jpeg(quality)
-  } else {
-    synthetic_capture_screenshot_png()
+  match self.build_synthetic_capture_screenshot_result(ctx_id, request.params) {
+    Some(Object(result_map)) =>
+      match result_map.get("error") {
+        Some(String(error_name)) => {
+          let message = match result_map.get("message") {
+            Some(String(message)) => message
+            _ => "Unable to capture screenshot"
+          }
+          self.send_error(request.id, error_name, message)
+        }
+        _ =>
+          match result_map.get("data") {
+            Some(String(data)) => {
+              let result = make_object({ "data": Json::string(data) })
+              self.send_success(request.id, Some(result))
+            }
+            _ =>
+              self.send_error(
+                request.id,
+                "unknown error",
+                "Failed to build synthetic screenshot",
+              )
+          }
+      }
+    _ =>
+      self.send_error(
+        request.id,
+        "unknown error",
+        "Failed to build synthetic screenshot",
+      )
   }
-  let result = make_object({ "data": Json::string(data) })
-  self.send_success(request.id, Some(result))
 }
 
 ///|
@@ -3034,7 +3059,81 @@ fn BidiProtocol::handle_print(
     }
   }
 
-  let result = make_object({ "data": Json::string(synthetic_print_pdf()) })
+  let orientation = match params.get("orientation") {
+    Some(String("landscape")) => "landscape"
+    _ => "portrait"
+  }
+  let mut page_width_cm = 21.59
+  let mut page_height_cm = 27.94
+  match params.get("page") {
+    Some(Object(page)) => {
+      match page.get("width") {
+        Some(Number(width, ..)) => page_width_cm = width
+        _ => ()
+      }
+      match page.get("height") {
+        Some(Number(height, ..)) => page_height_cm = height
+        _ => ()
+      }
+    }
+    _ => ()
+  }
+  if orientation == "landscape" {
+    let current_width = page_width_cm
+    page_width_cm = page_height_cm
+    page_height_cm = current_width
+  }
+  let mut margin_top = 0.0
+  let mut margin_bottom = 0.0
+  let mut margin_left = 0.0
+  let mut margin_right = 0.0
+  match params.get("margin") {
+    Some(Object(margin)) => {
+      match margin.get("top") {
+        Some(Number(value, ..)) => margin_top = value
+        _ => ()
+      }
+      match margin.get("bottom") {
+        Some(Number(value, ..)) => margin_bottom = value
+        _ => ()
+      }
+      match margin.get("left") {
+        Some(Number(value, ..)) => margin_left = value
+        _ => ()
+      }
+      match margin.get("right") {
+        Some(Number(value, ..)) => margin_right = value
+        _ => ()
+      }
+    }
+    _ => ()
+  }
+  if margin_top >= page_height_cm ||
+    margin_bottom >= page_height_cm ||
+    margin_left >= page_width_cm ||
+    margin_right >= page_width_cm {
+    self.send_error(
+      request.id,
+      "unsupported operation",
+      "Margin consumes entire printable area",
+    )
+    return
+  }
+  let background = match params.get("background") {
+    Some(True) => true
+    _ => false
+  }
+  let meta = make_object({
+    "kind": Json::string("crater.synthetic.print"),
+    "orientation": Json::string(orientation),
+    "pageWidthCm": Json::number(page_width_cm),
+    "pageHeightCm": Json::number(page_height_cm),
+    "background": Json::boolean(background),
+    "signature": Json::string(self.current_context_url(ctx_id)),
+  })
+  let result = make_object({
+    "data": Json::string(synthetic_print_pdf_from_meta(meta)),
+  })
   self.send_success(request.id, Some(result))
 }
 
@@ -3047,24 +3146,35 @@ fn is_valid_print_page_range(raw : String) -> Bool {
   }
   match find_substring(value, "-", 0) {
     Some(first_dash) => {
-      if first_dash <= 0 || first_dash >= value.length() - 1 {
-        return false
-      }
       match find_substring(value, "-", first_dash + 1) {
         Some(_) => return false
         None => ()
       }
-      let start_text = value[:first_dash].to_string() catch { _ => "" }
-      let end_text = value[first_dash + 1:].to_string() catch { _ => "" }
-      let start = match parse_decimal_string(start_text) {
-        Some(v) => v
-        None => return false
+      if first_dash == 0 {
+        let end_text = value[1:].to_string() catch { _ => "" }
+        match parse_decimal_string(end_text) {
+          Some(v) => v >= 1
+          None => false
+        }
+      } else if first_dash == value.length() - 1 {
+        let start_text = value[:first_dash].to_string() catch { _ => "" }
+        match parse_decimal_string(start_text) {
+          Some(v) => v >= 1
+          None => false
+        }
+      } else {
+        let start_text = value[:first_dash].to_string() catch { _ => "" }
+        let end_text = value[first_dash + 1:].to_string() catch { _ => "" }
+        let start = match parse_decimal_string(start_text) {
+          Some(v) => v
+          None => return false
+        }
+        let end = match parse_decimal_string(end_text) {
+          Some(v) => v
+          None => return false
+        }
+        start >= 1 && end >= 1 && start <= end
       }
-      let end = match parse_decimal_string(end_text) {
-        Some(v) => v
-        None => return false
-      }
-      start >= 1 && end >= 1 && start <= end
     }
     None =>
       match parse_decimal_string(value) {
@@ -3072,28 +3182,6 @@ fn is_valid_print_page_range(raw : String) -> Bool {
         None => false
       }
   }
-}
-
-///|
-/// Placeholder PNG data used for screenshot bootstrapping.
-fn synthetic_capture_screenshot_png() -> String {
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg=="
-}
-
-///|
-/// Placeholder JPEG data used for screenshot format validation tests.
-fn synthetic_capture_screenshot_jpeg(quality : Double) -> String {
-  if quality >= 0.5 {
-    "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxAQEBAQEA8QDw8PDw8PDw8PDw8PDw8PFREWFhURExUYHSggGBolGxUVITEhJSkrLi4uFx8zODMsNygtLisBCgoKDg0OFQ8PFS0dFR0tKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAAEAAgMBIgACEQEDEQH/xAAUAAEAAAAAAAAAAAAAAAAAAAAJ/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEAMQAAAAqA//xAAUEAEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAEFAqf/xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAEDAQE/Aaf/xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAECAQE/Aaf/xAAUEAEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAY/Aqf/xAAUEAEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAE/IV//2Q=="
-  } else {
-    "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDIBCQkJDAsMGA0NGDIhHCEyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMv/AABEIAAEAAgMBIgACEQEDEQH/xAAUAAEAAAAAAAAAAAAAAAAAAAAJ/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEAMQAAAAiA//xAAUEAEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAEFAn//xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAEDAQE/Aaf/xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAECAQE/Aaf/xAAUEAEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAY/An//xAAUEAEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAE/Ib//2Q=="
-  }
-}
-
-///|
-/// Placeholder PDF data used for print bootstrapping.
-fn synthetic_print_pdf() -> String {
-  "JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9Db3VudCAxCi9LaWRzIFsgMyAwIFIgXQo+PgplbmRvYmoKMyAwIG9iago8PAovVHlwZSAvUGFnZQovUGFyZW50IDIgMCBSCi9NZWRpYUJveCBbMCAwIDYxMiA3OTJdCi9Db250ZW50cyA0IDAgUgo+PgplbmRvYmoKNCAwIG9iago8PAovTGVuZ3RoIDAKPj4Kc3RyZWFtCgplbmRzdHJlYW0KZW5kb2JqCnRyYWlsZXIKPDwKL1Jvb3QgMSAwIFIKPj4KJSVFT0Y="
 }
 
 ///|
@@ -4974,9 +5062,24 @@ fn BidiProtocol::dispatch_script(
             "realm": Json::string(realm_id_call),
             "result": bidi_value,
           })
+          if should_capture_focus_target(func, bidi_value) {
+            self.remember_focused_element_remote(bidi_value)
+          }
           self.send_success(request.id, Some(result))
         }
         Some("exception") => {
+          if self.try_send_synthetic_scroll_call_fallback(
+              request.id,
+              ctx_id_call,
+              realm_id_call,
+              func,
+              capture_console_call,
+              user_activation_call,
+              root_ownership_call,
+              serialization_options_json_call,
+            ) {
+            return Ok(())
+          }
           let exc_details = get_field(eval_result, "exceptionDetails").unwrap_or(
             make_object({}),
           )
@@ -10703,6 +10806,7 @@ fn BidiProtocol::clear_input_state_for_context(
   self.input_pending_double_click.remove(ctx_id)
   self.input_action_clock_ms.remove(ctx_id)
   self.input_synthetic_events_by_context.remove(ctx_id)
+  self.context_synthetic_scrolled.remove(ctx_id)
 }
 
 ///|
