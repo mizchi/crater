@@ -165,3 +165,50 @@ test "bidi print embeds synthetic pdf metadata" {
     _ => assert_true(false)
   }
 }
+
+///|
+test "bidi print validates shrink_to_fit alias" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.print\",\"params\":{\"context\":\"session-1\",\"shrink_to_fit\":{}}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"message\":\"shrinkToFit must be a boolean\""))
+}
+
+///|
+test "bidi locateNodes validates max_node_count alias" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div>foo</div>\",\"wait\":\"complete\"}}",
+    ),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"browsingContext.locateNodes\",\"params\":{\"context\":\"session-1\",\"locator\":{\"type\":\"css\",\"value\":\"div\"},\"max_node_count\":0}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(
+    json.contains(
+      "\"message\":\"maxNodeCount must be an integer in [1, 9007199254740991]\"",
+    ),
+  )
+}

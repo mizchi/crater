@@ -60,6 +60,7 @@
 - [x] `session.subscribe / unsubscribe` の `user_contexts` alias を MoonBit で受理
 - [x] `script.evaluate / callFunction` の `await_promise / result_ownership / user_activation / function_declaration / serialization_options` alias を MoonBit で受理
 - [x] `browsingContext.setViewport` / `network.setExtraHeaders` / `browser.setDownloadBehavior` の `user_contexts` alias を MoonBit で受理
+- [x] `browser.createUserContext` と `browsingContext.{print,locateNodes}` の snake_case alias を MoonBit で受理
 - [ ] P3: adapter を pytest plugin / fixture glue のみに縮小する
   - [x] `network.continueRequest / continueResponse / continueWithAuth / provideResponse / failRequest` を MoonBit 実装へ置換
   - [x] `network.failRequest` の blocked state consume / `fetchError` payload を MoonBit command 化
@@ -127,6 +128,13 @@
 - [x] `session.subscribe / unsubscribe` と `script.evaluate / callFunction` の snake_case alias を protocol 側で受理して adapter の camelCase 変換を削除
 - [x] `session/{subscribe,unsubscribe} --quick` / `script/{evaluate,call_function} --quick` / `integration --quick` / `strict` で alias 移行の回帰確認
 - [x] `browsing_context/set_viewport --quick` / `network/set_extra_headers --quick` / `browser/set_download_behavior --quick` / `integration --quick` / `strict` で `user_contexts` alias 移行の回帰確認
+- [x] `browsing_context/{print,capture_screenshot,locate_nodes} --quick` / `browser/create_user_context --quick` / `integration --quick` / `strict` で wrapper 簡略化の回帰確認
+- [x] `network.performSyntheticFetch` を追加して `fetch` fixture の synthetic request sequence を MoonBit に移行
+- [x] adapter から synthetic fetch 用 helper / event emit を削除
+- [x] `network --quick` / `integration --quick` / `strict` で fetch 移行の回帰確認
+- [x] `network.continueBlockedResponse` に `provideResponse` body override を実装して document/script/style の runtime 反映を MoonBit に移行
+- [x] adapter から `provideResponse` body override の post-processing を削除
+- [x] `network/provide_response/body --quick` / `network/provide_response --quick` / `network --quick` / `integration --quick` / `strict` で回帰確認
 
 ### 次の具体タスク
 
@@ -143,6 +151,10 @@
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
   - `browsingContext` の `_last_navigated_url` と session の `_known_user_contexts` は削除済み
+  - `NetworkModule` の `continue/provide/fail/auth` event emit と preflight follow-up は MoonBit 側へ移行済み
+  - `fetch` fixture の synthetic request sequence / redirect / preflight / blocked state / collected data は MoonBit 側へ移行済み
+  - `provideResponse` の body override は MoonBit 側へ移行済み
+  - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ## WPT サポート状況（2026-03-03）
 

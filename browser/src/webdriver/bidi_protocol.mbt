@@ -1074,7 +1074,12 @@ fn BidiProtocol::dispatch_browser(
       }
       let id = "user-" + self.user_contexts.length().to_string()
       self.user_contexts[id] = true
-      match get_param_raw(request.params, "unhandledPromptBehavior") {
+      match
+        get_param_raw_with_alias(
+          request.params,
+          "unhandledPromptBehavior",
+          "unhandled_prompt_behavior",
+        ) {
         Some(Object(behavior)) =>
           self.user_context_prompt_behavior[id] = make_object(behavior)
         _ => ()
@@ -3501,7 +3506,7 @@ fn BidiProtocol::handle_print(
     }
   }
 
-  match params.get("pageRanges") {
+  match get_map_field_with_alias(params, "pageRanges", "page_ranges") {
     None => ()
     Some(Array(page_ranges)) =>
       for page_range in page_ranges {
@@ -3557,7 +3562,7 @@ fn BidiProtocol::handle_print(
       }
   }
 
-  match params.get("shrinkToFit") {
+  match get_map_field_with_alias(params, "shrinkToFit", "shrink_to_fit") {
     Some(True) | Some(False) | None => ()
     Some(_) => {
       self.send_error(
@@ -3856,7 +3861,8 @@ fn BidiProtocol::handle_locate_nodes(
     None => ()
   }
 
-  let max_node_count = match params.get("maxNodeCount") {
+  let max_node_count = match
+    get_map_field_with_alias(params, "maxNodeCount", "max_node_count") {
     Some(value) =>
       match json_as_safe_int(value, 1.0, 9007199254740991.0) {
         Some(parsed) => parsed
@@ -3873,7 +3879,7 @@ fn BidiProtocol::handle_locate_nodes(
   }
 
   let start_node_shared_ids : Array[String] = []
-  match params.get("startNodes") {
+  match get_map_field_with_alias(params, "startNodes", "start_nodes") {
     Some(Array(nodes)) => {
       if nodes.length() == 0 {
         self.send_error(
@@ -7853,6 +7859,10 @@ fn BidiProtocol::dispatch_network(
     }
     "prepareNavigationRequest" => {
       self.handle_network_prepare_navigation_request(request.id, request.params)
+      Ok(())
+    }
+    "performSyntheticFetch" => {
+      self.handle_network_perform_synthetic_fetch(request.id, request.params)
       Ok(())
     }
     "emitNavigationRequestSequence" => {
@@ -14454,7 +14464,10 @@ fn BidiProtocol::validate_browser_create_user_context(
   match params {
     None => ()
     Some(Object(map)) => {
-      match map.get("acceptInsecureCerts") {
+      match
+        get_map_field_with_alias(
+          map, "acceptInsecureCerts", "accept_insecure_certs",
+        ) {
         Some(True) | Some(False) => ()
         Some(_) => {
           self.send_error(
@@ -14480,7 +14493,10 @@ fn BidiProtocol::validate_browser_create_user_context(
         None => ()
       }
 
-      match map.get("unhandledPromptBehavior") {
+      match
+        get_map_field_with_alias(
+          map, "unhandledPromptBehavior", "unhandled_prompt_behavior",
+        ) {
         Some(Object(behavior)) =>
           match
             self.validate_browser_unhandled_prompt_behavior(

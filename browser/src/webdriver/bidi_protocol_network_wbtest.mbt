@@ -760,3 +760,255 @@ test "bidi network getData and disownData use protocol collector store" {
   assert_true(missing_json.contains("\"type\":\"error\""))
   assert_true(missing_json.contains("\"error\":\"no such network data\""))
 }
+
+///|
+test "bidi network continueBlockedResponse emits subscribed events after success" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.responseStarted\",\"network.responseCompleted\",\"browsingContext.load\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-20\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/provide-response.html\",\"method\":\"GET\",\"request_headers\":{\"x-test\":\"ok\"},\"navigation\":\"navigation-20\",\"destination\":\"document\",\"is_navigation\":true}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-20\",\"mode\":\"provideResponse\",\"body\":{\"type\":\"string\",\"value\":\"<div>ok</div>\"},\"statusCode\":200,\"reasonPhrase\":\"OK\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 4)
+  assert_true(msgs[0].to_json().contains("\"type\":\"success\""))
+  assert_true(
+    msgs[1].to_json().contains("\"method\":\"network.responseStarted\""),
+  )
+  assert_true(
+    msgs[2].to_json().contains("\"method\":\"network.responseCompleted\""),
+  )
+  assert_true(msgs[3].to_json().contains("\"method\":\"browsingContext.load\""))
+}
+
+///|
+test "bidi network provideResponse applies document body override in protocol" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-20a\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/provide_response.html\",\"method\":\"GET\",\"request_headers\":{},\"navigation\":\"navigation-20a\",\"destination\":\"document\",\"is_navigation\":true}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-20a\",\"mode\":\"provideResponse\",\"body\":{\"type\":\"string\",\"value\":\"<div id=\\\"from-provide-response\\\"></div>\"},\"statusCode\":200,\"reasonPhrase\":\"OK\"}}",
+  )
+  let provide_msgs = proto.take_messages()
+  assert_true(provide_msgs[0].to_json().contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"!!document.getElementById('from-provide-response')\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let eval_json = proto.take_messages()[0].to_json()
+  assert_true(eval_json.contains("\"value\":true"))
+}
+
+///|
+test "bidi network provideResponse applies script body override in protocol" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-20b\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/provide_response.js\",\"method\":\"GET\",\"request_headers\":{},\"navigation\":\"navigation-20b\",\"destination\":\"script\",\"is_navigation\":true}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-20b\",\"mode\":\"provideResponse\",\"body\":{\"type\":\"string\",\"value\":\"window.isFromProvideResponse = true;\"},\"statusCode\":200,\"reasonPhrase\":\"OK\"}}",
+  )
+  let provide_msgs = proto.take_messages()
+  assert_true(provide_msgs[0].to_json().contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"window.isFromProvideResponse == true\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let eval_json = proto.take_messages()[0].to_json()
+  assert_true(eval_json.contains("\"value\":true"))
+}
+
+///|
+test "bidi network provideResponse applies style body override in protocol" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-20c\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/provide_response.css\",\"method\":\"GET\",\"request_headers\":{},\"navigation\":\"navigation-20c\",\"destination\":\"style\",\"is_navigation\":true}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-20c\",\"mode\":\"provideResponse\",\"body\":{\"type\":\"string\",\"value\":\"div { color: rgb(255, 0, 0) }\"},\"statusCode\":200,\"reasonPhrase\":\"OK\"}}",
+  )
+  let provide_msgs = proto.take_messages()
+  assert_true(provide_msgs[0].to_json().contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"(() => { const div = document.createElement('div'); document.body.appendChild(div); return window.getComputedStyle(div).color === 'rgb(255, 0, 0)'; })()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let eval_json = proto.take_messages()[0].to_json()
+  assert_true(eval_json.contains("\"value\":true"))
+}
+
+///|
+test "bidi network provideResponse emits followup preflight block in protocol" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-21\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"method\":\"OPTIONS\",\"request_headers\":{\"x-test\":\"ok\"},\"destination\":\"fetch\",\"initiator_type\":\"fetch\",\"is_navigation\":false}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-21\",\"mode\":\"provideResponse\",\"statusCode\":204,\"reasonPhrase\":\"No Content\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  assert_true(msgs[0].to_json().contains("\"type\":\"success\""))
+  assert_true(
+    msgs[1].to_json().contains("\"method\":\"network.beforeRequestSent\""),
+  )
+  assert_true(msgs[1].to_json().contains("\"request\":\"request-1\""))
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"network.getBlockedRequest\",\"params\":{\"request\":\"request-1\"}}",
+  )
+  let blocked_json = proto.take_messages()[0].to_json()
+  assert_true(blocked_json.contains("\"phase\":\"beforeRequestSent\""))
+  assert_true(blocked_json.contains("\"method\":\"GET\""))
+}
+
+///|
+test "bidi network failBlockedRequest emits subscribed fetchError after success" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.fetchError\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-22\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"method\":\"GET\",\"request_headers\":{},\"destination\":\"fetch\",\"initiator_type\":\"fetch\"}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.failBlockedRequest\",\"params\":{\"request\":\"request-22\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  assert_true(msgs[0].to_json().contains("\"type\":\"success\""))
+  assert_true(msgs[1].to_json().contains("\"method\":\"network.fetchError\""))
+}
+
+///|
+test "bidi network performSyntheticFetch blocks before request in protocol" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.performSyntheticFetch\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"method\":\"GET\",\"requestHeaders\":[]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  assert_true(
+    msgs[0].to_json().contains("\"method\":\"network.beforeRequestSent\""),
+  )
+  assert_true(msgs[1].to_json().contains("\"blocked\":true"))
+  assert_true(
+    msgs[1]
+    .to_json()
+    .contains("\"message\":\"Request blocked by network intercept\""),
+  )
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.getBlockedRequest\",\"params\":{\"request\":\"request-1\"}}",
+  )
+  let blocked_json = proto.take_messages()[0].to_json()
+  assert_true(blocked_json.contains("\"phase\":\"beforeRequestSent\""))
+  assert_true(blocked_json.contains("\"method\":\"GET\""))
+}
+
+///|
+test "bidi network performSyntheticFetch returns synthetic bytes payload" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.setExtraHeaders\",\"params\":{\"headers\":[{\"name\":\"x-global-only\",\"value\":{\"type\":\"string\",\"value\":\"g\"}}]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.responseCompleted\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.performSyntheticFetch\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/http_handlers/headers_echo.py\",\"method\":\"GET\",\"requestHeaders\":[{\"name\":\"x-request-only\",\"value\":{\"type\":\"string\",\"value\":\"r\"}}]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  assert_true(
+    msgs[0].to_json().contains("\"method\":\"network.responseCompleted\""),
+  )
+  assert_true(msgs[1].to_json().contains("\"blocked\":false"))
+  assert_true(msgs[1].to_json().contains("\\\"x-global-only\\\":[\\\"g\\\"]"))
+  assert_true(msgs[1].to_json().contains("\\\"x-request-only\\\":[\\\"r\\\"]"))
+}

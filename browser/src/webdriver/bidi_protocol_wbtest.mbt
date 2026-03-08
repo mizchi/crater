@@ -285,6 +285,24 @@ test "bidi browsingContext setViewport accepts user_contexts alias" {
 }
 
 ///|
+test "bidi browser createUserContext accepts snake_case aliases" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{\"accept_insecure_certs\":false,\"unhandled_prompt_behavior\":{\"default\":\"ignore\"}}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"userContext\":\"user-1\""))
+  let behavior = proto.user_context_prompt_behavior.get("user-1").unwrap()
+  assert_eq(behavior.stringify(), "{\"default\":\"ignore\"}")
+}
+
+///|
 test "bidi browsingContext getContextScopeInfo returns ancestry and user context" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
