@@ -41,7 +41,7 @@ test "bidi network buildBeforeRequestSentEvent resolves extra header scopes in p
   ignore(proto.take_messages())
 
   let _ = proto.process_message(
-    "{\"id\":3,\"method\":\"network.setExtraHeaders\",\"params\":{\"userContexts\":[\"default\"],\"headers\":[{\"name\":\"x-shared\",\"value\":{\"type\":\"string\",\"value\":\"user\"}},{\"name\":\"x-user-only\",\"value\":{\"type\":\"string\",\"value\":\"u\"}}]}}",
+    "{\"id\":3,\"method\":\"network.setExtraHeaders\",\"params\":{\"user_contexts\":[\"default\"],\"headers\":[{\"name\":\"x-shared\",\"value\":{\"type\":\"string\",\"value\":\"user\"}},{\"name\":\"x-user-only\",\"value\":{\"type\":\"string\",\"value\":\"u\"}}]}}",
   )
   ignore(proto.take_messages())
 

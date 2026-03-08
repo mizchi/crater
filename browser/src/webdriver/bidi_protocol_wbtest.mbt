@@ -263,6 +263,28 @@ test "bidi browsingContext createAndGetInfo accepts snake_case aliases" {
 }
 
 ///|
+test "bidi browsingContext setViewport accepts user_contexts alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.setViewport\",\"params\":{\"user_contexts\":[\"user-1\"],\"viewport\":{\"width\":640,\"height\":480}}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_eq(proto.user_context_viewport_width.get("user-1"), Some(640))
+  assert_eq(proto.user_context_viewport_height.get("user-1"), Some(480))
+}
+
+///|
 test "bidi browsingContext getContextScopeInfo returns ancestry and user context" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -516,6 +538,61 @@ test "bidi session subscribe returns subscription id" {
   let json = msgs[0].to_json()
   assert_true(
     json.contains("\"subscription\":\"00000000000000000000000000000001\""),
+  )
+}
+
+///|
+test "bidi session subscribe and unsubscribe accept user_contexts alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"log.entryAdded\"],\"user_contexts\":[\"user-1\"]}}",
+  )
+  let subscribe_json = proto.take_messages()[0].to_json()
+  assert_true(subscribe_json.contains("\"type\":\"success\""))
+  assert_eq(proto.user_context_subscriptions.get("user-1").unwrap_or([]), [
+    "log.entryAdded",
+  ])
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"session.unsubscribe\",\"params\":{\"events\":[\"log.entryAdded\"],\"user_contexts\":[\"user-1\"]}}",
+  )
+  let unsubscribe_json = proto.take_messages()[0].to_json()
+  assert_true(unsubscribe_json.contains("\"type\":\"success\""))
+  assert_eq(proto.user_context_subscriptions.get("user-1").unwrap_or([]), [])
+}
+
+///|
+test "bidi browser setDownloadBehavior accepts user_contexts alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browser.setDownloadBehavior\",\"params\":{\"downloadBehavior\":{\"type\":\"allowed\",\"destinationFolder\":\"/tmp/downloads\"},\"user_contexts\":[\"user-1\"]}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  let behavior = proto.user_context_download_behavior.get("user-1").unwrap()
+  assert_eq(
+    behavior.stringify(),
+    "{\"type\":\"allowed\",\"destinationFolder\":\"/tmp/downloads\"}",
   )
 }
 
@@ -1284,4 +1361,36 @@ test "bidi script callFunction validates snake_case channel serializationOptions
   assert_true(json.contains("\"type\":\"error\""))
   assert_true(json.contains("\"error\":\"invalid argument\""))
   assert_true(json.contains("maxObjectDepth must be a non-negative integer"))
+}
+
+///|
+test "bidi script evaluate accepts await_promise alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"Promise.resolve(42)\",\"target\":{\"context\":\"session-1\"},\"await_promise\":true}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":42"))
+}
+
+///|
+test "bidi script callFunction accepts snake_case aliases" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.callFunction\",\"params\":{\"function_declaration\":\"async () => ({answer: 42})\",\"target\":{\"context\":\"session-1\"},\"await_promise\":true,\"result_ownership\":\"root\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"handle\":"))
 }

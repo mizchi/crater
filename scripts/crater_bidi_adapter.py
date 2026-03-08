@@ -1371,7 +1371,7 @@ class BrowsingContextModule:
         if device_pixel_ratio is not _UNSET:
             params["devicePixelRatio"] = device_pixel_ratio
         if user_contexts is not None:
-            params["userContexts"] = user_contexts
+            params["user_contexts"] = user_contexts
         future = await self._session.send_command("browsingContext.setViewport", params)
         return await future
 
@@ -1395,7 +1395,7 @@ class SessionModule:
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
-            params["userContexts"] = user_contexts
+            params["user_contexts"] = user_contexts
         future = await self._session.send_command("session.subscribe", params)
         return await future
 
@@ -1421,22 +1421,12 @@ class ScriptModule:
         params = {
             "expression": expression,
             "target": target,  # Pass target as-is for WPT validation tests
-            "awaitPromise": await_promise,
+            "await_promise": await_promise,
         }
-
-        context_id = None
-        if isinstance(target, Mapping):
-            candidate = target.get("context")
-            if isinstance(candidate, str):
-                context_id = candidate
-        elif hasattr(target, "context") and isinstance(target.context, str):
-            context_id = target.context
-        # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
                 continue
-            camel_key = self._to_camel_case(key)
-            params[camel_key] = value
+            params[key] = value
         future = await self._session.send_command("script.evaluate", params)
         result = await future
         if raw_result:
@@ -1445,26 +1435,19 @@ class ScriptModule:
             raise ScriptEvaluateResultException(result)
         return result.get("result", result)
 
-    def _to_camel_case(self, snake_str):
-        """Convert snake_case to camelCase"""
-        components = snake_str.split('_')
-        return components[0] + ''.join(x.title() for x in components[1:])
-
     async def call_function(self, function_declaration, target, arguments=None, await_promise=False, **kwargs):
         raw_result = kwargs.pop("raw_result", False)
         params = {
-            "functionDeclaration": function_declaration,
+            "function_declaration": function_declaration,
             "target": target,  # Pass target as-is for WPT validation tests
-            "awaitPromise": await_promise,
+            "await_promise": await_promise,
         }
         if arguments is not None:
             params["arguments"] = arguments
-        # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
                 continue
-            camel_key = self._to_camel_case(key)
-            params[camel_key] = value
+            params[key] = value
         future = await self._session.send_command("script.callFunction", params)
         result = await future
         if raw_result:
@@ -1914,7 +1897,7 @@ class NetworkModule:
         if contexts is not _UNSET:
             params["contexts"] = contexts
         if user_contexts is not _UNSET:
-            params["userContexts"] = user_contexts
+            params["user_contexts"] = user_contexts
         future = await self._session.send_command("network.setExtraHeaders", params)
         return await future
 
@@ -2259,7 +2242,7 @@ class BrowserModule:
         if download_behavior is not _UNSET:
             params["downloadBehavior"] = download_behavior
         if user_contexts is not _UNSET:
-            params["userContexts"] = user_contexts
+            params["user_contexts"] = user_contexts
         future = await self._session.send_command("browser.setDownloadBehavior", params)
         return await future
 
@@ -3170,7 +3153,7 @@ async def subscribe_events(bidi_session):
         if contexts:
             cleanup_params["contexts"] = contexts
         if user_contexts:
-            cleanup_params["userContexts"] = user_contexts
+            cleanup_params["user_contexts"] = user_contexts
         cleanup_requests.append(cleanup_params)
         if "subscription" in result:
             subscriptions.append(result["subscription"])

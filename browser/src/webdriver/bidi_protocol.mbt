@@ -1147,7 +1147,12 @@ fn BidiProtocol::dispatch_browser(
         _ => None
       }
       let target_user_contexts : Array[String] = []
-      match get_param_raw(request.params, "userContexts") {
+      match
+        get_param_raw_with_alias(
+          request.params,
+          "userContexts",
+          "user_contexts",
+        ) {
         Some(Array(user_contexts)) =>
           for user_context in user_contexts {
             match user_context {
@@ -2712,7 +2717,7 @@ fn BidiProtocol::handle_set_viewport(
   }
 
   let target_user_contexts : Array[String] = []
-  match params.get("userContexts") {
+  match get_map_field_with_alias(params, "userContexts", "user_contexts") {
     Some(Array(user_contexts)) =>
       if user_contexts.length() == 0 {
         self.send_error(
@@ -5113,12 +5118,21 @@ fn BidiProtocol::dispatch_script(
         self.realm_sandbox.get(realm_id) != None,
       )
       // Check if awaitPromise is true
-      let await_promise = match get_param_raw(request.params, "awaitPromise") {
+      let await_promise = match
+        get_param_raw_with_alias(
+          request.params,
+          "awaitPromise",
+          "await_promise",
+        ) {
         Some(True) => true
         _ => false
       }
       let root_ownership = match
-        get_param_raw(request.params, "resultOwnership") {
+        get_param_raw_with_alias(
+          request.params,
+          "resultOwnership",
+          "result_ownership",
+        ) {
         Some(String("root")) => true
         _ => false
       }
@@ -5342,7 +5356,12 @@ fn BidiProtocol::dispatch_script(
     }
     "callFunction" => {
       // Validate functionDeclaration - must be string
-      match get_param_raw(request.params, "functionDeclaration") {
+      match
+        get_param_raw_with_alias(
+          request.params,
+          "functionDeclaration",
+          "function_declaration",
+        ) {
         Some(String(_)) => ()
         Some(_) => {
           self.send_error(
@@ -5399,12 +5418,20 @@ fn BidiProtocol::dispatch_script(
       let capture_console_call = self.should_capture_console(ctx_id_call)
       // Check if awaitPromise is true
       let await_promise_call = match
-        get_param_raw(request.params, "awaitPromise") {
+        get_param_raw_with_alias(
+          request.params,
+          "awaitPromise",
+          "await_promise",
+        ) {
         Some(True) => true
         _ => false
       }
       let root_ownership_call = match
-        get_param_raw(request.params, "resultOwnership") {
+        get_param_raw_with_alias(
+          request.params,
+          "resultOwnership",
+          "result_ownership",
+        ) {
         Some(String("root")) => true
         _ => false
       }
@@ -5450,7 +5477,15 @@ fn BidiProtocol::dispatch_script(
         None => "undefined"
       }
       // Wrap function declaration and call it
-      let func = get_string_param(request.params, "functionDeclaration").unwrap()
+      let func = match
+        get_param_raw_with_alias(
+          request.params,
+          "functionDeclaration",
+          "function_declaration",
+        ) {
+        Some(String(func)) => func
+        _ => ""
+      }
       if self.try_handle_synthetic_document_status_call(
           request.id,
           ctx_id_call,
@@ -12852,7 +12887,7 @@ fn BidiProtocol::handle_subscribe(
           }
         _ => ()
       }
-      match map.get("userContexts") {
+      match get_map_field_with_alias(map, "userContexts", "user_contexts") {
         Some(Array(user_contexts)) =>
           for user_ctx in user_contexts {
             match user_ctx {
@@ -13019,7 +13054,7 @@ fn BidiProtocol::handle_unsubscribe(
         _ => ()
       }
       let user_contexts_to_unsub : Array[String] = []
-      match map.get("userContexts") {
+      match get_map_field_with_alias(map, "userContexts", "user_contexts") {
         Some(Array(user_contexts)) =>
           for user_ctx in user_contexts {
             match user_ctx {
@@ -14150,7 +14185,7 @@ fn BidiProtocol::validate_session_subscribe_params(
   }
 
   let mut has_user_context_targets = false
-  match map.get("userContexts") {
+  match get_map_field_with_alias(map, "userContexts", "user_contexts") {
     Some(Array(raw_user_contexts)) => {
       has_user_context_targets = true
       if raw_user_contexts.length() == 0 {
@@ -14344,7 +14379,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
   }
 
   let mut has_user_context_targets = false
-  match map.get("userContexts") {
+  match get_map_field_with_alias(map, "userContexts", "user_contexts") {
     Some(Array(raw_user_contexts)) => {
       has_user_context_targets = true
       if raw_user_contexts.length() == 0 {
@@ -14767,7 +14802,7 @@ fn BidiProtocol::validate_browser_set_download_behavior(
     None => ()
   }
 
-  match map.get("userContexts") {
+  match get_map_field_with_alias(map, "userContexts", "user_contexts") {
     Some(Array(user_contexts)) => {
       if user_contexts.length() == 0 {
         self.send_error(
@@ -15513,6 +15548,18 @@ fn get_param_raw(params : Json?, key : String) -> Json? {
 }
 
 ///|
+fn get_param_raw_with_alias(
+  params : Json?,
+  key : String,
+  alias_key : String,
+) -> Json? {
+  match params {
+    Some(Object(map)) => get_map_field_with_alias(map, key, alias_key)
+    _ => None
+  }
+}
+
+///|
 /// Get map entry by primary key, then fallback alias.
 fn get_map_field_with_alias(
   map : Map[String, Json],
@@ -15559,7 +15606,10 @@ fn canonicalize_serialization_options_map(
 ///|
 /// Get serializationOptions as JSON string.
 fn get_serialization_options_json(params : Json?) -> String {
-  match get_param_raw(params, "serializationOptions") {
+  match
+    get_param_raw_with_alias(
+      params, "serializationOptions", "serialization_options",
+    ) {
     Some(Object(opts)) =>
       make_object(canonicalize_serialization_options_map(opts)).stringify()
     _ => "{}"
@@ -15569,7 +15619,10 @@ fn get_serialization_options_json(params : Json?) -> String {
 ///|
 /// Get serializationOptions for locateNodes with adjusted DOM depth semantics.
 fn get_locate_nodes_serialization_options_json(params : Json?) -> String {
-  match get_param_raw(params, "serializationOptions") {
+  match
+    get_param_raw_with_alias(
+      params, "serializationOptions", "serialization_options",
+    ) {
     Some(Object(opts)) => {
       let normalized_opts = canonicalize_serialization_options_map(opts)
       let adjusted : Map[String, Json] = {}
@@ -15593,7 +15646,10 @@ fn get_locate_nodes_serialization_options_json(params : Json?) -> String {
 ///|
 /// Check if serializationOptions parameter is present.
 fn has_serialization_options_param(params : Json?) -> Bool {
-  match get_param_raw(params, "serializationOptions") {
+  match
+    get_param_raw_with_alias(
+      params, "serializationOptions", "serialization_options",
+    ) {
     Some(Object(_)) => true
     _ => false
   }
@@ -15720,7 +15776,7 @@ fn BidiProtocol::validate_await_promise(
   request_id : Int,
   params : Json?,
 ) -> Unit? {
-  match get_param_raw(params, "awaitPromise") {
+  match get_param_raw_with_alias(params, "awaitPromise", "await_promise") {
     Some(True) | Some(False) => ()
     None => () // Optional, defaults to false
     Some(_) => {
@@ -15740,7 +15796,8 @@ fn BidiProtocol::validate_result_ownership(
   request_id : Int,
   params : Json?,
 ) -> Unit? {
-  match get_param_raw(params, "resultOwnership") {
+  match
+    get_param_raw_with_alias(params, "resultOwnership", "result_ownership") {
     Some(String(s)) =>
       if s != "root" && s != "none" {
         self.send_error(
@@ -15766,7 +15823,10 @@ fn BidiProtocol::validate_serialization_options(
   request_id : Int,
   params : Json?,
 ) -> Unit? {
-  match get_param_raw(params, "serializationOptions") {
+  match
+    get_param_raw_with_alias(
+      params, "serializationOptions", "serialization_options",
+    ) {
     Some(Object(opts)) =>
       return self.validate_serialization_options_map(
         request_id,
@@ -15850,7 +15910,7 @@ fn BidiProtocol::validate_user_activation(
   request_id : Int,
   params : Json?,
 ) -> Unit? {
-  match get_param_raw(params, "userActivation") {
+  match get_param_raw_with_alias(params, "userActivation", "user_activation") {
     Some(True) | Some(False) => ()
     None => () // Optional
     Some(_) => {
@@ -15941,7 +16001,7 @@ fn BidiProtocol::resolve_target_context_realm(
 ///|
 /// Extract userActivation parameter with default false.
 fn get_user_activation_value(params : Json?) -> Bool {
-  match get_param_raw(params, "userActivation") {
+  match get_param_raw_with_alias(params, "userActivation", "user_activation") {
     Some(True) => true
     _ => false
   }

@@ -57,6 +57,9 @@
 - [x] `script.callFunction` の arguments local normalize を削除して protocol validation に委譲
 - [x] `browsingContext.create` の `type_hint / user_context / reference_context` alias を MoonBit で受理
 - [x] `script.addPreloadScript / getRealms` の Python wrapper を raw forwarding に縮小
+- [x] `session.subscribe / unsubscribe` の `user_contexts` alias を MoonBit で受理
+- [x] `script.evaluate / callFunction` の `await_promise / result_ownership / user_activation / function_declaration / serialization_options` alias を MoonBit で受理
+- [x] `browsingContext.setViewport` / `network.setExtraHeaders` / `browser.setDownloadBehavior` の `user_contexts` alias を MoonBit で受理
 - [ ] P3: adapter を pytest plugin / fixture glue のみに縮小する
   - [x] `network.continueRequest / continueResponse / continueWithAuth / provideResponse / failRequest` を MoonBit 実装へ置換
   - [x] `network.failRequest` の blocked state consume / `fetchError` payload を MoonBit command 化
@@ -121,6 +124,9 @@
 - [x] `browsing_context/{get_tree,context_created} --quick` / `script/get_realms --quick` / `integration --quick` / `strict` で fixture glue 移行の回帰確認
 - [x] `browsingContext.create` の snake_case alias を protocol 側で受理して adapter の camelCase 変換を削除
 - [x] `script.addPreloadScript / getRealms` を raw forwarding に寄せ、`browsing_context/create --quick` / `script/{add_preload_script,get_realms} --quick` / `integration --quick` / `strict` で回帰確認
+- [x] `session.subscribe / unsubscribe` と `script.evaluate / callFunction` の snake_case alias を protocol 側で受理して adapter の camelCase 変換を削除
+- [x] `session/{subscribe,unsubscribe} --quick` / `script/{evaluate,call_function} --quick` / `integration --quick` / `strict` で alias 移行の回帰確認
+- [x] `browsing_context/set_viewport --quick` / `network/set_extra_headers --quick` / `browser/set_download_behavior --quick` / `integration --quick` / `strict` で `user_contexts` alias 移行の回帰確認
 
 ### 次の具体タスク
 
