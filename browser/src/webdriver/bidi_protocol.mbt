@@ -952,6 +952,13 @@ fn BidiProtocol::dispatch_session(
       self.handle_session_is_subscribed_for_context(request.id, request.params)
       Ok(())
     }
+    "prepareBaselineContextForTest" => {
+      self.handle_session_prepare_baseline_context_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "resetForTest" => {
       self.reset_session_runtime_state()
       let ctx_id = self.ensure_default_context()
@@ -1194,6 +1201,13 @@ fn BidiProtocol::dispatch_browsing_context(
       )
       Ok(())
     }
+    "createAndGetInfo" => {
+      self.handle_browsing_context_create_and_get_info(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "getContextScopeInfo" => {
       self.handle_browsing_context_get_context_scope_info(
         request.id,
@@ -1206,6 +1220,10 @@ fn BidiProtocol::dispatch_browsing_context(
         request.id,
         request.params,
       )
+      Ok(())
+    }
+    "getContextInfo" => {
+      self.handle_browsing_context_get_context_info(request.id, request.params)
       Ok(())
     }
     "prepareNavigate" => {
@@ -1319,131 +1337,15 @@ fn BidiProtocol::dispatch_browsing_context(
       Ok(())
     }
     "create" => {
-      let type_hint = match get_param_raw(request.params, "type") {
-        Some(String(kind)) => kind
-        Some(_) => {
-          self.send_error(
+      match
+        self.create_top_level_context_from_params(request.id, request.params) {
+        Some(ctx_id) =>
+          self.send_success(
             request.id,
-            "invalid argument",
-            "type must be a string",
+            Some(make_object({ "context": Json::string(ctx_id) })),
           )
-          return Ok(())
-        }
-        None => "tab"
+        None => ()
       }
-      if type_hint != "tab" && type_hint != "window" {
-        self.send_error(
-          request.id,
-          "invalid argument",
-          "type must be 'tab' or 'window'",
-        )
-        return Ok(())
-      }
-
-      let background = match get_param_raw(request.params, "background") {
-        Some(True) => true
-        Some(False) => false
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "background must be a boolean",
-          )
-          return Ok(())
-        }
-        None => false
-      }
-
-      let reference_context = match
-        get_param_raw(request.params, "referenceContext") {
-        Some(String(reference_ctx_id)) => {
-          if not(self.manager.has_session(reference_ctx_id)) {
-            self.send_error(
-              request.id,
-              "no such frame",
-              "Unknown context: " + reference_ctx_id,
-            )
-            return Ok(())
-          }
-          if self.context_parent.contains(reference_ctx_id) {
-            self.send_error(
-              request.id,
-              "invalid argument",
-              "referenceContext must be top-level",
-            )
-            return Ok(())
-          }
-          Some(reference_ctx_id)
-        }
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "referenceContext must be a string",
-          )
-          return Ok(())
-        }
-        None => None
-      }
-
-      let requested_user_context = match
-        get_param_raw(request.params, "userContext") {
-        Some(String(user_ctx_id)) =>
-          if user_ctx_id == "" || not(self.user_contexts.contains(user_ctx_id)) {
-            self.send_error(
-              request.id,
-              "no such user context",
-              "Unknown user context: " + user_ctx_id,
-            )
-            return Ok(())
-          } else {
-            Some(user_ctx_id)
-          }
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "userContext must be a string",
-          )
-          return Ok(())
-        }
-        None => None
-      }
-
-      let user_ctx = match requested_user_context {
-        Some(user_ctx_id) => user_ctx_id
-        None =>
-          match reference_context {
-            Some(reference_ctx_id) =>
-              self.context_user_context
-              .get(reference_ctx_id)
-              .unwrap_or("default")
-            None => "default"
-          }
-      }
-
-      let previous_active_context = self.active_context_id
-      let ctx_id = self.create_context(user_ctx, type_hint)
-      if type_hint == "window" {
-        match reference_context {
-          Some(reference_ctx_id) =>
-            match self.context_client_window.get(reference_ctx_id) {
-              Some(reference_client_window) =>
-                self.context_client_window[ctx_id] = reference_client_window
-              None => ()
-            }
-          None => ()
-        }
-      }
-      if background {
-        self.active_context_id = previous_active_context
-      }
-      let result = make_object({ "context": Json::string(ctx_id) })
-      // Emit events before response for immediate listener availability.
-      self.emit_context_created(ctx_id, type_hint, "about:blank", None, None)
-      self.emit_default_realm(ctx_id)
-      self.apply_preload_scripts_for_context(ctx_id)
-      self.send_success(request.id, Some(result))
       Ok(())
     }
     "navigate" => {
@@ -2247,6 +2149,195 @@ fn BidiProtocol::handle_browsing_context_get_requested_navigation_url(
 }
 
 ///|
+fn BidiProtocol::handle_browsing_context_get_context_info(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  match self.build_context_entry(context_id, true, 0, Some(0)) {
+    Some(entry) => self.send_success(request_id, Some(entry))
+    None =>
+      self.send_error(
+        request_id,
+        "no such frame",
+        "Unknown context: " + context_id,
+      )
+  }
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_create_and_get_info(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.create_top_level_context_from_params(request_id, params) {
+    Some(ctx_id) =>
+      match self.build_context_entry(ctx_id, true, 0, Some(0)) {
+        Some(entry) => self.send_success(request_id, Some(entry))
+        None =>
+          self.send_error(
+            request_id,
+            "no such frame",
+            "Unknown context: " + ctx_id,
+          )
+      }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::create_top_level_context_from_params(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> String? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+
+  let type_hint = match get_map_field_with_alias(map, "type", "type_hint") {
+    Some(String(kind)) => kind
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "type must be a string")
+      return None
+    }
+    None => "tab"
+  }
+  if type_hint != "tab" && type_hint != "window" {
+    self.send_error(
+      request_id, "invalid argument", "type must be 'tab' or 'window'",
+    )
+    return None
+  }
+
+  let background = match map.get("background") {
+    Some(True) => true
+    Some(False) => false
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "background must be a boolean",
+      )
+      return None
+    }
+    None => false
+  }
+
+  let reference_context = match
+    get_map_field_with_alias(map, "referenceContext", "reference_context") {
+    Some(String(reference_ctx_id)) => {
+      if not(self.manager.has_session(reference_ctx_id)) {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + reference_ctx_id,
+        )
+        return None
+      }
+      if self.context_parent.contains(reference_ctx_id) {
+        self.send_error(
+          request_id, "invalid argument", "referenceContext must be top-level",
+        )
+        return None
+      }
+      Some(reference_ctx_id)
+    }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "referenceContext must be a string",
+      )
+      return None
+    }
+    None => None
+  }
+
+  let requested_user_context = match
+    get_map_field_with_alias(map, "userContext", "user_context") {
+    Some(String(user_ctx_id)) =>
+      if user_ctx_id == "" || not(self.user_contexts.contains(user_ctx_id)) {
+        self.send_error(
+          request_id,
+          "no such user context",
+          "Unknown user context: " + user_ctx_id,
+        )
+        return None
+      } else {
+        Some(user_ctx_id)
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContext must be a string",
+      )
+      return None
+    }
+    None => None
+  }
+
+  let user_ctx = match requested_user_context {
+    Some(user_ctx_id) => user_ctx_id
+    None =>
+      match reference_context {
+        Some(reference_ctx_id) =>
+          self.context_user_context.get(reference_ctx_id).unwrap_or("default")
+        None => "default"
+      }
+  }
+
+  let previous_active_context = self.active_context_id
+  let ctx_id = self.create_context(user_ctx, type_hint)
+  if type_hint == "window" {
+    match reference_context {
+      Some(reference_ctx_id) =>
+        match self.context_client_window.get(reference_ctx_id) {
+          Some(reference_client_window) =>
+            self.context_client_window[ctx_id] = reference_client_window
+          None => ()
+        }
+      None => ()
+    }
+  }
+  if background {
+    self.active_context_id = previous_active_context
+  }
+  self.emit_context_created(ctx_id, type_hint, "about:blank", None, None)
+  self.emit_default_realm(ctx_id)
+  self.apply_preload_scripts_for_context(ctx_id)
+  Some(ctx_id)
+}
+
+///|
 fn BidiProtocol::handle_browsing_context_prepare_navigate(
   self : BidiProtocol,
   request_id : Int,
@@ -2534,6 +2625,57 @@ fn BidiProtocol::handle_session_is_subscribed_for_context(
   self.send_success(
     request_id,
     Some(make_object({ "subscribed": Json::boolean(subscribed) })),
+  )
+}
+
+///|
+fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match params {
+    Some(Object(_)) | None => ()
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  self.reset_session_runtime_state()
+  let ctx_id = self.ensure_default_context()
+  let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  self.prepare_runtime_context_for_browsing_command(ctx_id)
+  ignore(evaluate_js("try { delete globalThis.SOME_VARIABLE; } catch (_) {}"))
+  let context_info = self
+    .build_context_entry(ctx_id, true, 0, Some(0))
+    .unwrap_or(
+      make_object({
+        "context": Json::string(ctx_id),
+        "url": Json::string(self.current_context_url(ctx_id)),
+        "children": Json::array([]),
+        "parent": Json::null(),
+        "clientWindow": Json::string(
+          self.context_client_window
+          .get(ctx_id)
+          .unwrap_or("client-window-" + ctx_id),
+        ),
+        "userContext": Json::string(
+          self.context_user_context.get(ctx_id).unwrap_or("default"),
+        ),
+        "originalOpener": Json::null(),
+      }),
+    )
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "context": Json::string(ctx_id),
+        "realm": Json::string(realm_id),
+        "contextInfo": context_info,
+      }),
+    ),
   )
 }
 

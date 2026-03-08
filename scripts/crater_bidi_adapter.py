@@ -632,6 +632,26 @@ class CraterBidiSession:
         url = result.get("url") if isinstance(result, Mapping) else None
         return url if isinstance(url, str) else None
 
+    async def get_browsing_context_info(self, context_id: str) -> dict[str, Any]:
+        if not isinstance(context_id, str) or context_id == "":
+            return {}
+        future = await self.send_command(
+            "browsingContext.getContextInfo",
+            {"context": context_id},
+        )
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def create_browsing_context_and_get_info(self, **params: Any) -> dict[str, Any]:
+        future = await self.send_command("browsingContext.createAndGetInfo", params)
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def prepare_baseline_context_for_test(self) -> dict[str, Any]:
+        future = await self.send_command("session.prepareBaselineContextForTest", {})
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
     async def prepare_browsing_context_navigate(
         self,
         *,
@@ -1148,10 +1168,10 @@ class BrowsingContextModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
-    async def create(self, type_hint: str = "tab", **kwargs):
-        params = {"type": type_hint}
-        for key, value in kwargs.items():
-            params[self._to_camel_case(key)] = value
+    async def create(self, type_hint=_UNSET, **kwargs):
+        params = dict(kwargs)
+        if type_hint is not _UNSET and "type" not in params and "type_hint" not in params:
+            params["type_hint"] = type_hint
         future = await self._session.send_command(
             "browsingContext.create", params
         )
@@ -1461,11 +1481,11 @@ class ScriptModule:
         return await future
 
     async def add_preload_script(self, function_declaration: str, **kwargs):
-        params = {"functionDeclaration": function_declaration}
+        params = {"function_declaration": function_declaration}
         for key, value in kwargs.items():
             if value is None or self._session._is_undefined(value):
                 continue
-            params[self._to_camel_case(key)] = value
+            params[key] = value
         future = await self._session.send_command("script.addPreloadScript", params)
         result = await future
         if isinstance(result, Mapping):
@@ -1485,12 +1505,10 @@ class ScriptModule:
         return await future
 
     async def get_realms(self, **kwargs):
-        params = {}
-        for key, value in kwargs.items():
-            params[self._to_camel_case(key)] = value
+        params = dict(kwargs)
         future = await self._session.send_command("script.getRealms", params)
         result = await future
-        return result.get("realms", [])
+        return result.get("realms", []) if isinstance(result, Mapping) else []
 
 
 class NetworkModule:
@@ -2326,35 +2344,13 @@ def _context_sort_key(context_info: dict):
 async def _trim_contexts_for_test(session: CraterBidiSession):
     baseline_ctx_id = None
     try:
-        result = await session.session.reset_for_test()
+        result = await session.prepare_baseline_context_for_test()
         ctx = result.get("context") if isinstance(result, Mapping) else None
         if isinstance(ctx, str):
             baseline_ctx_id = ctx
     except Exception:
         pass
     session._event_backlog.clear()
-    if isinstance(baseline_ctx_id, str):
-        try:
-            future = await session.send_command(
-                "script.evaluate",
-                {
-                    "expression": "try { delete globalThis.SOME_VARIABLE; } catch (_) {}",
-                    "target": {"context": baseline_ctx_id},
-                    "awaitPromise": True,
-                },
-            )
-            await future
-        except Exception:
-            pass
-
-    if not isinstance(baseline_ctx_id, str):
-        try:
-            created = await session.browsing_context.create(type_hint="tab")
-            ctx = created.get("context")
-            if isinstance(ctx, str):
-                baseline_ctx_id = ctx
-        except Exception:
-            baseline_ctx_id = None
 
     session._baseline_context_id = baseline_ctx_id
 
@@ -2364,10 +2360,8 @@ async def top_context(bidi_session):
     """Get the top-level browsing context."""
     baseline_ctx_id = getattr(bidi_session, "_baseline_context_id", None)
     if isinstance(baseline_ctx_id, str):
-        contexts = await bidi_session.browsing_context.get_tree(
-            root=baseline_ctx_id, max_depth=0
-        )
-        if contexts:
+        context_info = await bidi_session.get_browsing_context_info(baseline_ctx_id)
+        if context_info:
             try:
                 await bidi_session.browsing_context.navigate(
                     context=baseline_ctx_id,
@@ -2376,7 +2370,8 @@ async def top_context(bidi_session):
                 )
             except Exception:
                 pass
-            return contexts[0]
+            refreshed = await bidi_session.get_browsing_context_info(baseline_ctx_id)
+            return refreshed or context_info
 
     contexts = await bidi_session.browsing_context.get_tree()
     if contexts:
@@ -2393,32 +2388,26 @@ async def top_context(bidi_session):
                 )
             except Exception:
                 pass
-            refreshed = await bidi_session.browsing_context.get_tree(
-                root=baseline_ctx_id, max_depth=0
-            )
+            refreshed = await bidi_session.get_browsing_context_info(baseline_ctx_id)
             if refreshed:
-                return refreshed[0]
+                return refreshed
         return baseline_context
     # Create a context if none exists
-    result = await bidi_session.browsing_context.create(type_hint="tab")
-    if isinstance(result, dict):
-        bidi_session._baseline_context_id = result.get("context")
-    contexts = await bidi_session.browsing_context.get_tree(
-        root=result["context"], max_depth=0
-    )
-    return contexts[0] if contexts else {"context": result["context"], "url": "about:blank"}
+    context_info = await bidi_session.create_browsing_context_and_get_info(type="tab")
+    if isinstance(context_info, dict):
+        bidi_session._baseline_context_id = context_info.get("context")
+    return context_info or {"context": None, "url": "about:blank"}
 
 
 @pytest_asyncio.fixture
 async def new_tab(bidi_session):
     """Open and focus a new tab."""
-    result = await bidi_session.browsing_context.create(type_hint="tab")
-    contexts_info = await bidi_session.browsing_context.get_tree(
-        root=result["context"], max_depth=0
-    )
-    yield contexts_info[0]
+    context_info = await bidi_session.create_browsing_context_and_get_info(type="tab")
+    context_id = context_info.get("context") if isinstance(context_info, Mapping) else None
+    yield context_info or {"context": context_id, "url": "about:blank"}
     try:
-        await bidi_session.browsing_context.close(context=contexts_info[0]["context"])
+        if isinstance(context_id, str):
+            await bidi_session.browsing_context.close(context=context_id)
     except Exception:
         pass
 
@@ -3409,13 +3398,8 @@ def current_url(bidi_session):
 
     async def _current_url(context):
         context_id = context.get("context") if isinstance(context, dict) else context
-        contexts = await bidi_session.browsing_context.get_tree(
-            root=context_id,
-            max_depth=0,
-        )
-        if not contexts:
-            return None
-        return contexts[0].get("url")
+        context_info = await bidi_session.get_browsing_context_info(context_id)
+        return context_info.get("url") if context_info else None
 
     return _current_url
 

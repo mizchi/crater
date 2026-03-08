@@ -214,6 +214,55 @@ test "bidi browsingContext createSyntheticChildContext updates context tree" {
 }
 
 ///|
+test "bidi browsingContext createAndGetInfo returns created context entry" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.createAndGetInfo\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"context\":\"session-2\""))
+  assert_true(json.contains("\"url\":\"about:blank\""))
+  assert_true(json.contains("\"children\":[]"))
+  assert_true(json.contains("\"userContext\":\"default\""))
+}
+
+///|
+test "bidi browsingContext createAndGetInfo accepts snake_case aliases" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.createAndGetInfo\",\"params\":{\"type_hint\":\"tab\",\"user_context\":\"user-1\"}}",
+  )
+  let created_json = proto.take_messages()[0].to_json()
+  assert_true(created_json.contains("\"type\":\"success\""))
+  assert_true(created_json.contains("\"context\":\"session-2\""))
+  assert_true(created_json.contains("\"userContext\":\"user-1\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.createAndGetInfo\",\"params\":{\"reference_context\":\"session-2\"}}",
+  )
+  let inherited_json = proto.take_messages()[0].to_json()
+  assert_true(inherited_json.contains("\"type\":\"success\""))
+  assert_true(inherited_json.contains("\"context\":\"session-3\""))
+  assert_true(inherited_json.contains("\"userContext\":\"user-1\""))
+}
+
+///|
 test "bidi browsingContext getContextScopeInfo returns ancestry and user context" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -291,6 +340,53 @@ test "bidi browsingContext getRequestedNavigationUrl keeps original requested ur
       "\"url\":\"http://localhost:8000/webdriver/tests/support/http_handlers/headers_echo.py#frag\"",
     ),
   )
+}
+
+///|
+test "bidi browsingContext getContextInfo returns a single context entry" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.getContextInfo\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"context\":\"session-1\""))
+  assert_true(json.contains("\"url\":\"about:blank\""))
+  assert_true(json.contains("\"children\":[]"))
+  assert_true(json.contains("\"userContext\":\"default\""))
+}
+
+///|
+test "bidi session prepareBaselineContextForTest clears some variable and returns context info" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"globalThis.SOME_VARIABLE = 42; globalThis.SOME_VARIABLE\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.prepareBaselineContextForTest\",\"params\":{}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+  assert_true(prepare_json.contains("\"context\":\"session-1\""))
+  assert_true(prepare_json.contains("\"contextInfo\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"typeof globalThis.SOME_VARIABLE\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let eval_json = proto.take_messages()[0].to_json()
+  assert_true(eval_json.contains("\"value\":\"undefined\""))
 }
 
 ///|
@@ -946,6 +1042,44 @@ test "bidi script removeAllPreloadScripts clears future contexts" {
   )
   let after_remove_json = proto.take_messages()[0].to_json()
   assert_true(after_remove_json.contains("\"type\":\"undefined\""))
+}
+
+///|
+test "bidi script addPreloadScript accepts snake_case aliases" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.addPreloadScript\",\"params\":{\"function_declaration\":\"() => { window.foo = 'bar'; }\",\"user_contexts\":[\"user-1\"]}}",
+  )
+  let add_json = proto.take_messages()[0].to_json()
+  assert_true(add_json.contains("\"type\":\"success\""))
+  assert_true(add_json.contains("\"script\":\"preload-1\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.createAndGetInfo\",\"params\":{\"user_context\":\"user-1\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"window.foo\",\"target\":{\"context\":\"session-2\"},\"awaitPromise\":true}}",
+  )
+  let scoped_json = proto.take_messages()[0].to_json()
+  assert_true(scoped_json.contains("\"value\":\"bar\""))
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"window.foo\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true}}",
+  )
+  let default_json = proto.take_messages()[0].to_json()
+  assert_true(default_json.contains("\"type\":\"undefined\""))
 }
 
 ///|

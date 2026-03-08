@@ -52,8 +52,11 @@
   - [x] `script.callFunction` の focus / scroll fallback を MoonBit 化
   - [x] `browsingContext.getRequestedNavigationUrl` で requested URL state を MoonBit query 化
   - [x] `browsingContext.navigate / reload / close` の wrapper glue を MoonBit command に移行
-  - [x] `script.evaluate / callFunction / locateNodes` の `serializationOptions` snake_case 正規化を MoonBit 化
-  - [x] `script.callFunction` の arguments local normalize を削除して protocol validation に委譲
+- [x] `session.prepareBaselineContextForTest` と `browsingContext.getContextInfo` で fixture glue を MoonBit query/command 化
+- [x] `script.evaluate / callFunction / locateNodes` の `serializationOptions` snake_case 正規化を MoonBit 化
+- [x] `script.callFunction` の arguments local normalize を削除して protocol validation に委譲
+- [x] `browsingContext.create` の `type_hint / user_context / reference_context` alias を MoonBit で受理
+- [x] `script.addPreloadScript / getRealms` の Python wrapper を raw forwarding に縮小
 - [ ] P3: adapter を pytest plugin / fixture glue のみに縮小する
   - [x] `network.continueRequest / continueResponse / continueWithAuth / provideResponse / failRequest` を MoonBit 実装へ置換
   - [x] `network.failRequest` の blocked state consume / `fetchError` payload を MoonBit command 化
@@ -110,9 +113,14 @@
 - [x] network adapter に残っていた dead helper（header/cookie/auth/data-url 補助）を削除
 - [x] `network/remove_intercept --quick` / `network/get_data --quick` / `network/disown_data --quick` / `network/set_cache_behavior/invalid --quick` / `network/continue_with_auth --quick` / `network --quick` / `strict` で回帰確認
 - [x] `browsingContext.prepareNavigate / finalizeNavigate / finalizeReload / getCloseMetadata` を追加して `navigate/reload/close` wrapper glue を MoonBit 化
+- [x] `session.prepareBaselineContextForTest` を追加して `_trim_contexts_for_test` の baseline 準備を MoonBit 化
+- [x] `browsingContext.getContextInfo` を追加して `top_context / new_tab / current_url` fixture の `getTree(root, maxDepth=0)` 依存を削減
 - [x] `serializationOptions` の snake_case alias (`max_dom_depth` / `max_object_depth` / `include_shadow_tree`) を MoonBit validator / runtime に追加
 - [x] adapter 側の `_convert_serialization_options` / `_normalize_call_function_arguments` を削除
 - [x] `script/evaluate --quick` / `script/call_function --quick` / `browsing_context/{locate_nodes,close,reload,navigate} --quick` / `integration --quick` / `strict` で回帰確認
+- [x] `browsing_context/{get_tree,context_created} --quick` / `script/get_realms --quick` / `integration --quick` / `strict` で fixture glue 移行の回帰確認
+- [x] `browsingContext.create` の snake_case alias を protocol 側で受理して adapter の camelCase 変換を削除
+- [x] `script.addPreloadScript / getRealms` を raw forwarding に寄せ、`browsing_context/create --quick` / `script/{add_preload_script,get_realms} --quick` / `integration --quick` / `strict` で回帰確認
 
 ### 次の具体タスク
 
@@ -123,6 +131,7 @@
   - `captureScreenshot` / `print` / `script.callFunction` の主要な synthetic path は移行済み
   - `navigate/reload` 後の synthetic request sequence と request id 発番は MoonBit 側へ移行済み
   - `navigate/reload/close` の wrapper glue と `serializationOptions` 正規化は MoonBit 側へ移行済み
+  - baseline context 準備と single-context query は MoonBit 側へ移行済み
   - requested navigation URL / context cookie scope / userContext existence は query command 化済み
   - `network` の dead helper と一部 local validation は削除済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
